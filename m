@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaJBTtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:49:15 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42065 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751834AbaJBTtO (ORCPT
+	id S1752445AbaJBTv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:51:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:49411 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945AbaJBTvy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:49:14 -0400
-Message-ID: <542DAC31.8030504@hurleysoftware.com>
-Date: Thu, 02 Oct 2014 15:49:05 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <542D57D0.4030904@hurleysoftware.com> <20141002135250.GB10583@worktop.programming.kicks-ass.net> <20141002135805.GF6324@worktop.programming.kicks-ass.net> <20141002191114.GA30606@redhat.com>
-In-Reply-To: <20141002191114.GA30606@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Thu, 2 Oct 2014 15:51:54 -0400
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <542D953F.3030701@codeaurora.org>
+Date: Thu, 2 Oct 2014 14:51:50 -0500
+Cc: Georgi Djakov <gdjakov@mm-sol.com>, mturquette@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
+References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com> <542D953F.3030701@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 03:11 PM, Oleg Nesterov wrote:
-> On 10/02, Peter Zijlstra wrote:
->>
->> On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
->>>> If yes, then wakeups from signals don't work either, right?
->>>
->>> Its a kthread, there should not be any signals.
->>
->> That said, in the tty patch we do appear to have this problem.
->>
->> Oleg, do we want something like the below on top to make that work
->> again?
->>
->> ---
->> --- a/kernel/sched/wait.c
->> +++ b/kernel/sched/wait.c
->> @@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
->>  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
->>  	 * also observe all state before the wakeup.
->>  	 */
->> -	if (!(wait->flags & WQ_FLAG_WOKEN))
->> -		timeout = schedule_timeout(timeout);
->> +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
->> +		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
->> +			timeout = schedule_timeout(timeout);
->> +	}
->>  	__set_current_state(TASK_RUNNING);
-> 
-> I am a bit confused... but for what?
-> 
-> schedule() won't sleep if signal_pending_state(mode) anyway, so we
-> do not need this correctness-wise. And the caller needs to check
-> signal_pending() anyway.
-> 
-> We can probably add
-> 
-> 	if (signal_pending_state(mode, current))
-> 		return -EINTR;
-> 
-> at the start of wait_woken(), even before set_current_state(mode).
-> Then the caller can check "ret < 0" and avoid signal_pending().
-> Not sure this makes sense.
 
-The confusion is my fault; I see now that signals don't suffer from the
-missed wakeup problem to which other condition testing is prone. Thanks
-for setting me straight, Oleg.
+On Oct 2, 2014, at 1:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-So just back to the kthread wakeup problem then.
+> On 09/30/14 10:20, Georgi Djakov wrote:
+>> This patch expands the regmap support to allow registration of clock
+>> dividers. It just prepares for the introduction of a clkdiv driver,
+>> that will be in a separate patch.
+>> Such dividers are found in the Qualcomm PMIC chips such as PM8941,
+>> PMA8084 and others.
+> 
+> We're going to need to rework the Makefile in clk/qcom so that we only
+> build certain pieces of the "library" when we need them. Right now the
+> directory is focused entirely on mmio clock controllers and if we put
+> the pmic clocks in there then we need to figure out a way to only build
+> the pmic pieces if only the pmic driver is selected and only build the
+> mmio pieces if the mmio drivers are selected.
 
-Regards,
-Peter Hurley
+Would we ever not build the mmio drivers or do you mean something else?
 
+- k
 
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
