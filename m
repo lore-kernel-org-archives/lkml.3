@@ -1,56 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383AbaJBP3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:29:31 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:64531 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243AbaJBP33 (ORCPT
+	id S1754343AbaJBPa4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:30:56 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:23962 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510AbaJBPay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:29:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefan Agner <stefan@agner.ch>
-Cc: shawn.guo@freescale.com, kernel@pengutronix.de, b35083@freescale.com,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ARM: dts: vf500/vf610: support VF500 SoC
-Date: Thu, 02 Oct 2014 17:28:48 +0200
-Message-ID: <8882221.sfQOLcQs3p@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412261724-11073-1-git-send-email-stefan@agner.ch>
-References: <1412261724-11073-1-git-send-email-stefan@agner.ch>
+	Thu, 2 Oct 2014 11:30:54 -0400
+X-CheckPoint: {542D6FAE-2-2100090A-C0000000}
+Message-ID: <201410021530.s92FUrm1007050@farm-0039.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 2 Oct 2014 10:48:12 -0400
+Subject: [PATCH v3 1/2] tile: switch to using seqlocks for the vDSO time code
+To: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>, Henrik Austad <henrik@austad.us>
+In-Reply-To: <20141001212439.GA12974@sisyphus.home.austad.us>
+References: <20141001212439.GA12974@sisyphus.home.austad.us>
+	<201409301938.s8UJcfY4018093@lab-40.internal.tilera.com>
+	<alpine.DEB.2.11.1410010004560.4455@nanos>
+	<CALAqxLWHhmyDp-CeGzs6Jqzcrk-KDX_T4UQpTU79VDTL3oHdJw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LHr3eC11Oykpv7SdG5Bt8yUt4A/YStI24/+InlSzZjq
- 3KNdoPodRMP8kfrh7q3joNGDkt3ojfX0RKGDsWsm6N19t/rJr2
- 04vOZOhXIEhG2q6Indk32GuuIo/pAmkurnQQ3rMRucrxgKbnXd
- xkCbSIcNqSGeNBHGdk9Kwv8VeOvSGb//BP6L8UvW6rcppin7dt
- cWm2X16xKSfArGxkDf4elw1wOA/7b5lQXfJk0JPSA1ZstS5S34
- 89ZlM9S3WEz+eGDyLr807iI3e3Dk4QDkKaZX9k+RojuKZcF+bq
- sOBx6WPM6U/wSVbyrjZrzNbM6Duro3zgcjSdRf53qi0598CC5S
- Oe+dgQHbzeJ3afwd2yaI=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 October 2014 16:55:23 Stefan Agner wrote:
-> The VF500 is essentially the same SoC, but with only one core and
-> without L1 cache. The VF610 is therefore a superset of the VF500.
-> Move allmost all periperals to vf500.dtsi which is then included
-> and enhanced by vf610.dtsi.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
-> Somehow using -M -B switches create a unapplyable patch, hence I
-> generated one without those options. Sorry about that.
-> 
->  arch/arm/boot/dts/vf500.dtsi | 498 ++++++++++++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/vf610.dtsi | 507 +------------------------------------------
->  2 files changed, 510 insertions(+), 495 deletions(-)
->  create mode 100644 arch/arm/boot/dts/vf500.dtsi
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/asm/vdso.h          |  5 ++--
+ arch/tile/kernel/time.c               | 16 +++++-------
+ arch/tile/kernel/vdso/vgettimeofday.c | 47 +++++++++++------------------------
+ 3 files changed, 24 insertions(+), 44 deletions(-)
 
-I think it would be better to create one extra file that contains the common
-parts and is included by both vf500 and vf610.
+v2: split apart seqlock and new functionality into separate commits
+v3: rebase onto 3.17-rc7
 
-	Arnd
+diff --git a/arch/tile/include/asm/vdso.h b/arch/tile/include/asm/vdso.h
+index 9f6a78d665fa..d64b0d58a7e9 100644
+--- a/arch/tile/include/asm/vdso.h
++++ b/arch/tile/include/asm/vdso.h
+@@ -15,6 +15,7 @@
+ #ifndef __TILE_VDSO_H__
+ #define __TILE_VDSO_H__
+ 
++#include <linux/seqlock.h>
+ #include <linux/types.h>
+ 
+ /*
+@@ -26,8 +27,8 @@
+  */
+ 
+ struct vdso_data {
+-	__u64 tz_update_count;  /* Timezone atomicity ctr             */
+-	__u64 tb_update_count;  /* Timebase atomicity ctr             */
++	seqcount_t tz_seq;	/* Timezone seqlock                   */
++	seqcount_t tb_seq;	/* Timebase seqlock                   */
+ 	__u64 xtime_tod_stamp;  /* TOD clock for xtime                */
+ 	__u64 xtime_clock_sec;  /* Kernel time second                 */
+ 	__u64 xtime_clock_nsec; /* Kernel time nanosecond             */
+diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
+index d8fbc289e680..2fe8323db77e 100644
+--- a/arch/tile/kernel/time.c
++++ b/arch/tile/kernel/time.c
+@@ -249,13 +249,10 @@ cycles_t ns2cycles(unsigned long nsecs)
+ 
+ void update_vsyscall_tz(void)
+ {
+-	/* Userspace gettimeofday will spin while this value is odd. */
+-	++vdso_data->tz_update_count;
+-	smp_wmb();
++	write_seqcount_begin(&vdso_data->tz_seq);
+ 	vdso_data->tz_minuteswest = sys_tz.tz_minuteswest;
+ 	vdso_data->tz_dsttime = sys_tz.tz_dsttime;
+-	smp_wmb();
+-	++vdso_data->tz_update_count;
++	write_seqcount_end(&vdso_data->tz_seq);
+ }
+ 
+ void update_vsyscall(struct timekeeper *tk)
+@@ -266,9 +263,8 @@ void update_vsyscall(struct timekeeper *tk)
+ 	if (clock != &cycle_counter_cs)
+ 		return;
+ 
+-	/* Userspace gettimeofday will spin while this value is odd. */
+-	++vdso_data->tb_update_count;
+-	smp_wmb();
++	write_seqcount_begin(&vdso_data->tb_seq);
++
+ 	vdso_data->xtime_tod_stamp = tk->tkr.cycle_last;
+ 	vdso_data->xtime_clock_sec = tk->xtime_sec;
+ 	vdso_data->xtime_clock_nsec = tk->tkr.xtime_nsec;
+@@ -276,6 +272,6 @@ void update_vsyscall(struct timekeeper *tk)
+ 	vdso_data->wtom_clock_nsec = wtm->tv_nsec;
+ 	vdso_data->mult = tk->tkr.mult;
+ 	vdso_data->shift = tk->tkr.shift;
+-	smp_wmb();
+-	++vdso_data->tb_update_count;
++
++	write_seqcount_end(&vdso_data->tb_seq);
+ }
+diff --git a/arch/tile/kernel/vdso/vgettimeofday.c b/arch/tile/kernel/vdso/vgettimeofday.c
+index e933fb9fbf5c..7cff8fbac4f0 100644
+--- a/arch/tile/kernel/vdso/vgettimeofday.c
++++ b/arch/tile/kernel/vdso/vgettimeofday.c
+@@ -53,50 +53,33 @@ inline unsigned long get_datapage(void)
+ int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+ 	cycles_t cycles;
+-	unsigned long count, sec, ns;
+-	volatile struct vdso_data *vdso_data;
++	unsigned count;
++	unsigned long sec, ns;
++	struct vdso_data *vdso = (struct vdso_data *)get_datapage();
+ 
+-	vdso_data = (struct vdso_data *)get_datapage();
+ 	/* The use of the timezone is obsolete, normally tz is NULL. */
+ 	if (unlikely(tz != NULL)) {
+-		while (1) {
+-			/* Spin until the update finish. */
+-			count = vdso_data->tz_update_count;
+-			if (count & 1)
+-				continue;
+-
+-			tz->tz_minuteswest = vdso_data->tz_minuteswest;
+-			tz->tz_dsttime = vdso_data->tz_dsttime;
+-
+-			/* Check whether updated, read again if so. */
+-			if (count == vdso_data->tz_update_count)
+-				break;
+-		}
++		do {
++			count = read_seqcount_begin(&vdso->tz_seq);
++			tz->tz_minuteswest = vdso->tz_minuteswest;
++			tz->tz_dsttime = vdso->tz_dsttime;
++		} while (unlikely(read_seqcount_retry(&vdso->tz_seq, count)));
+ 	}
+ 
+ 	if (unlikely(tv == NULL))
+ 		return 0;
+ 
+-	while (1) {
+-		/* Spin until the update finish. */
+-		count = vdso_data->tb_update_count;
+-		if (count & 1)
+-			continue;
+-
+-		sec = vdso_data->xtime_clock_sec;
+-		cycles = get_cycles() - vdso_data->xtime_tod_stamp;
+-		ns = (cycles * vdso_data->mult) + vdso_data->xtime_clock_nsec;
+-		ns >>= vdso_data->shift;
+-
++	do {
++		count = read_seqcount_begin(&vdso->tb_seq);
++		sec = vdso->xtime_clock_sec;
++		cycles = get_cycles() - vdso->xtime_tod_stamp;
++		ns = (cycles * vdso->mult) + vdso->xtime_clock_nsec;
++		ns >>= vdso->shift;
+ 		if (ns >= NSEC_PER_SEC) {
+ 			ns -= NSEC_PER_SEC;
+ 			sec += 1;
+ 		}
+-
+-		/* Check whether updated, read again if so. */
+-		if (count == vdso_data->tb_update_count)
+-			break;
+-	}
++	} while (unlikely(read_seqcount_retry(&vdso->tb_seq, count)));
+ 
+ 	tv->tv_sec = sec;
+ 	tv->tv_usec = ns / 1000;
+-- 
+1.8.3.1
+
