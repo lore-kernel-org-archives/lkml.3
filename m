@@ -1,124 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaJBHql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:46:41 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:65487 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaJBHqh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:46:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 02/15] Driver core: Unified device properties interface for platform firmware
-Date: Thu, 02 Oct 2014 09:46:29 +0200
-Message-ID: <6092163.dWXI6rWTCu@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <4390403.PNxQqnBDGX@vostro.rjw.lan>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <7365448.TlsV4zB2It@wuerfel> <4390403.PNxQqnBDGX@vostro.rjw.lan>
+	id S1752101AbaJBHq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:46:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5663 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751958AbaJBHq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 03:46:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,637,1406617200"; 
+   d="scan'208";a="582332856"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Randy Dunlap <rdunlap@infradead.org>, Jim Davis <jim.epost@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, daniel.vetter@intel.com,
+        intel-gfx@lists.freedesktop.org,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: Re: randconfig build error with next-20141001, in drivers/gpu/drm/i915
+In-Reply-To: <542C46B3.2020901@infradead.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <CA+r1ZhhmT4DrWtf6MbRQo5EqXwx+LxCqh15Vsu_d9WpftLhnxw@mail.gmail.com> <87fvf73c6g.fsf@intel.com> <542C46B3.2020901@infradead.org>
+User-Agent: Notmuch/0.18.1+110~gd9ec63c (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 02 Oct 2014 10:46:52 +0300
+Message-ID: <87eguq6hhv.fsf@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uDam0uwOAQZJEu63idmbs+B8VMwAYkMe1ht7L4e1lkU
- 0zw3Tphj004dqfj/QOwi8jSndOnf+feVv0EW2zJ4YFAQahSxCO
- Pn2nSAy2NU59wNVYFMF5xXDJwmCscWRY83wSHkbfaFla2laNm4
- WdU4f/YjoqcsR8DcgIWWQK/JO3nEj/jrKRO3ZH/mpBzD0wBK0s
- GTwN7Xcpfd9+G2jB0DhhwlkEbGek6hNxDS4GRNs9crwWfBLAkN
- PZGmOJKVqwNvseA4sQjKSaPXfFxDCgcUkkE8VyJ/fgmuJntoHJ
- ArtuEwpcHQohBMN5YfBCJF8b+lCCg45IWzUHvYXCaYiWolGeGo
- ufTc+b0W9MCLoZEnAdCc=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 02 October 2014 00:09:44 Rafael J. Wysocki wrote:
-> On Wednesday, October 01, 2014 09:47:40 AM Arnd Bergmann wrote:
-> > On Wednesday 01 October 2014 04:10:03 Rafael J. Wysocki wrote:
-> > I still have my reservations against the child accessors, and would
-> > like to hear what other people think. Passing a void pointer rather
-> > than struct fw_dev_node has both advantages and disadvantages, and
-> > I won't complain about either one if enough other people on the DT
-> > side would like to see the addition of the child functions.
-> 
-> I actually would rather like to know if the people on the DT side have any
-> problems with the child functions.
+On Wed, 01 Oct 2014, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 10/01/14 10:57, Jani Nikula wrote:
+>> On Wed, 01 Oct 2014, Jim Davis <jim.epost@gmail.com> wrote:
+>>> Building with the attached random configuration file,
+>>>
+>>> warning: (VIDEO_TIMBERDALE) selects TIMB_DMA which has unmet direct
+>>> dependencies (DMADEVICES && MFD_TIMBERDALE)
+>>> warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG
+>>> which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME)
+>>>
+>>> drivers/built-in.o: In function `intel_panel_setup_backlight':
+>>> (.text+0x11855d): undefined reference to `backlight_device_register'
+>>> drivers/built-in.o: In function `intel_panel_destroy_backlight':
+>>> (.text+0x118624): undefined reference to `backlight_device_unregister'
+>>> make: *** [vmlinux] Error 1
+>> 
+>> It's the combination:
+>> 
+>>> CONFIG_DRM_I915=y
+>>> CONFIG_BACKLIGHT_CLASS_DEVICE=m
+>> 
+>> Not sure what the Kconfig magic spell needs to be when we don't want to
+>> depend on CONFIG_BACKLIGHT_CLASS_DEVICE but we'll use it if it's enabled
+>> (y or m).
+>
+> Something like:
+>
+> 	depends on BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=n
+>
+> is what we usually use.
 
-Sure, any kind of feedback would be helpful really. 
+Oh boy this gets ugly. Trying
 
-> Because, suppose that they wouldn't like those functions at all.  What are we
-> supposed to do, then, honestly?  Add the whole DT vs ACPI logic to the leds-gpio
-> and gpio_keys_polled drivers?  But these drivers have no reason whatsoever
-> to include that.  Zero.
-> 
-> So suggestions welcome.
-> 
-> [BTW, In principle we also could use something like
-> 
-> typedef union dev_node {
-> 	struct acpi_device *acpi_node;
-> 	struct device_node *of_node;
-> } dev_node_t;
-> 
-> instead of the (void *) for more type safety.  It still is useful to pass the
-> parent pointer along with that, though.]
+diff --git a/drivers/gpu/drm/i915/Kconfig b/drivers/gpu/drm/i915/Kconfig
+index 4e39ab34eb1c..daa453c62aa6 100644
+--- a/drivers/gpu/drm/i915/Kconfig
++++ b/drivers/gpu/drm/i915/Kconfig
+@@ -3,6 +3,7 @@ config DRM_I915
+ 	depends on DRM
+ 	depends on X86 && PCI
+ 	depends on (AGP || AGP=n)
++	depends on (BACKLIGHT_CLASS_DEVICE || BACKLIGHT_CLASS_DEVICE=n)
+ 	select INTEL_GTT
+ 	select AGP_INTEL if AGP
+ 	select INTERVAL_TREE
 
-Yes, I'm not worried about the implementation details.
+leads to
 
-> > > Finally, device_for_each_child_node() is added for iterating over
-> > > the children of the device description object associated with a
-> > > given device.
-> > > 
-> > > The interface covers both ACPI and Device Trees.
-> > > 
-> > > This change set includes material from Mika Westerberg and Aaron Lu.
-> > > 
-> > 
-> > Regarding device_for_each_child_node(), the syntax is inconsistent
-> > with what we normally use, which can probably be changed. All of the
-> > DT for_each_* helpers are macros that are used like
-> > 
-> > 	struct device *dev = ...;
-> > 	void *child; /* iterator */
-> > 
-> > 	device_for_each_child_node(dev, child) {
-> > 		u32 something;
-> > 		device_child_property_read_u32(dev, child, "propname", &something);
-> > 
-> > 		do_something(dev, something);
-> > 	}
-> > 
-> > If we get a consensus on having the child interfaces, I'd rather see
-> > them done this way than with a callback pointer, for consistency
-> > reasons.
-> 
-> That certainly is doable, although the resulting macro would generate a rather
-> large chunk of code each time it is used.
+scripts/kconfig/conf --olddefconfig Kconfig
+drivers/gpu/drm/i915/Kconfig:1:error: recursive dependency detected!
+drivers/gpu/drm/i915/Kconfig:1:	symbol DRM_I915 depends on BACKLIGHT_CLASS_DEVICE
+drivers/video/backlight/Kconfig:156:	symbol BACKLIGHT_CLASS_DEVICE is selected by DRM_I915
+
+because we depend on ACPI_VIDEO when ACPI is enabled, originally done in
+
+commit ecb4aed78dcf09e48c8c34c8c2fa7f5c69344be6
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Apr 24 11:33:47 2009 -0400
+
+    ACPI, i915: build fix
+
+Now, trying to fix that with what seems to me like the obvious
+dependency, conveying what we really want
+
+diff --git a/drivers/gpu/drm/i915/Kconfig b/drivers/gpu/drm/i915/Kconfig
+index 4e39ab34eb1c..f5a1ee37603e 100644
+--- a/drivers/gpu/drm/i915/Kconfig
++++ b/drivers/gpu/drm/i915/Kconfig
+@@ -3,6 +3,7 @@ config DRM_I915
+ 	depends on DRM
+ 	depends on X86 && PCI
+ 	depends on (AGP || AGP=n)
++	depends on ((ACPI && ACPI_VIDEO) || ACPI=n)
+ 	select INTEL_GTT
+ 	select AGP_INTEL if AGP
+ 	select INTERVAL_TREE
+@@ -11,13 +12,6 @@ config DRM_I915
+ 	select SHMEM
+ 	select TMPFS
+ 	select DRM_KMS_HELPER
+-	# i915 depends on ACPI_VIDEO when ACPI is enabled
+-	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
+-	select BACKLIGHT_LCD_SUPPORT if ACPI
+-	select BACKLIGHT_CLASS_DEVICE if ACPI
+-	select INPUT if ACPI
+-	select ACPI_VIDEO if ACPI
+-	select ACPI_BUTTON if ACPI
+ 	help
+ 	  Choose this option if you have a system that has "Intel Graphics
+ 	  Media Accelerator" or "HD Graphics" integrated graphics,
+
+leads to more fun
+
+scripts/kconfig/conf --olddefconfig Kconfig
+drivers/video/fbdev/Kconfig:5:error: recursive dependency detected!
+drivers/video/fbdev/Kconfig:5:	symbol FB is selected by DRM_KMS_FB_HELPER
+drivers/gpu/drm/Kconfig:34:	symbol DRM_KMS_FB_HELPER is selected by DRM_I915_FBDEV
+drivers/gpu/drm/i915/Kconfig:40:	symbol DRM_I915_FBDEV depends on DRM_I915
+drivers/gpu/drm/i915/Kconfig:1:	symbol DRM_I915 depends on ACPI_VIDEO
+drivers/acpi/Kconfig:130:	symbol ACPI_VIDEO is selected by BACKLIGHT_CLASS_DEVICE
+drivers/video/backlight/Kconfig:156:	symbol BACKLIGHT_CLASS_DEVICE is selected by FB_BACKLIGHT
+drivers/video/fbdev/Kconfig:188:	symbol FB_BACKLIGHT is selected by PMAC_BACKLIGHT
+drivers/macintosh/Kconfig:135:	symbol PMAC_BACKLIGHT depends on FB
+
+and the rabbit hole gets deeper than I thought. I guess it always does.
+
+At this point the question is whether "depends on ((ACPI && ACPI_VIDEO)
+|| ACPI=n)" is worth pursuing and makes more sense than the "select foo
+if ACPI" lines, or do we need to build hacks upon hacks to get this
+fixed.
+
+BR,
+Jani.
 
 
-#define device_for_each_child_node(dev, child) \
-	for (child = device_get_next_child_node(dev, NULL), child, \
-	     child = device_get_next_child_node(dev, child))
-
-void *device_get_next_child_node(struct device *dev, void *child)
-{
-	if (IS_ENABLED(CONFIG_OF) && dev->of_node)
-		return of_get_next_child(dev->of_node, child);
-	else if (IS_ENABLED(CONFIG_ACPI) && ...)
-		return acpi_get_next_child(dev, child);
-	return NULL;
-}
-
-Not any more code than what we have today for the DT-only case, and it's
-really just a function call in a loop.
-
-	Arnd
+-- 
+Jani Nikula, Intel Open Source Technology Center
