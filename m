@@ -1,116 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751118AbaJBGND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 02:13:03 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:63509 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaJBGM7 (ORCPT
+	id S1751207AbaJBGSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 02:18:47 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:54818 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaJBGSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 02:12:59 -0400
+	Thu, 2 Oct 2014 02:18:45 -0400
+Date: Wed, 1 Oct 2014 23:18:41 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v2 0/8] mtd: nand: Support for new DT NAND driver
+Message-ID: <20141002061841.GE3248@norris-Latitude-E6410>
+References: <1408357919-19793-1-git-send-email-lee.jones@linaro.org>
+ <20140819013729.GP18411@ld-irv-0074>
+ <20140820065744.GE4266@lee--X1>
 MIME-Version: 1.0
-X-Originating-IP: [84.208.172.182]
-In-Reply-To: <20140930152419.GF14081@wotan.suse.de>
-References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com>
- <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
- <CAG-2HqWmVODJ6Q46t96mS9ALbeFjRcQ18ypwejY=ug0wCUVv-Q@mail.gmail.com>
- <20140930022751.GA14081@wotan.suse.de> <CAG-2HqUdFWBPUrHg2yezVVu7xedqTQDBxAW5nuYWKWJCTkZSBg@mail.gmail.com>
- <20140930152419.GF14081@wotan.suse.de>
-From: Tom Gundersen <teg@jklm.no>
-Date: Thu, 2 Oct 2014 08:12:37 +0200
-Message-ID: <CAG-2HqVBnXUKSRBrJE=gEKA3St5KMfdgAbx2vRfpF3qw_teLOg@mail.gmail.com>
-Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe support
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Michal Hocko <mhocko@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Robert Milasan <rmilasan@suse.com>, werner@suse.com,
-        Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>, pmladek@suse.cz,
-        dbueso@suse.com, LKML <linux-kernel@vger.kernel.org>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140820065744.GE4266@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 5:24 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
->> > commit e64fae5573e566ce4fd9b23c68ac8f3096603314
->> > Author: Kay Sievers <kay.sievers@vrfy.org>
->> > Date:   Wed Jan 18 05:06:18 2012 +0100
->> >
->> >     udevd: kill hanging event processes after 30 seconds
->> >
->> >     Some broken kernel drivers load firmware synchronously in the module init
->> >     path and block modprobe until the firmware request is fulfilled.
->> >     <...>
->>
->> This was a workaround to avoid a deadlock between udev and the kernel.
->> The 180 s timeout was already in place before this change, and was not
->> motivated by firmware loading. Also note that this patch was not about
->> "tracking device drivers", just about avoiding dead-lock.
->
-> Thanks, can you elaborate on how a deadlock can occur if the kmod
-> worker is not at some point sigkilled?
+I guess I never answered this one:
 
-This was only relevant whet udev did the firmware loading. modprobe
-would wait for the kernel, which would wait for the firmware loading,
-which would wait for modprobe. This is no longer a problem as udev
-does not do firmware loading any more.
+On Wed, Aug 20, 2014 at 07:57:44AM +0100, Lee Jones wrote:
+> On Mon, 18 Aug 2014, Brian Norris wrote:
+> > Bisectability test results for configuration
+> > "arm-multi_v7_defconfig,arm,arm-unknown-linux-gnueabi-" 
+> > 
+> > Failed to build patch #7: 5936df30f5e1 mtd: nand: stm_nand_bch: add
+> > support for ST's BCH NAND controller 
+> > Configuration: "arm-multi_v7_defconfig, architecture arm".
+> 
+> How do _you_ test for bisectability?  Do you have a script?
+> 
+> What outputs "Failed to build patch #7: ..."?
 
-> Is the issue that if there is no extra worker available and all are
-> idling on sleep / synchronous long work boot will potentially hang
-> unless a new worker becomes available to do more work?
+I use aiaiai [1]. But you could easily test bisectability without it.
+e.g.
 
-Correct.
+	#!/bin/sh
+	for c in `git rev-list origin/master..HEAD`
+	do
+		git checkout $c
+		make || break
+	done
 
-> If so I can
-> see the sigkill helping for hanging tasks but it doesn't necessarily
-> mean its a good idea to kill modules loading taking a while. Also
-> what if the sigkill is just avoided for *just* kmod workers?
+Brian
 
-Depending on the number of devices you have, I suppose we could still
-exhaust the workers.
-
->> The way I see it, the current status from systemd's side is: our
->> short-term work-around is to increase the timeout, and at the moment
->> it appears no long-term solution is needed (i.e., it seems like the
->> right thing to do is to make sure insmod can be near instantaneous, it
->> appears people are working towards this goal, and so far no examples
->> have cropped up showing that it is fundamentally impossible (once/if
->> they do, we should of course revisit the problem)).
->
-> That again would be reactive behaviour, what would prevent avoiding the
-> sigkill only for kmod workers? Is it known the deadlock is immiment?
-> If the amount of workers for kmod that would hit the timeout is
-> considered low I don't see how that's possible and why not just lift
-> the sigkill.
-
-Making kmod a special case is of course possible. However, as long as
-there is no fundamental reason why kmod should get this special
-treatment, this just looks like a work-around to me. We already have a
-work-around, which is to increase the global timeout. If you still
-think we should do something different in systemd, it is probably best
-to take the discussion to systemd-devel to make sure all the relevant
-people are involved.
-
-Cheers,
-
-Tom
+[1] http://lwn.net/Articles/488992/
+    http://git.infradead.org/aiaiai.git
