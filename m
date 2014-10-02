@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaJBV0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 17:26:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:54419 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247AbaJBV0P (ORCPT
+	id S1752944AbaJBV1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 17:27:20 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:63944 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751965AbaJBV1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 17:26:15 -0400
-Message-ID: <542DC2F5.7080508@codeaurora.org>
-Date: Thu, 02 Oct 2014 14:26:13 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 2 Oct 2014 17:27:19 -0400
+Date: Thu, 2 Oct 2014 14:27:03 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        akpm@linux-foundation.org, rui.xiang@huawei.com,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
+        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
+        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
+Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the
+ directory entries
+Message-ID: <20141002142703.10325f4f@urahara>
+In-Reply-To: <87h9zmji3q.fsf@x220.int.ebiederm.org>
+References: <20131003.150947.2179820478039260398.davem@davemloft.net>
+	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
+	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
+	<87h9zmpcz5.fsf@x220.int.ebiederm.org>
+	<20141002200639.GA3497@p183.telecom.by>
+	<87h9zmji3q.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
-To: Kumar Gala <galak@codeaurora.org>
-CC: Georgi Djakov <gdjakov@mm-sol.com>, mturquette@linaro.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
-References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com> <542D953F.3030701@codeaurora.org> <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
-In-Reply-To: <40F825DC-F79B-43F6-9E9B-5E3879669155@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/14 12:51, Kumar Gala wrote:
-> On Oct 2, 2014, at 1:11 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->
->> On 09/30/14 10:20, Georgi Djakov wrote:
->>> This patch expands the regmap support to allow registration of clock
->>> dividers. It just prepares for the introduction of a clkdiv driver,
->>> that will be in a separate patch.
->>> Such dividers are found in the Qualcomm PMIC chips such as PM8941,
->>> PMA8084 and others.
->> We're going to need to rework the Makefile in clk/qcom so that we only
->> build certain pieces of the "library" when we need them. Right now the
->> directory is focused entirely on mmio clock controllers and if we put
->> the pmic clocks in there then we need to figure out a way to only build
->> the pmic pieces if only the pmic driver is selected and only build the
->> mmio pieces if the mmio drivers are selected.
-> Would we ever not build the mmio drivers or do you mean something else?
->
->
+On Thu, 02 Oct 2014 14:07:37 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-Yes I mean we may not build the mmio drivers.
+> Alexey Dobriyan <adobriyan@gmail.com> writes:
+> 
+> > On Thu, Oct 02, 2014 at 11:01:50AM -0700, Eric W. Biederman wrote:
+> >> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+> >> 
+> >> > From: Thierry Herbelot <thierry.herbelot@6wind.com>
+> >> >
+> >> > The current implementation for the directories in /proc is using a single
+> >> > linked list. This is slow when handling directories with large numbers of
+> >> > entries (eg netdevice-related entries when lots of tunnels are opened).
+> >> >
+> >> > This patch enables multiple linked lists. A hash based on the entry name is
+> >> > used to select the linked list for one given entry.
+> >> >
+> >> > The speed creation of netdevices is faster as shorter linked lists must be
+> >> > scanned when adding a new netdevice.
+> >> 
+> >> Is the directory of primary concern /proc/net/dev/snmp6 ?
+> >> 
+> >> Unless I have configured my networking stack weird by mistake that
+> >> is the only directory under /proc/net that grows when we add an
+> >> interface.
+> >> 
+> >> I just want to make certain I am seeing the same things that you are
+> >> seeing.
+> >> 
+> >> I feel silly for overlooking this directory when the rest of the
+> >> scalability work was done.
+> >
+> > Slowdown comes from "duplicate name" check:
+> >
+> >         for (tmp = dir->subdir; tmp; tmp = tmp->next)
+> >                 if (strcmp(tmp->name, dp->name) == 0) {
+> >                         WARN(1, "proc_dir_entry '%s/%s' already registered\n",
+> >                                 dir->name, dp->name);
+> >                         break;
+> >                 }
+> >
+> > Removal can be made O(1) after switching to doubly-linked list.
+> 
+> Yes.  There is the however unfortunate fact that proc directories exist
+> to be used.  If we don't switch to a better data structure than a linked
+> list the actual use will then opening of the files under
+> /proc/net/dev/snmp6/ will become O(N^2).  Which doesn't help much
+> (assuming those files are good for something).
+> 
+> If those files aren't actually useful we should just make registering
+> them a config option.  Deprecate them strongly and let only people who
+> need extreme backwards compatibility enable them.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Net-snmp uses them (agent/mibgroup/mibII/kernel_linux.c)
 
