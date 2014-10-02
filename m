@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaJBTsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:48:38 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:46663 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbaJBTsg convert rfc822-to-8bit (ORCPT
+	id S1753496AbaJBTtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:49:15 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42065 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751834AbaJBTtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:48:36 -0400
+	Thu, 2 Oct 2014 15:49:14 -0400
+Message-ID: <542DAC31.8030504@hurleysoftware.com>
+Date: Thu, 02 Oct 2014 15:49:05 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <877g0il0gd.fsf@x220.int.ebiederm.org>
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>
- <87ppei45ig.fsf@x220.int.ebiederm.org> <CALCETrX5e0cp4QFCv1eAqR1hjoROU9Rh=cRos9U35DaR-py3Eg@mail.gmail.com>
- <87y4t61a6v.fsf@x220.int.ebiederm.org> <54294B4E.70501@6wind.com>
- <87y4t2gtd0.fsf@x220.int.ebiederm.org> <542D5726.8070308@6wind.com>
- <8761g2nurx.fsf@x220.int.ebiederm.org> <CALCETrWxqzUF1x+TmW5G4kuHPP+sUtiRaT6dpZ0mQTJ217QB5w@mail.gmail.com>
- <877g0il0gd.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 2 Oct 2014 12:48:14 -0700
-Message-ID: <CALCETrWLhfQpT+f=DPTsB4w5Oy+OeiygBrQosf25HDJQaOnPWg@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <cwang@twopensource.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <542D57D0.4030904@hurleysoftware.com> <20141002135250.GB10583@worktop.programming.kicks-ass.net> <20141002135805.GF6324@worktop.programming.kicks-ass.net> <20141002191114.GA30606@redhat.com>
+In-Reply-To: <20141002191114.GA30606@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 12:45 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Thu, Oct 2, 2014 at 12:20 PM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
->>>
->>>> Le 29/09/2014 20:43, Eric W. Biederman a écrit :
->>>>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
->>>>>
->>>>>> Le 26/09/2014 20:57, Eric W. Biederman a écrit :
->>>>>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>>>>
->>>>>>>> On Fri, Sep 26, 2014 at 11:10 AM, Eric W. Biederman
->>>>>>>> <ebiederm@xmission.com> wrote:
->>>>>>>>> I see two ways to go with this.
->>>>>>>>>
->>>>>>>>> - A per network namespace table to that you can store ids for ``peer''
->>>>>>>>>     network namespaces.  The table would need to be populated manually by
->>>>>>>>>     the likes of ip netns add.
->>>>>>>>>
->>>>>>>>>     That flips the order of assignment and makes this idea solid.
->>>>>> I have a preference for this solution, because it allows to have a full
->>>>>> broadcast messages. When you have a lot of network interfaces (> 10k),
->>>>>> it saves a lot of time to avoid another request to get all informations.
->>>>>
->>>>> My practical question is how often does it happen that we care?
->>>> In fact, I don't think that scenarii with a lot of netns have a full mesh of
->>>> x-netns interfaces. It will be more one "link" netns with the physical
->>>> interface and all other with one interface with the link part in this "link"
->>>> netns. Hence, only one nsid is needing in each netns.
->>>
->>> I will buy that a full mesh is unlikely.
->>>
->>> For people doing simulations anything physical has a limited number of
->>> links.
->>>
->>> For people wanting all to all connectivity setting up an internal
->>> macvlan (or the equivalent) is likely much simpler and more efficient
->>> that a full mesh.
->>>
->>> So the question in my mind is how do we create these identifiers at need
->>> (when we create the cross network namespace links) instead of at network
->>> namespace creation time.  I don't see an answer to that in your patches,
->>> and perhaps it obvious.
->>>
+On 10/02/2014 03:11 PM, Oleg Nesterov wrote:
+> On 10/02, Peter Zijlstra wrote:
 >>
->> I wonder whether part of the problem is that we're thinking about
->> scoping wrong.  What if we made the hierarchy more explicit?
+>> On Thu, Oct 02, 2014 at 03:52:50PM +0200, Peter Zijlstra wrote:
+>>>> If yes, then wakeups from signals don't work either, right?
+>>>
+>>> Its a kthread, there should not be any signals.
 >>
->> For example, we could give each netns an admin-assigned identifier
->> (e.g. a 64-bit number, maybe required to be unique, maybe not)
->> relative to its containing userns.  Then we could come up with a way
->> to identify user namespaces (i.e. inode number relative to containing
->> user ns, if that's well-defined).
->
-> If as suggested we only assign ids when a tunnel (or equivalent) is
-> created between two network namespaces the space cost is a non-issue.
-> The ids become at worst a constant factor addition to the cost of the
-> tunnel.
->
-> To keep things simple we may want to assign a free id (if one does not
-> exist) when we connect a tunnel to a network namespace.
->
->> From user code's perspective, netnses that are in the requester's
->> userns or its descendents are identified by a path through a (possibly
->> zero-length) sequence of userns ids followed by a netns id.  Netnses
->> outside the requester's userns hierarchy cannot be named at all.
+>> That said, in the tty patch we do appear to have this problem.
 >>
->> Would this make sense?
->
-> Nope.  What happens if I migrate 2 of the 4 network namespaces in a user
-> namespace?  The migration potentially fails.  Application migration does
-> not require user namespace migration.
+>> Oleg, do we want something like the below on top to make that work
+>> again?
+>>
+>> ---
+>> --- a/kernel/sched/wait.c
+>> +++ b/kernel/sched/wait.c
+>> @@ -326,8 +326,10 @@ long wait_woken(wait_queue_t *wait, unsi
+>>  	 * woken_wake_function() such that if we observe WQ_FLAG_WOKEN we must
+>>  	 * also observe all state before the wakeup.
+>>  	 */
+>> -	if (!(wait->flags & WQ_FLAG_WOKEN))
+>> -		timeout = schedule_timeout(timeout);
+>> +	if (!(wait->flags & WQ_FLAG_WOKEN)) {
+>> +		if (___wait_is_interruptible(mode) && !signal_pending_state(mode, current))
+>> +			timeout = schedule_timeout(timeout);
+>> +	}
+>>  	__set_current_state(TASK_RUNNING);
+> 
+> I am a bit confused... but for what?
+> 
+> schedule() won't sleep if signal_pending_state(mode) anyway, so we
+> do not need this correctness-wise. And the caller needs to check
+> signal_pending() anyway.
+> 
+> We can probably add
+> 
+> 	if (signal_pending_state(mode, current))
+> 		return -EINTR;
+> 
+> at the start of wait_woken(), even before set_current_state(mode).
+> Then the caller can check "ret < 0" and avoid signal_pending().
+> Not sure this makes sense.
 
-Hmm.  I guess that, as long as those network namespaces aren't
-connected to anything else, migrating like that makes sense and ought
-to work.  Fair enough.
+The confusion is my fault; I see now that signals don't suffer from the
+missed wakeup problem to which other condition testing is prone. Thanks
+for setting me straight, Oleg.
 
---Andy
+So just back to the kthread wakeup problem then.
+
+Regards,
+Peter Hurley
+
+
+
