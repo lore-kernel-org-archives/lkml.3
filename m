@@ -1,58 +1,497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaJBVOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 17:14:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41621 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaJBVOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 17:14:01 -0400
-Date: Thu, 2 Oct 2014 23:13:59 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: sre@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HSI: remove deprecated IRQF_DISABLED
-Message-ID: <20141002211359.GA21093@amd>
-References: <1412195335-9437-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20140912143722.GA22420@xo-6d-61-c0.localdomain>
- <542DB350.3080707@free-electrons.com>
+	id S1752115AbaJBVWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 17:22:45 -0400
+Received: from mail-bn1bon0058.outbound.protection.outlook.com ([157.56.111.58]:16736
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751873AbaJBVWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 17:22:43 -0400
+Date: Thu, 2 Oct 2014 16:16:27 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: <dinguyen@opensource.altera.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v2 2/2] socfpga: support suspend to ram
+In-Reply-To: <1412192304-1209-3-git-send-email-atull@opensource.altera.com>
+Message-ID: <alpine.DEB.2.02.1410021615040.26682@atx-linux-37>
+References: <1412192304-1209-1-git-send-email-atull@opensource.altera.com> <1412192304-1209-3-git-send-email-atull@opensource.altera.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542DB350.3080707@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BN1PR02CA0040.namprd02.prod.outlook.com (10.141.56.40) To
+ DM2PR03MB318.namprd03.prod.outlook.com (10.141.54.17)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB318;
+X-Forefront-PRVS: 03524FBD26
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(189002)(199003)(24454002)(22564002)(64706001)(4396001)(76482002)(20776003)(47776003)(50466002)(46406003)(107046002)(33716001)(87976001)(66066001)(42186005)(15975445006)(69596002)(105586002)(81156004)(106356001)(102836001)(83506001)(99396003)(86362001)(53416004)(86152002)(85306004)(120916001)(92726001)(92566001)(10300001)(21056001)(101416001)(23726002)(54356999)(97736003)(80022003)(46102003)(85852003)(19580405001)(15202345003)(95666004)(76176999)(31966008)(77096002)(50986999)(19580395003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB318;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-10-02 22:19:28, Michael Opdenacker wrote:
-> On 09/12/2014 04:40 PM, Pavel Machek wrote:
-> > On Wed 2014-10-01 22:28:55, Michael Opdenacker wrote:
-> >> Remove the use of the IRQF_DISABLED flag
-> >> from drivers/hsi/clients/nokia-modem.c
-> >>
-> >> It's a NOOP since 2.6.35 and it will be removed soon.
-> >>
-> >> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-> > Acked-by: Pavel Machek <pavel@ucw.cz>
+On Wed, 1 Oct 2014, atull@opensource.altera.com wrote:
+
+> From: Alan Tull <atull@opensource.altera.com>
 > 
-> Thanks! Wow, you have a nice system date, writing from the past (Sep. 12).
+> Add code that requests that the sdr controller go into
+> self-refresh mode.  This code is run from ocram.
+> 
+> This patch assumes that u-boot has already configured sdr:
+>   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
+>   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
+>   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
+> 
+> How to suspend to ram:
+>  $ echo enabled > \
+> /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
+> 
+>  $ echo -n mem > /sys/power/state
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> 
+> v2: use Generic on-chip SRAM driver to allocate ocram
+>     rm fncpy_align since generic allocator handles alignment
+>     check __arm_ioremap_exec return code
+>     check for NULL pointers
+>     add a comment regarding sdram controller configuration
+> ---
+>  arch/arm/mach-socfpga/Kconfig        |    1 +
+>  arch/arm/mach-socfpga/Makefile       |    1 +
+>  arch/arm/mach-socfpga/core.h         |    6 +-
+>  arch/arm/mach-socfpga/platsmp.c      |    4 +-
+>  arch/arm/mach-socfpga/pm.c           |  147 +++++++++++++++++++++++++++++++
+>  arch/arm/mach-socfpga/self-refresh.S |  157 ++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-socfpga/socfpga.c      |   10 +++
+>  7 files changed, 323 insertions(+), 3 deletions(-)
+>  create mode 100644 arch/arm/mach-socfpga/pm.c
+>  create mode 100644 arch/arm/mach-socfpga/self-refresh.S
+> 
+> diff --git a/arch/arm/mach-socfpga/Kconfig b/arch/arm/mach-socfpga/Kconfig
+> index b5f8d75..81449da 100644
+> --- a/arch/arm/mach-socfpga/Kconfig
+> +++ b/arch/arm/mach-socfpga/Kconfig
+> @@ -4,6 +4,7 @@ config ARCH_SOCFPGA
+>  	select ARM_GIC
+>  	select CACHE_L2X0
+>  	select DW_APB_TIMER_OF
+> +	select GENERIC_ALLOCATOR
+>  	select GPIO_PL061 if GPIOLIB
+>  	select HAVE_ARM_SCU
+>  	select HAVE_ARM_TWD if SMP
+> diff --git a/arch/arm/mach-socfpga/Makefile b/arch/arm/mach-socfpga/Makefile
+> index 6dd7a93..0591927 100644
+> --- a/arch/arm/mach-socfpga/Makefile
+> +++ b/arch/arm/mach-socfpga/Makefile
+> @@ -4,3 +4,4 @@
+>  
+>  obj-y					:= socfpga.o
+>  obj-$(CONFIG_SMP)	+= headsmp.o platsmp.o
+> +obj-$(CONFIG_SUSPEND)	+= pm.o self-refresh.o
+> diff --git a/arch/arm/mach-socfpga/core.h b/arch/arm/mach-socfpga/core.h
+> index 953a9c0..211adfd 100644
+> --- a/arch/arm/mach-socfpga/core.h
+> +++ b/arch/arm/mach-socfpga/core.h
+> @@ -21,7 +21,7 @@
+>  #define __MACH_CORE_H
+>  
+>  #define SOCFPGA_RSTMGR_CTRL	0x04
+> -#define SOCFPGA_RSTMGR_MODMPURST	0x10
+> +#define SOCFPGA_RSTMGR_MPUMODRST	0x10
 
-My TARDIS is better and better. Normally, I write from 1970 :-).
+Obvious error here - I ment to change the name of the #define where I 
+added it in patch 1, not add it in patch 1 and change it in patch 2.
 
-Why do all the great machines lack working RTC? Spitz, n900,
-OLPC-1.75...
+Alan
 
-								Pavel
-
-#!/bin/bash
-F=/etc/zaurus.time
-if [ $(date +%s) -lt $(< $F) ];
-    then
-    date -s @$(< $F)
-    fi
-date +%s > $F
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>  #define SOCFPGA_RSTMGR_MODPERRST	0x14
+>  #define SOCFPGA_RSTMGR_BRGMODRST	0x1c
+>  
+> @@ -39,6 +39,7 @@ extern void socfpga_sysmgr_init(void);
+>  
+>  extern void __iomem *sys_manager_base_addr;
+>  extern void __iomem *rst_manager_base_addr;
+> +extern void __iomem *sdr_ctl_base_addr;
+>  
+>  extern struct smp_operations socfpga_smp_ops;
+>  extern char secondary_trampoline, secondary_trampoline_end;
+> @@ -47,4 +48,7 @@ extern unsigned long cpu1start_addr;
+>  
+>  #define SOCFPGA_SCU_VIRT_BASE   0xfffec000
+>  
+> +u32 socfpga_sdram_self_refresh(u32 sdr_base, u32 scu_base);
+> +extern unsigned int socfpga_sdram_self_refresh_sz;
+> +
+>  #endif
+> diff --git a/arch/arm/mach-socfpga/platsmp.c b/arch/arm/mach-socfpga/platsmp.c
+> index 97907dd..4093852 100644
+> --- a/arch/arm/mach-socfpga/platsmp.c
+> +++ b/arch/arm/mach-socfpga/platsmp.c
+> @@ -36,7 +36,7 @@ static int socfpga_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  	if (cpu1start_addr) {
+>  		/* This will put CPU #1 into reset. */
+>  		__raw_writel(RSTMGR_MPUMODRST_CPU1,
+> -			     rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
+> +			     rst_manager_base_addr + SOCFPGA_RSTMGR_MPUMODRST);
+>  
+>  		memcpy(phys_to_virt(0), &secondary_trampoline, trampoline_size);
+>  
+> @@ -49,7 +49,7 @@ static int socfpga_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  
+>  		/* This will release CPU #1 out of reset. */
+>  		__raw_writel(0,
+> -			     rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
+> +			     rst_manager_base_addr + SOCFPGA_RSTMGR_MPUMODRST);
+>  	}
+>  
+>  	return 0;
+> diff --git a/arch/arm/mach-socfpga/pm.c b/arch/arm/mach-socfpga/pm.c
+> new file mode 100644
+> index 0000000..912aab8
+> --- /dev/null
+> +++ b/arch/arm/mach-socfpga/pm.c
+> @@ -0,0 +1,147 @@
+> +/*
+> + *  arch/arm/mach-socfpga/pm.c
+> + *
+> + * Copyright (C) 2014 Altera Corporation. All rights reserved.
+> + *
+> + * with code from pm-imx6.c
+> + * Copyright 2011-2014 Freescale Semiconductor, Inc.
+> + * Copyright 2011 Linaro Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/bitops.h>
+> +#include <linux/genalloc.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/suspend.h>
+> +#include <asm/suspend.h>
+> +#include <asm/fncpy.h>
+> +#include "core.h"
+> +
+> +/* Pointer to function copied to ocram */
+> +static u32 (*socfpga_sdram_self_refresh_in_ocram)(u32 sdr_base, u32 scu_base);
+> +
+> +static int socfpga_setup_ocram_self_refresh(void)
+> +{
+> +	struct platform_device *pdev;
+> +	phys_addr_t ocram_pbase;
+> +	struct device_node *np;
+> +	struct gen_pool *ocram_pool;
+> +	unsigned long ocram_base;
+> +	void __iomem *suspend_ocram_base;
+> +	int ret = 0;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "mmio-sram");
+> +	if (!np) {
+> +		pr_err("%s: Unable to find mmio-sram in dtb\n", __func__);
+> +		return 0;
+> +	}
+> +
+> +	pdev = of_find_device_by_node(np);
+> +	if (!pdev) {
+> +		pr_warn("%s: failed to find ocram device!\n", __func__);
+> +		ret = -ENODEV;
+> +		goto put_node;
+> +	}
+> +
+> +	ocram_pool = dev_get_gen_pool(&pdev->dev);
+> +	if (!ocram_pool) {
+> +		pr_warn("%s: ocram pool unavailable!\n", __func__);
+> +		ret = -ENODEV;
+> +		goto put_node;
+> +	}
+> +
+> +	ocram_base = gen_pool_alloc(ocram_pool, socfpga_sdram_self_refresh_sz);
+> +	if (!ocram_base) {
+> +		pr_warn("%s: unable to alloc ocram!\n", __func__);
+> +		ret = -ENOMEM;
+> +		goto put_node;
+> +	}
+> +
+> +	ocram_pbase = gen_pool_virt_to_phys(ocram_pool, ocram_base);
+> +
+> +	suspend_ocram_base = __arm_ioremap_exec(ocram_pbase,
+> +						socfpga_sdram_self_refresh_sz,
+> +						false);
+> +	if (!suspend_ocram_base) {
+> +		pr_warn("%s: __arm_ioremap_exec failed!\n", __func__);
+> +		ret = -ENOMEM;
+> +		goto put_node;
+> +	}
+> +
+> +	/* Copy the code that puts DDR in self refresh to ocram */
+> +	socfpga_sdram_self_refresh_in_ocram =
+> +		(void *)fncpy(suspend_ocram_base,
+> +			      &socfpga_sdram_self_refresh,
+> +			      socfpga_sdram_self_refresh_sz);
+> +
+> +	WARN(!socfpga_sdram_self_refresh_in_ocram,
+> +	     "could not copy function to ocram");
+> +	if (!socfpga_sdram_self_refresh_in_ocram)
+> +		ret = -EFAULT;
+> +
+> +put_node:
+> +	of_node_put(np);
+> +
+> +	return ret;
+> +}
+> +
+> +static int socfpga_pm_suspend(unsigned long arg)
+> +{
+> +	u32 ret;
+> +
+> +	if (!sdr_ctl_base_addr || !socfpga_scu_base_addr)
+> +		return -EFAULT;
+> +
+> +	ret = socfpga_sdram_self_refresh_in_ocram(
+> +		(u32)sdr_ctl_base_addr, (u32)socfpga_scu_base_addr);
+> +
+> +	pr_debug("%s self-refresh loops request=%d exit=%d\n", __func__,
+> +		 ret & 0xffff, (ret >> 16) & 0xffff);
+> +
+> +	return 0;
+> +}
+> +
+> +static int socfpga_pm_enter(suspend_state_t state)
+> +{
+> +	switch (state) {
+> +	case PM_SUSPEND_STANDBY:
+> +	case PM_SUSPEND_MEM:
+> +		outer_disable();
+> +		cpu_suspend(0, socfpga_pm_suspend);
+> +		outer_resume();
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static const struct platform_suspend_ops socfpga_pm_ops = {
+> +	.valid	= suspend_valid_only_mem,
+> +	.enter	= socfpga_pm_enter,
+> +};
+> +
+> +static int __init socfpga_pm_init(void)
+> +{
+> +	if (socfpga_setup_ocram_self_refresh())
+> +		return -EFAULT;
+> +
+> +	suspend_set_ops(&socfpga_pm_ops);
+> +	pr_info("SoCFPGA initialized for DDR self-refresh during suspend.\n");
+> +
+> +	return 0;
+> +}
+> +arch_initcall(socfpga_pm_init);
+> diff --git a/arch/arm/mach-socfpga/self-refresh.S b/arch/arm/mach-socfpga/self-refresh.S
+> new file mode 100644
+> index 0000000..93962d4
+> --- /dev/null
+> +++ b/arch/arm/mach-socfpga/self-refresh.S
+> @@ -0,0 +1,157 @@
+> +/*
+> + * Copyright (C) 2014 Altera Corporation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/linkage.h>
+> +#include <asm/assembler.h>
+> +
+> +#define SOCFPGA_SCU_CTRL_OFFS	0
+> +#define SCU_STANDBY_ENA		0x20
+> +#define MAX_LOOP_COUNT		1000
+> +
+> +/* Register offset */
+> +#define SDR_CTRLGRP_LOWPWREQ_ADDR       0x54
+> +#define SDR_CTRLGRP_LOWPWRACK_ADDR      0x58
+> +
+> +/* Bitfield positions */
+> +#define SELFRSHREQ_POS                  3
+> +#define SELFRSHREQ_MASK                 0x8
+> +
+> +#define SELFRFSHACK_POS                 1
+> +#define SELFRFSHACK_MASK                0x2
+> +
+> +	/*	
+> +	 * This code assumes that the bootloader has already
+> +	 * properly configured the sdram controller:
+> +	 *
+> +	 * sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
+> +	 * sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
+> +	 * sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
+> +	 */
+> +
+> +	.arch   armv7-a
+> +	.text
+> +	.align 3
+> +
+> +	/*
+> +	 * socfpga_sdram_self_refresh
+> +	 *
+> +	 *  r0 : sdr_ctl_base_addr
+> +	 *  r1 : socfpga_scu_base_addr
+> +	 *  r2 : temp storage of register values
+> +	 *  r3 : loop counter
+> +	 *  r4 : temp storage of return value
+> +	 *
+> +	 *  return value: lower 16 bits: loop count going into self refresh
+> +	 *                upper 16 bits: loop count exiting self refresh
+> +	 */
+> +ENTRY(socfpga_sdram_self_refresh)
+> +	stmfd	sp!, {r4}
+> +
+> +	/*
+> +	 * Enable SCU (snoop) standby mode.
+> +	 *
+> +	 * From the ARM Cortex-A9 MPCore Technical Reference Manual:
+> +	 * "When set, SCU CLK is turned off when all processors are in WFI
+> +	 *  mode, there is no pending request on the ACP (if implemented), and
+> +	 *  there is no remaining activity in the SCU."
+> +	 */
+> +	ldr	r2, [r1, #SOCFPGA_SCU_CTRL_OFFS]
+> +	orr	r2, r2, #SCU_STANDBY_ENA
+> +	str	r2, [r1, #SOCFPGA_SCU_CTRL_OFFS]
+> +
+> +	/* Enable dynamic clock gating in the Power Control Register. */
+> +	mrc	p15, 0, r2, c15, c0, 0
+> +	orr	r2, r2, #1
+> +	mcr	p15, 0, r2, c15, c0, 0
+> +
+> +	/* Enable self refresh: set sdr.ctrlgrp.lowpwreq.selfrshreq = 1 */
+> +	ldr	r2, [r0, #SDR_CTRLGRP_LOWPWREQ_ADDR]
+> +	orr	r2, r2, #SELFRSHREQ_MASK
+> +	str	r2, [r0, #SDR_CTRLGRP_LOWPWREQ_ADDR]
+> +
+> +	/* Poll until sdr.ctrlgrp.lowpwrack.selfrfshack == 1 or hit max loops */
+> +	mov	r3, #0
+> +while_ack_0:
+> +	ldr	r2, [r0, #SDR_CTRLGRP_LOWPWRACK_ADDR]
+> +	and	r2, r2, #SELFRFSHACK_MASK
+> +	cmp	r2, #SELFRFSHACK_MASK
+> +	beq	ack_1
+> +
+> +	add	r3, #1
+> +	cmp	r3, #MAX_LOOP_COUNT
+> +	bne	while_ack_0
+> +
+> +ack_1:
+> +	mov	r4, r3
+> +
+> +	/*
+> +	 * Execute an ISB instruction to ensure that all of the
+> +	 * CP15 register changes have been committed.
+> +	 */
+> +	isb
+> +
+> +	/*
+> +	 * Execute a barrier instruction to ensure that all cache,
+> +	 * TLB and branch predictor maintenance operations issued
+> +	 * by any CPU in the cluster have completed.
+> +	 */
+> +	dsb
+> +	dmb
+> +
+> +	wfi
+> +
+> +	/* Disable self-refresh: set sdr.ctrlgrp.lowpwreq.selfrshreq = 0 */
+> +	ldr	r2, [r0, #SDR_CTRLGRP_LOWPWREQ_ADDR]
+> +	bic	r2, r2, #SELFRSHREQ_MASK
+> +	str	r2, [r0, #SDR_CTRLGRP_LOWPWREQ_ADDR]
+> +
+> +	/* Poll until sdr.ctrlgrp.lowpwrack.selfrfshack == 0 or hit max loops */
+> +	mov	r3, #0
+> +while_ack_1:
+> +	ldr	r2, [r0, #SDR_CTRLGRP_LOWPWRACK_ADDR]
+> +	and	r2, r2, #SELFRFSHACK_MASK
+> +	cmp	r2, #SELFRFSHACK_MASK
+> +	bne	ack_0
+> +
+> +	add	r3, #1
+> +	cmp	r3, #MAX_LOOP_COUNT
+> +	bne	while_ack_1
+> +
+> +ack_0:
+> +	/*
+> +	 * Prepare return value:
+> +	 * Shift loop count for exiting self refresh into upper 16 bits.
+> +	 * Leave loop count for requesting self refresh in lower 16 bits.
+> +	 */
+> +	mov	r3, r3, lsl #16
+> +	add	r4, r4, r3
+> +
+> +	/* Disable dynamic clock gating in the Power Control Register. */
+> +	mrc	p15, 0, r2, c15, c0, 0
+> +	bic	r2, r2, #1
+> +	mcr	p15, 0, r2, c15, c0, 0
+> +
+> +	/* Disable SCU standby mode */
+> +	ldr	r2, [r1, #SOCFPGA_SCU_CTRL_OFFS]
+> +	bic	r2, r2, #SCU_STANDBY_ENA
+> +	str	r2, [r1, #SOCFPGA_SCU_CTRL_OFFS]
+> +
+> +	mov     r0, r4                  @ return value
+> +	ldmfd	sp!, {r4}
+> +	bx	lr			@ return
+> +
+> +ENDPROC(socfpga_sdram_self_refresh)
+> +ENTRY(socfpga_sdram_self_refresh_sz)
+> +	.word	. - socfpga_sdram_self_refresh
+> diff --git a/arch/arm/mach-socfpga/socfpga.c b/arch/arm/mach-socfpga/socfpga.c
+> index adbf383..34b4cc5 100644
+> --- a/arch/arm/mach-socfpga/socfpga.c
+> +++ b/arch/arm/mach-socfpga/socfpga.c
+> @@ -30,6 +30,7 @@ void __iomem *socfpga_scu_base_addr = ((void __iomem *)(SOCFPGA_SCU_VIRT_BASE));
+>  void __iomem *sys_manager_base_addr;
+>  void __iomem *rst_manager_base_addr;
+>  unsigned long cpu1start_addr;
+> +void __iomem *sdr_ctl_base_addr;
+>  
+>  static struct map_desc scu_io_desc __initdata = {
+>  	.virtual	= SOCFPGA_SCU_VIRT_BASE,
+> @@ -77,6 +78,15 @@ void __init socfpga_sysmgr_init(void)
+>  
+>  	np = of_find_compatible_node(NULL, NULL, "altr,rst-mgr");
+>  	rst_manager_base_addr = of_iomap(np, 0);
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "altr,sdr-ctl");
+> +	if (!np) {
+> +		pr_err("SOCFPGA: Unable to find sdr-ctl\n");
+> +		return;
+> +	}
+> +
+> +	sdr_ctl_base_addr = of_iomap(np, 0);
+> +	WARN_ON(!sdr_ctl_base_addr);
+>  }
+>  
+>  static void __init socfpga_init_irq(void)
+> -- 
+> 1.7.9.5
+> 
+> 
