@@ -1,95 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaJBLe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:34:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:21802 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbaJBLe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:34:57 -0400
-X-IronPort-AV: E=Sophos;i="5.04,638,1406592000"; 
-   d="scan'208";a="177432043"
-Date: Thu, 2 Oct 2014 12:32:48 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <Ian.Campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] xen/arm: introduce XENMEM_cache_flush
-In-Reply-To: <542D2BC2.2040505@citrix.com>
-Message-ID: <alpine.DEB.2.02.1410021232060.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410021102480.17038@kaball.uk.xensource.com> <1412244417-12251-2-git-send-email-stefano.stabellini@eu.citrix.com> <542D2BC2.2040505@citrix.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752292AbaJBLhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:37:06 -0400
+Received: from mail-bn1on0099.outbound.protection.outlook.com ([157.56.110.99]:26016
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750987AbaJBLhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 07:37:04 -0400
+Message-ID: <542D38D6.4030209@opensource.altera.com>
+Date: Thu, 2 Oct 2014 06:36:54 -0500
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+To: Pavel Machek <pavel@denx.de>
+CC: atull <atull@opensource.altera.com>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <delicious.quinoa@gmail.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH 1/2] socfpga: hotplug: put cpu1 in wfi
+References: <1411590449-9794-1-git-send-email-atull@opensource.altera.com> <1411590449-9794-2-git-send-email-atull@opensource.altera.com> <20141001133527.GA12750@amd> <alpine.DEB.2.10.1410010915440.2332@shineypoop> <20141001150418.GA14609@amd> <542C26B6.7010302@opensource.altera.com> <20141001231646.GB1529@amd>
+In-Reply-To: <20141001231646.GB1529@amd>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [99.103.66.154]
+X-ClientProxiedBy: BY1PR00CA0003.namprd00.prod.outlook.com (25.160.102.13) To
+ CY1PR0301MB1195.namprd03.prod.outlook.com (25.160.165.26)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1195;
+X-Forefront-PRVS: 03524FBD26
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(24454002)(51704005)(51884002)(479174003)(189002)(377454003)(377424004)(92726001)(92566001)(101416001)(47776003)(80022003)(93886004)(59896002)(85306004)(64706001)(4396001)(23756003)(99396003)(76482002)(120916001)(46102003)(50466002)(10300001)(21056001)(107046002)(87976001)(65816999)(106356001)(86362001)(65956001)(102836001)(54356999)(76176999)(110136001)(31966008)(85852003)(95666004)(66066001)(20776003)(87266999)(33656002)(65806001)(83506001)(105586002)(77096002)(80316001)(64126003)(42186005)(97736003)(50986999);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1195;H:Dinhs-MacBook-Pro.local;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2 Oct 2014, David Vrabel wrote:
-> On 02/10/14 11:06, Stefano Stabellini wrote:
-> > Introduce support for new hypercall XENMEM_cache_flush.
-> > Use it to perform cache flashing on pages used for dma when necessary.
-> [...]
-> > --- a/arch/arm/xen/mm32.c
-> > +++ b/arch/arm/xen/mm32.c
-> [...]
-> > @@ -24,7 +27,21 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
-> >  	
-> >  		if (!pfn_valid(pfn))
-> >  		{
-> > -			/* TODO: cache flush */
-> > +			struct xen_cache_flush cflush;
-> > +
-> > +			cflush.op = 0;
-> > +			cflush.addr = handle + offset;
-> > +			cflush.size = size;
-> > +
-> > +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
-> > +				cflush.op = XENMEM_CACHE_INVAL;
-> > +			if (op == dmac_map_area) {
-> > +				cflush.op = XENMEM_CACHE_CLEAN;
-> > +				if (dir == DMA_FROM_DEVICE)
-> > +					cflush.op |= XENMEM_CACHE_INVAL;
-> > +			}
-> > +			if (cflush.op)
-> > +				HYPERVISOR_memory_op(XENMEM_cache_flush, &cflush);
-> >  		} else {
-> >  			struct page *page = pfn_to_page(pfn);
-> >  
-> [...]
-> > --- a/include/xen/interface/memory.h
-> > +++ b/include/xen/interface/memory.h
-> > @@ -263,4 +263,20 @@ struct xen_remove_from_physmap {
-> >  };
-> >  DEFINE_GUEST_HANDLE_STRUCT(xen_remove_from_physmap);
-> >  
-> > +/*
-> > + * Issue one or more cache maintenance operations on a memory range
-> > + * owned by the calling domain or granted to the calling domain by a
-> > + * foreign domain.
-> > + */
-> > +#define XENMEM_cache_flush                 27
-> > +struct xen_cache_flush {
-> > +/* addr is the machine address at the start of the memory range */
-> 
-> You say machine address here but call it with a bus address.  With no
-> IOMMU these are equivalent but what's correct if an IOMMU is used?
 
-I mean mfns, real machine addresses. With an IOMMU the hypercall should
-not be used.
 
- 
-> > +uint64_t addr;
-> > +uint64_t size;
-> > +#define XENMEM_CACHE_CLEAN      (1<<0)
-> > +#define XENMEM_CACHE_INVAL      (1<<1)
-> > +uint32_t op;
-> > +};
-> > +DEFINE_GUEST_HANDLE_STRUCT(xen_cache_flush);
-> > +
-> >  #endif /* __XEN_PUBLIC_MEMORY_H__ */
-> > 
+On 10/1/14, 6:16 PM, Pavel Machek wrote:
+> On Wed 2014-10-01 11:07:18, Dinh Nguyen wrote:
+>>
+>>
+>> On 10/1/14, 10:04 AM, Pavel Machek wrote:
+>>> Hi!
+>>>
+>>>>>> +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
+>>>>>> +			     rst_manager_base_addr + 0x10);
+>>>>>
+>>>>> Would it be possible to copy reset manager description struct from
+>>>>> u-boot and use it here, instead of raw offset?
+>>>>
+>>>> I will replace this 0x10 with a macro that reflects how the register is 
+>>>> named in the register map.
+>>>
+>>> That would be better than 0x10, but even better would be just copying
+>>>
+>>> struct socfpga_reset_manager {
+>>>         u32     status;
+>>>         u32     ctrl;
+>>>         u32     counts;
+>>>         u32     padding1;
+>>>         u32     mpu_mod_reset;
+>>>         u32     per_mod_reset;
+>>>         u32     per2_mod_reset;
+>>>         u32     brg_mod_reset;
+>>> };
+>>>
+>>> from u-boot. Unlike macros, structs have advantages that typos lead to
+>>> easier-to-see failure modes... (And they are easier to read/parse,
+>>> too).
+>>>
+>>
+>> Copying from uboot sounds good, but I already know that the CPU reset
+>> offset is different for our next SOC, Arria 10. The Arria 10 SOC should
+>> still be able to use the same MSL as Cyclone5 and Arria5, but with a few
+>> differences. One of them being, the CPU1 reset offset is at 0x20 instead
+>> of 0x10. So I think having a macro for this one register is a bit
+>> cleaner than having to define a whole new struct for Arria10.
 > 
+> I don't think "whole new struct" is a problem. At least it will be
+> plain to see what changed (which will get easily lost in ifdefs.
+> 
+> struct cyclone5_reset_manager {
+> 	struct socfpga_reset_manager common;
+> 	u32 brg_mod_reset;
+> }
+> 
+> struct aria10_reset_manager {
+> 	struct socfpga_reset_manager common;
+> 	char filler[0x10];
+> 	u32 brg_mod_reset;
+> }
+> 
+> if (of_machine_is_compatible("altr,socfpga-arria10"))
+> 	__raw_writel(0, (struct cyclone5_reset_manager *) rst_manager_base_addr->brg_mod_reset));
+> else
+> 	__raw_writel(0, (struct aria10_reset_manager *) rst_manager_base_addr->brg_mod_reset));
+> 
+> ...does not sound that bad. (And you'll need some nice solution for
+> u-boot, anyway...)
+> 
+
+That's fine.
+
+Dinh
