@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbaJBXfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 19:35:36 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:43886 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaJBXfe (ORCPT
+	id S1752352AbaJBXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 19:44:56 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:45242 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769AbaJBXoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 19:35:34 -0400
-From: Peter Foley <pefoley2@pefoley.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Foley <pefoley2@pefoley.com>, rdunlap@infradead.org,
-        linux-doc@vger.kernel.org, sudeep.dutt@intel.com, nikhil.rao@intel.com,
-        ashutosh.dixit@intel.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, harshavardhan.r.kharche@intel.com,
-        caz.yokoyama@intel.com, dasaratharaman.chandramouli@intel.com,
-        jkosina@suse.cz
-Subject: [PATCH] Documentation: update include path for mpssd
-Date: Thu,  2 Oct 2014 19:35:26 -0400
-Message-Id: <1412292926-21742-1-git-send-email-pefoley2@pefoley.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412292579-21519-1-git-send-email-pefoley2@pefoley.com>
-References: <1412292579-21519-1-git-send-email-pefoley2@pefoley.com>
+	Thu, 2 Oct 2014 19:44:54 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: Fri, 3 Oct 2014 00:44:52 +0100 (BST)
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linux-NTFS-Dev@lists.sourceforge.net,
+        Andrea Gelmini <andrea.gelmini@gelma.net>
+Subject: [PATCH] NTFS: Remove bogus space.
+Message-ID: <Pine.LNX.4.64.1410030041150.31680@hermes-1.csi.cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sysfs.c includes mpssd.h which includes virtio_ids.h.
-sysfs.c doesn't have the proper include flags set to use the latest
-headers, so this causes a build error if the system headers are too old.
+fs/ntfs/debug.c:124: WARNING: space prohibited between function name and 
+open parenthesis '('
 
-Signed-off-by: Peter Foley <pefoley2@pefoley.com>
-Cc: rdunlap@infradead.org
-Cc: linux-doc@vger.kernel.org
-Cc: sudeep.dutt@intel.com
-Cc: nikhil.rao@intel.com
-Cc: ashutosh.dixit@intel.com
-Cc: akpm@linux-foundation.org
-Cc: gregkh@linuxfoundation.org
-Cc: harshavardhan.r.kharche@intel.com
-Cc: caz.yokoyama@intel.com
-Cc: dasaratharaman.chandramouli@intel.com
-Cc: jkosina@suse.cz
+Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+Signed-off-by: Anton Altaparmakov <anton@tuxera.com>
 ---
+Hi Andrew,
 
-Resending with missing CC to Documentation maintainer
+Can you please take this simple patch and push it to Linus at some point?
 
- Documentation/mic/mpssd/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks a lot in advance!
 
-diff --git a/Documentation/mic/mpssd/Makefile b/Documentation/mic/mpssd/Makefile
-index 505d84f..0f31568 100644
---- a/Documentation/mic/mpssd/Makefile
-+++ b/Documentation/mic/mpssd/Makefile
-@@ -6,7 +6,7 @@ mpssd-objs := mpssd.o sysfs.o
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
- 
--HOSTCFLAGS_mpssd.o += -I$(objtree)/usr/include -I$(srctree)/tools/include
-+HOSTCFLAGS += -I$(objtree)/usr/include -I$(srctree)/tools/include
- 
- ifdef DEBUG
- HOSTCFLAGS += -DDEBUG=$(DEBUG)
+Best regards,
+
+	Anton
 -- 
-2.1.1
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
+diff --git a/fs/ntfs/debug.c b/fs/ntfs/debug.c
+index dd6103c..825a54e 100644
+--- a/fs/ntfs/debug.c
++++ b/fs/ntfs/debug.c
+@@ -112,7 +112,7 @@ void __ntfs_error(const char *function, const struct super_block *sb,
+ /* If 1, output debug messages, and if 0, don't. */
+ int debug_msgs = 0;
+ 
+-void __ntfs_debug (const char *file, int line, const char *function,
++void __ntfs_debug(const char *file, int line, const char *function,
+ 		const char *fmt, ...)
+ {
+ 	struct va_format vaf;
