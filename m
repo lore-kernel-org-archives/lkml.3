@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaJBH2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 03:28:05 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:54340 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaJBH2D (ORCPT
+	id S1751928AbaJBH3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 03:29:43 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:40127 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaJBH3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 03:28:03 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ASoC: tas2552: Fix compilation warning for !PM_RUNTIME
-Date: Thu,  2 Oct 2014 09:28:00 +0200
-Message-Id: <1412234880-8308-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.0
+	Thu, 2 Oct 2014 03:29:42 -0400
+Date: Thu, 2 Oct 2014 09:29:38 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rrichter@cavium.com>, Rob Herring <robh+dt@kernel.org>,
+        Radha Mohan Chintakuntla <rchintakuntla@cavium.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 0/4] arm64, thunder: Enable Cavium Thunder SoC Family
+Message-ID: <20141002072938.GM20170@rric.localhost>
+References: <1410544187-15876-1-git-send-email-rric@kernel.org>
+ <20140923104122.GE20170@rric.localhost>
+ <20140923104641.GF26472@arm.com>
+ <20140923112105.GV30085@e104818-lin.cambridge.arm.com>
+ <20140923141429.GH20170@rric.localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140923141429.GH20170@rric.localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On 23.09.14 16:14:29, Robert Richter wrote:
+> On 23.09.14 12:21:05, Catalin Marinas wrote:
+> > On Tue, Sep 23, 2014 at 11:46:41AM +0100, Will Deacon wrote:
+> > > On Tue, Sep 23, 2014 at 11:41:22AM +0100, Robert Richter wrote:
+> > > > On 12.09.14 19:49:43, Robert Richter wrote:
+> > > > > From: Robert Richter <rrichter@cavium.com>
+> > > > > 
+> > > > > This initial patches enable Cavium Thunder SoC Family. The patches add
+> > > > > devicetree and Kconfig support and then add Thunder to the defconfig.
+> > > > > 
+> > > > > The Thunder system needs more enablement patches for subsystems and
+> > > > > devices, this includes network, ahci, gicv3/gicv3-its, pci, smmu, kvm.
+> > > > > We will send separate patch sets for these. All of them base on this
+> > > > > initial patches.
+> > > > > 
+> > > > > I sent a separate patch set independently that introduces support for
+> > > > > dts vendor subdirs. After both patch sets have been applied I will
+> > > > > send a patch in addition that moves the dts file into a subdirectory.
+> > > > > 
+> > > > > I sent another separate patch that sets NR_CPUS to 64 per default.
+> > > > > 
+> > > > > The first patch introduces dts files without having a Kconfig option
+> > > > > for the soc (ARCH_THUNDER). However, this is introduced in patch 3 and
+> > > > > added to defconfig in patch 4 as this is my preferred solution. If
+> > > > > there is still resistance having an ARCH_THUNDER option, just drop
+> > > > > them.
+> > > > > 
+> > > > > Patches are available here:
+> > > > > 
+> > > > >  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git thunder/init
+> > > > 
+> > > > it would be good if these patches could be applied.
+> > > 
+> > > Catalin's handling the 3.18 merge window, but this looks like arm-soc
+> > > material anyway and should go via Olof/Arnd.
+> > 
+> > Yes. Olof said he's cherry-picking arm64 SoC patches (or Robert could
+> > send him a pull request).
+> 
+> just in case you want to pull, please pull from:
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/rric/linux.git tags/for-arm-soc-v3.18
 
-The tas2552_sw_shutdown() function is only used by runtime suspend
-support, so only build it when necessary.
+Olof, Arnd,
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- sound/soc/codecs/tas2552.c | 2 ++
- 1 file changed, 2 insertions(+)
+please pull or apply.
 
-diff --git a/sound/soc/codecs/tas2552.c b/sound/soc/codecs/tas2552.c
-index 1ed57a7e57b6..f039dc825971 100644
---- a/sound/soc/codecs/tas2552.c
-+++ b/sound/soc/codecs/tas2552.c
-@@ -115,6 +115,7 @@ static const struct snd_soc_dapm_route tas2552_audio_map[] = {
- 	{"ClassD", NULL, "PLL"},
- };
- 
-+#ifdef CONFIG_PM_RUNTIME
- static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
- {
- 	u8 cfg1_reg;
-@@ -127,6 +128,7 @@ static void tas2552_sw_shutdown(struct tas2552_data *tas_data, int sw_shutdown)
- 	snd_soc_update_bits(tas_data->codec, TAS2552_CFG_1,
- 						 TAS2552_SWS_MASK, cfg1_reg);
- }
-+#endif
- 
- static int tas2552_hw_params(struct snd_pcm_substream *substream,
- 			     struct snd_pcm_hw_params *params,
--- 
-2.1.0
+Thanks,
 
+-Robert
