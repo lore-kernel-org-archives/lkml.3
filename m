@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbaJBTDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:03:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43153 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751748AbaJBTDn (ORCPT
+	id S1752244AbaJBTEA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:04:00 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:45398 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaJBTD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:03:43 -0400
-Message-ID: <542DA18C.7000003@free-electrons.com>
-Date: Thu, 02 Oct 2014 21:03:40 +0200
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 2 Oct 2014 15:03:59 -0400
 MIME-Version: 1.0
-To: "Elliott, Robert (Server Storage)" <Elliott@hp.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Scott.Benesh@pmcs.com" <Scott.Benesh@pmcs.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "joe@perches.com" <joe@perches.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "crope@iki.fi" <crope@iki.fi>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: remove iss_storagedev@hp.com list
-References: <1412235940-17628-1-git-send-email-michael.opdenacker@free-electrons.com> <94D0CD8314A33A4D9D801C0FE68B402958CCA64E@G4W3202.americas.hpqcorp.net>
-In-Reply-To: <94D0CD8314A33A4D9D801C0FE68B402958CCA64E@G4W3202.americas.hpqcorp.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <542DA038.9000908@oracle.com>
+References: <1412256558-9995-1-git-send-email-mgorman@suse.de>
+	<1412256558-9995-5-git-send-email-mgorman@suse.de>
+	<CA+55aFzJtoEXEzoyYQ=j+AMxyZNL3Gr3bhXPr3twyuGzvES1PA@mail.gmail.com>
+	<542DA038.9000908@oracle.com>
+Date: Thu, 2 Oct 2014 12:03:58 -0700
+X-Google-Sender-Auth: btPjCEVa7dLr3JBoxQYFMAlWR2Q
+Message-ID: <CA+55aFwybOYtuOn43idiikVDPfBO7pWb4vLjhcM0dYUxTx7odA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mm: numa: Do not mark PTEs pte_numa when splitting
+ huge pages
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Mel Gorman <mgorman@suse.de>, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Michel Lespinasse <walken@google.com>,
+        Kirill A Shutemov <kirill.shutemov@linux.intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On Thu, Oct 2, 2014 at 11:58 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>
+> You've also mentioned that while I can tell you if nothing dies, I can't
+> really tell you if everything is working well. Is there a reasonable way
+> to easily say if NUMA is working properly? Even something that would just
+> tell me "your NUMA balancing seems to be sane" would be good.
 
-Thank you for reviewing this!
+So not having a NUMA machine (and not really wanting one), I can't
+really test things like the migration even *working*.
 
-On 10/02/2014 04:56 PM, Elliott, Robert (Server Storage) wrote:
-> NAK - that address is still valid; I just tested it from my gmail
-> account.  In fact, that's the only working email address of all
-> of those listed.  Chirag, Stephen, and Mike are no longer at HP.
+But the easy/obvious test would be to run the autonuma benchmarks, and
+verify that the performance is where it's expected to be and that the
+migration actually works.
 
-Oops, my mistake. Indeed, it's storagedev@hp.com that disappeared too,
-not iss_storagedev@hp.com.
+I think the "main" source site is
 
-Thanks for the test!
+  https://gitorious.org/autonuma-benchmark
 
-> I'll prod PMC-Sierra to send an update to MAINTAINERS.
+but haven't verified.
 
-That would be great indeed. Looking forward to this patch :)
-
-Michael.
-
--- 
-Michael Opdenacker, CEO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-+33 484 258 098
-
+             Linus
