@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaJBPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 11:13:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30640 "EHLO mx1.redhat.com"
+	id S1754237AbaJBPNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 11:13:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60319 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaJBPNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 11:13:23 -0400
-Date: Thu, 2 Oct 2014 11:13:02 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de
-Subject: Re: [PATCH 0/5] mm: poison critical mm/ structs
-Message-ID: <20141002151302.GA15348@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-mm@kvack.org, mgorman@suse.de
-References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com>
- <20141001140725.fd7f1d0cf933fbc2aa9fc1b1@linux-foundation.org>
- <542C749B.1040103@oracle.com>
- <alpine.LSU.2.11.1410020154500.6444@eggly.anvils>
+	id S1753746AbaJBPNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 11:13:42 -0400
+Date: Thu, 2 Oct 2014 12:13:07 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Milian Wolff <mail@milianw.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/5] perf tools: Move callchain_param to util object in
+ to fix python test
+Message-ID: <20141002151307.GA2245@redhat.com>
+References: <1412179229-19466-1-git-send-email-jolsa@kernel.org>
+ <1412179229-19466-2-git-send-email-jolsa@kernel.org>
+ <20141002145949.GK2799@kernel.org>
+ <20141002150827.GK9764@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1410020154500.6444@eggly.anvils>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141002150827.GK9764@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 02:23:08AM -0700, Hugh Dickins wrote:
+Em Thu, Oct 02, 2014 at 05:08:27PM +0200, Jiri Olsa escreveu:
+> On Thu, Oct 02, 2014 at 11:59:49AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Oct 01, 2014 at 06:00:26PM +0200, Jiri Olsa escreveu:
+> > > In following commit we changed the location of callchains data:
+> > >   b016b5ba554b perf tools: Move callchain config from record_opts to callchain_param
+> > > 
+> > > Now all callchains stuff stays in callchain_param struct,
+> > > which adds its dependency for evsel.c object and breaks
+> > > python perf.so usage (unresolved callchain_param).
+> > > 
+> > > Moving callchain_param into callchain.c and adding it into
+> > > python-ext-sources unleash just another dependency hell,
+> > > so I ended up adding callchain_param into util.c for now.
+> > 
+> > Against what branch is the patch? I am not finding b016b5ba554b in none
+> 
+> [jolsa@krava perf]$ git describe --contains b016b5ba554b
+> fatal: cannot describe 'b016b5ba554ba38c74241ef8739f8fde8878d3eb'
+> [jolsa@krava perf]$ git show --oneline b016b5ba554b | head -1
+> b016b5ba554b perf tools: Move callchain config from record_opts to callchain_param
+> [jolsa@krava perf]$ git show 72a128aa083a > /tmp/p
+> [jolsa@krava perf]$ git show b016b5ba554b > /tmp/p1
+> [jolsa@krava perf]$ diff -puw /tmp/p /tmp/p1 
+> --- /tmp/p      2014-10-02 17:06:20.072958720 +0200
+> +++ /tmp/p1     2014-10-02 17:06:26.035946113 +0200
+> @@ -1,4 +1,4 @@
+> -commit 72a128aa083a7f4cc4f800718aaae05d9c698e26
+> +commit b016b5ba554ba38c74241ef8739f8fde8878d3eb
+>  Author: Namhyung Kim <namhyung@kernel.org>
+>  Date:   Tue Sep 23 10:01:41 2014 +0900
+> 
+> 
+> I guess I took some version before your rebase
+> 
+> > of the branches in my linux git repo and the python 'perf test' entry
+> > works as expected:
+> > 
+> > [root@zoo ~]# perf test python
+> > 17: Try 'use perf' in python, checking link problems       : Ok
+> > [root@zoo ~]# 
+> 
+> hum.. yours acme/perf/core is failing for me:
+> 
+> [jolsa@krava perf]$ ./perf test python
+> 17: Try 'use perf' in python, checking link problems       : FAILED!
+> [jolsa@krava perf]$ git show --oneline HEAD | head -1
+> 281f92f233a5 perf record: Fix error message for --filter option not coming after tracepoint
+> 
+> maybe you need 'make clean && make' ?
 
- > I think these patches are fine for investigating whatever is the
- > problem currently afflicting you and mm under trinity; but we all
- > have our temporary debugging patches, I don't think all deserve
- > preservation in everyone else's kernel, that amounts to far more
- > clutter than any are worth.
+Yeap, I somehow thought that I had that covered :-\
 
-One problem with keeping things like this in -mm (or other non-Linus tree)
-is that they bit-rot quickly, and become a pain to apply, especially if
-they are perpetually on top of other changes in -mm.
+Reproduced, yeah, 72a128aa083a7f4cc4f800718aaae05d9c698e26 is in, and
+I'll take your patch, thanks.
 
-I looked at trying these patches on Linus' tree when Sasha posted them,
-but lost motivation when I realized they needed other bits of -mm too.
+Will update the comment to refer to the right cset.
 
-It may be that after Andrews 3.18+ mega-merge things would be simpler,
-but I have a feeling it wouldn't be long before the situation would
-arise again.
-
-	Dave
-
+- Arnaldo
