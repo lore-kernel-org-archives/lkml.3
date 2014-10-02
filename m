@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaJBJrb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 05:47:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49474 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaJBJr2 (ORCPT
+	id S1751935AbaJBJri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 05:47:38 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:51448 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaJBJrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 05:47:28 -0400
+	Thu, 2 Oct 2014 05:47:35 -0400
 From: AKASHI Takahiro <takahiro.akashi@linaro.org>
 To: keescook@chromium.org, catalin.marinas@arm.com, will.deacon@arm.com
 Cc: dsaxena@linaro.org, arndb@arndb.de, linux-arm-kernel@lists.infradead.org,
         linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         AKASHI Takahiro <takahiro.akashi@linaro.org>
-Subject: [PATCH v7 3/6] asm-generic: add generic seccomp.h for secure computing mode 1
-Date: Thu,  2 Oct 2014 18:46:13 +0900
-Message-Id: <1412243176-16192-4-git-send-email-takahiro.akashi@linaro.org>
+Subject: [PATCH v7 4/6] arm64: add seccomp syscall for compat task
+Date: Thu,  2 Oct 2014 18:46:14 +0900
+Message-Id: <1412243176-16192-5-git-send-email-takahiro.akashi@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
 References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
@@ -22,54 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those values (__NR_seccomp_*) are used solely in secure_computing()
-to identify mode 1 system calls. If compat system calls have different
-syscall numbers, asm/seccomp.h may override them.
+This patch allows compat task to issue seccomp() system call.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 Reviewed-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 ---
- include/asm-generic/seccomp.h |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 include/asm-generic/seccomp.h
+ arch/arm64/include/asm/unistd32.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/asm-generic/seccomp.h b/include/asm-generic/seccomp.h
-new file mode 100644
-index 0000000..9fa1f65
---- /dev/null
-+++ b/include/asm-generic/seccomp.h
-@@ -0,0 +1,30 @@
-+/*
-+ * include/asm-generic/seccomp.h
-+ *
-+ * Copyright (C) 2014 Linaro Limited
-+ * Author: AKASHI Takahiro <takahiro.akashi@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ASM_GENERIC_SECCOMP_H
-+#define _ASM_GENERIC_SECCOMP_H
-+
-+#include <linux/unistd.h>
-+
-+#if defined(CONFIG_COMPAT) && !defined(__NR_seccomp_read_32)
-+#define __NR_seccomp_read_32		__NR_read
-+#define __NR_seccomp_write_32		__NR_write
-+#define __NR_seccomp_exit_32		__NR_exit
-+#define __NR_seccomp_sigreturn_32	__NR_rt_sigreturn
-+#endif /* CONFIG_COMPAT && ! already defined */
-+
-+#define __NR_seccomp_read		__NR_read
-+#define __NR_seccomp_write		__NR_write
-+#define __NR_seccomp_exit		__NR_exit
-+#ifndef __NR_seccomp_sigreturn
-+#define __NR_seccomp_sigreturn		__NR_rt_sigreturn
-+#endif
-+
-+#endif /* _ASM_GENERIC_SECCOMP_H */
+diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
+index da1f06b..812f192 100644
+--- a/arch/arm64/include/asm/unistd32.h
++++ b/arch/arm64/include/asm/unistd32.h
+@@ -787,7 +787,8 @@ __SYSCALL(__NR_sched_setattr, sys_sched_setattr)
+ __SYSCALL(__NR_sched_getattr, sys_sched_getattr)
+ #define __NR_renameat2 382
+ __SYSCALL(__NR_renameat2, sys_renameat2)
+-			/* 383 for seccomp */
++#define __NR_seccomp 383
++__SYSCALL(__NR_seccomp, sys_seccomp)
+ #define __NR_getrandom 384
+ __SYSCALL(__NR_getrandom, sys_getrandom)
+ #define __NR_memfd_create 385
 -- 
 1.7.9.5
 
