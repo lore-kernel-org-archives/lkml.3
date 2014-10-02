@@ -1,164 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaJBSF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 14:05:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37733 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208AbaJBSFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 14:05:54 -0400
-Date: Thu, 2 Oct 2014 13:05:53 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Michael Welling <mwelling@ieee.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, <linux-iio@vger.kernel.org>,
-        <pmeerw@pmeerw.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
- sensor
-Message-ID: <20141002180553.GI7933@saruman>
-Reply-To: <balbi@ti.com>
-References: <20140924143610.GA17997@saruman>
- <20140925221619.GA10644@saruman>
- <20140927041959.GA28445@saruman>
- <20140929140227.GD32403@saruman>
- <20140929183856.GA11871@sysresccd>
- <20140929185325.GA1939@saruman>
- <20140929223833.GA13111@sysresccd>
- <20140929224638.GA21681@saruman>
- <20140929234159.GB13111@sysresccd>
- <20140930212204.GC13806@saruman>
+	id S1751821AbaJBSLQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 14:11:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41790 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaJBSLO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 14:11:14 -0400
+Message-ID: <542D953F.3030701@codeaurora.org>
+Date: Thu, 02 Oct 2014 11:11:11 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FK65GREB+Evh/hTL"
-Content-Disposition: inline
-In-Reply-To: <20140930212204.GC13806@saruman>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Georgi Djakov <gdjakov@mm-sol.com>
+CC: mturquette@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
+References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com>
+In-Reply-To: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FK65GREB+Evh/hTL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 09/30/14 10:20, Georgi Djakov wrote:
+> This patch expands the regmap support to allow registration of clock
+> dividers. It just prepares for the introduction of a clkdiv driver,
+> that will be in a separate patch.
+> Such dividers are found in the Qualcomm PMIC chips such as PM8941,
+> PMA8084 and others.
 
-Hi,
+We're going to need to rework the Makefile in clk/qcom so that we only
+build certain pieces of the "library" when we need them. Right now the
+directory is focused entirely on mmio clock controllers and if we put
+the pmic clocks in there then we need to figure out a way to only build
+the pmic pieces if only the pmic driver is selected and only build the
+mmio pieces if the mmio drivers are selected.
 
-On Tue, Sep 30, 2014 at 04:22:04PM -0500, Felipe Balbi wrote:
-> On Mon, Sep 29, 2014 at 06:41:59PM -0500, Michael Welling wrote:
-> > On Mon, Sep 29, 2014 at 05:46:38PM -0500, Felipe Balbi wrote:
-> > > Hi,
-> > >=20
-> > > On Mon, Sep 29, 2014 at 05:38:33PM -0500, Michael Welling wrote:
-> > > > > > > Alright, this is already ridiculous. Andrew, if I resend the =
-patch can
-> > > > > > > you apply it since maintainer has been ignoring this thread a=
-nyway ?
-> > > > > > >=20
-> > > > > >=20
-> > > > > > Do you reall think this is the best way to approach this?
-> > > > >=20
-> > > > > when maintainer doesn't respond for weeks, yeah! Sure it is.
-> > > > >=20
-> > > > > > Perhaps it would be better to explain what each field of the
-> > > > > > configuration register does and then we can move on.
-> > > > >=20
-> > > > > perhaps Jonathan could tell me exactly what he wants because I ca=
-n't
-> > > > > handle back-and-forth anymore. Specially when he complains about =
-stuff
-> > > > > he asked me to modify himself.
-> > > > >
-> > > > > > In particular the OPT3001_CONFIGURATION_L field needs to be exp=
-lained
-> > > > > > such that the ABI can be properly applied.
-> > > > > >=20
-> > > > > > Looking at the docs for the Windows demo program the field is a=
-ssociated
-> > > > > > with a latch configuration. What does this bit field actually d=
-o?
-> > > >=20
-> > > > Still no technical information. Without all the facts how can you e=
-xpect
-> > > > him to tell you what he wants?
-> > >=20
-> > > yeah, because clearly he doesn't know himself, right ?
-> >=20
-> > Could you explain how it works to me then?
->=20
-> checking how much of the docs I can expose now, gimme a couple days.
+>
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+> ---
+>  drivers/clk/qcom/clk-regmap.c |   68 +++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/qcom/clk-regmap.h |   24 +++++++++++++++
+>  2 files changed, 92 insertions(+)
+>
+> diff --git a/drivers/clk/qcom/clk-regmap.c b/drivers/clk/qcom/clk-regmap.c
+> index a58ba39..d63b8ca 100644
+> --- a/drivers/clk/qcom/clk-regmap.c
+> +++ b/drivers/clk/qcom/clk-regmap.c
+> @@ -112,3 +112,71 @@ struct clk *devm_clk_register_regmap(struct device *dev,
+>  	return devm_clk_register(dev, &rclk->hw);
+>  }
+>  EXPORT_SYMBOL_GPL(devm_clk_register_regmap);
+> +
+> +/**
+> + * clkdiv_recalc_rate_regmap - Calculate clock divider output rate
 
-alright, here's a snippet of what's on preliminary docs:
+Arguments should be documented?
+> + */
+> +unsigned long clkdiv_recalc_rate_regmap(struct clk_hw *hw,
 
-Latch field (read or write).
-The latch field controls the functionality of the interrupt reporting
-mechanisms: the INT pin, the flag high field (FH), and flag low field (FL).
-This bit selects the reporting style between a latched window-style compari=
-son
-and a transparent hysteresis-style comparison.
+Or this should be static.
 
-0 =3D The device functions in transparent hysteresis-style comparison opera=
-tion,
-where the three interrupt reporting mechanisms directly reflect the compari=
-son
-of the result register with the high- and low-limit registers with no
-user-controlled clearing event. See the Interrupt Operation, INT Pin, and
-Interrupt Reporting Mechanisms section for further details.
+> +					unsigned long parent_rate)
+> +{
+> +	struct clk_regmap *rclk = to_clk_regmap(hw);
+> +	struct clkdiv_regmap *clkdiv = to_clkdiv_regmap(rclk);
+> +	unsigned int div, val;
+> +
+> +	regmap_read(rclk->regmap, clkdiv->reg, &val);
+> +	if (!val)
+> +		return parent_rate;
+> +
+> +	div = (val >> clkdiv->shift) & ((1 << clkdiv->width)-1);
+> +
+> +	return parent_rate / div;
 
-1 =3D The device functions in latched window-style comparison operation, la=
-tching
-the interrupt reporting mechanisms until a user-controlled clearing event.
+I don't know if you saw the patch to split out the clk-divider.c logic
+from the readl/writel patch I sent[1]? That could make this slightly
+smaller.
+tabl
+> +}
+> +EXPORT_SYMBOL_GPL(clkdiv_recalc_rate_regmap);
+> +
+> +static const struct clk_ops clkdiv_ops = {
+> +	.enable = clk_enable_regmap,
+> +	.disable = clk_disable_regmap,
 
-[...]
+This isn't exactly a divider if it also has enable/disable control. At
+which point this starts to look like a composite clock. Perhaps call
+this clk_div_gate_ops?
 
-7.4.2.2 Transparent Hysteresis-Style Comparison Mode
-The transparent hysteresis-style comparison mode is typically used when a
-single digital signal is desired that indicates whether the input light is
-higher than or lower than a light level of interest. If the result register=
- is
-higher than the high-limit register for a consecutive number of events set =
-by
-the fault count field, the INT line is set to active, the flag high field is
-set to 1, and the flag low field is set to 0. If the result register is low=
-er
-than the lowlimit register for a consecutive number of events set by the fa=
-ult
-count field, the INT line is set to inactive, the flag low field is set to =
-1,
-and the flag high field is set to 0. The INT pin and flag high and flag low
-fields do not change state with configuration reads and writes. The INT pin=
- and
-flag fields continually report the appropriate comparison of the light to t=
-he
-low-limit and high-limit registers. The device does not respond to the SMBus
-alert response protocol while in either of the two transparent comparison m=
-odes
-(configuration register, latch field =3D 0).
+> +	.is_enabled = clk_is_enabled_regmap,
+> +	.recalc_rate = clkdiv_recalc_rate_regmap,
 
---=20
-balbi
+No .set_rate? So call it clk_fixed_div_gate_ops?
 
---FK65GREB+Evh/hTL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +};
+> +EXPORT_SYMBOL_GPL(clkdiv_ops);
+> +
+> +/**
+> + * devm_clkdiv_register_regmap - register a clk_regmap clock divider
+> + *
+> + * @dev: device that is registering this clock
+> + * @name: name of this clock
+> + * @parent_name: name of clock's parent
+> + * @flags: framework-specific flags
+> + * @clkdiv: clock divider to operate on
+> + *
+> + * Clocks that use regmap for their register I/O should register their
+> + * clk_regmap struct via this function so that the regmap is initialized
+> + * and so that the clock is registered with the common clock framework.
+> + */
+> +struct clk *devm_clkdiv_register_regmap(struct device *dev, const char *name,
+> +					const char *parent_name,
+> +					unsigned long flags,
+> +					struct clkdiv_regmap *clkdiv)
+> +{
+> +	struct clk_init_data init;
+> +
+> +	if (!clkdiv)
+> +		return ERR_PTR(-ENODEV);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Looks like a useless check. Just blow up instead so we don't have to
+tolerate bad code.
 
-iQIcBAEBAgAGBQJULZQAAAoJEIaOsuA1yqREQTEP/1cZ0zj52i8KKfyHA0r3r0m0
-mJf4kikkBs3Cty/oxC4DLFVb2rR5bfYdSTp2CeFaqdN7/nQf/2PhW+zy0kIIv3JP
-VLThdUcQkIaF+bSYHtHQ/BNzX8LcTbxnEGcHEC7f13VbKkXka0yLCCejvq6wq0ja
-2LGBldi8hiwGvMx/fgIY3GKr3vfFFtIF6Nyw4v6xR/RmgxgzM04S1jB0EVOb++Bx
-OmTxRp7aYr4j86nfPY7QGXGGsO/N3mzlv1siMutChZV39pADfymkZH8WfQh4BBUD
-d9TJBPdNK+eRLw6/8pSEg082vVjbmMRUyloJqrR25fE2/4f3NJTH1CDzn9FTvKGV
-NpekSPsGOVUtlA721Ic32r9XcAekgWT13XgWoUNCo/Z68X7XJb036VdDMPd4WL4v
-gdfr8avOThlCJ/W49tMw2PvCG+DKWwDP4OwzfdcqA4Rd4ujTXJoi5+x01slZkuKe
-ULeOeJ0lluOTcmtg9q21P29VpXsX3GaJg1Yfo/mevUBjOZr036HvmfehBCIj7zIM
-dCCVdKp+aVLcbtyTmzt7uXavwmlz+AqYIYTC8/XOc8Vj/GMqb0HAGhE9igQSdeJM
-OTOLqghUAR9JL9wIcx+8FMowgbfbTXOMN7kPGTEttC4W9XYrmskDpnyy1Zo+j4/U
-n+0HKKA5sFwX6Bcn/UQv
-=Pg79
------END PGP SIGNATURE-----
+> +
+> +	clkdiv->rclk.regmap = dev_get_regmap(dev->parent, NULL);
+> +
+> +	if (!clkdiv->rclk.regmap)
+> +		return ERR_PTR(-ENXIO);
+> +
+> +	init.name = name;
+> +	init.parent_names = (parent_name ? &parent_name : NULL);
+> +	init.num_parents = (parent_name ? 1 : 0);
+> +	init.flags = flags;
+> +	init.ops = &clkdiv_ops;
+> +
+> +	clkdiv->rclk.hw.init = &init;
+> +
+> +	return devm_clk_register(dev, &clkdiv->rclk.hw);
+> +}
+> +EXPORT_SYMBOL_GPL(devm_clkdiv_register_regmap);
+> diff --git a/drivers/clk/qcom/clk-regmap.h b/drivers/clk/qcom/clk-regmap.h
+> index 491a63d..02582cf 100644
+> --- a/drivers/clk/qcom/clk-regmap.h
+> +++ b/drivers/clk/qcom/clk-regmap.h
+> @@ -42,4 +42,28 @@ void clk_disable_regmap(struct clk_hw *hw);
+>  struct clk *
+>  devm_clk_register_regmap(struct device *dev, struct clk_regmap *rclk);
+>  
+> +/**
+> + * struct clkdiv_regmap - regmap supporting clock divider
+> + * @rclk:   regmap supporting clock struct
+> + * @reg:    offset into regmap for the control register
+> + * @shift:  bit position for divider value
+> + * @width:  number of bits used for divider value
+> + * @table:  pointer to table containing an array of divider/value pairs
+> + */
+> +struct clkdiv_regmap {
+> +	struct clk_regmap rclk;
+> +	unsigned int reg;
+> +	unsigned int shift;
+> +	unsigned int width;
+> +	struct clk_div_table *table;
 
---FK65GREB+Evh/hTL--
+Is this used?
+
+> +};
+> +
+> +#define to_clkdiv_regmap(_rclk) container_of(_rclk, struct clkdiv_regmap, rclk)
+> +
+> +unsigned long
+> +clkdiv_recalc_rate_regmap(struct clk_hw *hw, unsigned long parent_rate);
+> +struct clk *
+> +devm_clkdiv_register_regmap(struct device *dev, const char *name,
+> +			    const char *parent_name, unsigned long flags,
+> +			    struct clkdiv_regmap *clkdiv);
+>  #endif
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
