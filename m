@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaJBLIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 07:08:17 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50959 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750987AbaJBLIP (ORCPT
+	id S1751927AbaJBLJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 07:09:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55883 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaJBLJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 07:08:15 -0400
-Date: Thu, 2 Oct 2014 12:08:05 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra: Move AHB Kconfig to drivers/amba
-Message-ID: <20141002110805.GT5182@n2100.arm.linux.org.uk>
-References: <1406643934-16301-1-git-send-email-thierry.reding@gmail.com> <53D7C9EE.60503@wwwdotorg.org> <53FB7288.9050002@wwwdotorg.org> <5408BF77.1020007@wwwdotorg.org> <20141002105103.GA13906@ulmo>
+	Thu, 2 Oct 2014 07:09:32 -0400
+Date: Thu, 2 Oct 2014 13:09:27 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141002105103.GA13906@ulmo>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 12:51:04PM +0200, Thierry Reding wrote:
-> On Thu, Sep 04, 2014 at 01:37:27PM -0600, Stephen Warren wrote:
-> > On 08/25/2014 11:29 AM, Stephen Warren wrote:
-> > >On 07/29/2014 10:21 AM, Stephen Warren wrote:
-> > >>On 07/29/2014 08:25 AM, Thierry Reding wrote:
-> > >>>From: Thierry Reding <treding@nvidia.com>
-> > >>>
-> > >>>This will allow the Kconfig option to be shared among 32-bit and 64-bit
-> > >>>ARM.
-> > >>
-> > >>This seems fine to me. I'd expect to apply it for 3.18, provided I get
-> > >>an ack from Russell as drivers/amba maintainer (hence CCing him without
-> > >>trimming the quote).
-> > >
-> > >Russell,
-> > >
-> > >Are you OK with this patch? If so, if you could ack it so I can apply
-> > >it, that would be great.
-> > 
-> > Russell?
+On Tue, Sep 30, 2014 at 04:02:28PM +0800, Fengguang Wu wrote:
+> Hi Peter,
 > 
-> Russell,
+> We possibly find a rfcomm bug (maintainers CCed) exposed by your debug patch
 > 
-> Can I have your Acked-by on this or would you prefer it to be submitted
-> to the patch tracker? Would the patch tracker be the correct place also
-> for non-ARM core patches?
+> [    1.861895] NET: Registered protocol family 5
+> [    1.862978] Bluetooth: RFCOMM TTY layer initialized
+> [    1.863099] ------------[ cut here ]------------
+> [    1.863105] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156 __might_sleep+0x17d/0x1a1()
+> [    1.863112] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c14dc381>] rfcomm_run+0xdf/0x130e
+> [    1.863591]  [<c1058b73>] ? kthread_stop+0x53/0x53
+> [    1.864906]  [<c155a411>] dump_stack+0x48/0x60
+> [    1.866298]  [<c14dc381>] ? rfcomm_run+0xdf/0x130e
 
-I just had to go digging for the original patch, as I've been missing
-this.
-
-I think this is fine, though if we're going to have drivers/amba/Kconfig,
-we should also move the ARM_AMBA Kconfig option there too.  Note that it
-currently appears in both arch/arm/Kconfig and arch/arm64/Kconfig.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Ha yes, rfcomm_run is a complete buggy mess indeed. Lemme go see what I
+can make of it.
