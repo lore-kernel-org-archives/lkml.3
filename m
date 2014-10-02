@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaJBI2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 04:28:55 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49579 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaJBI2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 04:28:53 -0400
-Date: Thu, 2 Oct 2014 10:28:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: pipe/page fault oddness.
-Message-ID: <20141002082846.GA3259@worktop.programming.kicks-ass.net>
-References: <CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
- <20140930162201.GC15903@redhat.com>
- <20140930164047.GA18354@redhat.com>
- <CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
- <20140930182059.GA24431@redhat.com>
- <CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
- <alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
- <CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
- <CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
- <542C39E0.8030609@redhat.com>
+	id S1751807AbaJBIbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 04:31:21 -0400
+Received: from ozlabs.org ([103.22.144.67]:47862 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751319AbaJBIbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 04:31:19 -0400
+Date: Thu, 2 Oct 2014 18:31:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joern Engel <joern@logfs.org>, Quinn Tran <quinn.tran@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the target-updates tree with the scsi
+ tree
+Message-ID: <20141002183111.5eb998a7@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542C39E0.8030609@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/pp_jn3utfzg+2+N6=EZxl_K"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 01, 2014 at 01:29:04PM -0400, Rik van Riel wrote:
-> On 10/01/2014 12:18 PM, Linus Torvalds wrote:
-> 
-> > Seriously, why can't we just do this, and throw away all the crap that
-> > is "numa special case". This would make all the random games in
-> > change_pte_range() just go away entirely, because the whole NUMA thing
-> > really wouldn't be a special case for the pte AT ALL any more. All it
-> > would be is that a pte could be marked PROT_NONE even if the
-> > vma->vm_flags aren't.
-> 
-> That's what I suggested quite a while back, but IIRC either
-> Peter or Mel brought up a reason why this was not possible.
+--Sig_/pp_jn3utfzg+2+N6=EZxl_K
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hey, I'm the one that did the numa faulting with PROTNONE to begin with.
-Andrea and Mel (and possibly you) all didn't like that and did the per
-arch pagetable nonensen :-) I've never understood why.
+Hi Nicholas,
 
-https://lkml.org/lkml/2012/9/27/76
+Today's linux-next merge of the target-updates tree got a conflict in
+drivers/scsi/qla2xxx/qla_target.c between commit 33e799775593
+("qla2xxx: Add support for QFull throttling and Term Exchange retry")
+from the scsi tree and commit 55a9066fffd2 ("qla_target: make some
+global functions static") from the target-updates tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/scsi/qla2xxx/qla_target.c
+index 829752cfd73f,68c90ad441f4..000000000000
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@@ -108,10 -101,7 +108,11 @@@ static void qlt_send_term_exchange(stru
+  	*cmd, struct atio_from_isp *atio, int ha_locked);
+  static void qlt_reject_free_srr_imm(struct scsi_qla_host *ha,
+  	struct qla_tgt_srr_imm *imm, int ha_lock);
+ +static void qlt_abort_cmd_on_host_reset(struct scsi_qla_host *vha,
+ +	struct qla_tgt_cmd *cmd);
+ +static void qlt_alloc_qfull_cmd(struct scsi_qla_host *vha,
+ +	struct atio_from_isp *atio, uint16_t status, int qfull);
++ static void qlt_disable_vha(struct scsi_qla_host *vha);
+  /*
+   * Global Variables
+   */
+@@@ -189,28 -179,7 +190,28 @@@ struct scsi_qla_host *qlt_find_host_by_
+  	return NULL;
+  }
+ =20
+ +static inline void qlt_incr_num_pend_cmds(struct scsi_qla_host *vha)
+ +{
+ +	unsigned long flags;
+ +
+ +	spin_lock_irqsave(&vha->hw->tgt.q_full_lock, flags);
+ +
+ +	vha->hw->tgt.num_pend_cmds++;
+ +	if (vha->hw->tgt.num_pend_cmds > vha->hw->qla_stats.stat_max_pend_cmds)
+ +		vha->hw->qla_stats.stat_max_pend_cmds =3D
+ +			vha->hw->tgt.num_pend_cmds;
+ +	spin_unlock_irqrestore(&vha->hw->tgt.q_full_lock, flags);
+ +}
+ +static inline void qlt_decr_num_pend_cmds(struct scsi_qla_host *vha)
+ +{
+ +	unsigned long flags;
+ +
+ +	spin_lock_irqsave(&vha->hw->tgt.q_full_lock, flags);
+ +	vha->hw->tgt.num_pend_cmds--;
+ +	spin_unlock_irqrestore(&vha->hw->tgt.q_full_lock, flags);
+ +}
+ +
+- void qlt_24xx_atio_pkt_all_vps(struct scsi_qla_host *vha,
++ static void qlt_24xx_atio_pkt_all_vps(struct scsi_qla_host *vha,
+  	struct atio_from_isp *atio)
+  {
+  	ql_dbg(ql_dbg_tgt, vha, 0xe072,
+@@@ -3085,10 -2924,8 +3084,9 @@@ static void qlt_do_ctio_completion(stru
+ =20
+  	se_cmd =3D &cmd->se_cmd;
+  	tfo =3D se_cmd->se_tfo;
+ +	cmd->cmd_sent_to_fw =3D 0;
+ =20
+- 	if (cmd->sg_mapped)
+- 		qlt_unmap_sg(vha, cmd);
++ 	qlt_unmap_sg(vha, cmd);
+ =20
+  	if (unlikely(status !=3D CTIO_SUCCESS)) {
+  		switch (status & 0xFFFF) {
+
+--Sig_/pp_jn3utfzg+2+N6=EZxl_K
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJULQ1UAAoJEMDTa8Ir7ZwVIcYP/3RjVSAhn8ooUN6MeEkifq89
+zQuPx1lFbHxBGjxqAuhWO+MPCE/IoVFRGY+2khlmF3VJ+X08iZPFaUZ5QSRaZFxZ
+LV4HES2c2fjEr1PMs3iX4+CjrJBLyKFebR9zth2FETyCzcY0EFGSrpiBmAR9pun8
+yj3dKyFXfjS91BnAXCPMxUpg3XKWBhW3U2PLPRl4zGacItrxxaR6TmrIL90wm9wr
+fWgY5kUvoaW5ayZgEZMQl8RhYD8q46tqI9Hh3L06FmU7iS4AxbU3a4aUniWD3mVS
+VWIDCFFE8hxyS+kw2iY1RHa29raWz5VWvt6NFb6in6q5c89vvwwuD1QD9p2EIKUs
+TRO+9CukQMpvDAI533OpXu+81yQ6kh4ZaRYFDzyUzg0hS8qJYE/DYR8AT7m+HFhR
+mvRnJvktBHLmaXqM9TP3YqtNZ5/yatAuRJ/WYCMbmVjSlOUg5cw9eRC5M2wDNy45
+fuQdBP5COpVVl+YFjfpzotT9c4/gpqYebdj53JNgjGOVjZMJqIRnl2RxwO0JaFoO
+8Q/USeQY9DGsm/NhLX4UXeFkVBaubCCr+bEHO0zzEVOFiQ2A0fkJiHmv93RgIYnY
+g3qQEf970JnZKhIOKE41eEUTDPanmTbH91oVWamr095z5KWfUGuw+ydZsY8yBzes
+pG1r4lsdy1JZjOiMlq+5
+=1XUd
+-----END PGP SIGNATURE-----
+
+--Sig_/pp_jn3utfzg+2+N6=EZxl_K--
