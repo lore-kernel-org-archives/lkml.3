@@ -1,168 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaJBTw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 15:52:29 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:36307 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaJBTw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 15:52:28 -0400
-Date: Thu, 2 Oct 2014 15:52:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
-Message-ID: <20141002195214.GA2705@cmpxchg.org>
-References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
- <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
- <20140930110622.GB4456@dhcp22.suse.cz>
- <20141002150135.GA1394@cmpxchg.org>
+	id S1753241AbaJBTxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 15:53:05 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:47014 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563AbaJBTxB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 15:53:01 -0400
+Date: Thu, 2 Oct 2014 12:52:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] doc: Document RCU self test boot params
+Message-ID: <20141002195253.GU5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1411140752-27028-1-git-send-email-bobby.prani@gmail.com>
+ <1411140752-27028-3-git-send-email-bobby.prani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141002150135.GA1394@cmpxchg.org>
+In-Reply-To: <1411140752-27028-3-git-send-email-bobby.prani@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100219-3532-0000-0000-0000051C2BFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 11:01:35AM -0400, Johannes Weiner wrote:
-> On Tue, Sep 30, 2014 at 01:06:22PM +0200, Michal Hocko wrote:
-> > > +/**
-> > > + * page_counter_limit - limit the number of pages allowed
-> > > + * @counter: counter
-> > > + * @limit: limit to set
-> > > + *
-> > > + * Returns 0 on success, -EBUSY if the current number of pages on the
-> > > + * counter already exceeds the specified limit.
-> > > + *
-> > > + * The caller must serialize invocations on the same counter.
-> > > + */
-> > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
-> > > +{
-> > > +	for (;;) {
-> > > +		unsigned long old;
-> > > +		long count;
-> > > +
-> > > +		count = atomic_long_read(&counter->count);
-> > > +
-> > > +		old = xchg(&counter->limit, limit);
-> > > +
-> > > +		if (atomic_long_read(&counter->count) != count) {
-> > > +			counter->limit = old;
-> > > +			continue;
-> > > +		}
-> > > +
-> > > +		if (count > limit) {
-> > > +			counter->limit = old;
-> > > +			return -EBUSY;
-> > > +		}
-> > 
-> > Ordering doesn't make much sense to me here. Say you really want to set
-> > limit < count. You are effectively pushing all concurrent charges to
-> > the reclaim even though you would revert your change and return with
-> > EBUSY later on.
-> >
-> > Wouldn't (count > limit) check make more sense right after the first
-> > atomic_long_read?
-> > Also the second count check should be sufficient to check > count and
-> > retry only when the count has increased.
-> > Finally continuous flow of charges can keep this loop running for quite
-> > some time and trigger lockup detector. cond_resched before continue
-> > would handle that. Something like the following:
-> > 
-> > 	for (;;) {
-> > 		unsigned long old;
-> > 		long count;
-> > 
-> > 		count = atomic_long_read(&counter->count);
-> > 		if (count > limit)
-> > 			return -EBUSY;
-> > 
-> > 		old = xchg(&counter->limit, limit);
-> > 
-> > 		/* Recheck for concurrent charges */
-> > 		if (atomic_long_read(&counter->count) > count) {
-> > 			counter->limit = old;
-> > 			cond_resched();
-> > 			continue;
-> > 		}
-> > 
-> > 		return 0;
-> > 	}
+On Fri, Sep 19, 2014 at 11:32:30AM -0400, Pranith Kumar wrote:
+> Document the RCU self test boot parameters in kernel-parameters.txt.
 > 
-> This is susceptible to spurious -EBUSY during races with speculative
-> charges and uncharges.  My code avoids that by retrying until we set
-> the limit without any concurrent counter operations first, before
-> moving on to implementing policy and rollback.
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+
+I have this one queued, please let me know if this is an update.
+
+							Thanx, Paul
+
+> ---
+>  Documentation/kernel-parameters.txt | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
-> Some reclaim activity caused by a limit that the user is trying to set
-> anyway should be okay.  I'd rather have a reliable syscall.
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index c403957..04df74e 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -3054,6 +3054,15 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			messages.  Disable with a value less than or equal
+>  			to zero.
 > 
-> But the cond_resched() is a good idea, I'll add that, thanks.
+> +	rcupdate.rcu_self_test= [KNL]
+> +			Run the RCU early boot self tests
+> +
+> +	rcupdate.rcu_self_test_bh= [KNL]
+> +			Run the RCU bh early boot self tests
+> +
+> +	rcupdate.rcu_self_test_sched= [KNL]
+> +			Run the RCU sched early boot self tests
+> +
+>  	rdinit=		[KNL]
+>  			Format: <full_path>
+>  			Run specified binary instead of /init from the ramdisk,
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Thinking more about it, my code doesn't really avoid that if the
-speculative charges persist over the two reads, it just widens the
-window a bit.  But your suggestion seems indeed more readable,
-although I'd invert the second branch.
-
-How about this delta on top?
-
-diff --git a/mm/page_counter.c b/mm/page_counter.c
-index 4bdab1c7a057..7eb17135d4a4 100644
---- a/mm/page_counter.c
-+++ b/mm/page_counter.c
-@@ -19,8 +19,8 @@ int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
- 
- 	new = atomic_long_sub_return(nr_pages, &counter->count);
- 
--	if (WARN_ON_ONCE(new < 0))
--		atomic_long_add(nr_pages, &counter->count);
-+	/* More uncharges than charges? */
-+	WARN_ON_ONCE(new < 0);
- 
- 	return new > 0;
- }
-@@ -146,29 +146,29 @@ int page_counter_limit(struct page_counter *counter, unsigned long limit)
- 		unsigned long old;
- 		long count;
- 
--		count = atomic_long_read(&counter->count);
- 		/*
-+		 * Update the limit while making sure that it's not
-+		 * below the (concurrently changing) counter value.
-+		 *
- 		 * The xchg implies two full memory barriers before
- 		 * and after, so the read-swap-read is ordered and
- 		 * ensures coherency with page_counter_try_charge():
- 		 * that function modifies the count before checking
- 		 * the limit, so if it sees the old limit, we see the
--		 * modified counter and retry.  This guarantees we
--		 * never successfully set a limit below the counter.
-+		 * modified counter and retry.
- 		 */
--		old = xchg(&counter->limit, limit);
--
--		if (atomic_long_read(&counter->count) != count) {
--			counter->limit = old;
--			continue;
--		}
-+		count = atomic_long_read(&counter->count);
- 
--		if (count > limit) {
--			counter->limit = old;
-+		if (count > limit)
- 			return -EBUSY;
--		}
- 
--		return 0;
-+		old = xchg(&counter->limit, limit);
-+
-+		if (atomic_long_read(&counter->count) <= count)
-+			return 0;
-+
-+		counter->limit = old;
-+		cond_resched();
- 	}
- }
- 
