@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187AbaJCXFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:05:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46955 "EHLO
+	id S1759522AbaJCXF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:05:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46937 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757835AbaJCWOH (ORCPT
+	with ESMTP id S1757953AbaJCWOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:07 -0400
+	Fri, 3 Oct 2014 18:14:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 204/238] perf: Fix a race condition in perf_remove_from_context()
-Date: Fri,  3 Oct 2014 14:31:59 -0700
-Message-Id: <20141003212920.186261959@linuxfoundation.org>
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>,
+        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 188/238] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Date: Fri,  3 Oct 2014 14:31:43 -0700
+Message-Id: <20141003212919.679222971@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -34,63 +34,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
 
-This should cure the above soft lockup.
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
 
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
+
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
+
+Yasuaki also reported that this can happen on real hardware:
+
+  https://lkml.org/lkml/2014/7/22/1018
+
+His case is here:
+
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/kernel/smpboot.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1516,6 +1516,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1287,6 +1287,9 @@ static void remove_siblinginfo(int cpu)
  
-@@ -1957,6 +1962,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
- 
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 
 
