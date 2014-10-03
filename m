@@ -1,118 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751855AbaJCKB6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 06:01:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750992AbaJCKB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 06:01:57 -0400
-Message-ID: <542E7407.2040500@redhat.com>
-Date: Fri, 03 Oct 2014 12:01:43 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752017AbaJCKCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 06:02:19 -0400
+Received: from mail-db3on0095.outbound.protection.outlook.com ([157.55.234.95]:40838
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751908AbaJCKCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 06:02:17 -0400
+Date: Fri, 3 Oct 2014 11:00:46 +0100
+From: Romeo Cane <romeo.cane.ext@coriant.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Paul Mackerras <paulus@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] powerpc: fix sys_call_table declaration
+Message-ID: <20141003100046.GB2144@rcane-VirtualBox>
+References: <20141002144131.GA3855@rcane-VirtualBox>
+ <1412285674.28143.35.camel@pasglop>
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] input: alps: For protocol V3, do not process data
- when last packet's bit7 is set
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1412329392-5580-3-git-send-email-pali.rohar@gmail.com> <542E719A.8030509@redhat.com> <201410031158.02134@pali>
-In-Reply-To: <201410031158.02134@pali>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1412285674.28143.35.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [217.115.69.134]
+X-ClientProxiedBy: AM2PR02CA0039.eurprd02.prod.outlook.com (25.160.28.177) To
+ DBXPR04MB141.eurprd04.prod.outlook.com (10.242.140.11)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DBXPR04MB141;
+X-Forefront-PRVS: 0353563E2B
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(377424004)(199003)(24454002)(51704005)(189002)(76482002)(106356001)(107046002)(83506001)(19580395003)(19580405001)(80022003)(46102003)(50466002)(77096002)(95666004)(105586002)(85306004)(42186005)(101416001)(21056001)(4396001)(20776003)(64706001)(47776003)(97736003)(33716001)(33656002)(122386001)(31966008)(97756001)(66066001)(76176999)(50986999)(54356999)(87976001)(10300001)(120916001)(110136001)(85852003)(92566001)(23726002)(99396003)(86362001)(46406003)(92726001)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:DBXPR04MB141;H:rcane-VirtualBox;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: coriant.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/03/2014 11:58 AM, Pali Rohár wrote:
-> On Friday 03 October 2014 11:51:22 Hans de Goede wrote:
->> Hi,
->>
->> On 10/03/2014 11:43 AM, Pali Rohár wrote:
->>> Sometimes laptops with closed lid receive invalid ALPS
->>> protocol V3 packets with last bit7 set.
->>>
->>> This happens on Dell Latitude laptops and it looks like it
->>> is BIOS bug. Probably EC does not correctly split keyboard
->>> and touchpad PS/2 data and when laptop lid is closed it
->>> adds 0xFF packet into touchpad PS/2 data.
->>>
->>> When last packet's bit7 is set it is invalid ALPS packet. So
->>> Do not process it and drop it with PSMOUSE_FULL_PACKET.
->>>
->>> After testing it looks like this patch fixed problem with
->>> reseting mouse (after series of invalid packets) when
->>> laptop lid is closed on Dell Latitude machines.
->>>
->>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->>> Tested-by: Pali Rohár <pali.rohar@gmail.com>
->>> ---
->>>
->>>  drivers/input/mouse/alps.c |   10 ++++++++++
->>>  1 file changed, 10 insertions(+)
->>>
->>> diff --git a/drivers/input/mouse/alps.c
->>> b/drivers/input/mouse/alps.c index 1bd5aa1..b1f44d4 100644
->>> --- a/drivers/input/mouse/alps.c
->>> +++ b/drivers/input/mouse/alps.c
->>> @@ -1179,6 +1179,16 @@ static psmouse_ret_t
->>> alps_process_byte(struct psmouse *psmouse)
->>>
->>>  		return PSMOUSE_BAD_DATA;
->>>  	
->>>  	}
->>>
->>> +	if (priv->proto_version == ALPS_PROTO_V3 &&
->>> psmouse->pktcnt == psmouse->pktsize) { +		// For protocol
->>> V3, do not process data when last packet's bit7 is set
->>> +		if (psmouse->packet[psmouse->pktcnt - 1] & 0x80) {
->>> +			psmouse_dbg(psmouse, "v3 discard packet[%i] = 
-> %x\n",
->>> +				    psmouse->pktcnt - 1,
->>> +				    psmouse->packet[psmouse->pktcnt - 1]);
->>> +			return PSMOUSE_FULL_PACKET;
->>> +		}
->>> +	}
->>> +
->>
->> I wonder if this should not be PSMOUSE_BAD_DATA as a return
->> value ? I realize that with the 3th patch in place, that will
->> cause an immediate reset, but if your theory is right that
->> this ff gets inserted from the keyboard ps/2 stream, then we
->> actually want a full reset as otherwise we will be out of
->> sync then.
->>
+On Fri, Oct 03, 2014 at 07:34:34AM +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-10-02 at 15:41 +0100, Romeo Cane wrote:
+> > Declaring sys_call_table as a pointer causes the compiler to generate the wrong lookup code in arch_syscall_addr
 > 
-> We really do not know what is root cause of this problem. 
-> Probably it is BIOS/EC/firmware/... but it could be something 
-> other too.
+> Care to elaborate ?
 > 
-> On my laptop - Dell Latitude E6440 - I'm getting these invalid 
-> packets when I close LID. And they are generated too many (lot of 
-> per second). When PSMOUSE_FULL_PACKET is returned then no driver 
-> does not reset touchpad. With PSMOUSE_BAD_DATA psmouse decide 
-> that it needs reset and with 3rd patch psmouse could try to reset 
-> device too many times... So I think PSMOUSE_FULL_PACKET is better 
-> here. And having dmesg log full of device resets is probably not 
-> good too when laptop lid is closed.
+> Ben.
+> 
+> > Signed-off-by: Romeo Cane <romeo.cane.ext@coriant.com>
+> > ---
+> >  arch/powerpc/include/asm/syscall.h | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
+> > index b54b2ad..528ba9d 100644
+> > --- a/arch/powerpc/include/asm/syscall.h
+> > +++ b/arch/powerpc/include/asm/syscall.h
+> > @@ -17,7 +17,7 @@
+> >  
+> >  /* ftrace syscalls requires exporting the sys_call_table */
+> >  #ifdef CONFIG_FTRACE_SYSCALLS
+> > -extern const unsigned long *sys_call_table;
+> > +extern const unsigned long sys_call_table[];
+> >  #endif /* CONFIG_FTRACE_SYSCALLS */
+> >  
+> >  static inline long syscall_get_nr(struct task_struct *task,
+> 
+>
 
-Ok, then lets stick with PSMOUSE_FULL_PACKET.
+Hi Ben,
 
-So this patch also is:
+this is the arch_syscall_addr function from kernel/trace/trace_syscalls.c:
 
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+unsigned long __init __weak arch_syscall_addr(int nr)
+{
+    return (unsigned long)sys_call_table[nr];
+}
 
-Can you please do a v2, with the following tags added to the
-commit messages ? :
+on my platform (E500MC) the generated assembly code is as follows:
 
-- Cc: stable@vger.kernel.org
-- Acked-by: Hans de Goede <hdegoede@redhat.com>
-- Bug: ... for the relevant bugs
+without the patch:
+  <arch_syscall_addr>:
+     lis     r9,-16384
+     rlwinm  r3,r3,2,0,29
+     lwz     r11,30640(r9)
+     lwzx    r3,r11,r3
+     blr
 
-Thanks & Regards,
+with the patch:
+  <arch_syscall_addr>:
+     lis     r9,-16384
+     rlwinm  r3,r3,2,0,29
+     addi    r9,r9,30640
+     lwzx    r3,r9,r3
+     blr
 
-Hans
+
+the goal of the function is to retrieve the n-th element of the table (i.e. the address of a syscall)
+Without the patch, the returned value is in fact the memory content pointed by the address of the first syscall plus an offset, that is not what we want.
+The consequence is that ftrace of syscalls doesn't work.
+
+That table has always been declared as a pointer since the support for syscalls tracing has been introduced for powerpc years ago, so I'm wondering why nobody else had this problem before.
+Other architectures are not affected since in their includes the table is already declared as an array.
+
+
+Romeo
+ 
