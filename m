@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759226AbaJCW40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:56:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
+	id S1759259AbaJCW5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:57:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932580AbaJCWYD (ORCPT
+	with ESMTP id S932590AbaJCWYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:03 -0400
+	Fri, 3 Oct 2014 18:24:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Chu <Mike-Chu@prolific.com.tw>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 039/143] USB: serial: pl2303: add device id for ztek device
-Date: Fri,  3 Oct 2014 14:33:54 -0700
-Message-Id: <20141003213315.660052180@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.10 054/143] usb: hub: take hub->hdev reference when processing from eventlist
+Date: Fri,  3 Oct 2014 14:34:09 -0700
+Message-Id: <20141003213316.110125632@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,40 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Joe Lawrence <joe.lawrence@stratus.com>
 
-commit 91fcb1ce420e0a5f8d92d556d7008a78bc6ce1eb upstream.
+commit c605f3cdff53a743f6d875b76956b239deca1272 upstream.
 
-This adds a new device id to the pl2303 driver for the ZTEK device.
+During surprise device hotplug removal tests, it was observed that
+hub_events may try to call usb_lock_device on a device that has already
+been freed. Protect the usb_device by taking out a reference (under the
+hub_event_lock) when hub_events pulls it off the list, returning the
+reference after hub_events is finished using it.
 
-Reported-by: Mike Chu <Mike-Chu@prolific.com.tw>
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Suggested-by: David Bulkow <david.bulkow@stratus.com> for using kref
+Suggested-by: Alan Stern <stern@rowland.harvard.edu> for placement
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Johan Hovold <johan@kernel.org>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/core/hub.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -47,6 +47,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
-+	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_ZTEK) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
- 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -22,6 +22,7 @@
- #define PL2303_PRODUCT_ID_GPRS		0x0609
- #define PL2303_PRODUCT_ID_HCR331	0x331a
- #define PL2303_PRODUCT_ID_MOTOROLA	0x0307
-+#define PL2303_PRODUCT_ID_ZTEK		0xe1f1
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4702,9 +4702,10 @@ static void hub_events(void)
  
- #define ATEN_VENDOR_ID		0x0557
- #define ATEN_VENDOR_ID2		0x0547
+ 		hub = list_entry(tmp, struct usb_hub, event_list);
+ 		kref_get(&hub->kref);
++		hdev = hub->hdev;
++		usb_get_dev(hdev);
+ 		spin_unlock_irq(&hub_event_lock);
+ 
+-		hdev = hub->hdev;
+ 		hub_dev = hub->intfdev;
+ 		intf = to_usb_interface(hub_dev);
+ 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
+@@ -4919,6 +4920,7 @@ static void hub_events(void)
+ 		usb_autopm_put_interface(intf);
+  loop_disconnected:
+ 		usb_unlock_device(hdev);
++		usb_put_dev(hdev);
+ 		kref_put(&hub->kref, hub_release);
+ 
+         } /* end while (1) */
 
 
