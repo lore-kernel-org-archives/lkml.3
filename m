@@ -1,140 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855AbaJCQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:01:28 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:53645 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753450AbaJCQBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:01:25 -0400
-Date: Fri, 3 Oct 2014 18:01:17 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Simon Horman <horms@verge.net.au>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 07/13] ARM: shmobile: R-Mobile: Use generic_pm_domain.attach_dev()
- for pm_clk setup
-In-Reply-To: <CAMuHMdVZmhpKcRO0rnXFMu7RJ4zFNPdvzuW=TBpvE5B4JviAZA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1410031756580.14789@ayla.of.borg>
-References: <1411662520-22795-1-git-send-email-geert+renesas@glider.be> <1411662520-22795-8-git-send-email-geert+renesas@glider.be> <CAMuHMdVZmhpKcRO0rnXFMu7RJ4zFNPdvzuW=TBpvE5B4JviAZA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754065AbaJCQBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:01:42 -0400
+Received: from mail-bn1on0094.outbound.protection.outlook.com ([157.56.110.94]:34112
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753929AbaJCQBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:01:39 -0400
+From: Nathaniel Ting <nathaniel.ting@silabs.com>
+To: <johan@kernel.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Nathaniel Ting" <nathaniel.ting@silabs.com>
+Subject: [PATCH] USB: serial: cp210x: Add Silicon Labs 358x VID and PID.
+Date: Fri, 3 Oct 2014 12:01:20 -0400
+Message-ID: <1412352080-4711-1-git-send-email-nathaniel.ting@silabs.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [216.236.254.7]
+X-ClientProxiedBy: BN1PR08CA0035.namprd08.prod.outlook.com (10.242.217.163) To
+ BN1PR07MB904.namprd07.prod.outlook.com (10.242.215.15)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR07MB904;
+X-Forefront-PRVS: 0353563E2B
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(53416004)(66066001)(107046002)(2351001)(85306004)(48376002)(50226001)(69596002)(19580395003)(4396001)(20776003)(47776003)(110136001)(229853001)(33646002)(95666004)(50986999)(50466002)(105586002)(77096002)(40100001)(81156004)(106356001)(76482002)(122386001)(99396003)(101416001)(19580405001)(46102003)(10300001)(120916001)(92566001)(86362001)(80022003)(97736003)(92726001)(42186005)(64706001)(93916002)(21056001)(31966008)(104166001)(89996001)(87976001)(85852003)(87286001)(102836001)(88136002)(77156001)(36756003)(62966002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR07MB904;H:lab-nate-ubuntu.silabs.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: silabs.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Geert Uytterhoeven wrote:
-> On Thu, Sep 25, 2014 at 6:28 PM, Geert Uytterhoeven
-> <geert+renesas@glider.be> wrote:
-> > diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
-> > index 717e6413d29cb998..ae846dfcd69293f7 100644
-> > --- a/arch/arm/mach-shmobile/pm-rmobile.c
-> > +++ b/arch/arm/mach-shmobile/pm-rmobile.c
-> > @@ -101,6 +101,17 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
-> >         return true;
-> >  }
-> >
-> > +static void rmobile_pd_attach_dev(struct device *dev)
-> > +{
-> > +       if (pm_clk_no_clocks(dev))
-> > +               pm_clk_add(dev, NULL);
-> 
-> With !CONFIG_PM_RUNTIME, this doesn't work well in the DT case,
-> as the clocks are no longer enabled by runtime PM
-> (some clocks may have been enabled by boot loader/reset state though).
-> 
-> In the legacy case, this works more or less, as genpd takes over after
-> the pm_clk domain has been initialized, which implies enabling the clocks
-> if !CONFIG_PM_RUNTIME.
-> 
-> Will fix...
+From: Nathaniel Ting <nathaniel.ting@silabs.com>
 
-The patch below fixes that.
+Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
+driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
+connect to host PCs over a USB serial link.
 
-I'll update the whole series, and will repost after v3.18-rc1, after the
-prerequisites are in.
-
->From cf40afcfab65fef8e6e6fa84bd3b49434afcb5eb Mon Sep 17 00:00:00 2001
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-Date: Wed, 1 Oct 2014 20:05:53 +0200
-Subject: [PATCH] ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
-
-ARM: shmobile: R-Mobile: Enable module clocks if !CONFIG_PM_RUNTIME
-
-If CONFIG_PM_RUNTIME is not set, the clocks must be enabled before the
-devices can be used.  Also add missing pm_clk_create()/pm_clk_destroy()
-calls.
-
-Currently these clocks are enabled by the !CONFIG_PM_RUNTIME version of
-pm_clk_notify, activated by the hack in drivers/sh/pm_runtime.c, but
-this will go away soon (at least for DT, cfr. "[PATCH] drivers: sh:
-Disable PM runtime for multi-platform r8a7740 with genpd").
-
-On detach, disabling the clocks is already handled by pm_clk_destroy().
-On system suspend/resume, disabling/enabling clocks is already handled
-from the genpd->dev_ops.{start,stop}() callbacks.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
 ---
-This depends on "PM / clock_ops: Fix crash in clocks management code if
-!CONFIG_PM_RUNTIME".
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- arch/arm/mach-shmobile/pm-rmobile.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-shmobile/pm-rmobile.c b/arch/arm/mach-shmobile/pm-rmobile.c
-index 80be5848adc8f15c..e5a2c568d96cdd6b 100644
---- a/arch/arm/mach-shmobile/pm-rmobile.c
-+++ b/arch/arm/mach-shmobile/pm-rmobile.c
-@@ -121,13 +121,23 @@ static bool rmobile_pd_active_wakeup(struct device *dev)
- 
- static void rmobile_pd_attach_dev(struct device *dev)
- {
--	if (pm_clk_no_clocks(dev))
--		pm_clk_add(dev, NULL);
-+	int error;
-+
-+	error = pm_clk_create(dev);
-+	if (error) {
-+		dev_err(dev, "pm_clk_create failed %d\n", error);
-+		return;
-+	}
-+
-+	pm_clk_add(dev, NULL);
-+
-+	if (!IS_ENABLED(CONFIG_PM_RUNTIME))
-+		pm_clk_resume(dev);
- }
- 
- static void rmobile_pd_detach_dev(struct device *dev)
- {
--	pm_clk_remove(dev, NULL);
-+	pm_clk_destroy(dev);
- }
- 
- static void rmobile_init_pm_domain(struct rmobile_pm_domain *rmobile_pd)
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index e4bb622..ab1eb9b 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -154,6 +154,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
++	{ USB_DEVICE(0x1BA4, 0x0002) }, /* Silicon Labs 358x factory default */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 -- 
 1.9.1
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
