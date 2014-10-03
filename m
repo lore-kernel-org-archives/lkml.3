@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaJCWYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:24:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
+	id S1758756AbaJCWnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:43:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47433 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287AbaJCWYH (ORCPT
+	with ESMTP id S932640AbaJCWYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:07 -0400
+	Fri, 3 Oct 2014 18:24:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 069/143] MIPS: mcount: Adjust stack pointer for static trace in MIPS32
-Date: Fri,  3 Oct 2014 14:34:24 -0700
-Message-Id: <20141003213316.586033870@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 083/143] iio: adc: ad_sigma_delta: Fix indio_dev->trig assignment
+Date: Fri,  3 Oct 2014 14:34:38 -0700
+Message-Id: <20141003213317.002660414@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,71 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 8a574cfa2652545eb95595d38ac2a0bb501af0ae upstream.
+commit 9e5846be33277802c0c76e5c12825d0e4d27f639 upstream.
 
-Every mcount() call in the MIPS 32-bit kernel is done as follows:
+This can result in wrong reference count for trigger device, call
+iio_trigger_get to increment reference.
+Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
+with Jonathan.
 
-[...]
-move at, ra
-jal _mcount
-addiu sp, sp, -8
-[...]
-
-but upon returning from the mcount() function, the stack pointer
-is not adjusted properly. This is explained in details in 58b69401c797
-(MIPS: Function tracer: Fix broken function tracing).
-
-Commit ad8c396936e3 ("MIPS: Unbreak function tracer for 64-bit kernel.)
-fixed the stack manipulation for 64-bit but it didn't fix it completely
-for MIPS32.
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7792/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/mcount.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/iio/adc/ad_sigma_delta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/kernel/mcount.S
-+++ b/arch/mips/kernel/mcount.S
-@@ -123,7 +123,11 @@ NESTED(_mcount, PT_SIZE, ra)
- 	 nop
- #endif
- 	b	ftrace_stub
-+#ifdef CONFIG_32BIT
-+	 addiu sp, sp, 8
-+#else
- 	 nop
-+#endif
+--- a/drivers/iio/adc/ad_sigma_delta.c
++++ b/drivers/iio/adc/ad_sigma_delta.c
+@@ -477,7 +477,7 @@ static int ad_sd_probe_trigger(struct ii
+ 		goto error_free_irq;
  
- static_trace:
- 	MCOUNT_SAVE_REGS
-@@ -133,6 +137,9 @@ static_trace:
- 	 move	a1, AT		/* arg2: parent's return address */
+ 	/* select default trigger */
+-	indio_dev->trig = sigma_delta->trig;
++	indio_dev->trig = iio_trigger_get(sigma_delta->trig);
  
- 	MCOUNT_RESTORE_REGS
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
- 	.globl ftrace_stub
- ftrace_stub:
- 	RETURN_BACK
-@@ -181,6 +188,11 @@ NESTED(ftrace_graph_caller, PT_SIZE, ra)
- 	jal	prepare_ftrace_return
- 	 nop
- 	MCOUNT_RESTORE_REGS
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
-+#endif
- 	RETURN_BACK
- 	END(ftrace_graph_caller)
+ 	return 0;
  
 
 
