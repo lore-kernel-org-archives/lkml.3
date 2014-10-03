@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaJCEyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 00:54:06 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:33862 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaJCEyE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 00:54:04 -0400
-Date: Fri, 3 Oct 2014 06:53:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        dave@sr71.net, linux-kernel@vger.kernel.org, eranian@google.com,
-        x86@kernel.org, torvalds@linux-foundation.org,
-        Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Subject: Re: [PATCH 2/2] x86: Only do a single page fault for
- copy_from_user_nmi
-Message-ID: <20141003045359.GA24281@gmail.com>
-References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
- <1411774277-4198-3-git-send-email-andi@firstfloor.org>
- <20140929115620.GH5430@worktop>
- <20140929152646.GC1629@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140929152646.GC1629@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751197AbaJCE6C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 00:58:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48883 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaJCE6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 00:58:00 -0400
+Message-ID: <1412312253.27162.5.camel@linux-t7sj.site>
+Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
+From: Davidlohr Bueso <dbueso@suse.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Tuan Bui <tuan.d.bui@hp.com>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
+Date: Thu, 02 Oct 2014 21:57:33 -0700
+In-Reply-To: <20141001171226.GF2799@kernel.org>
+References: <1412120999.2941.11.camel@u64>
+	 <20141001052832.GA32248@gmail.com> <20141001171226.GF2799@kernel.org>
+Organization: SUSE Labs
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andi Kleen <ak@linux.intel.com> wrote:
-
-> > For now, changing the semantics of the function seems like a 
-> > sure way to fail in the future though.
+On Wed, 2014-10-01 at 14:12 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Oct 01, 2014 at 07:28:32AM +0200, Ingo Molnar escreveu:
+> > If you compare an strace of AIM7 steady state and 'perf bench 
+> > lock' steady state, is it comparable, i.e. do the syscalls and 
 > 
-> I doubt it. Nearly nobody uses the exact return value 
-> semantics.
-> 
-> (iirc it's mostly write() and some bizarre code in mount)
-> 
-> In fact it's a regular mistake to assume it returns -errno.
-> 
-> > > In theory we could also duplicate the whole copy_*_ path 
-> > > for cases where the caller doesn't care about the exact 
-> > > bytes. But that seems overkill for just this issue, and I'm 
-> > > not sure anyone else cares about how fast this is. The 
-> > > simpler check works as well for now.
-> > 
-> > So I don't get that code, but why not fix it in general? 
-> > Taking two faults seems silly.
-> 
-> It's really complicated to reconstruct the exact bytes, as an 
-> optimized memcpy is very complicated and has a lot of corner 
-> cases.
-> 
-> I tried it originally when writing the original copy function, 
-> but failed. That is why people came up later with this 
-> two-fault scheme.
-> 
-> I think two fault is fine for most cases, just not for NMIs.
+> Isn't "lock" too generic? Isn't this stressing some specific lock and if
+> so shouldn't that be made abundantly clear in the 'perf bench' test name
+> and in the docs?
 
-Slapping an ugly in_nmi() check into a generic memcpy routine, 
-especially if it changes semantics, is asking for trouble.
-It is a non-starter and I'm NAK-ing it.
+yeah, and 'perf bench locking creat' just doesn't sound right.
 
-There are cleaner ways to solve this problem - PeterZ offered 
-one, but there are other options as well, such as:
-
- - removing exact-bytes semantics explicitly from almost all 
-   cases and offering a separate (and more expensive, in the 
-   faulting case) memcpy variant for write() and other code that 
-   absolutely must know the number of copied bytes.
-
- - or adding a special no-bytes-copied memcpy variant that the 
-   NMI code could use.
-
-Use one of these or outline that they cannot possibly work.
-
-It might be more work for you, but it gives us a cleaner and more 
-maintainable kernel. The problem is that you should know this 
-general principle already, instead you are wasting maintainer 
-bandwidth via arguing in favor of ugly hacks again and again...
-
-Thanks,
-
-	Ingo
