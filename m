@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049AbaJDAXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:23:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45344 "EHLO
+	id S1756009AbaJCVnK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015AbaJCVnL (ORCPT
+	with ESMTP id S1755061AbaJCVcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:11 -0400
+	Fri, 3 Oct 2014 17:32:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Aubrey <aubrey.li@linux.intel.com>,
-        Fu Zhonghui <zhonghui.fu@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 197/357] ACPI / platform / LPSS: disable async suspend/resume of LPSS devices
-Date: Fri,  3 Oct 2014 14:29:43 -0700
-Message-Id: <20141003212939.394437302@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 060/357] ALSA: hda - Fix COEF setups for ALC1150 codec
+Date: Fri,  3 Oct 2014 14:27:26 -0700
+Message-Id: <20141003212935.261441898@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,41 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fu Zhonghui <zhonghui.fu@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 457920817e645a7dee42c2a75c81c5ed8e12ee1c upstream.
+commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
 
-On some systems (Asus T100 in particular) there are strict ordering
-dependencies between LPSS devices with respect to power management
-that break if they suspend/resume asynchronously.
+ALC1150 codec seems to need the COEF- and PLL-setups just like its
+compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
+the problem like too low output volumes unless the COEF setup is
+applied.
 
-In theory it should be possible to follow those dependencies in the
-async suspend/resume case too (the ACPI tables tell as that the
-dependencies are there), but since we're missing infrastructure
-for that at the moment, disable async suspend/resume for all of
-the LPSS devices for the time being.
-
-Link: http://marc.info/?l=linux-acpi&m=141158962321905&w=2
-Fixes: 8ce62f85a81f (ACPI / platform / LPSS: Enable async suspend/resume of LPSS devices)
-Signed-off-by: Li Aubrey <aubrey.li@linux.intel.com>
-Signed-off-by: Fu Zhonghui <zhonghui.fu@linux.intel.com>
-[ rjw: Changelog ]
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/acpi_lpss.c |    1 -
- 1 file changed, 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -392,7 +392,6 @@ static int acpi_lpss_create_device(struc
- 	adev->driver_data = pdata;
- 	pdev = acpi_create_platform_device(adev);
- 	if (!IS_ERR_OR_NULL(pdev)) {
--		device_enable_async_suspend(&pdev->dev);
- 		return 1;
- 	}
- 
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -327,6 +327,7 @@ static void alc_auto_init_amp(struct hda
+ 		case 0x10ec0885:
+ 		case 0x10ec0887:
+ 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
++		case 0x10ec0900:
+ 			alc889_coef_init(codec);
+ 			break;
+ 		case 0x10ec0888:
+@@ -2349,6 +2350,7 @@ static int patch_alc882(struct hda_codec
+ 	switch (codec->vendor_id) {
+ 	case 0x10ec0882:
+ 	case 0x10ec0885:
++	case 0x10ec0900:
+ 		break;
+ 	default:
+ 		/* ALC883 and variants */
 
 
