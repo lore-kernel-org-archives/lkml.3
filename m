@@ -1,127 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaJCXOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:14:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46891 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757787AbaJCWNy (ORCPT
+	id S1759852AbaJCXO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:14:27 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32952 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601AbaJCXOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.14 159/238] dm cache: fix race causing dirty blocks to be marked as clean
-Date: Fri,  3 Oct 2014 14:31:14 -0700
-Message-Id: <20141003212918.761283012@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 19:14:22 -0400
+Date: Sat, 4 Oct 2014 00:13:34 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>,
+        "jdelvare@suse.de" <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Message-ID: <20141003231334.GA4609@sirena.org.uk>
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
+ <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+ <20141003122736.GH26643@leverpostej>
+ <542EDCDB.6040406@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
+Content-Disposition: inline
+In-Reply-To: <542EDCDB.6040406@roeck-us.net>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+On Fri, Oct 03, 2014 at 10:28:59AM -0700, Guenter Roeck wrote:
+> On 10/03/2014 05:27 AM, Mark Rutland wrote:
 
-commit 40aa978eccec61347cd47b97c598df49acde8be5 upstream.
+> >>+Optional properties:
+> >>+ Name of the optional regulator subnode must be "regulators".
+> >>+  - #address-cells must be 1.
 
-When a writeback or a promotion of a block is completed, the cell of
-that block is removed from the prison, the block is marked as clean, and
-the clear_dirty() callback of the cache policy is called.
+> >What's the single address cell used for?
 
-Unfortunately, performing those actions in this order allows an incoming
-new write bio for that block to come in before clearing the dirty status
-is completed and therefore possibly causing one of these two scenarios:
+> I think this is required by the regulator bindings.
+> Other regulators use the same, though they don't typically
+> mention it in the properties list but only in the examples.
 
-Scenario A:
+Nope, nothing to do with regulator that I'm aware of and I've not seen
+any examples (but I don't tend to review users too often).
 
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called,
-.                               but block already dirty
-.                               => it does nothing
-clear_dirty()                 .
-- block marked clean          .
-- policy clear_dirty() called .
+> >Mark, what's the preferred scheme for identifying regulators in a
+> >container node?
 
-Result: Block is marked clean even though it is actually dirty. No
-writeback will occur.
+> >>+  - regulator-name: arbitrary name for regulator
 
-Scenario B:
+> >Drop the 'aribtarary'. Either this should be the name of the regulator
+> >on the board, or it shouldn't be necessary.
 
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-clear_dirty()                 .
-- block marked clean          .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called
-.                             - block marked dirty
-.                             - policy set_dirty() called
-- policy clear_dirty() called .
+> Not sure if it even needs to be documented here. It is already documented
+> in Documentation/devicetree/bindings/regulator/regulator.txt.
 
-Result: Block is properly marked as dirty, but policy thinks it is clean
-and therefore never asks us to writeback it.
-This case is visible in "dmsetup status" dirty block count (which
-normally decreases to 0 on a quiet device).
+Document by reference then?  It really should be the name of the supply
+provided by the regulator, that wording is probably good.  Given that
+it's a standard regulator property I'd not document it here at all, just
+refer to the generic bindings and say any suitable properties there can
+be used.
 
-Fix these issues by calling clear_dirty() before calling cell_defer().
-Incoming bios for that block will then be detained in the cell and
-released only after clear_dirty() has completed, so the race will not
-occur.
+--PEIAKu/WMn1b1Hv9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Found by inspecting the code after noticing spurious dirty counts
-(scenario B).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+iQEcBAEBAgAGBQJULy2dAAoJECTWi3JdVIfQJgUH/iGxSy0sCJT8+tCSidfBjYQA
+zNd9zjqXv89bDKeuWLOCR8TXi3Qx5bLigrgEH/NaC0RBrt+XcfvVOnr2oiXiMwbn
+bDHQV++qynsvScxjJ99FO9GYTyVdnzwDs8ek1XRDDbH39W407uIEHgBkCXzdxj1l
+oyD1tXjkMb+VBOMDi1LKBML2MI4kXcBWybk/yUQkeQTDtCmOi0oEq5slLJKrTvI9
+OsM0/pJ8GnzuxrHpmKisghKsKuALEZKDQq0jBR+5OREelhmZgyg/6wLkiVyw4mt5
+Jas4gNN9z6fMn0E+x1Fl89XgzPcL8ETuKp2gDuvaagBcazUzDb80q+O6/lCJCLA=
+=aDrK
+-----END PGP SIGNATURE-----
 
----
- drivers/md/dm-cache-target.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -890,8 +890,8 @@ static void migration_success_pre_commit
- 	struct cache *cache = mg->cache;
- 
- 	if (mg->writeback) {
--		cell_defer(cache, mg->old_ocell, false);
- 		clear_dirty(cache, mg->old_oblock, mg->cblock);
-+		cell_defer(cache, mg->old_ocell, false);
- 		cleanup_migration(mg);
- 		return;
- 
-@@ -946,13 +946,13 @@ static void migration_success_post_commi
- 		}
- 
- 	} else {
-+		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		if (mg->requeue_holder)
- 			cell_defer(cache, mg->new_ocell, true);
- 		else {
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		cleanup_migration(mg);
- 	}
- }
-
-
+--PEIAKu/WMn1b1Hv9--
