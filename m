@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913AbaJCV5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:57:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46093 "EHLO
+	id S1756894AbaJCV44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:56:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46096 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308AbaJCVzz (ORCPT
+	with ESMTP id S932310AbaJCVzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:55:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Douglas <adouglas@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.14 068/238] xtensa: fix address checks in dma_{alloc,free}_coherent
-Date: Fri,  3 Oct 2014 14:29:43 -0700
-Message-Id: <20141003212915.848741571@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.14 069/238] xtensa: fix access to THREAD_RA/THREAD_SP/THREAD_DS
+Date: Fri,  3 Oct 2014 14:29:44 -0700
+Message-Id: <20141003212915.881047475@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,55 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Douglas <adouglas@cadence.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 1ca49463c44c970b1ab1d71b0f268bfdf8427a7e upstream.
+commit 52247123749cc3cbc30168b33ad8c69515c96d23 upstream.
 
-Virtual address is translated to the XCHAL_KSEG_CACHED region in the
-dma_free_coherent, but is checked to be in the 0...XCHAL_KSEG_SIZE
-range.
+With SMP and a lot of debug options enabled task_struct::thread gets out
+of reach of s32i/l32i instructions with base pointing at task_struct,
+breaking build with the following messages:
 
-Change check for end of the range from 'addr >= X' to 'addr > X - 1' to
-handle the case of X == 0.
+  arch/xtensa/kernel/entry.S: Assembler messages:
+  arch/xtensa/kernel/entry.S:1002: Error: operand 3 of 'l32i.n' has invalid value '1048'
+  arch/xtensa/kernel/entry.S:1831: Error: operand 3 of 's32i.n' has invalid value '1040'
+  arch/xtensa/kernel/entry.S:1832: Error: operand 3 of 's32i.n' has invalid value '1044'
 
-Replace 'if (C) BUG();' construct with 'BUG_ON(C);'.
+Change base to point to task_struct::thread in such cases.
+Don't use a10 in _switch_to to save/restore prev pointer as a2 is not
+clobbered.
 
-Signed-off-by: Alan Douglas <adouglas@cadence.com>
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/pci-dma.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/xtensa/include/asm/uaccess.h |    5 +++++
+ arch/xtensa/kernel/entry.S        |   12 ++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
---- a/arch/xtensa/kernel/pci-dma.c
-+++ b/arch/xtensa/kernel/pci-dma.c
-@@ -49,9 +49,8 @@ dma_alloc_coherent(struct device *dev,si
+--- a/arch/xtensa/include/asm/uaccess.h
++++ b/arch/xtensa/include/asm/uaccess.h
+@@ -52,7 +52,12 @@
+  */
+ 	.macro	get_fs	ad, sp
+ 	GET_CURRENT(\ad,\sp)
++#if THREAD_CURRENT_DS > 1020
++	addi	\ad, \ad, TASK_THREAD
++	l32i	\ad, \ad, THREAD_CURRENT_DS - TASK_THREAD
++#else
+ 	l32i	\ad, \ad, THREAD_CURRENT_DS
++#endif
+ 	.endm
  
- 	/* We currently don't support coherent memory outside KSEG */
+ /*
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1820,7 +1820,6 @@ ENTRY(_switch_to)
  
--	if (ret < XCHAL_KSEG_CACHED_VADDR
--	    || ret >= XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(ret < XCHAL_KSEG_CACHED_VADDR ||
-+	       ret > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
+ 	entry	a1, 16
  
+-	mov	a10, a2			# preserve 'prev' (a2)
+ 	mov	a11, a3			# and 'next' (a3)
  
- 	if (ret != 0) {
-@@ -68,10 +67,11 @@ EXPORT_SYMBOL(dma_alloc_coherent);
- void dma_free_coherent(struct device *hwdev, size_t size,
- 			 void *vaddr, dma_addr_t dma_handle)
- {
--	long addr=(long)vaddr+XCHAL_KSEG_CACHED_VADDR-XCHAL_KSEG_BYPASS_VADDR;
-+	unsigned long addr = (unsigned long)vaddr +
-+		XCHAL_KSEG_CACHED_VADDR - XCHAL_KSEG_BYPASS_VADDR;
+ 	l32i	a4, a2, TASK_THREAD_INFO
+@@ -1828,8 +1827,14 @@ ENTRY(_switch_to)
  
--	if (addr < 0 || addr >= XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(addr < XCHAL_KSEG_CACHED_VADDR ||
-+	       addr > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
+ 	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
  
- 	free_pages(addr, get_order(size));
- }
+-	s32i	a0, a10, THREAD_RA	# save return address
+-	s32i	a1, a10, THREAD_SP	# save stack pointer
++#if THREAD_RA > 1020 || THREAD_SP > 1020
++	addi	a10, a2, TASK_THREAD
++	s32i	a0, a10, THREAD_RA - TASK_THREAD	# save return address
++	s32i	a1, a10, THREAD_SP - TASK_THREAD	# save stack pointer
++#else
++	s32i	a0, a2, THREAD_RA	# save return address
++	s32i	a1, a2, THREAD_SP	# save stack pointer
++#endif
+ 
+ 	/* Disable ints while we manipulate the stack pointer. */
+ 
+@@ -1870,7 +1875,6 @@ ENTRY(_switch_to)
+ 	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+ 	wsr	a14, ps
+-	mov	a2, a10			# return 'prev'
+ 	rsync
+ 
+ 	retw
 
 
