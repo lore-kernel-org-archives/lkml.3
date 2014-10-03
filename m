@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaJCMac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:30:32 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:45091 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420AbaJCMa3 (ORCPT
+	id S1752524AbaJCMdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:33:02 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64818 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaJCMdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:30:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141003011433.GG1323@katana>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
-	<1411661254-5204-3-git-send-email-octavian.purdila@intel.com>
-	<20141003011433.GG1323@katana>
-Date: Fri, 3 Oct 2014 15:30:28 +0300
-Message-ID: <CAE1zotLmY-UMVCGgJB=1X2MuMgERjdD2f7TsXVonZxE-cWb+kA@mail.gmail.com>
-Subject: Re: [PATCH v6 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Johan Hovold <johan@kernel.org>,
-        Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 08:33:00 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Mark Salter <msalter@redhat.com>
+Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>, Dave Young <dyoung@redhat.com>
+Subject: [PATCH] rtc: Disable EFI rtc for x86
+Date: Fri,  3 Oct 2014 13:32:56 +0100
+Message-Id: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 4:14 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> Hi,
->
->> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
->> index 2ac87fa..6afc17e 100644
->> --- a/drivers/i2c/busses/Kconfig
->> +++ b/drivers/i2c/busses/Kconfig
->> @@ -1021,4 +1021,14 @@ config SCx200_ACB
->>         This support is also available as a module.  If so, the module
->>         will be called scx200_acb.
->>
->> +config I2C_DLN2
->> +       tristate "Diolan DLN-2 USB I2C adapter"
->> +       depends on MFD_DLN2
->> +       help
->> +         If you say yes to this option, support will be included for Diolan
->> +         DLN2, a USB to I2C interface.
->> +
->> +         This driver can also be built as a module.  If so, the module
->> +         will be called i2c-dln2.
->> +
->
-> Please keep to the existing sorting.
->
->
->>  endmenu
->> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
->> index 49bf07e..3118fea 100644
->> --- a/drivers/i2c/busses/Makefile
->> +++ b/drivers/i2c/busses/Makefile
->> @@ -100,5 +100,6 @@ obj-$(CONFIG_I2C_ELEKTOR) += i2c-elektor.o
->>  obj-$(CONFIG_I2C_PCA_ISA)    += i2c-pca-isa.o
->>  obj-$(CONFIG_I2C_SIBYTE)     += i2c-sibyte.o
->>  obj-$(CONFIG_SCx200_ACB)     += scx200_acb.o
->> +obj-$(CONFIG_I2C_DLN2)               += i2c-dln2.o
->
-> Ditto!
->
->> +static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->> +{
->> +     int ret;
->> +     u16 cmd;
->> +
->> +     if (enable)
->> +             cmd = DLN2_I2C_ENABLE;
->> +     else
->> +             cmd = DLN2_I2C_DISABLE;
->
-> Ternary operator?
->
+From: Matt Fleming <matt.fleming@intel.com>
 
-In the first versions of the patch it was used, but Johan suggested to avoid it.
+commit da167ad7638759 ("rtc: ia64: allow other architectures to use EFI
+RTC") inadvertently introduced a regression for x86. We've been careful
+not to enable the EFI rtc driver for x86 due to the generally buggy
+implementations of the time-related EFI runtime services.
 
-I have addressed the rest of you comments, thanks for the review.
+Previous attempts have been made to us the time EFI services, but all
+have eventually been reverted due to crashes inside the firmware code.
+
+In fact, since the above commit was merged we've seen reports of crashes
+on 32-bit tablets,
+
+  https://bugzilla.kernel.org/show_bug.cgi?id=84241#c21
+
+Disable it explicitly for x86 so that we don't give users false hope
+that this driver will work - it won't, and your machine is likely to
+crash.
+
+Cc: Mark Salter <msalter@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+
+Unless anyone objects, I'm happy to take this through the EFI tree.
+
+ drivers/rtc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index a168e96142b9..54ef393b0def 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -806,7 +806,7 @@ config RTC_DRV_DA9063
+ 
+ config RTC_DRV_EFI
+ 	tristate "EFI RTC"
+-	depends on EFI
++	depends on EFI && !X86
+ 	help
+ 	  If you say yes here you will get support for the EFI
+ 	  Real Time Clock.
+-- 
+1.9.3
+
