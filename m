@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760753AbaJCX5D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:57:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S1760740AbaJCX5A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:57:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756783AbaJCVxb (ORCPT
+	with ESMTP id S1756791AbaJCVxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Honggang Li <enjoymindful@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.16 258/357] percpu: free percpu allocation info for uniprocessor system
-Date: Fri,  3 Oct 2014 14:30:44 -0700
-Message-Id: <20141003212941.254297816@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.16 239/357] Revert "iwlwifi: dvm: dont enable CTS to self"
+Date: Fri,  3 Oct 2014 14:30:25 -0700
+Message-Id: <20141003212940.689210597@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,32 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Honggang Li <enjoymindful@gmail.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 3189eddbcafcc4d827f7f19facbeddec4424eba8 upstream.
+commit f47f46d7b09cf1d09e4b44b6cc4dd7d68a08028c upstream.
 
-Currently, only SMP system free the percpu allocation info.
-Uniprocessor system should free it too. For example, one x86 UML
-virtual machine with 256MB memory, UML kernel wastes one page memory.
+This reverts commit 43d826ca5979927131685cc2092c7ce862cb91cd.
 
-Signed-off-by: Honggang Li <enjoymindful@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This commit caused packet loss.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1933,6 +1933,8 @@ void __init setup_per_cpu_areas(void)
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1068,6 +1068,13 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
  
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
++	/*
++	 * force CTS-to-self frames protection if RTS-CTS is not preferred
++	 * one aggregation protection method
++	 */
++	if (!priv->hw_params.use_rts_for_aggregation)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
 +
-+	pcpu_free_alloc_info(ai);
- }
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1473,6 +1480,11 @@ void iwlagn_bss_info_changed(struct ieee
+ 	else
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
  
- #endif	/* CONFIG_SMP */
++	if (bss_conf->use_cts_prot)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
++	else
++		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
++
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+ 
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 
 
