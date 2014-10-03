@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760145AbaJCXbi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:31:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46470 "EHLO
+	id S1760175AbaJCXcA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:32:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757376AbaJCWDy (ORCPT
+	with ESMTP id S1757374AbaJCWDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:54 -0400
+	Fri, 3 Oct 2014 18:03:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Bimow Chen <Bimow.Chen@ite.com.tw>, Antti Palosaari <crope@iki.fi>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 320/357] media: af9035: new IDs: add support for PCTV 78e and PCTV 79e
-Date: Fri,  3 Oct 2014 14:31:46 -0700
-Message-Id: <20141003212943.079996673@linuxfoundation.org>
+Subject: [PATCH 3.16 319/357] media: it913x: init tuner on attach
+Date: Fri,  3 Oct 2014 14:31:45 -0700
+Message-Id: <20141003212943.051546098@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,50 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Bimow Chen <Bimow.Chen@ite.com.tw>
 
-commit a04646c045cab08a9e62b9be8f01ecbb0632d24e upstream.
+commit 01b461bbe74b89da8941f4c95711777d87b9172e upstream.
 
-add the following IDs
-USB_PID_PCTV_78E (0x025a) for PCTV 78e
-USB_PID_PCTV_79E (0x0262) for PCTV 79e
+That register is needed to program very first in order to operate
+correctly.
 
-For these it9135 devices.
+[crope@iki.fi: returned sequence back, removed sleep, moved reg
+write earlier to prevent populating tuner ops in case of failure]
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Cc: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Bimow Chen <Bimow.Chen@ite.com.tw>
 Signed-off-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-core/dvb-usb-ids.h  |    2 ++
- drivers/media/usb/dvb-usb-v2/af9035.c |    4 ++++
- 2 files changed, 6 insertions(+)
+ drivers/media/tuners/tuner_it913x.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -279,6 +279,8 @@
- #define USB_PID_PCTV_400E				0x020f
- #define USB_PID_PCTV_450E				0x0222
- #define USB_PID_PCTV_452E				0x021f
-+#define USB_PID_PCTV_78E				0x025a
-+#define USB_PID_PCTV_79E				0x0262
- #define USB_PID_REALTEK_RTL2831U			0x2831
- #define USB_PID_REALTEK_RTL2832U			0x2832
- #define USB_PID_TECHNOTREND_CONNECT_S2_3600		0x3007
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -1555,6 +1555,10 @@ static const struct usb_device_id af9035
- 		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_HAUPPAUGE, 0xf900,
- 		&af9035_props, "Hauppauge WinTV-MiniStick 2", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_78E,
-+		&af9035_props, "PCTV 78e", RC_MAP_IT913X_V1) },
-+	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_79E,
-+		&af9035_props, "PCTV 79e", RC_MAP_IT913X_V2) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, af9035_id_table);
+--- a/drivers/media/tuners/tuner_it913x.c
++++ b/drivers/media/tuners/tuner_it913x.c
+@@ -396,6 +396,7 @@ struct dvb_frontend *it913x_attach(struc
+ 		struct i2c_adapter *i2c_adap, u8 i2c_addr, u8 config)
+ {
+ 	struct it913x_state *state = NULL;
++	int ret;
+ 
+ 	/* allocate memory for the internal state */
+ 	state = kzalloc(sizeof(struct it913x_state), GFP_KERNEL);
+@@ -425,6 +426,11 @@ struct dvb_frontend *it913x_attach(struc
+ 	state->tuner_type = config;
+ 	state->firmware_ver = 1;
+ 
++	/* tuner RF initial */
++	ret = it913x_wr_reg(state, PRO_DMOD, 0xec4c, 0x68);
++	if (ret < 0)
++		goto error;
++
+ 	fe->tuner_priv = state;
+ 	memcpy(&fe->ops.tuner_ops, &it913x_tuner_ops,
+ 			sizeof(struct dvb_tuner_ops));
 
 
