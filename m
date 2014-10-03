@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091AbaJCWsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:48:22 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63731 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757989AbaJCWsT (ORCPT
+	id S1758845AbaJCWs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:48:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758245AbaJCWYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:48:19 -0400
-Date: Fri, 3 Oct 2014 17:48:14 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, luto@amacapital.net, dvlasenk@redhat.com,
-        tglx@linutronix.de
-Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using
- THUNK helpers
-Message-ID: <20141003174814.6829cf26@as>
-In-Reply-To: <20141003214124.GA31614@redhat.com>
-References: <20140921184153.GA23727@redhat.com>
-	<tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org>
-	<542E2B05.5080607@oracle.com>
-	<20141003083954.10a13a24@as>
-	<20141003214124.GA31614@redhat.com>
+	Fri, 3 Oct 2014 18:24:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Pointner <johannes.pointner@br-automation.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 085/143] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
+Date: Fri,  3 Oct 2014 14:34:40 -0700
+Message-Id: <20141003213317.059288987@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
+References: <20141003213314.470709810@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 3 Oct 2014 23:41:24 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> On 10/03, Chuck Ebbert wrote:
-> >
-> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> >
-> > <snip lots of repeats of this>
-> >
-> > I *think* this is because RBP isn't being saved across task switch
-> > anymore?
-> >
-> > Without CONFIG_FRAME_POINTERS that night not be a problem...
-> 
-> Could you please spell?
-> 
-> I don't even understand "RBP isn't being saved", SAVE_CONTEXT/RESTORE_CONTEXT
-> do push/pop %rbp?
-> 
+------------------
 
-SAVE_ARGS/RESTORE_ARGS, which is what THUNK uses, doesn't push/pop %rbp
+From: Johannes Pointner <johannes.pointner@gmail.com>
 
-Before, SAVE_ALL/RESTORE_ALL were being used around the call to
-preempt_schedule(). So from the symptoms I thought this was the problem.
+commit 872687f626e033b4ddfaec1e410057cfc6636d77 upstream.
+
+Fixes: a2c12493ed7e ('iio: of_iio_channel_get_by_name() returns non-null pointers for error legs')
+
+which improperly assumes that of_iio_channel_get_by_name must always
+return NULL and thus now hides -EPROBE_DEFER.
+
+Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/iio/inkern.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/iio/inkern.c
++++ b/drivers/iio/inkern.c
+@@ -178,7 +178,7 @@ static struct iio_channel *of_iio_channe
+ 			index = of_property_match_string(np, "io-channel-names",
+ 							 name);
+ 		chan = of_iio_channel_get(np, index);
+-		if (!IS_ERR(chan))
++		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
+ 			break;
+ 		else if (name && index >= 0) {
+ 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+
+
