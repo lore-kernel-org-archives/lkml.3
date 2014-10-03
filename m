@@ -1,102 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaJCKCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 06:02:19 -0400
-Received: from mail-db3on0095.outbound.protection.outlook.com ([157.55.234.95]:40838
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751908AbaJCKCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 06:02:17 -0400
-Date: Fri, 3 Oct 2014 11:00:46 +0100
-From: Romeo Cane <romeo.cane.ext@coriant.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] powerpc: fix sys_call_table declaration
-Message-ID: <20141003100046.GB2144@rcane-VirtualBox>
-References: <20141002144131.GA3855@rcane-VirtualBox>
- <1412285674.28143.35.camel@pasglop>
+	id S1752023AbaJCKFs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 06:05:48 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:38485 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992AbaJCKFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 06:05:46 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately after first invalid packet
+Date: Fri, 3 Oct 2014 12:05:42 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1412329392-5580-4-git-send-email-pali.rohar@gmail.com> <542E72A8.2030908@redhat.com>
+In-Reply-To: <542E72A8.2030908@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1412285674.28143.35.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [217.115.69.134]
-X-ClientProxiedBy: AM2PR02CA0039.eurprd02.prod.outlook.com (25.160.28.177) To
- DBXPR04MB141.eurprd04.prod.outlook.com (10.242.140.11)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DBXPR04MB141;
-X-Forefront-PRVS: 0353563E2B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(377424004)(199003)(24454002)(51704005)(189002)(76482002)(106356001)(107046002)(83506001)(19580395003)(19580405001)(80022003)(46102003)(50466002)(77096002)(95666004)(105586002)(85306004)(42186005)(101416001)(21056001)(4396001)(20776003)(64706001)(47776003)(97736003)(33716001)(33656002)(122386001)(31966008)(97756001)(66066001)(76176999)(50986999)(54356999)(87976001)(10300001)(120916001)(110136001)(85852003)(92566001)(23726002)(99396003)(86362001)(46406003)(92726001)(107986001);DIR:OUT;SFP:1101;SCL:1;SRVR:DBXPR04MB141;H:rcane-VirtualBox;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: coriant.com
+Content-Type: multipart/signed;
+  boundary="nextPart3156729.R03uagbh4H";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410031205.42927@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 07:34:34AM +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2014-10-02 at 15:41 +0100, Romeo Cane wrote:
-> > Declaring sys_call_table as a pointer causes the compiler to generate the wrong lookup code in arch_syscall_addr
-> 
-> Care to elaborate ?
-> 
-> Ben.
-> 
-> > Signed-off-by: Romeo Cane <romeo.cane.ext@coriant.com>
-> > ---
-> >  arch/powerpc/include/asm/syscall.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
-> > index b54b2ad..528ba9d 100644
-> > --- a/arch/powerpc/include/asm/syscall.h
-> > +++ b/arch/powerpc/include/asm/syscall.h
-> > @@ -17,7 +17,7 @@
-> >  
-> >  /* ftrace syscalls requires exporting the sys_call_table */
-> >  #ifdef CONFIG_FTRACE_SYSCALLS
-> > -extern const unsigned long *sys_call_table;
-> > +extern const unsigned long sys_call_table[];
-> >  #endif /* CONFIG_FTRACE_SYSCALLS */
-> >  
-> >  static inline long syscall_get_nr(struct task_struct *task,
-> 
->
+--nextPart3156729.R03uagbh4H
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Hi Ben,
+On Friday 03 October 2014 11:55:52 Hans de Goede wrote:
+> Hi,
+>=20
+> On 10/03/2014 11:43 AM, Pali Roh=C3=A1r wrote:
+> > For unknown reasons linux psmouse alps driver sometimes
+> > receive totally invalid packet sequences on Dell Latitude
+> > laptops. According to ALPS HW engineers these invalid
+> > packets do not come from ALPS devices. So it looks like bug
+> > in BIOS and EC incorrectly split keyboard and touchpad PS/2
+> > data when laptops are under heavy loads (big I/O together
+> > with powersave governor, running on battery).
+> >=20
+> > There are sequences of invalid packets (which are dropeed)
+> > and some sequences which look like valid. But these valid
+> > packets cause random trackstick button pressing, random
+> > cursor moving/jumping and in these condition it is not
+> > possible to use ALPS device (trackstick+touchpad).
+> >=20
+> > To prevent random button press and random cursor jumps
+> > immediately reset ALPS device after first invalid packet.
+> > This will cause that touchpad and trackstick will not
+> > respond for one or two seconds and it better then random
+> > cursor jumps.
+>=20
+> This one probably should have:
+>=20
+> Bug: https://bugzilla.redhat.com/show_bug.cgi?id=3D1145954
+>=20
 
-this is the arch_syscall_addr function from kernel/trace/trace_syscalls.c:
+Yes, in that bug is described same problem as on my E6440.
 
-unsigned long __init __weak arch_syscall_addr(int nr)
-{
-    return (unsigned long)sys_call_table[nr];
-}
+> And you may want to add Bug: tags to the relevant patches for
+> the launchpad issues too.
+>=20
 
-on my platform (E500MC) the generated assembly code is as follows:
+I just added links to famous ALPS bugs which looks like that one=20
+which I have on my E6440. But I'm not sure if my patches will=20
+resolve these problems on other machines too.
 
-without the patch:
-  <arch_syscall_addr>:
-     lis     r9,-16384
-     rlwinm  r3,r3,2,0,29
-     lwz     r11,30640(r9)
-     lwzx    r3,r11,r3
-     blr
+> While on the topic of tags, once we've agreed upon the return
+> value to use for the 2nd patch, can you please resend with a
+> "Cc: stable@vger.kernel.org" added to all 3 patches?
+>=20
 
-with the patch:
-  <arch_syscall_addr>:
-     lis     r9,-16384
-     rlwinm  r3,r3,2,0,29
-     addi    r9,r9,30640
-     lwzx    r3,r9,r3
-     blr
+I would like if somebody else can test patches on other machines=20
+with ALPS devices. Specially this third if it does not break=20
+something else.
 
+Note that this third patch does not fixing problem correctly with=20
+jumping & clicking. It just immediately reset ps/2 device if it=20
+receive invalid packages. So it only try to prevent jumping &=20
+clicking. On my E6440 machine it somehow working. When driver=20
+doing ps/2 reset keyboard, touchpad and trackstick not=20
+responding. I think it is better then having random clicks but=20
+somebody else really should try and test patches how it will work=20
+on other machines.
 
-the goal of the function is to retrieve the n-th element of the table (i.e. the address of a syscall)
-Without the patch, the returned value is in fact the memory content pointed by the address of the first syscall plus an offset, that is not what we want.
-The consequence is that ftrace of syscalls doesn't work.
+Proper fix would be to understand why invalid packets are=20
+received and try to force buggy component to not send these=20
+invalid packets.
 
-That table has always been declared as a pointer since the support for syscalls tracing has been introduced for powerpc years ago, so I'm wondering why nobody else had this problem before.
-Other architectures are not affected since in their includes the table is already declared as an array.
+> > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+> > Tested-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
+>=20
+> Looks good and seems sensible:
+>=20
+> Acked-by: Hans de Goede <hdegoede@redhat.com>
+>=20
+> Thanks & Regards,
+>=20
+> Hans
 
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-Romeo
- 
+--nextPart3156729.R03uagbh4H
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlQudPYACgkQi/DJPQPkQ1IoqwCguY4NHk+iXrFuDrMSYe2RlbO0
+EZ8AoKFn5RAITwLHegChFIPOH4AruKgi
+=yXbE
+-----END PGP SIGNATURE-----
+
+--nextPart3156729.R03uagbh4H--
