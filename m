@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072AbaJCXZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:25:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46725 "EHLO
+	id S933064AbaJCXZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:25:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758AbaJCWNj (ORCPT
+	with ESMTP id S1757760AbaJCWNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.16 352/357] ext4: propagate errors up to ext4_find_entry()s callers
-Date: Fri,  3 Oct 2014 14:32:18 -0700
-Message-Id: <20141003212944.032503942@linuxfoundation.org>
+        Dann Frazier <dann.frazier@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3.16 354/357] staging/lustre: disable virtual block device for 64K pages
+Date: Fri,  3 Oct 2014 14:32:20 -0700
+Message-Id: <20141003212944.091198559@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,161 +29,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit 36de928641ee48b2078d3fe9514242aaa2f92013 upstream.
+commit 0bf22be0da8ea74bc7ccc5b07d7855830be16eca upstream.
 
-If we run into some kind of error, such as ENOMEM, while calling
-ext4_getblk() or ext4_dx_find_entry(), we need to make sure this error
-gets propagated up to ext4_find_entry() and then to its callers.  This
-way, transient errors such as ENOMEM can get propagated to the VFS.
-This is important so that the system calls return the appropriate
-error, and also so that in the case of ext4_lookup(), we return an
-error instead of a NULL inode, since that will result in a negative
-dentry cache entry that will stick around long past the OOM condition
-which caused a transient ENOMEM error.
+The lustre virtual block device cannot handle 64K pages and fails at compile
+time. To avoid running into this error, let's disable the Kconfig option
+for this driver in cases it doesn't support.
 
-Google-Bug-Id: #17142205
-
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reported-by: Dann Frazier <dann.frazier@canonical.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ext4.h  |    2 +-
- fs/ext4/namei.c |   35 +++++++++++++++++++++++++++++++++--
- 2 files changed, 34 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1826,7 +1826,7 @@ ext4_group_first_block_no(struct super_b
- /*
-  * Special error return code only used by dx_probe() and its callers.
-  */
--#define ERR_BAD_DX_DIR	-75000
-+#define ERR_BAD_DX_DIR	(-(MAX_ERRNO - 1))
- 
- /*
-  * Timeout and state flag for lazy initialization inode thread.
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -1227,7 +1227,7 @@ static struct buffer_head * ext4_find_en
- 				   buffer */
- 	int num = 0;
- 	ext4_lblk_t  nblocks;
--	int i, err;
-+	int i, err = 0;
- 	int namelen;
- 
- 	*res_dir = NULL;
-@@ -1264,7 +1264,11 @@ static struct buffer_head * ext4_find_en
- 		 * return.  Otherwise, fall back to doing a search the
- 		 * old fashioned way.
- 		 */
--		if (bh || (err != ERR_BAD_DX_DIR))
-+		if (err == -ENOENT)
-+			return NULL;
-+		if (err && err != ERR_BAD_DX_DIR)
-+			return ERR_PTR(err);
-+		if (bh)
- 			return bh;
- 		dxtrace(printk(KERN_DEBUG "ext4_find_entry: dx failed, "
- 			       "falling back\n"));
-@@ -1295,6 +1299,11 @@ restart:
- 				}
- 				num++;
- 				bh = ext4_getblk(NULL, dir, b++, 0, &err);
-+				if (unlikely(err)) {
-+					if (ra_max == 0)
-+						return ERR_PTR(err);
-+					break;
-+				}
- 				bh_use[ra_max] = bh;
- 				if (bh)
- 					ll_rw_block(READ | REQ_META | REQ_PRIO,
-@@ -1417,6 +1426,8 @@ static struct dentry *ext4_lookup(struct
- 		return ERR_PTR(-ENAMETOOLONG);
- 
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
-+	if (IS_ERR(bh))
-+		return (struct dentry *) bh;
- 	inode = NULL;
- 	if (bh) {
- 		__u32 ino = le32_to_cpu(de->inode);
-@@ -1450,6 +1461,8 @@ struct dentry *ext4_get_parent(struct de
- 	struct buffer_head *bh;
- 
- 	bh = ext4_find_entry(child->d_inode, &dotdot, &de, NULL);
-+	if (IS_ERR(bh))
-+		return (struct dentry *) bh;
- 	if (!bh)
- 		return ERR_PTR(-ENOENT);
- 	ino = le32_to_cpu(de->inode);
-@@ -2727,6 +2740,8 @@ static int ext4_rmdir(struct inode *dir,
- 
- 	retval = -ENOENT;
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
-+	if (IS_ERR(bh))
-+		return PTR_ERR(bh);
- 	if (!bh)
- 		goto end_rmdir;
- 
-@@ -2794,6 +2809,8 @@ static int ext4_unlink(struct inode *dir
- 
- 	retval = -ENOENT;
- 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
-+	if (IS_ERR(bh))
-+		return PTR_ERR(bh);
- 	if (!bh)
- 		goto end_unlink;
- 
-@@ -3121,6 +3138,8 @@ static int ext4_find_delete_entry(handle
- 	struct ext4_dir_entry_2 *de;
- 
- 	bh = ext4_find_entry(dir, d_name, &de, NULL);
-+	if (IS_ERR(bh))
-+		return PTR_ERR(bh);
- 	if (bh) {
- 		retval = ext4_delete_entry(handle, dir, de, bh);
- 		brelse(bh);
-@@ -3205,6 +3224,8 @@ static int ext4_rename(struct inode *old
- 		dquot_initialize(new.inode);
- 
- 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name, &old.de, NULL);
-+	if (IS_ERR(old.bh))
-+		return PTR_ERR(old.bh);
- 	/*
- 	 *  Check for inode number is _not_ due to possible IO errors.
- 	 *  We might rmdir the source, keep it as pwd of some process
-@@ -3217,6 +3238,10 @@ static int ext4_rename(struct inode *old
- 
- 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
- 				 &new.de, &new.inlined);
-+	if (IS_ERR(new.bh)) {
-+		retval = PTR_ERR(new.bh);
-+		goto end_rename;
-+	}
- 	if (new.bh) {
- 		if (!new.inode) {
- 			brelse(new.bh);
-@@ -3345,6 +3370,8 @@ static int ext4_cross_rename(struct inod
- 
- 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name,
- 				 &old.de, &old.inlined);
-+	if (IS_ERR(old.bh))
-+		return PTR_ERR(old.bh);
- 	/*
- 	 *  Check for inode number is _not_ due to possible IO errors.
- 	 *  We might rmdir the source, keep it as pwd of some process
-@@ -3357,6 +3384,10 @@ static int ext4_cross_rename(struct inod
- 
- 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
- 				 &new.de, &new.inlined);
-+	if (IS_ERR(new.bh)) {
-+		retval = PTR_ERR(new.bh);
-+		goto end_rename;
-+	}
- 
- 	/* RENAME_EXCHANGE case: old *and* new must both exist */
- 	if (!new.bh || le32_to_cpu(new.de->inode) != new.inode->i_ino)
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -57,4 +57,5 @@ config LUSTRE_TRANSLATE_ERRNOS
+ config LUSTRE_LLITE_LLOOP
+ 	tristate "Lustre virtual block device"
+ 	depends on LUSTRE_FS && BLOCK
++	depends on !PPC_64K_PAGES && !ARM64_64K_PAGES
+ 	default m
 
 
