@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759900AbaJCXPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:15:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S1756369AbaJCXQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:16:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885AbaJCWNx (ORCPT
+	with ESMTP id S1757876AbaJCWNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:53 -0400
+	Fri, 3 Oct 2014 18:13:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "=?UTF-8?q?Dave=20 \"Trinity\" =20Jones?=" <davej@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 3.14 157/238] futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-Date: Fri,  3 Oct 2014 14:31:12 -0700
-Message-Id: <20141003212918.699312857@linuxfoundation.org>
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.14 178/238] usb: dwc3: core: fix ordering for PHY suspend
+Date: Fri,  3 Oct 2014 14:31:33 -0700
+Message-Id: <20141003212919.370121773@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -32,48 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
+commit dc99f16f076559235c92d3eb66d03d1310faea08 upstream.
 
-futex_wait_requeue_pi() calls futex_wait_setup(). If
-futex_wait_setup() succeeds it returns with hb->lock held and
-preemption disabled. Now the sanity check after this does:
+We can't suspend the PHYs before dwc3_core_exit_mode()
+has been called, that's because the host and/or device
+sides might still need to communicate with the far end
+link partner.
 
-        if (match_futex(&q.key, &key2)) {
-	   	ret = -EINVAL;
-		goto out_put_keys;
-	}
-
-which releases the keys but does not release hb->lock.
-
-So we happily return to user space with hb->lock held and therefor
-preemption disabled.
-
-Unlock hb->lock before taking the exit route.
-
-Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fixes: 8ba007a (usb: dwc3: core: enable the USB2 and USB3 phy in probe)
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/futex.c |    1 +
- 1 file changed, 1 insertion(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2614,6 +2614,7 @@ static int futex_wait_requeue_pi(u32 __u
- 	 * shared futexes. We need to compare the keys:
- 	 */
- 	if (match_futex(&q.key, &key2)) {
-+		queue_unlock(hb);
- 		ret = -EINVAL;
- 		goto out_put_keys;
- 	}
+---
+ drivers/usb/dwc3/core.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -583,9 +583,6 @@ static int dwc3_remove(struct platform_d
+ {
+ 	struct dwc3	*dwc = platform_get_drvdata(pdev);
+ 
+-	usb_phy_set_suspend(dwc->usb2_phy, 1);
+-	usb_phy_set_suspend(dwc->usb3_phy, 1);
+-
+ 	dwc3_debugfs_exit(dwc);
+ 
+ 	switch (dwc->dr_mode) {
+@@ -606,6 +603,10 @@ static int dwc3_remove(struct platform_d
+ 
+ 	dwc3_event_buffers_cleanup(dwc);
+ 	dwc3_free_event_buffers(dwc);
++
++	usb_phy_set_suspend(dwc->usb2_phy, 1);
++	usb_phy_set_suspend(dwc->usb3_phy, 1);
++
+ 	dwc3_core_exit(dwc);
+ 
+ 	pm_runtime_put_sync(&pdev->dev);
 
 
