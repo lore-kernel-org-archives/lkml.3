@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402AbaJCXAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:00:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47305 "EHLO
+	id S1757867AbaJCXAK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:00:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932568AbaJCWX6 (ORCPT
+	with ESMTP id S932569AbaJCWX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Richter <adam_richter2004@yahoo.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 023/143] ALSA: hda - Fix invalid pin powermap without jack detection
-Date: Fri,  3 Oct 2014 14:33:38 -0700
-Message-Id: <20141003213315.183088766@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 024/143] ALSA: pcm: fix fifo_size frame calculation
+Date: Fri,  3 Oct 2014 14:33:39 -0700
+Message-Id: <20141003213315.224446345@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,73 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 7a9744cb455e6faa287e148394b4b422a6f3c5c4 upstream.
+commit a9960e6a293e6fc3ed414643bb4e4106272e4d0a upstream.
 
-When a driver is set up without the jack detection explicitly (either
-by passing a model option or via a specific fixup), the pin powermap
-of IDT/STAC codecs is set up wrongly, resulting in the silence
-output.  It's because of a logic failure in stac_init_power_map().
-It tries to avoid creating a callback for the pins that have other
-auto-hp and auto-mic callbacks, but the check is done in a wrong way
-at a wrong time.  The stac_init_power_map() should be called after
-creating other jack detection ctls, and the jack callback should be
-created only for jack-detectable widgets.
+The calculated frame size was wrong because snd_pcm_format_physical_width()
+actually returns the number of bits, not bytes.
 
-This patch fixes the check in stac_init_power_map() and its callee
-at the right place, after snd_hda_gen_build_controls().
+Use snd_pcm_format_size() instead, which not only returns bytes, but also
+simplifies the calculation.
 
-Reported-by: Adam Richter <adam_richter2004@yahoo.com>
+Fixes: 8bea869c5e56 ("ALSA: PCM midlevel: improve fifo_size handling")
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ sound/core/pcm_lib.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -539,8 +539,8 @@ static void stac_init_power_map(struct h
- 		if (snd_hda_jack_tbl_get(codec, nid))
- 			continue;
- 		if (def_conf == AC_JACK_PORT_COMPLEX &&
--		    !(spec->vref_mute_led_nid == nid ||
--		      is_jack_detectable(codec, nid))) {
-+		    spec->vref_mute_led_nid != nid &&
-+		    is_jack_detectable(codec, nid)) {
- 			snd_hda_jack_detect_enable_callback(codec, nid,
- 							    STAC_PWR_EVENT,
- 							    jack_update_power);
-@@ -3647,11 +3647,18 @@ static int stac_parse_auto_config(struct
- 			return err;
- 	}
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -1782,14 +1782,16 @@ static int snd_pcm_lib_ioctl_fifo_size(s
+ {
+ 	struct snd_pcm_hw_params *params = arg;
+ 	snd_pcm_format_t format;
+-	int channels, width;
++	int channels;
++	ssize_t frame_size;
  
--	stac_init_power_map(codec);
--
+ 	params->fifo_size = substream->runtime->hw.fifo_size;
+ 	if (!(substream->runtime->hw.info & SNDRV_PCM_INFO_FIFO_IN_FRAMES)) {
+ 		format = params_format(params);
+ 		channels = params_channels(params);
+-		width = snd_pcm_format_physical_width(format);
+-		params->fifo_size /= width * channels;
++		frame_size = snd_pcm_format_size(format, channels);
++		if (frame_size > 0)
++			params->fifo_size /= (unsigned)frame_size;
+ 	}
  	return 0;
  }
- 
-+static int stac_build_controls(struct hda_codec *codec)
-+{
-+	int err = snd_hda_gen_build_controls(codec);
-+
-+	if (err < 0)
-+		return err;
-+	stac_init_power_map(codec);
-+	return 0;
-+}
- 
- static int stac_init(struct hda_codec *codec)
- {
-@@ -3794,7 +3801,7 @@ static void stac_set_power_state(struct
- #endif /* CONFIG_PM */
- 
- static const struct hda_codec_ops stac_patch_ops = {
--	.build_controls = snd_hda_gen_build_controls,
-+	.build_controls = stac_build_controls,
- 	.build_pcms = snd_hda_gen_build_pcms,
- 	.init = stac_init,
- 	.free = stac_free,
 
 
