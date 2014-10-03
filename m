@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029AbaJCWrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:47:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47346 "EHLO
+	id S1756312AbaJCWro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:47:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758247AbaJCWYO (ORCPT
+	with ESMTP id S1758250AbaJCWYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
+        Joern Engel <joern@logfs.org>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 087/143] Target/iser: Dont put isert_conn inside disconnected handler
-Date: Fri,  3 Oct 2014 14:34:42 -0700
-Message-Id: <20141003213317.116121553@linuxfoundation.org>
+Subject: [PATCH 3.10 089/143] iscsi-target: Fix memory corruption in iscsit_logout_post_handler_diffcid
+Date: Fri,  3 Oct 2014 14:34:44 -0700
+Message-Id: <20141003213317.172996137@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,41 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 0fc4ea701fcf5bc51ace4e288af5be741465f776 upstream.
+commit b53b0d99d6fbf7d44330395349a895521cfdbc96 upstream.
 
-disconnected_handler is invoked on several CM events (such
-as DISCONNECTED, DEVICE_REMOVAL, TIMEWAIT_EXIT...). Since
-multiple  events can occur while before isert_free_conn is
-invoked, we might put all isert_conn references and free
-the connection too early.
+This patch fixes a bug in iscsit_logout_post_handler_diffcid() where
+a pointer used as storage for list_for_each_entry() was incorrectly
+being used to determine if no matching entry had been found.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+This patch changes iscsit_logout_post_handler_diffcid() to key off
+bool conn_found to determine if the function needs to exit early.
+
+Reported-by: Joern Engel <joern@logfs.org>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -583,7 +583,6 @@ isert_disconnect_work(struct work_struct
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -4453,6 +4453,7 @@ static void iscsit_logout_post_handler_d
+ {
+ 	struct iscsi_conn *l_conn;
+ 	struct iscsi_session *sess = conn->sess;
++	bool conn_found = false;
  
- wake_up:
- 	complete(&isert_conn->conn_wait);
--	isert_put_conn(isert_conn);
- }
+ 	if (!sess)
+ 		return;
+@@ -4461,12 +4462,13 @@ static void iscsit_logout_post_handler_d
+ 	list_for_each_entry(l_conn, &sess->sess_conn_list, conn_list) {
+ 		if (l_conn->cid == cid) {
+ 			iscsit_inc_conn_usage_count(l_conn);
++			conn_found = true;
+ 			break;
+ 		}
+ 	}
+ 	spin_unlock_bh(&sess->conn_lock);
  
- static void
-@@ -2266,6 +2265,7 @@ static void isert_wait_conn(struct iscsi
- 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+-	if (!l_conn)
++	if (!conn_found)
+ 		return;
  
- 	wait_for_completion(&isert_conn->conn_wait);
-+	isert_put_conn(isert_conn);
- }
- 
- static void isert_free_conn(struct iscsi_conn *conn)
+ 	if (l_conn->sock)
 
 
