@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaJCWdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:33:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47291 "EHLO
+	id S932120AbaJCWdF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:33:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932665AbaJCWYV (ORCPT
+	with ESMTP id S932667AbaJCWYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:21 -0400
+	Fri, 3 Oct 2014 18:24:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 111/143] usb: dwc3: core: fix ordering for PHY suspend
-Date: Fri,  3 Oct 2014 14:35:06 -0700
-Message-Id: <20141003213317.831853822@linuxfoundation.org>
+        Luciano Coelho <luciano.coelho@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 112/143] Revert "mac80211: disable uAPSD if all ACs are under ACM"
+Date: Fri,  3 Oct 2014 14:35:07 -0700
+Message-Id: <20141003213317.860472840@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,46 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit dc99f16f076559235c92d3eb66d03d1310faea08 upstream.
+commit bb512ad0732232f1d2693bb68f31a76bed8f22ae upstream.
 
-We can't suspend the PHYs before dwc3_core_exit_mode()
-has been called, that's because the host and/or device
-sides might still need to communicate with the far end
-link partner.
+This reverts commit 24aa11ab8ae03292d38ec0dbd9bc2ac49fe8a6dd.
 
-Fixes: 8ba007a (usb: dwc3: core: enable the USB2 and USB3 phy in probe)
-Suggested-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+That commit was wrong since it uses data that hasn't even been set
+up yet, but might be a hold-over from a previous connection.
+
+Additionally, it seems like a driver-specific workaround that
+shouldn't have been in mac80211 to start with.
+
+Fixes: 24aa11ab8ae0 ("mac80211: disable uAPSD if all ACs are under ACM")
+Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/core.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/mac80211/mlme.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -603,9 +603,6 @@ static int dwc3_remove(struct platform_d
- {
- 	struct dwc3	*dwc = platform_get_drvdata(pdev);
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -4395,8 +4395,7 @@ int ieee80211_mgd_assoc(struct ieee80211
+ 	rcu_read_unlock();
  
--	usb_phy_set_suspend(dwc->usb2_phy, 1);
--	usb_phy_set_suspend(dwc->usb3_phy, 1);
--
- 	dwc3_debugfs_exit(dwc);
- 
- 	switch (dwc->mode) {
-@@ -626,6 +623,10 @@ static int dwc3_remove(struct platform_d
- 
- 	dwc3_event_buffers_cleanup(dwc);
- 	dwc3_free_event_buffers(dwc);
-+
-+	usb_phy_set_suspend(dwc->usb2_phy, 1);
-+	usb_phy_set_suspend(dwc->usb3_phy, 1);
-+
- 	dwc3_core_exit(dwc);
- 
- 	pm_runtime_put_sync(&pdev->dev);
+ 	if (bss->wmm_used && bss->uapsd_supported &&
+-	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD) &&
+-	    sdata->wmm_acm != 0xff) {
++	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD)) {
+ 		assoc_data->uapsd = true;
+ 		ifmgd->flags |= IEEE80211_STA_UAPSD_ENABLED;
+ 	} else {
 
 
