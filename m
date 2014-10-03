@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaJCF2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:28:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60846 "EHLO
+	id S1753487AbaJCF3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:29:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60872 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbaJCF21 (ORCPT
+	with ESMTP id S1753298AbaJCF27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 01:28:27 -0400
-Date: Thu, 2 Oct 2014 22:27:40 -0700
-From: tip-bot for Vincent Guittot <tipbot@zytor.com>
-Message-ID: <tip-43f4d66637bc752e93a77ff2536474a5a3888442@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
-        vincent.guittot@linaro.org, tglx@linutronix.de
-In-Reply-To: <1412170735-5356-1-git-send-email-vincent.guittot@linaro.org>
-References: <1412170735-5356-1-git-send-email-vincent.guittot@linaro.org>
+	Fri, 3 Oct 2014 01:28:59 -0400
+Date: Thu, 2 Oct 2014 22:28:07 -0700
+From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
+Message-ID: <tip-10a12983b3d437a6998b3845870e52c1c752c101@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, ktkhai@parallels.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        juri.lelli@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, ktkhai@parallels.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, tglx@linutronix.de,
+        juri.lelli@gmail.com
+In-Reply-To: <20140930210441.5258.55054.stgit@localhost>
+References: <20140930210441.5258.55054.stgit@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Improve sysbench performance by fixing spurious active migration
-Git-Commit-ID: 43f4d66637bc752e93a77ff2536474a5a3888442
+Subject: [tip:sched/core] sched/fair: Delete resched_cpu()
+  from idle_balance()
+Git-Commit-ID: 10a12983b3d437a6998b3845870e52c1c752c101
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,116 +34,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  43f4d66637bc752e93a77ff2536474a5a3888442
-Gitweb:     http://git.kernel.org/tip/43f4d66637bc752e93a77ff2536474a5a3888442
-Author:     Vincent Guittot <vincent.guittot@linaro.org>
-AuthorDate: Wed, 1 Oct 2014 15:38:55 +0200
+Commit-ID:  10a12983b3d437a6998b3845870e52c1c752c101
+Gitweb:     http://git.kernel.org/tip/10a12983b3d437a6998b3845870e52c1c752c101
+Author:     Kirill Tkhai <ktkhai@parallels.com>
+AuthorDate: Wed, 1 Oct 2014 01:04:44 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 3 Oct 2014 05:46:54 +0200
+CommitDate: Fri, 3 Oct 2014 05:46:56 +0200
 
-sched: Improve sysbench performance by fixing spurious active migration
+sched/fair: Delete resched_cpu() from idle_balance()
 
-Since commit caeb178c60f4 ("sched/fair: Make update_sd_pick_busiest() ...")
-sd_pick_busiest returns a group that can be neither imbalanced nor overloaded
-but is only more loaded than others. This change has been introduced to ensure
-a better load balance in system that are not overloaded but as a side effect,
-it can also generate useless active migration between groups.
+We already reschedule env.dst_cpu in attach_tasks()->check_preempt_curr()
+if this is necessary.
 
-Let take the example of 3 tasks on a quad cores system. We will always have an
-idle core so the load balance will find a busiest group (core) whenever an ILB
-is triggered and it will force an active migration (once above
-nr_balance_failed threshold) so the idle core becomes busy but another core
-will become idle. With the next ILB, the freshly idle core will try to pull the
-task of a busy CPU.
-The number of spurious active migration is not so huge in quad core system
-because the ILB is not triggered so much. But it becomes significant as soon as
-you have more than one sched_domain level like on a dual cluster of quad cores
-where the ILB is triggered every tick when you have more than 1 busy_cpu
+Furthermore, a higher priority class task may be current on dest rq,
+we shouldn't disturb it.
 
-We need to ensure that the migration generate a real improveùent and will not
-only move the avg_load imbalance on another CPU.
-
-Before caeb178c60f4f93f1b45c0bc056b5cf6d217b67f, the filtering of such use
-case was ensured by the following test in f_b_g:
-
-  if ((local->idle_cpus < busiest->idle_cpus) &&
-		    busiest->sum_nr_running  <= busiest->group_weight)
-
-This patch modified the condition to take into account situation where busiest
-group is not overloaded: If the diff between the number of idle cpus in 2
-groups is less than or equal to 1 and the busiest group is not overloaded,
-moving a task will not improve the load balance but just move it.
-
-A test with sysbench on a dual clusters of quad cores gives the following
-results:
-
-  command: sysbench --test=cpu --num-threads=5 --max-time=5 run
-
-The HZ is 200 which means that 1000 ticks has fired during the test.
-
-With Mainline, perf gives the following figures:
-
- Samples: 727  of event 'sched:sched_migrate_task'
- Event count (approx.): 727
-  Overhead  Command          Shared Object  Symbol
-  ........  ...............  .............  ..............
-    12.52%  migration/1      [unknown]      [.] 00000000
-    12.52%  migration/5      [unknown]      [.] 00000000
-    12.52%  migration/7      [unknown]      [.] 00000000
-    12.10%  migration/6      [unknown]      [.] 00000000
-    11.83%  migration/0      [unknown]      [.] 00000000
-    11.83%  migration/3      [unknown]      [.] 00000000
-    11.14%  migration/4      [unknown]      [.] 00000000
-    10.87%  migration/2      [unknown]      [.] 00000000
-     2.75%  sysbench         [unknown]      [.] 00000000
-     0.83%  swapper          [unknown]      [.] 00000000
-     0.55%  ktps65090charge  [unknown]      [.] 00000000
-     0.41%  mmcqd/1          [unknown]      [.] 00000000
-     0.14%  perf             [unknown]      [.] 00000000
-
-With this patch, perf gives the following figures
-
- Samples: 20  of event 'sched:sched_migrate_task'
- Event count (approx.): 20
-  Overhead  Command          Shared Object  Symbol
-  ........  ...............  .............  ..............
-    80.00%  sysbench         [unknown]      [.] 00000000
-    10.00%  swapper          [unknown]      [.] 00000000
-     5.00%  ktps65090charge  [unknown]      [.] 00000000
-     5.00%  migration/1      [unknown]      [.] 00000000
-
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Cc: Juri Lelli <juri.lelli@gmail.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1412170735-5356-1-git-send-email-vincent.guittot@linaro.org
+Link: http://lkml.kernel.org/r/20140930210441.5258.55054.stgit@localhost
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 10a5a28..dfdcbfd 100644
+index dfdcbfd..bd61cff 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -6436,13 +6436,14 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
+@@ -6701,12 +6701,6 @@ more_balance:
  
- 	if (env->idle == CPU_IDLE) {
- 		/*
--		 * This cpu is idle. If the busiest group load doesn't
--		 * have more tasks than the number of available cpu's and
--		 * there is no imbalance between this and busiest group
--		 * wrt to idle cpu's, it is balanced.
-+		 * This cpu is idle. If the busiest group is not overloaded
-+		 * and there is no imbalance between this and busiest group
-+		 * wrt idle cpus, it is balanced. The imbalance becomes
-+		 * significant if the diff is greater than 1 otherwise we
-+		 * might end up to just move the imbalance on another group
- 		 */
--		if ((local->idle_cpus < busiest->idle_cpus) &&
--		    busiest->sum_nr_running <= busiest->group_weight)
-+		if ((busiest->group_type != group_overloaded) &&
-+				(local->idle_cpus <= (busiest->idle_cpus + 1)))
- 			goto out_balanced;
- 	} else {
- 		/*
+ 		local_irq_restore(flags);
+ 
+-		/*
+-		 * some other cpu did the load balance for us.
+-		 */
+-		if (cur_ld_moved && env.dst_cpu != smp_processor_id())
+-			resched_cpu(env.dst_cpu);
+-
+ 		if (env.flags & LBF_NEED_BREAK) {
+ 			env.flags &= ~LBF_NEED_BREAK;
+ 			goto more_balance;
