@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbaJCVcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:32:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44750 "EHLO
+	id S1755046AbaJCVcu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:32:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233AbaJCVcg (ORCPT
+	with ESMTP id S1754925AbaJCVch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:36 -0400
+	Fri, 3 Oct 2014 17:32:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.16 022/357] drm/radeon/atom: add new voltage fetch function for hawaii
-Date: Fri,  3 Oct 2014 14:26:48 -0700
-Message-Id: <20141003212934.132202202@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 034/357] ibmveth: Fix endian issues with rx_no_buffer statistic
+Date: Fri,  3 Oct 2014 14:27:00 -0700
+Message-Id: <20141003212934.493608259@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,76 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit e9f274b2a1bd4ecc569b823b1e7942e9bf92593e upstream.
+commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
 
-Some hawaii boards use a different method for fetching the
-voltage information from the vbios.
+Hidden away in the last 8 bytes of the buffer_list page is a solitary
+statistic. It needs to be byte swapped or else ethtool -S will
+produce numbers that terrify the user.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Since we do this in multiple places, create a helper function with a
+comment explaining what is going on.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h          |    3 ++
- drivers/gpu/drm/radeon/radeon_atombios.c |   35 +++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+ drivers/net/ethernet/ibm/ibmveth.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -304,6 +304,9 @@ int radeon_atom_get_leakage_vddc_based_o
- 							 u16 *vddc, u16 *vddci,
- 							 u16 virtual_voltage_id,
- 							 u16 vbios_voltage_id);
-+int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
-+				u16 virtual_voltage_id,
-+				u16 *voltage);
- int radeon_atom_round_to_true_voltage(struct radeon_device *rdev,
- 				      u8 voltage_type,
- 				      u16 nominal_voltage,
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -3236,6 +3236,41 @@ int radeon_atom_get_leakage_vddc_based_o
- 	return 0;
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -292,6 +292,18 @@ failure:
+ 	atomic_add(buffers_added, &(pool->available));
  }
  
-+union get_voltage_info {
-+	struct  _GET_VOLTAGE_INFO_INPUT_PARAMETER_V1_2 in;
-+	struct  _GET_EVV_VOLTAGE_INFO_OUTPUT_PARAMETER_V1_2 evv_out;
-+};
-+
-+int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
-+				u16 virtual_voltage_id,
-+				u16 *voltage)
++/*
++ * The final 8 bytes of the buffer list is a counter of frames dropped
++ * because there was not a buffer in the buffer list capable of holding
++ * the frame.
++ */
++static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
 +{
-+	int index = GetIndexIntoMasterTable(COMMAND, GetVoltageInfo);
-+	u32 entry_id;
-+	u32 count = rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.count;
-+	union get_voltage_info args;
++	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
 +
-+	for (entry_id = 0; entry_id < count; entry_id++) {
-+		if (rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].v ==
-+		    virtual_voltage_id)
-+			break;
-+	}
-+
-+	if (entry_id >= count)
-+		return -EINVAL;
-+
-+	args.in.ucVoltageType = VOLTAGE_TYPE_VDDC;
-+	args.in.ucVoltageMode = ATOM_GET_VOLTAGE_EVV_VOLTAGE;
-+	args.in.ulSCLKFreq =
-+		cpu_to_le32(rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].clk);
-+
-+	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+
-+	*voltage = le16_to_cpu(args.evv_out.usVoltageLevel);
-+
-+	return 0;
++	adapter->rx_no_buffer = be64_to_cpup(p);
 +}
 +
- int radeon_atom_get_voltage_gpio_settings(struct radeon_device *rdev,
- 					  u16 voltage_level, u8 voltage_type,
- 					  u32 *gpio_value, u32 *gpio_mask)
+ /* replenish routine */
+ static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
+ {
+@@ -307,8 +319,7 @@ static void ibmveth_replenish_task(struc
+ 			ibmveth_replenish_buffer_pool(adapter, pool);
+ 	}
+ 
+-	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
+-						4096 - 8);
++	ibmveth_update_rx_no_buffer(adapter);
+ }
+ 
+ /* empty and free ana buffer pool - also used to do cleanup in error paths */
+@@ -698,8 +709,7 @@ static int ibmveth_close(struct net_devi
+ 
+ 	free_irq(netdev->irq, netdev);
+ 
+-	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
+-						4096 - 8);
++	ibmveth_update_rx_no_buffer(adapter);
+ 
+ 	ibmveth_cleanup(adapter);
+ 
 
 
