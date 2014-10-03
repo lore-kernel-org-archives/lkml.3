@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761018AbaJDACn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:02:43 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13551 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760993AbaJDACk (ORCPT
+	id S1760974AbaJDACb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:02:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756023AbaJCVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 20:02:40 -0400
-Date: Fri, 3 Oct 2014 17:02:50 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC 5/7] soc: qcom: Add Shared Memory Driver
-Message-ID: <20141004000249.GD28481@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412037291-16880-6-git-send-email-bjorn.andersson@sonymobile.com>
- <542DD3DA.1010909@codeaurora.org>
+	Fri, 3 Oct 2014 17:53:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chen-Yu Tsai <wens@csie.org>, Andrew Lunn <andrew@lunn.ch>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.14 035/238] i2c: mv64xxx: continue probe when clock-frequency is missing
+Date: Fri,  3 Oct 2014 14:29:10 -0700
+Message-Id: <20141003212914.784825568@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <542DD3DA.1010909@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02 Oct 15:38 PDT 2014, Stephen Boyd wrote:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> On 09/29/14 17:34, Bjorn Andersson wrote:
-> > +
-> > +#define GET_RX_CHANNEL_INFO(channel, param) \
-> > +	(channel->rx_info_word ? \
-> > +		channel->rx_info_word->param : \
-> > +		channel->rx_info->param)
-> > +
-> > +#define GET_TX_CHANNEL_INFO(channel, param) \
-> > +	(channel->rx_info_word ? \
-> > +		channel->tx_info_word->param : \
-> > +		channel->tx_info->param)
-> > +
-> > +#define SET_RX_CHANNEL_INFO(channel, param, value) \
-> > +	(channel->rx_info_word ? \
-> > +		(channel->rx_info_word->param = value) : \
-> > +		(channel->rx_info->param = value))
-> > +
-> > +#define SET_TX_CHANNEL_INFO(channel, param, value) \
-> > +	(channel->rx_info_word ? \
-> 
-> Drive-by review: Should this be tx_info_word? Given that it works I
-> wonder why not just have a flag indicating if we should use word aligned
-> read/write vs. byte aligned.
-> 
+------------------
 
-You're right, that should be tx - but from the way things both channels will
-always be of the same type, so it will simply work.
+From: Chen-Yu Tsai <wens@csie.org>
 
-I had a separate flag, but instead of having 4 members in the struct to
-indicate if I was dealing with word aligned access I had 5. So I dropped it.
+commit 0ce4bc1dbdd911ae1763e2d4ff36bd1b214a59f7 upstream.
 
-> > +		(channel->tx_info_word->param = value) : \
-> > +		(channel->tx_info->param = value))
-> > +
-> 
+The "clock-frequency" DT property is listed as optional, However,
+the current code stores the return value of of_property_read_u32 in
+the return code of mv64xxx_of_config, but then forgets to clear it
+after setting the default value of "clock-frequency". It is then
+passed out to the main probe function, resulting in a probe failure
+when "clock-frequency" is missing.
 
-Regards,
-Bjorn
+This patch checks and then throws away the return value of
+of_property_read_u32, instead of storing it and having to clear it
+afterwards.
+
+This issue was discovered after the property was removed from all
+sunxi DTs.
+
+Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/i2c/busses/i2c-mv64xxx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -748,8 +748,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
+ 	}
+ 	tclk = clk_get_rate(drv_data->clk);
+ 
+-	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
+-	if (rc)
++	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
+ 		bus_freq = 100000; /* 100kHz by default */
+ 
+ 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
+
+
