@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494AbaJDAE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:04:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45769 "EHLO
+	id S932393AbaJDAEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:04:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722AbaJCVxW (ORCPT
+	with ESMTP id S1756726AbaJCVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Charles Reiss <woggling@gmail.com>
-Subject: [PATCH 3.14 024/238] libata: widen Crucial M550 blacklist matching
-Date: Fri,  3 Oct 2014 14:28:59 -0700
-Message-Id: <20141003212914.438772226@linuxfoundation.org>
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [PATCH 3.14 033/238] arm/arm64: KVM: Complete WFI/WFE instructions
+Date: Fri,  3 Oct 2014 14:29:08 -0700
+Message-Id: <20141003212914.722648682@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,34 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Christoffer Dall <christoffer.dall@linaro.org>
 
-commit 2a13772a144d2956a7fedd18685921d0a9b8b783 upstream.
+commit 05e0127f9e362b36aa35f17b1a3d52bca9322a3a upstream.
 
-Crucial M550 may cause data corruption on queued trims and is
-blacklisted.  The pattern used for it fails to match 1TB one as the
-capacity section will be four chars instead of three.  Widen the
-pattern.
+The architecture specifies that when the processor wakes up from a WFE
+or WFI instruction, the instruction is considered complete, however we
+currrently return to EL1 (or EL0) at the WFI/WFE instruction itself.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Charles Reiss <woggling@gmail.com>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=81071
+While most guests may not be affected by this because their local
+exception handler performs an exception returning setting the event bit
+or with an interrupt pending, some guests like UEFI will get wedged due
+this little mishap.
+
+Simply skip the instruction when we have completed the emulation.
+
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kvm/handle_exit.c   |    2 ++
+ arch/arm64/kvm/handle_exit.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4227,7 +4227,7 @@ static const struct ata_blacklist_entry
- 	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Crucial_CT???M500SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Micron_M550*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
--	{ "Crucial_CT???M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT*M550SSD*",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+--- a/arch/arm/kvm/handle_exit.c
++++ b/arch/arm/kvm/handle_exit.c
+@@ -89,6 +89,8 @@ static int kvm_handle_wfx(struct kvm_vcp
+ 	else
+ 		kvm_vcpu_block(vcpu);
  
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
++	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
++
+ 	return 1;
+ }
+ 
+--- a/arch/arm64/kvm/handle_exit.c
++++ b/arch/arm64/kvm/handle_exit.c
+@@ -62,6 +62,8 @@ static int kvm_handle_wfx(struct kvm_vcp
+ 	else
+ 		kvm_vcpu_block(vcpu);
+ 
++	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
++
+ 	return 1;
+ }
+ 
 
 
