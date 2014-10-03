@@ -1,42 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbaJCMXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:23:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262AbaJCMXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:23:02 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com>
-References: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com> <20140908153704.28301.41578.stgit@warthog.procyon.org.uk> <20140908153830.28301.37880.stgit@warthog.procyon.org.uk> <542D741D.5070109@samsung.com> <542D77A4.5030606@samsung.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        keyrings <keyrings@linux-nfs.org>, Josh Boyer <jwboyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        pjones@redhat.com, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for asymmetric keys
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <28686.1412338969.1@warthog.procyon.org.uk>
-Date: Fri, 03 Oct 2014 13:22:49 +0100
-Message-ID: <28687.1412338969@warthog.procyon.org.uk>
+	id S1752828AbaJCMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:23:27 -0400
+Received: from resqmta-po-04v.sys.comcast.net ([96.114.154.163]:49827 "EHLO
+	resqmta-po-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752006AbaJCMXY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:23:24 -0400
+Date: Fri, 3 Oct 2014 07:23:21 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Paul Bolle <pebolle@tiscali.nl>
+cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <1412338512.19413.85.camel@x220>
+Message-ID: <alpine.DEB.2.11.1410030722390.9084@gentwo.org>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <1412338512.19413.85.camel@x220>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+On Fri, 3 Oct 2014, Paul Bolle wrote:
 
-> Does it still support searching for the key by partially matching
-> Subject Key Identifier?
+> dc -e "1 k 2 32 ^ 1000 / 86400 / p"
+> 49.7
+>
+> (That was the number I remembered from stories about a ancient Windows
+> lockup.)
 
-No, not at this time.  Adding partial matching support wouldn't be hard, and
-given that the subjKeyId is the first part of the second key ID, that would
-then work.
+Well yes, I used bc which discards the remainder on integer divides
 
-David
