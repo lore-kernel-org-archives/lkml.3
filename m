@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758901AbaJCXvG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:51:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46260 "EHLO
+	id S1757228AbaJCWDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:03:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756314AbaJCWD0 (ORCPT
+	with ESMTP id S932175AbaJCVxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:26 -0400
+	Fri, 3 Oct 2014 17:53:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>,
-        Richard Larocque <rlarocque@google.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.16 292/357] alarmtimer: Do not signal SIGEV_NONE timers
-Date: Fri,  3 Oct 2014 14:31:18 -0700
-Message-Id: <20141003212942.254670549@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 055/238] imx-drm: ipuv3-plane: fix ipu_plane_dpms()
+Date: Fri,  3 Oct 2014 14:29:30 -0700
+Message-Id: <20141003212915.437497332@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,56 +24,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Larocque <rlarocque@google.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
+commit 3a44a2058747d71385eb69691c7f977cb58cc293 upstream.
 
-Avoids sending a signal to alarm timers created with sigev_notify set to
-SIGEV_NONE by checking for that special case in the timeout callback.
+When unbinding imx-drm, the following oops was observed:
 
-The regular posix timers avoid sending signals to SIGEV_NONE timers by
-not scheduling any callbacks for them in the first place.  Although it
-would be possible to do something similar for alarm timers, it's simpler
-to handle this as a special case in the timeout.
+Unable to handle kernel NULL pointer dereference at virtual address 00000004
+pgd = e995c000
+[00000004] *pgd=4fea5831
+Internal error: Oops: 817 [#1] SMP ARM
+Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma snd_soc_sgtl5000 imx_sdma imx2_wdt imx_ldb(C) imx_thermal snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
+CPU: 1 PID: 779 Comm: bash Tainted: G         C    3.16.0-rc2+ #1230
+task: ea9eb180 ti: ea378000 task.ti: ea378000
+PC is at ipu_dp_put+0x10/0x18
+LR is at ipu_plane_dpms+0x60/0x8c
+pc : [<c0350d20>]    lr : [<c04bd9e8>]    psr: 200f0013
+sp : ea379d80  ip : ea379d90  fp : ea379d8c
+r10: 00100100  r9 : 00000000  r8 : 00200200
+r7 : e9ba0264  r6 : e9ba01f8  r5 : 00000000  r4 : ea34b800
+r3 : 00000000  r2 : 00000000  r1 : 0000009b  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 3995c04a  DAC: 00000015
+Process bash (pid: 779, stack limit = 0xea378240)
+Stack: (0xea379d80 to 0xea37a000)
+...
+Backtrace:
+[<c0350d10>] (ipu_dp_put) from [<c04bd9e8>] (ipu_plane_dpms+0x60/0x8c)
+[<c04bd988>] (ipu_plane_dpms) from [<c04bda40>] (ipu_disable_plane+0x2c/0x60)
+[<c04bda14>] (ipu_disable_plane) from [<c04bda9c>] (ipu_plane_destroy+0x28/0x60)
+[<c04bda74>] (ipu_plane_destroy) from [<c033ff84>] (drm_mode_config_cleanup+0x1b8/0x250)
+[<c033fdcc>] (drm_mode_config_cleanup) from [<c04bc234>] (imx_drm_driver_unload+0x44/0x4c)
+[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
+[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
+[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
+[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
+...
+Code: e1a0c00d e92dd800 e24cb004 e3a03000 (e5c03004)
 
-Prior to this patch, the alarm timer would ignore the sigev_notify value
-and try to deliver signals to the process anyway.  Even worse, the
-sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
-specified, so the signal number could be bogus.  If sigev_signo was an
-unitialized value (as it often would be if SIGEV_NONE is used), then
-it's hard to predict which signal will be sent.
+This is caused by a missing check in ipu_plane_dpms for a NULL pointer.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: Richard Larocque <rlarocque@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Fixes: b8d181e408af ("staging: drm/imx: add drm plane support")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/staging/imx-drm/ipuv3-plane.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -466,8 +466,10 @@ static enum alarmtimer_restart alarm_han
- {
- 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
- 						it.alarm.alarmtimer);
--	if (posix_timer_event(ptr, 0) != 0)
--		ptr->it_overrun++;
-+	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
-+		if (posix_timer_event(ptr, 0) != 0)
-+			ptr->it_overrun++;
-+	}
+--- a/drivers/staging/imx-drm/ipuv3-plane.c
++++ b/drivers/staging/imx-drm/ipuv3-plane.c
+@@ -277,7 +277,8 @@ static void ipu_plane_dpms(struct ipu_pl
  
- 	/* Re-add periodic timers */
- 	if (ptr->it.alarm.interval.tv64) {
+ 		ipu_idmac_put(ipu_plane->ipu_ch);
+ 		ipu_dmfc_put(ipu_plane->dmfc);
+-		ipu_dp_put(ipu_plane->dp);
++		if (ipu_plane->dp)
++			ipu_dp_put(ipu_plane->dp);
+ 	}
+ }
+ 
 
 
