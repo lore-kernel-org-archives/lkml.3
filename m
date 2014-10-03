@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619AbaJCVlH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:41:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45110 "EHLO
+	id S1755159AbaJCVdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:33:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309AbaJCVfH (ORCPT
+	with ESMTP id S1755100AbaJCVdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:07 -0400
+	Fri, 3 Oct 2014 17:33:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.16 103/357] xtensa: fix access to THREAD_RA/THREAD_SP/THREAD_DS
-Date: Fri,  3 Oct 2014 14:28:09 -0700
-Message-Id: <20141003212936.569604387@linuxfoundation.org>
+        Kari Suvanto <kari.tj.suvanto@gmail.com>,
+        Brad Volkin <bradley.d.volkin@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.16 079/357] drm/i915: Dont leak command parser tables on suspend/resume
+Date: Fri,  3 Oct 2014 14:27:45 -0700
+Message-Id: <20141003212935.861084553@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,80 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Brad Volkin <bradley.d.volkin@intel.com>
 
-commit 52247123749cc3cbc30168b33ad8c69515c96d23 upstream.
+commit 22cb99af39b5d4aae075a5bc9da615ba245227cd upstream.
 
-With SMP and a lot of debug options enabled task_struct::thread gets out
-of reach of s32i/l32i instructions with base pointing at task_struct,
-breaking build with the following messages:
+Ring init and cleanup are not balanced because we re-init the rings on
+resume without having cleaned them up on suspend. This leads to the
+driver leaking the parser's hash tables with a kmemleak signature such
+as this:
 
-  arch/xtensa/kernel/entry.S: Assembler messages:
-  arch/xtensa/kernel/entry.S:1002: Error: operand 3 of 'l32i.n' has invalid value '1048'
-  arch/xtensa/kernel/entry.S:1831: Error: operand 3 of 's32i.n' has invalid value '1040'
-  arch/xtensa/kernel/entry.S:1832: Error: operand 3 of 's32i.n' has invalid value '1044'
+unreferenced object 0xffff880405960980 (size 32):
+  comm "systemd-udevd", pid 516, jiffies 4294896961 (age 10202.044s)
+  hex dump (first 32 bytes):
+    d0 85 46 c0 ff ff ff ff 00 00 00 00 00 00 00 00  ..F.............
+    98 60 28 04 04 88 ff ff 00 00 00 00 00 00 00 00  .`(.............
+  backtrace:
+    [<ffffffff81816f9e>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff811fa678>] kmem_cache_alloc_trace+0x168/0x2f0
+    [<ffffffffc03e20a5>] i915_cmd_parser_init_ring+0x2a5/0x3e0 [i915]
+    [<ffffffffc04088a2>] intel_init_ring_buffer+0x202/0x470 [i915]
+    [<ffffffffc040c998>] intel_init_vebox_ring_buffer+0x1e8/0x2b0 [i915]
+    [<ffffffffc03eff59>] i915_gem_init_hw+0x2f9/0x3a0 [i915]
+    [<ffffffffc03f0057>] i915_gem_init+0x57/0x1d0 [i915]
+    [<ffffffffc045e26a>] i915_driver_load+0xc0a/0x10e0 [i915]
+    [<ffffffffc02e0d5d>] drm_dev_register+0xad/0x100 [drm]
+    [<ffffffffc02e3b9f>] drm_get_pci_dev+0x8f/0x200 [drm]
+    [<ffffffffc03c934b>] i915_pci_probe+0x3b/0x60 [i915]
+    [<ffffffff81436725>] local_pci_probe+0x45/0xa0
+    [<ffffffff81437a69>] pci_device_probe+0xd9/0x130
+    [<ffffffff81524f4d>] driver_probe_device+0x12d/0x3e0
+    [<ffffffff815252d3>] __driver_attach+0x93/0xa0
+    [<ffffffff81522e1b>] bus_for_each_dev+0x6b/0xb0
 
-Change base to point to task_struct::thread in such cases.
-Don't use a10 in _switch_to to save/restore prev pointer as a2 is not
-clobbered.
+This patch extends the current convention of checking whether a
+resource is already allocated before allocating it during ring init.
+Longer term it might make sense to only init the rings once.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=83794
+Tested-by: Kari Suvanto <kari.tj.suvanto@gmail.com>
+Signed-off-by: Brad Volkin <bradley.d.volkin@intel.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/asm/uaccess.h |    5 +++++
- arch/xtensa/kernel/entry.S        |   12 ++++++++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_cmd_parser.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/arch/xtensa/include/asm/uaccess.h
-+++ b/arch/xtensa/include/asm/uaccess.h
-@@ -52,7 +52,12 @@
-  */
- 	.macro	get_fs	ad, sp
- 	GET_CURRENT(\ad,\sp)
-+#if THREAD_CURRENT_DS > 1020
-+	addi	\ad, \ad, TASK_THREAD
-+	l32i	\ad, \ad, THREAD_CURRENT_DS - TASK_THREAD
-+#else
- 	l32i	\ad, \ad, THREAD_CURRENT_DS
-+#endif
- 	.endm
+--- a/drivers/gpu/drm/i915/i915_cmd_parser.c
++++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
+@@ -706,11 +706,13 @@ int i915_cmd_parser_init_ring(struct int
+ 	BUG_ON(!validate_cmds_sorted(ring, cmd_tables, cmd_table_count));
+ 	BUG_ON(!validate_regs_sorted(ring));
  
- /*
---- a/arch/xtensa/kernel/entry.S
-+++ b/arch/xtensa/kernel/entry.S
-@@ -1820,7 +1820,6 @@ ENTRY(_switch_to)
+-	ret = init_hash_table(ring, cmd_tables, cmd_table_count);
+-	if (ret) {
+-		DRM_ERROR("CMD: cmd_parser_init failed!\n");
+-		fini_hash_table(ring);
+-		return ret;
++	if (hash_empty(ring->cmd_hash)) {
++		ret = init_hash_table(ring, cmd_tables, cmd_table_count);
++		if (ret) {
++			DRM_ERROR("CMD: cmd_parser_init failed!\n");
++			fini_hash_table(ring);
++			return ret;
++		}
+ 	}
  
- 	entry	a1, 16
- 
--	mov	a10, a2			# preserve 'prev' (a2)
- 	mov	a11, a3			# and 'next' (a3)
- 
- 	l32i	a4, a2, TASK_THREAD_INFO
-@@ -1828,8 +1827,14 @@ ENTRY(_switch_to)
- 
- 	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
- 
--	s32i	a0, a10, THREAD_RA	# save return address
--	s32i	a1, a10, THREAD_SP	# save stack pointer
-+#if THREAD_RA > 1020 || THREAD_SP > 1020
-+	addi	a10, a2, TASK_THREAD
-+	s32i	a0, a10, THREAD_RA - TASK_THREAD	# save return address
-+	s32i	a1, a10, THREAD_SP - TASK_THREAD	# save stack pointer
-+#else
-+	s32i	a0, a2, THREAD_RA	# save return address
-+	s32i	a1, a2, THREAD_SP	# save stack pointer
-+#endif
- 
- 	/* Disable ints while we manipulate the stack pointer. */
- 
-@@ -1870,7 +1875,6 @@ ENTRY(_switch_to)
- 	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
- 
- 	wsr	a14, ps
--	mov	a2, a10			# return 'prev'
- 	rsync
- 
- 	retw
+ 	ring->needs_cmd_parser = true;
 
 
