@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724AbaJCWmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:42:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47305 "EHLO
+	id S1758738AbaJCWmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:42:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642AbaJCWYT (ORCPT
+	with ESMTP id S932641AbaJCWYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 075/143] ASoC: davinci-mcasp: Correct rx format unit configuration
-Date: Fri,  3 Oct 2014 14:34:30 -0700
-Message-Id: <20141003213316.758250998@linuxfoundation.org>
+        Denis Ciocca <denis.ciocca@st.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.10 084/143] iio:magnetometer: bugfix magnetometers gain values
+Date: Fri,  3 Oct 2014 14:34:39 -0700
+Message-Id: <20141003213317.030761308@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,49 +29,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: Denis CIOCCA <denis.ciocca@st.com>
 
-commit fe0a29e163a5d045c73faab682a8dac71c2f8012 upstream.
+commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
 
-In case of capture we should not use rotation. The reverse and mask is
-enough to get the data align correctly from the bus to MCU:
-Format	  data from bus    after reverse (XRBUF)
-S16_LE:  |LSB|MSB|xxx|xxx|  |xxx|xxx|MSB|LSB|
-S24_3LE: |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S24_LE:  |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S32_LE:  |LSB|DAT|DAT|MSB|  |MSB|DAT|DAT|LSB|
+This patch fix gains values. The first driver was designed using
+engineering samples, in mass production the values are changed.
 
-With this patch all supported formats will work for playback and capture.
-
-Reported-by: Jyri Sarha <jsarha@ti.com> (broken S24_3LE capture)
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/davinci/davinci-mcasp.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/iio/magnetometer/st_magn_core.c |   52 ++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 22 deletions(-)
 
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -632,8 +632,17 @@ static int davinci_config_channel_size(s
- {
- 	u32 fmt;
- 	u32 tx_rotate = (word_length / 4) & 0x7;
--	u32 rx_rotate = (32 - word_length) / 4;
- 	u32 mask = (1ULL << word_length) - 1;
-+	/*
-+	 * For captured data we should not rotate, inversion and masking is
-+	 * enoguh to get the data to the right position:
-+	 * Format	  data from bus		after reverse (XRBUF)
-+	 * S16_LE:	|LSB|MSB|xxx|xxx|	|xxx|xxx|MSB|LSB|
-+	 * S24_3LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S24_LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S32_LE:	|LSB|DAT|DAT|MSB|	|MSB|DAT|DAT|LSB|
-+	 */
-+	u32 rx_rotate = 0;
+--- a/drivers/iio/magnetometer/st_magn_core.c
++++ b/drivers/iio/magnetometer/st_magn_core.c
+@@ -40,7 +40,8 @@
+ #define ST_MAGN_FS_AVL_5600MG			5600
+ #define ST_MAGN_FS_AVL_8000MG			8000
+ #define ST_MAGN_FS_AVL_8100MG			8100
+-#define ST_MAGN_FS_AVL_10000MG			10000
++#define ST_MAGN_FS_AVL_12000MG			12000
++#define ST_MAGN_FS_AVL_16000MG			16000
  
- 	/*
- 	 * if s BCLK-to-LRCLK ratio has been configured via the set_clkdiv()
+ /* CUSTOM VALUES FOR SENSOR 1 */
+ #define ST_MAGN_1_WAI_EXP			0x3c
+@@ -67,20 +68,20 @@
+ #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
+ #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
+ #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
++#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
++#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
++#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
++#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
++#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
++#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
++#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
++#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
++#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
++#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
++#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
++#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
++#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
++#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
+ #define ST_MAGN_1_MULTIREAD_BIT			false
+ 
+ /* CUSTOM VALUES FOR SENSOR 2 */
+@@ -103,10 +104,12 @@
+ #define ST_MAGN_2_FS_MASK			0x60
+ #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
+ #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
+-#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
+-#define ST_MAGN_2_FS_AVL_4000_GAIN		430
+-#define ST_MAGN_2_FS_AVL_8000_GAIN		230
+-#define ST_MAGN_2_FS_AVL_10000_GAIN		230
++#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
++#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
++#define ST_MAGN_2_FS_AVL_4000_GAIN		146
++#define ST_MAGN_2_FS_AVL_8000_GAIN		292
++#define ST_MAGN_2_FS_AVL_12000_GAIN		438
++#define ST_MAGN_2_FS_AVL_16000_GAIN		584
+ #define ST_MAGN_2_MULTIREAD_BIT			false
+ #define ST_MAGN_2_OUT_X_L_ADDR			0x28
+ #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
+@@ -252,9 +255,14 @@ static const struct st_sensors st_magn_s
+ 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
+ 				},
+ 				[2] = {
+-					.num = ST_MAGN_FS_AVL_10000MG,
+-					.value = ST_MAGN_2_FS_AVL_10000_VAL,
+-					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
++					.num = ST_MAGN_FS_AVL_12000MG,
++					.value = ST_MAGN_2_FS_AVL_12000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
++				},
++				[3] = {
++					.num = ST_MAGN_FS_AVL_16000MG,
++					.value = ST_MAGN_2_FS_AVL_16000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
+ 				},
+ 			},
+ 		},
 
 
