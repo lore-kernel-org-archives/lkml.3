@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757138AbaJCWCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:02:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S1757322AbaJCWDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:03:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185AbaJCVxj (ORCPT
+	with ESMTP id S932169AbaJCVxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:39 -0400
+	Fri, 3 Oct 2014 17:53:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Chernovskiy <algonkvel@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 058/238] drm/radeon: Add missing lines to ci_set_thermal_temperature_range
-Date: Fri,  3 Oct 2014 14:29:33 -0700
-Message-Id: <20141003212915.528981305@linuxfoundation.org>
+        "Y.C. Chen" <yc_chen@aspeedtech.com>, Egbert Eich <eich@suse.de>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 054/238] drm/ast: AST2000 cannot be detected correctly
+Date: Fri,  3 Oct 2014 14:29:29 -0700
+Message-Id: <20141003212915.404776416@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,33 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Chernovskiy <algonkvel@gmail.com>
+From: "Y.C. Chen" <yc_chen@aspeedtech.com>
 
-commit 6bce8d9772c1c606921a9c99e566eb14202f6669 upstream.
+commit 83502a5d34386f7c6973bc70e1c423f55f5a2e3a upstream.
 
-Properly set the thermal min and max temp on CI.
-Otherwise, we end up setting the thermal ranges
-to 0 on resume and end up in the lowest power state.
+Type error and cause AST2000 cannot be detected correctly
 
-Signed-off-by: Oleg Chernovskiy <algonkvel@gmail.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Y.C. Chen <yc_chen@aspeedtech.com>
+Reviewed-by: Egbert Eich <eich@suse.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ci_dpm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/ast/ast_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -851,6 +851,9 @@ static int ci_set_thermal_temperature_ra
- 	WREG32_SMC(CG_THERMAL_CTRL, tmp);
- #endif
- 
-+	rdev->pm.dpm.thermal.min_temp = low_temp;
-+	rdev->pm.dpm.thermal.max_temp = high_temp;
-+
- 	return 0;
- }
- 
+--- a/drivers/gpu/drm/ast/ast_main.c
++++ b/drivers/gpu/drm/ast/ast_main.c
+@@ -100,7 +100,7 @@ static int ast_detect_chip(struct drm_de
+ 			}
+ 			ast->vga2_clone = false;
+ 		} else {
+-			ast->chip = 2000;
++			ast->chip = AST2000;
+ 			DRM_INFO("AST 2000 detected\n");
+ 		}
+ 	}
 
 
