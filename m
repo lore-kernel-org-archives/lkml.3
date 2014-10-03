@@ -1,76 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756422AbaJCWip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:38:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47841 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077AbaJCWeQ (ORCPT
+	id S1758656AbaJCWjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:39:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60384 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755132AbaJCWjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:16 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.16 290/357] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-Date: Fri,  3 Oct 2014 14:31:16 -0700
-Message-Id: <20141003212942.193505836@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 18:39:00 -0400
+Date: Fri, 03 Oct 2014 15:40:59 -0700 (PDT)
+Message-Id: <20141003.154059.1211808905920859149.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net v2] r8152: autoresume before setting MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-56-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-55-Taiwan-albertk@realtek.com>
+	<1394712342-15778-56-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 15:38:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 2 Oct 2014 17:03:12 +0800
 
-------------------
+> Resume the device before setting the MAC address.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
-From: John David Anglin <dave.anglin@bell.net>
-
-commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
-
-In spite of what the GCC manual says, the -mfast-indirect-calls has
-never been supported in the 64-bit parisc compiler. Indirect calls have
-always been done using function descriptors irrespective of the
--mfast-indirect-calls option.
-
-Recently, it was noticed that a function descriptor was always requested
-when the -mfast-indirect-calls option was specified. This caused
-problems when the option was used in  application code and doesn't make
-any sense because the whole point of the option is to avoid using a
-function descriptor for indirect calls.
-
-Fixing this broke 64-bit kernel builds.
-
-I will fix GCC but for now we need the attached change. This results in
-the same kernel code as before.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/parisc/Makefile |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -48,7 +48,12 @@ cflags-y	:= -pipe
- 
- # These flags should be implied by an hppa-linux configuration, but they
- # are not in gcc 3.2.
--cflags-y	+= -mno-space-regs -mfast-indirect-calls
-+cflags-y	+= -mno-space-regs
-+
-+# -mfast-indirect-calls is only relevant for 32-bit kernels.
-+ifndef CONFIG_64BIT
-+cflags-y	+= -mfast-indirect-calls
-+endif
- 
- # Currently we save and restore fpregs on all kernel entry/interruption paths.
- # If that gets optimized, we might need to disable the use of fpregs in the
-
-
+Applied, thanks.
