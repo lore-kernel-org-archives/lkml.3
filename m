@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761199AbaJDAO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:14:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S1761231AbaJDAOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:14:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755644AbaJCVxM (ORCPT
+	with ESMTP id S1755588AbaJCVxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:12 -0400
+	Fri, 3 Oct 2014 17:53:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 231/357] iio: adc: at91: dont use the last converted data register
-Date: Fri,  3 Oct 2014 14:30:17 -0700
-Message-Id: <20141003212940.450260955@linuxfoundation.org>
+Subject: [PATCH 3.16 230/357] iio: adc: xilinx-xadc: assign auxiliary channels address correctly
+Date: Fri,  3 Oct 2014 14:30:16 -0700
+Message-Id: <20141003212940.421480012@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,86 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
 
-commit d4f51956ac8ad302db9b0c4e4232775b1baa7b44 upstream.
+commit 1887e724e2b6df06847522fe9dc2ab53639516cc upstream.
 
-If touchscreen mode is enabled and a conversion is requested on another
-channel, the result in the last converted data register can be a
-touchscreen relative value. Starting a conversion involves to do a
-conversion for all active channel. It starts with ADC channels and ends
-with touchscreen channels. Then if ADC_LCD register is not read quickly,
-its content may be a touchscreen conversion.
-To remove this temporal constraint, the conversion value is taken from
-the channel data register.
+This patch fixes incorrect logic for assigning address
+to auxiliary channels of xilinx xadc.
 
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/adc/at91_adc.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/iio/adc/xilinx-xadc-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/adc/at91_adc.c
-+++ b/drivers/iio/adc/at91_adc.c
-@@ -196,6 +196,7 @@ struct at91_adc_state {
- 	bool			done;
- 	int			irq;
- 	u16			last_value;
-+	int			chnb;
- 	struct mutex		lock;
- 	u8			num_channels;
- 	void __iomem		*reg_base;
-@@ -274,7 +275,7 @@ void handle_adc_eoc_trigger(int irq, str
- 		disable_irq_nosync(irq);
- 		iio_trigger_poll(idev->trig, iio_get_time_ns());
- 	} else {
--		st->last_value = at91_adc_readl(st, AT91_ADC_LCDR);
-+		st->last_value = at91_adc_readl(st, AT91_ADC_CHAN(st, st->chnb));
- 		st->done = true;
- 		wake_up_interruptible(&st->wq_data_avail);
- 	}
-@@ -351,7 +352,7 @@ static irqreturn_t at91_adc_rl_interrupt
- 	unsigned int reg;
- 
- 	status &= at91_adc_readl(st, AT91_ADC_IMR);
--	if (status & st->registers->drdy_mask)
-+	if (status & GENMASK(st->num_channels - 1, 0))
- 		handle_adc_eoc_trigger(irq, idev);
- 
- 	if (status & AT91RL_ADC_IER_PEN) {
-@@ -418,7 +419,7 @@ static irqreturn_t at91_adc_9x5_interrup
- 		AT91_ADC_IER_YRDY |
- 		AT91_ADC_IER_PRDY;
- 
--	if (status & st->registers->drdy_mask)
-+	if (status & GENMASK(st->num_channels - 1, 0))
- 		handle_adc_eoc_trigger(irq, idev);
- 
- 	if (status & AT91_ADC_IER_PEN) {
-@@ -689,9 +690,10 @@ static int at91_adc_read_raw(struct iio_
- 	case IIO_CHAN_INFO_RAW:
- 		mutex_lock(&st->lock);
- 
-+		st->chnb = chan->channel;
- 		at91_adc_writel(st, AT91_ADC_CHER,
- 				AT91_ADC_CH(chan->channel));
--		at91_adc_writel(st, AT91_ADC_IER, st->registers->drdy_mask);
-+		at91_adc_writel(st, AT91_ADC_IER, BIT(chan->channel));
- 		at91_adc_writel(st, AT91_ADC_CR, AT91_ADC_START);
- 
- 		ret = wait_event_interruptible_timeout(st->wq_data_avail,
-@@ -708,7 +710,7 @@ static int at91_adc_read_raw(struct iio_
- 
- 		at91_adc_writel(st, AT91_ADC_CHDR,
- 				AT91_ADC_CH(chan->channel));
--		at91_adc_writel(st, AT91_ADC_IDR, st->registers->drdy_mask);
-+		at91_adc_writel(st, AT91_ADC_IDR, BIT(chan->channel));
- 
- 		st->last_value = 0;
- 		st->done = false;
+--- a/drivers/iio/adc/xilinx-xadc-core.c
++++ b/drivers/iio/adc/xilinx-xadc-core.c
+@@ -1126,7 +1126,7 @@ static int xadc_parse_dt(struct iio_dev
+ 				chan->address = XADC_REG_VPVN;
+ 			} else {
+ 				chan->scan_index = 15 + reg;
+-				chan->scan_index = XADC_REG_VAUX(reg - 1);
++				chan->address = XADC_REG_VAUX(reg - 1);
+ 			}
+ 			num_channels++;
+ 			chan++;
 
 
