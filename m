@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738AbaJCMxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:53:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36784 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648AbaJCMxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:53:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="395089597"
-Message-ID: <1412340740.3795.60.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/4] UBI: Ensure that all fastmap work is done upon WL
- shutdown
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Date: Fri, 03 Oct 2014 15:52:20 +0300
-In-Reply-To: <542A64BB.7060904@nod.at>
-References: <1412029248-22454-1-git-send-email-richard@nod.at>
-			 <1412029248-22454-2-git-send-email-richard@nod.at>
-		 <1412058366.23429.77.camel@sauron.fi.intel.com> <542A548A.7040308@nod.at>
-	 <1412063620.2379.12.camel@sauron.fi.intel.com> <542A64BB.7060904@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752769AbaJCMyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:54:01 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:64510 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJCMx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:53:58 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-45-542e9c639766
+Message-id: <542E9C65.4030208@samsung.com>
+Date: Fri, 03 Oct 2014 15:53:57 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: David Howells <dhowells@redhat.com>
+Cc: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, jmorris@namei.org,
+        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH 3/4] module: search the key only by keyid
+References: <6d32cecfb3c3f5d041900ce1866bc15134832991.1412327306.git.d.kasatkin@samsung.com>
+ <cover.1412327306.git.d.kasatkin@samsung.com>
+ <cover.1412327306.git.d.kasatkin@samsung.com>
+ <29146.1412340378@warthog.procyon.org.uk> <542E9B68.1010906@samsung.com>
+In-reply-to: <542E9B68.1010906@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xq7rJc/RCDPb2mVu8a/rNYvFlaZ3F
+	uvWLmSxm73rIYvFyxjx2i8u75rBZfOh5xGZxc9oFFotPKyYxO3B67Jx1l91j2ollLB4PDm1m
+	8di94DOTR8/3ZI/3+66yeazYcILZ4/MmuQCOKC6blNSczLLUIn27BK6MNV+fshec4qr49Gwe
+	UwPjPY4uRk4OCQETiSMH3rNC2GISF+6tZ+ti5OIQEljKKNH4Zi0jhNPIJPF2y3UoZxajxK//
+	39lAWngFtCR2dexjB7FZBFQlHq14yAxiswnoSWxo/gEWFxWIkDh5dw87RL2gxI/J91hAbBEB
+	dYlHyzYygwxlFnjNKLHxygewO4QFbCWedB2EuqOTSWLrgj6wDk4BbYlZtyczdTFyAHXoSdy/
+	qAUSZhaQl9i85i3YYiGgI7rXrmWD+EdR4vTkc8wTGIVnIdk9C6F7FpLuBYzMqxhFU0uTC4qT
+	0nON9IoTc4tL89L1kvNzNzFC4uvrDsalx6wOMQpwMCrx8H64oRsixJpYVlyZe4hRgoNZSYRX
+	ukkvRIg3JbGyKrUoP76oNCe1+BAjEwenVAPjoUnXV67LujdLpS1P2k7Zf9tSfSHp8o7ldlM9
+	dR1kZvVunJbhclpdM7VMpuFQicORgIXcDP//n52/kfv29+5exXRbvuMfNq7n/ManwpPM+Mja
+	1+xzicCzGSaBbq/9uZzcHr0LaD6Q8VNrSv0CtqxWt0U7DlQ7RW7Y6NjA+Gpz6TLhid2it7mU
+	WIozEg21mIuKEwEPQesyjQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 10:07 +0200, Richard Weinberger wrote:
-> > UBI consists of subsystems. Subsystems try to be more or less
-> > independent, whenever possible. They expose interface functions for
-> > other subsystems. Of course the split is not ideal, but we do our best.
-> > 
-> > * wl.c does wear-levelling.
-> > * wl.c does not do fastmap.
-> > * fastmap.c does fastmap.
-> > * I am unhappy seeing yet another ifdef to wl.c
-> 
-> I can warp it.
+On 03/10/14 15:49, Dmitry Kasatkin wrote:
+> On 03/10/14 15:46, David Howells wrote:
+>> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+>>
+>>> Latest KEYS code change the way keys identified and module
+>>> signing keys are not searchable anymore with original id.
+>>>
+>>> This patch fixes this problem without change module signature
+>>> data.
+>> This isn't sufficient.  The key search must also include the signer.
+>>
+> IMA uses "id:<id>" partial matching.. There is no signer in the signature.
+> It is added as "last resort"
+>
+> It is here... the same but I renamed with finger print..
+>
+> http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/commit/?h=keys-fixes&id=f036bb9a4c1b3c548f315226d3284e6a91d284e7
+>
+> - Dmitry
+>
+>
 
-What I am looking forward to is to see fastmap.c and wl.c to be
-separated in a better way. Would your answer be "this is impossible", or
-"I've got some ideas"?
+For module actually I made it as a fix because it was broken.
+Other requires changes in module signature format...
 
-The end result should be no #ifdefs in wl.c, or very few of them.
+- Dmitry
 
-> > * I am unhappy seeing wl.c calling 'flush_work(&ubi->fm_work)', because
-> > fastmap.c should deal with 'fm_work'. Or said differently, wl.c is not a
-> > fastmap queue baby-sitter. fastmap.c is.
-> 
-> But wl.c has to trigger the deferred fastmap work as only wl.c detects when it is
-> needed. I you want I can implement a ubi_fastmap_shutdown() in fastmap.c which
-> calls flush_work().
-> But I did it in wl.c to have it balanced. wl.c triggers and stops the fastmap work.
-
-wl.c should be responsible for wear levelling.
-
-wl.c should not be responsible for managing the fastmap pool.
-
-Architecture-wise, is the pull something above or below the WL level?
-
-I think above.
-
-In the past, the EBA layer, which sits on top of the WL layer, called
-the WL functions directly to get an and put the LEB.
-
-Then you added the Fastmap pool inbetween EBA and WL. And you added it
-to wl.c, it seems (note, I do not know the fastmap well enough, so be
-patient and carefully explain me things when I am wrong, please).
-
-What I think is that the pool should live in fastmap.c instead. EBA
-should call the pool functions, instead of the WL functions. The pool
-code should call the WL functions whenever it needs to refill the pool.
-
-Can something like this be done?
-
-> Some background info:
-> Fastmap needs to create a snapshot of the UBI state.
-> This is why you cannot call it within an UBI work. As UBI works can run in parallel.
-
-My point is, let's do it in fastmap.c. Let's keep each layer as pure a
-possible.
-
-Right now wl.c is populated by fastmap-specific stuff too much. It is
-hard to make wear-levelling improvements there because of this.
-
-I want the complexity to be partitioned.
-
-I want WL complexity be in wl.c
-
-I do want to try hard to have _no_ fastmap complexity in wl.c.
-
-I am looking for a discussion about how we could do this.
-
-This patch adds a little bit, but more fastmap complexity to the WL
-subsystem. I am trying to block this.
-
+>> David
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
