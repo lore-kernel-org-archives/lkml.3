@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142AbaJCXoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:44:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
+	id S933177AbaJCXoj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:44:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757283AbaJCWDf (ORCPT
+	with ESMTP id S1757281AbaJCWDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:35 -0400
+	Fri, 3 Oct 2014 18:03:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lei Liu <lei35151@163.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 091/238] USB: zte_ev: fix removed PIDs
-Date: Fri,  3 Oct 2014 14:30:06 -0700
-Message-Id: <20141003212916.587384479@linuxfoundation.org>
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.16 305/357] perf: Fix a race condition in perf_remove_from_context()
+Date: Fri,  3 Oct 2014 14:31:31 -0700
+Message-Id: <20141003212942.637054035@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,47 +30,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 3096691011d01cef56b243a5e65431405c07d574 upstream.
+commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
 
-Add back some PIDs that were mistakingly remove when reverting commit
-73228a0538a7 ("USB: option,zte_ev: move most ZTE CDMA devices to
-zte_ev"), which apparently did more than its commit message claimed in
-that it not only moved some PIDs from option to zte_ev but also added
-some new ones.
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-Fixes: 63a901c06e3c ("Revert "USB: option,zte_ev: move most ZTE CDMA
-devices to zte_ev"")
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
 
-Reported-by: Lei Liu <lei35151@163.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+This should cure the above soft lockup.
+
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/zte_ev.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/events/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -272,6 +272,14 @@ static void zte_ev_usb_serial_close(stru
- }
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1523,6 +1523,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
  
- static const struct usb_device_id id_table[] = {
-+	{ USB_DEVICE(0x19d2, 0xffec) },
-+	{ USB_DEVICE(0x19d2, 0xffee) },
-+	{ USB_DEVICE(0x19d2, 0xfff6) },
-+	{ USB_DEVICE(0x19d2, 0xfff7) },
-+	{ USB_DEVICE(0x19d2, 0xfff8) },
-+	{ USB_DEVICE(0x19d2, 0xfff9) },
-+	{ USB_DEVICE(0x19d2, 0xfffb) },
-+	{ USB_DEVICE(0x19d2, 0xfffc) },
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
- 	{ },
+@@ -1966,6 +1971,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
 
 
