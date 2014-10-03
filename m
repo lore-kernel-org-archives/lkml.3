@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789AbaJCLDx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 07:03:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12617 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaJCLDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 07:03:50 -0400
-Message-ID: <542E828A.6010305@redhat.com>
-Date: Fri, 03 Oct 2014 13:03:38 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752070AbaJCLE5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 07:04:57 -0400
+Received: from exprod7og103.obsmtp.com ([64.18.2.159]:50298 "EHLO
+	exprod7og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaJCLEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 07:04:55 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately
- after first invalid packet
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410031205.42927@pali> <542E780B.7030103@redhat.com> <201410031223.10608@pali>
-In-Reply-To: <201410031223.10608@pali>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141003103630.GB1349@katana>
+References: <1411983159-4692-1-git-send-email-anders.berg@avagotech.com>
+	<20141003103630.GB1349@katana>
+Date: Fri, 3 Oct 2014 13:04:54 +0200
+Message-ID: <CAE0=X_2mCfbmgiP955N9OesJ9Aiz1zW6wmNXE4SPZr4dNxehPw@mail.gmail.com>
+Subject: Re: [PATCH v2] i2c: axxia: Add I2C driver for AXM55xx
+From: Anders Berg <anders.berg@avagotech.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: devicetree <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 10/03/2014 12:23 PM, Pali Rohár wrote:
-> On Friday 03 October 2014 12:18:51 Hans de Goede wrote:
->>> On my E6440 machine it somehow working. When driver
->>> doing ps/2 reset keyboard, touchpad and trackstick not
->>> responding.
+On Fri, Oct 3, 2014 at 12:36 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 2ac87fa..8983474 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -77,6 +77,17 @@ config I2C_AMD8111
+>>         This driver can also be built as a module.  If so, the module
+>>         will be called i2c-amd8111.
 >>
->> Right, but I would expect that to be for only a short period
->> of time, or does the whole reset take a significant amount of
->> time ?
->>
-> 
-> It is one or two seconds which is OK for me.
+>> +config I2C_AXXIA
+>> +     tristate "Axxia I2C controller"
+>> +     depends on ARCH_AXXIA || COMPILE_TEST
+>> +     default ARCH_AXXIA
+>> +     help
+>> +       Say yes if you want to support the I2C bus on Axxia platforms.
+>> +
+>> +       Please note that this controller is limited to transfers of maximum
+>> +       255 bytes in length. Any attempt to to a larger transfer will return
+>> +       an error.
+>> +
+>>  config I2C_I801
+>>       tristate "Intel 82801 (ICH/PCH)"
+>>       depends on PCI
+>> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+>> index 49bf07e..5899edb 100644
+>> --- a/drivers/i2c/busses/Makefile
+>> +++ b/drivers/i2c/busses/Makefile
+>> @@ -12,6 +12,7 @@ obj-$(CONFIG_I2C_ALI15X3)   += i2c-ali15x3.o
+>>  obj-$(CONFIG_I2C_AMD756)     += i2c-amd756.o
+>>  obj-$(CONFIG_I2C_AMD756_S4882)       += i2c-amd756-s4882.o
+>>  obj-$(CONFIG_I2C_AMD8111)    += i2c-amd8111.o
+>> +obj-$(CONFIG_I2C_AXXIA)              += i2c-axxia.o
+>>  obj-$(CONFIG_I2C_I801)               += i2c-i801.o
+>>  obj-$(CONFIG_I2C_ISCH)               += i2c-isch.o
+>>  obj-$(CONFIG_I2C_ISMT)               += i2c-ismt.o
+>
+> Please put it to the embedded section.
+>
 
-Hmm, 1-2 seconds is quite long, not good. Lets see if the solution
-we've been discussing by private mail yields better results.
+OK.
 
-Regards,
+> ...
+>
+>> +     idev->adapter.class = I2C_CLASS_HWMON;
+>
+> Being a DT driver, you most probably don't need this.
+>
 
-Hans
+Right, thanks.  I'll fix up these and submit a v3.
+
+/Anders
