@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760667AbaJCXyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:54:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45902 "EHLO
+	id S1760652AbaJCXyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:54:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756805AbaJCVxe (ORCPT
+	with ESMTP id S1756808AbaJCVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.14 049/238] HID: logitech-dj: prevent false errors to be shown
-Date: Fri,  3 Oct 2014 14:29:24 -0700
-Message-Id: <20141003212915.247353737@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.16 264/357] lockdep: Revert lockdep check in raw_seqcount_begin()
+Date: Fri,  3 Oct 2014 14:30:50 -0700
+Message-Id: <20141003212941.429439082@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,116 +31,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 5abfe85c1d4694d5d4bbd13ecc166262b937adf0 upstream.
+commit 22fdcf02f6e80d64a927f702dd9d631a927d87d4 upstream.
 
-Commit "HID: logitech: perform bounds checking on device_id early
-enough" unfortunately leaks some errors to dmesg which are not real
-ones:
-- if the report is not a DJ one, then there is not point in checking
-  the device_id
-- the receiver (index 0) can also receive some notifications which
-  can be safely ignored given the current implementation
+This commit reverts the addition of lockdep checking to raw_seqcount_begin
+for the following reasons:
 
-Move out the test regarding the report_id and also discards
-printing errors when the receiver got notified.
+ 1) It violates the naming convention that raw_* functions should not
+    do lockdep checks (a convention that is also followed by the other
+    raw_*_seqcount_begin functions).
 
-Fixes: ad3e14d7c5268c2e24477c6ef54bbdf88add5d36
+ 2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
+    deadlock in very special circumstances (for instance if a lock
+    is held across the entire raw_seqcount_begin()+read_seqcount_retry()
+    loop while also being taken inside the write_seqcount protected area).
 
-Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+ 3) It is causing false positives with some existing callers, and there
+    is no non-lockdep alternative for those callers to use.
+
+None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
+the NFS state code) appear to use the function in a manner that is ABBA
+deadlock prone.
+
+Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   43 ++++++++++++++++++++++++------------------
- drivers/hid/hid-logitech-dj.h |    1 
- 2 files changed, 26 insertions(+), 18 deletions(-)
+ include/linux/seqlock.h |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -687,7 +687,6 @@ static int logi_dj_raw_event(struct hid_
- 	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
- 	struct dj_report *dj_report = (struct dj_report *) data;
- 	unsigned long flags;
--	bool report_processed = false;
- 
- 	dbg_hid("%s, size:%d\n", __func__, size);
- 
-@@ -714,34 +713,42 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+
-+	/* case 1) */
-+	if (data[0] != REPORT_ID_DJ_SHORT)
-+		return false;
-+
- 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
- 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+		/*
-+		 * Device index is wrong, bail out.
-+		 * This driver can ignore safely the receiver notifications,
-+		 * so ignore those reports too.
-+		 */
-+		if (dj_report->device_index != DJ_RECEIVER_INDEX)
-+			dev_err(&hdev->dev, "%s: invalid device index:%d\n",
- 				__func__, dj_report->device_index);
- 		return false;
- 	}
- 
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
--	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
--		switch (dj_report->report_type) {
--		case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
--		case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
--			logi_dj_recv_queue_notification(djrcv_dev, dj_report);
--			break;
--		case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
--			if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
--			    STATUS_LINKLOSS) {
--				logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
--			}
--			break;
--		default:
--			logi_dj_recv_forward_report(djrcv_dev, dj_report);
-+	switch (dj_report->report_type) {
-+	case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-+	case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-+		logi_dj_recv_queue_notification(djrcv_dev, dj_report);
-+		break;
-+	case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
-+		if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
-+		    STATUS_LINKLOSS) {
-+			logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
- 		}
--		report_processed = true;
-+		break;
-+	default:
-+		logi_dj_recv_forward_report(djrcv_dev, dj_report);
- 	}
- 	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
- 
--	return report_processed;
-+	return true;
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -164,8 +164,6 @@ static inline unsigned read_seqcount_beg
+ static inline unsigned raw_seqcount_begin(const seqcount_t *s)
+ {
+ 	unsigned ret = ACCESS_ONCE(s->sequence);
+-
+-	seqcount_lockdep_reader_access(s);
+ 	smp_rmb();
+ 	return ret & ~1;
  }
- 
- static int logi_dj_probe(struct hid_device *hdev,
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -27,6 +27,7 @@
- 
- #define DJ_MAX_PAIRED_DEVICES			6
- #define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_RECEIVER_INDEX			0
- #define DJ_DEVICE_INDEX_MIN 			1
- #define DJ_DEVICE_INDEX_MAX 			6
- 
 
 
