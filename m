@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798AbaJCWIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:08:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46651 "EHLO
+	id S1756578AbaJCWJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:09:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932426AbaJCWGH (ORCPT
+	with ESMTP id S1753845AbaJCWJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:06:07 -0400
+	Fri, 3 Oct 2014 18:09:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
-Subject: [PATCH 3.16 343/357] dmaengine: dw: introduce dwc_dostart_first_queued() helper
-Date: Fri,  3 Oct 2014 14:32:09 -0700
-Message-Id: <20141003212943.757667934@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>
+Subject: [PATCH 3.14 127/238] KVM: s390/mm: try a cow on read only pages for key ops
+Date: Fri,  3 Oct 2014 14:30:42 -0700
+Message-Id: <20141003212917.739881982@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,67 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit e7637c6c0382485f4d2e20715d058dae6f2b6a7c upstream.
+commit ab3f285f227fec62868037e9b1b1fd18294a83b8 upstream.
 
-We have a duplicate code which starts first descriptor in the queue. Let's make
-this as a separate helper that can be used in future as well.
+The PFMF instruction handler  blindly wrote the storage key even if
+the page was mapped R/O in the host. Lets try a COW before continuing
+and bail out in case of errors.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/dw/core.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ arch/s390/mm/pgtable.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -279,6 +279,15 @@ static void dwc_dostart(struct dw_dma_ch
- 	channel_set_bit(dw, CH_EN, dwc->mask);
- }
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -810,11 +810,21 @@ int set_guest_storage_key(struct mm_stru
+ 	pte_t *ptep;
  
-+static void dwc_dostart_first_queued(struct dw_dma_chan *dwc)
-+{
-+	if (list_empty(&dwc->queue))
-+		return;
-+
-+	list_move(dwc->queue.next, &dwc->active_list);
-+	dwc_dostart(dwc, dwc_first_active(dwc));
-+}
-+
- /*----------------------------------------------------------------------*/
+ 	down_read(&mm->mmap_sem);
++retry:
+ 	ptep = get_locked_pte(current->mm, addr, &ptl);
+ 	if (unlikely(!ptep)) {
+ 		up_read(&mm->mmap_sem);
+ 		return -EFAULT;
+ 	}
++	if (!(pte_val(*ptep) & _PAGE_INVALID) &&
++	     (pte_val(*ptep) & _PAGE_PROTECT)) {
++			pte_unmap_unlock(*ptep, ptl);
++			if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
++				up_read(&mm->mmap_sem);
++				return -EFAULT;
++			}
++			goto retry;
++		}
  
- static void
-@@ -335,10 +344,7 @@ static void dwc_complete_all(struct dw_d
- 	 * the completed ones.
- 	 */
- 	list_splice_init(&dwc->active_list, &list);
--	if (!list_empty(&dwc->queue)) {
--		list_move(dwc->queue.next, &dwc->active_list);
--		dwc_dostart(dwc, dwc_first_active(dwc));
--	}
-+	dwc_dostart_first_queued(dwc);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-@@ -467,10 +473,7 @@ static void dwc_scan_descriptors(struct
- 	/* Try to continue after resetting the channel... */
- 	dwc_chan_disable(dw, dwc);
- 
--	if (!list_empty(&dwc->queue)) {
--		list_move(dwc->queue.next, &dwc->active_list);
--		dwc_dostart(dwc, dwc_first_active(dwc));
--	}
-+	dwc_dostart_first_queued(dwc);
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- }
- 
+ 	new = old = pgste_get_lock(ptep);
+ 	pgste_val(new) &= ~(PGSTE_GR_BIT | PGSTE_GC_BIT |
 
 
