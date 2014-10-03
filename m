@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671AbaJDAUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:20:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45377 "EHLO
+	id S1755408AbaJDAVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:21:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45289 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053AbaJCVnT (ORCPT
+	with ESMTP id S1756034AbaJCVnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:19 -0400
+	Fri, 3 Oct 2014 17:43:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Niebel <Markus.Niebel@tq-group.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.16 188/357] ARM: DT: imx53: fix lvds channel 1 port
-Date: Fri,  3 Oct 2014 14:29:34 -0700
-Message-Id: <20141003212939.118823445@linuxfoundation.org>
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.16 201/357] arm64: Add brackets around user_stack_pointer()
+Date: Fri,  3 Oct 2014 14:29:47 -0700
+Message-Id: <20141003212939.515937313@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,121 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Niebel <Markus.Niebel@tq-group.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 1b134c9c4b555342be667f144ee714af1c3f6a9f upstream.
+commit 2520d039728b2a3c5ae7f79fe2a0e9d182855b12 upstream.
 
-using LVDS channel 1 on an i.MX53 leads to following error:
+Commit 5f888a1d33 (ARM64: perf: support dwarf unwinding in compat mode)
+changes user_stack_pointer() to return the compat SP for 32-bit tasks
+but without brackets around the whole definition, with possible issues
+on the call sites (noticed with a subsequent fix for KSTK_ESP).
 
-imx-ldb 53fa8008.ldb: unable to set di0 parent clock to ldb_di1
-
-This comes from imx_ldb_set_clock with mux = 0. Mux parameter must be "1" for
-reparenting di1 clock to ldb_di1. The value of the mux param comes from device
-tree port settings.
-
-On i.MX5, the internal two-input-multiplexer is used. Due to hardware limitations,
-only one port (port@[0,1]) can be used for each channel (lvds-channel@[0,1],
-respectively)
-
-Documentation update suggested by Philipp Zabel <p.zabel@pengutronix.de>
-
-Signed-off-by: Markus Niebel <Markus.Niebel@tq-group.com>
-Fixes: e05c8c9a790a ("ARM: dts: imx53: Add IPU DI ports and endpoints, move imx-drm node to dtsi")
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Fixes: 5f888a1d33c4 (ARM64: perf: support dwarf unwinding in compat mode)
+Reported-by: Sudeep Holla <sudeep.holla@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/devicetree/bindings/staging/imx-drm/ldb.txt |   15 ++++++++++++--
- arch/arm/boot/dts/imx53.dtsi                              |   12 +++++++++--
- 2 files changed, 23 insertions(+), 4 deletions(-)
+ arch/arm64/include/asm/ptrace.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/devicetree/bindings/staging/imx-drm/ldb.txt
-+++ b/Documentation/devicetree/bindings/staging/imx-drm/ldb.txt
-@@ -56,6 +56,9 @@ Required properties:
-  - fsl,data-width : should be <18> or <24>
-  - port: A port node with endpoint definitions as defined in
-    Documentation/devicetree/bindings/media/video-interfaces.txt.
-+   On i.MX5, the internal two-input-multiplexer is used.
-+   Due to hardware limitations, only one port (port@[0,1])
-+   can be used for each channel (lvds-channel@[0,1], respectively)
-    On i.MX6, there should be four ports (port@[0-3]) that correspond
-    to the four LVDS multiplexer inputs.
+--- a/arch/arm64/include/asm/ptrace.h
++++ b/arch/arm64/include/asm/ptrace.h
+@@ -137,7 +137,7 @@ struct pt_regs {
+ 	(!((regs)->pstate & PSR_F_BIT))
  
-@@ -78,6 +81,8 @@ ldb: ldb@53fa8008 {
- 		      "di0", "di1";
+ #define user_stack_pointer(regs) \
+-	(!compat_user_mode(regs)) ? ((regs)->sp) : ((regs)->compat_sp)
++	(!compat_user_mode(regs) ? (regs)->sp : (regs)->compat_sp)
  
- 	lvds-channel@0 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
- 		reg = <0>;
- 		fsl,data-mapping = "spwg";
- 		fsl,data-width = <24>;
-@@ -86,7 +91,9 @@ ldb: ldb@53fa8008 {
- 			/* ... */
- 		};
- 
--		port {
-+		port@0 {
-+			reg = <0>;
-+
- 			lvds0_in: endpoint {
- 				remote-endpoint = <&ipu_di0_lvds0>;
- 			};
-@@ -94,6 +101,8 @@ ldb: ldb@53fa8008 {
- 	};
- 
- 	lvds-channel@1 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
- 		reg = <1>;
- 		fsl,data-mapping = "spwg";
- 		fsl,data-width = <24>;
-@@ -102,7 +111,9 @@ ldb: ldb@53fa8008 {
- 			/* ... */
- 		};
- 
--		port {
-+		port@1 {
-+			reg = <1>;
-+
- 			lvds1_in: endpoint {
- 				remote-endpoint = <&ipu_di1_lvds1>;
- 			};
---- a/arch/arm/boot/dts/imx53.dtsi
-+++ b/arch/arm/boot/dts/imx53.dtsi
-@@ -419,10 +419,14 @@
- 				status = "disabled";
- 
- 				lvds-channel@0 {
-+					#address-cells = <1>;
-+					#size-cells = <0>;
- 					reg = <0>;
- 					status = "disabled";
- 
--					port {
-+					port@0 {
-+						reg = <0>;
-+
- 						lvds0_in: endpoint {
- 							remote-endpoint = <&ipu_di0_lvds0>;
- 						};
-@@ -430,10 +434,14 @@
- 				};
- 
- 				lvds-channel@1 {
-+					#address-cells = <1>;
-+					#size-cells = <0>;
- 					reg = <1>;
- 					status = "disabled";
- 
--					port {
-+					port@1 {
-+						reg = <1>;
-+
- 						lvds1_in: endpoint {
- 							remote-endpoint = <&ipu_di1_lvds1>;
- 						};
+ static inline unsigned long regs_return_value(struct pt_regs *regs)
+ {
 
 
