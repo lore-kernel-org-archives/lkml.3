@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761394AbaJDAsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:48:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44809 "EHLO
+	id S1761381AbaJDAsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:48:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954AbaJCVcj (ORCPT
+	with ESMTP id S1754956AbaJCVcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.16 049/357] i2c: rcar: fix MNR interrupt handling
-Date: Fri,  3 Oct 2014 14:27:15 -0700
-Message-Id: <20141003212934.927956972@linuxfoundation.org>
+Subject: [PATCH 3.16 050/357] i2c: rcar: fix RCAR_IRQ_ACK_{RECV|SEND}
+Date: Fri,  3 Oct 2014 14:27:16 -0700
+Message-Id: <20141003212934.956670334@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,61 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-commit dd318b0df27c582ac0d72a346fd6e693700be23c upstream.
+commit 938916fbb8e8cb67eacb784f4eda17e2950c16c5 upstream.
 
-Sometimes the MNR and MST interrupts happen simultaneously  (stop  automatically
-follows NACK, according to the manuals) and in such case the ID_NACK flag  isn't
-set since the MST interrupt handling precedes MNR and all interrupts are cleared
-and disabled then, so that MNR interrupt is never noticed -- this causes NACK'ed
-transfers to be falsely reported as successful. Exchanging MNR and  MST handlers
-fixes this issue, however the MNR bit  somehow  gets set again even after  being
-explicitly cleared, so I decided to completely suppress handling of all disabled
-interrupts (which is a good thing anyway)...
+Bits 8-31 of all registers reflect the value of bits 0-7 on reads and should be
+0 on writes, according to the manuals. RCAR_IRQ_ACK_{RECV|SEND} macros have all
+1's in bits 8-31, thus going against the manuals, so fix them.
 
 Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-rcar.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-rcar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/drivers/i2c/busses/i2c-rcar.c
 +++ b/drivers/i2c/busses/i2c-rcar.c
-@@ -372,18 +372,15 @@ static irqreturn_t rcar_i2c_irq(int irq,
+@@ -76,8 +76,8 @@
+ #define RCAR_IRQ_RECV	(MNR | MAL | MST | MAT | MDR)
+ #define RCAR_IRQ_STOP	(MST)
  
- 	msr = rcar_i2c_read(priv, ICMSR);
+-#define RCAR_IRQ_ACK_SEND	(~(MAT | MDE))
+-#define RCAR_IRQ_ACK_RECV	(~(MAT | MDR))
++#define RCAR_IRQ_ACK_SEND	(~(MAT | MDE) & 0xFF)
++#define RCAR_IRQ_ACK_RECV	(~(MAT | MDR) & 0xFF)
  
-+	/* Only handle interrupts that are currently enabled */
-+	msr &= rcar_i2c_read(priv, ICMIER);
-+
- 	/* Arbitration lost */
- 	if (msr & MAL) {
- 		rcar_i2c_flags_set(priv, (ID_DONE | ID_ARBLOST));
- 		goto out;
- 	}
- 
--	/* Stop */
--	if (msr & MST) {
--		rcar_i2c_flags_set(priv, ID_DONE);
--		goto out;
--	}
--
- 	/* Nack */
- 	if (msr & MNR) {
- 		/* go to stop phase */
-@@ -393,6 +390,12 @@ static irqreturn_t rcar_i2c_irq(int irq,
- 		goto out;
- 	}
- 
-+	/* Stop */
-+	if (msr & MST) {
-+		rcar_i2c_flags_set(priv, ID_DONE);
-+		goto out;
-+	}
-+
- 	if (rcar_i2c_is_recv(priv))
- 		rcar_i2c_flags_set(priv, rcar_i2c_irq_recv(priv, msr));
- 	else
+ #define ID_LAST_MSG	(1 << 0)
+ #define ID_IOERROR	(1 << 1)
 
 
