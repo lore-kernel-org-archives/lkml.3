@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034AbaJCWtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:49:55 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:62231 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758988AbaJCWtd convert rfc822-to-8bit (ORCPT
+	id S1758977AbaJCWta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47408 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097AbaJCWYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:49:33 -0400
-MIME-Version: 1.0
-Date: Fri, 3 Oct 2014 15:49:32 -0700
-Message-ID: <CAPJTyAV4-bXaKt-cC-Rv4cr+u-mr6z2QaKd-BnzLDK6DJ15BhQ@mail.gmail.com>
-Subject: Two drives are both sda
-From: Michael Bushey <corwin7@gmail.com>
+	Fri, 3 Oct 2014 18:24:10 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Joe Lawrence <joe.lawrence@stratus.com>
+Subject: [PATCH 3.10 059/143] USB: EHCI: unlink QHs even after the controller has stopped
+Date: Fri,  3 Oct 2014 14:34:14 -0700
+Message-Id: <20141003213316.284416528@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
+References: <20141003213314.470709810@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have two SSD drives that are both sda:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-root@dev:~# ls -l /dev/disk/by-id/
-total 0
-lrwxrwxrwx 1 root root  9 Oct  3 13:39
-ata-Samsung_SSD_850_PRO_128GB_S1SMNWAF713081V -> ../../sda
-lrwxrwxrwx 1 root root 10 Oct  3 13:39
-ata-Samsung_SSD_850_PRO_128GB_S1SMNWAF713081V-part1 -> ../../sda1
-lrwxrwxrwx 1 root root 10 Oct  3 13:39
-ata-Samsung_SSD_850_PRO_128GB_S1SMNWAF713081V-part2 -> ../../sda2
-lrwxrwxrwx 1 root root 10 Oct  3 13:39
-ata-Samsung_SSD_850_PRO_128GB_S1SMNWAF713081V-part3 -> ../../sda3
-lrwxrwxrwx 1 root root  9 Oct  3 13:41
-usb-HGST_Touro_Desk_Pro_31001310280002201158-0:0 -> ../../sdb
-lrwxrwxrwx 1 root root 10 Oct  3 13:39
-usb-HGST_Touro_Desk_Pro_31001310280002201158-0:0-part1 -> ../../sdb1
-lrwxrwxrwx 1 root root  9 Oct  3 13:39 wwn-0x500253887000a4f1 -> ../../sda
-lrwxrwxrwx 1 root root 10 Oct  3 13:39 wwn-0x500253887000a4f1-part1 ->
-../../sda1
-lrwxrwxrwx 1 root root 10 Oct  3 13:39 wwn-0x500253887000a4f1-part2 ->
-../../sda2
-lrwxrwxrwx 1 root root 10 Oct  3 13:39 wwn-0x500253887000a4f1-part3 ->
-../../sda3
+------------------
 
-# cat /sys/class/block/sda/device/model
-Samsung SSD 850
+From: Alan Stern <stern@rowland.harvard.edu>
 
-The wwn drive is a PNY XLR8 240GB SSD. Is there any way I can make it
-sdc? I would like to image the PNY drive and try to recover the data
-off of it.
+commit 7312b5ddd47fee2356baa78c5516ef8e04eed452 upstream.
 
-The machine seems to be functioning OK off of the Samsung 850 system
-drive; I just brought it back up yesterday with the Samsung SSD after
-the PNY drive started giving errors.
+Old code in ehci-hcd tries to expedite disabling endpoints after the
+controller has stopped, by destroying the endpoint's associated QH
+without first unlinking the QH.  This was necessary back when the
+driver wasn't so careful about keeping track of the controller's
+state.
 
-# uname -a
-Linux dev.rm 3.16-2-amd64 #1 SMP Debian 3.16.3-2 (2014-09-20) x86_64 GNU/Linux
+But now we are careful about it, and the driver knows that when the
+controller isn't running, no unlinking delay is needed.  Furthermore,
+skipping the unlink step will trigger a BUG() in qh_destroy() when the
+preceding QH is released, because the link pointer will be non-NULL.
 
-Both SSD drives are configured so part1 is EXT4, part2 is swap, and
-part3 is ZFS.
+Removing the lines that skip the unlinking step and go directly to
+QH_STATE_IDLE fixes the problem.
 
-I'm not on the mailing list so please CC any responses / further
-questions to my email.
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Tested-by: Joe Lawrence <joe.lawrence@stratus.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks in advance for any help.
-￼Michael Bushey
+---
+ drivers/usb/host/ehci-hcd.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -972,8 +972,6 @@ rescan:
+ 	}
+ 
+ 	qh->exception = 1;
+-	if (ehci->rh_state < EHCI_RH_RUNNING)
+-		qh->qh_state = QH_STATE_IDLE;
+ 	switch (qh->qh_state) {
+ 	case QH_STATE_LINKED:
+ 	case QH_STATE_COMPLETING:
+
+
