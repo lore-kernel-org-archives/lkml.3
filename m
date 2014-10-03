@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020AbaJCXWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:22:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
+	id S1757796AbaJCWNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:13:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757763AbaJCWNo (ORCPT
+	with ESMTP id S1757759AbaJCWNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:44 -0400
+	Fri, 3 Oct 2014 18:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
         Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 136/238] iio: accel: bma180: Fix indio_dev->trig assignment
-Date: Fri,  3 Oct 2014 14:30:51 -0700
-Message-Id: <20141003212918.025777518@linuxfoundation.org>
+Subject: [PATCH 3.14 141/238] iio: st_sensors: Fix indio_dev->trig assignment
+Date: Fri,  3 Oct 2014 14:30:56 -0700
+Message-Id: <20141003212918.188575330@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -31,7 +31,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 0668a4e4d297328ce08b44d91d160537596115e2 upstream.
+commit f0e84acd7056e6d7ade551c6439531606ae30a46 upstream.
 
 This can result in wrong reference count for trigger device, call
 iio_trigger_get to increment reference.
@@ -43,19 +43,19 @@ Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/accel/bma180.c |    2 +-
+ drivers/iio/common/st_sensors/st_sensors_trigger.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -571,7 +571,7 @@ static int bma180_probe(struct i2c_clien
- 	trig->ops = &bma180_trigger_ops;
- 	iio_trigger_set_drvdata(trig, indio_dev);
- 	data->trig = trig;
--	indio_dev->trig = trig;
-+	indio_dev->trig = iio_trigger_get(trig);
+--- a/drivers/iio/common/st_sensors/st_sensors_trigger.c
++++ b/drivers/iio/common/st_sensors/st_sensors_trigger.c
+@@ -49,7 +49,7 @@ int st_sensors_allocate_trigger(struct i
+ 		dev_err(&indio_dev->dev, "failed to register iio trigger.\n");
+ 		goto iio_trigger_register_error;
+ 	}
+-	indio_dev->trig = sdata->trig;
++	indio_dev->trig = iio_trigger_get(sdata->trig);
  
- 	ret = iio_trigger_register(trig);
- 	if (ret)
+ 	return 0;
+ 
 
 
