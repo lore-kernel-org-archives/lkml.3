@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaJCVnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44833 "EHLO
+	id S1755996AbaJCVnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061AbaJCVcz (ORCPT
+	with ESMTP id S1755062AbaJCVcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Adam Richter <adam_richter2004@yahoo.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 060/357] ALSA: hda - Fix COEF setups for ALC1150 codec
-Date: Fri,  3 Oct 2014 14:27:26 -0700
-Message-Id: <20141003212935.261441898@linuxfoundation.org>
+Subject: [PATCH 3.16 061/357] ALSA: hda - Fix invalid pin powermap without jack detection
+Date: Fri,  3 Oct 2014 14:27:27 -0700
+Message-Id: <20141003212935.290631111@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,38 +31,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
+commit 7a9744cb455e6faa287e148394b4b422a6f3c5c4 upstream.
 
-ALC1150 codec seems to need the COEF- and PLL-setups just like its
-compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
-the problem like too low output volumes unless the COEF setup is
-applied.
+When a driver is set up without the jack detection explicitly (either
+by passing a model option or via a specific fixup), the pin powermap
+of IDT/STAC codecs is set up wrongly, resulting in the silence
+output.  It's because of a logic failure in stac_init_power_map().
+It tries to avoid creating a callback for the pins that have other
+auto-hp and auto-mic callbacks, but the check is done in a wrong way
+at a wrong time.  The stac_init_power_map() should be called after
+creating other jack detection ctls, and the jack callback should be
+created only for jack-detectable widgets.
 
-Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
+This patch fixes the check in stac_init_power_map() and its callee
+at the right place, after snd_hda_gen_build_controls().
+
+Reported-by: Adam Richter <adam_richter2004@yahoo.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/hda/patch_sigmatel.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -327,6 +327,7 @@ static void alc_auto_init_amp(struct hda
- 		case 0x10ec0885:
- 		case 0x10ec0887:
- 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
-+		case 0x10ec0900:
- 			alc889_coef_init(codec);
- 			break;
- 		case 0x10ec0888:
-@@ -2349,6 +2350,7 @@ static int patch_alc882(struct hda_codec
- 	switch (codec->vendor_id) {
- 	case 0x10ec0882:
- 	case 0x10ec0885:
-+	case 0x10ec0900:
- 		break;
- 	default:
- 		/* ALC883 and variants */
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -565,8 +565,8 @@ static void stac_init_power_map(struct h
+ 		if (snd_hda_jack_tbl_get(codec, nid))
+ 			continue;
+ 		if (def_conf == AC_JACK_PORT_COMPLEX &&
+-		    !(spec->vref_mute_led_nid == nid ||
+-		      is_jack_detectable(codec, nid))) {
++		    spec->vref_mute_led_nid != nid &&
++		    is_jack_detectable(codec, nid)) {
+ 			snd_hda_jack_detect_enable_callback(codec, nid,
+ 							    STAC_PWR_EVENT,
+ 							    jack_update_power);
+@@ -4263,11 +4263,18 @@ static int stac_parse_auto_config(struct
+ 			return err;
+ 	}
+ 
+-	stac_init_power_map(codec);
+-
+ 	return 0;
+ }
+ 
++static int stac_build_controls(struct hda_codec *codec)
++{
++	int err = snd_hda_gen_build_controls(codec);
++
++	if (err < 0)
++		return err;
++	stac_init_power_map(codec);
++	return 0;
++}
+ 
+ static int stac_init(struct hda_codec *codec)
+ {
+@@ -4379,7 +4386,7 @@ static int stac_suspend(struct hda_codec
+ #endif /* CONFIG_PM */
+ 
+ static const struct hda_codec_ops stac_patch_ops = {
+-	.build_controls = snd_hda_gen_build_controls,
++	.build_controls = stac_build_controls,
+ 	.build_pcms = snd_hda_gen_build_pcms,
+ 	.init = stac_init,
+ 	.free = stac_free,
 
 
