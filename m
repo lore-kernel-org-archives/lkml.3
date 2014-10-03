@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaJCPCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:02:35 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:59855 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152AbaJCPC3 (ORCPT
+	id S1753641AbaJCPDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:03:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46670 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752238AbaJCPCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:02:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Date: Fri, 03 Oct 2014 17:02:13 +0200
-Message-ID: <2784760.Rf0vOml5OQ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141003135610.GM26643@leverpostej>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <2072038.Vir4futZot@wuerfel> <20141003135610.GM26643@leverpostej>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:hEGB7uF6jW+hdAC/pXdkkPATClUqHjrlNJ6Wojur1Qy
- KAJt798ajvKSCgTD4Yp9QVpBcxu0h56fpQjQAV/TrB5w0Fb3LX
- wqDfM/ehQpOeifUm7JvIpC0yc18cwc1rgmkBusz8l5KixWiaFJ
- 5vonHcVUGKkoMomvNBG+DS53bvib4ENS90yuYMAK85C0wJI7up
- MdNV7Tu8BXdfD/XaNu0gsyOzih5jWk9Fgl+BidugpG4A/0SRYW
- 1CcuKeUjzL7T72mo/VYTVjapq1pLz9FztPdTe7IW6Agcwax/Ex
- z2wpwz49wT6S9pJ5EPy9Yn5u86/KIYANOLQ1Pu8t8uX+8UeH4Y
- wY4bQEButdv+xbzct/XI=
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 3 Oct 2014 11:02:00 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: dan.carpenter@oracle.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: pxa168_eth: avoid using signed char for bitops
+Date: Fri,  3 Oct 2014 17:01:54 +0200
+Message-Id: <1412348517-20352-2-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 October 2014 14:56:10 Mark Rutland wrote:
-> On Thu, Oct 02, 2014 at 03:55:56PM +0100, Arnd Bergmann wrote:
-> > On Thursday 02 October 2014 17:38:09 Mika Westerberg wrote:
-> > > On Thu, Oct 02, 2014 at 04:29:03PM +0200, Arnd Bergmann wrote:
-> > > > Is this a limitation in the way that the AML syntax and compiler works,
-> > > > or is this a decision you made specifically for the _DSD syntax and that
-> > > > could still be changed if there is an overwhelming interest?
-> > > 
-> > > It is only limitation of the _DSD device property UUID specification and
-> > > our implementation. It can be changed if needed.
-> > 
-> > Ok, I see. I think it would be nice if this could be changed in order
-> > to avoid having to copy the #xxx-cells and xxx-names properties from
-> > DT, by providing a more natural syntax.
-> 
-> I'd certainly not like to see #foo-cells in _DSD given it should be
-> possible with a package to have a package description like the
-> following:
-> 
->         Package () {
->                 Package () { ^ref1, data, data }, 
->                 Package () { ^ref2, dta, data, data },
->         }
-> 
-> Where the #foo-cells is implicit in each instance. That makes variadic
-> properties possible, and makes it possible to perform validation on each
-> tuple even in the binary format, which we can't do with a DTB
-> 
-> I'm not so sure on foo-names unless we made names an explicit
-> requirement from the start (which I wish was the case on the DT side).
-> Even then we might need other parallel properties anyway (think
-> clock-indicies).
+Signedness bugs may occur when using signed char for bitops,
+depending on if the highest bit is ever used.
 
-I suppose it might even be possible to define the ACPI references to
-have an optional string, so you can do
+Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
 
-         Package () {
-                 Package () { ^ref1, data, data }, 
-                 Package () { "foo", ^ref2, data, data, data },
-         }
+Dan reported a static checker warning:
+http://marc.info/?l=kernel-janitors&m=141218246222535&w=2
 
-The parser should be able to interpret both anonymous and named
-references just by looking at the type of the first member.
-You might not want to allow mixing them in a single property, but
-that is more a style question than a technical requirement.
+This patch fixes it. Instead of using sa->sa_data we now use
+dev->dev_addr (of type unsigned char *) to avoid possible
+signedness issues.
 
-	Arnd
+ drivers/net/ethernet/marvell/pxa168_eth.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index 24de41231593..c3b209cd0660 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -634,12 +634,12 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
+ 	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
+ 	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
+ 
+-	mac_h = sa->sa_data[0] << 24;
+-	mac_h |= sa->sa_data[1] << 16;
+-	mac_h |= sa->sa_data[2] << 8;
+-	mac_h |= sa->sa_data[3];
+-	mac_l = sa->sa_data[4] << 8;
+-	mac_l |= sa->sa_data[5];
++	mac_h = dev->dev_addr[0] << 24;
++	mac_h |= dev->dev_addr[1] << 16;
++	mac_h |= dev->dev_addr[2] << 8;
++	mac_h |= dev->dev_addr[3];
++	mac_l = dev->dev_addr[4] << 8;
++	mac_l |= dev->dev_addr[5];
+ 	wrl(pep, MAC_ADDR_HIGH, mac_h);
+ 	wrl(pep, MAC_ADDR_LOW, mac_l);
+ 
+-- 
+1.9.1
+
