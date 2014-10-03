@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbaJCW2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:28:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47567 "EHLO
+	id S1756291AbaJCW2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:28:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627AbaJCW0f (ORCPT
+	with ESMTP id S1756515AbaJCW0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:26:35 -0400
+	Fri, 3 Oct 2014 18:26:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 132/143] PM / sleep: Use valid_state() for platform-dependent sleep states only
-Date: Fri,  3 Oct 2014 14:35:27 -0700
-Message-Id: <20141003213318.440364067@linuxfoundation.org>
+        Julian Anastasov <ja@ssi.bg>, Hans Schillstrom <hans@schillstrom.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 3.10 128/143] ipvs: avoid netns exit crash on ip_vs_conn_drop_conntrack
+Date: Fri,  3 Oct 2014 14:35:23 -0700
+Message-Id: <20141003213318.326413934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,185 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit 43e8317b0bba1d6eb85f38a4a233d82d7c20d732 upstream.
+commit 2627b7e15c5064ddd5e578e4efd948d48d531a3f upstream.
 
-Use the observation that, for platform-dependent sleep states
-(PM_SUSPEND_STANDBY, PM_SUSPEND_MEM), a given state is either
-always supported or always unsupported and store that information
-in pm_states[] instead of calling valid_state() every time we
-need to check it.
+commit 8f4e0a18682d91 ("IPVS netns exit causes crash in conntrack")
+added second ip_vs_conn_drop_conntrack call instead of just adding
+the needed check. As result, the first call still can cause
+crash on netns exit. Remove it.
 
-Also do not use valid_state() for PM_SUSPEND_FREEZE, which is always
-valid, and move the pm_test_level validity check for PM_SUSPEND_FREEZE
-directly into enter_state().
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/main.c         |    9 +++---
- kernel/power/power.h        |    2 -
- kernel/power/suspend.c      |   60 ++++++++++++++++++++++----------------------
- kernel/power/suspend_test.c |    2 -
- 4 files changed, 36 insertions(+), 37 deletions(-)
+ net/netfilter/ipvs/ip_vs_conn.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -296,7 +296,7 @@ static ssize_t state_show(struct kobject
- 	suspend_state_t i;
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -797,7 +797,6 @@ static void ip_vs_conn_expire(unsigned l
+ 			ip_vs_control_del(cp);
  
- 	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
--		if (valid_state(i))
-+		if (pm_states[i].state)
- 			s += sprintf(s,"%s ", pm_states[i].label);
- 
- #endif
-@@ -328,8 +328,9 @@ static suspend_state_t decode_state(cons
- 
- #ifdef CONFIG_SUSPEND
- 	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
--		if (len == strlen(s->label) && !strncmp(buf, s->label, len))
--			return state;
-+		if (s->state && len == strlen(s->label)
-+		    && !strncmp(buf, s->label, len))
-+			return s->state;
- #endif
- 
- 	return PM_SUSPEND_ON;
-@@ -445,7 +446,7 @@ static ssize_t autosleep_show(struct kob
- 
- #ifdef CONFIG_SUSPEND
- 	if (state < PM_SUSPEND_MAX)
--		return sprintf(buf, "%s\n", valid_state(state) ?
-+		return sprintf(buf, "%s\n", pm_states[state].state ?
- 					pm_states[state].label : "error");
- #endif
- #ifdef CONFIG_HIBERNATION
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -183,14 +183,12 @@ struct pm_sleep_state {
- /* kernel/power/suspend.c */
- extern struct pm_sleep_state pm_states[];
- 
--extern bool valid_state(suspend_state_t state);
- extern int suspend_devices_and_enter(suspend_state_t state);
- #else /* !CONFIG_SUSPEND */
- static inline int suspend_devices_and_enter(suspend_state_t state)
- {
- 	return -ENOSYS;
- }
--static inline bool valid_state(suspend_state_t state) { return false; }
- #endif /* !CONFIG_SUSPEND */
- 
- #ifdef CONFIG_PM_TEST_SUSPEND
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -30,9 +30,9 @@
- #include "power.h"
- 
- struct pm_sleep_state pm_states[PM_SUSPEND_MAX] = {
--	[PM_SUSPEND_FREEZE] = { "freeze", PM_SUSPEND_FREEZE },
--	[PM_SUSPEND_STANDBY] = { "standby", PM_SUSPEND_STANDBY },
--	[PM_SUSPEND_MEM] = { "mem", PM_SUSPEND_MEM },
-+	[PM_SUSPEND_FREEZE] = { .label = "freeze", .state = PM_SUSPEND_FREEZE },
-+	[PM_SUSPEND_STANDBY] = { .label = "standby", },
-+	[PM_SUSPEND_MEM] = { .label = "mem", },
- };
- 
- static const struct platform_suspend_ops *suspend_ops;
-@@ -62,42 +62,34 @@ void freeze_wake(void)
- }
- EXPORT_SYMBOL_GPL(freeze_wake);
- 
-+static bool valid_state(suspend_state_t state)
-+{
-+	/*
-+	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEM states need low level
-+	 * support and need to be valid to the low level
-+	 * implementation, no valid callback implies that none are valid.
-+	 */
-+	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
-+}
-+
- /**
-  * suspend_set_ops - Set the global suspend method table.
-  * @ops: Suspend operations to use.
-  */
- void suspend_set_ops(const struct platform_suspend_ops *ops)
- {
-+	suspend_state_t i;
-+
- 	lock_system_sleep();
-+
- 	suspend_ops = ops;
-+	for (i = PM_SUSPEND_STANDBY; i <= PM_SUSPEND_MEM; i++)
-+		pm_states[i].state = valid_state(i) ? i : 0;
-+
- 	unlock_system_sleep();
- }
- EXPORT_SYMBOL_GPL(suspend_set_ops);
- 
--bool valid_state(suspend_state_t state)
--{
--	if (state == PM_SUSPEND_FREEZE) {
--#ifdef CONFIG_PM_DEBUG
--		if (pm_test_level != TEST_NONE &&
--		    pm_test_level != TEST_FREEZER &&
--		    pm_test_level != TEST_DEVICES &&
--		    pm_test_level != TEST_PLATFORM) {
--			printk(KERN_WARNING "Unsupported pm_test mode for "
--					"freeze state, please choose "
--					"none/freezer/devices/platform.\n");
--			return false;
--		}
--#endif
--			return true;
--	}
--	/*
--	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
--	 * support and need to be valid to the lowlevel
--	 * implementation, no valid callback implies that none are valid.
--	 */
--	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
--}
--
- /**
-  * suspend_valid_only_mem - Generic memory-only valid callback.
-  *
-@@ -324,9 +316,17 @@ static int enter_state(suspend_state_t s
- {
- 	int error;
- 
--	if (!valid_state(state))
--		return -ENODEV;
--
-+	if (state == PM_SUSPEND_FREEZE) {
-+#ifdef CONFIG_PM_DEBUG
-+		if (pm_test_level != TEST_NONE && pm_test_level <= TEST_CPUS) {
-+			pr_warning("PM: Unsupported test mode for freeze state,"
-+				   "please choose none/freezer/devices/platform.\n");
-+			return -EAGAIN;
-+		}
-+#endif
-+	} else if (!valid_state(state)) {
-+		return -EINVAL;
-+	}
- 	if (!mutex_trylock(&pm_mutex))
- 		return -EBUSY;
- 
---- a/kernel/power/suspend_test.c
-+++ b/kernel/power/suspend_test.c
-@@ -162,7 +162,7 @@ static int __init test_suspend(void)
- 	/* PM is initialized by now; is that state testable? */
- 	if (test_state == PM_SUSPEND_ON)
- 		goto done;
--	if (!valid_state(test_state)) {
-+	if (!pm_states[test_state].state) {
- 		printk(warn_bad_state, pm_states[test_state].label);
- 		goto done;
- 	}
+ 		if (cp->flags & IP_VS_CONN_F_NFCT) {
+-			ip_vs_conn_drop_conntrack(cp);
+ 			/* Do not access conntracks during subsys cleanup
+ 			 * because nf_conntrack_find_get can not be used after
+ 			 * conntrack cleanup for the net.
 
 
