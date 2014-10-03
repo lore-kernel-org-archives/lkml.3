@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760959AbaJDACa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:02:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S932233AbaJDADg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:03:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756732AbaJCVxY (ORCPT
+	with ESMTP id S1756730AbaJCVxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:24 -0400
+	Fri, 3 Oct 2014 17:53:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.16 250/357] Input: synaptics - add support for ForcePads
-Date: Fri,  3 Oct 2014 14:30:36 -0700
-Message-Id: <20141003212941.013893962@linuxfoundation.org>
+        Mark Rutland <mark.rutland@arm.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
+        Anup Patel <anup.patel@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [PATCH 3.14 034/238] ARM/ARM64: KVM: Nuke Hyp-mode tlbs before enabling MMU
+Date: Fri,  3 Oct 2014 14:29:09 -0700
+Message-Id: <20141003212914.753488155@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,152 +28,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
 
-commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
+commit f6edbbf36da3a27b298b66c7955fc84e1dcca305 upstream.
 
-ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-physical buttons, instead they generate primary button click when user
-presses somewhat hard on the surface of the touchpad. Unfortunately they
-also report primary button click whenever there are 2 or more contacts
-on the pad, messing up all multi-finger gestures (2-finger scrolling,
-multi-finger tapping, etc). To cope with this behavior we introduce a
-delay (currently 50 msecs) in reporting primary press in case more
-contacts appear.
+X-Gene u-boot runs in EL2 mode with MMU enabled hence we might
+have stale EL2 tlb enteris when we enable EL2 MMU on each host CPU.
 
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This can happen on any ARM/ARM64 board running bootloader in
+Hyp-mode (or EL2-mode) with MMU enabled.
+
+This patch ensures that we flush all Hyp-mode (or EL2-mode) TLBs
+on each host CPU before enabling Hyp-mode (or EL2-mode) MMU.
+
+Tested-by: Mark Rutland <mark.rutland@arm.com>
+Reviewed-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Signed-off-by: Anup Patel <anup.patel@linaro.org>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |   68 ++++++++++++++++++++++++++++++----------
- drivers/input/mouse/synaptics.h |   11 ++++++
- 2 files changed, 63 insertions(+), 16 deletions(-)
+ arch/arm/kvm/init.S       |    4 ++++
+ arch/arm64/kvm/hyp-init.S |    4 ++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -626,10 +626,61 @@ static int synaptics_parse_hw_state(cons
- 			 ((buf[0] & 0x04) >> 1) |
- 			 ((buf[3] & 0x04) >> 2));
+--- a/arch/arm/kvm/init.S
++++ b/arch/arm/kvm/init.S
+@@ -98,6 +98,10 @@ __do_hyp_init:
+ 	mrc	p15, 0, r0, c10, c2, 1
+ 	mcr	p15, 4, r0, c10, c2, 1
  
-+		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-+			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-+		    hw->w == 2) {
-+			synaptics_parse_agm(buf, priv, hw);
-+			return 1;
-+		}
++	@ Invalidate the stale TLBs from Bootloader
++	mcr	p15, 4, r0, c8, c7, 0	@ TLBIALLH
++	dsb	ish
 +
-+		hw->x = (((buf[3] & 0x10) << 8) |
-+			 ((buf[1] & 0x0f) << 8) |
-+			 buf[4]);
-+		hw->y = (((buf[3] & 0x20) << 7) |
-+			 ((buf[1] & 0xf0) << 4) |
-+			 buf[5]);
-+		hw->z = buf[2];
-+
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 	@ Set the HSCTLR to:
+ 	@  - ARM/THUMB exceptions: Kernel config (Thumb-2 kernel)
+ 	@  - Endianness: Kernel config
+--- a/arch/arm64/kvm/hyp-init.S
++++ b/arch/arm64/kvm/hyp-init.S
+@@ -74,6 +74,10 @@ __do_hyp_init:
+ 	msr	mair_el2, x4
+ 	isb
  
--		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-+		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-+			/*
-+			 * ForcePads, like Clickpads, use middle button
-+			 * bits to report primary button clicks.
-+			 * Unfortunately they report primary button not
-+			 * only when user presses on the pad above certain
-+			 * threshold, but also when there are more than one
-+			 * finger on the touchpad, which interferes with
-+			 * out multi-finger gestures.
-+			 */
-+			if (hw->z == 0) {
-+				/* No contacts */
-+				priv->press = priv->report_press = false;
-+			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-+				/*
-+				 * Single-finger touch with pressure above
-+				 * the threshold. If pressure stays long
-+				 * enough, we'll start reporting primary
-+				 * button. We rely on the device continuing
-+				 * sending data even if finger does not
-+				 * move.
-+				 */
-+				if  (!priv->press) {
-+					priv->press_start = jiffies;
-+					priv->press = true;
-+				} else if (time_after(jiffies,
-+						priv->press_start +
-+							msecs_to_jiffies(50))) {
-+					priv->report_press = true;
-+				}
-+			} else {
-+				priv->press = false;
-+			}
++	/* Invalidate the stale TLBs from Bootloader */
++	tlbi	alle2
++	dsb	sy
 +
-+			hw->left = priv->report_press;
-+
-+		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 			/*
- 			 * Clickpad's button is transmitted as middle button,
- 			 * however, since it is primary button, we will report
-@@ -648,21 +699,6 @@ static int synaptics_parse_hw_state(cons
- 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
- 		}
- 
--		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
--			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
--		    hw->w == 2) {
--			synaptics_parse_agm(buf, priv, hw);
--			return 1;
--		}
--
--		hw->x = (((buf[3] & 0x10) << 8) |
--			 ((buf[1] & 0x0f) << 8) |
--			 buf[4]);
--		hw->y = (((buf[3] & 0x20) << 7) |
--			 ((buf[1] & 0xf0) << 4) |
--			 buf[5]);
--		hw->z = buf[2];
--
- 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
- 		    ((buf[0] ^ buf[3]) & 0x02)) {
- 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -78,6 +78,11 @@
-  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
-  *					reports 2.
-  * 2	0x20	report min		query 0x0f gives min coord reported
-+ * 2	0x80	forcepad		forcepad is a variant of clickpad that
-+ *					does not have physical buttons but rather
-+ *					uses pressure above certain threshold to
-+ *					report primary clicks. Forcepads also have
-+ *					clickpad bit set.
-  */
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
- #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-@@ -86,6 +91,7 @@
- #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
- #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
-+#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
- 
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
-@@ -177,6 +183,11 @@ struct synaptics_data {
- 	 */
- 	struct synaptics_hw_state agm;
- 	bool agm_pending;			/* new AGM packet received */
-+
-+	/* ForcePad handling */
-+	unsigned long				press_start;
-+	bool					press;
-+	bool					report_press;
- };
- 
- void synaptics_module_init(void);
+ 	mrs	x4, sctlr_el2
+ 	and	x4, x4, #SCTLR_EL2_EE	// preserve endianness of EL2
+ 	ldr	x5, =SCTLR_EL2_FLAGS
 
 
