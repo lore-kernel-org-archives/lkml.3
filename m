@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843AbaJCXn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:43:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46279 "EHLO
+	id S933142AbaJCXoA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:44:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288AbaJCWDf (ORCPT
+	with ESMTP id S1757283AbaJCWDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Starr <shawn.starr@rogers.com>,
-        "Jose P." <lbdkmjdf@sharklasers.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Rajat Jain <rajatxjain@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.16 307/357] PCI: Add pci_ignore_hotplug() to ignore hotplug events for a device
-Date: Fri,  3 Oct 2014 14:31:33 -0700
-Message-Id: <20141003212942.696916966@linuxfoundation.org>
+        Lei Liu <lei35151@163.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 091/238] USB: zte_ev: fix removed PIDs
+Date: Fri,  3 Oct 2014 14:30:06 -0700
+Message-Id: <20141003212916.587384479@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,182 +24,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit b440bde74f043c8ec31081cb59c9a53ade954701 upstream.
+commit 3096691011d01cef56b243a5e65431405c07d574 upstream.
 
-Powering off a hot-pluggable device, e.g., with pci_set_power_state(D3cold),
-normally generates a hot-remove event that unbinds the driver.
+Add back some PIDs that were mistakingly remove when reverting commit
+73228a0538a7 ("USB: option,zte_ev: move most ZTE CDMA devices to
+zte_ev"), which apparently did more than its commit message claimed in
+that it not only moved some PIDs from option to zte_ev but also added
+some new ones.
 
-Some drivers expect to remain bound to a device even while they power it
-off and back on again.  This can be dangerous, because if the device is
-removed or replaced while it is powered off, the driver doesn't know that
-anything changed.  But some drivers accept that risk.
+Fixes: 63a901c06e3c ("Revert "USB: option,zte_ev: move most ZTE CDMA
+devices to zte_ev"")
 
-Add pci_ignore_hotplug() for use by drivers that know their device cannot
-be removed.  Using pci_ignore_hotplug() tells the PCI core that hot-plug
-events for the device should be ignored.
-
-The radeon and nouveau drivers use this to switch between a low-power,
-integrated GPU and a higher-power, higher-performance discrete GPU.  They
-power off the unused GPU, but they want to remain bound to it.
-
-This is a reimplementation of f244d8b623da ("ACPIPHP / radeon / nouveau:
-Fix VGA switcheroo problem related to hotplug") but extends it to work with
-both acpiphp and pciehp.
-
-This fixes a problem where systems with dual GPUs using the radeon drivers
-become unusable, freezing every few seconds (see bugzillas below).  The
-resume of the radeon device may also fail, e.g.,
-
-This fixes problems on dual GPU systems where the radeon driver becomes
-unusable because of problems while suspending the device, as in bug 79701:
-
-    [drm] radeon: finishing device.
-    radeon 0000:01:00.0: Userspace still has active objects !
-    radeon 0000:01:00.0: ffff8800cb4ec288 ffff8800cb4ec000 16384 4294967297 force free
-    ...
-    WARNING: CPU: 0 PID: 67 at /home/apw/COD/linux/drivers/gpu/drm/radeon/radeon_gart.c:234 radeon_gart_unbind+0xd2/0xe0 [radeon]()
-    trying to unbind memory from uninitialized GART !
-
-or while resuming it, as in bug 77261:
-
-    radeon 0000:01:00.0: ring 0 stalled for more than 10158msec
-    radeon 0000:01:00.0: GPU lockup ...
-    radeon 0000:01:00.0: GPU pci config reset
-    pciehp 0000:00:01.0:pcie04: Card not present on Slot(1-1)
-    radeon 0000:01:00.0: GPU reset succeeded, trying to resume
-    *ERROR* radeon: dpm resume failed
-    radeon 0000:01:00.0: Wait for MC idle timedout !
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=77261
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=79701
-Reported-by: Shawn Starr <shawn.starr@rogers.com>
-Reported-by: Jose P. <lbdkmjdf@sharklasers.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Alex Deucher <alexander.deucher@amd.com>
-Acked-by: Rajat Jain <rajatxjain@gmail.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Lei Liu <lei35151@163.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_drm.c |    1 +
- drivers/gpu/drm/radeon/radeon_drv.c   |    1 +
- drivers/pci/hotplug/acpiphp_glue.c    |   16 ++++++----------
- drivers/pci/hotplug/pciehp_hpc.c      |   12 ++++++++++++
- include/linux/pci.h                   |    6 ++++++
- 5 files changed, 26 insertions(+), 10 deletions(-)
+ drivers/usb/serial/zte_ev.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -596,6 +596,7 @@ int nouveau_pmops_suspend(struct device
- 
- 	pci_save_state(pdev);
- 	pci_disable_device(pdev);
-+	pci_ignore_hotplug(pdev);
- 	pci_set_power_state(pdev, PCI_D3hot);
- 	return 0;
- }
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -429,6 +429,7 @@ static int radeon_pmops_runtime_suspend(
- 	ret = radeon_suspend_kms(drm_dev, false, false);
- 	pci_save_state(pdev);
- 	pci_disable_device(pdev);
-+	pci_ignore_hotplug(pdev);
- 	pci_set_power_state(pdev, PCI_D3cold);
- 	drm_dev->switch_power_state = DRM_SWITCH_POWER_DYNAMIC_OFF;
- 
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -573,19 +573,15 @@ static void disable_slot(struct acpiphp_
- 	slot->flags &= (~SLOT_ENABLED);
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -272,6 +272,14 @@ static void zte_ev_usb_serial_close(stru
  }
  
--static bool acpiphp_no_hotplug(struct acpi_device *adev)
--{
--	return adev && adev->flags.no_hotplug;
--}
--
- static bool slot_no_hotplug(struct acpiphp_slot *slot)
- {
--	struct acpiphp_func *func;
-+	struct pci_bus *bus = slot->bus;
-+	struct pci_dev *dev;
- 
--	list_for_each_entry(func, &slot->funcs, sibling)
--		if (acpiphp_no_hotplug(func_to_acpi_device(func)))
-+	list_for_each_entry(dev, &bus->devices, bus_list) {
-+		if (PCI_SLOT(dev->devfn) == slot->device && dev->ignore_hotplug)
- 			return true;
--
-+	}
- 	return false;
- }
- 
-@@ -658,7 +654,7 @@ static void trim_stale_devices(struct pc
- 
- 		status = acpi_evaluate_integer(adev->handle, "_STA", NULL, &sta);
- 		alive = (ACPI_SUCCESS(status) && device_status_valid(sta))
--			|| acpiphp_no_hotplug(adev);
-+			|| dev->ignore_hotplug;
- 	}
- 	if (!alive)
- 		alive = pci_device_is_present(dev);
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -508,6 +508,8 @@ static irqreturn_t pcie_isr(int irq, voi
- {
- 	struct controller *ctrl = (struct controller *)dev_id;
- 	struct pci_dev *pdev = ctrl_dev(ctrl);
-+	struct pci_bus *subordinate = pdev->subordinate;
-+	struct pci_dev *dev;
- 	struct slot *slot = ctrl->slot;
- 	u16 detected, intr_loc;
- 
-@@ -541,6 +543,16 @@ static irqreturn_t pcie_isr(int irq, voi
- 		wake_up(&ctrl->queue);
- 	}
- 
-+	if (subordinate) {
-+		list_for_each_entry(dev, &subordinate->devices, bus_list) {
-+			if (dev->ignore_hotplug) {
-+				ctrl_dbg(ctrl, "ignoring hotplug event %#06x (%s requested no hotplug)\n",
-+					 intr_loc, pci_name(dev));
-+				return IRQ_HANDLED;
-+			}
-+		}
-+	}
-+
- 	if (!(intr_loc & ~PCI_EXP_SLTSTA_CC))
- 		return IRQ_HANDLED;
- 
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -303,6 +303,7 @@ struct pci_dev {
- 						   D3cold, not set for devices
- 						   powered on/off by the
- 						   corresponding bridge */
-+	unsigned int	ignore_hotplug:1;	/* Ignore hotplug events */
- 	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
- 	unsigned int	d3cold_delay;	/* D3cold->D0 transition time in ms */
- 
-@@ -1019,6 +1020,11 @@ bool pci_dev_run_wake(struct pci_dev *de
- bool pci_check_pme_status(struct pci_dev *dev);
- void pci_pme_wakeup_bus(struct pci_bus *bus);
- 
-+static inline void pci_ignore_hotplug(struct pci_dev *dev)
-+{
-+	dev->ignore_hotplug = 1;
-+}
-+
- static inline int pci_enable_wake(struct pci_dev *dev, pci_power_t state,
- 				  bool enable)
- {
+ static const struct usb_device_id id_table[] = {
++	{ USB_DEVICE(0x19d2, 0xffec) },
++	{ USB_DEVICE(0x19d2, 0xffee) },
++	{ USB_DEVICE(0x19d2, 0xfff6) },
++	{ USB_DEVICE(0x19d2, 0xfff7) },
++	{ USB_DEVICE(0x19d2, 0xfff8) },
++	{ USB_DEVICE(0x19d2, 0xfff9) },
++	{ USB_DEVICE(0x19d2, 0xfffb) },
++	{ USB_DEVICE(0x19d2, 0xfffc) },
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+ 	{ },
 
 
