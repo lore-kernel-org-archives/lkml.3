@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760974AbaJDACb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:02:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	id S1760959AbaJDACa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:02:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023AbaJCVxY (ORCPT
+	with ESMTP id S1756732AbaJCVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chen-Yu Tsai <wens@csie.org>, Andrew Lunn <andrew@lunn.ch>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 035/238] i2c: mv64xxx: continue probe when clock-frequency is missing
-Date: Fri,  3 Oct 2014 14:29:10 -0700
-Message-Id: <20141003212914.784825568@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.16 250/357] Input: synaptics - add support for ForcePads
+Date: Fri,  3 Oct 2014 14:30:36 -0700
+Message-Id: <20141003212941.013893962@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,50 +25,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chen-Yu Tsai <wens@csie.org>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 0ce4bc1dbdd911ae1763e2d4ff36bd1b214a59f7 upstream.
+commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
 
-The "clock-frequency" DT property is listed as optional, However,
-the current code stores the return value of of_property_read_u32 in
-the return code of mv64xxx_of_config, but then forgets to clear it
-after setting the default value of "clock-frequency". It is then
-passed out to the main probe function, resulting in a probe failure
-when "clock-frequency" is missing.
+ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+physical buttons, instead they generate primary button click when user
+presses somewhat hard on the surface of the touchpad. Unfortunately they
+also report primary button click whenever there are 2 or more contacts
+on the pad, messing up all multi-finger gestures (2-finger scrolling,
+multi-finger tapping, etc). To cope with this behavior we introduce a
+delay (currently 50 msecs) in reporting primary press in case more
+contacts appear.
 
-This patch checks and then throws away the return value of
-of_property_read_u32, instead of storing it and having to clear it
-afterwards.
-
-This issue was discovered after the property was removed from all
-sunxi DTs.
-
-Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-mv64xxx.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c |   68 ++++++++++++++++++++++++++++++----------
+ drivers/input/mouse/synaptics.h |   11 ++++++
+ 2 files changed, 63 insertions(+), 16 deletions(-)
 
---- a/drivers/i2c/busses/i2c-mv64xxx.c
-+++ b/drivers/i2c/busses/i2c-mv64xxx.c
-@@ -748,8 +748,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
- 	}
- 	tclk = clk_get_rate(drv_data->clk);
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -626,10 +626,61 @@ static int synaptics_parse_hw_state(cons
+ 			 ((buf[0] & 0x04) >> 1) |
+ 			 ((buf[3] & 0x04) >> 2));
  
--	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
--	if (rc)
-+	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
- 		bus_freq = 100000; /* 100kHz by default */
++		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
++			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
++		    hw->w == 2) {
++			synaptics_parse_agm(buf, priv, hw);
++			return 1;
++		}
++
++		hw->x = (((buf[3] & 0x10) << 8) |
++			 ((buf[1] & 0x0f) << 8) |
++			 buf[4]);
++		hw->y = (((buf[3] & 0x20) << 7) |
++			 ((buf[1] & 0xf0) << 4) |
++			 buf[5]);
++		hw->z = buf[2];
++
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
  
- 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
+-		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
++		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
++			/*
++			 * ForcePads, like Clickpads, use middle button
++			 * bits to report primary button clicks.
++			 * Unfortunately they report primary button not
++			 * only when user presses on the pad above certain
++			 * threshold, but also when there are more than one
++			 * finger on the touchpad, which interferes with
++			 * out multi-finger gestures.
++			 */
++			if (hw->z == 0) {
++				/* No contacts */
++				priv->press = priv->report_press = false;
++			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
++				/*
++				 * Single-finger touch with pressure above
++				 * the threshold. If pressure stays long
++				 * enough, we'll start reporting primary
++				 * button. We rely on the device continuing
++				 * sending data even if finger does not
++				 * move.
++				 */
++				if  (!priv->press) {
++					priv->press_start = jiffies;
++					priv->press = true;
++				} else if (time_after(jiffies,
++						priv->press_start +
++							msecs_to_jiffies(50))) {
++					priv->report_press = true;
++				}
++			} else {
++				priv->press = false;
++			}
++
++			hw->left = priv->report_press;
++
++		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 			/*
+ 			 * Clickpad's button is transmitted as middle button,
+ 			 * however, since it is primary button, we will report
+@@ -648,21 +699,6 @@ static int synaptics_parse_hw_state(cons
+ 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+ 		}
+ 
+-		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+-		    hw->w == 2) {
+-			synaptics_parse_agm(buf, priv, hw);
+-			return 1;
+-		}
+-
+-		hw->x = (((buf[3] & 0x10) << 8) |
+-			 ((buf[1] & 0x0f) << 8) |
+-			 buf[4]);
+-		hw->y = (((buf[3] & 0x20) << 7) |
+-			 ((buf[1] & 0xf0) << 4) |
+-			 buf[5]);
+-		hw->z = buf[2];
+-
+ 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+ 		    ((buf[0] ^ buf[3]) & 0x02)) {
+ 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -78,6 +78,11 @@
+  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
+  *					reports 2.
+  * 2	0x20	report min		query 0x0f gives min coord reported
++ * 2	0x80	forcepad		forcepad is a variant of clickpad that
++ *					does not have physical buttons but rather
++ *					uses pressure above certain threshold to
++ *					report primary clicks. Forcepads also have
++ *					clickpad bit set.
+  */
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+ #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+@@ -86,6 +91,7 @@
+ #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
+ #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
+ #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
++#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -177,6 +183,11 @@ struct synaptics_data {
+ 	 */
+ 	struct synaptics_hw_state agm;
+ 	bool agm_pending;			/* new AGM packet received */
++
++	/* ForcePad handling */
++	unsigned long				press_start;
++	bool					press;
++	bool					report_press;
+ };
+ 
+ void synaptics_module_init(void);
 
 
