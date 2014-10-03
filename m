@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbaJCVrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:47:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45641 "EHLO
+	id S1756453AbaJCVrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:47:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756257AbaJCVp1 (ORCPT
+	with ESMTP id S1756258AbaJCVp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 203/357] regmap: Fix regcache debugfs initialization
-Date: Fri,  3 Oct 2014 14:29:49 -0700
-Message-Id: <20141003212939.580693689@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.14 009/238] drm/ttm: Choose a pool to shrink correctly in ttm_dma_pool_shrink_scan().
+Date: Fri,  3 Oct 2014 14:28:44 -0700
+Message-Id: <20141003212913.964218529@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,89 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 5e0cbe78762b5f02986bf9e59a188dad2f6e0be1 upstream.
+commit 46c2df68f03a236b30808bba361f10900c88d95e upstream.
 
-Commit 6cfec04bcc05 ("regmap: Separate regmap dev initialization") moved the
-regmap debugfs initialization after regcache initialization. This means
-that the regmap debugfs directory is not created yet when the cache
-initialization runs and so any debugfs files registered by the regcache are
-created in the debugfs root directory rather than the debugfs directory of
-the regmap instance. Fix this by adding a separate callback for the
-regcache debugfs initialization which will be called after the parent
-debugfs entry has been created.
+We can use "unsigned int" instead of "atomic_t" by updating start_pool
+variable under _manager->lock. This patch will make it possible to avoid
+skipping when choosing a pool to shrink in round-robin style, after next
+patch changes mutex_lock(_manager->lock) to !mutex_trylock(_manager->lork).
 
-Fixes: 6cfec04bcc05 (regmap: Separate regmap dev initialization)
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/internal.h        |    3 +++
- drivers/base/regmap/regcache-rbtree.c |    9 +++------
- drivers/base/regmap/regmap-debugfs.c  |    3 +++
- 3 files changed, 9 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -146,6 +146,9 @@ struct regcache_ops {
- 	enum regcache_type type;
- 	int (*init)(struct regmap *map);
- 	int (*exit)(struct regmap *map);
-+#ifdef CONFIG_DEBUG_FS
-+	void (*debugfs_init)(struct regmap *map);
-+#endif
- 	int (*read)(struct regmap *map, unsigned int reg, unsigned int *value);
- 	int (*write)(struct regmap *map, unsigned int reg, unsigned int value);
- 	int (*sync)(struct regmap *map, unsigned int min, unsigned int max);
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -194,10 +194,6 @@ static void rbtree_debugfs_init(struct r
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1004,9 +1004,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+ static unsigned long
+ ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
  {
- 	debugfs_create_file("rbtree", 0400, map->debugfs, map, &rbtree_fops);
- }
--#else
--static void rbtree_debugfs_init(struct regmap *map)
--{
--}
- #endif
+-	static atomic_t start_pool = ATOMIC_INIT(0);
++	static unsigned start_pool;
+ 	unsigned idx = 0;
+-	unsigned pool_offset = atomic_add_return(1, &start_pool);
++	unsigned pool_offset;
+ 	unsigned shrink_pages = sc->nr_to_scan;
+ 	struct device_pools *p;
+ 	unsigned long freed = 0;
+@@ -1017,7 +1017,7 @@ ttm_dma_pool_shrink_scan(struct shrinker
+ 	mutex_lock(&_manager->lock);
+ 	if (!_manager->npools)
+ 		goto out;
+-	pool_offset = pool_offset % _manager->npools;
++	pool_offset = ++start_pool % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
  
- static int regcache_rbtree_init(struct regmap *map)
-@@ -222,8 +218,6 @@ static int regcache_rbtree_init(struct r
- 			goto err;
- 	}
- 
--	rbtree_debugfs_init(map);
--
- 	return 0;
- 
- err:
-@@ -532,6 +526,9 @@ struct regcache_ops regcache_rbtree_ops
- 	.name = "rbtree",
- 	.init = regcache_rbtree_init,
- 	.exit = regcache_rbtree_exit,
-+#ifdef CONFIG_DEBUG_FS
-+	.debugfs_init = rbtree_debugfs_init,
-+#endif
- 	.read = regcache_rbtree_read,
- 	.write = regcache_rbtree_write,
- 	.sync = regcache_rbtree_sync,
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -538,6 +538,9 @@ void regmap_debugfs_init(struct regmap *
- 
- 		next = rb_next(&range_node->node);
- 	}
-+
-+	if (map->cache_ops && map->cache_ops->debugfs_init)
-+		map->cache_ops->debugfs_init(map);
- }
- 
- void regmap_debugfs_exit(struct regmap *map)
 
 
