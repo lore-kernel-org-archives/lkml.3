@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039AbaJCWOb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:14:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47078 "EHLO
+	id S932140AbaJCWO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:14:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757997AbaJCWON (ORCPT
+	with ESMTP id S1757985AbaJCWOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:13 -0400
+	Fri, 3 Oct 2014 18:14:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.14 226/238] ipvs: fix ipv6 hook registration for local replies
-Date: Fri,  3 Oct 2014 14:32:21 -0700
-Message-Id: <20141003212920.890993632@linuxfoundation.org>
+        Alexey Perevalov <a.perevalov@samsung.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.14 225/238] netfilter: x_tables: allow to use default cgroup match
+Date: Fri,  3 Oct 2014 14:32:20 -0700
+Message-Id: <20141003212920.860525239@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,40 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit eb90b0c734ad793d5f5bf230a9e9a4dcc48df8aa upstream.
+commit caa8ad94edf686d02b555c65a6162c0d1b434958 upstream.
 
-commit fc604767613b6d2036cdc35b660bc39451040a47
-("ipvs: changes for local real server") from 2.6.37
-introduced DNAT support to local real server but the
-IPv6 LOCAL_OUT handler ip_vs_local_reply6() is
-registered incorrectly as IPv4 hook causing any outgoing
-IPv4 traffic to be dropped depending on the IP header values.
+There's actually no good reason why we cannot use cgroup id 0,
+so lets just remove this artificial barrier.
 
-Chris tracked down the problem to CONFIG_IP_VS_IPV6=y
-Bug report: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1349768
-
-Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Reported-by: Alexey Perevalov <a.perevalov@samsung.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Alexey Perevalov <a.perevalov@samsung.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_core.c |    2 +-
+ net/netfilter/xt_cgroup.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1906,7 +1906,7 @@ static struct nf_hook_ops ip_vs_ops[] __
- 	{
- 		.hook		= ip_vs_local_reply6,
- 		.owner		= THIS_MODULE,
--		.pf		= NFPROTO_IPV4,
-+		.pf		= NFPROTO_IPV6,
- 		.hooknum	= NF_INET_LOCAL_OUT,
- 		.priority	= NF_IP6_PRI_NAT_DST + 1,
- 	},
+--- a/net/netfilter/xt_cgroup.c
++++ b/net/netfilter/xt_cgroup.c
+@@ -31,7 +31,7 @@ static int cgroup_mt_check(const struct
+ 	if (info->invert & ~1)
+ 		return -EINVAL;
+ 
+-	return info->id ? 0 : -EINVAL;
++	return 0;
+ }
+ 
+ static bool
 
 
