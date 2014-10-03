@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbaJCVgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:36:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45105 "EHLO
+	id S1755444AbaJCVh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:37:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322AbaJCVfK (ORCPT
+	with ESMTP id S1755316AbaJCVfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:10 -0400
+	Fri, 3 Oct 2014 17:35:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 110/357] USB: serial: fix potential stack buffer overflow
-Date: Fri,  3 Oct 2014 14:28:16 -0700
-Message-Id: <20141003212936.783804533@linuxfoundation.org>
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.16 108/357] usb: gadget: f_rndis: fix interface id for OS descriptors
+Date: Fri,  3 Oct 2014 14:28:14 -0700
+Message-Id: <20141003212936.719315592@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,86 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-commit d979e9f9ecab04c1ecca741370e30a8a498893f5 upstream.
+commit 4546527350c3c508554dff53e9086e9d3de0b97b upstream.
 
-Make sure to verify the maximum number of endpoints per type to avoid
-writing beyond the end of a stack-allocated array.
+f->os_desc_table[0].if_id is zero by default. If the actual id happens
+to be different then no Feature Descriptors will be returned to the host
+for this interface, so assign if_id as soon as it is known.
 
-The current usb-serial implementation is limited to eight ports per
-interface but failed to verify that the number of endpoints of a certain
-type reported by a device did not exceed this limit.
-
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/serial/usb-serial.c |   32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -764,29 +764,39 @@ static int usb_serial_probe(struct usb_i
- 		if (usb_endpoint_is_bulk_in(endpoint)) {
- 			/* we found a bulk in endpoint */
- 			dev_dbg(ddev, "found bulk in on endpoint %d\n", i);
--			bulk_in_endpoint[num_bulk_in] = endpoint;
--			++num_bulk_in;
-+			if (num_bulk_in < MAX_NUM_PORTS) {
-+				bulk_in_endpoint[num_bulk_in] = endpoint;
-+				++num_bulk_in;
-+			}
- 		}
+---
+ drivers/usb/gadget/f_rndis.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -727,6 +727,10 @@ rndis_bind(struct usb_configuration *c,
+ 	rndis_control_intf.bInterfaceNumber = status;
+ 	rndis_union_desc.bMasterInterface0 = status;
  
- 		if (usb_endpoint_is_bulk_out(endpoint)) {
- 			/* we found a bulk out endpoint */
- 			dev_dbg(ddev, "found bulk out on endpoint %d\n", i);
--			bulk_out_endpoint[num_bulk_out] = endpoint;
--			++num_bulk_out;
-+			if (num_bulk_out < MAX_NUM_PORTS) {
-+				bulk_out_endpoint[num_bulk_out] = endpoint;
-+				++num_bulk_out;
-+			}
- 		}
- 
- 		if (usb_endpoint_is_int_in(endpoint)) {
- 			/* we found a interrupt in endpoint */
- 			dev_dbg(ddev, "found interrupt in on endpoint %d\n", i);
--			interrupt_in_endpoint[num_interrupt_in] = endpoint;
--			++num_interrupt_in;
-+			if (num_interrupt_in < MAX_NUM_PORTS) {
-+				interrupt_in_endpoint[num_interrupt_in] =
-+						endpoint;
-+				++num_interrupt_in;
-+			}
- 		}
- 
- 		if (usb_endpoint_is_int_out(endpoint)) {
- 			/* we found an interrupt out endpoint */
- 			dev_dbg(ddev, "found interrupt out on endpoint %d\n", i);
--			interrupt_out_endpoint[num_interrupt_out] = endpoint;
--			++num_interrupt_out;
-+			if (num_interrupt_out < MAX_NUM_PORTS) {
-+				interrupt_out_endpoint[num_interrupt_out] =
-+						endpoint;
-+				++num_interrupt_out;
-+			}
- 		}
- 	}
- 
-@@ -809,8 +819,10 @@ static int usb_serial_probe(struct usb_i
- 				if (usb_endpoint_is_int_in(endpoint)) {
- 					/* we found a interrupt in endpoint */
- 					dev_dbg(ddev, "found interrupt in for Prolific device on separate interface\n");
--					interrupt_in_endpoint[num_interrupt_in] = endpoint;
--					++num_interrupt_in;
-+					if (num_interrupt_in < MAX_NUM_PORTS) {
-+						interrupt_in_endpoint[num_interrupt_in] = endpoint;
-+						++num_interrupt_in;
-+					}
- 				}
- 			}
- 		}
++	if (cdev->use_os_string)
++		f->os_desc_table[0].if_id =
++			rndis_iad_descriptor.bFirstInterface;
++
+ 	status = usb_interface_id(c, f);
+ 	if (status < 0)
+ 		goto fail;
 
 
