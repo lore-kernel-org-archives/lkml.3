@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134AbaJCVwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:52:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45591 "EHLO
+	id S932150AbaJCVwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:52:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45587 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaJCVpU (ORCPT
+	with ESMTP id S1756215AbaJCVpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.14 008/238] drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
-Date: Fri,  3 Oct 2014 14:28:43 -0700
-Message-Id: <20141003212913.936064114@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.16 221/357] iio: accel: bma180: Fix indio_dev->trig assignment
+Date: Fri,  3 Oct 2014 14:30:07 -0700
+Message-Id: <20141003212940.159704297@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,44 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 11e504cc705e8ccb06ac93a276e11b5e8fee4d40 upstream.
+commit 0668a4e4d297328ce08b44d91d160537596115e2 upstream.
 
-list_empty(&_manager->pools) being false before taking _manager->lock
-does not guarantee that _manager->npools != 0 after taking _manager->lock
-because _manager->npools is updated under _manager->lock.
+This can result in wrong reference count for trigger device, call
+iio_trigger_get to increment reference.
+Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
+with Jonathan.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/iio/accel/bma180.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1015,6 +1015,8 @@ ttm_dma_pool_shrink_scan(struct shrinker
- 		return SHRINK_STOP;
+--- a/drivers/iio/accel/bma180.c
++++ b/drivers/iio/accel/bma180.c
+@@ -571,7 +571,7 @@ static int bma180_probe(struct i2c_clien
+ 	trig->ops = &bma180_trigger_ops;
+ 	iio_trigger_set_drvdata(trig, indio_dev);
+ 	data->trig = trig;
+-	indio_dev->trig = trig;
++	indio_dev->trig = iio_trigger_get(trig);
  
- 	mutex_lock(&_manager->lock);
-+	if (!_manager->npools)
-+		goto out;
- 	pool_offset = pool_offset % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
-@@ -1034,6 +1036,7 @@ ttm_dma_pool_shrink_scan(struct shrinker
- 			 p->pool->dev_name, p->pool->name, current->pid,
- 			 nr_free, shrink_pages);
- 	}
-+out:
- 	mutex_unlock(&_manager->lock);
- 	return freed;
- }
+ 	ret = iio_trigger_register(trig);
+ 	if (ret)
 
 
