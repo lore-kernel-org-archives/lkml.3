@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647AbaJCVlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:41:53 -0400
+	id S1755889AbaJCVmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:42:47 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:44895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119AbaJCVdF (ORCPT
+	with ESMTP id S1753233AbaJCVc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:33:05 -0400
+	Fri, 3 Oct 2014 17:32:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 3.16 074/357] drm/i915: Remove bogus __init annotation from DMI callbacks
-Date: Fri,  3 Oct 2014 14:27:40 -0700
-Message-Id: <20141003212935.707163476@linuxfoundation.org>
+        Steven Vittitoe <scvitti@google.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.16 066/357] HID: magicmouse: sanity check report size in raw_event() callback
+Date: Fri,  3 Oct 2014 14:27:32 -0700
+Message-Id: <20141003212935.448677600@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -32,78 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
+commit c54def7bd64d7c0b6993336abcffb8444795bf38 upstream.
 
-The __init annotations for the DMI callback functions are wrong as this
-code can be called even after the module has been initialized, e.g. like
-this:
+The report passed to us from transport driver could potentially be
+arbitrarily large, therefore we better sanity-check it so that
+magicmouse_emit_touch() gets only valid values of raw_id.
 
-  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
-  # modprobe i915
-  # echo 1 > /sys/bus/pci/rescan
-
-The first command will remove the PCI device from the kernel's device
-list so the second command won't see it right away. But as it registers
-a PCI driver it'll see it on the third command. If the system happens to
-match one of the DMI table entries we'll try to call a function in long
-released memory and generate an Oops, at best.
-
-Fix this by removing the bogus annotation.
-
-Modpost should have caught that one but it ignores section reference
-mismatches from the .rodata section. :/
-
-Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
-Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
-Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Jarod Wilson <jarod@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Reported-by: Steven Vittitoe <scvitti@google.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_bios.c |    2 +-
- drivers/gpu/drm/i915/intel_crt.c  |    2 +-
- drivers/gpu/drm/i915/intel_lvds.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/hid/hid-magicmouse.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -1122,7 +1122,7 @@ init_vbt_defaults(struct drm_i915_privat
- 	}
- }
- 
--static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-+static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
- {
- 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
- 		      "VBIOS ROM for %s\n",
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -780,7 +780,7 @@ static const struct drm_encoder_funcs in
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_INFO("Skipping CRT initialization for %s\n", id->ident);
- 	return 1;
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -531,7 +531,7 @@ static const struct drm_encoder_funcs in
- 	.destroy = intel_encoder_destroy,
- };
- 
--static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
-+static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
- {
- 	DRM_INFO("Skipping LVDS initialization for %s\n", id->ident);
- 	return 1;
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -290,6 +290,11 @@ static int magicmouse_raw_event(struct h
+ 		if (size < 4 || ((size - 4) % 9) != 0)
+ 			return 0;
+ 		npoints = (size - 4) / 9;
++		if (npoints > 15) {
++			hid_warn(hdev, "invalid size value (%d) for TRACKPAD_REPORT_ID\n",
++					size);
++			return 0;
++		}
+ 		msc->ntouches = 0;
+ 		for (ii = 0; ii < npoints; ii++)
+ 			magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
+@@ -307,6 +312,11 @@ static int magicmouse_raw_event(struct h
+ 		if (size < 6 || ((size - 6) % 8) != 0)
+ 			return 0;
+ 		npoints = (size - 6) / 8;
++		if (npoints > 15) {
++			hid_warn(hdev, "invalid size value (%d) for MOUSE_REPORT_ID\n",
++					size);
++			return 0;
++		}
+ 		msc->ntouches = 0;
+ 		for (ii = 0; ii < npoints; ii++)
+ 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
 
 
