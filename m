@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390AbaJDAAQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:00:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1760924AbaJDABh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:01:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45813 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756760AbaJCVx2 (ORCPT
+	with ESMTP id S1756201AbaJCVxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:28 -0400
+	Fri, 3 Oct 2014 17:53:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.14 040/238] arm64: ptrace: fix compat hardware watchpoint reporting
-Date: Fri,  3 Oct 2014 14:29:15 -0700
-Message-Id: <20141003212914.946208714@linuxfoundation.org>
+        Marek Roszko <mark.roszko@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.14 036/238] i2c: at91: add bound checking on SMBus block length bytes
+Date: Fri,  3 Oct 2014 14:29:11 -0700
+Message-Id: <20141003212914.816087016@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,49 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Marek Roszko <mark.roszko@gmail.com>
 
-commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
+commit 75b81f339c6af43f6f4a1b3eabe0603321dade65 upstream.
 
-I'm not sure what I was on when I wrote this, but when iterating over
-the hardware watchpoint array (hbp_watch_array), our index is off by
-ARM_MAX_BRP, so we walk off the end of our thread_struct...
+The driver was not bound checking the received length byte to ensure it was within the
+the buffer size that is allocated for SMBus blocks. This resulted in buffer overflows
+whenever an invalid length byte was received.
+It also failed to ensure the length byte was not zero. If it received zero, it would end up
+in an infinite loop as the at91_twi_read_next_byte function returned immediately without
+allowing RHR to be read to clear the RXRDY interrupt.
 
-... except, a dodgy condition in the loop means that it never executes
-at all (bp cannot be NULL).
+Tested agaisnt a SMBus compliant battery.
 
-This patch fixes the code so that we remove the bp check and use the
-correct index for accessing the watchpoint structures.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/hw_breakpoint.h |    1 -
- arch/arm64/kernel/ptrace.c             |    3 ++-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-at91.c |   28 ++++++++++++++++++++++++----
+ 1 file changed, 24 insertions(+), 4 deletions(-)
 
---- a/arch/arm64/include/asm/hw_breakpoint.h
-+++ b/arch/arm64/include/asm/hw_breakpoint.h
-@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 r
-  */
- #define ARM_MAX_BRP		16
- #define ARM_MAX_WRP		16
--#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -101,6 +101,7 @@ struct at91_twi_dev {
+ 	unsigned twi_cwgr_reg;
+ 	struct at91_twi_pdata *pdata;
+ 	bool use_dma;
++	bool recv_len_abort;
+ 	struct at91_twi_dma dma;
+ };
  
- /* Virtual debug register bases. */
- #define AARCH64_DBG_REG_BVR	0
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -81,7 +81,8 @@ static void ptrace_hbptriggered(struct p
- 			break;
- 		}
- 	}
--	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
+@@ -267,12 +268,24 @@ static void at91_twi_read_next_byte(stru
+ 	*dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
+ 	--dev->buf_len;
+ 
++	/* return if aborting, we only needed to read RHR to clear RXRDY*/
++	if (dev->recv_len_abort)
++		return;
 +
-+	for (i = 0; i < ARM_MAX_WRP; ++i) {
- 		if (current->thread.debug.hbp_watch[i] == bp) {
- 			info.si_errno = -((i << 1) + 1);
- 			break;
+ 	/* handle I2C_SMBUS_BLOCK_DATA */
+ 	if (unlikely(dev->msg->flags & I2C_M_RECV_LEN)) {
+-		dev->msg->flags &= ~I2C_M_RECV_LEN;
+-		dev->buf_len += *dev->buf;
+-		dev->msg->len = dev->buf_len + 1;
+-		dev_dbg(dev->dev, "received block length %d\n", dev->buf_len);
++		/* ensure length byte is a valid value */
++		if (*dev->buf <= I2C_SMBUS_BLOCK_MAX && *dev->buf > 0) {
++			dev->msg->flags &= ~I2C_M_RECV_LEN;
++			dev->buf_len += *dev->buf;
++			dev->msg->len = dev->buf_len + 1;
++			dev_dbg(dev->dev, "received block length %d\n",
++					 dev->buf_len);
++		} else {
++			/* abort and send the stop by reading one more byte */
++			dev->recv_len_abort = true;
++			dev->buf_len = 1;
++		}
+ 	}
+ 
+ 	/* send stop if second but last byte has been read */
+@@ -444,6 +457,12 @@ static int at91_do_twi_transfer(struct a
+ 		ret = -EIO;
+ 		goto error;
+ 	}
++	if (dev->recv_len_abort) {
++		dev_err(dev->dev, "invalid smbus block length recvd\n");
++		ret = -EPROTO;
++		goto error;
++	}
++
+ 	dev_dbg(dev->dev, "transfer complete\n");
+ 
+ 	return 0;
+@@ -500,6 +519,7 @@ static int at91_twi_xfer(struct i2c_adap
+ 	dev->buf_len = m_start->len;
+ 	dev->buf = m_start->buf;
+ 	dev->msg = m_start;
++	dev->recv_len_abort = false;
+ 
+ 	ret = at91_do_twi_transfer(dev);
+ 
 
 
