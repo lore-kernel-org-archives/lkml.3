@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752659AbaJCBnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 21:43:13 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:38929 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaJCBnL (ORCPT
+	id S1752799AbaJCBnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 21:43:53 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64331 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752602AbaJCBnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 21:43:11 -0400
-MIME-Version: 1.0
-Reply-To: rajatxjain@gmail.com
-In-Reply-To: <20141002063423.GA1405@katana>
-References: <542A3593.4020108@gmail.com>
-	<CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
-	<20140930211339.GA1264@katana>
-	<CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
-	<20141001072949.GA1322@katana>
-	<CAA93t1qjzAWQqkZQcJYFZxvuhy6o1N2gJ+j=AKgcqE=zup=BJw@mail.gmail.com>
-	<20141002063423.GA1405@katana>
-Date: Thu, 2 Oct 2014 18:43:10 -0700
-Message-ID: <CAA93t1p-gj4FzbpaVVzWzcFmZHooVcrr3+XLNv1YyYssScep4Q@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over I2C
-From: Rajat Jain <rajatxjain@gmail.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
+	Thu, 2 Oct 2014 21:43:52 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-i2c <linux-i2c@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
+Date: Fri, 03 Oct 2014 04:03:51 +0200
+Message-ID: <26673925.fa6Qhdm5sV@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141002133654.GP1786@lahna.fi.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <15893883.nvuW3ndylz@wuerfel> <20141002133654.GP1786@lahna.fi.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
+> On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
+> > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
 
-Thanks a lot for your review and comments. I understand and will
-update with those APIs and send out a V2.
+[cut]
 
-Thanks & Best Regards,
+> 
+> Putting everything to a single package results this:
+> 
+> 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
+> 
+> But I think the below looks better:
 
-Rajat Jain
+I agree.
 
-On Wed, Oct 1, 2014 at 11:34 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
->
->> I understand and agree. In fact in the internal version of this driver
->> (that I have not yet sent out for review), we do have APIs added
->> similar to what you mention above. Currently I have APIs that:
->> - Enable / Disable PCIe links.
->> - Change the upstream port.
->> - Enable / Disable Non-transparent mode etc.
->
-> Now, that sounds better to me...
->
->> However, I did not send them all out for review because I don't have
->> the hardware to try and test them out on ALL the supported devices
->> (also would require considerable amount of time). I have tested those
->> APIs on PEX8713 only, because for e.g.I only have PEX8713 in a HW that
->> connects to 2 CPUs at the same time.
->
-> That is a common problem to not have enough hardware to test. You could
-> ask on the PCI mailing list for testers. The solution usually lies in
-> showing the code rather than not showing the code.
->
->> the switch. Yes, I agree that we can have another layer of abstraction
->> so that we have:
->>
->> - The Core logic code (that knows "How do we want the switch to behave")
->> - A PEX8xxx driver (that knows "which registers to program")
->> - A PEX8xxx I2C driver ("How to program those registers") - this driver.
->>
->> I do understand that your suggestion is to include and bundle the
->> latter two into this same driver.
->
-> It definately should be this way. Nobody else than the PEX8xxx driver
-> should be able to send I2C messeges to the device! And this is
-> absolutely standard, the logic how to talk to a device knows also how to
-> prepare the I2C messages. One reason where it could be factored out is
-> if there are multiple ways of transportation possible, like I2C or SPI.
->
->> However since the possibilities
->> (about which APIs to provide) are too much and not enough hardware to
->> test it, would it be acceptable if I include those APIs, but support
->> them for only 1 device (and return error for others)?
->
-> Start with what YOU need and show us (all of it). From there, we can
-> decide: do we start with one driver and factor out later, do we start
-> with a sub-subsystem right away, etc... And there is still the question
-> what APIs you provide, how they are implemented and if we really should
-> have them in-kernel. I think that question will be more interesting for
-> Bjorn because I don't really know much about switches in the PCI world.
->
->> with those APIs, I feel exposing the Read/Write APIs will be useful -
->> because what core logic wants to achieve can be highly device and
->> platform specific.
->
-> That could also be solved by fixup-callbacks, but we'd need to see the
-> core to tell, really.
->
->> Also, a sysfs interface for this switch is proving
->> to be a very helpful development aid :-) (personal experience :-))
->
-> Sure, but such development aids don't need to be upstream. Especially if
-> they create ABI such as sysfs-entries.
->
-> Thanks and regards,
->
->    Wolfram
+> 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
+> 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
+> 
+> and it is trivial to match with the corresponding DT fragment.
+> 
+> > 	}
+> > 
+> > vs.
+> > 
+> > 	pwm-slave {
+> > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
+> > 		pwm-names = "led-red", "led-green";
+> > 	};
+> > 
+> 
+> I don't have strong feelings which way it should be. The current
+> implementation limits references so that you can have only integer
+> arguments, like {ref0, int, int, ref1, int} but if people think it is
+> better to allow strings there as well, it can be changed.
+> 
+> I would like to get comments from Darren and Rafael about this, though.
+
+In my opinion there needs to be a "canonical" representation of the
+binding that people always can expect to work.  It seems reasonable to
+use the one exactly matching the DT representation for that.
+
+In addition to that we can add other representations that the code will
+also parse correctly as alternatives.  In the future.
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
