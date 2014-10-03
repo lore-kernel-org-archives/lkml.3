@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393AbaJDAEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:04:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1759416AbaJDAFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:05:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726AbaJCVxW (ORCPT
+	with ESMTP id S1755665AbaJCVxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:22 -0400
+	Fri, 3 Oct 2014 17:53:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: [PATCH 3.14 033/238] arm/arm64: KVM: Complete WFI/WFE instructions
-Date: Fri,  3 Oct 2014 14:29:08 -0700
-Message-Id: <20141003212914.722648682@linuxfoundation.org>
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.14 031/238] arm64: flush TLS registers during exec
+Date: Fri,  3 Oct 2014 14:29:06 -0700
+Message-Id: <20141003212914.660954385@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,52 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoffer Dall <christoffer.dall@linaro.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 05e0127f9e362b36aa35f17b1a3d52bca9322a3a upstream.
+commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
 
-The architecture specifies that when the processor wakes up from a WFE
-or WFI instruction, the instruction is considered complete, however we
-currrently return to EL1 (or EL0) at the WFI/WFE instruction itself.
+Nathan reports that we leak TLS information from the parent context
+during an exec, as we don't clear the TLS registers when flushing the
+thread state.
 
-While most guests may not be affected by this because their local
-exception handler performs an exception returning setting the event bit
-or with an interrupt pending, some guests like UEFI will get wedged due
-this little mishap.
+This patch updates the flushing code so that we:
 
-Simply skip the instruction when we have completed the emulation.
+  (1) Unconditionally zero the tpidr_el0 register (since this is fully
+      context switched for native tasks and zeroed for compat tasks)
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+  (2) Zero the tp_value state in thread_info before clearing the
+      tpidrr0_el0 register for compat tasks (since this is only writable
+      by the set_tls compat syscall and therefore not fully switched).
+
+A missing compiler barrier is also added to the compat set_tls syscall.
+
+Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/handle_exit.c   |    2 ++
- arch/arm64/kvm/handle_exit.c |    2 ++
- 2 files changed, 4 insertions(+)
+ arch/arm64/kernel/process.c    |   18 ++++++++++++++++++
+ arch/arm64/kernel/sys_compat.c |    6 ++++++
+ 2 files changed, 24 insertions(+)
 
---- a/arch/arm/kvm/handle_exit.c
-+++ b/arch/arm/kvm/handle_exit.c
-@@ -89,6 +89,8 @@ static int kvm_handle_wfx(struct kvm_vcp
- 	else
- 		kvm_vcpu_block(vcpu);
- 
-+	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
-+
- 	return 1;
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -187,9 +187,27 @@ void exit_thread(void)
+ {
  }
  
---- a/arch/arm64/kvm/handle_exit.c
-+++ b/arch/arm64/kvm/handle_exit.c
-@@ -62,6 +62,8 @@ static int kvm_handle_wfx(struct kvm_vcp
- 	else
- 		kvm_vcpu_block(vcpu);
- 
-+	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
++static void tls_thread_flush(void)
++{
++	asm ("msr tpidr_el0, xzr");
 +
- 	return 1;
++	if (is_compat_task()) {
++		current->thread.tp_value = 0;
++
++		/*
++		 * We need to ensure ordering between the shadow state and the
++		 * hardware state, so that we don't corrupt the hardware state
++		 * with a stale shadow state during context switch.
++		 */
++		barrier();
++		asm ("msr tpidrro_el0, xzr");
++	}
++}
++
+ void flush_thread(void)
+ {
+ 	fpsimd_flush_thread();
++	tls_thread_flush();
+ 	flush_ptrace_hw_breakpoint(current);
  }
+ 
+--- a/arch/arm64/kernel/sys_compat.c
++++ b/arch/arm64/kernel/sys_compat.c
+@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *
+ 
+ 	case __ARM_NR_compat_set_tls:
+ 		current->thread.tp_value = regs->regs[0];
++
++		/*
++		 * Protect against register corruption from context switch.
++		 * See comment in tls_thread_flush.
++		 */
++		barrier();
+ 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
+ 		return 0;
  
 
 
