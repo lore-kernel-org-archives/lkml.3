@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549AbaJCXIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:08:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46982 "EHLO
+	id S1759600AbaJCXI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:08:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757936AbaJCWOC (ORCPT
+	with ESMTP id S1757926AbaJCWOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:02 -0400
+	Fri, 3 Oct 2014 18:14:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 182/238] fsnotify/fdinfo: use named constants instead of hardcoded values
-Date: Fri,  3 Oct 2014 14:31:37 -0700
-Message-Id: <20141003212919.494285213@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 3.14 199/238] GFS2: fix d_splice_alias() misuses
+Date: Fri,  3 Oct 2014 14:31:54 -0700
+Message-Id: <20141003212920.028081572@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -32,43 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
+commit cfb2f9d5c921e38b0f12bb26fed10b877664444d upstream.
 
-MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
-bytes, so exportfs_encode_inode_fh can return an error.
+Callers of d_splice_alias(dentry, inode) don't need iput(), neither
+on success nor on failure.  Either the reference to inode is stored
+in a previously negative dentry, or it's dropped.  In either case
+inode reference the caller used to hold is consumed.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+__gfs2_lookup() does iput() in case when d_splice_alias() has failed.
+Double iput() if we ever hit that.  And gfs2_create_inode() ends up
+not only with double iput(), but with link count dropped to zero - on
+an inode it has just found in directory.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fdinfo.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/gfs2/inode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_
- {
- 	struct {
- 		struct file_handle handle;
--		u8 pad[64];
-+		u8 pad[MAX_HANDLE_SZ];
- 	} f;
- 	int size, ret, i;
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -606,8 +606,10 @@ static int gfs2_create_inode(struct inod
+ 	if (!IS_ERR(inode)) {
+ 		d = d_splice_alias(inode, dentry);
+ 		error = PTR_ERR(d);
+-		if (IS_ERR(d))
++		if (IS_ERR(d)) {
++			inode = ERR_CAST(d);
+ 			goto fail_gunlock;
++		}
+ 		error = 0;
+ 		if (file) {
+ 			if (S_ISREG(inode->i_mode)) {
+@@ -823,7 +825,6 @@ static struct dentry *__gfs2_lookup(stru
  
-@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
- 	size = f.handle.handle_bytes >> 2;
- 
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
--	if ((ret == 255) || (ret == -ENOSPC)) {
-+	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
- 		return 0;
+ 	d = d_splice_alias(inode, dentry);
+ 	if (IS_ERR(d)) {
+-		iput(inode);
+ 		gfs2_glock_dq_uninit(&gh);
+ 		return d;
  	}
 
 
