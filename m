@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291AbaJCXzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:55:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
+	id S1760753AbaJCX5D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:57:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804AbaJCVxd (ORCPT
+	with ESMTP id S1756783AbaJCVxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:33 -0400
+	Fri, 3 Oct 2014 17:53:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.16 259/357] percpu: fix pcpu_alloc_pages() failure path
-Date: Fri,  3 Oct 2014 14:30:45 -0700
-Message-Id: <20141003212941.283545049@linuxfoundation.org>
+        Honggang Li <enjoymindful@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.16 258/357] percpu: free percpu allocation info for uniprocessor system
+Date: Fri,  3 Oct 2014 14:30:44 -0700
+Message-Id: <20141003212941.254297816@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,68 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Honggang Li <enjoymindful@gmail.com>
 
-commit f0d279654dea22b7a6ad34b9334aee80cda62cde upstream.
+commit 3189eddbcafcc4d827f7f19facbeddec4424eba8 upstream.
 
-When pcpu_alloc_pages() fails midway, pcpu_free_pages() is invoked to
-free what has already been allocated.  The invocation is across the
-whole requested range and pcpu_free_pages() will try to free all
-non-NULL pages; unfortunately, this is incorrect as
-pcpu_get_pages_and_bitmap(), unlike what its comment suggests, doesn't
-clear the pages array and thus the array may have entries from the
-previous invocations making the partial failure path free incorrect
-pages.
+Currently, only SMP system free the percpu allocation info.
+Uniprocessor system should free it too. For example, one x86 UML
+virtual machine with 256MB memory, UML kernel wastes one page memory.
 
-Fix it by open-coding the partial freeing of the already allocated
-pages.
-
+Signed-off-by: Honggang Li <enjoymindful@gmail.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu-vm.c |   21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
+ mm/percpu.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -108,7 +108,7 @@ static int pcpu_alloc_pages(struct pcpu_
- 			    int page_start, int page_end)
- {
- 	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
--	unsigned int cpu;
-+	unsigned int cpu, tcpu;
- 	int i;
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1933,6 +1933,8 @@ void __init setup_per_cpu_areas(void)
  
- 	for_each_possible_cpu(cpu) {
-@@ -116,14 +116,23 @@ static int pcpu_alloc_pages(struct pcpu_
- 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
- 
- 			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
--			if (!*pagep) {
--				pcpu_free_pages(chunk, pages, populated,
--						page_start, page_end);
--				return -ENOMEM;
--			}
-+			if (!*pagep)
-+				goto err;
- 		}
- 	}
- 	return 0;
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
 +
-+err:
-+	while (--i >= page_start)
-+		__free_page(pages[pcpu_page_idx(cpu, i)]);
-+
-+	for_each_possible_cpu(tcpu) {
-+		if (tcpu == cpu)
-+			break;
-+		for (i = page_start; i < page_end; i++)
-+			__free_page(pages[pcpu_page_idx(tcpu, i)]);
-+	}
-+	return -ENOMEM;
++	pcpu_free_alloc_info(ai);
  }
  
- /**
+ #endif	/* CONFIG_SMP */
 
 
