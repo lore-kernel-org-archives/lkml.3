@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240AbaJCVd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:33:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44833 "EHLO
+	id S1755221AbaJCVdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:33:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44851 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093AbaJCVdD (ORCPT
+	with ESMTP id S1755089AbaJCVdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:33:03 -0400
+	Fri, 3 Oct 2014 17:33:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Andersen <martin.x.andersen@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.16 078/357] drm/i915/hdmi: fix hdmi audio state readout
-Date: Fri,  3 Oct 2014 14:27:44 -0700
-Message-Id: <20141003212935.832839180@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.16 082/357] imx-drm: ipuv3-plane: fix ipu_plane_dpms()
+Date: Fri,  3 Oct 2014 14:27:48 -0700
+Message-Id: <20141003212935.948074403@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,40 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit c84db77010877da6c5da119868ed54c43d59e726 upstream.
+commit 3a44a2058747d71385eb69691c7f977cb58cc293 upstream.
 
-Check the correct bit for audio. Seems like a copy-paste error from the
-start:
+When unbinding imx-drm, the following oops was observed:
 
-commit 9ed109a7b445e3f073d8ea72f888ec80c0532465
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Thu Apr 24 23:54:52 2014 +0200
+Unable to handle kernel NULL pointer dereference at virtual address 00000004
+pgd = e995c000
+[00000004] *pgd=4fea5831
+Internal error: Oops: 817 [#1] SMP ARM
+Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma snd_soc_sgtl5000 imx_sdma imx2_wdt imx_ldb(C) imx_thermal snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
+CPU: 1 PID: 779 Comm: bash Tainted: G         C    3.16.0-rc2+ #1230
+task: ea9eb180 ti: ea378000 task.ti: ea378000
+PC is at ipu_dp_put+0x10/0x18
+LR is at ipu_plane_dpms+0x60/0x8c
+pc : [<c0350d20>]    lr : [<c04bd9e8>]    psr: 200f0013
+sp : ea379d80  ip : ea379d90  fp : ea379d8c
+r10: 00100100  r9 : 00000000  r8 : 00200200
+r7 : e9ba0264  r6 : e9ba01f8  r5 : 00000000  r4 : ea34b800
+r3 : 00000000  r2 : 00000000  r1 : 0000009b  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 3995c04a  DAC: 00000015
+Process bash (pid: 779, stack limit = 0xea378240)
+Stack: (0xea379d80 to 0xea37a000)
+...
+Backtrace:
+[<c0350d10>] (ipu_dp_put) from [<c04bd9e8>] (ipu_plane_dpms+0x60/0x8c)
+[<c04bd988>] (ipu_plane_dpms) from [<c04bda40>] (ipu_disable_plane+0x2c/0x60)
+[<c04bda14>] (ipu_disable_plane) from [<c04bda9c>] (ipu_plane_destroy+0x28/0x60)
+[<c04bda74>] (ipu_plane_destroy) from [<c033ff84>] (drm_mode_config_cleanup+0x1b8/0x250)
+[<c033fdcc>] (drm_mode_config_cleanup) from [<c04bc234>] (imx_drm_driver_unload+0x44/0x4c)
+[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
+[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
+[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
+[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
+...
+Code: e1a0c00d e92dd800 e24cb004 e3a03000 (e5c03004)
 
-    drm/i915: Track has_audio in the pipe config
+This is caused by a missing check in ipu_plane_dpms for a NULL pointer.
 
-Reported-by: Martin Andersen <martin.x.andersen@gmail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82756
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Fixes: b8d181e408af ("staging: drm/imx: add drm plane support")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_hdmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/imx-drm/ipuv3-plane.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_hdmi.c
-+++ b/drivers/gpu/drm/i915/intel_hdmi.c
-@@ -728,7 +728,7 @@ static void intel_hdmi_get_config(struct
- 	if (tmp & HDMI_MODE_SELECT_HDMI)
- 		pipe_config->has_hdmi_sink = true;
+--- a/drivers/staging/imx-drm/ipuv3-plane.c
++++ b/drivers/staging/imx-drm/ipuv3-plane.c
+@@ -281,7 +281,8 @@ static void ipu_plane_dpms(struct ipu_pl
  
--	if (tmp & HDMI_MODE_SELECT_HDMI)
-+	if (tmp & SDVO_AUDIO_ENABLE)
- 		pipe_config->has_audio = true;
+ 		ipu_idmac_put(ipu_plane->ipu_ch);
+ 		ipu_dmfc_put(ipu_plane->dmfc);
+-		ipu_dp_put(ipu_plane->dp);
++		if (ipu_plane->dp)
++			ipu_dp_put(ipu_plane->dp);
+ 	}
+ }
  
- 	pipe_config->adjusted_mode.flags |= flags;
 
 
