@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743AbaJCXbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:31:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
+	id S1760145AbaJCXbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:31:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46470 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387AbaJCWDz (ORCPT
+	with ESMTP id S1757376AbaJCWDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:55 -0400
+	Fri, 3 Oct 2014 18:03:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bimow Chen <Bimow.Chen@ite.com.tw>, Antti Palosaari <crope@iki.fi>,
+        Malcolm Priestley <tvboxspy@gmail.com>, Antti Palosaari <crope@iki.fi>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.16 321/357] media: af9033: feed clock to RF tuner
-Date: Fri,  3 Oct 2014 14:31:47 -0700
-Message-Id: <20141003212943.108684979@linuxfoundation.org>
+Subject: [PATCH 3.16 320/357] media: af9035: new IDs: add support for PCTV 78e and PCTV 79e
+Date: Fri,  3 Oct 2014 14:31:46 -0700
+Message-Id: <20141003212943.079996673@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,46 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antti Palosaari <crope@iki.fi>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 9dc0f3fe3fe6b83b44e5920a0b143b4f96755b59 upstream.
+commit a04646c045cab08a9e62b9be8f01ecbb0632d24e upstream.
 
-IT9135 RF tuner clock is coming from demodulator. We need enable it
-early in demod init, before any tuner I/O. Currently it is enabled
-by tuner driver itself, but it is too late and performance will be
-reduced as some registers are not updated correctly. Clock is
-disabled automatically when demod is put onto sleep.
+add the following IDs
+USB_PID_PCTV_78E (0x025a) for PCTV 78e
+USB_PID_PCTV_79E (0x0262) for PCTV 79e
 
-Cc: Bimow Chen <Bimow.Chen@ite.com.tw>
+For these it9135 devices.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Cc: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Antti Palosaari <crope@iki.fi>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-frontends/af9033.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/media/dvb-core/dvb-usb-ids.h  |    2 ++
+ drivers/media/usb/dvb-usb-v2/af9035.c |    4 ++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/media/dvb-frontends/af9033.c
-+++ b/drivers/media/dvb-frontends/af9033.c
-@@ -314,6 +314,19 @@ static int af9033_init(struct dvb_fronte
- 			goto err;
- 	}
- 
-+	/* feed clock to RF tuner */
-+	switch (state->cfg.tuner) {
-+	case AF9033_TUNER_IT9135_38:
-+	case AF9033_TUNER_IT9135_51:
-+	case AF9033_TUNER_IT9135_52:
-+	case AF9033_TUNER_IT9135_60:
-+	case AF9033_TUNER_IT9135_61:
-+	case AF9033_TUNER_IT9135_62:
-+		ret = af9033_wr_reg(state, 0x80fba8, 0x00);
-+		if (ret < 0)
-+			goto err;
-+	}
-+
- 	/* settings for TS interface */
- 	if (state->cfg.ts_mode == AF9033_TS_MODE_USB) {
- 		ret = af9033_wr_reg_mask(state, 0x80f9a5, 0x00, 0x01);
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -279,6 +279,8 @@
+ #define USB_PID_PCTV_400E				0x020f
+ #define USB_PID_PCTV_450E				0x0222
+ #define USB_PID_PCTV_452E				0x021f
++#define USB_PID_PCTV_78E				0x025a
++#define USB_PID_PCTV_79E				0x0262
+ #define USB_PID_REALTEK_RTL2831U			0x2831
+ #define USB_PID_REALTEK_RTL2832U			0x2832
+ #define USB_PID_TECHNOTREND_CONNECT_S2_3600		0x3007
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -1555,6 +1555,10 @@ static const struct usb_device_id af9035
+ 		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_HAUPPAUGE, 0xf900,
+ 		&af9035_props, "Hauppauge WinTV-MiniStick 2", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_78E,
++		&af9035_props, "PCTV 78e", RC_MAP_IT913X_V1) },
++	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_79E,
++		&af9035_props, "PCTV 79e", RC_MAP_IT913X_V2) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, af9035_id_table);
 
 
