@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760422AbaJCXgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:36:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37065 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758777AbaJCXgt (ORCPT
+	id S1760248AbaJCXfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:35:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46270 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756591AbaJCWDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:36:49 -0400
-Message-ID: <542F3304.4000703@infradead.org>
-Date: Fri, 03 Oct 2014 16:36:36 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 3 Oct 2014 18:03:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.14 109/238] spi: dw-pci: fix bug when regs left uninitialized
+Date: Fri,  3 Oct 2014 14:30:24 -0700
+Message-Id: <20141003212917.163556557@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>,
-        "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Matt Turner <mattst88@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?UTF-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Tejun Heo <tj@kernel.org>, Fabian Frederick <fabf@skynet.be>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break
- up the EXPERT menu
-References: <20141003233139.GA16079@thin>
-In-Reply-To: <20141003233139.GA16079@thin>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/14 16:31, Josh Triplett wrote:
-> commit 03b8c7b623c80af264c4c8d6111e5c6289933666 ("futex: Allow
-> architectures to skip futex_atomic_cmpxchg_inatomic() test") added the
-> HAVE_FUTEX_CMPXCHG symbol right below FUTEX.  This placed it right in
-> the middle of the options for the EXPERT menu.  However,
-> HAVE_FUTEX_CMPXCHG does not depend on EXPERT or FUTEX, so Kconfig stops
-> placing items in the EXPERT menu, and displays the remaining several
-> EXPERT items (starting with EPOLL) directly in the General Setup menu.
-> 
-> Since both users of HAVE_FUTEX_CMPXCHG only select it "if FUTEX", make
-> HAVE_FUTEX_CMPXCHG itself depend on FUTEX.  With this change, the
-> subsequent items display as part of the EXPERT menu again; the EMBEDDED
-> menu now appears as the next top-level item in the General Setup menu,
-> which makes General Setup much shorter and more usable.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
-> 
-> Posting for review.  I can upstream this through the tiny tree.
-> 
-> Personally, I'd consider this a bit of a bug in Kconfig; ideally,
-> Kconfig should only consider symbols with prompt strings when
-> considering what to display in a menu.  However, in the interim, this
-> one-line patch drastically improves the usability of the "General Setup"
-> config menu.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Good catch.  Thanks.
+------------------
 
-I would prefer to see both of your patches merged quickly into 3.17 no matter
-how they get there.
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-both patches:
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+commit c9d5d6fe168fd45a4dfdd0116affe708789b4702 upstream.
 
+The commit 04f421e7 "spi: dw: use managed resources" changes drivers to use
+managed functions, but seems wasn't properly tested in PCI case. The regs field
+of struct dw_spi left uninitialized. Thus, kernel crashes when tries to access
+to the SPI controller registers. This patch fixes the issue.
 
->  init/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 31505a5..80a6907 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1477,6 +1477,7 @@ config FUTEX
->  
->  config HAVE_FUTEX_CMPXCHG
->  	bool
-> +	depends on FUTEX
->  	help
->  	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
->  	  is implemented and always working. This removes a couple of runtime
-> 
+Fixes: 04f421e7 (spi: dw: use managed resources)
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/spi/spi-dw-pci.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/spi/spi-dw-pci.c
++++ b/drivers/spi/spi-dw-pci.c
+@@ -62,6 +62,8 @@ static int spi_pci_probe(struct pci_dev
+ 	if (ret)
+ 		return ret;
+ 
++	dws->regs = pcim_iomap_table(pdev)[pci_bar];
++
+ 	dws->bus_num = 0;
+ 	dws->num_cs = 4;
+ 	dws->irq = pdev->irq;
 
 
--- 
-~Randy
