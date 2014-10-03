@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240AbaJCHaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 03:30:13 -0400
-Received: from ozlabs.org ([103.22.144.67]:39251 "EHLO ozlabs.org"
+	id S1751300AbaJCHeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 03:34:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814AbaJCHaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 03:30:12 -0400
-Date: Fri, 3 Oct 2014 17:30:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: linux-next: build warnings after merge of the akpm-current tree
-Message-ID: <20141003173004.7ac4edce@canb.auug.org.au>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+	id S1750731AbaJCHeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 03:34:22 -0400
+Date: Fri, 3 Oct 2014 09:33:54 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Add option to copy events when queueing
+Message-ID: <20141003073354.GA19087@krava.brq.redhat.com>
+References: <1412267936-19827-1-git-send-email-yarygin@linux.vnet.ibm.com>
+ <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5miqDsxQp2pRr5vKXDL+Eey"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5miqDsxQp2pRr5vKXDL+Eey
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Oct 02, 2014 at 08:38:55PM +0400, Alexander Yarygin wrote:
+> When processing events the session code has an ordered samples queue which is
+> used to time-sort events coming in across multiple mmaps. At a later point in
+> time samples on the queue are flushed up to some timestamp at which point the
+> event is actually processed.
+> 
+> When analyzing events live (ie., record/analysis path in the same command)
+> there is a race that leads to corrupted events and parse errors which cause
+> perf to terminate. The problem is that when the event is placed in the ordered
+> samples queue it is only a reference to the event which is really sitting in
+> the mmap buffer. Even though the event is queued for later processing the mmap
+> tail pointer is updated which indicates to the kernel that the event has been
+> processed. The race is flushing the event from the queue before it gets
+> overwritten by some other event. For commands trying to process events live
+> (versus just writing to a file) and processing a high rate of events this leads
+> to parse failures and perf terminates.
+> 
+> Examples hitting this problem are 'perf kvm stat live', especially with nested
+> VMs which generate 100,000+ traces per second, and a command processing
+> scheduling events with a high rate of context switching -- e.g., running
+> 'perf bench sched pipe'.
+> 
+> This patch offers live commands an option to copy the event when it is placed in
+> the ordered samples queue.
+> 
+> Based on a patch from David Ahern <dsahern@gmail.com>
+> 
+> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Stephane Eranian <eranian@google.com>
+> ---
+>  tools/perf/util/ordered-events.c | 51 ++++++++++++++++++++++++++++++++++++----
+>  tools/perf/util/ordered-events.h | 10 +++++++-
+>  tools/perf/util/session.c        |  5 ++--
+>  3 files changed, 58 insertions(+), 8 deletions(-)
 
-Hi Andrew,
+apart from extra whitespaces (below):
+Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-After merging the akpm-current tree, today's linux-next build (arm
-multi_v7_defconfig) produced these warnings:
+thanks,
+jirka
 
-drivers/base/dma-contiguous.c:244:2: warning: initialization from incompati=
-ble pointer type
-  .device_init =3D rmem_cma_device_init,
-  ^
-drivers/base/dma-contiguous.c:244:2: warning: (near initialization for 'rme=
-m_cma_ops.device_init')
-drivers/base/dma-coherent.c:303:2: warning: initialization from incompatibl=
-e pointer type
-  .device_init =3D rmem_dma_device_init,
-  ^
+> 
+> diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
+> index 706ce1a..06d53ee 100644
+> --- a/tools/perf/util/ordered-events.c
+> +++ b/tools/perf/util/ordered-events.c
 
-Introduced by commit e92f6296f3a2 ("drivers: dma-coherent: add
-initialization from device tree").  This init routine is supposed to
-return void ...
+SNIP
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> +		}
+>  
+>  		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
+>  		   oe->cur_alloc_size, size, oe->max_alloc_size);
+> @@ -90,15 +127,19 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
+>  		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
+>  	}
+>  
+> +	new->event = new_event;
+> +
+>  	return new;
 
---Sig_/5miqDsxQp2pRr5vKXDL+Eey
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+^^^ here
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+>  }
+>  
+>  struct ordered_event *
+> -ordered_events__new(struct ordered_events *oe, u64 timestamp)
+> +ordered_events__new(struct ordered_events *oe, u64 timestamp,
+> +		    union perf_event *event)
+>  {
+>  	struct ordered_event *new;
+>  
+> -	new = alloc_event(oe);
+> +	new = alloc_event(oe, event);
+> +
+>  	if (new) {
 
-iQIcBAEBCAAGBQJULlCBAAoJEMDTa8Ir7ZwVmjcP/ivoW8UvsDXtfaF3dJTmUu71
-zgGB4qTWk8XVf9jZEty9+t5lmxmH8/9wcmr7IdYi879EWBuB0fkWb70nYRvEQy1v
-fJ6zZWh2YyIb2wf4gDLE+PqSx1iF8EPxBA49ybwg0S/ljc6c9QUAx2mU4lJ7ujkr
-byk+f+mGQzNuNC9cJ3DPnAtMGgFZH6ceDUk1FU+1jVKCvPIDiKeNv96afzIrV5F9
-13qtXrck+0Ptu86fSEHNsgQk6h5Pu55TMeOsgbFK1ouueFUKd/Lcv5I/A4vmLr+t
-mwfadp4z7vZF3SizFsiLYOLRJSfigRrAf1ZfKXTjiNk6Li5WBRjyrqnGevFutafa
-kZtIRWuc5PkOKX3QK2gEK7OsUV96y226N5n7r4NnSfKfvEUwidLdme8xOsJf2rbD
-YLq8027lws9f/uoYiEd6PJJ8k/8WyEgns0POliPWkI/K8rUphQbOSBNGjibqeV+A
-kYaeih4Vj7RWfCkM7pvR+pZIUSRyOWZduIcWFxF+iW06+Jb1ci855pjQXWmHcGpC
-k0AodJEF9ijqCyntmnvjPa4DNYDk/2JldRG0fRfNdmMw29iDZ7J8ZBj8/v1a3ioN
-IEEO6ofdsFd88IeC1vbPu0vaGiWloHO/FYgY2JYvxYqWY3YwDuirLSK8yFHDPGnA
-f22DMADSPMuJTbm0leyF
-=2Zeh
------END PGP SIGNATURE-----
-
---Sig_/5miqDsxQp2pRr5vKXDL+Eey--
+^^^ and here
