@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933071AbaJDAtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:49:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44710 "EHLO
+	id S932701AbaJDAtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:49:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754940AbaJCVch (ORCPT
+	with ESMTP id S1754941AbaJCVci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:37 -0400
+	Fri, 3 Oct 2014 17:32:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Addy Ke <addy.ke@rock-chips.com>, Max Schwarz <max.schwarz@online.de>,
-        Doug Anderson <dianders@chromium.org>,
+        Chen-Yu Tsai <wens@csie.org>, Andrew Lunn <andrew@lunn.ch>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
         Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.16 044/357] i2c: rk3x: fix bug that cause transfer fails in master receive mode
-Date: Fri,  3 Oct 2014 14:27:10 -0700
-Message-Id: <20141003212934.783430672@linuxfoundation.org>
+Subject: [PATCH 3.16 045/357] i2c: mv64xxx: continue probe when clock-frequency is missing
+Date: Fri,  3 Oct 2014 14:27:11 -0700
+Message-Id: <20141003212934.812053127@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,38 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: addy ke <addy.ke@rock-chips.com>
+From: Chen-Yu Tsai <wens@csie.org>
 
-commit 5da4309f9e1b4de9c2b69e917912fbb84006d44e upstream.
+commit 0ce4bc1dbdd911ae1763e2d4ff36bd1b214a59f7 upstream.
 
-In rk3x SOC, the I2C controller can receive/transmit up to 32 bytes data
-in one chunk, so the size of data to be write/read to/from TXDATAx/RXDATAx
-must be less than or equal 32 bytes at a time.
+The "clock-frequency" DT property is listed as optional, However,
+the current code stores the return value of of_property_read_u32 in
+the return code of mv64xxx_of_config, but then forgets to clear it
+after setting the default value of "clock-frequency". It is then
+passed out to the main probe function, resulting in a probe failure
+when "clock-frequency" is missing.
 
-Tested on rk3288-pinky board, elan receive 158 bytes data.
+This patch checks and then throws away the return value of
+of_property_read_u32, instead of storing it and having to clear it
+afterwards.
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-Acked-by: Max Schwarz <max.schwarz@online.de>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+This issue was discovered after the property was removed from all
+sunxi DTs.
+
+Fixes: 4c730a06c19bb ("i2c: mv64xxx: Set bus frequency to 100kHz if clock-frequency is not provided")
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-rk3x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/i2c/busses/i2c-mv64xxx.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -323,6 +323,10 @@ static void rk3x_i2c_handle_read(struct
- 	/* ack interrupt */
- 	i2c_writel(i2c, REG_INT_MBRF, REG_IPD);
+--- a/drivers/i2c/busses/i2c-mv64xxx.c
++++ b/drivers/i2c/busses/i2c-mv64xxx.c
+@@ -746,8 +746,7 @@ mv64xxx_of_config(struct mv64xxx_i2c_dat
+ 	}
+ 	tclk = clk_get_rate(drv_data->clk);
  
-+	/* Can only handle a maximum of 32 bytes at a time */
-+	if (len > 32)
-+		len = 32;
-+
- 	/* read the data from receive buffer */
- 	for (i = 0; i < len; ++i) {
- 		if (i % 4 == 0)
+-	rc = of_property_read_u32(np, "clock-frequency", &bus_freq);
+-	if (rc)
++	if (of_property_read_u32(np, "clock-frequency", &bus_freq))
+ 		bus_freq = 100000; /* 100kHz by default */
+ 
+ 	if (!mv64xxx_find_baud_factors(bus_freq, tclk,
 
 
