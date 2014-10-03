@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177AbaJCXoj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:44:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
+	id S933161AbaJCXoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:44:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46368 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757281AbaJCWDe (ORCPT
+	with ESMTP id S1756608AbaJCWDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.16 305/357] perf: Fix a race condition in perf_remove_from_context()
-Date: Fri,  3 Oct 2014 14:31:31 -0700
-Message-Id: <20141003212942.637054035@linuxfoundation.org>
+        Emanuel Koczwara <poczta@emanuelkoczwara.pl>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 090/238] USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
+Date: Fri,  3 Oct 2014 14:30:05 -0700
+Message-Id: <20141003212916.556774308@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,67 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
+commit ee444609dbae8afee420c3243ce4c5f442efb622 upstream.
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+Add device id for NOVITUS Bono E thermal printer.
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
-
-This should cure the above soft lockup.
-
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Emanuel Koczwara <poczta@emanuelkoczwara.pl>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1523,6 +1523,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -741,6 +741,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
++	{ USB_DEVICE(NOVITUS_VID, NOVITUS_BONO_E_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -837,6 +837,12 @@
+ #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
  
-@@ -1966,6 +1971,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
- 
+ /*
++ * NOVITUS printers
++ */
++#define NOVITUS_VID			0x1a28
++#define NOVITUS_BONO_E_PID		0x6010
++
++/*
+  * RT Systems programming cables for various ham radios
+  */
+ #define RTSYSTEMS_VID		0x2100	/* Vendor ID */
 
 
