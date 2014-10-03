@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbaJCMW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:22:29 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:65381 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaJCMW1 (ORCPT
+	id S1752716AbaJCMWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:22:53 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:63168 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaJCMWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:22:27 -0400
-Message-ID: <542E94FF.7070109@6wind.com>
-Date: Fri, 03 Oct 2014 14:22:23 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 3 Oct 2014 08:22:49 -0400
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <cwang@twopensource.com>
-Subject: Re: [RFC PATCH net-next v2 0/5] netns: allow to identify peer netns
-References: <1411478430-4989-1-git-send-email-nicolas.dichtel@6wind.com>	<87ppei45ig.fsf@x220.int.ebiederm.org>	<CALCETrX5e0cp4QFCv1eAqR1hjoROU9Rh=cRos9U35DaR-py3Eg@mail.gmail.com>	<87y4t61a6v.fsf@x220.int.ebiederm.org> <54294B4E.70501@6wind.com>	<87y4t2gtd0.fsf@x220.int.ebiederm.org> <542D5726.8070308@6wind.com> <8761g2nurx.fsf@x220.int.ebiederm.org>
-In-Reply-To: <8761g2nurx.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
+References: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
+	<CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
+Date: Fri, 3 Oct 2014 14:22:47 +0200
+X-Google-Sender-Auth: SmvfX9PtG9RZLEvLD362RJfEsIM
+Message-ID: <CAMuHMdWwEoK__-qTdUmzx6vJJSQ1+XdvL3nZukUX_RjM1tDVGA@mail.gmail.com>
+Subject: Re: [PATCH] serial/core: Initialize the console pm state
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Sudhir Sreedharan <ssreedharan@mvista.com>, linux-serial@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/10/2014 21:20, Eric W. Biederman a écrit :
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+On Wed, Oct 1, 2014 at 7:27 PM, Kevin Hilman <khilman@kernel.org> wrote:
+> On Sun, Sep 21, 2014 at 11:30 PM, Sudhir Sreedharan
+> <ssreedharan@mvista.com> wrote:
+>> For console devices having UART_CAP_SLEEP capability, the uart_pm_state has
+>> to be initialized to UART_PM_STATE_ON. Otherwise the LCR regiser values
+>> are reinitialized when uart_change_pm is called from uart_configure_port.
+>>
+>> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
 >
->> Le 29/09/2014 20:43, Eric W. Biederman a écrit :
->>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
->>>
->>>> Le 26/09/2014 20:57, Eric W. Biederman a écrit :
->>>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>>
->>>>>> On Fri, Sep 26, 2014 at 11:10 AM, Eric W. Biederman
->>>>>> <ebiederm@xmission.com> wrote:
->>>>>>> I see two ways to go with this.
->>>>>>>
->>>>>>> - A per network namespace table to that you can store ids for ``peer''
->>>>>>>      network namespaces.  The table would need to be populated manually by
->>>>>>>      the likes of ip netns add.
->>>>>>>
->>>>>>>      That flips the order of assignment and makes this idea solid.
->>>> I have a preference for this solution, because it allows to have a full
->>>> broadcast messages. When you have a lot of network interfaces (> 10k),
->>>> it saves a lot of time to avoid another request to get all informations.
->>>
->>> My practical question is how often does it happen that we care?
->> In fact, I don't think that scenarii with a lot of netns have a full mesh of
->> x-netns interfaces. It will be more one "link" netns with the physical
->> interface and all other with one interface with the link part in this "link"
->> netns. Hence, only one nsid is needing in each netns.
+> Multiple boot failures on ARM[1] were bisected down to this patch.
 >
-> I will buy that a full mesh is unlikely.
+> How was this patch tested, and on which platforms?
 >
-> For people doing simulations anything physical has a limited number of
-> links.
+> Also, the changelog states that this should be done only for
+> UART_CAP_SLEEP, but the patch does it for every UART.
 >
-> For people wanting all to all connectivity setting up an internal
-> macvlan (or the equivalent) is likely much simpler and more efficient
-> that a full mesh.
+> Greg, I suggest this patch be dropped from tty-next until it has been
+> better described and tested.
 >
-> So the question in my mind is how do we create these identifiers at need
-> (when we create the cross network namespace links) instead of at network
-> namespace creation time.  I don't see an answer to that in your patches,
-> and perhaps it obvious.
-For me, it is the responsability of the user who creates the netns. He should
-know what will be done with this new netns, hence he may or may not define an
-id. It's also possible to delegate this to the user who will create the tunnel.
-In other words, it's part of the configuration.
+> Kevin
+>
+> [1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-October/005550.html
+
+Perhaps it should call "uart_change_pm(state, UART_PM_STATE_ON)"
+instead, so the driver's .pm() method is called?
+
+UART_CAP_SLEEP seems to be an 8250-only flag.
+
+BTW, this was the first commit I reverted when I had an issue with a serial
+console yesterday, but it didn't seem to have any influence (for me).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
