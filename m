@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaJCVna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45374 "EHLO
+	id S1756101AbaJCVni (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080AbaJCVnR (ORCPT
+	with ESMTP id S1756038AbaJCVnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:17 -0400
+	Fri, 3 Oct 2014 17:43:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
+        Sudeep Holla <sudeep.holla@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.16 186/357] ARM: 8149/1: perf: Dont sleep while atomic when enabling per-cpu interrupts
-Date: Fri,  3 Oct 2014 14:29:32 -0700
-Message-Id: <20141003212939.061220222@linuxfoundation.org>
+Subject: [PATCH 3.16 184/357] ARM: 8133/1: use irq_set_affinity with force=false when migrating irqs
+Date: Fri,  3 Oct 2014 14:29:30 -0700
+Message-Id: <20141003212939.003113264@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,107 +31,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Sudeep Holla <sudeep.holla@arm.com>
 
-commit 505013bc9065391f09a51d51cd3bf0b06dfb570a upstream.
+commit a040803a9d6b8c1876d3487a5cb69602ebcbb82c upstream.
 
-Rob Clark reports a sleeping while atomic bug when using perf.
+Since commit 1dbfa187dad ("ARM: irq migration: force migration off CPU
+going down") the ARM interrupt migration code on cpu offline calls
+irqchip.irq_set_affinity() with the argument force=true. At the point
+of this change the argument had no effect because it was not used by
+any interrupt chip driver and there was no semantics defined.
 
-BUG: sleeping function called from invalid context at ../kernel/locking/mutex.c:583
-in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/0
-------------[ cut here ]------------
-WARNING: CPU: 2 PID: 4828 at ../kernel/locking/mutex.c:479 mutex_lock_nested+0x3a0/0x3e8()
-DEBUG_LOCKS_WARN_ON(in_interrupt())
-Modules linked in:
-CPU: 2 PID: 4828 Comm: Xorg.bin Tainted: G        W      3.17.0-rc3-00234-gd535c45-dirty #819
-[<c0216690>] (unwind_backtrace) from [<c0212174>] (show_stack+0x10/0x14)
-[<c0212174>] (show_stack) from [<c0867cc0>] (dump_stack+0x98/0xb8)
-[<c0867cc0>] (dump_stack) from [<c02492a4>] (warn_slowpath_common+0x70/0x8c)
-[<c02492a4>] (warn_slowpath_common) from [<c02492f0>] (warn_slowpath_fmt+0x30/0x40)
-[<c02492f0>] (warn_slowpath_fmt) from [<c086a3f8>] (mutex_lock_nested+0x3a0/0x3e8)
-[<c086a3f8>] (mutex_lock_nested) from [<c0294d08>] (irq_find_host+0x20/0x9c)
-[<c0294d08>] (irq_find_host) from [<c0769d50>] (of_irq_get+0x28/0x48)
-[<c0769d50>] (of_irq_get) from [<c057d104>] (platform_get_irq+0x1c/0x8c)
-[<c057d104>] (platform_get_irq) from [<c021a06c>] (cpu_pmu_enable_percpu_irq+0x14/0x38)
-[<c021a06c>] (cpu_pmu_enable_percpu_irq) from [<c02b1634>] (flush_smp_call_function_queue+0x88/0x178)
-[<c02b1634>] (flush_smp_call_function_queue) from [<c0214dc0>] (handle_IPI+0x88/0x160)
-[<c0214dc0>] (handle_IPI) from [<c0208930>] (gic_handle_irq+0x64/0x68)
-[<c0208930>] (gic_handle_irq) from [<c0212d04>] (__irq_svc+0x44/0x5c)
-Exception stack(0xe63ddea0 to 0xe63ddee8)
-dea0: 00000001 00000001 00000000 c2f3b200 c16db380 c032d4a0 e63ddf40 60010013
-dec0: 00000000 001fbfd4 00000100 00000000 00000001 e63ddee8 c0284770 c02a2e30
-dee0: 20010013 ffffffff
-[<c0212d04>] (__irq_svc) from [<c02a2e30>] (ktime_get_ts64+0x1c8/0x200)
-[<c02a2e30>] (ktime_get_ts64) from [<c032d4a0>] (poll_select_set_timeout+0x60/0xa8)
-[<c032d4a0>] (poll_select_set_timeout) from [<c032df64>] (SyS_select+0xa8/0x118)
-[<c032df64>] (SyS_select) from [<c020e8e0>] (ret_fast_syscall+0x0/0x48)
----[ end trace 0bb583b46342da6f ]---
-INFO: lockdep is turned off.
+This changed with commit 01f8fa4f01d8 ("genirq: Allow forcing cpu
+affinity of interrupts") which made the force argument useful to route
+interrupts to not yet online cpus without checking the target cpu
+against the cpu online mask. The following commit ffde1de64012
+("irqchip: gic: Support forced affinity setting") implemented this for
+the GIC interrupt controller.
 
-We don't really need to get the platform irq again when we're
-enabling or disabling the per-cpu irq. Furthermore, we don't
-really need to set and clear bits in the active_irqs bitmask
-because that's only used in the non-percpu irq case to figure out
-when the last CPU PMU has been disabled. Just pass the irq
-directly to the enable/disable functions to clean all this up.
-This should be slightly more efficient and also fix the
-scheduling while atomic bug.
+As a consequence the ARM cpu offline irq migration fails if CPU0 is
+offlined, because CPU0 is still set in the affinity mask and the
+validataion against cpu online mask is skipped to the force argument
+being true. The following first_cpu(mask) selection always selects
+CPU0 as the target.
 
-Fixes: bbd64559376f "ARM: perf: support percpu irqs for the CPU PMU"
+Solve the issue by calling irq_set_affinity() with force=false from
+the CPU offline irq migration code so the GIC driver validates the
+affinity mask against CPU online mask and therefore removes CPU0 from
+the possible target candidates.
 
-Reported-by: Rob Clark <robdclark@gmail.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Tested on TC2 hotpluging CPU0 in and out. Without this patch the system
+locks up as the IRQs are not migrated away from CPU0.
+
+Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/perf_event_cpu.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ arch/arm/kernel/irq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/kernel/perf_event_cpu.c
-+++ b/arch/arm/kernel/perf_event_cpu.c
-@@ -76,21 +76,15 @@ static struct pmu_hw_events *cpu_pmu_get
+--- a/arch/arm/kernel/irq.c
++++ b/arch/arm/kernel/irq.c
+@@ -175,7 +175,7 @@ static bool migrate_one_irq(struct irq_d
+ 	c = irq_data_get_irq_chip(d);
+ 	if (!c->irq_set_affinity)
+ 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
+-	else if (c->irq_set_affinity(d, affinity, true) == IRQ_SET_MASK_OK && ret)
++	else if (c->irq_set_affinity(d, affinity, false) == IRQ_SET_MASK_OK && ret)
+ 		cpumask_copy(d->affinity, affinity);
  
- static void cpu_pmu_enable_percpu_irq(void *data)
- {
--	struct arm_pmu *cpu_pmu = data;
--	struct platform_device *pmu_device = cpu_pmu->plat_device;
--	int irq = platform_get_irq(pmu_device, 0);
-+	int irq = *(int *)data;
- 
- 	enable_percpu_irq(irq, IRQ_TYPE_NONE);
--	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
- }
- 
- static void cpu_pmu_disable_percpu_irq(void *data)
- {
--	struct arm_pmu *cpu_pmu = data;
--	struct platform_device *pmu_device = cpu_pmu->plat_device;
--	int irq = platform_get_irq(pmu_device, 0);
-+	int irq = *(int *)data;
- 
--	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
- 	disable_percpu_irq(irq);
- }
- 
-@@ -103,7 +97,7 @@ static void cpu_pmu_free_irq(struct arm_
- 
- 	irq = platform_get_irq(pmu_device, 0);
- 	if (irq >= 0 && irq_is_percpu(irq)) {
--		on_each_cpu(cpu_pmu_disable_percpu_irq, cpu_pmu, 1);
-+		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
- 		free_percpu_irq(irq, &percpu_pmu);
- 	} else {
- 		for (i = 0; i < irqs; ++i) {
-@@ -138,7 +132,7 @@ static int cpu_pmu_request_irq(struct ar
- 				irq);
- 			return err;
- 		}
--		on_each_cpu(cpu_pmu_enable_percpu_irq, cpu_pmu, 1);
-+		on_each_cpu(cpu_pmu_enable_percpu_irq, &irq, 1);
- 	} else {
- 		for (i = 0; i < irqs; ++i) {
- 			err = 0;
+ 	return ret;
 
 
