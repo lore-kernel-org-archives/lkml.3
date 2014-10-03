@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878AbaJCXiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:38:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
+	id S1760503AbaJCXld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:41:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349AbaJCWDn (ORCPT
+	with ESMTP id S1757316AbaJCWDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:43 -0400
+	Fri, 3 Oct 2014 18:03:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.14 102/238] usb: dwc3: omap: fix ordering for runtime pm calls
-Date: Fri,  3 Oct 2014 14:30:17 -0700
-Message-Id: <20141003212916.940835369@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 095/238] xhci: fix oops when xhci resumes from hibernate with hw lpm capable devices
+Date: Fri,  3 Oct 2014 14:30:10 -0700
+Message-Id: <20141003212916.714347934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,33 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 81a60b7f5c143ab3cdcd9943c9b4b7c63c32fc31 upstream.
+commit 96044694b8511bc2b04df0776b4ba295cfe005c0 upstream.
 
-we don't to gate clocks until our children are
-done with their remove path.
+Resuming from hibernate (S4) will restart and re-initialize xHC.
+The device contexts are freed and will be re-allocated later during device reset.
 
-Fixes: af310e9 (usb: dwc3: omap: use runtime API's to enable clocks)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Usb core will disable link pm in device resume before device reset, which will
+try to change the max exit latency, accessing the device contexts before they are re-allocated.
+
+There is no need to zero (disable) the max exit latency when disabling hw lpm
+for a freshly re-initialized xHC. So check that device context exists before
+doing anything. The max exit latency will be set again after device reset when usb core
+enables the link pm.
+
+Reported-by: Imre Deak <imre.deak@intel.com>
+Tested-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/dwc3-omap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -582,9 +582,9 @@ static int dwc3_omap_remove(struct platf
- 	if (omap->extcon_id_dev.edev)
- 		extcon_unregister_interest(&omap->extcon_id_dev);
- 	dwc3_omap_disable_irqs(omap);
-+	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
- 	pm_runtime_put_sync(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
--	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3928,13 +3928,21 @@ static int __maybe_unused xhci_change_ma
+ 	int ret;
  
- 	return 0;
- }
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
++
++	virt_dev = xhci->devs[udev->slot_id];
++
++	/*
++	 * virt_dev might not exists yet if xHC resumed from hibernate (S4) and
++	 * xHC was re-initialized. Exit latency will be set later after
++	 * hub_port_finish_reset() is done and xhci->devs[] are re-allocated
++	 */
++
++	if (!virt_dev || max_exit_latency == virt_dev->current_mel) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		return 0;
+ 	}
+ 
+ 	/* Attempt to issue an Evaluate Context command to change the MEL. */
+-	virt_dev = xhci->devs[udev->slot_id];
+ 	command = xhci->lpm_command;
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
+ 	if (!ctrl_ctx) {
 
 
