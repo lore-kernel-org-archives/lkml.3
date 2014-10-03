@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664AbaJCXLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:11:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46923 "EHLO
+	id S932737AbaJCXLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:11:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757907AbaJCWN5 (ORCPT
+	with ESMTP id S1757916AbaJCWN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:57 -0400
+	Fri, 3 Oct 2014 18:13:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.14 191/238] powerpc: Add smp_mb() to arch_spin_is_locked()
-Date: Fri,  3 Oct 2014 14:31:46 -0700
-Message-Id: <20141003212919.774279574@linuxfoundation.org>
+        Guy Martin <gmsoft@tuxicoman.be>, Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.14 194/238] parisc: Implement new LWS CAS supporting 64 bit operations.
+Date: Fri,  3 Oct 2014 14:31:49 -0700
+Message-Id: <20141003212919.867043243@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,191 +28,283 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Guy Martin <gmsoft@tuxicoman.be>
 
-commit 51d7d5205d3389a32859f9939f1093f267409929 upstream.
+commit 89206491201cbd1571009b36292af781cef74c1b upstream.
 
-The kernel defines the function spin_is_locked(), which can be used to
-check if a spinlock is currently locked.
+The current LWS cas only works correctly for 32bit. The new LWS allows
+for CAS operations of variable size.
 
-Using spin_is_locked() on a lock you don't hold is obviously racy. That
-is, even though you may observe that the lock is unlocked, it may become
-locked at any time.
-
-There is (at least) one exception to that, which is if two locks are
-used as a pair, and the holder of each checks the status of the other
-before doing any update.
-
-Assuming *A and *B are two locks, and *COUNTER is a shared non-atomic
-value:
-
-The first CPU does:
-
-	spin_lock(*A)
-
-	if spin_is_locked(*B)
-		# nothing
-	else
-		smp_mb()
-		LOAD r = *COUNTER
-		r++
-		STORE *COUNTER = r
-
-	spin_unlock(*A)
-
-And the second CPU does:
-
-	spin_lock(*B)
-
-	if spin_is_locked(*A)
-		# nothing
-	else
-		smp_mb()
-		LOAD r = *COUNTER
-		r++
-		STORE *COUNTER = r
-
-	spin_unlock(*B)
-
-Although this is a strange locking construct, it should work.
-
-It seems to be understood, but not documented, that spin_is_locked() is
-not a memory barrier, so in the examples above and below the caller
-inserts its own memory barrier before acting on the result of
-spin_is_locked().
-
-For now we assume spin_is_locked() is implemented as below, and we break
-it out in our examples:
-
-	bool spin_is_locked(*LOCK) {
-		LOAD l = *LOCK
-		return l.locked
-	}
-
-Our intuition is that there should be no problem even if the two code
-sequences run simultaneously such as:
-
-	CPU 0			CPU 1
-	==================================================
-	spin_lock(*A)		spin_lock(*B)
-	LOAD b = *B		LOAD a = *A
-	if b.locked # true	if a.locked # true
-	# nothing		# nothing
-	spin_unlock(*A)		spin_unlock(*B)
-
-If one CPU gets the lock before the other then it will do the update and
-the other CPU will back off:
-
-	CPU 0			CPU 1
-	==================================================
-	spin_lock(*A)
-	LOAD b = *B
-				spin_lock(*B)
-	if b.locked # false	LOAD a = *A
-	else			if a.locked # true
-	smp_mb()		# nothing
-	LOAD r1 = *COUNTER	spin_unlock(*B)
-	r1++
-	STORE *COUNTER = r1
-	spin_unlock(*A)
-
-However in reality spin_lock() itself is not indivisible. On powerpc we
-implement it as a load-and-reserve and store-conditional.
-
-Ignoring the retry logic for the lost reservation case, it boils down to:
-	spin_lock(*LOCK) {
-		LOAD l = *LOCK
-		l.locked = true
-		STORE *LOCK = l
-		ACQUIRE_BARRIER
-	}
-
-The ACQUIRE_BARRIER is required to give spin_lock() ACQUIRE semantics as
-defined in memory-barriers.txt:
-
-     This acts as a one-way permeable barrier.  It guarantees that all
-     memory operations after the ACQUIRE operation will appear to happen
-     after the ACQUIRE operation with respect to the other components of
-     the system.
-
-On modern powerpc systems we use lwsync for ACQUIRE_BARRIER. lwsync is
-also know as "lightweight sync", or "sync 1".
-
-As described in Power ISA v2.07 section B.2.1.1, in this scenario the
-lwsync is not the barrier itself. It instead causes the LOAD of *LOCK to
-act as the barrier, preventing any loads or stores in the locked region
-from occurring prior to the load of *LOCK.
-
-Whether this behaviour is in accordance with the definition of ACQUIRE
-semantics in memory-barriers.txt is open to discussion, we may switch to
-a different barrier in future.
-
-What this means in practice is that the following can occur:
-
-	CPU 0			CPU 1
-	==================================================
-	LOAD a = *A 		LOAD b = *B
-	a.locked = true		b.locked = true
-	LOAD b = *B		LOAD a = *A
-	STORE *A = a		STORE *B = b
-	if b.locked # false	if a.locked # false
-	else			else
-	smp_mb()		smp_mb()
-	LOAD r1 = *COUNTER	LOAD r2 = *COUNTER
-	r1++			r2++
-	STORE *COUNTER = r1
-				STORE *COUNTER = r2	# Lost update
-	spin_unlock(*A)		spin_unlock(*B)
-
-That is, the load of *B can occur prior to the store that makes *A
-visibly locked. And similarly for CPU 1. The result is both CPUs hold
-their lock and believe the other lock is unlocked.
-
-The easiest fix for this is to add a full memory barrier to the start of
-spin_is_locked(), so adding to our previous definition would give us:
-
-	bool spin_is_locked(*LOCK) {
-		smp_mb()
-		LOAD l = *LOCK
-		return l.locked
-	}
-
-The new barrier orders the store to the lock we are locking vs the load
-of the other lock:
-
-	CPU 0			CPU 1
-	==================================================
-	LOAD a = *A 		LOAD b = *B
-	a.locked = true		b.locked = true
-	STORE *A = a		STORE *B = b
-	smp_mb()		smp_mb()
-	LOAD b = *B		LOAD a = *A
-	if b.locked # true	if a.locked # true
-	# nothing		# nothing
-	spin_unlock(*A)		spin_unlock(*B)
-
-Although the above example is theoretical, there is code similar to this
-example in sem_lock() in ipc/sem.c. This commit in addition to the next
-commit appears to be a fix for crashes we are seeing in that code where
-we believe this race happens in practice.
-
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/spinlock.h |    1 +
- 1 file changed, 1 insertion(+)
+ arch/parisc/kernel/syscall.S |  233 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 229 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/include/asm/spinlock.h
-+++ b/arch/powerpc/include/asm/spinlock.h
-@@ -61,6 +61,7 @@ static __always_inline int arch_spin_val
+--- a/arch/parisc/kernel/syscall.S
++++ b/arch/parisc/kernel/syscall.S
+@@ -74,7 +74,7 @@ ENTRY(linux_gateway_page)
+ 	/* ADDRESS 0xb0 to 0xb8, lws uses two insns for entry */
+ 	/* Light-weight-syscall entry must always be located at 0xb0 */
+ 	/* WARNING: Keep this number updated with table size changes */
+-#define __NR_lws_entries (2)
++#define __NR_lws_entries (3)
  
- static inline int arch_spin_is_locked(arch_spinlock_t *lock)
- {
-+	smp_mb();
- 	return !arch_spin_value_unlocked(*lock);
- }
+ lws_entry:
+ 	gate	lws_start, %r0		/* increase privilege */
+@@ -502,7 +502,7 @@ lws_exit:
+ 
+ 	
+ 	/***************************************************
+-		Implementing CAS as an atomic operation:
++		Implementing 32bit CAS as an atomic operation:
+ 
+ 		%r26 - Address to examine
+ 		%r25 - Old value to check (old)
+@@ -659,6 +659,230 @@ cas_action:
+ 	ASM_EXCEPTIONTABLE_ENTRY(2b-linux_gateway_page, 3b-linux_gateway_page)
+ 
+ 
++	/***************************************************
++		New CAS implementation which uses pointers and variable size
++		information. The value pointed by old and new MUST NOT change
++		while performing CAS. The lock only protect the value at %r26.
++
++		%r26 - Address to examine
++		%r25 - Pointer to the value to check (old)
++		%r24 - Pointer to the value to set (new)
++		%r23 - Size of the variable (0/1/2/3 for 8/16/32/64 bit)
++		%r28 - Return non-zero on failure
++		%r21 - Kernel error code
++
++		%r21 has the following meanings:
++
++		EAGAIN - CAS is busy, ldcw failed, try again.
++		EFAULT - Read or write failed.
++
++		Scratch: r20, r22, r28, r29, r1, fr4 (32bit for 64bit CAS only)
++
++	****************************************************/
++
++	/* ELF32 Process entry path */
++lws_compare_and_swap_2:
++#ifdef CONFIG_64BIT
++	/* Clip the input registers */
++	depdi	0, 31, 32, %r26
++	depdi	0, 31, 32, %r25
++	depdi	0, 31, 32, %r24
++	depdi	0, 31, 32, %r23
++#endif
++
++	/* Check the validity of the size pointer */
++	subi,>>= 4, %r23, %r0
++	b,n	lws_exit_nosys
++
++	/* Jump to the functions which will load the old and new values into
++	   registers depending on the their size */
++	shlw	%r23, 2, %r29
++	blr	%r29, %r0
++	nop
++
++	/* 8bit load */
++4:	ldb	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++5:	ldb	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 16bit load */
++6:	ldh	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++7:	ldh	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 32bit load */
++8:	ldw	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++9:	ldw	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 64bit load */
++#ifdef CONFIG_64BIT
++10:	ldd	0(%sr3,%r25), %r25
++11:	ldd	0(%sr3,%r24), %r24
++#else
++	/* Load new value into r22/r23 - high/low */
++10:	ldw	0(%sr3,%r25), %r22
++11:	ldw	4(%sr3,%r25), %r23
++	/* Load new value into fr4 for atomic store later */
++12:	flddx	0(%sr3,%r24), %fr4
++#endif
++
++cas2_lock_start:
++	/* Load start of lock table */
++	ldil	L%lws_lock_start, %r20
++	ldo	R%lws_lock_start(%r20), %r28
++
++	/* Extract four bits from r26 and hash lock (Bits 4-7) */
++	extru  %r26, 27, 4, %r20
++
++	/* Find lock to use, the hash is either one of 0 to
++	   15, multiplied by 16 (keep it 16-byte aligned)
++	   and add to the lock table offset. */
++	shlw	%r20, 4, %r20
++	add	%r20, %r28, %r20
++
++	rsm	PSW_SM_I, %r0			/* Disable interrupts */
++	/* COW breaks can cause contention on UP systems */
++	LDCW	0(%sr2,%r20), %r28		/* Try to acquire the lock */
++	cmpb,<>,n	%r0, %r28, cas2_action	/* Did we get it? */
++cas2_wouldblock:
++	ldo	2(%r0), %r28			/* 2nd case */
++	ssm	PSW_SM_I, %r0
++	b	lws_exit			/* Contended... */
++	ldo	-EAGAIN(%r0), %r21		/* Spin in userspace */
++
++	/*
++		prev = *addr;
++		if ( prev == old )
++		  *addr = new;
++		return prev;
++	*/
++
++	/* NOTES:
++		This all works becuse intr_do_signal
++		and schedule both check the return iasq
++		and see that we are on the kernel page
++		so this process is never scheduled off
++		or is ever sent any signal of any sort,
++		thus it is wholly atomic from usrspaces
++		perspective
++	*/
++cas2_action:
++	/* Jump to the correct function */
++	blr	%r29, %r0
++	/* Set %r28 as non-zero for now */
++	ldo	1(%r0),%r28
++
++	/* 8bit CAS */
++13:	ldb,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++14:	stb,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 16bit CAS */
++15:	ldh,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++16:	sth,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 32bit CAS */
++17:	ldw,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++18:	stw,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 64bit CAS */
++#ifdef CONFIG_64BIT
++19:	ldd,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++20:	std,ma	%r24, 0(%sr3,%r26)
++	copy	%r0, %r28
++#else
++	/* Compare first word */
++19:	ldw,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r22, %r0
++	b,n	cas2_end
++	/* Compare second word */
++20:	ldw,ma	4(%sr3,%r26), %r29
++	sub,=	%r29, %r23, %r0
++	b,n	cas2_end
++	/* Perform the store */
++21:	fstdx	%fr4, 0(%sr3,%r26)
++	copy	%r0, %r28
++#endif
++
++cas2_end:
++	/* Free lock */
++	stw,ma	%r20, 0(%sr2,%r20)
++	/* Enable interrupts */
++	ssm	PSW_SM_I, %r0
++	/* Return to userspace, set no error */
++	b	lws_exit
++	copy	%r0, %r21
++
++22:
++	/* Error occurred on load or store */
++	/* Free lock */
++	stw	%r20, 0(%sr2,%r20)
++	ssm	PSW_SM_I, %r0
++	ldo	1(%r0),%r28
++	b	lws_exit
++	ldo	-EFAULT(%r0),%r21	/* set errno */
++	nop
++	nop
++	nop
++
++	/* Exception table entries, for the load and store, return EFAULT.
++	   Each of the entries must be relocated. */
++	ASM_EXCEPTIONTABLE_ENTRY(4b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(5b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(6b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(7b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(8b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(9b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(10b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(11b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(13b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(14b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(15b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(16b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(17b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(18b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(19b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(20b-linux_gateway_page, 22b-linux_gateway_page)
++#ifndef CONFIG_64BIT
++	ASM_EXCEPTIONTABLE_ENTRY(12b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(21b-linux_gateway_page, 22b-linux_gateway_page)
++#endif
++
+ 	/* Make sure nothing else is placed on this page */
+ 	.align PAGE_SIZE
+ END(linux_gateway_page)
+@@ -675,8 +899,9 @@ ENTRY(end_linux_gateway_page)
+ 	/* Light-weight-syscall table */
+ 	/* Start of lws table. */
+ ENTRY(lws_table)
+-	LWS_ENTRY(compare_and_swap32)	/* 0 - ELF32 Atomic compare and swap */
+-	LWS_ENTRY(compare_and_swap64)	/* 1 - ELF64 Atomic compare and swap */
++	LWS_ENTRY(compare_and_swap32)		/* 0 - ELF32 Atomic 32bit CAS */
++	LWS_ENTRY(compare_and_swap64)		/* 1 - ELF64 Atomic 32bit CAS */
++	LWS_ENTRY(compare_and_swap_2)		/* 2 - ELF32 Atomic 64bit CAS */
+ END(lws_table)
+ 	/* End of lws table */
  
 
 
