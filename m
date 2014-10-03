@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759289AbaJCW5Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:57:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
+	id S1759273AbaJCW5W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:57:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932589AbaJCWYC (ORCPT
+	with ESMTP id S932587AbaJCWYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
+        Manuel Reimer <manuel.reimer@gmx.de>,
         Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.10 053/143] xhci: fix oops when xhci resumes from hibernate with hw lpm capable devices
-Date: Fri,  3 Oct 2014 14:34:08 -0700
-Message-Id: <20141003213316.081348442@linuxfoundation.org>
+Subject: [PATCH 3.10 052/143] xhci: Fix null pointer dereference if xhci initialization fails
+Date: Fri,  3 Oct 2014 14:34:07 -0700
+Message-Id: <20141003213316.045521778@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,53 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit 96044694b8511bc2b04df0776b4ba295cfe005c0 upstream.
+commit c207e7c50f31113c24a9f536fcab1e8a256985d7 upstream.
 
-Resuming from hibernate (S4) will restart and re-initialize xHC.
-The device contexts are freed and will be re-allocated later during device reset.
+If xhci initialization fails before the roothub bandwidth
+domains (xhci->rh_bw[i]) are allocated it will oops when
+trying to access rh_bw members in xhci_mem_cleanup().
 
-Usb core will disable link pm in device resume before device reset, which will
-try to change the max exit latency, accessing the device contexts before they are re-allocated.
-
-There is no need to zero (disable) the max exit latency when disabling hw lpm
-for a freshly re-initialized xHC. So check that device context exists before
-doing anything. The max exit latency will be set again after device reset when usb core
-enables the link pm.
-
-Reported-by: Imre Deak <imre.deak@intel.com>
-Tested-by: Imre Deak <imre.deak@intel.com>
+Reported-by: Manuel Reimer <manuel.reimer@gmx.de>
 Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-mem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4407,13 +4407,21 @@ static int xhci_change_max_exit_latency(
- 	int ret;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
-+
-+	virt_dev = xhci->devs[udev->slot_id];
-+
-+	/*
-+	 * virt_dev might not exists yet if xHC resumed from hibernate (S4) and
-+	 * xHC was re-initialized. Exit latency will be set later after
-+	 * hub_port_finish_reset() is done and xhci->devs[] are re-allocated
-+	 */
-+
-+	if (!virt_dev || max_exit_latency == virt_dev->current_mel) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return 0;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1795,7 +1795,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
  	}
  
- 	/* Attempt to issue an Evaluate Context command to change the MEL. */
--	virt_dev = xhci->devs[udev->slot_id];
- 	command = xhci->lpm_command;
- 	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
- 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+-	for (i = 0; i < num_ports; i++) {
++	for (i = 0; i < num_ports && xhci->rh_bw; i++) {
+ 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
+ 		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
+ 			struct list_head *ep = &bwt->interval_bw[j].endpoints;
 
 
