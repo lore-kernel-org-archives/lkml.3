@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760056AbaJCXZO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:25:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
+	id S1760072AbaJCXZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:25:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46725 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757768AbaJCWNk (ORCPT
+	with ESMTP id S1756758AbaJCWNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:40 -0400
+	Fri, 3 Oct 2014 18:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Ciocca <denis.ciocca@st.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 143/238] iio:magnetometer: bugfix magnetometers gain values
-Date: Fri,  3 Oct 2014 14:30:58 -0700
-Message-Id: <20141003212918.261213109@linuxfoundation.org>
+        Theodore Tso <tytso@mit.edu>
+Subject: [PATCH 3.16 352/357] ext4: propagate errors up to ext4_find_entry()s callers
+Date: Fri,  3 Oct 2014 14:32:18 -0700
+Message-Id: <20141003212944.032503942@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,106 +24,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Denis CIOCCA <denis.ciocca@st.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
+commit 36de928641ee48b2078d3fe9514242aaa2f92013 upstream.
 
-This patch fix gains values. The first driver was designed using
-engineering samples, in mass production the values are changed.
+If we run into some kind of error, such as ENOMEM, while calling
+ext4_getblk() or ext4_dx_find_entry(), we need to make sure this error
+gets propagated up to ext4_find_entry() and then to its callers.  This
+way, transient errors such as ENOMEM can get propagated to the VFS.
+This is important so that the system calls return the appropriate
+error, and also so that in the case of ext4_lookup(), we return an
+error instead of a NULL inode, since that will result in a negative
+dentry cache entry that will stick around long past the OOM condition
+which caused a transient ENOMEM error.
 
-Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Google-Bug-Id: #17142205
+
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/st_magn_core.c |   52 ++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 22 deletions(-)
+ fs/ext4/ext4.h  |    2 +-
+ fs/ext4/namei.c |   35 +++++++++++++++++++++++++++++++++--
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
---- a/drivers/iio/magnetometer/st_magn_core.c
-+++ b/drivers/iio/magnetometer/st_magn_core.c
-@@ -42,7 +42,8 @@
- #define ST_MAGN_FS_AVL_5600MG			5600
- #define ST_MAGN_FS_AVL_8000MG			8000
- #define ST_MAGN_FS_AVL_8100MG			8100
--#define ST_MAGN_FS_AVL_10000MG			10000
-+#define ST_MAGN_FS_AVL_12000MG			12000
-+#define ST_MAGN_FS_AVL_16000MG			16000
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1826,7 +1826,7 @@ ext4_group_first_block_no(struct super_b
+ /*
+  * Special error return code only used by dx_probe() and its callers.
+  */
+-#define ERR_BAD_DX_DIR	-75000
++#define ERR_BAD_DX_DIR	(-(MAX_ERRNO - 1))
  
- /* CUSTOM VALUES FOR SENSOR 1 */
- #define ST_MAGN_1_WAI_EXP			0x3c
-@@ -69,20 +70,20 @@
- #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
- #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
- #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
--#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
--#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
--#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
--#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
--#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
--#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
--#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
--#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
--#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
--#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
--#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
--#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
--#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
--#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
- #define ST_MAGN_1_MULTIREAD_BIT			false
+ /*
+  * Timeout and state flag for lazy initialization inode thread.
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1227,7 +1227,7 @@ static struct buffer_head * ext4_find_en
+ 				   buffer */
+ 	int num = 0;
+ 	ext4_lblk_t  nblocks;
+-	int i, err;
++	int i, err = 0;
+ 	int namelen;
  
- /* CUSTOM VALUES FOR SENSOR 2 */
-@@ -105,10 +106,12 @@
- #define ST_MAGN_2_FS_MASK			0x60
- #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
- #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
--#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
--#define ST_MAGN_2_FS_AVL_4000_GAIN		430
--#define ST_MAGN_2_FS_AVL_8000_GAIN		230
--#define ST_MAGN_2_FS_AVL_10000_GAIN		230
-+#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
-+#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
-+#define ST_MAGN_2_FS_AVL_4000_GAIN		146
-+#define ST_MAGN_2_FS_AVL_8000_GAIN		292
-+#define ST_MAGN_2_FS_AVL_12000_GAIN		438
-+#define ST_MAGN_2_FS_AVL_16000_GAIN		584
- #define ST_MAGN_2_MULTIREAD_BIT			false
- #define ST_MAGN_2_OUT_X_L_ADDR			0x28
- #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
-@@ -266,9 +269,14 @@ static const struct st_sensors st_magn_s
- 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
- 				},
- 				[2] = {
--					.num = ST_MAGN_FS_AVL_10000MG,
--					.value = ST_MAGN_2_FS_AVL_10000_VAL,
--					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
-+					.num = ST_MAGN_FS_AVL_12000MG,
-+					.value = ST_MAGN_2_FS_AVL_12000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
-+				},
-+				[3] = {
-+					.num = ST_MAGN_FS_AVL_16000MG,
-+					.value = ST_MAGN_2_FS_AVL_16000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
- 				},
- 			},
- 		},
+ 	*res_dir = NULL;
+@@ -1264,7 +1264,11 @@ static struct buffer_head * ext4_find_en
+ 		 * return.  Otherwise, fall back to doing a search the
+ 		 * old fashioned way.
+ 		 */
+-		if (bh || (err != ERR_BAD_DX_DIR))
++		if (err == -ENOENT)
++			return NULL;
++		if (err && err != ERR_BAD_DX_DIR)
++			return ERR_PTR(err);
++		if (bh)
+ 			return bh;
+ 		dxtrace(printk(KERN_DEBUG "ext4_find_entry: dx failed, "
+ 			       "falling back\n"));
+@@ -1295,6 +1299,11 @@ restart:
+ 				}
+ 				num++;
+ 				bh = ext4_getblk(NULL, dir, b++, 0, &err);
++				if (unlikely(err)) {
++					if (ra_max == 0)
++						return ERR_PTR(err);
++					break;
++				}
+ 				bh_use[ra_max] = bh;
+ 				if (bh)
+ 					ll_rw_block(READ | REQ_META | REQ_PRIO,
+@@ -1417,6 +1426,8 @@ static struct dentry *ext4_lookup(struct
+ 		return ERR_PTR(-ENAMETOOLONG);
+ 
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return (struct dentry *) bh;
+ 	inode = NULL;
+ 	if (bh) {
+ 		__u32 ino = le32_to_cpu(de->inode);
+@@ -1450,6 +1461,8 @@ struct dentry *ext4_get_parent(struct de
+ 	struct buffer_head *bh;
+ 
+ 	bh = ext4_find_entry(child->d_inode, &dotdot, &de, NULL);
++	if (IS_ERR(bh))
++		return (struct dentry *) bh;
+ 	if (!bh)
+ 		return ERR_PTR(-ENOENT);
+ 	ino = le32_to_cpu(de->inode);
+@@ -2727,6 +2740,8 @@ static int ext4_rmdir(struct inode *dir,
+ 
+ 	retval = -ENOENT;
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (!bh)
+ 		goto end_rmdir;
+ 
+@@ -2794,6 +2809,8 @@ static int ext4_unlink(struct inode *dir
+ 
+ 	retval = -ENOENT;
+ 	bh = ext4_find_entry(dir, &dentry->d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (!bh)
+ 		goto end_unlink;
+ 
+@@ -3121,6 +3138,8 @@ static int ext4_find_delete_entry(handle
+ 	struct ext4_dir_entry_2 *de;
+ 
+ 	bh = ext4_find_entry(dir, d_name, &de, NULL);
++	if (IS_ERR(bh))
++		return PTR_ERR(bh);
+ 	if (bh) {
+ 		retval = ext4_delete_entry(handle, dir, de, bh);
+ 		brelse(bh);
+@@ -3205,6 +3224,8 @@ static int ext4_rename(struct inode *old
+ 		dquot_initialize(new.inode);
+ 
+ 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name, &old.de, NULL);
++	if (IS_ERR(old.bh))
++		return PTR_ERR(old.bh);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+@@ -3217,6 +3238,10 @@ static int ext4_rename(struct inode *old
+ 
+ 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
+ 				 &new.de, &new.inlined);
++	if (IS_ERR(new.bh)) {
++		retval = PTR_ERR(new.bh);
++		goto end_rename;
++	}
+ 	if (new.bh) {
+ 		if (!new.inode) {
+ 			brelse(new.bh);
+@@ -3345,6 +3370,8 @@ static int ext4_cross_rename(struct inod
+ 
+ 	old.bh = ext4_find_entry(old.dir, &old.dentry->d_name,
+ 				 &old.de, &old.inlined);
++	if (IS_ERR(old.bh))
++		return PTR_ERR(old.bh);
+ 	/*
+ 	 *  Check for inode number is _not_ due to possible IO errors.
+ 	 *  We might rmdir the source, keep it as pwd of some process
+@@ -3357,6 +3384,10 @@ static int ext4_cross_rename(struct inod
+ 
+ 	new.bh = ext4_find_entry(new.dir, &new.dentry->d_name,
+ 				 &new.de, &new.inlined);
++	if (IS_ERR(new.bh)) {
++		retval = PTR_ERR(new.bh);
++		goto end_rename;
++	}
+ 
+ 	/* RENAME_EXCHANGE case: old *and* new must both exist */
+ 	if (!new.bh || le32_to_cpu(new.de->inode) != new.inode->i_ino)
 
 
