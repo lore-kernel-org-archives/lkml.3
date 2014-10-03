@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750943AbaJCEVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 00:21:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:47703 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730AbaJCEVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 00:21:17 -0400
-Date: Fri, 3 Oct 2014 14:21:15 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v3] powerpc/iommu/ddw: Fix endianness
-Message-ID: <20141003142115.34b9be97@kryten>
-In-Reply-To: <1411627167-22927-1-git-send-email-aik@ozlabs.ru>
-References: <1411627167-22927-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1750956AbaJCEe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 00:34:28 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:49851 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaJCEe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 00:34:26 -0400
+Date: Fri, 3 Oct 2014 06:34:21 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/2] perf tools: Add option to copy events when queueing
+Message-ID: <20141003043421.GA24217@gmail.com>
+References: <1412267936-19827-1-git-send-email-yarygin@linux.vnet.ibm.com>
+ <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey,
 
-> rtas_call() accepts and returns values in CPU endianness.
-> The ddw_query_response and ddw_create_response structs members are
-> defined and treated as BE but as they are passed to rtas_call() as
-> (u32 *) and they get byteswapped automatically, the data is
-> CPU-endian. This fixes ddw_query_response and ddw_create_response
-> definitions and use.
+* Alexander Yarygin <yarygin@linux.vnet.ibm.com> wrote:
+
+> When processing events the session code has an ordered samples 
+> queue which is used to time-sort events coming in across 
+> multiple mmaps. At a later point in time samples on the queue 
+> are flushed up to some timestamp at which point the event is 
+> actually processed.
 > 
-> of_read_number() is designed to work with device tree cells - it
-> assumes the input is big-endian and returns data in CPU-endian.
-> However due to the ddw_create_response struct fix, create.addr_hi/lo
-> are already CPU-endian so do not byteswap them.
+> When analyzing events live (ie., record/analysis path in the 
+> same command) there is a race that leads to corrupted events 
+> and parse errors which cause perf to terminate. The problem is 
+> that when the event is placed in the ordered samples queue it 
+> is only a reference to the event which is really sitting in the 
+> mmap buffer. Even though the event is queued for later 
+> processing the mmap tail pointer is updated which indicates to 
+> the kernel that the event has been processed. The race is 
+> flushing the event from the queue before it gets overwritten by 
+> some other event. For commands trying to process events live 
+> (versus just writing to a file) and processing a high rate of 
+> events this leads to parse failures and perf terminates.
 > 
-> ddw_avail is a pointer to the "ibm,ddw-applicable" property which
-> contains 3 cells which are big-endian as it is a device tree.
-> rtas_call() accepts a RTAS token in CPU-endian. This makes use of
-> of_property_read_u32_array to byte swap and avoid the need for a
-> number of be32_to_cpu calls.
+> Examples hitting this problem are 'perf kvm stat live', 
+> especially with nested VMs which generate 100,000+ traces per 
+> second, and a command processing scheduling events with a high 
+> rate of context switching -- e.g., running 'perf bench sched 
+> pipe'.
 > 
-> Cc: stable@vger.kernel.org # v3.13
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Reviewed-by: Anton Blanchard <anton@samba.org>
-> [aik: folded Anton's patch with of_property_read_u32_array]
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> This patch offers live commands an option to copy the event 
+> when it is placed in the ordered samples queue.
 
-Thanks for updating, looks good. Could we make it clear the bug is
-present in 3.13-3.17 with:
+What's the performance effect of this - i.e. by how much does CPU 
+use increase due to copying the events?
 
-Cc: stable@vger.kernel.org # v3.13+
+Wouldn't it be faster to fix this problem by updating the mmap 
+tail pointer only once the event has truly been consumed?
 
-Acked-by: Anton Blanchard <anton@samba.org>
+Thanks,
 
-Anton
+	Ingo
