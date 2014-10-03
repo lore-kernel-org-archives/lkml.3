@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932666AbaJCWYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:24:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
+	id S1755084AbaJCWeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932627AbaJCWYH (ORCPT
+	with ESMTP id S1755368AbaJCWeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:07 -0400
+	Fri, 3 Oct 2014 18:34:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.10 068/143] MIPS: ZBOOT: add missing <linux/string.h> include
-Date: Fri,  3 Oct 2014 14:34:23 -0700
-Message-Id: <20141003213316.556590036@linuxfoundation.org>
+        Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
+Subject: [PATCH 3.10 124/143] perf kmem: Make it work again on non NUMA machines
+Date: Fri,  3 Oct 2014 14:35:19 -0700
+Message-Id: <20141003213318.211280554@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,52 +34,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aurelien Jarno <aurelien@aurel32.net>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
+commit 4921e320244e099bdf237fd10428594ce5f5b87d upstream.
 
-Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
-moved the string related functions into a separate file, which might
-cause the following build error, depending on the configuration:
+The commit '2814eb0 perf kmem: Remove die() calls' disabled 'perf kmem'
+command for machines without numa support. It made the command fail if
+'/sys/devices/system/node' dir wasn't found.
 
-| CC      arch/mips/boot/compressed/decompress.o
-| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
-|                  from linux/arch/mips/boot/compressed/decompress.c:67:
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
-| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
-| cc1: some warnings being treated as errors
-| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
-| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
-| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
+Skipping the numa based initialization in case the directory is not
+found and continue execution.
 
-It does not fail with the standard configuration, as when
-CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
-include/linux/dynamic_debug.h. There might be other ways for it to
-get indirectly included.
-
-We can't add the include directly in xz_dec_stream.c as some
-architectures might want to use a different version for the boot/
-directory (see for example arch/x86/boot/string.h).
-
-Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7420/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1379003976-5839-5-git-send-email-jolsa@redhat.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/boot/compressed/decompress.c |    1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-kmem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/mips/boot/compressed/decompress.c
-+++ b/arch/mips/boot/compressed/decompress.c
-@@ -13,6 +13,7 @@
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -101,7 +101,7 @@ static int setup_cpunode_map(void)
  
- #include <linux/types.h>
- #include <linux/kernel.h>
-+#include <linux/string.h>
+ 	dir1 = opendir(PATH_SYS_NODE);
+ 	if (!dir1)
+-		return -1;
++		return 0;
  
- #include <asm/addrspace.h>
- 
+ 	while ((dent1 = readdir(dir1)) != NULL) {
+ 		if (dent1->d_type != DT_DIR ||
 
 
