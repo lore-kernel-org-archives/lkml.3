@@ -1,129 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095AbaJCOfy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 10:35:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65073 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752437AbaJCOfw (ORCPT
+	id S1753344AbaJCOgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:36:31 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:44235 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721AbaJCOg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 10:35:52 -0400
-Date: Fri, 3 Oct 2014 15:35:47 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Message-ID: <20141003143547.GP26643@leverpostej>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <26673925.fa6Qhdm5sV@vostro.rjw.lan>
- <20141003135826.GN26643@leverpostej>
- <7198018.2Bqkjlecz2@vostro.rjw.lan>
+	Fri, 3 Oct 2014 10:36:28 -0400
+Message-ID: <542EB2A2.3050005@gmail.com>
+Date: Fri, 03 Oct 2014 07:28:50 -0700
+From: Alexander Duyck <alexander.duyck@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7198018.2Bqkjlecz2@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>, "Li, ZhenHua" <zhen-hual@hp.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        linda.knippers@hp.com
+Subject: Re: [PATCH 1/1] pci/quirks: fix a dmar fault for intel 82599 card
+References: <1412057394-7186-1-git-send-email-zhen-hual@hp.com> <542A4A99.4030204@hp.com> <CAErSpo56yKZgP3KLbZWRH78PXc8i2nrnN2aN-12j9HR+R5bhUA@mail.gmail.com>
+In-Reply-To: <CAErSpo56yKZgP3KLbZWRH78PXc8i2nrnN2aN-12j9HR+R5bhUA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 03:38:49PM +0100, Rafael J. Wysocki wrote:
-> On Friday, October 03, 2014 02:58:26 PM Mark Rutland wrote:
-> > On Fri, Oct 03, 2014 at 03:03:51AM +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
-> > > > On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
-> > > > > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
-> > > 
-> > > [cut]
-> > > 
-> > > > 
-> > > > Putting everything to a single package results this:
-> > > > 
-> > > > 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
-> > > > 
-> > > > But I think the below looks better:
-> > > 
-> > > I agree.
-> > > 
-> > > > 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
-> > > > 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
-> > > > 
-> > > > and it is trivial to match with the corresponding DT fragment.
-> > > > 
-> > > > > 	}
-> > > > > 
-> > > > > vs.
-> > > > > 
-> > > > > 	pwm-slave {
-> > > > > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
-> > > > > 		pwm-names = "led-red", "led-green";
-> > > > > 	};
-> > > > > 
-> > > > 
-> > > > I don't have strong feelings which way it should be. The current
-> > > > implementation limits references so that you can have only integer
-> > > > arguments, like {ref0, int, int, ref1, int} but if people think it is
-> > > > better to allow strings there as well, it can be changed.
-> > > > 
-> > > > I would like to get comments from Darren and Rafael about this, though.
-> > > 
-> > > In my opinion there needs to be a "canonical" representation of the
-> > > binding that people always can expect to work.  It seems reasonable to
-> > > use the one exactly matching the DT representation for that.
-> > 
-> > I don't follow. The two forms would share the same high-level accessors,
-> > but the binary representation is already different. Why should we choose
-> > the inferior layout given they are already different binary formats?
-> 
-> Well, why is it inferior in the first place?  It represents the same information
-> and I'm not sure why the binary formats matter here?
+On 10/02/2014 08:09 AM, Bjorn Helgaas wrote:
+> On Tue, Sep 30, 2014 at 12:15 AM, Li, ZhenHua <zhen-hual@hp.com> wrote:
+>> Add Joerg to CC list. For it is also related to iommu module.
+>>
+>> Joerg,
+>> There was a try for this dmar fault,
+>>         https://lkml.org/lkml/2014/8/18/118
+>>
+>> This patch is trying to fix the same thing.
+>>
+>>
+>> Zhenhua
+>>
+>> On 09/30/2014 02:09 PM, Li, Zhen-Hua wrote:
+>>> On a HP system with Intel Corporation 82599 ethernet adapter, when kernel
+>>> crashed and the kdump kernel boots with intel_iommu=on, there may be some
+>>> unexpected DMA requests on this adapter, which will cause DMA Remapping
+>>> faults like:
+>>>      dmar: DRHD: handling fault status reg 102
+>>>      dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>>>      DMAR:[fault reason 01] Present bit in root entry is clear
+>>>
+>>> Analysis for this bug:
+>>>
+>>> The present bit is set in this function:
+>>>
+>>> static struct context_entry * device_to_context_entry(
+>>>                 struct intel_iommu *iommu, u8 bus, u8 devfn)
+>>> {
+>>>      ......
+>>>                  set_root_present(root);
+>>>      ......
+>>> }
+>>>
+>>> Calling tree:
+>>> ixgbe_open
+>>>      ixgbe_setup_tx_resources
+>>>          intel_alloc_coherent
+>>>              __intel_map_single
+>>>                  domain_context_mapping
+>>>                      domain_context_mapping_one
+>>>                          device_to_context_entry
+>>>
+>>> This means, the present bit in root entry will not be set until the device
+>>>   driver is loaded.
+>>>
+>>> But in the kdump kernel, some hardware device does not know the OS is the
+>>>   second kernel and the drivers should be loaded again, this causes there
+>>> are
+>>>   some unexpected DMA requsts on this device when it has not been
+>>> initialized,
+>>>   and then the DMA Remapping errors come.
+>>>
+>>> To fix this DMAR fault, we need to reset the bus that this device on.
+>>> Reset
+>>>   the device itself does not work.
+> This seems like something that could happen with *any* device, not
+> just the 82599 NIC.  Or is there something in the "kernel crash ->
+> kexec -> kdump kernel" path that stops DMA for most devices, but not
+> for the 82599?lex
+>
 
-Because people get the format wrong regardless of documentation. The
-format:
-
-Package () {
-	Package () { ^ref1, data, data },
-	Package () { ^ref2, data },
-	Package () { ^ref3, data, data, data },
-}
-
-Is superior to the format:
-
-Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
-
-Because in the former you have delimiters that can be used to verify
-each tuple. Imagine someone misses a data element for one of these
-tuples. In the former layout you can detect this easily while in the
-latter you cannot.
-
-Additionally, the former can represent variadic phandle/reference + args
-formats, which the latter cannot. The DT pinctrl bindings look the way
-they do because we can't represent variadic args in DT due to a lack of
-delimiters.
-
-You have the ability to embed structure in the binary format. Throwing
-this away because it doesn't quite match DT does not to me sounds like
-the right tradeoff.
-
-> If I'm to create a _DSD with that information and have a DT template, it
-> surely is easier to copy it exactly than to figure out how to resolve it
-> to represent something I can actually put in there. 
-
-Sure, you can put something together fast. However, that doesn't make it
-necessarily better.
-
-If you want to make reusing DT templates easier, why not just embed a
-DTB and be done with it?
+This is an *any* device problem.  Specifically any device that is doing
+active DMA when a kdump kernel is triggered will cause this issue since
+the IOMMU will not have valid mappings for the DMA events until the
+device driver itself is loaded and resets the device.
 
 Thanks,
-Mark.
+
+Alex
