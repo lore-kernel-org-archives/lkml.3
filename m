@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932836AbaJCW2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:28:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47570 "EHLO
+	id S932821AbaJCW2C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:28:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaJCW0f (ORCPT
+	with ESMTP id S932627AbaJCW0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:26:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 131/143] PM / sleep: Add state field to pm_states[] entries
-Date: Fri,  3 Oct 2014 14:35:26 -0700
-Message-Id: <20141003213318.411193358@linuxfoundation.org>
+Subject: [PATCH 3.10 132/143] PM / sleep: Use valid_state() for platform-dependent sleep states only
+Date: Fri,  3 Oct 2014 14:35:27 -0700
+Message-Id: <20141003213318.440364067@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,178 +31,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 27ddcc6596e50cb8f03d2e83248897667811d8f6 upstream.
+commit 43e8317b0bba1d6eb85f38a4a233d82d7c20d732 upstream.
 
-To allow sleep states corresponding to the "mem", "standby" and
-"freeze" lables to be different from the pm_states[] indexes of
-those strings, introduce struct pm_sleep_state, consisting of
-a string label and a state number, and turn pm_states[] into an
-array of objects of that type.
+Use the observation that, for platform-dependent sleep states
+(PM_SUSPEND_STANDBY, PM_SUSPEND_MEM), a given state is either
+always supported or always unsupported and store that information
+in pm_states[] instead of calling valid_state() every time we
+need to check it.
 
-This modification should not lead to any functional changes.
+Also do not use valid_state() for PM_SUSPEND_FREEZE, which is always
+valid, and move the pm_test_level validity check for PM_SUSPEND_FREEZE
+directly into enter_state().
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Cc: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/power/main.c         |   16 ++++++++--------
- kernel/power/power.h        |    7 ++++++-
- kernel/power/suspend.c      |   12 ++++++------
- kernel/power/suspend_test.c |   22 ++++++++++------------
- 4 files changed, 30 insertions(+), 27 deletions(-)
+ kernel/power/main.c         |    9 +++---
+ kernel/power/power.h        |    2 -
+ kernel/power/suspend.c      |   60 ++++++++++++++++++++++----------------------
+ kernel/power/suspend_test.c |    2 -
+ 4 files changed, 36 insertions(+), 37 deletions(-)
 
 --- a/kernel/power/main.c
 +++ b/kernel/power/main.c
-@@ -293,12 +293,12 @@ static ssize_t state_show(struct kobject
- {
- 	char *s = buf;
- #ifdef CONFIG_SUSPEND
--	int i;
-+	suspend_state_t i;
-+
-+	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
-+		if (valid_state(i))
-+			s += sprintf(s,"%s ", pm_states[i].label);
+@@ -296,7 +296,7 @@ static ssize_t state_show(struct kobject
+ 	suspend_state_t i;
  
--	for (i = 0; i < PM_SUSPEND_MAX; i++) {
--		if (pm_states[i] && valid_state(i))
--			s += sprintf(s,"%s ", pm_states[i]);
--	}
+ 	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
+-		if (valid_state(i))
++		if (pm_states[i].state)
+ 			s += sprintf(s,"%s ", pm_states[i].label);
+ 
  #endif
- #ifdef CONFIG_HIBERNATION
- 	s += sprintf(s, "%s\n", "disk");
-@@ -314,7 +314,7 @@ static suspend_state_t decode_state(cons
- {
- #ifdef CONFIG_SUSPEND
- 	suspend_state_t state = PM_SUSPEND_MIN;
--	const char * const *s;
-+	struct pm_sleep_state *s;
- #endif
- 	char *p;
- 	int len;
-@@ -328,7 +328,7 @@ static suspend_state_t decode_state(cons
+@@ -328,8 +328,9 @@ static suspend_state_t decode_state(cons
  
  #ifdef CONFIG_SUSPEND
  	for (s = &pm_states[state]; state < PM_SUSPEND_MAX; s++, state++)
--		if (*s && len == strlen(*s) && !strncmp(buf, *s, len))
-+		if (len == strlen(s->label) && !strncmp(buf, s->label, len))
- 			return state;
+-		if (len == strlen(s->label) && !strncmp(buf, s->label, len))
+-			return state;
++		if (s->state && len == strlen(s->label)
++		    && !strncmp(buf, s->label, len))
++			return s->state;
  #endif
  
-@@ -446,7 +446,7 @@ static ssize_t autosleep_show(struct kob
+ 	return PM_SUSPEND_ON;
+@@ -445,7 +446,7 @@ static ssize_t autosleep_show(struct kob
+ 
  #ifdef CONFIG_SUSPEND
  	if (state < PM_SUSPEND_MAX)
- 		return sprintf(buf, "%s\n", valid_state(state) ?
--						pm_states[state] : "error");
-+					pm_states[state].label : "error");
+-		return sprintf(buf, "%s\n", valid_state(state) ?
++		return sprintf(buf, "%s\n", pm_states[state].state ?
+ 					pm_states[state].label : "error");
  #endif
  #ifdef CONFIG_HIBERNATION
- 	return sprintf(buf, "disk\n");
 --- a/kernel/power/power.h
 +++ b/kernel/power/power.h
-@@ -175,8 +175,13 @@ extern void swsusp_show_speed(struct tim
- 				unsigned int, char *);
- 
- #ifdef CONFIG_SUSPEND
-+struct pm_sleep_state {
-+	const char *label;
-+	suspend_state_t state;
-+};
-+
+@@ -183,14 +183,12 @@ struct pm_sleep_state {
  /* kernel/power/suspend.c */
--extern const char *const pm_states[];
-+extern struct pm_sleep_state pm_states[];
+ extern struct pm_sleep_state pm_states[];
  
- extern bool valid_state(suspend_state_t state);
+-extern bool valid_state(suspend_state_t state);
  extern int suspend_devices_and_enter(suspend_state_t state);
+ #else /* !CONFIG_SUSPEND */
+ static inline int suspend_devices_and_enter(suspend_state_t state)
+ {
+ 	return -ENOSYS;
+ }
+-static inline bool valid_state(suspend_state_t state) { return false; }
+ #endif /* !CONFIG_SUSPEND */
+ 
+ #ifdef CONFIG_PM_TEST_SUSPEND
 --- a/kernel/power/suspend.c
 +++ b/kernel/power/suspend.c
-@@ -29,10 +29,10 @@
- 
+@@ -30,9 +30,9 @@
  #include "power.h"
  
--const char *const pm_states[PM_SUSPEND_MAX] = {
--	[PM_SUSPEND_FREEZE]	= "freeze",
--	[PM_SUSPEND_STANDBY]	= "standby",
--	[PM_SUSPEND_MEM]	= "mem",
-+struct pm_sleep_state pm_states[PM_SUSPEND_MAX] = {
-+	[PM_SUSPEND_FREEZE] = { "freeze", PM_SUSPEND_FREEZE },
-+	[PM_SUSPEND_STANDBY] = { "standby", PM_SUSPEND_STANDBY },
-+	[PM_SUSPEND_MEM] = { "mem", PM_SUSPEND_MEM },
+ struct pm_sleep_state pm_states[PM_SUSPEND_MAX] = {
+-	[PM_SUSPEND_FREEZE] = { "freeze", PM_SUSPEND_FREEZE },
+-	[PM_SUSPEND_STANDBY] = { "standby", PM_SUSPEND_STANDBY },
+-	[PM_SUSPEND_MEM] = { "mem", PM_SUSPEND_MEM },
++	[PM_SUSPEND_FREEZE] = { .label = "freeze", .state = PM_SUSPEND_FREEZE },
++	[PM_SUSPEND_STANDBY] = { .label = "standby", },
++	[PM_SUSPEND_MEM] = { .label = "mem", },
  };
  
  static const struct platform_suspend_ops *suspend_ops;
-@@ -337,7 +337,7 @@ static int enter_state(suspend_state_t s
- 	sys_sync();
- 	printk("done.\n");
+@@ -62,42 +62,34 @@ void freeze_wake(void)
+ }
+ EXPORT_SYMBOL_GPL(freeze_wake);
  
--	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
-+	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state].label);
- 	error = suspend_prepare(state);
- 	if (error)
- 		goto Unlock;
-@@ -345,7 +345,7 @@ static int enter_state(suspend_state_t s
- 	if (suspend_test(TEST_FREEZER))
- 		goto Finish;
++static bool valid_state(suspend_state_t state)
++{
++	/*
++	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEM states need low level
++	 * support and need to be valid to the low level
++	 * implementation, no valid callback implies that none are valid.
++	 */
++	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
++}
++
+ /**
+  * suspend_set_ops - Set the global suspend method table.
+  * @ops: Suspend operations to use.
+  */
+ void suspend_set_ops(const struct platform_suspend_ops *ops)
+ {
++	suspend_state_t i;
++
+ 	lock_system_sleep();
++
+ 	suspend_ops = ops;
++	for (i = PM_SUSPEND_STANDBY; i <= PM_SUSPEND_MEM; i++)
++		pm_states[i].state = valid_state(i) ? i : 0;
++
+ 	unlock_system_sleep();
+ }
+ EXPORT_SYMBOL_GPL(suspend_set_ops);
  
--	pr_debug("PM: Entering %s sleep\n", pm_states[state]);
-+	pr_debug("PM: Entering %s sleep\n", pm_states[state].label);
- 	pm_restrict_gfp_mask();
- 	error = suspend_devices_and_enter(state);
- 	pm_restore_gfp_mask();
+-bool valid_state(suspend_state_t state)
+-{
+-	if (state == PM_SUSPEND_FREEZE) {
+-#ifdef CONFIG_PM_DEBUG
+-		if (pm_test_level != TEST_NONE &&
+-		    pm_test_level != TEST_FREEZER &&
+-		    pm_test_level != TEST_DEVICES &&
+-		    pm_test_level != TEST_PLATFORM) {
+-			printk(KERN_WARNING "Unsupported pm_test mode for "
+-					"freeze state, please choose "
+-					"none/freezer/devices/platform.\n");
+-			return false;
+-		}
+-#endif
+-			return true;
+-	}
+-	/*
+-	 * PM_SUSPEND_STANDBY and PM_SUSPEND_MEMORY states need lowlevel
+-	 * support and need to be valid to the lowlevel
+-	 * implementation, no valid callback implies that none are valid.
+-	 */
+-	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
+-}
+-
+ /**
+  * suspend_valid_only_mem - Generic memory-only valid callback.
+  *
+@@ -324,9 +316,17 @@ static int enter_state(suspend_state_t s
+ {
+ 	int error;
+ 
+-	if (!valid_state(state))
+-		return -ENODEV;
+-
++	if (state == PM_SUSPEND_FREEZE) {
++#ifdef CONFIG_PM_DEBUG
++		if (pm_test_level != TEST_NONE && pm_test_level <= TEST_CPUS) {
++			pr_warning("PM: Unsupported test mode for freeze state,"
++				   "please choose none/freezer/devices/platform.\n");
++			return -EAGAIN;
++		}
++#endif
++	} else if (!valid_state(state)) {
++		return -EINVAL;
++	}
+ 	if (!mutex_trylock(&pm_mutex))
+ 		return -EBUSY;
+ 
 --- a/kernel/power/suspend_test.c
 +++ b/kernel/power/suspend_test.c
-@@ -92,13 +92,13 @@ static void __init test_wakealarm(struct
- 	}
- 
- 	if (state == PM_SUSPEND_MEM) {
--		printk(info_test, pm_states[state]);
-+		printk(info_test, pm_states[state].label);
- 		status = pm_suspend(state);
- 		if (status == -ENODEV)
- 			state = PM_SUSPEND_STANDBY;
- 	}
- 	if (state == PM_SUSPEND_STANDBY) {
--		printk(info_test, pm_states[state]);
-+		printk(info_test, pm_states[state].label);
- 		status = pm_suspend(state);
- 	}
- 	if (status < 0)
-@@ -136,18 +136,16 @@ static char warn_bad_state[] __initdata
- 
- static int __init setup_test_suspend(char *value)
- {
--	unsigned i;
-+	suspend_state_t i;
- 
- 	/* "=mem" ==> "mem" */
- 	value++;
--	for (i = 0; i < PM_SUSPEND_MAX; i++) {
--		if (!pm_states[i])
--			continue;
--		if (strcmp(pm_states[i], value) != 0)
--			continue;
--		test_state = (__force suspend_state_t) i;
--		return 0;
--	}
-+	for (i = PM_SUSPEND_MIN; i < PM_SUSPEND_MAX; i++)
-+		if (!strcmp(pm_states[i].label, value)) {
-+			test_state = pm_states[i].state;
-+			return 0;
-+		}
-+
- 	printk(warn_bad_state, value);
- 	return 0;
- }
-@@ -165,7 +163,7 @@ static int __init test_suspend(void)
+@@ -162,7 +162,7 @@ static int __init test_suspend(void)
+ 	/* PM is initialized by now; is that state testable? */
  	if (test_state == PM_SUSPEND_ON)
  		goto done;
- 	if (!valid_state(test_state)) {
--		printk(warn_bad_state, pm_states[test_state]);
-+		printk(warn_bad_state, pm_states[test_state].label);
+-	if (!valid_state(test_state)) {
++	if (!pm_states[test_state].state) {
+ 		printk(warn_bad_state, pm_states[test_state].label);
  		goto done;
  	}
- 
 
 
