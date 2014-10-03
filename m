@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758960AbaJCWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:49:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
+	id S1759011AbaJCWtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757171AbaJCWYK (ORCPT
+	with ESMTP id S1756502AbaJCWYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:10 -0400
+	Fri, 3 Oct 2014 18:24:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.10 060/143] usb: dwc3: omap: fix ordering for runtime pm calls
-Date: Fri,  3 Oct 2014 14:34:15 -0700
-Message-Id: <20141003213316.319430643@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.10 074/143] shmem: fix nlink for rename overwrite directory
+Date: Fri,  3 Oct 2014 14:34:29 -0700
+Message-Id: <20141003213316.729214547@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,33 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 81a60b7f5c143ab3cdcd9943c9b4b7c63c32fc31 upstream.
+commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
 
-we don't to gate clocks until our children are
-done with their remove path.
+If overwriting an empty directory with rename, then need to drop the extra
+nlink.
 
-Fixes: af310e9 (usb: dwc3: omap: use runtime API's to enable clocks)
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Test prog:
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <err.h>
+#include <sys/stat.h>
+
+int main(void)
+{
+	const char *test_dir1 = "test-dir1";
+	const char *test_dir2 = "test-dir2";
+	int res;
+	int fd;
+	struct stat statbuf;
+
+	res = mkdir(test_dir1, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir1);
+
+	res = mkdir(test_dir2, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir2);
+
+	fd = open(test_dir2, O_RDONLY);
+	if (fd == -1)
+		err(1, "open(\"%s\")", test_dir2);
+
+	res = rename(test_dir1, test_dir2);
+	if (res == -1)
+		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
+
+	res = fstat(fd, &statbuf);
+	if (res == -1)
+		err(1, "fstat(%i)", fd);
+
+	if (statbuf.st_nlink != 0) {
+		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
+		return 1;
+	}
+
+	return 0;
+}
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/dwc3/dwc3-omap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/shmem.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/dwc3/dwc3-omap.c
-+++ b/drivers/usb/dwc3/dwc3-omap.c
-@@ -395,9 +395,9 @@ static int dwc3_omap_remove(struct platf
- 	struct dwc3_omap	*omap = platform_get_drvdata(pdev);
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2128,8 +2128,10 @@ static int shmem_rename(struct inode *ol
  
- 	dwc3_omap_disable_irqs(omap);
-+	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
- 	pm_runtime_put_sync(&pdev->dev);
- 	pm_runtime_disable(&pdev->dev);
--	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
- 
- 	return 0;
- }
+ 	if (new_dentry->d_inode) {
+ 		(void) shmem_unlink(new_dir, new_dentry);
+-		if (they_are_dirs)
++		if (they_are_dirs) {
++			drop_nlink(new_dentry->d_inode);
+ 			drop_nlink(old_dir);
++		}
+ 	} else if (they_are_dirs) {
+ 		drop_nlink(old_dir);
+ 		inc_nlink(new_dir);
 
 
