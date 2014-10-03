@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759273AbaJCW5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:57:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47305 "EHLO
+	id S932344AbaJCW6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:58:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587AbaJCWYC (ORCPT
+	with ESMTP id S932583AbaJCWYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:02 -0400
+	Fri, 3 Oct 2014 18:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manuel Reimer <manuel.reimer@gmx.de>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.10 052/143] xhci: Fix null pointer dereference if xhci initialization fails
-Date: Fri,  3 Oct 2014 14:34:07 -0700
-Message-Id: <20141003213316.045521778@linuxfoundation.org>
+        Emanuel Koczwara <poczta@emanuelkoczwara.pl>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 050/143] USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
+Date: Fri,  3 Oct 2014 14:34:05 -0700
+Message-Id: <20141003213315.987053549@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,32 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit c207e7c50f31113c24a9f536fcab1e8a256985d7 upstream.
+commit ee444609dbae8afee420c3243ce4c5f442efb622 upstream.
 
-If xhci initialization fails before the roothub bandwidth
-domains (xhci->rh_bw[i]) are allocated it will oops when
-trying to access rh_bw members in xhci_mem_cleanup().
+Add device id for NOVITUS Bono E thermal printer.
 
-Reported-by: Manuel Reimer <manuel.reimer@gmx.de>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Reported-by: Emanuel Koczwara <poczta@emanuelkoczwara.pl>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-mem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1795,7 +1795,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -744,6 +744,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
++	{ USB_DEVICE(NOVITUS_VID, NOVITUS_BONO_E_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -837,6 +837,12 @@
+ #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
  
- 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
--	for (i = 0; i < num_ports; i++) {
-+	for (i = 0; i < num_ports && xhci->rh_bw; i++) {
- 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
- 		for (j = 0; j < XHCI_MAX_INTERVAL; j++) {
- 			struct list_head *ep = &bwt->interval_bw[j].endpoints;
+ /*
++ * NOVITUS printers
++ */
++#define NOVITUS_VID			0x1a28
++#define NOVITUS_BONO_E_PID		0x6010
++
++/*
+  * RT Systems programming cables for various ham radios
+  */
+ #define RTSYSTEMS_VID		0x2100	/* Vendor ID */
 
 
