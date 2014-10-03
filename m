@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964AbaJCQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:20:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17689 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020AbaJCQU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:20:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,648,1406617200"; 
-   d="scan'208";a="600364224"
-Message-ID: <1412353168.10105.5.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] mtd: ubi: Extend UBI layer debug/messaging
- capabilities
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: =?UTF-8?Q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: Tanya Brokhman <tlinder@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Richard Weinberger <richard@nod.at>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Date: Fri, 03 Oct 2014 19:19:28 +0300
-In-Reply-To: <CACna6ryws=d_7NXhzWyu34TaV+Yv8y0+D4Q0ewuzDEv=8xDxRg@mail.gmail.com>
-References: <1412089998-18978-1-git-send-email-tlinder@codeaurora.org>
-	 <1412350035.3795.101.camel@sauron.fi.intel.com>
-	 <CACna6ryws=d_7NXhzWyu34TaV+Yv8y0+D4Q0ewuzDEv=8xDxRg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1753687AbaJCQWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:22:42 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14480 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489AbaJCQWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:22:41 -0400
+X-IronPort-AV: E=Sophos;i="5.04,648,1406592000"; 
+   d="scan'208";a="179016554"
+Date: Fri, 3 Oct 2014 17:20:08 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <Ian.Campbell@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
+In-Reply-To: <542EBB2A.6030104@citrix.com>
+Message-ID: <alpine.DEB.2.02.1410031717420.17038@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com> <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com> <542EBB2A.6030104@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 17:50 +0200, Rafał Miłecki wrote:
-> On 3 October 2014 17:27, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> > Yes, I guess a single patch is indeed OK. I have few nit-picks, though.
-> >
-> > On Tue, 2014-09-30 at 18:13 +0300, Tanya Brokhman wrote:
-> >> -             ubi_err("'ubi_io_read_ec_hdr()' returned unknown code %d", err);
-> >> +             ubi_err(ubi,
-> >> +               "'ubi_io_read_ec_hdr()' returned unknown code %d", err);
-> >>               return -EINVAL;
-> >
-> > I think it is fine if the line is long in these cases, let's keep the
-> > message on the same line, this split does not contribute to better
-> > readability, quite the opposite, in my opinion.
-> >
-> > One line:
-> > ubi_err(ubi, "long line")
-> >
-> > Multiple lines:
-> > ubi_err(ubi, "long line,
-> >         parameters)
+On Fri, 3 Oct 2014, David Vrabel wrote:
+> On 03/10/14 15:53, Stefano Stabellini wrote:
+> > Introduce support for new hypercall GNTTABOP_cache_flush.
+> > Use it to perform cache flashing on pages used for dma when necessary.
+> [..]
+> >  /* functions called by SWIOTLB */
+> > @@ -22,16 +25,31 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+> >  		size_t len = left;
+> >  		void *vaddr;
+> >  	
+> > +		if (len + offset > PAGE_SIZE)
+> > +			len = PAGE_SIZE - offset;
+> > +
+> >  		if (!pfn_valid(pfn))
+> >  		{
+> > -			/* TODO: cache flush */
+> > +			struct gnttab_cache_flush cflush;
+> > +
+> > +			cflush.op = 0;
+> > +			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
+> > +			cflush.offset = offset;
+> > +			cflush.size = len;
+> > +
+> > +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
+> > +				cflush.op = GNTTAB_CACHE_INVAL;
+> > +			if (op == dmac_map_area) {
+> > +				cflush.op = GNTTAB_CACHE_CLEAN;
+> > +				if (dir == DMA_FROM_DEVICE)
+> > +					cflush.op |= GNTTAB_CACHE_INVAL;
+> > +			}
 > 
-> You should discuss that with checkpatch team, because ARAIR it will
-> complain about "long line" with any other parameter in the same line.
+> Are all these cache operations needed?  You do a clean on map regardless
+> of the direction and INVAL on map seems unnecessary.
+> 
+> I would have thought it would be:
+> 
+> map && (TO_DEVICE || BOTH)
+>    op = CLEAN
+> 
+> unmap && (FROM_DEVICE || BOTH)
+>    op = INVAL
 
-I respect checkpatch.pl, and uniformity / consistency, but in this
-particular case I put my maintainer hat on and say that for this kernel
-subsystem it is fine, because the maintainer will be more efficient in
-maintaining this code when the code is a bit mere readable for him.
+I was trying to do the same thing Linux is already doing on native to
+stay on the safe side.
 
-Artem.
+See arch/arm/mm/cache-v7.S:v7_dma_map_area and
+arch/arm/mm/cache-v7.S:v7_dma_unmap_area.
 
+Unless I misread the assembly they should match.
+
+
+> > --- a/include/xen/interface/grant_table.h
+> > +++ b/include/xen/interface/grant_table.h
+> > @@ -479,6 +479,24 @@ struct gnttab_get_version {
+> >  DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+> >  
+> >  /*
+> > + * Issue one or more cache maintenance operations on a portion of a
+> > + * page granted to the calling domain by a foreign domain.
+> > + */
+> > +#define GNTTABOP_cache_flush          12
+> > +struct gnttab_cache_flush {
+> > +    union {
+> > +        uint64_t dev_bus_addr;
+> > +        grant_ref_t ref;
+> > +    } a;
+> > +    uint32_t offset; /* offset from start of grant */
+> > +    uint32_t size;   /* size within the grant */
+> > +#define GNTTAB_CACHE_CLEAN      (1<<0)
+> > +#define GNTTAB_CACHE_INVAL      (1<<1)
+> > +    uint32_t op;
+> > +};
+> > +DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
+> > +
+> > +/*
+> >   * Bitfield values for update_pin_status.flags.
+> >   */
+> >   /* Map the grant entry for access by I/O devices. */
+> 
+> If the ARM bits are correct, have a
+> 
+> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+> 
+> for the common header.
+> 
+> David
+> 
