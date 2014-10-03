@@ -1,107 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151AbaJCQga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:36:30 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:38056 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711AbaJCQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:36:28 -0400
-X-IronPort-AV: E=Sophos;i="5.04,648,1406592000"; 
-   d="scan'208";a="177948840"
-Message-ID: <542ED08A.1090507@citrix.com>
-Date: Fri, 3 Oct 2014 17:36:26 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1754159AbaJCQjY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:39:24 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56068 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752711AbaJCQjW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:39:22 -0400
+Message-ID: <542ED130.2090501@hurleysoftware.com>
+Date: Fri, 03 Oct 2014 12:39:12 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
-References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com>	 <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com>	 <542EBB2A.6030104@citrix.com>	 <alpine.DEB.2.02.1410031717420.17038@kaball.uk.xensource.com> <1412354047.12695.38.camel@citrix.com>
-In-Reply-To: <1412354047.12695.38.camel@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>	<5426CA0A.7000806@hurleysoftware.com>	<CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>	<54294C0B.1060705@hurleysoftware.com>	<CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>	<542ABF77.1020402@hurleysoftware.com>	<alpine.DEB.2.11.1410010131380.4455@nanos>	<542B5DC2.8020806@hurleysoftware.com>	<20141002164121.GF1715@laptop.dumpdata.com>	<542DCB9C.4020703@hurleysoftware.com>	<CAC5umyjHruhnwiKwrHLBAF+g0ZDVouuuNvrisrUH8o963GyytQ@mail.gmail.com>	<542EB242.4090102@hurleysoftware.com> <CAC5umygJ3EDOb4E29+YPo4t4Ew_K3x7jpxLrmvNco3U=UJBCrA@mail.gmail.com>
+In-Reply-To: <CAC5umygJ3EDOb4E29+YPo4t4Ew_K3x7jpxLrmvNco3U=UJBCrA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/14 17:34, Ian Campbell wrote:
-> On Fri, 2014-10-03 at 17:20 +0100, Stefano Stabellini wrote:
->> On Fri, 3 Oct 2014, David Vrabel wrote:
->>> On 03/10/14 15:53, Stefano Stabellini wrote:
->>>> Introduce support for new hypercall GNTTABOP_cache_flush.
->>>> Use it to perform cache flashing on pages used for dma when necessary.
->>> [..]
->>>>  /* functions called by SWIOTLB */
->>>> @@ -22,16 +25,31 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
->>>>  		size_t len = left;
->>>>  		void *vaddr;
->>>>  	
->>>> +		if (len + offset > PAGE_SIZE)
->>>> +			len = PAGE_SIZE - offset;
->>>> +
->>>>  		if (!pfn_valid(pfn))
->>>>  		{
->>>> -			/* TODO: cache flush */
->>>> +			struct gnttab_cache_flush cflush;
->>>> +
->>>> +			cflush.op = 0;
->>>> +			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
->>>> +			cflush.offset = offset;
->>>> +			cflush.size = len;
->>>> +
->>>> +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
->>>> +				cflush.op = GNTTAB_CACHE_INVAL;
->>>> +			if (op == dmac_map_area) {
->>>> +				cflush.op = GNTTAB_CACHE_CLEAN;
->>>> +				if (dir == DMA_FROM_DEVICE)
->>>> +					cflush.op |= GNTTAB_CACHE_INVAL;
->>>> +			}
+On 10/03/2014 12:06 PM, Akinobu Mita wrote:
+> 2014-10-03 23:27 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>> On 10/02/2014 07:08 PM, Akinobu Mita wrote:
+>>> 2014-10-03 7:03 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>>>> On 10/02/2014 12:41 PM, Konrad Rzeszutek Wilk wrote:
+>>>>> On Tue, Sep 30, 2014 at 09:49:54PM -0400, Peter Hurley wrote:
+>>>>>> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
 >>>
->>> Are all these cache operations needed?  You do a clean on map regardless
->>> of the direction and INVAL on map seems unnecessary.
-> 
-> Isn't the inval on map so that the processor doesn't decide to
-> evict/clean the cache line all over your newly DMA'd data?
-
-Ah, yes that makes sense.
-
->>> I would have thought it would be:
+>>>>>> Which is different than if the plan is to ship production units for x86;
+>>>>>> then a general purpose solution will be required.
+>>>>>>
+>>>>>> As to the good design of a general purpose solution for allocating and
+>>>>>> mapping huge order pages, you are certainly more qualified to help Akinobu
+>>>>>> than I am.
+>>>>
+>>>> What Akinobu's patches intend to support is:
+>>>>
+>>>>         phys_addr = dma_alloc_coherent(dev, 64 * 1024 * 1024, &bus_addr, GFP_KERNEL);
+>>>>
+>>>> which raises three issues:
+>>>>
+>>>> 1. Where do coherent blocks of this size come from?
+>>>> 2. How to prevent fragmentation of these reserved blocks over time by
+>>>>    existing DMA users?
+>>>> 3. Is this support generically required across all iommu implementations on x86?
+>>>>
+>>>> Questions 1 and 2 are non-trivial, in the general case, otherwise the page
+>>>> allocator would already do this. Simply dropping in the contiguous memory
+>>>> allocator doesn't work because CMA does not have the same policy and performance
+>>>> as the page allocator, and is already causing performance regressions even
+>>>> in the absence of huge page allocations.
 >>>
->>> map && (TO_DEVICE || BOTH)
->>>    op = CLEAN
+>>> Could you take a look at the patches I sent?  Can they fix these issues?
+>>> https://lkml.org/lkml/2014/9/28/110
 >>>
->>> unmap && (FROM_DEVICE || BOTH)
->>>    op = INVAL
+>>> With these patches, normal alloc_pages() is used for allocation first
+>>> and dma_alloc_from_contiguous() is used as a fallback.
 >>
->> I was trying to do the same thing Linux is already doing on native to
->> stay on the safe side.
->>
->> See arch/arm/mm/cache-v7.S:v7_dma_map_area and
->> arch/arm/mm/cache-v7.S:v7_dma_unmap_area.
->>
->> Unless I misread the assembly they should match.
+>> Sure, I can test these patches this weekend.
+>> Where are the unit tests?
 > 
-> I think you have, beq doesn't set lr, so the called function will return
-> to its "grandparent". i.e. the caller of v7_dma_map_area in this case
-> (which will have used bl), so:
-> ENTRY(v7_dma_map_area)
->         add     r1, r1, r0
->         teq     r2, #DMA_FROM_DEVICE
->         beq     v7_dma_inv_range
->         b       v7_dma_clean_range
-> ENDPROC(v7_dma_map_area)
-> 
-> Is actually
-> 	if (dir == from device)
-> 		inv
-> 	else
-> 		clean
-> 
-> which makes much more sense I think.
+> Thanks a lot.  I would like to know whether the performance regression
+> you see will disappear or not with these patches as if CONFIG_DMA_CMA is
+> disabled.
 
-This is how I read the assembler too.
+I think something may have gotten lost in translation.
 
-David
+My "test" consists of doing my daily work (email, emacs, kernel builds,
+web breaks, etc).
+
+I don't have a testsuite that validates a page allocator or records any
+performance metrics (for TTM allocations under load, as an example).
+
+Without a unit test and performance metrics, my "test" is not really
+positive affirmation of a correct implementation.
+
+
+>>>> So that's why I raised question 3; is making the necessary compromises to support
+>>>> 64MB coherent DMA allocations across all x86 iommu implementations actually
+>>>> required?
+>>>>
+>>>> Prior to Akinobu's patches, the use of CMA by x86 iommu configurations was
+>>>> designed to be limited to testing configurations, as the introductory
+>>>> commit states:
+>>>>
+>>>> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
+>>>> Author: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>> Date:   Thu Dec 29 13:09:51 2011 +0100
+>>>>
+>>>>     X86: integrate CMA with DMA-mapping subsystem
+>>>>
+>>>>     This patch adds support for CMA to dma-mapping subsystem for x86
+>>>>     architecture that uses common pci-dma/pci-nommu implementation. This
+>>>>     allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+>>>>
+>>>>     Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>     CC: Michal Nazarewicz <mina86@mina86.com>
+>>>>     Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>>>
+>>>>
+>>>> Which brings me to my suggestion: if support for huge coherent DMA is
+>>>> required only for a special test platform, then could not this support
+>>>> be specific to a new iommu configuration, namely iommu=cma, which would
+>>>> get initialized much the same way that iommu=calgary is now.
+>>>>
+>>>> The code for such a iommu configuration would mostly duplicate
+>>>> arch/x86/kernel/pci-swiotlb.c and the CMA support would get removed from
+>>>> the other x86 iommu implementations.
+>>>
+>>> I'm not sure I read correctly, though.  Can boot option 'cma=0' also
+>>> help avoiding CMA from IOMMU implementation?
+>>
+>> Maybe, but that's not an appropriate solution for distro kernels.
+>>
+>> Nor does this address configurations that want a really large CMA so
+>> 1GB huge pages can be allocated (not for DMA though).
+> 
+> Now I see the point of iommu=cma you suggested.  But what should we do
+> when CONFIG_SWIOTLB is disabled, especially for x86_32?
+> Should we just introduce yet another flag to tell not using DMA_CMA
+> instead of adding new swiotlb-like iommu implementation?
+
+Again, since I don't know what you're using this for and
+there are no existing mainline users, I can't really design this for
+you.
+
+I'm just trying to do my best to come up with alternative solutions
+that limit the impact to existing x86 configurations, while still
+achieving your goals (without really knowing what those design
+constraints are).
+
+Regards,
+Peter Hurley
+
