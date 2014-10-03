@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760138AbaJDAye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:54:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44710 "EHLO
+	id S1758718AbaJDAyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:54:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754887AbaJCVcc (ORCPT
+	with ESMTP id S1754889AbaJCVcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.16 026/357] drm/i915: Disable RCS flips on Ivybridge
-Date: Fri,  3 Oct 2014 14:26:52 -0700
-Message-Id: <20141003212934.256541428@linuxfoundation.org>
+        Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 3.16 025/357] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
+Date: Fri,  3 Oct 2014 14:26:51 -0700
+Message-Id: <20141003212934.221196812@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,33 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 2a92d5bca1999b69c78f3c3e97b5484985b094b9 upstream.
+commit ece4a17d237a79f63fbfaf3f724a12b6d500555c upstream.
 
-We currently see random GPU hangs when using RCS flips with multiple
-pipes on Ivybridge. Now that we have mmio flips, we can fairly cheaply
-fallback to using CPU driven flips instead.
+Withtout this, ring initialization fails reliabily during resume with
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77104
+	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
+
+This is not a complete fix, but it is verified to make the ring
+initialization failures during resume much less likely.
+
+We were not able to root-cause this bug (likely HW-specific to Gen4 chips)
+yet. This is therefore used as a ducttape before problem is fully
+understood and proper fix created, so that people don't suffer from
+completely unusable systems in the meantime.
+
+The discussion and debugging is happening at
+
+	https://bugs.freedesktop.org/show_bug.cgi?id=76554
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -9294,6 +9294,8 @@ static int intel_crtc_page_flip(struct d
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -517,6 +517,9 @@ static int init_ring_common(struct intel
+ 	else
+ 		ring_setup_phys_status_page(ring);
  
- 	if (IS_VALLEYVIEW(dev)) {
- 		ring = &dev_priv->ring[BCS];
-+	} else if (IS_IVYBRIDGE(dev)) {
-+		ring = &dev_priv->ring[BCS];
- 	} else if (INTEL_INFO(dev)->gen >= 7) {
- 		ring = obj->ring;
- 		if (ring == NULL || ring->id != RCS)
++	/* Enforce ordering by reading HEAD register back */
++	I915_READ_HEAD(ring);
++
+ 	/* Initialize the ring. This must happen _after_ we've cleared the ring
+ 	 * registers with the above sequence (the readback of the HEAD registers
+ 	 * also enforces ordering), otherwise the hw might lose the new ring
 
 
