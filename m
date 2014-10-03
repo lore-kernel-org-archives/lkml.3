@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497AbaJCIKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 04:10:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbaJCIJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 04:09:57 -0400
-Date: Fri, 3 Oct 2014 10:09:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [BUG] perf tools: off-by-one error in map_groups__find_ams()
-Message-ID: <20141003080920.GE19087@krava.brq.redhat.com>
-References: <CABPqkBQPjpgD_5n0ZMmx971+YO86CO+5mSfcg7a1p4Ys_TgOUA@mail.gmail.com>
- <20141002083635.GF9764@krava.brq.redhat.com>
- <CABPqkBRrBttsL6maPCjXuQXhCmEYLWVYVpmQaMYihXcRy2k_-g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBRrBttsL6maPCjXuQXhCmEYLWVYVpmQaMYihXcRy2k_-g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751728AbaJCIKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 04:10:41 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:52349 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaJCIKa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 04:10:30 -0400
+Message-ID: <1412323827.6015.10.camel@haakon3.risingtidesystems.com>
+Subject: Re: linux-next: build failure after merge of the target-updates tree
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 03 Oct 2014 01:10:27 -0700
+In-Reply-To: <20141003154629.3b64e021@canb.auug.org.au>
+References: <20141003154629.3b64e021@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 06:40:14PM +0200, Stephane Eranian wrote:
-> On Thu, Oct 2, 2014 at 10:36 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Wed, Oct 01, 2014 at 09:16:31PM +0200, Stephane Eranian wrote:
-> >> Hi,
-> >>
-> >> It appears that there is a off-by-one bug in map_groups__find_ams().
-> >> The upper-bound check in the test below should be >= because
-> >> end = start + len; The end address is outside the range.
-> >>
-> >> Please confirm.
-> >>
-> >>
-> >> int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
-> >> {
-> >>                 if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
-> >
-> > yep, looks like bug to me
-> >
-> Are you providing a fix or should I?
+On Fri, 2014-10-03 at 15:46 +1000, Stephen Rothwell wrote:
+> Hi Nicholas,
+> 
+> After merging the target-updates tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/target/target_core_user.c: In function 'tcmu_netlink_event':
+> drivers/target/target_core_user.c:780:2: error: expected ';' before 'ret'
+>   ret = nla_put_u32(skb, TCMU_ATTR_MINOR, minor);
+>   ^
+> 
+> Caused by commit 7f2ea21b2c8d ("target/user: Fix up smatch warnings in
+> tcmu_netlink_event").
+> 
+> I have reverted that commit for today.
 
-please go ahead
+Fixed.  Thank you Stephen.
 
-jirka
+--nab
+
+
