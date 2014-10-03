@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932337AbaJCV7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:59:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46120 "EHLO
+	id S1756404AbaJCV7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:59:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46124 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398AbaJCV7I (ORCPT
+	with ESMTP id S1756992AbaJCV7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:59:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.16 286/357] powerpc: Add smp_mb()s to arch_spin_unlock_wait()
-Date: Fri,  3 Oct 2014 14:31:12 -0700
-Message-Id: <20141003212942.077046405@linuxfoundation.org>
+        Richard Genoud <richard.genoud@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3.16 287/357] tty/serial: at91: BUG: disable interrupts when !UART_ENABLE_MS()
+Date: Fri,  3 Oct 2014 14:31:13 -0700
+Message-Id: <20141003212942.106051461@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,47 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <mpe@ellerman.id.au>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit 78e05b1421fa41ae8457701140933baa5e7d9479 upstream.
+commit 35b675b9100fc38f58cb75b30e422ecd342519a8 upstream.
 
-Similar to the previous commit which described why we need to add a
-barrier to arch_spin_is_locked(), we have a similar problem with
-spin_unlock_wait().
+In set_termios(), interrupts where not disabled if UART_ENABLE_MS() was
+false.
 
-We need a barrier on entry to ensure any spinlock we have previously
-taken is visibly locked prior to the load of lock->slock.
+Tested on at91sam9g35.
 
-It's also not clear if spin_unlock_wait() is intended to have ACQUIRE
-semantics. For now be conservative and add a barrier on exit to give it
-ACQUIRE semantics.
-
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/lib/locks.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/tty/serial/atmel_serial.c |   43 +++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/lib/locks.c
-+++ b/arch/powerpc/lib/locks.c
-@@ -70,12 +70,16 @@ void __rw_yield(arch_rwlock_t *rw)
- 
- void arch_spin_unlock_wait(arch_spinlock_t *lock)
- {
-+	smp_mb();
-+
- 	while (lock->slock) {
- 		HMT_low();
- 		if (SHARED_PROCESSOR)
- 			__spin_yield(lock);
- 	}
- 	HMT_medium();
-+
-+	smp_mb();
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -527,6 +527,45 @@ static void atmel_enable_ms(struct uart_
  }
  
- EXPORT_SYMBOL(arch_spin_unlock_wait);
+ /*
++ * Disable modem status interrupts
++ */
++static void atmel_disable_ms(struct uart_port *port)
++{
++	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
++	uint32_t idr = 0;
++
++	/*
++	 * Interrupt should not be disabled twice
++	 */
++	if (!atmel_port->ms_irq_enabled)
++		return;
++
++	atmel_port->ms_irq_enabled = false;
++
++	if (atmel_port->gpio_irq[UART_GPIO_CTS] >= 0)
++		disable_irq(atmel_port->gpio_irq[UART_GPIO_CTS]);
++	else
++		idr |= ATMEL_US_CTSIC;
++
++	if (atmel_port->gpio_irq[UART_GPIO_DSR] >= 0)
++		disable_irq(atmel_port->gpio_irq[UART_GPIO_DSR]);
++	else
++		idr |= ATMEL_US_DSRIC;
++
++	if (atmel_port->gpio_irq[UART_GPIO_RI] >= 0)
++		disable_irq(atmel_port->gpio_irq[UART_GPIO_RI]);
++	else
++		idr |= ATMEL_US_RIIC;
++
++	if (atmel_port->gpio_irq[UART_GPIO_DCD] >= 0)
++		disable_irq(atmel_port->gpio_irq[UART_GPIO_DCD]);
++	else
++		idr |= ATMEL_US_DCDIC;
++
++	UART_PUT_IDR(port, idr);
++}
++
++/*
+  * Control the transmission of a break signal
+  */
+ static void atmel_break_ctl(struct uart_port *port, int break_state)
+@@ -1993,7 +2032,9 @@ static void atmel_set_termios(struct uar
+ 
+ 	/* CTS flow-control and modem-status interrupts */
+ 	if (UART_ENABLE_MS(port, termios->c_cflag))
+-		port->ops->enable_ms(port);
++		atmel_enable_ms(port);
++	else
++		atmel_disable_ms(port);
+ 
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ }
 
 
