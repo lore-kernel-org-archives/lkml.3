@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaJCNrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 09:47:13 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:56101 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJCNrK (ORCPT
+	id S1752952AbaJCNs4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 09:48:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64452 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282AbaJCNsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 09:47:10 -0400
-Date: Fri, 3 Oct 2014 14:47:07 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Mathias Krause <minipli@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
-Message-ID: <20141003134707.GJ14343@console-pimps.org>
-References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
- <1411313216-2641-2-git-send-email-minipli@googlemail.com>
+	Fri, 3 Oct 2014 09:48:53 -0400
+Date: Fri, 3 Oct 2014 14:48:49 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
+Message-ID: <20141003134849.GL26643@leverpostej>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1979325.jM0BQzDCTX@wuerfel>
+ <20141002104123.GJ1786@lahna.fi.intel.com>
+ <2466832.0XJezjdvYs@wuerfel>
+ <20141002121508.GM1786@lahna.fi.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411313216-2641-2-git-send-email-minipli@googlemail.com>
+In-Reply-To: <20141002121508.GM1786@lahna.fi.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Sep, at 05:26:54PM, Mathias Krause wrote:
-> In commit 3891a04aafd6 ("x86-64, espfix: Don't leak bits 31:16 of %esp
-> returning..") the "ESPFix Area" was added to the page table dump special
-> sections. That area, though, has a limited amount of entries printed.
+On Thu, Oct 02, 2014 at 01:15:08PM +0100, Mika Westerberg wrote:
+> On Thu, Oct 02, 2014 at 01:51:24PM +0200, Arnd Bergmann wrote:
+> > On Thursday 02 October 2014 13:41:23 Mika Westerberg wrote:
+> > > On Wed, Oct 01, 2014 at 09:59:14AM +0200, Arnd Bergmann wrote:
+> > > > On Wednesday 01 October 2014 04:11:20 Rafael J. Wysocki wrote:
+> > > > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > 
+> > > > > +The referenced ACPI device is returned in args->adev if found.
+> > > > > +
+> > > > > +In addition to simple object references it is also possible to have object
+> > > > > +references with arguments. These are represented in ASL as follows:
+> > > > > +
+> > > > > +	Device (\_SB.PCI0.PWM)
+> > > > > +	{
+> > > > > +		Name (_DSD, Package () {
+> > > > > +			ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+> > > > > +			Package () {
+> > > > > +				Package () {"#pwm-cells", 2}
+> > > > > +			}
+> > > > > +		})
+> > > > > +	}
+> > > > > +
+> > > > 
+> > > > Similarly, the "#foo-cells" syntax is an artifact of the limitations of the
+> > > > DT syntax, and I'd assume there would be a better way to encode this
+> > > > in ACPI. Also, a "cell" in Open Firmware is defined as a big-endian
+> > > > 32-bit value, which doesn't directly correspond to something in ACPI,
+> > > > and the '#' character is an artifact of the use of the Forth language
+> > > > in Open Firmware, which you also don't have here.
+> > > 
+> > > Same here, we tried to make it follow closely the DT description. It is
+> > > probably not the best/optimal encoding for ACPI but it is documented
+> > > well in Documentation/devicetree/bindings so why not use it.
+> > > 
+> > > The summary email from Darren at KS also mentions that for the existing
+> > > drivers, the existing schemas should be common for both implementations [1].
+> > > 
+> > > For new bindings we probably should look out if they can be better
+> > > represented using ACPI types.
+> > > 
+> > > [1] http://lwn.net/Articles/609373/
+> > 
+> > I thought when we had discussed the subsystem specific bindings, the
+> > consensus there was to have subsystem specific accessors and
+> > properties/tables.
+> > 
+> > I would argue that for everything that ACPI already has (interrupts,
+> > registers, gpio, dmaengine, ...) the native method should be used,
+> > possibly using _DSD to provide naming for otherwise anonymous references.
 > 
-> The EFI runtime services are, unfortunately, located in-between the
-> espfix area and the high kernel memory mapping. Due to the enforced
-> limitation for the espfix area, the EFI mappings won't be printed in the
-> page table dump.
+> Absolutely. That's precisely what we do in the GPIO patch of this
+> series. E.g we use ACPI GpioIo/GpioInt _CRS resources but give name to
+> the GPIOs with the help of _DSD.
 > 
-> To make the ESP runtime service mappings visible again, provide them a
-> dedicated entry.
-> 
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> ---
-> v2: same as v1
-> 
->  arch/x86/include/asm/pgtable_64_types.h |    2 ++
->  arch/x86/mm/dump_pagetables.c           |    3 +++
->  arch/x86/platform/efi/efi_64.c          |    3 +--
->  3 files changed, 6 insertions(+), 2 deletions(-)
- 
-Looks OK to me. Borislav?
+> For things that don't have correspondence in ACPI but have well defined
+> existing DT schema, like PWMs, we should follow that.
 
-> diff --git a/arch/x86/include/asm/pgtable_64_types.h b/arch/x86/include/asm/pgtable_64_types.h
-> index 7166e25ecb57..602b6028c5b6 100644
-> --- a/arch/x86/include/asm/pgtable_64_types.h
-> +++ b/arch/x86/include/asm/pgtable_64_types.h
-> @@ -63,6 +63,8 @@ typedef struct { pteval_t pte; } pte_t;
->  #define MODULES_LEN   (MODULES_END - MODULES_VADDR)
->  #define ESPFIX_PGD_ENTRY _AC(-2, UL)
->  #define ESPFIX_BASE_ADDR (ESPFIX_PGD_ENTRY << PGDIR_SHIFT)
-> +#define EFI_VA_START	 ( -4 * (_AC(1, UL) << 30))
-> +#define EFI_VA_END	 (-68 * (_AC(1, UL) << 30))
->  
->  #define EARLY_DYNAMIC_PAGE_TABLES	64
->  
-> diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-> index 95a427e57887..1a8053d1012e 100644
-> --- a/arch/x86/mm/dump_pagetables.c
-> +++ b/arch/x86/mm/dump_pagetables.c
-> @@ -76,6 +76,9 @@ static struct addr_marker address_markers[] = {
->  # ifdef CONFIG_X86_ESPFIX64
->  	{ ESPFIX_BASE_ADDR,	"ESPfix Area", 16 },
->  # endif
-> +# ifdef CONFIG_EFI
-> +	{ EFI_VA_END,		"EFI Runtime Services" },
-> +# endif
->  	{ __START_KERNEL_map,   "High Kernel Mapping" },
->  	{ MODULES_VADDR,        "Modules" },
->  	{ MODULES_END,          "End Modules" },
-> diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-> index 290d397e1dd9..899c7f17ad85 100644
-> --- a/arch/x86/platform/efi/efi_64.c
-> +++ b/arch/x86/platform/efi/efi_64.c
-> @@ -48,8 +48,7 @@ static unsigned long efi_flags __initdata;
->   * We allocate runtime services regions bottom-up, starting from -4G, i.e.
->   * 0xffff_ffff_0000_0000 and limit EFI VA mapping space to 64G.
->   */
-> -static u64 efi_va	= -4 * (1UL << 30);
-> -#define EFI_VA_END	(-68 * (1UL << 30))
-> +static u64 efi_va = EFI_VA_START;
->  
->  /*
->   * Scratch space used for switching the pagetable in the EFI stub
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I'm rather concerned that while that's expedient for us, that's going to
+end up in the creation of Linux-only ACPI tables. If any other OS vendor
+decides they need to model this information and doesn't wnat to pick up
+Linux _DSD bindings, what happens if they try to get an explicit object
+model defined in ACPI for those objects?
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Mark.
