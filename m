@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849AbaJCXu1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:50:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46270 "EHLO
+	id S1758901AbaJCXvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:51:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46260 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757233AbaJCWD0 (ORCPT
+	with ESMTP id S1756314AbaJCWD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabian Frederick <fabf@skynet.be>, David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 279/357] fs/cachefiles: add missing \n to kerror conversions
-Date: Fri,  3 Oct 2014 14:31:05 -0700
-Message-Id: <20141003212941.873559787@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.16 292/357] alarmtimer: Do not signal SIGEV_NONE timers
+Date: Fri,  3 Oct 2014 14:31:18 -0700
+Message-Id: <20141003212942.254670549@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,309 +33,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabian Frederick <fabf@skynet.be>
+From: Richard Larocque <rlarocque@google.com>
 
-commit 6ff66ac77aeaa9c13db28784e1c50c027a1f487b upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-Commit 0227d6abb378 ("fs/cachefiles: replace kerror by pr_err") didn't
-include newline featuring in original kerror definition
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Reported-by: David Howells <dhowells@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
+
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cachefiles/bind.c     |    8 ++++----
- fs/cachefiles/daemon.c   |   30 +++++++++++++++---------------
- fs/cachefiles/internal.h |    2 +-
- fs/cachefiles/main.c     |    2 +-
- fs/cachefiles/namei.c    |   14 +++++++-------
- fs/cachefiles/xattr.c    |   10 +++++-----
- 6 files changed, 33 insertions(+), 33 deletions(-)
+ kernel/time/alarmtimer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/cachefiles/bind.c
-+++ b/fs/cachefiles/bind.c
-@@ -50,18 +50,18 @@ int cachefiles_daemon_bind(struct cachef
- 	       cache->brun_percent  < 100);
- 
- 	if (*args) {
--		pr_err("'bind' command doesn't take an argument");
-+		pr_err("'bind' command doesn't take an argument\n");
- 		return -EINVAL;
- 	}
- 
- 	if (!cache->rootdirname) {
--		pr_err("No cache directory specified");
-+		pr_err("No cache directory specified\n");
- 		return -EINVAL;
- 	}
- 
- 	/* don't permit already bound caches to be re-bound */
- 	if (test_bit(CACHEFILES_READY, &cache->flags)) {
--		pr_err("Cache already bound");
-+		pr_err("Cache already bound\n");
- 		return -EBUSY;
- 	}
- 
-@@ -248,7 +248,7 @@ error_open_root:
- 	kmem_cache_free(cachefiles_object_jar, fsdef);
- error_root_object:
- 	cachefiles_end_secure(cache, saved_cred);
--	pr_err("Failed to register: %d", ret);
-+	pr_err("Failed to register: %d\n", ret);
- 	return ret;
- }
- 
---- a/fs/cachefiles/daemon.c
-+++ b/fs/cachefiles/daemon.c
-@@ -315,7 +315,7 @@ static unsigned int cachefiles_daemon_po
- static int cachefiles_daemon_range_error(struct cachefiles_cache *cache,
- 					 char *args)
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -466,8 +466,10 @@ static enum alarmtimer_restart alarm_han
  {
--	pr_err("Free space limits must be in range 0%%<=stop<cull<run<100%%");
-+	pr_err("Free space limits must be in range 0%%<=stop<cull<run<100%%\n");
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
++	}
  
- 	return -EINVAL;
- }
-@@ -475,12 +475,12 @@ static int cachefiles_daemon_dir(struct
- 	_enter(",%s", args);
- 
- 	if (!*args) {
--		pr_err("Empty directory specified");
-+		pr_err("Empty directory specified\n");
- 		return -EINVAL;
- 	}
- 
- 	if (cache->rootdirname) {
--		pr_err("Second cache directory specified");
-+		pr_err("Second cache directory specified\n");
- 		return -EEXIST;
- 	}
- 
-@@ -503,12 +503,12 @@ static int cachefiles_daemon_secctx(stru
- 	_enter(",%s", args);
- 
- 	if (!*args) {
--		pr_err("Empty security context specified");
-+		pr_err("Empty security context specified\n");
- 		return -EINVAL;
- 	}
- 
- 	if (cache->secctx) {
--		pr_err("Second security context specified");
-+		pr_err("Second security context specified\n");
- 		return -EINVAL;
- 	}
- 
-@@ -531,7 +531,7 @@ static int cachefiles_daemon_tag(struct
- 	_enter(",%s", args);
- 
- 	if (!*args) {
--		pr_err("Empty tag specified");
-+		pr_err("Empty tag specified\n");
- 		return -EINVAL;
- 	}
- 
-@@ -562,12 +562,12 @@ static int cachefiles_daemon_cull(struct
- 		goto inval;
- 
- 	if (!test_bit(CACHEFILES_READY, &cache->flags)) {
--		pr_err("cull applied to unready cache");
-+		pr_err("cull applied to unready cache\n");
- 		return -EIO;
- 	}
- 
- 	if (test_bit(CACHEFILES_DEAD, &cache->flags)) {
--		pr_err("cull applied to dead cache");
-+		pr_err("cull applied to dead cache\n");
- 		return -EIO;
- 	}
- 
-@@ -587,11 +587,11 @@ static int cachefiles_daemon_cull(struct
- 
- notdir:
- 	path_put(&path);
--	pr_err("cull command requires dirfd to be a directory");
-+	pr_err("cull command requires dirfd to be a directory\n");
- 	return -ENOTDIR;
- 
- inval:
--	pr_err("cull command requires dirfd and filename");
-+	pr_err("cull command requires dirfd and filename\n");
- 	return -EINVAL;
- }
- 
-@@ -614,7 +614,7 @@ static int cachefiles_daemon_debug(struc
- 	return 0;
- 
- inval:
--	pr_err("debug command requires mask");
-+	pr_err("debug command requires mask\n");
- 	return -EINVAL;
- }
- 
-@@ -634,12 +634,12 @@ static int cachefiles_daemon_inuse(struc
- 		goto inval;
- 
- 	if (!test_bit(CACHEFILES_READY, &cache->flags)) {
--		pr_err("inuse applied to unready cache");
-+		pr_err("inuse applied to unready cache\n");
- 		return -EIO;
- 	}
- 
- 	if (test_bit(CACHEFILES_DEAD, &cache->flags)) {
--		pr_err("inuse applied to dead cache");
-+		pr_err("inuse applied to dead cache\n");
- 		return -EIO;
- 	}
- 
-@@ -659,11 +659,11 @@ static int cachefiles_daemon_inuse(struc
- 
- notdir:
- 	path_put(&path);
--	pr_err("inuse command requires dirfd to be a directory");
-+	pr_err("inuse command requires dirfd to be a directory\n");
- 	return -ENOTDIR;
- 
- inval:
--	pr_err("inuse command requires dirfd and filename");
-+	pr_err("inuse command requires dirfd and filename\n");
- 	return -EINVAL;
- }
- 
---- a/fs/cachefiles/internal.h
-+++ b/fs/cachefiles/internal.h
-@@ -255,7 +255,7 @@ extern int cachefiles_remove_object_xatt
- 
- #define cachefiles_io_error(___cache, FMT, ...)		\
- do {							\
--	pr_err("I/O Error: " FMT, ##__VA_ARGS__);	\
-+	pr_err("I/O Error: " FMT"\n", ##__VA_ARGS__);	\
- 	fscache_io_error(&(___cache)->cache);		\
- 	set_bit(CACHEFILES_DEAD, &(___cache)->flags);	\
- } while (0)
---- a/fs/cachefiles/main.c
-+++ b/fs/cachefiles/main.c
-@@ -84,7 +84,7 @@ error_proc:
- error_object_jar:
- 	misc_deregister(&cachefiles_dev);
- error_dev:
--	pr_err("failed to register: %d", ret);
-+	pr_err("failed to register: %d\n", ret);
- 	return ret;
- }
- 
---- a/fs/cachefiles/namei.c
-+++ b/fs/cachefiles/namei.c
-@@ -543,7 +543,7 @@ lookup_again:
- 			       next, next->d_inode, next->d_inode->i_ino);
- 
- 		} else if (!S_ISDIR(next->d_inode->i_mode)) {
--			pr_err("inode %lu is not a directory",
-+			pr_err("inode %lu is not a directory\n",
- 			       next->d_inode->i_ino);
- 			ret = -ENOBUFS;
- 			goto error;
-@@ -574,7 +574,7 @@ lookup_again:
- 		} else if (!S_ISDIR(next->d_inode->i_mode) &&
- 			   !S_ISREG(next->d_inode->i_mode)
- 			   ) {
--			pr_err("inode %lu is not a file or directory",
-+			pr_err("inode %lu is not a file or directory\n",
- 			       next->d_inode->i_ino);
- 			ret = -ENOBUFS;
- 			goto error;
-@@ -768,7 +768,7 @@ struct dentry *cachefiles_get_directory(
- 	ASSERT(subdir->d_inode);
- 
- 	if (!S_ISDIR(subdir->d_inode->i_mode)) {
--		pr_err("%s is not a directory", dirname);
-+		pr_err("%s is not a directory\n", dirname);
- 		ret = -EIO;
- 		goto check_error;
- 	}
-@@ -795,13 +795,13 @@ check_error:
- mkdir_error:
- 	mutex_unlock(&dir->d_inode->i_mutex);
- 	dput(subdir);
--	pr_err("mkdir %s failed with error %d", dirname, ret);
-+	pr_err("mkdir %s failed with error %d\n", dirname, ret);
- 	return ERR_PTR(ret);
- 
- lookup_error:
- 	mutex_unlock(&dir->d_inode->i_mutex);
- 	ret = PTR_ERR(subdir);
--	pr_err("Lookup %s failed with error %d", dirname, ret);
-+	pr_err("Lookup %s failed with error %d\n", dirname, ret);
- 	return ERR_PTR(ret);
- 
- nomem_d_alloc:
-@@ -891,7 +891,7 @@ lookup_error:
- 	if (ret == -EIO) {
- 		cachefiles_io_error(cache, "Lookup failed");
- 	} else if (ret != -ENOMEM) {
--		pr_err("Internal error: %d", ret);
-+		pr_err("Internal error: %d\n", ret);
- 		ret = -EIO;
- 	}
- 
-@@ -950,7 +950,7 @@ error:
- 	}
- 
- 	if (ret != -ENOMEM) {
--		pr_err("Internal error: %d", ret);
-+		pr_err("Internal error: %d\n", ret);
- 		ret = -EIO;
- 	}
- 
---- a/fs/cachefiles/xattr.c
-+++ b/fs/cachefiles/xattr.c
-@@ -51,7 +51,7 @@ int cachefiles_check_object_type(struct
- 	}
- 
- 	if (ret != -EEXIST) {
--		pr_err("Can't set xattr on %*.*s [%lu] (err %d)",
-+		pr_err("Can't set xattr on %*.*s [%lu] (err %d)\n",
- 		       dentry->d_name.len, dentry->d_name.len,
- 		       dentry->d_name.name, dentry->d_inode->i_ino,
- 		       -ret);
-@@ -64,7 +64,7 @@ int cachefiles_check_object_type(struct
- 		if (ret == -ERANGE)
- 			goto bad_type_length;
- 
--		pr_err("Can't read xattr on %*.*s [%lu] (err %d)",
-+		pr_err("Can't read xattr on %*.*s [%lu] (err %d)\n",
- 		       dentry->d_name.len, dentry->d_name.len,
- 		       dentry->d_name.name, dentry->d_inode->i_ino,
- 		       -ret);
-@@ -85,14 +85,14 @@ error:
- 	return ret;
- 
- bad_type_length:
--	pr_err("Cache object %lu type xattr length incorrect",
-+	pr_err("Cache object %lu type xattr length incorrect\n",
- 	       dentry->d_inode->i_ino);
- 	ret = -EIO;
- 	goto error;
- 
- bad_type:
- 	xtype[2] = 0;
--	pr_err("Cache object %*.*s [%lu] type %s not %s",
-+	pr_err("Cache object %*.*s [%lu] type %s not %s\n",
- 	       dentry->d_name.len, dentry->d_name.len,
- 	       dentry->d_name.name, dentry->d_inode->i_ino,
- 	       xtype, type);
-@@ -293,7 +293,7 @@ error:
- 	return ret;
- 
- bad_type_length:
--	pr_err("Cache object %lu xattr length incorrect",
-+	pr_err("Cache object %lu xattr length incorrect\n",
- 	       dentry->d_inode->i_ino);
- 	ret = -EIO;
- 	goto error;
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 
 
