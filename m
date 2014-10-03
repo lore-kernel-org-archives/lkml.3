@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322AbaJCW6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:58:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47246 "EHLO
+	id S932577AbaJCWX7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:23:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47233 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391AbaJCWYA (ORCPT
+	with ESMTP id S932391AbaJCWXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:00 -0400
+	Fri, 3 Oct 2014 18:23:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 046/143] USB: zte_ev: remove duplicate Gobi PID
-Date: Fri,  3 Oct 2014 14:34:01 -0700
-Message-Id: <20141003213315.865419612@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 009/143] drm/ttm: Choose a pool to shrink correctly in ttm_dma_pool_shrink_scan().
+Date: Fri,  3 Oct 2014 14:33:24 -0700
+Message-Id: <20141003213314.764150912@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,31 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 95be5739588c56a9327e477aa0ba3c81c5cf8631 upstream.
+commit 46c2df68f03a236b30808bba361f10900c88d95e upstream.
 
-Remove dublicate Gobi PID 0x9008 which is already handled by the
-qcserial driver since commit f05932c0caf4 ("USB: qcserial: Add extra
-device IDs").
+We can use "unsigned int" instead of "atomic_t" by updating start_pool
+variable under _manager->lock. This patch will make it possible to avoid
+skipping when choosing a pool to shrink in round-robin style, after next
+patch changes mutex_lock(_manager->lock) to !mutex_trylock(_manager->lork).
 
-Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/zte_ev.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -276,7 +276,6 @@ static const struct usb_device_id id_tab
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
- 	{ USB_DEVICE(0x05C6, 0x3197) },
--	{ USB_DEVICE(0x05C6, 0x9008) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1006,9 +1006,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+ static int ttm_dma_pool_mm_shrink(struct shrinker *shrink,
+ 				  struct shrink_control *sc)
+ {
+-	static atomic_t start_pool = ATOMIC_INIT(0);
++	static unsigned start_pool;
+ 	unsigned idx = 0;
+-	unsigned pool_offset = atomic_add_return(1, &start_pool);
++	unsigned pool_offset;
+ 	unsigned shrink_pages = sc->nr_to_scan;
+ 	struct device_pools *p;
+ 
+@@ -1018,7 +1018,7 @@ static int ttm_dma_pool_mm_shrink(struct
+ 	mutex_lock(&_manager->lock);
+ 	if (!_manager->npools)
+ 		goto out;
+-	pool_offset = pool_offset % _manager->npools;
++	pool_offset = ++start_pool % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
+ 
 
 
