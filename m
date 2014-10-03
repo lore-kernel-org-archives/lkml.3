@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205AbaJCWVw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:21:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47110 "EHLO
+	id S1758053AbaJCWVv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:21:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254AbaJCWQS (ORCPT
+	with ESMTP id S1756042AbaJCWQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:16:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 210/238] cpufreq: release policy->rwsem on error
-Date: Fri,  3 Oct 2014 14:32:05 -0700
-Message-Id: <20141003212920.379428374@linuxfoundation.org>
+        Malcolm Priestley <tvboxspy@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 211/238] media: af9035: new IDs: add support for PCTV 78e and PCTV 79e
+Date: Fri,  3 Oct 2014 14:32:06 -0700
+Message-Id: <20141003212920.410911504@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,98 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 7106e02baed4a72fb23de56b02ad4d31daa74d95 upstream.
+commit a04646c045cab08a9e62b9be8f01ecbb0632d24e upstream.
 
-While debugging a cpufreq-related hardware failure on a system I saw the
-following lockdep warning:
+add the following IDs
+USB_PID_PCTV_78E (0x025a) for PCTV 78e
+USB_PID_PCTV_79E (0x0262) for PCTV 79e
 
- =========================
- [ BUG: held lock freed! ] 3.17.0-rc4+ #1 Tainted: G            E
- -------------------------
- insmod/2247 is freeing memory ffff88006e1b1400-ffff88006e1b17ff, with a lock still held there!
-  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
- 3 locks held by insmod/2247:
-  #0:  (subsys mutex#5){+.+.+.}, at: [<ffffffff81485579>] subsys_interface_register+0x69/0x120
-  #1:  (cpufreq_rwsem){.+.+.+}, at: [<ffffffff8156cf73>] __cpufreq_add_dev.isra.21+0x73/0xb80
-  #2:  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
+For these it9135 devices.
 
- stack backtrace:
- CPU: 0 PID: 2247 Comm: insmod Tainted: G            E  3.17.0-rc4+ #1
- Hardware name: HP ProLiant MicroServer Gen8, BIOS J06 08/24/2013
-  0000000000000000 000000008f3063c4 ffff88006f87bb30 ffffffff8171b358
-  ffff88006bcf3750 ffff88006f87bb68 ffffffff810e09e1 ffff88006e1b1400
-  ffffea0001b86c00 ffffffff8156d327 ffff880073003500 0000000000000246
- Call Trace:
-  [<ffffffff8171b358>] dump_stack+0x4d/0x66
-  [<ffffffff810e09e1>] debug_check_no_locks_freed+0x171/0x180
-  [<ffffffff8156d327>] ? __cpufreq_add_dev.isra.21+0x427/0xb80
-  [<ffffffff8121412b>] kfree+0xab/0x2b0
-  [<ffffffff8156d327>] __cpufreq_add_dev.isra.21+0x427/0xb80
-  [<ffffffff81724cf7>] ? _raw_spin_unlock+0x27/0x40
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffff8156da8e>] cpufreq_add_dev+0xe/0x10
-  [<ffffffff814855d1>] subsys_interface_register+0xc1/0x120
-  [<ffffffff8156bcf2>] cpufreq_register_driver+0x112/0x340
-  [<ffffffff8121415a>] ? kfree+0xda/0x2b0
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffffa003562e>] pcc_cpufreq_init+0x4af/0xe81 [pcc_cpufreq]
-  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
-  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
-  [<ffffffff811f7472>] ? __vunmap+0xd2/0x120
-  [<ffffffff81127155>] load_module+0x1315/0x1b70
-  [<ffffffff811222a0>] ? store_uevent+0x70/0x70
-  [<ffffffff811229d9>] ? copy_module_from_fd.isra.44+0x129/0x180
-  [<ffffffff81127b86>] SyS_finit_module+0xa6/0xd0
-  [<ffffffff81725b69>] system_call_fastpath+0x16/0x1b
- cpufreq: __cpufreq_add_dev: ->get() failed
-insmod: ERROR: could not insert module pcc-cpufreq.ko: No such device
-
-The warning occurs in the __cpufreq_add_dev() code which does
-
-        down_write(&policy->rwsem);
-	...
-        if (cpufreq_driver->get && !cpufreq_driver->setpolicy) {
-                policy->cur = cpufreq_driver->get(policy->cpu);
-                if (!policy->cur) {
-                        pr_err("%s: ->get() failed\n", __func__);
-                        goto err_get_freq;
-                }
-
-If cpufreq_driver->get(policy->cpu) returns an error we execute the
-code at err_get_freq, which does not up the policy->rwsem.  This causes
-the lockdep warning.
-
-Trivial patch to up the policy->rwsem in the error path.
-
-After the patch has been applied, and an error occurs in the
-cpufreq_driver->get(policy->cpu) call we will now see
-
-cpufreq: __cpufreq_add_dev: ->get() failed
-cpufreq: __cpufreq_add_dev: ->get() failed
-modprobe: ERROR: could not insert 'pcc_cpufreq': No such device
-
-Fixes: 4e97b631f24c (cpufreq: Initialize governor for a new policy under policy->rwsem)
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Cc: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Antti Palosaari <crope@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/dvb-core/dvb-usb-ids.h  |    2 ++
+ drivers/media/usb/dvb-usb-v2/af9035.c |    4 ++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1225,6 +1225,8 @@ err_get_freq:
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
-+	up_write(&policy->rwsem);
-+
- 	if (cpufreq_driver->exit)
- 		cpufreq_driver->exit(policy);
- err_set_policy_cpu:
+--- a/drivers/media/dvb-core/dvb-usb-ids.h
++++ b/drivers/media/dvb-core/dvb-usb-ids.h
+@@ -279,6 +279,8 @@
+ #define USB_PID_PCTV_400E				0x020f
+ #define USB_PID_PCTV_450E				0x0222
+ #define USB_PID_PCTV_452E				0x021f
++#define USB_PID_PCTV_78E				0x025a
++#define USB_PID_PCTV_79E				0x0262
+ #define USB_PID_REALTEK_RTL2831U			0x2831
+ #define USB_PID_REALTEK_RTL2832U			0x2832
+ #define USB_PID_TECHNOTREND_CONNECT_S2_3600		0x3007
+--- a/drivers/media/usb/dvb-usb-v2/af9035.c
++++ b/drivers/media/usb/dvb-usb-v2/af9035.c
+@@ -1541,6 +1541,10 @@ static const struct usb_device_id af9035
+ 		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
+ 	{ DVB_USB_DEVICE(USB_VID_HAUPPAUGE, 0xf900,
+ 		&af9035_props, "Hauppauge WinTV-MiniStick 2", NULL) },
++	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_78E,
++		&af9035_props, "PCTV 78e", RC_MAP_IT913X_V1) },
++	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_79E,
++		&af9035_props, "PCTV 79e", RC_MAP_IT913X_V2) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(usb, af9035_id_table);
 
 
