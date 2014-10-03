@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaJCPDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:03:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687AbaJCPDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:03:19 -0400
-Message-ID: <1412348517.5410.13.camel@deneb.redhat.com>
-Subject: Re: [PATCH] rtc: Disable EFI rtc for x86
-From: Mark Salter <msalter@redhat.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>, Dave Young <dyoung@redhat.com>
-Date: Fri, 03 Oct 2014 11:01:57 -0400
-In-Reply-To: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
-References: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1753564AbaJCPFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:05:20 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25199 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJCPFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:05:17 -0400
+X-IronPort-AV: E=Sophos;i="5.04,647,1406592000"; 
+   d="scan'208";a="178984361"
+Message-ID: <542EBB2A.6030104@citrix.com>
+Date: Fri, 3 Oct 2014 16:05:14 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
+References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com> <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 13:32 +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> commit da167ad7638759 ("rtc: ia64: allow other architectures to use EFI
-> RTC") inadvertently introduced a regression for x86. We've been careful
-> not to enable the EFI rtc driver for x86 due to the generally buggy
-> implementations of the time-related EFI runtime services.
-> 
-> Previous attempts have been made to us the time EFI services, but all
-> have eventually been reverted due to crashes inside the firmware code.
-> 
-> In fact, since the above commit was merged we've seen reports of crashes
-> on 32-bit tablets,
-> 
->   https://bugzilla.kernel.org/show_bug.cgi?id=84241#c21
-> 
-> Disable it explicitly for x86 so that we don't give users false hope
-> that this driver will work - it won't, and your machine is likely to
-> crash.
-> 
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Dave Young <dyoung@redhat.com>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
+On 03/10/14 15:53, Stefano Stabellini wrote:
+> Introduce support for new hypercall GNTTABOP_cache_flush.
+> Use it to perform cache flashing on pages used for dma when necessary.
+[..]
+>  /* functions called by SWIOTLB */
+> @@ -22,16 +25,31 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+>  		size_t len = left;
+>  		void *vaddr;
+>  	
+> +		if (len + offset > PAGE_SIZE)
+> +			len = PAGE_SIZE - offset;
+> +
+>  		if (!pfn_valid(pfn))
+>  		{
+> -			/* TODO: cache flush */
+> +			struct gnttab_cache_flush cflush;
+> +
+> +			cflush.op = 0;
+> +			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
+> +			cflush.offset = offset;
+> +			cflush.size = len;
+> +
+> +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
+> +				cflush.op = GNTTAB_CACHE_INVAL;
+> +			if (op == dmac_map_area) {
+> +				cflush.op = GNTTAB_CACHE_CLEAN;
+> +				if (dir == DMA_FROM_DEVICE)
+> +					cflush.op |= GNTTAB_CACHE_INVAL;
+> +			}
 
-Acked-by: Mark Salter <msalter@redhat.com>
+Are all these cache operations needed?  You do a clean on map regardless
+of the direction and INVAL on map seems unnecessary.
 
-> 
-> Unless anyone objects, I'm happy to take this through the EFI tree.
-> 
->  drivers/rtc/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index a168e96142b9..54ef393b0def 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -806,7 +806,7 @@ config RTC_DRV_DA9063
+I would have thought it would be:
+
+map && (TO_DEVICE || BOTH)
+   op = CLEAN
+
+unmap && (FROM_DEVICE || BOTH)
+   op = INVAL
+
+> --- a/include/xen/interface/grant_table.h
+> +++ b/include/xen/interface/grant_table.h
+> @@ -479,6 +479,24 @@ struct gnttab_get_version {
+>  DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
 >  
->  config RTC_DRV_EFI
->  	tristate "EFI RTC"
-> -	depends on EFI
-> +	depends on EFI && !X86
->  	help
->  	  If you say yes here you will get support for the EFI
->  	  Real Time Clock.
+>  /*
+> + * Issue one or more cache maintenance operations on a portion of a
+> + * page granted to the calling domain by a foreign domain.
+> + */
+> +#define GNTTABOP_cache_flush          12
+> +struct gnttab_cache_flush {
+> +    union {
+> +        uint64_t dev_bus_addr;
+> +        grant_ref_t ref;
+> +    } a;
+> +    uint32_t offset; /* offset from start of grant */
+> +    uint32_t size;   /* size within the grant */
+> +#define GNTTAB_CACHE_CLEAN      (1<<0)
+> +#define GNTTAB_CACHE_INVAL      (1<<1)
+> +    uint32_t op;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
+> +
+> +/*
+>   * Bitfield values for update_pin_status.flags.
+>   */
+>   /* Map the grant entry for access by I/O devices. */
 
+If the ARM bits are correct, have a
+
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+
+for the common header.
+
+David
 
