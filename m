@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329AbaJCXrm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:47:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
+	id S933358AbaJCXrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:47:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757253AbaJCWD3 (ORCPT
+	with ESMTP id S1757243AbaJCWD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:29 -0400
+	Fri, 3 Oct 2014 18:03:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.16 297/357] IB/qib: Correct reference counting in debugfs qp_stats
-Date: Fri,  3 Oct 2014 14:31:23 -0700
-Message-Id: <20141003212942.405982173@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.14 080/238] USB: zte_ev: remove duplicate Qualcom PID
+Date: Fri,  3 Oct 2014 14:29:55 -0700
+Message-Id: <20141003212916.242219971@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,75 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 85cbb7c728bf39c45a9789b88c9471c0d7a58b0e upstream.
+commit 754eb21c0bbbbc4b8830a9a864b286323b84225f upstream.
 
-This particular reference count is not needed with the rcu protection,
-and the current code leaks a reference count, causing a hang in
-qib_qp_destroy().
+Remove dublicate Qualcom PID 0x3197 which is already handled by the
+moto-modem driver since commit 6986a978eec7 ("USB: add new moto_modem
+driver for some Morotola phones").
 
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/qib/qib_debugfs.c |    3 ++-
- drivers/infiniband/hw/qib/qib_qp.c      |    8 --------
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ drivers/usb/serial/zte_ev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/infiniband/hw/qib/qib_debugfs.c
-+++ b/drivers/infiniband/hw/qib/qib_debugfs.c
-@@ -193,6 +193,7 @@ static void *_qp_stats_seq_start(struct
- 	struct qib_qp_iter *iter;
- 	loff_t n = *pos;
- 
-+	rcu_read_lock();
- 	iter = qib_qp_iter_init(s->private);
- 	if (!iter)
- 		return NULL;
-@@ -224,7 +225,7 @@ static void *_qp_stats_seq_next(struct s
- 
- static void _qp_stats_seq_stop(struct seq_file *s, void *iter_ptr)
- {
--	/* nothing for now */
-+	rcu_read_unlock();
- }
- 
- static int _qp_stats_seq_show(struct seq_file *s, void *iter_ptr)
---- a/drivers/infiniband/hw/qib/qib_qp.c
-+++ b/drivers/infiniband/hw/qib/qib_qp.c
-@@ -1325,7 +1325,6 @@ int qib_qp_iter_next(struct qib_qp_iter
- 	struct qib_qp *pqp = iter->qp;
- 	struct qib_qp *qp;
- 
--	rcu_read_lock();
- 	for (; n < dev->qp_table_size; n++) {
- 		if (pqp)
- 			qp = rcu_dereference(pqp->next);
-@@ -1333,18 +1332,11 @@ int qib_qp_iter_next(struct qib_qp_iter
- 			qp = rcu_dereference(dev->qp_table[n]);
- 		pqp = qp;
- 		if (qp) {
--			if (iter->qp)
--				atomic_dec(&iter->qp->refcount);
--			atomic_inc(&qp->refcount);
--			rcu_read_unlock();
- 			iter->qp = qp;
- 			iter->n = n;
- 			return 0;
- 		}
- 	}
--	rcu_read_unlock();
--	if (iter->qp)
--		atomic_dec(&iter->qp->refcount);
- 	return ret;
- }
- 
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -274,7 +274,6 @@ static void zte_ev_usb_serial_close(stru
+ static const struct usb_device_id id_table[] = {
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+-	{ USB_DEVICE(0x05C6, 0x3197) },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
