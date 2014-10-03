@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716AbaJCWYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:24:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47390 "EHLO
+	id S932748AbaJCWYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:24:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501AbaJCWYI (ORCPT
+	with ESMTP id S932612AbaJCWYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:08 -0400
+	Fri, 3 Oct 2014 18:24:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3.10 071/143] regmap: Fix handling of volatile registers for format_write() chips
-Date: Fri,  3 Oct 2014 14:34:26 -0700
-Message-Id: <20141003213316.643293779@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.10 036/143] xtensa: fix access to THREAD_RA/THREAD_SP/THREAD_DS
+Date: Fri,  3 Oct 2014 14:33:51 -0700
+Message-Id: <20141003213315.574492502@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,39 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 5844a8b9d98ec11ce1d77610daacf3f0a0e14715 upstream.
+commit 52247123749cc3cbc30168b33ad8c69515c96d23 upstream.
 
-A previous over-zealous factorisation of code means that we only treat
-registers as volatile if they are readable. For most devices this is fine
-since normally most registers can be read and volatility implies
-readability but for format_write() devices where there is no readback from
-the hardware and we use volatility to mean simply uncacheability this means
-that we end up treating all registers as cacheble.
+With SMP and a lot of debug options enabled task_struct::thread gets out
+of reach of s32i/l32i instructions with base pointing at task_struct,
+breaking build with the following messages:
 
-A bigger refactoring of the code to clarify this is in order but as a fix
-make a minimal change and only check readability when checking volatility
-if there is no format_write() operation defined for the device.
+  arch/xtensa/kernel/entry.S: Assembler messages:
+  arch/xtensa/kernel/entry.S:1002: Error: operand 3 of 'l32i.n' has invalid value '1048'
+  arch/xtensa/kernel/entry.S:1831: Error: operand 3 of 's32i.n' has invalid value '1040'
+  arch/xtensa/kernel/entry.S:1832: Error: operand 3 of 's32i.n' has invalid value '1044'
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Tested-by: Lars-Peter Clausen <lars@metafoo.de>
+Change base to point to task_struct::thread in such cases.
+Don't use a10 in _switch_to to save/restore prev pointer as a2 is not
+clobbered.
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/xtensa/include/asm/uaccess.h |    5 +++++
+ arch/xtensa/kernel/entry.S        |   12 ++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -114,7 +114,7 @@ bool regmap_readable(struct regmap *map,
+--- a/arch/xtensa/include/asm/uaccess.h
++++ b/arch/xtensa/include/asm/uaccess.h
+@@ -52,7 +52,12 @@
+  */
+ 	.macro	get_fs	ad, sp
+ 	GET_CURRENT(\ad,\sp)
++#if THREAD_CURRENT_DS > 1020
++	addi	\ad, \ad, TASK_THREAD
++	l32i	\ad, \ad, THREAD_CURRENT_DS - TASK_THREAD
++#else
+ 	l32i	\ad, \ad, THREAD_CURRENT_DS
++#endif
+ 	.endm
  
- bool regmap_volatile(struct regmap *map, unsigned int reg)
- {
--	if (!regmap_readable(map, reg))
-+	if (!map->format.format_write && !regmap_readable(map, reg))
- 		return false;
+ /*
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1961,7 +1961,6 @@ ENTRY(_switch_to)
  
- 	if (map->volatile_reg)
+ 	entry	a1, 16
+ 
+-	mov	a10, a2			# preserve 'prev' (a2)
+ 	mov	a11, a3			# and 'next' (a3)
+ 
+ 	l32i	a4, a2, TASK_THREAD_INFO
+@@ -1969,8 +1968,14 @@ ENTRY(_switch_to)
+ 
+ 	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+-	s32i	a0, a10, THREAD_RA	# save return address
+-	s32i	a1, a10, THREAD_SP	# save stack pointer
++#if THREAD_RA > 1020 || THREAD_SP > 1020
++	addi	a10, a2, TASK_THREAD
++	s32i	a0, a10, THREAD_RA - TASK_THREAD	# save return address
++	s32i	a1, a10, THREAD_SP - TASK_THREAD	# save stack pointer
++#else
++	s32i	a0, a2, THREAD_RA	# save return address
++	s32i	a1, a2, THREAD_SP	# save stack pointer
++#endif
+ 
+ 	/* Disable ints while we manipulate the stack pointer. */
+ 
+@@ -2011,7 +2016,6 @@ ENTRY(_switch_to)
+ 	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+ 	wsr	a14, ps
+-	mov	a2, a10			# return 'prev'
+ 	rsync
+ 
+ 	retw
 
 
