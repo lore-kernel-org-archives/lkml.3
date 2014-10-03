@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaJCRPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:15:45 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:47463 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaJCRPn (ORCPT
+	id S1753866AbaJCRRe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:17:34 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61446 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750987AbaJCRRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:15:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdZDVPTKX4N9fxYdr1OEBQ_BisU2vXrvNRZ3YXCax4jm+A@mail.gmail.com>
-References: <1412087707-8313-1-git-send-email-pramod.gurav@smartplayin.com>
- <CAK5ve-KCYHySjs4f+rd+kAvKQmTkJqsq87Muq_j-D0nB7WSYjQ@mail.gmail.com> <CACRpkdZDVPTKX4N9fxYdr1OEBQ_BisU2vXrvNRZ3YXCax4jm+A@mail.gmail.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Fri, 3 Oct 2014 10:15:21 -0700
-Message-ID: <CAK5ve-+_6sVypk_UTQ5kD4dMx+yqFk_4yQZTY3gOAjCRQ5YO8w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] led: remove use of gpiochip_remove() retval
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 13:17:30 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, lgirdwood@gmail.com, broonie@kernel.org,
+        tiwai@suse.de
+Cc: joe@perches.com, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] ASoC: da732x: Remove unnecessary KERN_ERR in pr_err()
+Date: Sat,  4 Oct 2014 02:17:08 +0900
+Message-Id: <1412356628-10818-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.1.273.g97b8860
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 12:12 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Sep 30, 2014 at 11:21 PM, Bryan Wu <cooloney@gmail.com> wrote:
->> On Tue, Sep 30, 2014 at 7:35 AM, Pramod Gurav
->> <pramod.gurav@smartplayin.com> wrote:
->>> Get rid of using return value from gpiochip_remove() as it returns
->>> void.
->>
->> Looks good to me. I will merge it.
->
-> Please don't.
->
-> The issue is already fixed through the GPIO tree, where the
-> API change is.
->
+This patch remove unnecessary KERN_ERR in pr_err().
 
-Oh, really. I wasn't aware that. Let me drop this change then.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ sound/soc/codecs/da732x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
--Bryan
+diff --git a/sound/soc/codecs/da732x.c b/sound/soc/codecs/da732x.c
+index f35e83e..61b2f9a 100644
+--- a/sound/soc/codecs/da732x.c
++++ b/sound/soc/codecs/da732x.c
+@@ -216,7 +216,7 @@ static void da732x_set_charge_pump(struct snd_soc_codec *codec, int state)
+ 		snd_soc_write(codec, DA732X_REG_CP_CTRL1, DA723X_CP_DIS);
+ 		break;
+ 	default:
+-		pr_err(KERN_ERR "Wrong charge pump state\n");
++		pr_err("Wrong charge pump state\n");
+ 		break;
+ 	}
+ }
+-- 
+2.1.1.273.g97b8860
+
