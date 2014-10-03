@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892AbaJCXio (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:38:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
+	id S932850AbaJCXil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:38:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46275 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757327AbaJCWDj (ORCPT
+	with ESMTP id S1757325AbaJCWDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Altaparmakov <aia21@cantab.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 312/357] Fix nasty 32-bit overflow bug in buffer i/o code.
-Date: Fri,  3 Oct 2014 14:31:38 -0700
-Message-Id: <20141003212942.849150378@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3.14 096/238] usb: hub: take hub->hdev reference when processing from eventlist
+Date: Fri,  3 Oct 2014 14:30:11 -0700
+Message-Id: <20141003212916.745316535@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,77 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Altaparmakov <aia21@cam.ac.uk>
+From: Joe Lawrence <joe.lawrence@stratus.com>
 
-commit f2d5a94436cc7cc0221b9a81bba2276a25187dd3 upstream.
+commit c605f3cdff53a743f6d875b76956b239deca1272 upstream.
 
-On 32-bit architectures, the legacy buffer_head functions are not always
-handling the sector number with the proper 64-bit types, and will thus
-fail on 4TB+ disks.
+During surprise device hotplug removal tests, it was observed that
+hub_events may try to call usb_lock_device on a device that has already
+been freed. Protect the usb_device by taking out a reference (under the
+hub_event_lock) when hub_events pulls it off the list, returning the
+reference after hub_events is finished using it.
 
-Any code that uses __getblk() (and thus bread(), breadahead(),
-sb_bread(), sb_breadahead(), sb_getblk()), and calls it using a 64-bit
-block on a 32-bit arch (where "long" is 32-bit) causes an inifinite loop
-in __getblk_slow() with an infinite stream of errors logged to dmesg
-like this:
-
-  __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
-  b_state=0x00000020, b_size=512
-  device sda1 blocksize: 512
-
-Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the
-top 32-bits are missing (in this case the 0x1 at the top).
-
-This is because grow_dev_page() is broken and has a 32-bit overflow due
-to shifting the page index value (a pgoff_t - which is just 32 bits on
-32-bit architectures) left-shifted as the block number.  But the top
-bits to get lost as the pgoff_t is not type cast to sector_t / 64-bit
-before the shift.
-
-This patch fixes this issue by type casting "index" to sector_t before
-doing the left shift.
-
-Note this is not a theoretical bug but has been seen in the field on a
-4TiB hard drive with logical sector size 512 bytes.
-
-This patch has been verified to fix the infinite loop problem on 3.17-rc5
-kernel using a 4TB disk image mounted using "-o loop".  Without this patch
-doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop
-100% reproducibly whilst with the patch it works fine as expected.
-
-Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Suggested-by: David Bulkow <david.bulkow@stratus.com> for using kref
+Suggested-by: Alan Stern <stern@rowland.harvard.edu> for placement
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/hub.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1029,7 +1029,8 @@ grow_dev_page(struct block_device *bdev,
- 		bh = page_buffers(page);
- 		if (bh->b_size == size) {
- 			end_block = init_page_buffers(page, bdev,
--						index << sizebits, size);
-+						(sector_t)index << sizebits,
-+						size);
- 			goto done;
- 		}
- 		if (!try_to_free_buffers(page))
-@@ -1050,7 +1051,8 @@ grow_dev_page(struct block_device *bdev,
- 	 */
- 	spin_lock(&inode->i_mapping->private_lock);
- 	link_dev_buffers(page, bh);
--	end_block = init_page_buffers(page, bdev, index << sizebits, size);
-+	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
-+			size);
- 	spin_unlock(&inode->i_mapping->private_lock);
- done:
- 	ret = (block < end_block) ? 1 : -ENXIO;
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4764,9 +4764,10 @@ static void hub_events(void)
+ 
+ 		hub = list_entry(tmp, struct usb_hub, event_list);
+ 		kref_get(&hub->kref);
++		hdev = hub->hdev;
++		usb_get_dev(hdev);
+ 		spin_unlock_irq(&hub_event_lock);
+ 
+-		hdev = hub->hdev;
+ 		hub_dev = hub->intfdev;
+ 		intf = to_usb_interface(hub_dev);
+ 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
+@@ -4979,6 +4980,7 @@ static void hub_events(void)
+ 		usb_autopm_put_interface(intf);
+  loop_disconnected:
+ 		usb_unlock_device(hdev);
++		usb_put_dev(hdev);
+ 		kref_put(&hub->kref, hub_release);
+ 
+ 	} /* end while (1) */
 
 
