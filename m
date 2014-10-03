@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760696AbaJCXzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:55:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45895 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756803AbaJCVxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.16 241/357] iwlwifi: increase DEFAULT_MAX_TX_POWER
-Date: Fri,  3 Oct 2014 14:30:27 -0700
-Message-Id: <20141003212940.746153883@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1759231AbaJCX4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:56:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759301AbaJCXzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 19:55:16 -0400
+Date: Sat, 4 Oct 2014 01:51:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using
+	THUNK helpers
+Message-ID: <20141003235145.GA4548@redhat.com>
+References: <20140921184153.GA23727@redhat.com> <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org> <542E2B05.5080607@oracle.com> <20141003083954.10a13a24@as> <20141003214124.GA31614@redhat.com> <CALCETrVVeuVc7JC7w3Z_2pCx0y_HAFtm4=FmEp_xNkn3tvnR+A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVVeuVc7JC7w3Z_2pCx0y_HAFtm4=FmEp_xNkn3tvnR+A@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On 10/03, Andy Lutomirski wrote:
+>
+> Is this thing missing a flags or cc clobber:
+>
+> # define __preempt_schedule() asm ("call ___preempt_schedule")
 
-------------------
+Well, calling.h says "rflags is clobbered", so probably yes?
 
-From: Eliad Peller <eliad@wizery.com>
 
-commit 22d059a5c7c5de61e53c88e30b65e55fbfd91e91 upstream.
+> Also, I'm at a loss as to wtf all this code is doing.
+>
+> There's preempt_schedule, which appears to be a normal C function.
+>
+> There's ___preempt_schedule, which is written in assembly and calls
+> preempt_schedule.
+>
+> Then there's __preempt_schedule, which is an inline assembler function
+> that calls ___preempt_schedule.
+>
+> Is this all just to make the call sequence for preempt_schedule shorter?
 
-The chip is able to transmit up to 22dBm, so set
-the constant appropriately.
+Yes, please look at 1a338ac32ca630f67df25b4a16436cccc314e997
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    sched, x86: Optimize the preempt_schedule() call
 
----
- drivers/net/wireless/iwlwifi/iwl-config.h    |    2 ++
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    4 +---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+    Remove the bloat of the C calling convention out of the
+    preempt_enable() sites by creating an ASM wrapper which allows us to
+    do an asm("call ___preempt_schedule") instead.
 
---- a/drivers/net/wireless/iwlwifi/iwl-config.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-config.h
-@@ -120,6 +120,8 @@ enum iwl_led_mode {
- #define IWL_LONG_WD_TIMEOUT	10000
- #define IWL_MAX_WD_TIMEOUT	120000
- 
-+#define IWL_DEFAULT_MAX_TX_POWER 22
-+
- /* Antenna presence definitions */
- #define	ANT_NONE	0x0
- #define	ANT_A		BIT(0)
---- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-@@ -143,8 +143,6 @@ static const u8 iwl_nvm_channels_family_
- #define LAST_2GHZ_HT_PLUS		9
- #define LAST_5GHZ_HT			161
- 
--#define DEFAULT_MAX_TX_POWER 16
--
- /* rate data (static) */
- static struct ieee80211_rate iwl_cfg80211_rates[] = {
- 	{ .bitrate = 1 * 10, .hw_value = 0, .hw_value_short = 0, },
-@@ -279,7 +277,7 @@ static int iwl_init_channel_map(struct d
- 		 * Default value - highest tx power value.  max_power
- 		 * is not used in mvm, and is used for backwards compatibility
- 		 */
--		channel->max_power = DEFAULT_MAX_TX_POWER;
-+		channel->max_power = IWL_DEFAULT_MAX_TX_POWER;
- 		is_5ghz = channel->band == IEEE80211_BAND_5GHZ;
- 		IWL_DEBUG_EEPROM(dev,
- 				 "Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x %ddBm): Ad-Hoc %ssupported\n",
-
+Oleg.
 
