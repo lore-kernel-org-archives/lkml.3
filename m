@@ -1,62 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380AbaJCMZh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:25:37 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:19335 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaJCMZd (ORCPT
+	id S1752326AbaJCM1q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:27:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63597 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282AbaJCM1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:25:33 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-a6-542e95bab3f0
-Message-id: <542E95BC.9000704@samsung.com>
-Date: Fri, 03 Oct 2014 15:25:32 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: rusty@rustcorp.com.au, keyrings@linux-nfs.org, jwboyer@redhat.com,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        pjones@redhat.com, vgoyal@redhat.com
-Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for
- asymmetric keys
-References: <542D77A4.5030606@samsung.com>
- <20140908153704.28301.41578.stgit@warthog.procyon.org.uk>
- <20140908153830.28301.37880.stgit@warthog.procyon.org.uk>
- <542D741D.5070109@samsung.com> <28452.1412338401@warthog.procyon.org.uk>
-In-reply-to: <28452.1412338401@warthog.procyon.org.uk>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/xy7q7puqFGLz6om7xruk3i8WBd09Y
-	LGbveshicXnXHDaLDz2P2Cy6Ft5gt7g57QKLxbVb+9gcODymnVjG4vF+31U2jxUbTjB7fN4k
-	F8ASxWWTkpqTWZZapG+XwJUxfcY+toJXTBVfF69lamBcxdTFyMEhIWAi8XaxdxcjJ5ApJnHh
-	3nq2LkYuDiGBpYwSG+4ug3IamSQubdoK5cxilLh0Zh8rSAuvgJZE661VLCA2i4CqxNT1J5lB
-	bDYBPYkNzT/YQWxRgQiJk3f3sEPUC0r8mHwPrF5EQF3i0bKNzCBDmQW2MEo0rD3CBpIQFkiU
-	mLZnBxPEtreMEhM2f2IEuZVTwEzi3QtbEJMZaMH9i1og5cwC8hKb17wF2ysEdEP32rVsEO8o
-	SpyefI55AqPwLCSrZyF0z0LSvYCReRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSLR82cG4
-	+JjVIUYBDkYlHt6PN3RDhFgTy4orcw8xSnAwK4nwSjfphQjxpiRWVqUW5ccXleakFh9iZOLg
-	lGpg1GjdPzHN5f1PzvlHuZ60OR6ayneDUfPLKZvIbtWP3B0yj05nppwtEXY9lrwmufRV6r4Z
-	7fdLGKu2s/AxRP1WUKx0sGBvtv4X92HNjjIDmfSS5aXzVjwWfHmub1mzZfye2mvXV5RUR19W
-	m39j0/H/CeltanPcn93Oyjuqc8X0OLtXYVZcz4NVSizFGYmGWsxFxYkANsEmhHQCAAA=
+	Fri, 3 Oct 2014 08:27:42 -0400
+Date: Fri, 3 Oct 2014 13:27:36 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: "atull@opensource.altera.com" <atull@opensource.altera.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+Cc: "linux@roeck-us.net" <linux@roeck-us.net>,
+        "jdelvare@suse.de" <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
+Message-ID: <20141003122736.GH26643@leverpostej>
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
+ <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/14 15:13, David Howells wrote:
-> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->
->> [  132.820302] CR2: ffffffffffffffea
-> Looks like I leaked an error number somewhere.
->
-> David
->
+On Thu, Oct 02, 2014 at 07:37:48PM +0100, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Add device tree bindings documentation for ltc2978.
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+> v2: clean whitespace
+> ---
+>  .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> new file mode 100644
+> index 0000000..b2d9c4d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> @@ -0,0 +1,41 @@
+> +ltc2978
+> +
+> +Required properties:
+> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
 
-Yes... I found..
-Check patches I posted.
+Could we please format this like:
 
-Also here
-http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/log/?h=keys-fixes
+- compatible: should contain one of:
+  * "ltc2974"
+  * "ltc2977"
+  * "ltc2978"
+  * "ltc3880"
+  * "ltc3883"
+  * "ltm4676"
 
-- Dmitry
+Given the file name, are these all variants of ltc2978? 
 
+> + - reg: I2C address
+> +
+> +Optional properties:
+> + Name of the optional regulator subnode must be "regulators".
+> +  - #address-cells must be 1.
+
+What's the single address cell used for?
+
+> +  - #size-cells must be 0.
+> +
+> + For each regulator:
+> +  - reg: regulator number
+
+Which can be...?
+
+What does this correspond to in the HW?
+
+> +  - regulator-compatible: must be vout_en<regulator number> such as vout_en3
+> +    valid range is:
+> +      ltc2977, ltc2978 : vout_en0 - vout_en7
+> +      ltc2974          : vout_en0 - vout_en3
+> +      ltc3880, ltm4676 : vout_en0 - vout_en1
+> +      ltc3883          : vout_en0 only
+
+In other bindings I believe I've seen the node name used for this.
+
+Mark, what's the preferred scheme for identifying regulators in a
+container node?
+
+> +  - regulator-name: arbitrary name for regulator
+
+Drop the 'aribtarary'. Either this should be the name of the regulator
+on the board, or it shouldn't be necessary.
+
+Mark.
+
+> +
+> +Example:
+> +ltc2978@5e {
+> +	compatible = "ltc2978";
+> +	reg = <0x5e>;
+> +	regulators {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		vdacp0_reg: regulator@0 {
+> +			reg = <0>;
+> +			regulator-compatible = "vout_en0";
+> +			regulator-name = "FPGA-2.5V";
+> +		};
+> +		vdacp2_reg: regulator@2 {
+> +			reg = <2>;
+> +			regulator-compatible = "vout_en2";
+> +			regulator-name = "FPGA-1.5V";
+> +		};
+> +	};
+> +};
+> -- 
+> 1.7.9.5
+> 
+> 
