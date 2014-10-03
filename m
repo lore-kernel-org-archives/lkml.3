@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933756AbaJDA2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:28:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45285 "EHLO
+	id S933741AbaJDA2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:28:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755943AbaJCVm6 (ORCPT
+	with ESMTP id S1755948AbaJCVm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:42:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.16 178/357] ARM: 8129/1: errata: work around Cortex-A15 erratum 830321 using dummy strex
-Date: Fri,  3 Oct 2014 14:29:24 -0700
-Message-Id: <20141003212938.823698574@linuxfoundation.org>
+        Keerthy <j-keerthy@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Nishanth Menon <nm@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH 3.16 180/357] ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
+Date: Fri,  3 Oct 2014 14:29:26 -0700
+Message-Id: <20141003212938.888372152@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,123 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Rajendra Nayak <rnayak@ti.com>
 
-commit 2c32c65e3726c773760038910be30cce1b4d4149 upstream.
+commit f7f7a29bf0cf25af23f37e5b5bf1368b85705286 upstream.
 
-On revisions of Cortex-A15 prior to r3p3, a CLREX instruction at PL1 may
-falsely trigger a watchpoint exception, leading to potential data aborts
-during exception return and/or livelock.
+To deal with IPs which are specific to dra74x and dra72x, maintain seperate
+ocp interface lists, while keeping the common list for all common IPs.
 
-This patch resolves the issue in the following ways:
+Move USB OTG SS4 to dra74x only list since its unavailable in
+dra72x and is giving an abort during boot. The dra72x only list
+is empty for now and a placeholder for future hwmod additions which
+are specific to dra72x.
 
-  - Replacing our uses of CLREX with a dummy STREX sequence instead (as
-    we did for v6 CPUs).
-
-  - Removing the clrex code from v7_exit_coherency_flush and derivatives,
-    since this only exists as a minor performance improvement when
-    non-cached exclusives are in use (Linux doesn't use these).
-
-Benchmarking on a variety of ARM cores revealed no measurable
-performance difference with this change applied, so the change is
-performed unconditionally and no new Kconfig entry is added.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
+Reported-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+Tested-by: Nishanth Menon <nm@ti.com>
+[paul@pwsan.com: fixed comment style to conform with CodingStyle]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/cacheflush.h  |    1 -
- arch/arm/kernel/entry-header.S     |   29 +++++++++++++++--------------
- arch/arm/mach-exynos/mcpm-exynos.c |    1 -
- 3 files changed, 15 insertions(+), 16 deletions(-)
+ arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+ 2 files changed, 23 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -472,7 +472,6 @@ static inline void __sync_cache_range_r(
- 	"mcr	p15, 0, r0, c1, c0, 0	@ set SCTLR \n\t" \
- 	"isb	\n\t" \
- 	"bl	v7_flush_dcache_"__stringify(level)" \n\t" \
--	"clrex	\n\t" \
- 	"mrc	p15, 0, r0, c1, c0, 1	@ get ACTLR \n\t" \
- 	"bic	r0, r0, #(1 << 6)	@ disable local coherency \n\t" \
- 	"mcr	p15, 0, r0, c1, c0, 1	@ set ACTLR \n\t" \
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -208,26 +208,21 @@
- #endif
- 	.endif
- 	msr	spsr_cxsf, \rpsr
--#if defined(CONFIG_CPU_V6)
--	ldr	r0, [sp]
--	strex	r1, r2, [sp]			@ clear the exclusive monitor
--	ldmib	sp, {r1 - pc}^			@ load r1 - pc, cpsr
--#elif defined(CONFIG_CPU_32v6K)
--	clrex					@ clear the exclusive monitor
--	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
--#else
--	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
-+#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
-+	@ We must avoid clrex due to Cortex-A15 erratum #830321
-+	sub	r0, sp, #4			@ uninhabited address
-+	strex	r1, r2, [r0]			@ clear the exclusive monitor
- #endif
-+	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
- 	.endm
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -3349,6 +3349,9 @@ int __init omap_hwmod_register_links(str
+ 	if (!ois)
+ 		return 0;
  
- 	.macro	restore_user_regs, fast = 0, offset = 0
- 	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
- 	ldr	lr, [sp, #\offset + S_PC]!	@ get pc
- 	msr	spsr_cxsf, r1			@ save in spsr_svc
--#if defined(CONFIG_CPU_V6)
-+#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
-+	@ We must avoid clrex due to Cortex-A15 erratum #830321
- 	strex	r1, r2, [sp]			@ clear the exclusive monitor
--#elif defined(CONFIG_CPU_32v6K)
--	clrex					@ clear the exclusive monitor
- #endif
- 	.if	\fast
- 	ldmdb	sp, {r1 - lr}^			@ get calling r1 - lr
-@@ -267,7 +262,10 @@
- 	.endif
- 	ldr	lr, [sp, #S_SP]			@ top of the stack
- 	ldrd	r0, r1, [sp, #S_LR]		@ calling lr and pc
--	clrex					@ clear the exclusive monitor
++	if (ois[0] == NULL) /* Empty list */
++		return 0;
 +
-+	@ We must avoid clrex due to Cortex-A15 erratum #830321
-+	strex	r2, r1, [sp, #S_LR]		@ clear the exclusive monitor
+ 	if (!linkspace) {
+ 		if (_alloc_linkspace(ois)) {
+ 			pr_err("omap_hwmod: could not allocate link space\n");
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -35,6 +35,7 @@
+ #include "i2c.h"
+ #include "mmc.h"
+ #include "wd_timer.h"
++#include "soc.h"
+ 
+ /* Base offset for all DRA7XX interrupts external to MPUSS */
+ #define DRA7XX_IRQ_GIC_START	32
+@@ -2705,7 +2706,6 @@ static struct omap_hwmod_ocp_if *dra7xx_
+ 	&dra7xx_l4_per3__usb_otg_ss1,
+ 	&dra7xx_l4_per3__usb_otg_ss2,
+ 	&dra7xx_l4_per3__usb_otg_ss3,
+-	&dra7xx_l4_per3__usb_otg_ss4,
+ 	&dra7xx_l3_main_1__vcp1,
+ 	&dra7xx_l4_per2__vcp1,
+ 	&dra7xx_l3_main_1__vcp2,
+@@ -2714,8 +2714,26 @@ static struct omap_hwmod_ocp_if *dra7xx_
+ 	NULL,
+ };
+ 
++static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
++	&dra7xx_l4_per3__usb_otg_ss4,
++	NULL,
++};
 +
- 	stmdb	lr!, {r0, r1, \rpsr}		@ calling lr and rfe context
- 	ldmia	sp, {r0 - r12}
- 	mov	sp, lr
-@@ -288,13 +286,16 @@
- 	.endm
- #else	/* ifdef CONFIG_CPU_V7M */
- 	.macro	restore_user_regs, fast = 0, offset = 0
--	clrex					@ clear the exclusive monitor
- 	mov	r2, sp
- 	load_user_sp_lr r2, r3, \offset + S_SP	@ calling sp, lr
- 	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
- 	ldr	lr, [sp, #\offset + S_PC]	@ get pc
- 	add	sp, sp, #\offset + S_SP
- 	msr	spsr_cxsf, r1			@ save in spsr_svc
++static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
++	NULL,
++};
 +
-+	@ We must avoid clrex due to Cortex-A15 erratum #830321
-+	strex	r1, r2, [sp]			@ clear the exclusive monitor
+ int __init dra7xx_hwmod_init(void)
+ {
++	int ret;
 +
- 	.if	\fast
- 	ldmdb	sp, {r1 - r12}			@ get calling r1 - r12
- 	.else
---- a/arch/arm/mach-exynos/mcpm-exynos.c
-+++ b/arch/arm/mach-exynos/mcpm-exynos.c
-@@ -39,7 +39,6 @@
- 	"mcr	p15, 0, r0, c1, c0, 0	@ set SCTLR\n\t" \
- 	"isb\n\t"\
- 	"bl	v7_flush_dcache_"__stringify(level)"\n\t" \
--	"clrex\n\t"\
- 	"mrc	p15, 0, r0, c1, c0, 1	@ get ACTLR\n\t" \
- 	"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t" \
- 	/* Dummy Load of a device register to avoid Erratum 799270 */ \
+ 	omap_hwmod_init();
+-	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
++	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
++
++	if (!ret && soc_is_dra74x())
++		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
++	else if (!ret && soc_is_dra72x())
++		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
++
++	return ret;
+ }
 
 
