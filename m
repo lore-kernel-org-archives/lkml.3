@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436AbaJCWUL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:20:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47189 "EHLO
+	id S932492AbaJCWUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:20:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266AbaJCWTf (ORCPT
+	with ESMTP id S932265AbaJCWTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:19:35 -0400
+	Fri, 3 Oct 2014 18:19:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Murali Karicheri <m-karicheri2@ti.com>, Tejun Heo <tj@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 3.10 014/143] ahci: add pcid for Marvel 0x9182 controller
-Date: Fri,  3 Oct 2014 14:33:29 -0700
-Message-Id: <20141003213314.916132234@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 013/143] ahci: Add Device IDs for Intel 9 Series PCH
+Date: Fri,  3 Oct 2014 14:33:28 -0700
+Message-Id: <20141003213314.887399591@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,32 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Murali Karicheri <m-karicheri2@ti.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit c5edfff9db6f4d2c35c802acb4abe0df178becee upstream.
+commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
 
-Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
-for the ID in the ahci driver.
+This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ata/ahci.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
 --- a/drivers/ata/ahci.c
 +++ b/drivers/ata/ahci.c
-@@ -449,6 +449,8 @@ static const struct pci_device_id ahci_p
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9182 */
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9182),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
+@@ -304,6 +304,14 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
