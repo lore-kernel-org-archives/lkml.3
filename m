@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761415AbaJDAtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44721 "EHLO
+	id S934139AbaJDAvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:51:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44710 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754944AbaJCVci (ORCPT
+	with ESMTP id S1754916AbaJCVcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:38 -0400
+	Fri, 3 Oct 2014 17:32:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Lindgren <simon@aqwary.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.16 047/357] i2c: at91: Fix a race condition during signal handling in at91_do_twi_xfer.
-Date: Fri,  3 Oct 2014 14:27:13 -0700
-Message-Id: <20141003212934.871238517@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.16 019/357] drm/radeon: re-enable dpm by default on BTC
+Date: Fri,  3 Oct 2014 14:26:45 -0700
+Message-Id: <20141003212934.045682367@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,47 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Lindgren <simon@aqwary.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6721f28a26efd6368497abbdef5dcfc59608d899 upstream.
+commit c08abf11900e19b14dd3a0cc3d105bd74519cd18 upstream.
 
-There is a race condition in at91_do_twi_xfer when signals arrive.
-If a signal is recieved while waiting for a transfer to complete
-wait_for_completion_interruptible_timeout() will return -ERESTARTSYS.
-This is not handled correctly resulting in interrupts still being
-enabled and a transfer being in flight when we return.
+This patch depends on:
+e07929810f0a19ddd756558290c7d72827cbfcd9
+(drm/radeon/dpm: fix typo in vddci setup for eg/btc)
 
-Symptoms include a range of oopses and bus lockups. Oopses can happen
-when the transfer completes because the interrupt handler will corrupt
-the stack. If a new transfer is started before the interrupt fires
-the controller will start a new transfer in the middle of the old one,
-resulting in confused slaves and a locked bus.
+bugs:
+https://bugs.freedesktop.org/show_bug.cgi?id=73053
+https://bugzilla.kernel.org/show_bug.cgi?id=68571
 
-To avoid this, use wait_for_completion_io_timeout instead so that we
-don't have to deal with gracefully shutting down the transfer and
-disabling the interrupts.
-
-Signed-off-by: Simon Lindgren <simon@aqwary.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-at91.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -434,8 +434,8 @@ static int at91_do_twi_transfer(struct a
- 		}
- 	}
- 
--	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
--							dev->adapter.timeout);
-+	ret = wait_for_completion_io_timeout(&dev->cmd_complete,
-+					     dev->adapter.timeout);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		at91_init_twi_bus(dev);
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1303,9 +1303,6 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_RS780:
+ 	case CHIP_RS880:
+ 	case CHIP_RV770:
+-	case CHIP_BARTS:
+-	case CHIP_TURKS:
+-	case CHIP_CAICOS:
+ 		/* DPM requires the RLC, RV770+ dGPU requires SMC */
+ 		if (!rdev->rlc_fw)
+ 			rdev->pm.pm_method = PM_METHOD_PROFILE;
+@@ -1329,6 +1326,9 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_PALM:
+ 	case CHIP_SUMO:
+ 	case CHIP_SUMO2:
++	case CHIP_BARTS:
++	case CHIP_TURKS:
++	case CHIP_CAICOS:
+ 	case CHIP_CAYMAN:
+ 	case CHIP_ARUBA:
+ 	case CHIP_TAHITI:
 
 
