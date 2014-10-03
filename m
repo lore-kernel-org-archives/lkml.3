@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761306AbaJDAce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:32:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45374 "EHLO
+	id S1759903AbaJDAcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:32:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916AbaJCVmv (ORCPT
+	with ESMTP id S1755072AbaJCVmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:42:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Weston Andros Adamson <dros@primarydata.com>,
+        Peng Tao <tao.peng@primarydata.com>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 166/357] nfs: clear_request_commit while holding i_lock
-Date: Fri,  3 Oct 2014 14:29:12 -0700
-Message-Id: <20141003212938.459480621@linuxfoundation.org>
+Subject: [PATCH 3.16 167/357] nfs: change nfs_page_group_lock argument
+Date: Fri,  3 Oct 2014 14:29:13 -0700
+Message-Id: <20141003212938.489409786@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -32,109 +33,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Weston Andros Adamson <dros@primarydata.com>
 
-commit 411a99adffb4f993eee29759f744de01487044ac upstream.
+commit fd2f3a06d30c85a17cf035ebc60c88c2a13a8ece upstream.
+
+Flip the meaning of the second argument from 'wait' to 'nonblock' to
+match related functions. Update all five calls to reflect this change.
 
 Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Reviewed-by: Peng Tao <tao.peng@primarydata.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/nfs/filelayout/filelayout.c |    5 ++---
- fs/nfs/write.c                 |   15 ++++-----------
- 2 files changed, 6 insertions(+), 14 deletions(-)
+ fs/nfs/pagelist.c |   11 ++++++-----
+ fs/nfs/write.c    |    4 ++--
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
---- a/fs/nfs/filelayout/filelayout.c
-+++ b/fs/nfs/filelayout/filelayout.c
-@@ -1015,6 +1015,7 @@ static u32 select_bucket_index(struct nf
- 
- /* The generic layer is about to remove the req from the commit list.
-  * If this will make the bucket empty, it will need to put the lseg reference.
-+ * Note this is must be called holding the inode (/cinfo) lock
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -145,13 +145,14 @@ static int nfs_wait_bit_uninterruptible(
+ /*
+  * nfs_page_group_lock - lock the head of the page group
+  * @req - request in group that is to be locked
++ * @nonblock - if true don't block waiting for lock
+  *
+  * this lock must be held if modifying the page group list
+  *
+  * returns result from wait_on_bit_lock: 0 on success, < 0 on error
   */
- static void
- filelayout_clear_request_commit(struct nfs_page *req,
-@@ -1022,7 +1023,6 @@ filelayout_clear_request_commit(struct n
+ int
+-nfs_page_group_lock(struct nfs_page *req, bool wait)
++nfs_page_group_lock(struct nfs_page *req, bool nonblock)
  {
- 	struct pnfs_layout_segment *freeme = NULL;
+ 	struct nfs_page *head = req->wb_head;
+ 	int ret;
+@@ -162,7 +163,7 @@ nfs_page_group_lock(struct nfs_page *req
+ 		ret = wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
+ 			nfs_wait_bit_uninterruptible,
+ 			TASK_UNINTERRUPTIBLE);
+-	} while (wait && ret != 0);
++	} while (!nonblock && ret != 0);
  
--	spin_lock(cinfo->lock);
- 	if (!test_and_clear_bit(PG_COMMIT_TO_DS, &req->wb_flags))
- 		goto out;
- 	cinfo->ds->nwritten--;
-@@ -1037,8 +1037,7 @@ filelayout_clear_request_commit(struct n
- 	}
- out:
- 	nfs_request_remove_commit_list(req, cinfo);
--	spin_unlock(cinfo->lock);
--	pnfs_put_lseg(freeme);
-+	pnfs_put_lseg_async(freeme);
- }
+ 	WARN_ON_ONCE(ret > 0);
+ 	return ret;
+@@ -226,7 +227,7 @@ bool nfs_page_group_sync_on_bit(struct n
+ {
+ 	bool ret;
  
- static struct list_head *
+-	nfs_page_group_lock(req, true);
++	nfs_page_group_lock(req, false);
+ 	ret = nfs_page_group_sync_on_bit_locked(req, bit);
+ 	nfs_page_group_unlock(req);
+ 
+@@ -869,7 +870,7 @@ static int __nfs_pageio_add_request(stru
+ 	unsigned int offset, pgbase;
+ 	int ret;
+ 
+-	ret = nfs_page_group_lock(req, false);
++	ret = nfs_page_group_lock(req, true);
+ 	if (ret < 0) {
+ 		desc->pg_error = ret;
+ 		return 0;
+@@ -895,7 +896,7 @@ static int __nfs_pageio_add_request(stru
+ 			if (desc->pg_recoalesce)
+ 				return 0;
+ 			/* retry add_request for this subreq */
+-			ret = nfs_page_group_lock(req, false);
++			ret = nfs_page_group_lock(req, true);
+ 			if (ret < 0) {
+ 				desc->pg_error = ret;
+ 				return 0;
 --- a/fs/nfs/write.c
 +++ b/fs/nfs/write.c
-@@ -379,8 +379,6 @@ nfs_destroy_unlinked_subrequests(struct
- 		subreq->wb_head = subreq;
- 		subreq->wb_this_page = subreq;
+@@ -216,7 +216,7 @@ static bool nfs_page_group_covers_page(s
+ 	unsigned int pos = 0;
+ 	unsigned int len = nfs_page_length(req->wb_page);
  
--		nfs_clear_request_commit(subreq);
--
- 		/* subreq is now totally disconnected from page group or any
- 		 * write / commit lists. last chance to wake any waiters */
- 		nfs_unlock_request(subreq);
-@@ -490,7 +488,7 @@ try_again:
- 	 * Commit list removal accounting is done after locks are dropped */
- 	subreq = head;
+-	nfs_page_group_lock(req, true);
++	nfs_page_group_lock(req, false);
+ 
  	do {
--		nfs_list_remove_request(subreq);
-+		nfs_clear_request_commit(subreq);
- 		subreq = subreq->wb_this_page;
- 	} while (subreq != head);
- 
-@@ -520,15 +518,11 @@ try_again:
- 
- 	nfs_page_group_unlock(head);
- 
--	/* drop lock to clear_request_commit the head req and clean up
--	 * requests on destroy list */
-+	/* drop lock to clean uprequests on destroy list */
- 	spin_unlock(&inode->i_lock);
- 
- 	nfs_destroy_unlinked_subrequests(destroy_list, head);
- 
--	/* clean up commit list state */
--	nfs_clear_request_commit(head);
--
- 	/* still holds ref on head from nfs_page_find_head_request_locked
- 	 * and still has lock on head from lock loop */
- 	return head;
-@@ -810,6 +804,7 @@ nfs_clear_page_commit(struct page *page)
- 	dec_bdi_stat(page_file_mapping(page)->backing_dev_info, BDI_RECLAIMABLE);
- }
- 
-+/* Called holding inode (/cinfo) lock */
- static void
- nfs_clear_request_commit(struct nfs_page *req)
- {
-@@ -819,9 +814,7 @@ nfs_clear_request_commit(struct nfs_page
- 
- 		nfs_init_cinfo_from_inode(&cinfo, inode);
- 		if (!pnfs_clear_request_commit(req, &cinfo)) {
--			spin_lock(cinfo.lock);
- 			nfs_request_remove_commit_list(req, &cinfo);
--			spin_unlock(cinfo.lock);
- 		}
- 		nfs_clear_page_commit(req->wb_page);
+ 		tmp = nfs_page_group_search_locked(req->wb_head, pos);
+@@ -454,7 +454,7 @@ try_again:
  	}
-@@ -1040,9 +1033,9 @@ static struct nfs_page *nfs_try_to_updat
- 	else
- 		req->wb_bytes = rqend - req->wb_offset;
- out_unlock:
--	spin_unlock(&inode->i_lock);
- 	if (req)
- 		nfs_clear_request_commit(req);
-+	spin_unlock(&inode->i_lock);
- 	return req;
- out_flushme:
- 	spin_unlock(&inode->i_lock);
+ 
+ 	/* lock each request in the page group */
+-	ret = nfs_page_group_lock(head, false);
++	ret = nfs_page_group_lock(head, true);
+ 	if (ret < 0)
+ 		return ERR_PTR(ret);
+ 	subreq = head;
 
 
