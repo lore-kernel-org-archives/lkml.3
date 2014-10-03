@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291AbaJCW2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:28:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47570 "EHLO
+	id S1755398AbaJCW2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:28:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515AbaJCW0e (ORCPT
+	with ESMTP id S1756993AbaJCW0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:26:34 -0400
+	Fri, 3 Oct 2014 18:26:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julian Anastasov <ja@ssi.bg>, Hans Schillstrom <hans@schillstrom.com>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.10 128/143] ipvs: avoid netns exit crash on ip_vs_conn_drop_conntrack
-Date: Fri,  3 Oct 2014 14:35:23 -0700
-Message-Id: <20141003213318.326413934@linuxfoundation.org>
+        Chris J Arges <chris.j.arges@canonical.com>,
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>
+Subject: [PATCH 3.10 130/143] ipvs: fix ipv6 hook registration for local replies
+Date: Fri,  3 Oct 2014 14:35:25 -0700
+Message-Id: <20141003213318.382992506@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,31 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julian Anastasov <ja@ssi.bg>
 
-commit 2627b7e15c5064ddd5e578e4efd948d48d531a3f upstream.
+commit eb90b0c734ad793d5f5bf230a9e9a4dcc48df8aa upstream.
 
-commit 8f4e0a18682d91 ("IPVS netns exit causes crash in conntrack")
-added second ip_vs_conn_drop_conntrack call instead of just adding
-the needed check. As result, the first call still can cause
-crash on netns exit. Remove it.
+commit fc604767613b6d2036cdc35b660bc39451040a47
+("ipvs: changes for local real server") from 2.6.37
+introduced DNAT support to local real server but the
+IPv6 LOCAL_OUT handler ip_vs_local_reply6() is
+registered incorrectly as IPv4 hook causing any outgoing
+IPv4 traffic to be dropped depending on the IP header values.
 
+Chris tracked down the problem to CONFIG_IP_VS_IPV6=y
+Bug report: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1349768
+
+Reported-by: Chris J Arges <chris.j.arges@canonical.com>
+Tested-by: Chris J Arges <chris.j.arges@canonical.com>
 Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
 Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_conn.c |    1 -
- 1 file changed, 1 deletion(-)
+ net/netfilter/ipvs/ip_vs_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/ipvs/ip_vs_conn.c
-+++ b/net/netfilter/ipvs/ip_vs_conn.c
-@@ -797,7 +797,6 @@ static void ip_vs_conn_expire(unsigned l
- 			ip_vs_control_del(cp);
- 
- 		if (cp->flags & IP_VS_CONN_F_NFCT) {
--			ip_vs_conn_drop_conntrack(cp);
- 			/* Do not access conntracks during subsys cleanup
- 			 * because nf_conntrack_find_get can not be used after
- 			 * conntrack cleanup for the net.
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -1898,7 +1898,7 @@ static struct nf_hook_ops ip_vs_ops[] __
+ 	{
+ 		.hook		= ip_vs_local_reply6,
+ 		.owner		= THIS_MODULE,
+-		.pf		= NFPROTO_IPV4,
++		.pf		= NFPROTO_IPV6,
+ 		.hooknum	= NF_INET_LOCAL_OUT,
+ 		.priority	= NF_IP6_PRI_NAT_DST + 1,
+ 	},
 
 
