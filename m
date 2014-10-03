@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759178AbaJCXwq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:52:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1759118AbaJCXwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:52:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932152AbaJCVxf (ORCPT
+	with ESMTP id S932153AbaJCVxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pontus Fuchs <pontus.fuchs@gmail.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.16 265/357] genhd: fix leftover might_sleep() in blk_free_devt()
-Date: Fri,  3 Oct 2014 14:30:51 -0700
-Message-Id: <20141003212941.458467784@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Duncan Laurie <dlaurie@chromium.org>, Jarod Wilson <jarod@redhat.com>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 3.14 051/238] drm/i915: Remove bogus __init annotation from DMI callbacks
+Date: Fri,  3 Oct 2014 14:29:26 -0700
+Message-Id: <20141003212915.309001858@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,37 +28,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 46f341ffcfb5d8530f7d1e60f3be06cce6661b62 upstream.
+commit bbe1c2740d3a25aa1dbe5d842d2ff09cddcdde0a upstream.
 
-Commit 2da78092 changed the locking from a mutex to a spinlock,
-so we now longer sleep in this context. But there was a leftover
-might_sleep() in there, which now triggers since we do the final
-free from an RCU callback. Get rid of it.
+The __init annotations for the DMI callback functions are wrong as this
+code can be called even after the module has been initialized, e.g. like
+this:
 
-Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+  # echo 1 > /sys/bus/pci/devices/0000:00:02.0/remove
+  # modprobe i915
+  # echo 1 > /sys/bus/pci/rescan
+
+The first command will remove the PCI device from the kernel's device
+list so the second command won't see it right away. But as it registers
+a PCI driver it'll see it on the third command. If the system happens to
+match one of the DMI table entries we'll try to call a function in long
+released memory and generate an Oops, at best.
+
+Fix this by removing the bogus annotation.
+
+Modpost should have caught that one but it ignores section reference
+mismatches from the .rodata section. :/
+
+Fixes: 25e341cfc33d ("drm/i915: quirk away broken OpRegion VBT")
+Fixes: 8ca4013d702d ("CHROMIUM: i915: Add DMI override to skip CRT...")
+Fixes: 425d244c8670 ("drm/i915: ignore LVDS on intel graphics systems...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Jarod Wilson <jarod@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>	# Can modpost be fixed?
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/gpu/drm/i915/intel_bios.c |    2 +-
+ drivers/gpu/drm/i915/intel_crt.c  |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -445,8 +445,6 @@ int blk_alloc_devt(struct hd_struct *par
-  */
- void blk_free_devt(dev_t devt)
- {
--	might_sleep();
--
- 	if (devt == MKDEV(0, 0))
- 		return;
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -839,7 +839,7 @@ init_vbt_defaults(struct drm_i915_privat
+ 	}
+ }
  
+-static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
++static int intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_DEBUG_KMS("Falling back to manually reading VBT from "
+ 		      "VBIOS ROM for %s\n",
+--- a/drivers/gpu/drm/i915/intel_crt.c
++++ b/drivers/gpu/drm/i915/intel_crt.c
+@@ -750,7 +750,7 @@ static const struct drm_encoder_funcs in
+ 	.destroy = intel_encoder_destroy,
+ };
+ 
+-static int __init intel_no_crt_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_crt_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_INFO("Skipping CRT initialization for %s\n", id->ident);
+ 	return 1;
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -544,7 +544,7 @@ static const struct drm_encoder_funcs in
+ 	.destroy = intel_encoder_destroy,
+ };
+ 
+-static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
++static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
+ {
+ 	DRM_INFO("Skipping LVDS initialization for %s\n", id->ident);
+ 	return 1;
 
 
