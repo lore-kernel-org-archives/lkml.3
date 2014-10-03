@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785AbaJCWna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:43:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47422 "EHLO
+	id S1758824AbaJCWnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:43:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932639AbaJCWYS (ORCPT
+	with ESMTP id S932379AbaJCWYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:18 -0400
+	Fri, 3 Oct 2014 18:24:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 081/143] iio: meter: ade7758: Fix indio_dev->trig assignment
-Date: Fri,  3 Oct 2014 14:34:36 -0700
-Message-Id: <20141003213316.944648086@linuxfoundation.org>
+        Krzysztof Kolasa <kkolasa@winsoft.pl>,
+        Milan Broz <gmazyland@gmail.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 095/143] dm crypt: fix access beyond the end of allocated space
+Date: Fri,  3 Oct 2014 14:34:50 -0700
+Message-Id: <20141003213317.346170969@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -30,34 +31,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 0495081179212b758775df752e657ea71dcae020 upstream.
+commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
 
-This can result in wrong reference count for trigger device, call
-iio_trigger_get to increment reference.
-Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
-with Jonathan.
+The DM crypt target accesses memory beyond allocated space resulting in
+a crash on 32 bit x86 systems.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
+crypt: use async crypto").  However, this bug was masked by the fact
+that kmalloc rounds the size up to the next power of two.  This bug
+wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
+data").  By switching to using per-bio data there was no longer any
+padding beyond the end of a dm-crypt allocated memory block.
+
+To minimize allocation overhead dm-crypt puts several structures into one
+block allocated with kmalloc.  The block holds struct ablkcipher_request,
+cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
+struct dm_crypt_request and an initialization vector.
+
+The variable dmreq_start is set to offset of struct dm_crypt_request
+within this memory block.  dm-crypt allocates the block with this size:
+cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
+
+When accessing the initialization vector, dm-crypt uses the function
+iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
++ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
+
+dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
+structure.  However, when dm-crypt accesses the initialization vector, it
+takes a pointer to the end of dm_crypt_request, aligns it, and then uses
+it as the initialization vector.  If the end of dm_crypt_request is not
+aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
+alignment causes the initialization vector to point beyond the allocated
+space.
+
+Fix this bug by calculating the variable iv_size_padding and adding it
+to the allocated size.
+
+Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
+is specific to dm-crypt (it isn't used by the crypto subsystem at all),
+so it is aligned on __alignof__(struct dm_crypt_request).
+
+Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
+aligned as if the block was allocated with kmalloc.
+
+Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
+Tested-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_trigger.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-crypt.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/iio/meter/ade7758_trigger.c
-+++ b/drivers/staging/iio/meter/ade7758_trigger.c
-@@ -85,7 +85,7 @@ int ade7758_probe_trigger(struct iio_dev
- 	ret = iio_trigger_register(st->trig);
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1506,6 +1506,7 @@ static int crypt_ctr(struct dm_target *t
+ 	unsigned int key_size, opt_params;
+ 	unsigned long long tmpll;
+ 	int ret;
++	size_t iv_size_padding;
+ 	struct dm_arg_set as;
+ 	const char *opt_string;
+ 	char dummy;
+@@ -1542,12 +1543,23 @@ static int crypt_ctr(struct dm_target *t
  
- 	/* select default trigger */
--	indio_dev->trig = st->trig;
-+	indio_dev->trig = iio_trigger_get(st->trig);
- 	if (ret)
- 		goto error_free_irq;
+ 	cc->dmreq_start = sizeof(struct ablkcipher_request);
+ 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
+-	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
+-	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
+-			   ~(crypto_tfm_ctx_alignment() - 1);
++	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
++
++	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
++		/* Allocate the padding exactly */
++		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
++				& crypto_ablkcipher_alignmask(any_tfm(cc));
++	} else {
++		/*
++		 * If the cipher requires greater alignment than kmalloc
++		 * alignment, we don't know the exact position of the
++		 * initialization vector. We must assume worst case.
++		 */
++		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
++	}
  
+ 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
+-			sizeof(struct dm_crypt_request) + cc->iv_size);
++			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
+ 	if (!cc->req_pool) {
+ 		ti->error = "Cannot allocate crypt request mempool";
+ 		goto bad;
 
 
