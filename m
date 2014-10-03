@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259AbaJCW5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:57:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47279 "EHLO
+	id S1759289AbaJCW5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:57:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932590AbaJCWYC (ORCPT
+	with ESMTP id S932589AbaJCWYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.10 054/143] usb: hub: take hub->hdev reference when processing from eventlist
-Date: Fri,  3 Oct 2014 14:34:09 -0700
-Message-Id: <20141003213316.110125632@linuxfoundation.org>
+        Imre Deak <imre.deak@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.10 053/143] xhci: fix oops when xhci resumes from hibernate with hw lpm capable devices
+Date: Fri,  3 Oct 2014 14:34:08 -0700
+Message-Id: <20141003213316.081348442@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,47 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <joe.lawrence@stratus.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit c605f3cdff53a743f6d875b76956b239deca1272 upstream.
+commit 96044694b8511bc2b04df0776b4ba295cfe005c0 upstream.
 
-During surprise device hotplug removal tests, it was observed that
-hub_events may try to call usb_lock_device on a device that has already
-been freed. Protect the usb_device by taking out a reference (under the
-hub_event_lock) when hub_events pulls it off the list, returning the
-reference after hub_events is finished using it.
+Resuming from hibernate (S4) will restart and re-initialize xHC.
+The device contexts are freed and will be re-allocated later during device reset.
 
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Suggested-by: David Bulkow <david.bulkow@stratus.com> for using kref
-Suggested-by: Alan Stern <stern@rowland.harvard.edu> for placement
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Usb core will disable link pm in device resume before device reset, which will
+try to change the max exit latency, accessing the device contexts before they are re-allocated.
+
+There is no need to zero (disable) the max exit latency when disabling hw lpm
+for a freshly re-initialized xHC. So check that device context exists before
+doing anything. The max exit latency will be set again after device reset when usb core
+enables the link pm.
+
+Reported-by: Imre Deak <imre.deak@intel.com>
+Tested-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4702,9 +4702,10 @@ static void hub_events(void)
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4407,13 +4407,21 @@ static int xhci_change_max_exit_latency(
+ 	int ret;
  
- 		hub = list_entry(tmp, struct usb_hub, event_list);
- 		kref_get(&hub->kref);
-+		hdev = hub->hdev;
-+		usb_get_dev(hdev);
- 		spin_unlock_irq(&hub_event_lock);
+ 	spin_lock_irqsave(&xhci->lock, flags);
+-	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
++
++	virt_dev = xhci->devs[udev->slot_id];
++
++	/*
++	 * virt_dev might not exists yet if xHC resumed from hibernate (S4) and
++	 * xHC was re-initialized. Exit latency will be set later after
++	 * hub_port_finish_reset() is done and xhci->devs[] are re-allocated
++	 */
++
++	if (!virt_dev || max_exit_latency == virt_dev->current_mel) {
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		return 0;
+ 	}
  
--		hdev = hub->hdev;
- 		hub_dev = hub->intfdev;
- 		intf = to_usb_interface(hub_dev);
- 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
-@@ -4919,6 +4920,7 @@ static void hub_events(void)
- 		usb_autopm_put_interface(intf);
-  loop_disconnected:
- 		usb_unlock_device(hdev);
-+		usb_put_dev(hdev);
- 		kref_put(&hub->kref, hub_release);
- 
-         } /* end while (1) */
+ 	/* Attempt to issue an Evaluate Context command to change the MEL. */
+-	virt_dev = xhci->devs[udev->slot_id];
+ 	command = xhci->lpm_command;
+ 	xhci_slot_copy(xhci, command->in_ctx, virt_dev->out_ctx);
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
 
 
