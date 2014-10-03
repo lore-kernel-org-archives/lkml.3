@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790AbaJDAkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:40:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45275 "EHLO
+	id S1755837AbaJCVml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:42:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755847AbaJCVmm (ORCPT
+	with ESMTP id S1755075AbaJCVc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:42 -0400
+	Fri, 3 Oct 2014 17:32:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lei Liu <liu.lei78@zte.com.cn>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 115/357] Revert "USB: option,zte_ev: move most ZTE CDMA devices to zte_ev"
-Date: Fri,  3 Oct 2014 14:28:21 -0700
-Message-Id: <20141003212936.934713312@linuxfoundation.org>
+        Daniel Robbins <drobbins@funtoo.org>,
+        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 058/357] ALSA: firewire-lib/dice: add arrangements of PCM pointer and interrupts for Dice quirk
+Date: Fri,  3 Oct 2014 14:27:24 -0700
+Message-Id: <20141003212935.195382929@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,140 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
 
-commit 63a901c06e3c2c45bd601916fe04e870e9ccae1e upstream.
+commit 65845f29bec6bc17f80eff25c3bc39bcf3be9bf9 upstream.
 
-This reverts commit 73228a0538a7 ("USB: option,zte_ev: move most ZTE
-CDMA devices to zte_ev").
+In IEC 61883-6, one data block transfers one event. In ALSA, the event equals one PCM frame,
+hence one data block transfers one PCM frame. But Dice has a quirk at higher sampling rate
+(176.4/192.0 kHz) that one data block transfers two PCM frames.
 
-Move the IDs of the devices that were previously driven by the option
-driver back to that driver.
+Commit 10550bea44a8 ("ALSA: dice/firewire-lib: Keep dualwire mode but obsolete
+CIP_HI_DUALWIRE") moved some codes related to this quirk into Dice driver. But the commit
+forgot to add arrangements for PCM period interrupts and DMA pointer updates. As a result, Dice
+driver cannot work correctly at higher sampling rate.
 
-As several users have reported, the zte_ev driver is causing random
-disconnects as well as reconnect failures.
+This commit adds 'double_pcm_frames' parameter to amdtp structure for this quirk. When this
+parameter is set, PCM period interrupts and DMA pointer updates occur at double speed than in
+IEC 61883-6.
 
-A closer analysis of the zte_ev setup code reveals that it consists of
-standard CDC requests (SET/GET_LINE_CODING and SET_CONTROL_LINE_STATE)
-but unfortunately fails to get some of those right. In particular, as
-reported by Liu Lei, it fails to lower DTR/RTS on close. It also appears
-that the control requests lack the interface argument.
-
-Note that the zte_ev driver is based on code (once) distributed by ZTE
-that still appears to originally have been reverse-engineered and bolted
-onto the generic driver.
-
-Since line control is already handled properly by the option driver, and
-the SET/GET_LINE_CODING requests appears to be redundant (amounts to a
-SET 9600 8N1), this is a first step in ultimately removing the redundant
-zte_ev driver.
-
-Note that AC2726 had already been moved back to option, and that some
-IDs were in the device table of both drivers prior to the commit being
-reverted.
-
-Reported-by: Lei Liu <liu.lei78@zte.com.cn>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Reported-by: Daniel Robbins <drobbins@funtoo.org>
+Fixes: 10550bea44a8 ("ALSA: dice/firewire-lib: Keep dualwire mode but obsolete CIP_HI_DUALWIRE")
+Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   24 +++++++++++++++++++++---
- drivers/usb/serial/zte_ev.c |   18 ------------------
- 2 files changed, 21 insertions(+), 21 deletions(-)
+ sound/firewire/amdtp.c |   11 ++++++++++-
+ sound/firewire/amdtp.h |    1 +
+ sound/firewire/dice.c  |   15 +++++++++++----
+ 3 files changed, 22 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -275,8 +275,12 @@ static void option_instat_callback(struc
- #define ZTE_PRODUCT_MF622			0x0001
- #define ZTE_PRODUCT_MF628			0x0015
- #define ZTE_PRODUCT_MF626			0x0031
--#define ZTE_PRODUCT_MC2718			0xffe8
- #define ZTE_PRODUCT_AC2726			0xfff1
-+#define ZTE_PRODUCT_CDMA_TECH			0xfffe
-+#define ZTE_PRODUCT_AC8710T			0xffff
-+#define ZTE_PRODUCT_MC2718			0xffe8
-+#define ZTE_PRODUCT_AD3812			0xffeb
-+#define ZTE_PRODUCT_MC2716			0xffed
- 
- #define BENQ_VENDOR_ID				0x04a5
- #define BENQ_PRODUCT_H10			0x4068
-@@ -531,10 +535,18 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_ad3812_z_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1) | BIT(2),
-+};
+--- a/sound/firewire/amdtp.c
++++ b/sound/firewire/amdtp.c
+@@ -507,7 +507,16 @@ static void amdtp_pull_midi(struct amdtp
+ static void update_pcm_pointers(struct amdtp_stream *s,
+ 				struct snd_pcm_substream *pcm,
+ 				unsigned int frames)
+-{	unsigned int ptr;
++{
++	unsigned int ptr;
 +
- static const struct option_blacklist_info zte_mc2718_z_blacklist = {
- 	.sendsetup = BIT(1) | BIT(2) | BIT(3) | BIT(4),
- };
++	/*
++	 * In IEC 61883-6, one data block represents one event. In ALSA, one
++	 * event equals to one PCM frame. But Dice has a quirk to transfer
++	 * two PCM frames in one data block.
++	 */
++	if (s->double_pcm_frames)
++		frames *= 2;
  
-+static const struct option_blacklist_info zte_mc2716_z_blacklist = {
-+	.sendsetup = BIT(1) | BIT(2) | BIT(3),
-+};
-+
- static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
-@@ -1074,6 +1086,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_INTERFACE_CLASS(BANDRICH_VENDOR_ID, BANDRICH_PRODUCT_1012, 0xff) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC650) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
-@@ -1548,13 +1561,18 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
+ 	ptr = s->pcm_buffer_pointer + frames;
+ 	if (ptr >= pcm->runtime->buffer_size)
+--- a/sound/firewire/amdtp.h
++++ b/sound/firewire/amdtp.h
+@@ -125,6 +125,7 @@ struct amdtp_stream {
+ 	unsigned int pcm_buffer_pointer;
+ 	unsigned int pcm_period_pointer;
+ 	bool pointer_flush;
++	bool double_pcm_frames;
  
--	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
- 	 .driver_info = (kernel_ulong_t)&zte_mc2718_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AD3812, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
+ 	struct snd_rawmidi_substream *midi[AMDTP_MAX_CHANNELS_FOR_MIDI * 8];
  
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -272,27 +272,9 @@ static void zte_ev_usb_serial_close(stru
- }
+--- a/sound/firewire/dice.c
++++ b/sound/firewire/dice.c
+@@ -567,10 +567,14 @@ static int dice_hw_params(struct snd_pcm
+ 		return err;
  
- static const struct usb_device_id id_table[] = {
--	/* AC8710, AC8710T */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffff, 0xff, 0xff, 0xff) },
--	 /* AC8700 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfffe, 0xff, 0xff, 0xff) },
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
--	{ USB_DEVICE(0x19d2, 0xfffc) },
--	{ USB_DEVICE(0x19d2, 0xfffb) },
--	/* AC8710_V3 */
--	{ USB_DEVICE(0x19d2, 0xfff6) },
--	{ USB_DEVICE(0x19d2, 0xfff7) },
--	{ USB_DEVICE(0x19d2, 0xfff8) },
--	{ USB_DEVICE(0x19d2, 0xfff9) },
--	{ USB_DEVICE(0x19d2, 0xffee) },
--	/* AC2716, MC2716 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffed, 0xff, 0xff, 0xff) },
--	/* AD3812 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffeb, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE(0x19d2, 0xffec) },
- 	{ USB_DEVICE(0x05C6, 0x3197) },
--	{ USB_DEVICE(0x05C6, 0x6000) },
- 	{ USB_DEVICE(0x05C6, 0x9008) },
- 	{ },
- };
+ 	/*
+-	 * At rates above 96 kHz, pretend that the stream runs at half the
+-	 * actual sample rate with twice the number of channels; two samples
+-	 * of a channel are stored consecutively in the packet. Requires
+-	 * blocking mode and PCM buffer size should be aligned to SYT_INTERVAL.
++	 * At 176.4/192.0 kHz, Dice has a quirk to transfer two PCM frames in
++	 * one data block of AMDTP packet. Thus sampling transfer frequency is
++	 * a half of PCM sampling frequency, i.e. PCM frames at 192.0 kHz are
++	 * transferred on AMDTP packets at 96 kHz. Two successive samples of a
++	 * channel are stored consecutively in the packet. This quirk is called
++	 * as 'Dual Wire'.
++	 * For this quirk, blocking mode is required and PCM buffer size should
++	 * be aligned to SYT_INTERVAL.
+ 	 */
+ 	channels = params_channels(hw_params);
+ 	if (rate_index > 4) {
+@@ -581,6 +585,9 @@ static int dice_hw_params(struct snd_pcm
+ 
+ 		rate /= 2;
+ 		channels *= 2;
++		dice->stream.double_pcm_frames = true;
++	} else {
++		dice->stream.double_pcm_frames = false;
+ 	}
+ 
+ 	mode = rate_index_to_mode(rate_index);
 
 
