@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089AbaJCX1Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:27:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46292 "EHLO
+	id S1758644AbaJCX1W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:27:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46302 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409AbaJCWD7 (ORCPT
+	with ESMTP id S1757415AbaJCWD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.16 333/357] md/raid1: update next_resync under resync_lock.
-Date: Fri,  3 Oct 2014 14:31:59 -0700
-Message-Id: <20141003212943.461151084@linuxfoundation.org>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 121/238] ACPI / hotplug: Generate online uevents for ACPI containers
+Date: Fri,  3 Oct 2014 14:30:36 -0700
+Message-Id: <20141003212917.546379712@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,60 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit c2fd4c94deedb89ac1746c4a53219be499372c06 upstream.
+commit 8ab17fc92e49bc2b8fff9d220c19bf50ec9c1158 upstream.
 
-raise_barrier() uses next_resync as part of its calculations, so it
-really should be updated first, instead of afterwards.
+Commit 46394fd01 (ACPI / hotplug: Move container-specific code out of
+the core) removed the generation of "online" uevents for containers,
+because "add" uevents are now generated for them automatically when
+container system devices are registered.  However, there are user
+space tools that need to be notified when the container and all of
+its children have been enumerated, which doesn't happen any more.
 
-next_resync is always used under resync_lock so update it under
-resync lock to, just before it is used.  That is safest.
+For this reason, add a mechanism allowing "online" uevents to be
+generated for ACPI containers after enumerating the container along
+with all of its children.
 
-This could cause normal IO and resync IO to interact badly so
-it suitable for -stable.
-
-Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
-Signed-off-by: NeilBrown <neilb@suse.de>
+Fixes: 46394fd01 (ACPI / hotplug: Move container-specific code out of the core)
+Reported-and-tested-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/acpi/container.c |    8 ++++++++
+ drivers/acpi/scan.c      |    3 +++
+ include/acpi/acpi_bus.h  |    1 +
+ 3 files changed, 12 insertions(+)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -827,7 +827,7 @@ static void flush_pending_writes(struct
-  *    there is no normal IO happeing.  It must arrange to call
-  *    lower_barrier when the particular background IO completes.
-  */
--static void raise_barrier(struct r1conf *conf)
-+static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
- {
- 	spin_lock_irq(&conf->resync_lock);
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -96,6 +96,13 @@ static void container_device_detach(stru
+ 		device_unregister(dev);
+ }
  
-@@ -837,6 +837,7 @@ static void raise_barrier(struct r1conf
++static void container_device_online(struct acpi_device *adev)
++{
++	struct device *dev = acpi_driver_data(adev);
++
++	kobject_uevent(&dev->kobj, KOBJ_ONLINE);
++}
++
+ static struct acpi_scan_handler container_handler = {
+ 	.ids = container_device_ids,
+ 	.attach = container_device_attach,
+@@ -103,6 +110,7 @@ static struct acpi_scan_handler containe
+ 	.hotplug = {
+ 		.enabled = true,
+ 		.demand_offline = true,
++		.notify_online = container_device_online,
+ 	},
+ };
  
- 	/* block any new IO from starting */
- 	conf->barrier++;
-+	conf->next_resync = sector_nr;
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -2068,6 +2068,9 @@ static void acpi_bus_attach(struct acpi_
+  ok:
+ 	list_for_each_entry(child, &device->children, node)
+ 		acpi_bus_attach(child);
++
++	if (device->handler && device->handler->hotplug.notify_online)
++		device->handler->hotplug.notify_online(device);
+ }
  
- 	/* For these conditions we must wait:
- 	 * A: while the array is in frozen state
-@@ -2542,9 +2543,8 @@ static sector_t sync_request(struct mdde
- 
- 	bitmap_cond_end_sync(mddev->bitmap, sector_nr);
- 	r1_bio = mempool_alloc(conf->r1buf_pool, GFP_NOIO);
--	raise_barrier(conf);
- 
--	conf->next_resync = sector_nr;
-+	raise_barrier(conf, sector_nr);
- 
- 	rcu_read_lock();
- 	/*
+ /**
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -118,6 +118,7 @@ struct acpi_device;
+ struct acpi_hotplug_profile {
+ 	struct kobject kobj;
+ 	int (*scan_dependent)(struct acpi_device *adev);
++	void (*notify_online)(struct acpi_device *adev);
+ 	bool enabled:1;
+ 	bool demand_offline:1;
+ };
 
 
