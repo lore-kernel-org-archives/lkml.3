@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960AbaJCWOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:14:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S1758072AbaJCXFj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:05:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47030 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757835AbaJCWNs (ORCPT
+	with ESMTP id S1755713AbaJCWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:48 -0400
+	Fri, 3 Oct 2014 18:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Robinson <mail@jasonrobinson.me>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 165/238] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-Date: Fri,  3 Oct 2014 14:31:20 -0700
-Message-Id: <20141003212918.955141532@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 214/238] md/raid1: clean up request counts properly in close_sync()
+Date: Fri,  3 Oct 2014 14:32:09 -0700
+Message-Id: <20141003212920.502032932@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,37 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
+commit 669cc7ba77864e7b1ac39c9f2b2afb8730f341f4 upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=69731
+If there are outstanding writes when close_sync is called,
+the change to ->start_next_window might cause them to
+decrement the wrong counter when they complete.  Fix this
+by merging the two counters into the one that will be decremented.
 
-Reported-by: Jason Robinson <mail@jasonrobinson.me>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Having an incorrect value in a counter can cause raise_barrier()
+to hangs, so this is suitable for -stable.
+
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/md/raid1.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -601,6 +601,14 @@ static const struct dmi_system_id __init
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Fujitsu U574 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
-+		},
-+	},
- 	{ }
- };
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1548,8 +1548,13 @@ static void close_sync(struct r1conf *co
+ 	mempool_destroy(conf->r1buf_pool);
+ 	conf->r1buf_pool = NULL;
  
++	spin_lock_irq(&conf->resync_lock);
+ 	conf->next_resync = 0;
+ 	conf->start_next_window = MaxSector;
++	conf->current_window_requests +=
++		conf->next_window_requests;
++	conf->next_window_requests = 0;
++	spin_unlock_irq(&conf->resync_lock);
+ }
+ 
+ static int raid1_spare_active(struct mddev *mddev)
 
 
