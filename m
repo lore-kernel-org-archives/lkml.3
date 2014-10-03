@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759635AbaJCXK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:10:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46937 "EHLO
+	id S1758311AbaJCXKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:10:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757797AbaJCWN6 (ORCPT
+	with ESMTP id S1757920AbaJCWN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:58 -0400
+	Fri, 3 Oct 2014 18:13:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.14 195/238] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-Date: Fri,  3 Oct 2014 14:31:50 -0700
-Message-Id: <20141003212919.897921168@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.14 197/238] alarmtimer: Do not signal SIGEV_NONE timers
+Date: Fri,  3 Oct 2014 14:31:52 -0700
+Message-Id: <20141003212919.960934152@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,49 +33,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Richard Larocque <rlarocque@google.com>
 
-commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-In spite of what the GCC manual says, the -mfast-indirect-calls has
-never been supported in the 64-bit parisc compiler. Indirect calls have
-always been done using function descriptors irrespective of the
--mfast-indirect-calls option.
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-Recently, it was noticed that a function descriptor was always requested
-when the -mfast-indirect-calls option was specified. This caused
-problems when the option was used in  application code and doesn't make
-any sense because the whole point of the option is to avoid using a
-function descriptor for indirect calls.
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
 
-Fixing this broke 64-bit kernel builds.
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
 
-I will fix GCC but for now we need the attached change. This results in
-the same kernel code as before.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/Makefile |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/time/alarmtimer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -48,7 +48,12 @@ cflags-y	:= -pipe
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -466,8 +466,10 @@ static enum alarmtimer_restart alarm_han
+ {
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
++	}
  
- # These flags should be implied by an hppa-linux configuration, but they
- # are not in gcc 3.2.
--cflags-y	+= -mno-space-regs -mfast-indirect-calls
-+cflags-y	+= -mno-space-regs
-+
-+# -mfast-indirect-calls is only relevant for 32-bit kernels.
-+ifndef CONFIG_64BIT
-+cflags-y	+= -mfast-indirect-calls
-+endif
- 
- # Currently we save and restore fpregs on all kernel entry/interruption paths.
- # If that gets optimized, we might need to disable the use of fpregs in the
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 
 
