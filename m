@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918AbaJCWN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:13:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
+	id S1758423AbaJCXLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:11:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757797AbaJCWNn (ORCPT
+	with ESMTP id S1757914AbaJCWN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:43 -0400
+	Fri, 3 Oct 2014 18:13:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Sagi Grimberg <sagig@mellanox.com>, Christoph Hellwig <hch@lst.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.14 151/238] SCSI: libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-Date: Fri,  3 Oct 2014 14:31:06 -0700
-Message-Id: <20141003212918.514212044@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.14 193/238] dont bugger nd->seq on set_root_rcu() from follow_dotdot_rcu()
+Date: Fri,  3 Oct 2014 14:31:48 -0700
+Message-Id: <20141003212919.832802714@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -31,52 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
+commit 7bd88377d482e1eae3c5329b12e33cfd664fa6a9 upstream.
 
-This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
-This function is used by iscsi drivers and userspace to send iscsi PDUs/
-commands. For login commands, we have a set buffer size. For all other
-commands we do not support data buffers.
+return the value instead, and have path_init() do the assignment.  Broken by
+"vfs: Fix absolute RCU path walk failures due to uninitialized seq number",
+which was Cc-stable with 2.6.38+ as destination.  This one should go where
+it went.
 
-This was reported by Dan Carpenter here:
-http://www.spinics.net/lists/linux-scsi/msg66838.html
+To avoid dummy value returned in case when root is already set (it would do
+no harm, actually, since the only caller that doesn't ignore the return value
+is guaranteed to have nd->root *not* set, but it's more obvious that way),
+lift the check into callers.  And do the same to set_root(), to keep them
+in sync.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/libiscsi.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/namei.c |   33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn
- 			return NULL;
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -642,24 +642,22 @@ static int complete_walk(struct nameidat
+ 
+ static __always_inline void set_root(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt)
+-		get_fs_root(current->fs, &nd->root);
++	get_fs_root(current->fs, &nd->root);
+ }
+ 
+ static int link_path_walk(const char *, struct nameidata *);
+ 
+-static __always_inline void set_root_rcu(struct nameidata *nd)
++static __always_inline unsigned set_root_rcu(struct nameidata *nd)
+ {
+-	if (!nd->root.mnt) {
+-		struct fs_struct *fs = current->fs;
+-		unsigned seq;
++	struct fs_struct *fs = current->fs;
++	unsigned seq, res;
+ 
+-		do {
+-			seq = read_seqcount_begin(&fs->seq);
+-			nd->root = fs->root;
+-			nd->seq = __read_seqcount_begin(&nd->root.dentry->d_seq);
+-		} while (read_seqcount_retry(&fs->seq, seq));
+-	}
++	do {
++		seq = read_seqcount_begin(&fs->seq);
++		nd->root = fs->root;
++		res = __read_seqcount_begin(&nd->root.dentry->d_seq);
++	} while (read_seqcount_retry(&fs->seq, seq));
++	return res;
+ }
+ 
+ static void path_put_conditional(struct path *path, struct nameidata *nd)
+@@ -859,7 +857,8 @@ follow_link(struct path *link, struct na
+ 			return PTR_ERR(s);
  		}
+ 		if (*s == '/') {
+-			set_root(nd);
++			if (!nd->root.mnt)
++				set_root(nd);
+ 			path_put(&nd->path);
+ 			nd->path = nd->root;
+ 			path_get(&nd->root);
+@@ -1132,7 +1131,8 @@ static bool __follow_mount_rcu(struct na
  
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
+ static int follow_dotdot_rcu(struct nameidata *nd)
+ {
+-	set_root_rcu(nd);
++	if (!nd->root.mnt)
++		set_root_rcu(nd);
  
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 	while (1) {
+ 		if (nd->path.dentry == nd->root.dentry &&
+@@ -1244,7 +1244,8 @@ static void follow_mount(struct path *pa
  
+ static void follow_dotdot(struct nameidata *nd)
+ {
+-	set_root(nd);
++	if (!nd->root.mnt)
++		set_root(nd);
+ 
+ 	while(1) {
+ 		struct dentry *old = nd->path.dentry;
+@@ -1842,7 +1843,7 @@ static int path_init(int dfd, const char
+ 	if (*name=='/') {
+ 		if (flags & LOOKUP_RCU) {
+ 			rcu_read_lock();
+-			set_root_rcu(nd);
++			nd->seq = set_root_rcu(nd);
+ 		} else {
+ 			set_root(nd);
+ 			path_get(&nd->root);
 
 
