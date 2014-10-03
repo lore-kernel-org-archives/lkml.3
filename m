@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaJCPDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:03:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46670 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752238AbaJCPCA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:02:00 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: dan.carpenter@oracle.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] net: pxa168_eth: avoid using signed char for bitops
-Date: Fri,  3 Oct 2014 17:01:54 +0200
-Message-Id: <1412348517-20352-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1753746AbaJCPDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:03:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753687AbaJCPDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:03:19 -0400
+Message-ID: <1412348517.5410.13.camel@deneb.redhat.com>
+Subject: Re: [PATCH] rtc: Disable EFI rtc for x86
+From: Mark Salter <msalter@redhat.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Fleming <matt.fleming@intel.com>, Dave Young <dyoung@redhat.com>
+Date: Fri, 03 Oct 2014 11:01:57 -0400
+In-Reply-To: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
+References: <1412339576-17972-1-git-send-email-matt@console-pimps.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signedness bugs may occur when using signed char for bitops,
-depending on if the highest bit is ever used.
+On Fri, 2014-10-03 at 13:32 +0100, Matt Fleming wrote:
+> From: Matt Fleming <matt.fleming@intel.com>
+> 
+> commit da167ad7638759 ("rtc: ia64: allow other architectures to use EFI
+> RTC") inadvertently introduced a regression for x86. We've been careful
+> not to enable the EFI rtc driver for x86 due to the generally buggy
+> implementations of the time-related EFI runtime services.
+> 
+> Previous attempts have been made to us the time EFI services, but all
+> have eventually been reverted due to crashes inside the firmware code.
+> 
+> In fact, since the above commit was merged we've seen reports of crashes
+> on 32-bit tablets,
+> 
+>   https://bugzilla.kernel.org/show_bug.cgi?id=84241#c21
+> 
+> Disable it explicitly for x86 so that we don't give users false hope
+> that this driver will work - it won't, and your machine is likely to
+> crash.
+> 
+> Cc: Mark Salter <msalter@redhat.com>
+> Cc: Dave Young <dyoung@redhat.com>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
----
+Acked-by: Mark Salter <msalter@redhat.com>
 
-Dan reported a static checker warning:
-http://marc.info/?l=kernel-janitors&m=141218246222535&w=2
+> 
+> Unless anyone objects, I'm happy to take this through the EFI tree.
+> 
+>  drivers/rtc/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index a168e96142b9..54ef393b0def 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -806,7 +806,7 @@ config RTC_DRV_DA9063
+>  
+>  config RTC_DRV_EFI
+>  	tristate "EFI RTC"
+> -	depends on EFI
+> +	depends on EFI && !X86
+>  	help
+>  	  If you say yes here you will get support for the EFI
+>  	  Real Time Clock.
 
-This patch fixes it. Instead of using sa->sa_data we now use
-dev->dev_addr (of type unsigned char *) to avoid possible
-signedness issues.
-
- drivers/net/ethernet/marvell/pxa168_eth.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 24de41231593..c3b209cd0660 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -634,12 +634,12 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
- 	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
- 	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
- 
--	mac_h = sa->sa_data[0] << 24;
--	mac_h |= sa->sa_data[1] << 16;
--	mac_h |= sa->sa_data[2] << 8;
--	mac_h |= sa->sa_data[3];
--	mac_l = sa->sa_data[4] << 8;
--	mac_l |= sa->sa_data[5];
-+	mac_h = dev->dev_addr[0] << 24;
-+	mac_h |= dev->dev_addr[1] << 16;
-+	mac_h |= dev->dev_addr[2] << 8;
-+	mac_h |= dev->dev_addr[3];
-+	mac_l = dev->dev_addr[4] << 8;
-+	mac_l |= dev->dev_addr[5];
- 	wrl(pep, MAC_ADDR_HIGH, mac_h);
- 	wrl(pep, MAC_ADDR_LOW, mac_l);
- 
--- 
-1.9.1
 
