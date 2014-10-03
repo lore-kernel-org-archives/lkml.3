@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaJCJnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 05:43:49 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:44469 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752088AbaJCJnq (ORCPT
+	id S1752291AbaJCJpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 05:45:12 -0400
+Received: from resqmta-po-12v.sys.comcast.net ([96.114.154.171]:41347 "EHLO
+	resqmta-po-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751282AbaJCJpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 05:43:46 -0400
-From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
-Subject: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately after first invalid packet
-Date: Fri,  3 Oct 2014 11:43:12 +0200
-Message-Id: <1412329392-5580-4-git-send-email-pali.rohar@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com>
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 3 Oct 2014 05:45:10 -0400
+Date: Fri, 3 Oct 2014 04:45:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+Message-ID: <alpine.DEB.2.11.1410030435260.8324@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For unknown reasons linux psmouse alps driver sometimes receive totally invalid
-packet sequences on Dell Latitude laptops. According to ALPS HW engineers these
-invalid packets do not come from ALPS devices. So it looks like bug in BIOS and
-EC incorrectly split keyboard and touchpad PS/2 data when laptops are under
-heavy loads (big I/O together with powersave governor, running on battery).
 
-There are sequences of invalid packets (which are dropeed) and some sequences
-which look like valid. But these valid packets cause random trackstick button
-pressing, random cursor moving/jumping and in these condition it is not possible
-to use ALPS device (trackstick+touchpad).
+struct irq_desc still has
 
-To prevent random button press and random cursor jumps immediately reset ALPS
-device after first invalid packet. This will cause that touchpad and trackstick
-will not respond for one or two seconds and it better then random cursor jumps.
+  unsigned int irq_count;
 
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
----
- drivers/input/mouse/alps.c |    4 ++++
- 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-index b1f44d4..d2b144f 100644
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -2399,6 +2399,10 @@ int alps_init(struct psmouse *psmouse)
- 	/* We are having trouble resyncing ALPS touchpads so disable it for now */
- 	psmouse->resync_time = 0;
- 
-+	/* Reset immediately after bad packet. When bad packet arrives then
-+	   cursor pointer jumps and trackstick buttons are randomly pressed. */
-+	psmouse->resetafter = 1;
-+
- 	return 0;
- 
- init_fail:
--- 
-1.7.9.5
+A timer interrupt occurs 1000 times per second and there are 86400 seconds
+in a day. There is a counter for the local timer interrupt that needs to
+be continually incremented.
+
+So the counter will overflow in
+
+2^32 / 1000 / 86400 = 46 days
+
+Diagnostic tools will be surprised by the counters suddenly going back to
+zero. There may be other interrupt sources that also occur quite often.
+
+Is this the way its intended or should the counters be expanded to 64 bit?
+
+64 bit would last for our lifetime.
 
