@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601AbaJCVlC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:41:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45102 "EHLO
+	id S1755619AbaJCVlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:41:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311AbaJCVfI (ORCPT
+	with ESMTP id S1755309AbaJCVfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:08 -0400
+	Fri, 3 Oct 2014 17:35:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.16 105/357] xtensa: fix a6 and a7 handling in fast_syscall_xtensa
-Date: Fri,  3 Oct 2014 14:28:11 -0700
-Message-Id: <20141003212936.626563666@linuxfoundation.org>
+Subject: [PATCH 3.16 103/357] xtensa: fix access to THREAD_RA/THREAD_SP/THREAD_DS
+Date: Fri,  3 Oct 2014 14:28:09 -0700
+Message-Id: <20141003212936.569604387@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,71 +30,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit d1b6ba82a50cecf94be540a3a153aa89d97511a0 upstream.
+commit 52247123749cc3cbc30168b33ad8c69515c96d23 upstream.
 
-Remove restoring a6 on some return paths and instead modify and restore
-it in a single place, using symbolic name.
-Correctly restore a7 from PT_AREG7 in case of illegal a6 value.
+With SMP and a lot of debug options enabled task_struct::thread gets out
+of reach of s32i/l32i instructions with base pointing at task_struct,
+breaking build with the following messages:
+
+  arch/xtensa/kernel/entry.S: Assembler messages:
+  arch/xtensa/kernel/entry.S:1002: Error: operand 3 of 'l32i.n' has invalid value '1048'
+  arch/xtensa/kernel/entry.S:1831: Error: operand 3 of 's32i.n' has invalid value '1040'
+  arch/xtensa/kernel/entry.S:1832: Error: operand 3 of 's32i.n' has invalid value '1044'
+
+Change base to point to task_struct::thread in such cases.
+Don't use a10 in _switch_to to save/restore prev pointer as a2 is not
+clobbered.
 
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/entry.S |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ arch/xtensa/include/asm/uaccess.h |    5 +++++
+ arch/xtensa/kernel/entry.S        |   12 ++++++++----
+ 2 files changed, 13 insertions(+), 4 deletions(-)
 
+--- a/arch/xtensa/include/asm/uaccess.h
++++ b/arch/xtensa/include/asm/uaccess.h
+@@ -52,7 +52,12 @@
+  */
+ 	.macro	get_fs	ad, sp
+ 	GET_CURRENT(\ad,\sp)
++#if THREAD_CURRENT_DS > 1020
++	addi	\ad, \ad, TASK_THREAD
++	l32i	\ad, \ad, THREAD_CURRENT_DS - TASK_THREAD
++#else
+ 	l32i	\ad, \ad, THREAD_CURRENT_DS
++#endif
+ 	.endm
+ 
+ /*
 --- a/arch/xtensa/kernel/entry.S
 +++ b/arch/xtensa/kernel/entry.S
-@@ -1001,9 +1001,8 @@ ENTRY(fast_syscall_xtensa)
- 	movi	a7, 4			# sizeof(unsigned int)
- 	access_ok a3, a7, a0, a2, .Leac	# a0: scratch reg, a2: sp
+@@ -1820,7 +1820,6 @@ ENTRY(_switch_to)
  
--	addi	a6, a6, -1		# assuming SYS_XTENSA_ATOMIC_SET = 1
--	_bgeui	a6, SYS_XTENSA_COUNT - 1, .Lill
--	_bnei	a6, SYS_XTENSA_ATOMIC_CMP_SWP - 1, .Lnswp
-+	_bgeui	a6, SYS_XTENSA_COUNT, .Lill
-+	_bnei	a6, SYS_XTENSA_ATOMIC_CMP_SWP, .Lnswp
+ 	entry	a1, 16
  
- 	/* Fall through for ATOMIC_CMP_SWP. */
+-	mov	a10, a2			# preserve 'prev' (a2)
+ 	mov	a11, a3			# and 'next' (a3)
  
-@@ -1015,27 +1014,26 @@ TRY	s32i	a5, a3, 0		# different, modify
- 	l32i	a7, a2, PT_AREG7	# restore a7
- 	l32i	a0, a2, PT_AREG0	# restore a0
- 	movi	a2, 1			# and return 1
--	addi	a6, a6, 1		# restore a6 (really necessary?)
- 	rfe
+ 	l32i	a4, a2, TASK_THREAD_INFO
+@@ -1828,8 +1827,14 @@ ENTRY(_switch_to)
  
- 1:	l32i	a7, a2, PT_AREG7	# restore a7
- 	l32i	a0, a2, PT_AREG0	# restore a0
- 	movi	a2, 0			# return 0 (note that we cannot set
--	addi	a6, a6, 1		# restore a6 (really necessary?)
- 	rfe
+ 	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
  
- .Lnswp:	/* Atomic set, add, and exg_add. */
+-	s32i	a0, a10, THREAD_RA	# save return address
+-	s32i	a1, a10, THREAD_SP	# save stack pointer
++#if THREAD_RA > 1020 || THREAD_SP > 1020
++	addi	a10, a2, TASK_THREAD
++	s32i	a0, a10, THREAD_RA - TASK_THREAD	# save return address
++	s32i	a1, a10, THREAD_SP - TASK_THREAD	# save stack pointer
++#else
++	s32i	a0, a2, THREAD_RA	# save return address
++	s32i	a1, a2, THREAD_SP	# save stack pointer
++#endif
  
- TRY	l32i	a7, a3, 0		# orig
-+	addi	a6, a6, -SYS_XTENSA_ATOMIC_SET
- 	add	a0, a4, a7		# + arg
- 	moveqz	a0, a4, a6		# set
-+	addi	a6, a6, SYS_XTENSA_ATOMIC_SET
- TRY	s32i	a0, a3, 0		# write new value
+ 	/* Disable ints while we manipulate the stack pointer. */
  
- 	mov	a0, a2
- 	mov	a2, a7
- 	l32i	a7, a0, PT_AREG7	# restore a7
- 	l32i	a0, a0, PT_AREG0	# restore a0
--	addi	a6, a6, 1		# restore a6 (really necessary?)
- 	rfe
+@@ -1870,7 +1875,6 @@ ENTRY(_switch_to)
+ 	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
  
- CATCH
-@@ -1044,7 +1042,7 @@ CATCH
- 	movi	a2, -EFAULT
- 	rfe
+ 	wsr	a14, ps
+-	mov	a2, a10			# return 'prev'
+ 	rsync
  
--.Lill:	l32i	a7, a2, PT_AREG0	# restore a7
-+.Lill:	l32i	a7, a2, PT_AREG7	# restore a7
- 	l32i	a0, a2, PT_AREG0	# restore a0
- 	movi	a2, -EINVAL
- 	rfe
+ 	retw
 
 
