@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312AbaJCWro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:47:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758250AbaJCWYO (ORCPT
+	id S1758091AbaJCWsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:48:22 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:63731 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757989AbaJCWsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 089/143] iscsi-target: Fix memory corruption in iscsit_logout_post_handler_diffcid
-Date: Fri,  3 Oct 2014 14:34:44 -0700
-Message-Id: <20141003213317.172996137@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
-References: <20141003213314.470709810@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 18:48:19 -0400
+Date: Fri, 3 Oct 2014 17:48:14 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, luto@amacapital.net, dvlasenk@redhat.com,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using
+ THUNK helpers
+Message-ID: <20141003174814.6829cf26@as>
+In-Reply-To: <20141003214124.GA31614@redhat.com>
+References: <20140921184153.GA23727@redhat.com>
+	<tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org>
+	<542E2B05.5080607@oracle.com>
+	<20141003083954.10a13a24@as>
+	<20141003214124.GA31614@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 3 Oct 2014 23:41:24 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-------------------
+> On 10/03, Chuck Ebbert wrote:
+> >
+> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> >
+> > <snip lots of repeats of this>
+> >
+> > I *think* this is because RBP isn't being saved across task switch
+> > anymore?
+> >
+> > Without CONFIG_FRAME_POINTERS that night not be a problem...
+> 
+> Could you please spell?
+> 
+> I don't even understand "RBP isn't being saved", SAVE_CONTEXT/RESTORE_CONTEXT
+> do push/pop %rbp?
+> 
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+SAVE_ARGS/RESTORE_ARGS, which is what THUNK uses, doesn't push/pop %rbp
 
-commit b53b0d99d6fbf7d44330395349a895521cfdbc96 upstream.
-
-This patch fixes a bug in iscsit_logout_post_handler_diffcid() where
-a pointer used as storage for list_for_each_entry() was incorrectly
-being used to determine if no matching entry had been found.
-
-This patch changes iscsit_logout_post_handler_diffcid() to key off
-bool conn_found to determine if the function needs to exit early.
-
-Reported-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/target/iscsi/iscsi_target.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -4453,6 +4453,7 @@ static void iscsit_logout_post_handler_d
- {
- 	struct iscsi_conn *l_conn;
- 	struct iscsi_session *sess = conn->sess;
-+	bool conn_found = false;
- 
- 	if (!sess)
- 		return;
-@@ -4461,12 +4462,13 @@ static void iscsit_logout_post_handler_d
- 	list_for_each_entry(l_conn, &sess->sess_conn_list, conn_list) {
- 		if (l_conn->cid == cid) {
- 			iscsit_inc_conn_usage_count(l_conn);
-+			conn_found = true;
- 			break;
- 		}
- 	}
- 	spin_unlock_bh(&sess->conn_lock);
- 
--	if (!l_conn)
-+	if (!conn_found)
- 		return;
- 
- 	if (l_conn->sock)
-
-
+Before, SAVE_ALL/RESTORE_ALL were being used around the call to
+preempt_schedule(). So from the symptoms I thought this was the problem.
