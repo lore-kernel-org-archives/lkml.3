@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758311AbaJCXKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:10:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46955 "EHLO
+	id S1757918AbaJCWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:13:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757920AbaJCWN7 (ORCPT
+	with ESMTP id S1757797AbaJCWNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:59 -0400
+	Fri, 3 Oct 2014 18:13:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>,
-        Richard Larocque <rlarocque@google.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.14 197/238] alarmtimer: Do not signal SIGEV_NONE timers
-Date: Fri,  3 Oct 2014 14:31:52 -0700
-Message-Id: <20141003212919.960934152@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Sagi Grimberg <sagig@mellanox.com>, Christoph Hellwig <hch@lst.de>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.14 151/238] SCSI: libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
+Date: Fri,  3 Oct 2014 14:31:06 -0700
+Message-Id: <20141003212918.514212044@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -33,52 +31,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Larocque <rlarocque@google.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
+commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
 
-Avoids sending a signal to alarm timers created with sigev_notify set to
-SIGEV_NONE by checking for that special case in the timeout callback.
+This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
+This function is used by iscsi drivers and userspace to send iscsi PDUs/
+commands. For login commands, we have a set buffer size. For all other
+commands we do not support data buffers.
 
-The regular posix timers avoid sending signals to SIGEV_NONE timers by
-not scheduling any callbacks for them in the first place.  Although it
-would be possible to do something similar for alarm timers, it's simpler
-to handle this as a special case in the timeout.
+This was reported by Dan Carpenter here:
+http://www.spinics.net/lists/linux-scsi/msg66838.html
 
-Prior to this patch, the alarm timer would ignore the sigev_notify value
-and try to deliver signals to the process anyway.  Even worse, the
-sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
-specified, so the signal number could be bogus.  If sigev_signo was an
-unitialized value (as it often would be if SIGEV_NONE is used), then
-it's hard to predict which signal will be sent.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: Richard Larocque <rlarocque@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/libiscsi.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -466,8 +466,10 @@ static enum alarmtimer_restart alarm_han
- {
- 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
- 						it.alarm.alarmtimer);
--	if (posix_timer_event(ptr, 0) != 0)
--		ptr->it_overrun++;
-+	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
-+		if (posix_timer_event(ptr, 0) != 0)
-+			ptr->it_overrun++;
-+	}
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn
+ 			return NULL;
+ 		}
  
- 	/* Re-add periodic timers */
- 	if (ptr->it.alarm.interval.tv64) {
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
++
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
+ 
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
++
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 
 
 
