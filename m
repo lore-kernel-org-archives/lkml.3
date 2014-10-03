@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbaJCXPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:15:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46878 "EHLO
+	id S1759900AbaJCXPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:15:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757882AbaJCWNx (ORCPT
+	with ESMTP id S1757885AbaJCWNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:13:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Mike Anderson <mike.anderson@us.ibm.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Gustavo Luiz Duarte <gduarte@redhat.com>,
-        Tomas Henzl <thenzl@redhat.com>
-Subject: [PATCH 3.14 156/238] workqueue: apply __WQ_ORDERED to create_singlethread_workqueue()
-Date: Fri,  3 Oct 2014 14:31:11 -0700
-Message-Id: <20141003212918.669696916@linuxfoundation.org>
+        "=?UTF-8?q?Dave=20 \"Trinity\" =20Jones?=" <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 3.14 157/238] futex: Unlock hb->lock in futex_wait_requeue_pi() error path
+Date: Fri,  3 Oct 2014 14:31:12 -0700
+Message-Id: <20141003212918.699312857@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -31,67 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit e09c2c295468476a239d13324ce9042ec4de05eb upstream.
+commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
 
-create_singlethread_workqueue() is a compat interface for single
-threaded workqueue which maps to ordered workqueue w/ rescuer in the
-current implementation.  create_singlethread_workqueue() currently
-implemented by invoking alloc_workqueue() w/ appropriate parameters.
+futex_wait_requeue_pi() calls futex_wait_setup(). If
+futex_wait_setup() succeeds it returns with hb->lock held and
+preemption disabled. Now the sanity check after this does:
 
-8719dceae2f9 ("workqueue: reject adjusting max_active or applying
-attrs to ordered workqueues") introduced __WQ_ORDERED to protect
-ordered workqueues against dynamic attribute changes which can break
-ordering guarantees but forgot to apply it to
-create_singlethread_workqueue().  This in itself is okay as nobody
-currently uses dynamic attribute change on workqueues created with
-create_singlethread_workqueue().
+        if (match_futex(&q.key, &key2)) {
+	   	ret = -EINVAL;
+		goto out_put_keys;
+	}
 
-However, 4c16bd327c ("workqueue: implement NUMA affinity for unbound
-workqueues") broke singlethreaded guarantee for ordered workqueues
-through allocating a separate pool_workqueue on each NUMA node by
-default.  A later change 8a2b75384444 ("workqueue: fix ordered
-workqueues in NUMA setups") fixed it by allocating only one global
-pool_workqueue if __WQ_ORDERED is set.
+which releases the keys but does not release hb->lock.
 
-Combined, the __WQ_ORDERED omission in create_singlethread_workqueue()
-became critical breaking its single threadedness and ordering
-guarantee.
+So we happily return to user space with hb->lock held and therefor
+preemption disabled.
 
-Let's make create_singlethread_workqueue() wrap
-alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
-can implicitly track future ordered_workqueue changes.
+Unlock hb->lock before taking the exit route.
 
-v2: I missed that __WQ_ORDERED now protects against pwq splitting
-    across NUMA nodes and incorrectly described the patch as a
-    nice-to-have fix to protect against future dynamic attribute
-    usages.  Oleg pointed out that this is actually a critical
-    breakage due to 8a2b75384444 ("workqueue: fix ordered workqueues
-    in NUMA setups").
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mike Anderson <mike.anderson@us.ibm.com>
-Cc: Oleg Nesterov <onestero@redhat.com>
-Cc: Gustavo Luiz Duarte <gduarte@redhat.com>
-Cc: Tomas Henzl <thenzl@redhat.com>
-Fixes: 4c16bd327c ("workqueue: implement NUMA affinity for unbound workqueues")
+Reported-by: Dave "Trinity" Jones <davej@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/workqueue.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/futex.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -452,7 +452,7 @@ __alloc_workqueue_key(const char *fmt, u
- 	alloc_workqueue("%s", WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, \
- 			1, (name))
- #define create_singlethread_workqueue(name)				\
--	alloc_workqueue("%s", WQ_UNBOUND | WQ_MEM_RECLAIM, 1, (name))
-+	alloc_ordered_workqueue("%s", WQ_MEM_RECLAIM, name)
- 
- extern void destroy_workqueue(struct workqueue_struct *wq);
- 
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2614,6 +2614,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 	 * shared futexes. We need to compare the keys:
+ 	 */
+ 	if (match_futex(&q.key, &key2)) {
++		queue_unlock(hb);
+ 		ret = -EINVAL;
+ 		goto out_put_keys;
+ 	}
 
 
