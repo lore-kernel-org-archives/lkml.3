@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760725AbaJCX47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
+	id S1760785AbaJCX5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:57:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794AbaJCVxb (ORCPT
+	with ESMTP id S1756768AbaJCVxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:31 -0400
+	Fri, 3 Oct 2014 17:53:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 026/238] ahci: Add Device IDs for Intel 9 Series PCH
-Date: Fri,  3 Oct 2014 14:29:01 -0700
-Message-Id: <20141003212914.508137768@linuxfoundation.org>
+        Arjun Sreedharan <arjun024@gmail.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 025/238] pata_scc: propagate return value of scc_wait_after_reset
+Date: Fri,  3 Oct 2014 14:29:00 -0700
+Message-Id: <20141003212914.475984269@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,36 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Arjun Sreedharan <arjun024@gmail.com>
 
-commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
+commit 4dc7c76cd500fa78c64adfda4b070b870a2b993c upstream.
 
-This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
+scc_bus_softreset not necessarily should return zero.
+Propagate the error code.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/ata/pata_scc.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -306,6 +306,14 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
+--- a/drivers/ata/pata_scc.c
++++ b/drivers/ata/pata_scc.c
+@@ -586,7 +586,7 @@ static int scc_wait_after_reset(struct a
+  *	Note: Original code is ata_bus_softreset().
+  */
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+-static unsigned int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
++static int scc_bus_softreset(struct ata_port *ap, unsigned int devmask,
+                                       unsigned long deadline)
+ {
+ 	struct ata_ioports *ioaddr = &ap->ioaddr;
+@@ -600,9 +600,7 @@ static unsigned int scc_bus_softreset(st
+ 	udelay(20);
+ 	out_be32(ioaddr->ctl_addr, ap->ctl);
+ 
+-	scc_wait_after_reset(&ap->link, devmask, deadline);
+-
+-	return 0;
++	return scc_wait_after_reset(&ap->link, devmask, deadline);
+ }
+ 
+ /**
+@@ -619,7 +617,8 @@ static int scc_softreset(struct ata_link
+ {
+ 	struct ata_port *ap = link->ap;
+ 	unsigned int slave_possible = ap->flags & ATA_FLAG_SLAVE_POSS;
+-	unsigned int devmask = 0, err_mask;
++	unsigned int devmask = 0;
++	int rc;
+ 	u8 err;
+ 
+ 	DPRINTK("ENTER\n");
+@@ -635,9 +634,9 @@ static int scc_softreset(struct ata_link
+ 
+ 	/* issue bus reset */
+ 	DPRINTK("about to softreset, devmask=%x\n", devmask);
+-	err_mask = scc_bus_softreset(ap, devmask, deadline);
+-	if (err_mask) {
+-		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", err_mask);
++	rc = scc_bus_softreset(ap, devmask, deadline);
++	if (rc) {
++		ata_port_err(ap, "SRST failed (err_mask=0x%x)\n", rc);
+ 		return -EIO;
+ 	}
+ 
 
 
