@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760005AbaJDAla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:41:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45275 "EHLO
+	id S1759970AbaJDAl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:41:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823AbaJCVml (ORCPT
+	with ESMTP id S1755829AbaJCVml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:42:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thierry Reding <treding@nvidia.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.16 120/357] usb: phy: tegra: Avoid use of sizeof(void)
-Date: Fri,  3 Oct 2014 14:28:26 -0700
-Message-Id: <20141003212937.084181089@linuxfoundation.org>
+        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+Subject: [PATCH 3.16 121/357] usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
+Date: Fri,  3 Oct 2014 14:28:27 -0700
+Message-Id: <20141003212937.113315373@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,40 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Reding <treding@nvidia.com>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 9ce9ec95fb9b82e09b55a52f1bb8a362bf8f74d8 upstream.
+commit 85601b8d81e24ce9ae2d31e93f35468ab7616b18 upstream.
 
-The PHY configuration is stored in an opaque "config" field, but when
-allocating the structure, its proper size needs to be known. In the case
-of UTMI, the proper structure is tegra_utmip_config of which a local
-variable already exists, so we can use that to obtain the size from.
+Commit 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+added twl4030_id_workaround_work() to deal with lost interrupts
+after ID pin goes down. Looks like commit f1ddc24c9e33 ("usb: phy:
+twl4030-usb: remove *set_suspend* and *phy_init* ops") changed
+things around for the generic phy framework, and delayed work no
+longer got called except initially during boot.
 
-Fixes the following warning from the sparse checker:
+The PHY connect and disconnect interrupts for twl4030-usb are not
+working after disconnecting a USB-A cable from the board, and the
+deeper idle states for omap are blocked as the USB controller
+stays busy.
 
-	drivers/usb/phy/phy-tegra-usb.c:882:17: warning: expression using sizeof(void)
+The issue can be solved by calling delayed work from twl4030_usb_irq()
+when ID pin is down and the PHY is not asleep like we already do
+in twl4030_id_workaround_work().
 
-Fixes: 81d5dfe6d8b3 (usb: phy: tegra: Read UTMIP parameters from device tree)
-Signed-off-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+But as both twl4030_usb_irq() and twl4030_id_workaround_work()
+already do pretty much the same thing, let's call twl4030_usb_irq()
+from twl4030_id_workaround_work() instead of adding some more
+duplicate code. We also must call sysfs_notify() only when we have
+an interrupt and not from the delayed work as notified by
+Grazvydas Ignotas <notasas@gmail.com>.
+
+Fixes: f1ddc24c9e33 ("usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops")
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/phy/phy-tegra-usb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/phy/phy-twl4030-usb.c |   33 ++++++++++-----------------------
+ 1 file changed, 10 insertions(+), 23 deletions(-)
 
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -881,8 +881,8 @@ static int utmi_phy_probe(struct tegra_u
- 		return -ENOMEM;
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -560,7 +560,15 @@ static irqreturn_t twl4030_usb_irq(int i
+ 		 */
+ 		omap_musb_mailbox(status);
  	}
+-	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
++
++	/* don't schedule during sleep - irq works right then */
++	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
++		cancel_delayed_work(&twl->id_workaround_work);
++		schedule_delayed_work(&twl->id_workaround_work, HZ);
++	}
++
++	if (irq)
++		sysfs_notify(&twl->dev->kobj, NULL, "vbus");
  
--	tegra_phy->config = devm_kzalloc(&pdev->dev,
--		sizeof(*tegra_phy->config), GFP_KERNEL);
-+	tegra_phy->config = devm_kzalloc(&pdev->dev, sizeof(*config),
-+					 GFP_KERNEL);
- 	if (!tegra_phy->config) {
- 		dev_err(&pdev->dev,
- 			"unable to allocate memory for USB UTMIP config\n");
+ 	return IRQ_HANDLED;
+ }
+@@ -569,29 +577,8 @@ static void twl4030_id_workaround_work(s
+ {
+ 	struct twl4030_usb *twl = container_of(work, struct twl4030_usb,
+ 		id_workaround_work.work);
+-	enum omap_musb_vbus_id_status status;
+-	bool status_changed = false;
+-
+-	status = twl4030_usb_linkstat(twl);
+-
+-	spin_lock_irq(&twl->lock);
+-	if (status >= 0 && status != twl->linkstat) {
+-		twl->linkstat = status;
+-		status_changed = true;
+-	}
+-	spin_unlock_irq(&twl->lock);
+ 
+-	if (status_changed) {
+-		dev_dbg(twl->dev, "handle missing status change to %d\n",
+-				status);
+-		omap_musb_mailbox(status);
+-	}
+-
+-	/* don't schedule during sleep - irq works right then */
+-	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
+-		cancel_delayed_work(&twl->id_workaround_work);
+-		schedule_delayed_work(&twl->id_workaround_work, HZ);
+-	}
++	twl4030_usb_irq(0, twl);
+ }
+ 
+ static int twl4030_phy_init(struct phy *phy)
 
 
