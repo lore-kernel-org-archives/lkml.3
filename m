@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaJCH2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 03:28:33 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:52649 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaJCH2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 03:28:31 -0400
-Message-ID: <542E501B.1010109@6wind.com>
-Date: Fri, 03 Oct 2014 09:28:27 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1751240AbaJCHaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 03:30:13 -0400
+Received: from ozlabs.org ([103.22.144.67]:39251 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814AbaJCHaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 03:30:12 -0400
+Date: Fri, 3 Oct 2014 17:30:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: linux-next: build warnings after merge of the akpm-current tree
+Message-ID: <20141003173004.7ac4edce@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        akpm@linux-foundation.org, rui.xiang@huawei.com,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
-        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
-        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the directory
- entries
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>	<87h9zmpcz5.fsf@x220.int.ebiederm.org>	<20141002200639.GA3497@p183.telecom.by> <87h9zmji3q.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87h9zmji3q.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5miqDsxQp2pRr5vKXDL+Eey"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/10/2014 23:07, Eric W. Biederman a écrit :
-> Alexey Dobriyan <adobriyan@gmail.com> writes:
->
->> On Thu, Oct 02, 2014 at 11:01:50AM -0700, Eric W. Biederman wrote:
->>> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
->>>
->>>> From: Thierry Herbelot <thierry.herbelot@6wind.com>
->>>>
->>>> The current implementation for the directories in /proc is using a single
->>>> linked list. This is slow when handling directories with large numbers of
->>>> entries (eg netdevice-related entries when lots of tunnels are opened).
->>>>
->>>> This patch enables multiple linked lists. A hash based on the entry name is
->>>> used to select the linked list for one given entry.
->>>>
->>>> The speed creation of netdevices is faster as shorter linked lists must be
->>>> scanned when adding a new netdevice.
->>>
->>> Is the directory of primary concern /proc/net/dev/snmp6 ?
->>>
->>> Unless I have configured my networking stack weird by mistake that
->>> is the only directory under /proc/net that grows when we add an
->>> interface.
->>>
->>> I just want to make certain I am seeing the same things that you are
->>> seeing.
->>>
->>> I feel silly for overlooking this directory when the rest of the
->>> scalability work was done.
->>
->> Slowdown comes from "duplicate name" check:
->>
->>          for (tmp = dir->subdir; tmp; tmp = tmp->next)
->>                  if (strcmp(tmp->name, dp->name) == 0) {
->>                          WARN(1, "proc_dir_entry '%s/%s' already registered\n",
->>                                  dir->name, dp->name);
->>                          break;
->>                  }
->>
->> Removal can be made O(1) after switching to doubly-linked list.
->
-> Yes.  There is the however unfortunate fact that proc directories exist
-> to be used.  If we don't switch to a better data structure than a linked
-> list the actual use will then opening of the files under
-> /proc/net/dev/snmp6/ will become O(N^2).  Which doesn't help much
-> (assuming those files are good for something).
->
-> If those files aren't actually useful we should just make registering
-> them a config option.  Deprecate them strongly and let only people who
-> need extreme backwards compatibility enable them.
->
-> Alexey do you know that those files aren't useful?  Unless we know
-> otherwise we should make those files useful.
-This was proposed and nacked in a first version:
-http://thread.gmane.org/gmane.linux.network/285840/
+--Sig_/5miqDsxQp2pRr5vKXDL+Eey
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-Regards,
-Nicolas
+After merging the akpm-current tree, today's linux-next build (arm
+multi_v7_defconfig) produced these warnings:
+
+drivers/base/dma-contiguous.c:244:2: warning: initialization from incompati=
+ble pointer type
+  .device_init =3D rmem_cma_device_init,
+  ^
+drivers/base/dma-contiguous.c:244:2: warning: (near initialization for 'rme=
+m_cma_ops.device_init')
+drivers/base/dma-coherent.c:303:2: warning: initialization from incompatibl=
+e pointer type
+  .device_init =3D rmem_dma_device_init,
+  ^
+
+Introduced by commit e92f6296f3a2 ("drivers: dma-coherent: add
+initialization from device tree").  This init routine is supposed to
+return void ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/5miqDsxQp2pRr5vKXDL+Eey
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJULlCBAAoJEMDTa8Ir7ZwVmjcP/ivoW8UvsDXtfaF3dJTmUu71
+zgGB4qTWk8XVf9jZEty9+t5lmxmH8/9wcmr7IdYi879EWBuB0fkWb70nYRvEQy1v
+fJ6zZWh2YyIb2wf4gDLE+PqSx1iF8EPxBA49ybwg0S/ljc6c9QUAx2mU4lJ7ujkr
+byk+f+mGQzNuNC9cJ3DPnAtMGgFZH6ceDUk1FU+1jVKCvPIDiKeNv96afzIrV5F9
+13qtXrck+0Ptu86fSEHNsgQk6h5Pu55TMeOsgbFK1ouueFUKd/Lcv5I/A4vmLr+t
+mwfadp4z7vZF3SizFsiLYOLRJSfigRrAf1ZfKXTjiNk6Li5WBRjyrqnGevFutafa
+kZtIRWuc5PkOKX3QK2gEK7OsUV96y226N5n7r4NnSfKfvEUwidLdme8xOsJf2rbD
+YLq8027lws9f/uoYiEd6PJJ8k/8WyEgns0POliPWkI/K8rUphQbOSBNGjibqeV+A
+kYaeih4Vj7RWfCkM7pvR+pZIUSRyOWZduIcWFxF+iW06+Jb1ci855pjQXWmHcGpC
+k0AodJEF9ijqCyntmnvjPa4DNYDk/2JldRG0fRfNdmMw29iDZ7J8ZBj8/v1a3ioN
+IEEO6ofdsFd88IeC1vbPu0vaGiWloHO/FYgY2JYvxYqWY3YwDuirLSK8yFHDPGnA
+f22DMADSPMuJTbm0leyF
+=2Zeh
+-----END PGP SIGNATURE-----
+
+--Sig_/5miqDsxQp2pRr5vKXDL+Eey--
