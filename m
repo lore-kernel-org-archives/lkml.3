@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932310AbaJCWVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:21:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47123 "EHLO
+	id S932505AbaJCWWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:22:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963AbaJCWQT (ORCPT
+	with ESMTP id S1757974AbaJCWOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:16:19 -0400
+	Fri, 3 Oct 2014 18:14:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aleksey Senin <alekseys@mellanox.com>,
-        Matan Barak <matanb@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 203/238] IB/core: When marshaling uverbs path, clear unused fields
-Date: Fri,  3 Oct 2014 14:31:58 -0700
-Message-Id: <20141003212920.155790745@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 220/238] md/raid1: fix_read_error should act on all non-faulty devices.
+Date: Fri,  3 Oct 2014 14:32:15 -0700
+Message-Id: <20141003212920.704753460@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,35 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matan Barak <matanb@mellanox.com>
+From: NeilBrown <neilb@suse.de>
 
-commit a59c5850f09b4c2d6ad2fc47e5e1be8d654529d6 upstream.
+commit b8cb6b4c121e1bf1963c16ed69e7adcb1bc301cd upstream.
 
-When marsheling a user path to the kernel struct ib_sa_path, need
-to zero smac, dmac and set the vlan id to the "no vlan" value.
+If a devices is being recovered it is not InSync and is not Faulty.
 
-Fixes: dd5f03beb4f7 ("IB/core: Ethernet L2 attributes in verbs/cm structures")
-Reported-by: Aleksey Senin <alekseys@mellanox.com>
-Signed-off-by: Matan Barak <matanb@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+If a read error is experienced on that device, fix_read_error()
+will be called, but it ignores non-InSync devices.  So it will
+neither fix the error nor fail the device.
+
+It is incorrect that fix_read_error() ignores non-InSync devices.
+It should only ignore Faulty devices.  So fix it.
+
+This became a bug when we allowed reading from a device that was being
+recovered.  It is suitable for any subsequent -stable kernel.
+
+Fixes: da8840a747c0dbf49506ec906757a6b87b9741e9
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/uverbs_marshall.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/raid1.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/core/uverbs_marshall.c
-+++ b/drivers/infiniband/core/uverbs_marshall.c
-@@ -140,5 +140,9 @@ void ib_copy_path_rec_from_user(struct i
- 	dst->packet_life_time	= src->packet_life_time;
- 	dst->preference		= src->preference;
- 	dst->packet_life_time_selector = src->packet_life_time_selector;
-+
-+	memset(dst->smac, 0, sizeof(dst->smac));
-+	memset(dst->dmac, 0, sizeof(dst->dmac));
-+	dst->vlan_id = 0xffff;
- }
- EXPORT_SYMBOL(ib_copy_path_rec_from_user);
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2154,7 +2154,7 @@ static void fix_read_error(struct r1conf
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags))
++			    !test_bit(Faulty, &rdev->flags))
+ 				r1_sync_page_io(rdev, sect, s,
+ 						conf->tmppage, WRITE);
+ 		}
+@@ -2166,7 +2166,7 @@ static void fix_read_error(struct r1conf
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags)) {
++			    !test_bit(Faulty, &rdev->flags)) {
+ 				if (r1_sync_page_io(rdev, sect, s,
+ 						    conf->tmppage, READ)) {
+ 					atomic_add(s, &rdev->corrected_errors);
 
 
