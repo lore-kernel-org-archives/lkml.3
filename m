@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaJDAAR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:00:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S1759390AbaJDAAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:00:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756736AbaJCVx2 (ORCPT
+	with ESMTP id S1756760AbaJCVx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugo P <saurosii@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.16 254/357] Input: i8042 - add nomux quirk for Avatar AVIU-145A6
-Date: Fri,  3 Oct 2014 14:30:40 -0700
-Message-Id: <20141003212941.136683228@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.14 040/238] arm64: ptrace: fix compat hardware watchpoint reporting
+Date: Fri,  3 Oct 2014 14:29:15 -0700
+Message-Id: <20141003212914.946208714@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,44 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit d2682118f4bb3ceb835f91c1a694407a31bb7378 upstream.
+commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
 
-The sys_vendor / product_name are somewhat generic unfortunately, so this
-may lead to some false positives. But nomux usually does no harm, where as
-not having it clearly is causing problems on the Avatar AVIU-145A6.
+I'm not sure what I was on when I wrote this, but when iterating over
+the hardware watchpoint array (hbp_watch_array), our index is off by
+ARM_MAX_BRP, so we walk off the end of our thread_struct...
 
-https://bugzilla.kernel.org/show_bug.cgi?id=77391
+... except, a dodgy condition in the loop means that it never executes
+at all (bp cannot be NULL).
 
-Reported-by: Hugo P <saurosii@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This patch fixes the code so that we remove the bp check and use the
+correct index for accessing the watchpoint structures.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm64/include/asm/hw_breakpoint.h |    1 -
+ arch/arm64/kernel/ptrace.c             |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -465,6 +465,13 @@ static const struct dmi_system_id __init
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Avatar AVIU-145A6 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "IC4I"),
-+		},
-+	},
- 	{ }
- };
+--- a/arch/arm64/include/asm/hw_breakpoint.h
++++ b/arch/arm64/include/asm/hw_breakpoint.h
+@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 r
+  */
+ #define ARM_MAX_BRP		16
+ #define ARM_MAX_WRP		16
+-#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
  
+ /* Virtual debug register bases. */
+ #define AARCH64_DBG_REG_BVR	0
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -81,7 +81,8 @@ static void ptrace_hbptriggered(struct p
+ 			break;
+ 		}
+ 	}
+-	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
++
++	for (i = 0; i < ARM_MAX_WRP; ++i) {
+ 		if (current->thread.debug.hbp_watch[i] == bp) {
+ 			info.si_errno = -((i << 1) + 1);
+ 			break;
 
 
