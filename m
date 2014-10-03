@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398AbaJCW2n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:28:43 -0400
+	id S1756061AbaJCW3M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:29:12 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:47575 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993AbaJCW0f (ORCPT
+	with ESMTP id S1756482AbaJCW0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:26:35 -0400
+	Fri, 3 Oct 2014 18:26:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.10 130/143] ipvs: fix ipv6 hook registration for local replies
-Date: Fri,  3 Oct 2014 14:35:25 -0700
-Message-Id: <20141003213318.382992506@linuxfoundation.org>
+        Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.10 127/143] md/raid1: fix_read_error should act on all non-faulty devices.
+Date: Fri,  3 Oct 2014 14:35:22 -0700
+Message-Id: <20141003213318.297966513@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,40 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: NeilBrown <neilb@suse.de>
 
-commit eb90b0c734ad793d5f5bf230a9e9a4dcc48df8aa upstream.
+commit b8cb6b4c121e1bf1963c16ed69e7adcb1bc301cd upstream.
 
-commit fc604767613b6d2036cdc35b660bc39451040a47
-("ipvs: changes for local real server") from 2.6.37
-introduced DNAT support to local real server but the
-IPv6 LOCAL_OUT handler ip_vs_local_reply6() is
-registered incorrectly as IPv4 hook causing any outgoing
-IPv4 traffic to be dropped depending on the IP header values.
+If a devices is being recovered it is not InSync and is not Faulty.
 
-Chris tracked down the problem to CONFIG_IP_VS_IPV6=y
-Bug report: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1349768
+If a read error is experienced on that device, fix_read_error()
+will be called, but it ignores non-InSync devices.  So it will
+neither fix the error nor fail the device.
 
-Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+It is incorrect that fix_read_error() ignores non-InSync devices.
+It should only ignore Faulty devices.  So fix it.
+
+This became a bug when we allowed reading from a device that was being
+recovered.  It is suitable for any subsequent -stable kernel.
+
+Fixes: da8840a747c0dbf49506ec906757a6b87b9741e9
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1898,7 +1898,7 @@ static struct nf_hook_ops ip_vs_ops[] __
- 	{
- 		.hook		= ip_vs_local_reply6,
- 		.owner		= THIS_MODULE,
--		.pf		= NFPROTO_IPV4,
-+		.pf		= NFPROTO_IPV6,
- 		.hooknum	= NF_INET_LOCAL_OUT,
- 		.priority	= NF_IP6_PRI_NAT_DST + 1,
- 	},
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -2051,7 +2051,7 @@ static void fix_read_error(struct r1conf
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags))
++			    !test_bit(Faulty, &rdev->flags))
+ 				r1_sync_page_io(rdev, sect, s,
+ 						conf->tmppage, WRITE);
+ 		}
+@@ -2063,7 +2063,7 @@ static void fix_read_error(struct r1conf
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags)) {
++			    !test_bit(Faulty, &rdev->flags)) {
+ 				if (r1_sync_page_io(rdev, sect, s,
+ 						    conf->tmppage, READ)) {
+ 					atomic_add(s, &rdev->corrected_errors);
 
 
