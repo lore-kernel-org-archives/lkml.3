@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979AbaJCU1c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:27:32 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:48723 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752200AbaJCU12 (ORCPT
+	id S1754533AbaJCU1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:27:34 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39019 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753134AbaJCU13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:27:28 -0400
+	Fri, 3 Oct 2014 16:27:29 -0400
 From: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: micky_ching@realsil.com.cn, fabio.falzoi84@gmail.com,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] Divide lines to make them less than 80 characters long, align to the opening paranthesis where possible
-Date: Fri,  3 Oct 2014 23:27:07 +0300
-Message-Id: <1412368028-18935-5-git-send-email-giedrius.statkevicius@gmail.com>
+Subject: [PATCH 5/5] Use ternary operators where possible and sensible to avoid unnecessary increase of indentation level
+Date: Fri,  3 Oct 2014 23:27:08 +0300
+Message-Id: <1412368028-18935-6-git-send-email-giedrius.statkevicius@gmail.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1412368028-18935-1-git-send-email-giedrius.statkevicius@gmail.com>
 References: <1412368028-18935-1-git-send-email-giedrius.statkevicius@gmail.com>
@@ -26,95 +26,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Giedrius Statkevičius <giedrius.statkevicius@gmail.com>
 
-Make a couple of lines shorter than the max limit by diving them and also make sure to align them properly where possible.
+Convert code in format of if (a) if(b) { [...] } to one line with a simple ternary operation to avoid unnecesary increase of indentation level.
 
 Signed-off-by: Giedrius Statkevičius <giedrius.statkevicius@gmail.com>
 ---
- drivers/staging/rts5208/rtsx_chip.c | 31 ++++++++++++++++++++++---------
- 1 file changed, 22 insertions(+), 9 deletions(-)
+ drivers/staging/rts5208/rtsx_chip.c | 90 ++++++++++---------------------------
+ 1 file changed, 23 insertions(+), 67 deletions(-)
 
 diff --git a/drivers/staging/rts5208/rtsx_chip.c b/drivers/staging/rts5208/rtsx_chip.c
-index b47eade..71dc6ee 100644
+index 71dc6ee..ffcf5de 100644
 --- a/drivers/staging/rts5208/rtsx_chip.c
 +++ b/drivers/staging/rts5208/rtsx_chip.c
-@@ -291,7 +291,8 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
- 	if (chip->aspm_l0s_l1_en) {
- 		if (chip->dynamic_aspm) {
- 			if (CHK_SDIO_EXIST(chip) && CHECK_PID(chip, 0x5288)) {
--				retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+				retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF,
-+						chip->aspm_l0s_l1_en);
- 				if (retval != STATUS_SUCCESS)
- 					TRACE_RET(chip, STATUS_FAIL);
- 			}
-@@ -309,9 +310,13 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
+@@ -309,14 +309,10 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
+ 			chip->aspm_level[0] = chip->aspm_l0s_l1_en;
  			if (CHK_SDIO_EXIST(chip)) {
  				chip->aspm_level[1] = chip->aspm_l0s_l1_en;
- 				if (CHECK_PID(chip, 0x5288))
--					retval = rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 2,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
- 				else
--					retval = rtsx_write_cfg_dw(chip, 1, 0xC0, 0xFF, chip->aspm_l0s_l1_en);
-+					retval = rtsx_write_cfg_dw(chip, 1,
-+							0xC0, 0xFF,
-+							chip->aspm_l0s_l1_en);
+-				if (CHECK_PID(chip, 0x5288))
+-					retval = rtsx_write_cfg_dw(chip, 2,
+-							0xC0, 0xFF,
+-							chip->aspm_l0s_l1_en);
+-				else
+-					retval = rtsx_write_cfg_dw(chip, 1,
+-							0xC0, 0xFF,
+-							chip->aspm_l0s_l1_en);
++				retval = rtsx_write_cfg_dw(chip,
++						CHECK_PID(chip, 0x5288) ? 2 : 1,
++						0xC0, 0xFF,
++						chip->aspm_l0s_l1_en);
  
  				if (retval != STATUS_SUCCESS)
  					TRACE_RET(chip, STATUS_FAIL);
-@@ -954,7 +959,8 @@ void rtsx_polling_func(struct rtsx_chip *chip)
- 					dev_dbg(rtsx_dev(chip), "SDIO enter ASPM!\n");
- 					rtsx_write_register(chip,
- 						ASPM_FORCE_CTL, 0xFC,
--						0x30 | (chip->aspm_level[1] << 2));
-+						0x30 |
-+						(chip->aspm_level[1] << 2));
- 					chip->sdio_aspm = 1;
- 				}
- 			}
-@@ -976,8 +982,10 @@ void rtsx_polling_func(struct rtsx_chip *chip)
+@@ -341,12 +337,9 @@ int rtsx_reset_chip(struct rtsx_chip *chip)
+ 		TRACE_RET(chip, STATUS_FAIL);
  
- 			turn_off_led(chip, LED_GPIO);
+ 	if (CHK_SDIO_EXIST(chip)) {
+-		if (CHECK_PID(chip, 0x5288))
+-			retval = rtsx_write_cfg_dw(chip, 2, 0xC0,
+-						   0xFF00, 0x0100);
+-		else
+-			retval = rtsx_write_cfg_dw(chip, 1, 0xC0,
+-						   0xFF00, 0x0100);
++		retval = rtsx_write_cfg_dw(chip,
++					   CHECK_PID(chip, 0x5288) ? 2 : 1,
++					   0xC0, 0xFF00, 0x0100);
  
--			if (chip->auto_power_down && !chip->card_ready && !chip->sd_io)
--				rtsx_force_power_down(chip, SSC_PDCTL | OC_PDCTL);
-+			if (chip->auto_power_down && !chip->card_ready &&
-+			    !chip->sd_io)
-+				rtsx_force_power_down(chip,
-+						      SSC_PDCTL | OC_PDCTL);
- 		}
+ 		if (retval != STATUS_SUCCESS)
+ 			TRACE_RET(chip, STATUS_FAIL);
+@@ -537,10 +530,7 @@ static int rts5208_init(struct rtsx_chip *chip)
+ 
+ 	RTSX_WRITE_REG(chip, CLK_SEL, 0x03, 0x03);
+ 	RTSX_READ_REG(chip, CLK_SEL, &val);
+-	if (val == 0)
+-		chip->asic_code = 1;
+-	else
+-		chip->asic_code = 0;
++	chip->asic_code = val == 0 ? 1 : 0;
+ 
+ 	if (chip->asic_code) {
+ 		retval = rtsx_read_phy_register(chip, 0x1C, &reg);
+@@ -550,10 +540,7 @@ static int rts5208_init(struct rtsx_chip *chip)
+ 		dev_dbg(rtsx_dev(chip), "Value of phy register 0x1C is 0x%x\n",
+ 			reg);
+ 		chip->ic_version = (reg >> 4) & 0x07;
+-		if (reg & PHY_DEBUG_MODE)
+-			chip->phy_debug_mode = 1;
+-		else
+-			chip->phy_debug_mode = 0;
++		chip->phy_debug_mode = reg & PHY_DEBUG_MODE ? 1 : 0;
+ 
+ 	} else {
+ 		RTSX_READ_REG(chip, 0xFE80, &val);
+@@ -563,16 +550,10 @@ static int rts5208_init(struct rtsx_chip *chip)
+ 
+ 	RTSX_READ_REG(chip, PDINFO, &val);
+ 	dev_dbg(rtsx_dev(chip), "PDINFO: 0x%x\n", val);
+-	if (val & AUX_PWR_DETECTED)
+-		chip->aux_pwr_exist = 1;
+-	else
+-		chip->aux_pwr_exist = 0;
++	chip->aux_pwr_exist = val & AUX_PWR_DETECTED ? 1 : 0;
+ 
+ 	RTSX_READ_REG(chip, 0xFE50, &val);
+-	if (val & 0x01)
+-		chip->hw_bypass_sd = 1;
+-	else
+-		chip->hw_bypass_sd = 0;
++	chip->hw_bypass_sd = val & 0x01 ? 1 : 0;
+ 
+ 	rtsx_read_config_byte(chip, 0x0E, &val);
+ 	if (val & 0x80)
+@@ -582,10 +563,7 @@ static int rts5208_init(struct rtsx_chip *chip)
+ 
+ 	if (chip->use_hw_setting) {
+ 		RTSX_READ_REG(chip, CHANGE_LINK_STATE, &val);
+-		if (val & 0x80)
+-			chip->auto_delink_en = 1;
+-		else
+-			chip->auto_delink_en = 0;
++		chip->auto_delink_en = val & 0x80 ? 1 : 0;
  	}
  
-@@ -1067,7 +1075,9 @@ delink_stage:
- 					dev_dbg(rtsx_dev(chip), "False card inserted, do force delink\n");
+ 	return STATUS_SUCCESS;
+@@ -599,33 +577,21 @@ static int rts5288_init(struct rtsx_chip *chip)
  
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
+ 	RTSX_WRITE_REG(chip, CLK_SEL, 0x03, 0x03);
+ 	RTSX_READ_REG(chip, CLK_SEL, &val);
+-	if (val == 0)
+-		chip->asic_code = 1;
+-	else
+-		chip->asic_code = 0;
++	chip->asic_code = val == 0 ? 1 : 0;
  
- 					rtsx_write_register(chip,
- 							    CHANGE_LINK_STATE,
-@@ -1076,12 +1086,15 @@ delink_stage:
- 					if (enter_L1)
- 						rtsx_enter_L1(chip);
+ 	chip->ic_version = 0;
+ 	chip->phy_debug_mode = 0;
  
--					chip->auto_delink_cnt = delink_stage3_cnt + 1;
-+					chip->auto_delink_cnt =
-+						delink_stage3_cnt + 1;
- 				} else {
- 					dev_dbg(rtsx_dev(chip), "No card inserted, do delink\n");
+ 	RTSX_READ_REG(chip, PDINFO, &val);
+ 	dev_dbg(rtsx_dev(chip), "PDINFO: 0x%x\n", val);
+-	if (val & AUX_PWR_DETECTED)
+-		chip->aux_pwr_exist = 1;
+-	else
+-		chip->aux_pwr_exist = 0;
++	chip->aux_pwr_exist = val & AUX_PWR_DETECTED ? 1 : 0;
  
- 					if (enter_L1)
--						rtsx_write_register(chip, HOST_SLEEP_STATE, 0x03, 1);
-+						rtsx_write_register(chip,
-+							      HOST_SLEEP_STATE,
-+							      0x03, 1);
+ 	RTSX_READ_REG(chip, CARD_SHARE_MODE, &val);
+ 	dev_dbg(rtsx_dev(chip), "CARD_SHARE_MODE: 0x%x\n", val);
+-	if (val & 0x04)
+-		chip->baro_pkg = QFN;
+-	else
+-		chip->baro_pkg = LQFP;
++	chip->baro_pkg = val & 0x04 ? QFN : LQFP;
  
- 					rtsx_write_register(chip,
- 							    CHANGE_LINK_STATE,
+ 	RTSX_READ_REG(chip, 0xFE5A, &val);
+-	if (val & 0x10)
+-		chip->hw_bypass_sd = 1;
+-	else
+-		chip->hw_bypass_sd = 0;
++	chip->hw_bypass_sd = val & 0x10 ? 1 : 0;
+ 
+ 	retval = rtsx_read_cfg_dw(chip, 0, 0x718, &lval);
+ 	if (retval != STATUS_SUCCESS)
+@@ -640,10 +606,7 @@ static int rts5288_init(struct rtsx_chip *chip)
+ 
+ 	if (chip->use_hw_setting) {
+ 		RTSX_READ_REG(chip, CHANGE_LINK_STATE, &val);
+-		if (val & 0x80)
+-			chip->auto_delink_en = 1;
+-		else
+-			chip->auto_delink_en = 0;
++		chip->auto_delink_en = val & 0x80 ? 1 : 0;
+ 
+ 		if (CHECK_BARO_PKG(chip, LQFP))
+ 			chip->lun_mode = SD_MS_1LUN;
+@@ -1522,7 +1485,7 @@ int rtsx_set_phy_reg_bit(struct rtsx_chip *chip, u8 reg, u8 bit)
+ 	if (retval != STATUS_SUCCESS)
+ 		TRACE_RET(chip, STATUS_FAIL);
+ 
+-	if (0 == (value & (1 << bit))) {
++	if ((value & (1 << bit)) == 0) {
+ 		value |= (1 << bit);
+ 		retval = rtsx_write_phy_register(chip, reg, value);
+ 		if (retval != STATUS_SUCCESS)
+@@ -1595,12 +1558,9 @@ void rtsx_enter_ss(struct rtsx_chip *chip)
+ 		rtsx_force_power_down(chip, SSC_PDCTL | OC_PDCTL);
+ 	}
+ 
+-	if (CHK_SDIO_EXIST(chip)) {
+-		if (CHECK_PID(chip, 0x5288))
+-			rtsx_write_cfg_dw(chip, 2, 0xC0, 0xFF00, 0x0100);
+-		else
+-			rtsx_write_cfg_dw(chip, 1, 0xC0, 0xFF00, 0x0100);
+-	}
++	if (CHK_SDIO_EXIST(chip))
++		rtsx_write_cfg_dw(chip, CHECK_PID(chip, 0x5288) ? 2 : 1,
++				  0xC0, 0xFF00, 0x0100);
+ 
+ 	if (chip->auto_delink_en) {
+ 		rtsx_write_register(chip, HOST_SLEEP_STATE, 0x01, 0x01);
+@@ -1811,12 +1771,8 @@ void rtsx_enable_aspm(struct rtsx_chip *chip)
+ 		if (CHK_SDIO_EXIST(chip)) {
+ 			u16 val = chip->aspm_l0s_l1_en | 0x0100;
+ 
+-			if (CHECK_PID(chip, 0x5288))
+-				rtsx_write_cfg_dw(chip, 2, 0xC0,
+-						  0xFFFF, val);
+-			else
+-				rtsx_write_cfg_dw(chip, 1, 0xC0,
+-						  0xFFFF, val);
++			rtsx_write_cfg_dw(chip, CHECK_PID(chip, 0x5288) ? 2 : 1,
++					  0xC0, 0xFFF, val);
+ 		}
+ 	}
+ }
 -- 
 2.1.2
 
