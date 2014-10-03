@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156AbaJCMEv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:04:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6740 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaJCMEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:04:49 -0400
-Message-ID: <542E90D5.2070307@redhat.com>
-Date: Fri, 03 Oct 2014 14:04:37 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately
- after first invalid packet
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410031205.42927@pali> <542E780B.7030103@redhat.com> <201410031223.10608@pali> <542E828A.6010305@redhat.com>
-In-Reply-To: <542E828A.6010305@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1752284AbaJCMHt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:07:49 -0400
+Received: from resqmta-po-12v.sys.comcast.net ([96.114.154.171]:34076 "EHLO
+	resqmta-po-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751454AbaJCMHs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:07:48 -0400
+Date: Fri, 3 Oct 2014 07:07:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Richard Cochran <richardcochran@gmail.com>
+cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <20141003120345.GA6652@localhost.localdomain>
+Message-ID: <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 3 Oct 2014, Richard Cochran wrote:
 
-On 10/03/2014 01:03 PM, Hans de Goede wrote:
-> Hi,
-> 
-> On 10/03/2014 12:23 PM, Pali Rohár wrote:
->> On Friday 03 October 2014 12:18:51 Hans de Goede wrote:
->>>> On my E6440 machine it somehow working. When driver
->>>> doing ps/2 reset keyboard, touchpad and trackstick not
->>>> responding.
->>>
->>> Right, but I would expect that to be for only a short period
->>> of time, or does the whole reset take a significant amount of
->>> time ?
->>>
->>
->> It is one or two seconds which is OK for me.
-> 
-> Hmm, 1-2 seconds is quite long, not good. Lets see if the solution
-> we've been discussing by private mail yields better results.
+> >  DECLARE_PER_CPU(char *, irq_stack_ptr);
+> > -DECLARE_PER_CPU(unsigned int, irq_count);
+> > +DECLARE_PER_CPU(unsigned long, irq_count);
+>
+> Still 32 bit on 32 bit machines...
 
-So further debugging has shown that once this problems happens on
-these touchpads, they go into a mode where the spew random giberish,
-and as such it seems that resetting them really seems best, so lets
-do a v2 of this patchset and go with that.
+64 bit counters on 32 bit machines are not an easy thing and could be
+expensive to handle in particular because these counters are used in
+performance critical hotpaths.
 
-Regards,
+I thought I better leave it alone on 32 bit.
 
-Hans
