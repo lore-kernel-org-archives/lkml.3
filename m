@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaJCSZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 14:25:29 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39244 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaJCSZ2 (ORCPT
+	id S1754022AbaJCSbh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 14:31:37 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:51528 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaJCSbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 14:25:28 -0400
-Message-ID: <542EEA13.8090105@kernel.dk>
-Date: Fri, 03 Oct 2014 12:25:23 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 3 Oct 2014 14:31:32 -0400
 MIME-Version: 1.0
-To: Kent Overstreet <kmo@daterainc.com>
-CC: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
-        Zach Brown <zab@zabbo.net>, Jeff Moyer <jmoyer@redhat.com>,
-        Slava Pestov <sp@daterainc.com>
-Subject: Re: [PATCH] aio: Fix return code of io_submit() (RFC)
-References: <1412359693-2535-1-git-send-email-kmo@daterainc.com> <542EE753.20005@kernel.dk> <20141003182151.GD17903@daterainc.com>
-In-Reply-To: <20141003182151.GD17903@daterainc.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+	<1412356087-16115-11-git-send-email-aarcange@redhat.com>
+Date: Fri, 3 Oct 2014 11:31:31 -0700
+X-Google-Sender-Auth: rBBK7Hn9L9RSfElSb7zwFL8sC0U
+Message-ID: <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
+Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: qemu-devel@nongnu.org, KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-03 12:21, Kent Overstreet wrote:
-> On Fri, Oct 03, 2014 at 12:13:39PM -0600, Jens Axboe wrote:
->> On 2014-10-03 12:08, Kent Overstreet wrote:
->>> io_submit() could return -EAGAIN on memory allocation failure when it should
->>> really have been returning -ENOMEM. This could confuse applications (i.e. fio)
->>> since -EAGAIN means "too many requests outstanding, wait until completions have
->>> been reaped" and if the application actually was tracking outstanding
->>> completions this wouldn't make a lot of sense.
->>>
->>> NOTE:
->>>
->>> the man page seems to imply that the current behaviour (-EAGAIN on allocation
->>> failure) has always been the case. I don't think it makes a lot of sense, but
->>> this should probably be discussed more widely in case applications have somehow
->>> come to rely on the current behaviour...
->>
->> We can't really feasibly fix this, is my worry. Fio does track the pending
->> requests and does not get into a getevents() forever wait if it gets -EAGAIN
->> on submission. But before the fix, it would loop forever in submission in
->> -EAGAIN.
->>
->> How are applications supposed to deal with ENOMEM? I think the answer here
->> is that they can't, it would be a fatal condition. AIO must provide isn't
->> own guarantee of progress, with a mempool or similar.
+On Fri, Oct 3, 2014 at 10:08 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
 >
-> Well, even though the AIO code doesn't currently return -ENOMEM we definitely do
-> have random other driver/filesystem code that will return -ENOMEM if a random
-> GFP_KERNEL allocation fails (e.g. the dio code, if allocating a struct dio
-> fails). So I think there's precedent for this, and having it be a fatal error
-> when the system is under major memory pressure is not a crazy thing to do too.
->
-> But OTOH maybe we should just use a mempool there.
->
-> The argument against making it a mempool would be "we don't want io_submit() to
-> block; even if that's not the case today, we at least have a chance of fixing it
-> with the current setup. If we can't allocate memory for our asynchronous state,
-> we really can't do anything there except block or fail".
+> Overall this looks a fairly small change to the rmap code, notably
+> less intrusive than the nonlinear vmas created by remap_file_pages.
 
-It'll block anyway in other places, if we run out of resources there. 
-But good point on the other potential -ENOMEM cases, it's not a new 
-condition (potentially).
+Considering that remap_file_pages() was an unmitigated disaster, and
+-mm has a patch to remove it entirely, I'm not at all convinced this
+is a good argument.
 
-> I'm not sure I have strong feelings one way or the other.
+We thought remap_file_pages() was a good idea, and it really really
+really wasn't. Almost nobody used it, why would the anonymous page
+case be any different?
 
-Me neither...
-
--- 
-Jens Axboe
-
+            Linus
