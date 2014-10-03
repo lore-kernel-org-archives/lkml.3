@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159AbaJCVdO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:33:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44838 "EHLO
+	id S1755667AbaJCVl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:41:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100AbaJCVdD (ORCPT
+	with ESMTP id S1755118AbaJCVdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:33:03 -0400
+	Fri, 3 Oct 2014 17:33:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kari Suvanto <kari.tj.suvanto@gmail.com>,
-        Brad Volkin <bradley.d.volkin@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.16 079/357] drm/i915: Dont leak command parser tables on suspend/resume
-Date: Fri,  3 Oct 2014 14:27:45 -0700
-Message-Id: <20141003212935.861084553@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.16 083/357] imx-drm: imx-ldb: fix NULL pointer in imx_ldb_unbind()
+Date: Fri,  3 Oct 2014 14:27:49 -0700
+Message-Id: <20141003212935.977141181@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,73 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brad Volkin <bradley.d.volkin@intel.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 22cb99af39b5d4aae075a5bc9da615ba245227cd upstream.
+commit d9fdb9fba7ec08769594abede8f78523ed3f025a upstream.
 
-Ring init and cleanup are not balanced because we re-init the rings on
-resume without having cleaned them up on suspend. This leads to the
-driver leaking the parser's hash tables with a kmemleak signature such
-as this:
+When trying to unbind imx-drm, the following oops was observed from
+the imx-ldb driver:
 
-unreferenced object 0xffff880405960980 (size 32):
-  comm "systemd-udevd", pid 516, jiffies 4294896961 (age 10202.044s)
-  hex dump (first 32 bytes):
-    d0 85 46 c0 ff ff ff ff 00 00 00 00 00 00 00 00  ..F.............
-    98 60 28 04 04 88 ff ff 00 00 00 00 00 00 00 00  .`(.............
-  backtrace:
-    [<ffffffff81816f9e>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff811fa678>] kmem_cache_alloc_trace+0x168/0x2f0
-    [<ffffffffc03e20a5>] i915_cmd_parser_init_ring+0x2a5/0x3e0 [i915]
-    [<ffffffffc04088a2>] intel_init_ring_buffer+0x202/0x470 [i915]
-    [<ffffffffc040c998>] intel_init_vebox_ring_buffer+0x1e8/0x2b0 [i915]
-    [<ffffffffc03eff59>] i915_gem_init_hw+0x2f9/0x3a0 [i915]
-    [<ffffffffc03f0057>] i915_gem_init+0x57/0x1d0 [i915]
-    [<ffffffffc045e26a>] i915_driver_load+0xc0a/0x10e0 [i915]
-    [<ffffffffc02e0d5d>] drm_dev_register+0xad/0x100 [drm]
-    [<ffffffffc02e3b9f>] drm_get_pci_dev+0x8f/0x200 [drm]
-    [<ffffffffc03c934b>] i915_pci_probe+0x3b/0x60 [i915]
-    [<ffffffff81436725>] local_pci_probe+0x45/0xa0
-    [<ffffffff81437a69>] pci_device_probe+0xd9/0x130
-    [<ffffffff81524f4d>] driver_probe_device+0x12d/0x3e0
-    [<ffffffff815252d3>] __driver_attach+0x93/0xa0
-    [<ffffffff81522e1b>] bus_for_each_dev+0x6b/0xb0
+Unable to handle kernel NULL pointer dereference at virtual address 0000001c
+pgd = de954000
+[0000001c] *pgd=2e92c831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 17 [#1] SMP ARM
+Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma imx_ldb(C) imx_thermal imx_sdma imx2_wdt snd_soc_sgtl5000 snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
+CPU: 1 PID: 1228 Comm: bash Tainted: G         C    3.16.0-rc2+ #1229
+task: ea378d80 ti: de948000 task.ti: de948000
+PC is at imx_ldb_unbind+0x1c/0x58 [imx_ldb]
+LR is at component_unbind+0x38/0x70
+pc : [<bf025068>]    lr : [<c0353108>]    psr: 200f0013
+sp : de949da8  ip : de949dc0  fp : de949dbc
+r10: e9a44b0c  r9 : 00000000  r8 : de949f78
+r7 : 00000012  r6 : e9b3f400  r5 : e9b133b8  r4 : e9b13010
+r3 : 00000000  r2 : e9b3f400  r1 : ea9a0210  r0 : e9b13020
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 2e95404a  DAC: 00000015
+Process bash (pid: 1228, stack limit = 0xde948240)
+Stack: (0xde949da8 to 0xde94a000)
+...
+Backtrace:
+[<bf02504c>] (imx_ldb_unbind [imx_ldb]) from [<c0353108>] (component_unbind+0x38/0x70)
+[<c03530d0>] (component_unbind) from [<c03531d4>] (component_unbind_all+0x94/0xc8)
+[<c0353140>] (component_unbind_all) from [<c04bc224>] (imx_drm_driver_unload+0x34/0x4c)
+[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
+[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
+[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
+[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
+...
+Code: e5904058 e2840010 e2845fea e59430a0 (e593301c)
+---[ end trace 4f211c6dbbcd4963 ]---
 
-This patch extends the current convention of checking whether a
-resource is already allocated before allocating it during ring init.
-Longer term it might make sense to only init the rings once.
+This is caused by only having one channel out of the pair configured in
+DT; the second channel remains uninitialised, but upon unbind, the
+driver attempts to clean up both, thereby dereferencing a NULL pointer.
+Avoid this by checking that the second channel is initialised.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=83794
-Tested-by: Kari Suvanto <kari.tj.suvanto@gmail.com>
-Signed-off-by: Brad Volkin <bradley.d.volkin@intel.com>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Fixes: 1b3f76756633 ("imx-drm: initialise drm components directly")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_cmd_parser.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/staging/imx-drm/imx-ldb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_cmd_parser.c
-+++ b/drivers/gpu/drm/i915/i915_cmd_parser.c
-@@ -706,11 +706,13 @@ int i915_cmd_parser_init_ring(struct int
- 	BUG_ON(!validate_cmds_sorted(ring, cmd_tables, cmd_table_count));
- 	BUG_ON(!validate_regs_sorted(ring));
+--- a/drivers/staging/imx-drm/imx-ldb.c
++++ b/drivers/staging/imx-drm/imx-ldb.c
+@@ -574,6 +574,9 @@ static void imx_ldb_unbind(struct device
+ 	for (i = 0; i < 2; i++) {
+ 		struct imx_ldb_channel *channel = &imx_ldb->channel[i];
  
--	ret = init_hash_table(ring, cmd_tables, cmd_table_count);
--	if (ret) {
--		DRM_ERROR("CMD: cmd_parser_init failed!\n");
--		fini_hash_table(ring);
--		return ret;
-+	if (hash_empty(ring->cmd_hash)) {
-+		ret = init_hash_table(ring, cmd_tables, cmd_table_count);
-+		if (ret) {
-+			DRM_ERROR("CMD: cmd_parser_init failed!\n");
-+			fini_hash_table(ring);
-+			return ret;
-+		}
++		if (!channel->connector.funcs)
++			continue;
++
+ 		channel->connector.funcs->destroy(&channel->connector);
+ 		channel->encoder.funcs->destroy(&channel->encoder);
  	}
- 
- 	ring->needs_cmd_parser = true;
 
 
