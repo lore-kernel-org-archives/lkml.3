@@ -1,121 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751775AbaJCLjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 07:39:25 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:34682 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJCLjW (ORCPT
+	id S1752079AbaJCLjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 07:39:41 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51383 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaJCLji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 07:39:22 -0400
+	Fri, 3 Oct 2014 07:39:38 -0400
+Message-ID: <542E8AF3.2030206@hitachi.com>
+Date: Fri, 03 Oct 2014 20:39:31 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <542E6F9D.2090005@samsung.com>
-References: <1412324653-30677-1-git-send-email-a.hajda@samsung.com>
-	<20141003083121.GC16117@phenom.ffwll.local>
-	<542E6F9D.2090005@samsung.com>
-Date: Fri, 3 Oct 2014 13:39:21 +0200
-X-Google-Sender-Auth: Yb9yY8_QJktlfuQ81JssNs8Z1A0
-Message-ID: <CAKMK7uGec2yV89n-RLsg+HqXoXvXBMBVZ6py3Z7puFe+KR6e7A@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/4] drm/core: restore suspend/resume calbacks in KMS
- drm drivers
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:INTEL DRM DRIVERS..." <intel-gfx@lists.freedesktop.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v2 1/5] perf/sdt: ELF support for SDT
+References: <20141001023723.28985.39736.stgit@hemant-fedora> <20141001024525.28985.95513.stgit@hemant-fedora>
+In-Reply-To: <20141001024525.28985.95513.stgit@hemant-fedora>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 11:42 AM, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> On 10/03/2014 10:31 AM, Daniel Vetter wrote:
->> On Fri, Oct 03, 2014 at 10:24:09AM +0200, Andrzej Hajda wrote:
->>> The main intent of this patchset is to allow use of suspend/resume drm driver
->>> callbacks in KMS drivers, as these callbacks seems to me the best place
->>> to implement suspend/resume functionality in drm driver.
->>> Implementing this functionality in master component driver PM ops is problematic
->>> as those callbacks can be called asynchronously regardless of state/existence of
->>> drm device, thus it would require additional synchronization mechanism.
->>>
->>> Callbacks re-enabling requires small changes in i915 and exynos driver.
->>> The patchset contains also fix of exynos resume callback.
->> Nack.
->>
->> Like completely and totally. The drm core has really no business doing
->> hardware stuff, which includes runtime pm, system suspend and all that
->> nonsense. It' an interface between userspace and drivers, with a big
->> library to back it all up. Everything else just repeats the old midlayer
->> mistake.
->
-> Hmm, I have just tried to reuse the existing infrastructure, I did not see
-> any sign "do not touch, this is a mistake". Now I see it, thanks :)
+(2014/10/01 11:47), Hemant Kumar wrote:
+> This patch serves as the basic support to identify and list SDT events in binaries.
+> When programs containing SDT markers are compiled, gcc with the help of assembler
+> directives identifies them and places them in the section ".note.stapsdt". To find
+> these markers from the binaries, one needs to traverse through this section and
+> parse the relevant details like the name, type and location of the marker. Also,
+> the original location could be skewed due to the effect of prelinking. If that is
+> the case, the locations need to be adjusted.
+> 
+> The functions in this patch open a given ELF, find out the SDT section, parse the
+> relevant details, adjust the location (if necessary) and populate them in a list.
+> 
+> Made the necessary changes as suggested by Namhyung Kim.
 
-As a rule of thumb, if you see a !DRIVER_MODESET check anywhere, then
-that's a clear sign that you're wandering off the light and into the
-dangerous parts of what drm was like age dark ages ;-)
+Looks almost good!
+I have some comments, please see below.
 
->> If you driver needs this, do it there. Also, the component framework is
->> probably the solution you're looking for. And if there are synchronization
->> issues with that then we need to fix those instead of reinventing yet
->> another half-assed broken wheel.
->
-> But this is an issue closely connected with component framework.
-> Component framework separates master component probe and drm device
-> initialization. As a result PM ops which are synchronized with probe
-> (via device_lock)
-> are no more synchronized with drm initialization which is usually called
-> from
-> .bind callback.
+> 
+> Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/symbol-elf.c |  207 ++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/symbol.h     |   19 ++++
+>  2 files changed, 226 insertions(+)
+> 
+> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+> index 2a92e10..9702167 100644
+> --- a/tools/perf/util/symbol-elf.c
+> +++ b/tools/perf/util/symbol-elf.c
+> @@ -1672,6 +1672,213 @@ void kcore_extract__delete(struct kcore_extract *kce)
+>  	unlink(kce->extract_filename);
+>  }
+>  
+> +/*
+> + * populate_sdt_note() : Responsible for parsing the section .note.stapsdt and
+> + * after adjusting the note's location, returns that to the calling functions.
+> + */
+> +static int populate_sdt_note(Elf **elf, const char *data, size_t len, int type,
+> +			     struct sdt_note **note)
+> +{
+> +	const char *provider, *name;
+> +	struct sdt_note *tmp = NULL;
+> +	GElf_Ehdr ehdr;
+> +	GElf_Addr base_off = 0;
+> +	GElf_Shdr shdr;
+> +	int ret = -1;
 
-Now I'm confused. component->bind and drm initialization is about
-driver load, but all this code here is about system suspend/resume
-really. So I'm rather confused what problem you actually want to fix
-..
+-1 is not an error code. maybe, -EINVAL is better.
 
->> Aside: With David Herrmann's latest patches to de-midlayer the drm
->> init/teardown sequence the driver is in full control of when the drm data
->> structures get allocate, initialized and registered. If you convert to
->> that plus the component framework I'm pretty sure your problem is solved.
->
-> I will look closer at it but as I described above it is rather matter of
-> separation
-> of master component and drm device initialization.
->
-> My idea was to avoid creation of new synchronization mechanism and to
-> reuse the
-> existing ones which seems to fit perfectly to the scenario, but if there
-> is big NO for it
-> another solution should be found.
->
-> Anyway I guess the problem exists for all drivers having component
-> framework and suspend:
-> exynos, msm and incoming rockchip.
+> +	int i;
+> +
+> +	union {
+> +		Elf64_Addr a64[3];
+> +		Elf32_Addr a32[3];
+> +	} buf;
+> +
+> +	Elf_Data dst = {
+> +		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
+> +		.d_size = gelf_fsize((*elf), ELF_T_ADDR, 3, EV_CURRENT),
+> +		.d_off = 0, .d_align = 0
+> +	};
+> +	Elf_Data src = {
+> +		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
+> +		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
+> +		.d_align = 0
+> +	};
+> +
+> +	/* Check the type of each of the notes */
+> +	if (type != SDT_NOTE_TYPE)
+> +		goto out_err;
+> +
+> +	tmp = (struct sdt_note *)calloc(1, sizeof(struct sdt_note));
+> +	if (!tmp) {
+> +		ret = -ENOMEM;
+> +		goto out_err;
+> +	}
+> +
+> +	INIT_LIST_HEAD(&tmp->note_list);
+> +
+> +	if (len < dst.d_size + 3)
+> +		goto out_free_note;
+> +
+> +	/* Translation from file representation to memory representation */
+> +	if (gelf_xlatetom(*elf, &dst, &src,
+> +			  elf_getident(*elf, NULL)[EI_DATA]) == NULL)
+> +		printf("gelf_xlatetom : %s\n", elf_errmsg(-1));
 
-It sounds like the component framework needs to be teached to work
-with system suspend/resume. I guess either we need to have clever
-abuse of deferred probing to make sure that the master device is
-probed first and so in the correct place in the system/resume
-sequence. Or the master framework needs to grow pm_ops itself so that
-the state associated with the logical componentized framework can be
-saved/restored.
+pr_err? and shouldn't it goes to out_free_note?
 
-So master pm_ops would save/restore kms state, and all the components
-would just save/restore any additional (register, clock, whatever)
-state that each componnent driver would need.
+> +
+> +	/* Populate the fields of sdt_note */
+> +	provider = data + dst.d_size;
+> +
+> +	name = (const char *)memchr(provider, '\0', data + len - provider);
+> +	if (name++ == NULL)
+> +		goto out_free_note;
+> +
+> +	tmp->provider = strdup(provider);
+> +	if (!tmp->provider) {
+> +		ret = -ENOMEM;
+> +		goto out_free_note;
+> +	}
+> +	tmp->name = strdup(name);
+> +	if (!tmp->name) {
+> +		ret = -ENOMEM;
+> +		goto out_free_prov;
+> +	}
+> +
+> +	/* Obtain the addresses */
+> +	if (gelf_getclass(*elf) == ELFCLASS32) {
+> +		for (i = 0; i < 3; i++)
+> +			tmp->addr.a32[i] = buf.a32[i];
+> +		tmp->bit32 = true;
+> +	} else {
+> +		for (i = 0; i < 3; i++)
+> +			tmp->addr.a64[i] = buf.a64[i];
+> +		tmp->bit32 = false;
+> +	}
+> +
+> +	/* Now Adjust the prelink effect */
+> +	if (!gelf_getehdr(*elf, &ehdr)) {
+> +		pr_debug("%s : cannot get elf header.\n", __func__);
+> +		ret = -EBADF;
+> +		goto out_free_name;
+> +	}
+> +
+> +	/*
+> +	 * Find out the .stapsdt.base section.
+> +	 * This scn will help us to handle prelinking (if present).
+> +	 * Compare the retrieved file offset of the base section with the
+> +	 * base address in the description of the SDT note. If its different,
+> +	 * then accordingly, adjust the note location.
+> +	 */
+> +	if (elf_section_by_name(*elf, &ehdr, &shdr, SDT_BASE_SCN, NULL)) {
+> +		base_off = shdr.sh_offset;
+> +		if (base_off) {
+> +			if (tmp->bit32)
+> +				tmp->addr.a32[0] = tmp->addr.a32[0] + base_off -
+> +					tmp->addr.a32[1];
+> +			else
+> +				tmp->addr.a64[0] = tmp->addr.a64[0] + base_off -
+> +					tmp->addr.a64[1];
+> +		}
+> +	}
+> +
+> +	*note = tmp;
+> +	return 0;
+> +
+> +out_free_name:
+> +	free(tmp->name);
+> +out_free_prov:
+> +	free(tmp->provider);
+> +out_free_note:
+> +	free(tmp);
+> +out_err:
+> +	return ret;
+> +}
+> +
 
-But I'm not really an expert here, so adding more people.
--Daniel
+Thank you,
+
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
