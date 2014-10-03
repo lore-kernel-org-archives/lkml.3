@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaJCUjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:39:31 -0400
-Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:33434
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750944AbaJCUj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:39:26 -0400
-X-Greylist: delayed 1991 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Oct 2014 16:39:26 EDT
-Message-ID: <1412367858.13320.432.camel@snotra.buserror.net>
-Subject: Re: [PATCH 2/2] spi: fsl-spi: Allow dynamic allocation of CPM1
- parameter RAM
-From: Scott Wood <scottwood@freescale.com>
-To: christophe leroy <christophe.leroy@c-s.fr>
-CC: Mark Brown <broonie@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1753442AbaJCUnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:43:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35742 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaJCUnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 16:43:03 -0400
+Date: Fri, 3 Oct 2014 22:42:56 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        "Marcelo Tosatti" <marcelo@kvack.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-spi@vger.kernel.org>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Fri, 3 Oct 2014 15:24:18 -0500
-In-Reply-To: <542F03CF.8010900@c-s.fr>
-References: <20141003125609.5BEA11AB276@localhost.localdomain>
-	 <20141003144420.GC24441@sirena.org.uk> <542F03CF.8010900@c-s.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
+Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC
+ filtering
+Message-ID: <20141003204256.GO10583@worktop.programming.kicks-ass.net>
+References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
+ <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
+ <20141003201409.GM10583@worktop.programming.kicks-ass.net>
+ <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [2601:2:5800:3f7:2d08:4497:b38c:aeed]
-X-ClientProxiedBy: BY1PR0201CA0001.namprd02.prod.outlook.com (25.160.191.139)
- To BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 0353563E2B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(479174003)(377424004)(199003)(24454002)(189002)(95666004)(107046002)(31966008)(50466002)(62966002)(21056001)(102836001)(85306004)(87976001)(120916001)(99396003)(40100001)(4396001)(50226001)(104166001)(10300001)(77096002)(76482002)(105586002)(76176999)(50986999)(106356001)(122386001)(92566001)(46102003)(97736003)(80022003)(23676002)(103116003)(85852003)(20776003)(86362001)(47776003)(92726001)(101416001)(77156001)(64706001)(93916002)(88136002)(89996001)(42186005)(110136001)(33646002)(87286001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:2d08:4497:b38c:aeed];FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 22:15 +0200, christophe leroy wrote:
-> Le 03/10/2014 16:44, Mark Brown a écrit :
-> > On Fri, Oct 03, 2014 at 02:56:09PM +0200, Christophe Leroy wrote:
-> >
-> >> +config CPM1_RELOCSPI
-> >> +	bool "Dynamic SPI relocation"
-> >> +	default n
-> >> +	help
-> >> +	  On recent MPC8xx (at least MPC866 and MPC885) SPI can be relocated
-> >> +	  without micropatch. This activates relocation to a dynamically
-> >> +	  allocated area in the CPM Dual port RAM.
-> >> +	  When combined with SPI relocation patch (for older MPC8xx) it avoids
-> >> +	  the "loss" of additional Dual port RAM space just above the patch,
-> >> +	  which might be needed for example when using the CPM QMC.
-> > Something like this shouldn't be a compile time option.  Either it
-> > should be unconditional or it should be triggered in some system
-> > specific manner (from DT, from knowing about other users or similar).
-> Can't be unconditional as older versions of mpc8xx (eg MPC860) don't 
-> support relocation without a micropatch.
-> I have therefore submitted a v2 based on a DTS compatible property.
+On Fri, Oct 03, 2014 at 01:22:22PM -0700, Andy Lutomirski wrote:
+> > So the problem with the default deny is that its:
+> >  1) pointless -- the attacker can do sys_perf_event_open() just fine;
+> 
+> Not if the attacker is in a seccomp sandbox.
 
-So the device tree change is about whether relocation is supported, not
-whether it is required?  Is this specific to SPI or does the relocation
-mechanism work for other things?
+Clearly :-)
 
-How about checking for the existing specific-SoC compatibles?
+> >  2) and expensive -- the people trying to measure performance get the
+> >     penalty of the CR4 write.
+> 
+> Does this matter for performance measuring?  I'm not 100% clear on how all
+> the perf_event stuff gets used in practice, but, by my very vague
+> understanding, there are two main workflows:
+> 
+> a) perf record, etc: one process creates a ringbuffer and wakes up
+> rarely to record the contents.  The process being recorded doesn't
+> have a perf_event mapped, so the cr4 switch will only happen when
+> waking up the perf process.
+> 
+> perf record prints stuff like "[ perf record: Woken up 1 times to
+> write data ]", which seems to confirm my understanding.
+> 
+> b) self-monitoring.  A task mmaps a perf_event, does rdpmc, does
+> something, and does rdpmc again.  In that case, there's no context
+> switch.
 
--Scott
+Agreed, but with the default disable, the self-monitoring task will get
+CR4 writes to its context switches and will be slower.
 
+Whereas if we default on and only disable with seccomp then only the
+seccomp tasks will suffer the burden of a CR4 write at context switch
+time.
 
+And I don't see a security implication in the default.
+
+> > So I would suggest a default on, but allow a disable for the seccomp
+> > users, which might have also disabled the syscall. Note that is is
+> > possible to disable RDPMC while still allowing the syscall.
+> 
+> Disabling RDPMC per-process while still allowing the syscall will need
+> a bunch of work, right? 
+
+Not much, all you need to do is make
+perf_event_mmmap_page::cap_user_rdpmc be 0 and userspace should never
+use rdpmc. Currently we set that bit based on the global sysfs rdpmc
+value, but we could easy bitwise AND it with a per process value.
+
+> What happens if the same perf_event is mapped
+> by two different users?
+
+Not entirely clear on what you mean here.
+
+> We could make the rule be that RDPMC is enabled if a perf event is
+> mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
+> there's an actual performance issue first.  Ideally we can get this
+> all working with no API or ABI change at all.
+
+Well I just want to not have extra CR4 writes by default (and by default
+I don't care about seccomp).
+
+> P.S. Hey, Intel, let us context switch RDPMC accessibility of the
+> individual counters, please :)
+
+Ha sure, make it more complicated why don't you ;-) But yes, that has
+come up before.
