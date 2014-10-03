@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbaJCRJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:09:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21424 "EHLO mx1.redhat.com"
+	id S1754671AbaJCRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:11:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54711 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979AbaJCRI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:08:58 -0400
+	id S1751296AbaJCRI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 13:08:56 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-api@vger.kernel.org
@@ -34,80 +34,324 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Stefan Hajnoczi <stefanha@gmail.com>,
         Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
         Juan Quintela <quintela@redhat.com>
-Subject: [PATCH 15/17] userfaultfd: make userfaultfd_write non blocking
-Date: Fri,  3 Oct 2014 19:08:05 +0200
-Message-Id: <1412356087-16115-16-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 04/17] mm: gup: make get_user_pages_fast and __get_user_pages_fast latency conscious
+Date: Fri,  3 Oct 2014 19:07:54 +0200
+Message-Id: <1412356087-16115-5-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is generally inefficient to ask the wakeup of userfault ranges
-where there's not a single userfault address read through
-userfaultfd_read earlier and in turn waiting a wakeup. However it may
-come handy to wakeup the same userfault range twice in case of
-multiple thread faulting on the same address. But we should still
-return an error so if the application thinks this occurrence can never
-happen it will know it hit a bug. So just return -ENOENT instead of
-blocking.
+This teaches gup_fast and __gup_fast to re-enable irqs and
+cond_resched() if possible every BATCH_PAGES.
+
+This must be implemented by other archs as well and it's a requirement
+before converting more get_user_pages() to get_user_pages_fast() as an
+optimization (instead of using get_user_pages_unlocked which would be
+slower).
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- fs/userfaultfd.c | 34 +++++-----------------------------
- 1 file changed, 5 insertions(+), 29 deletions(-)
+ arch/x86/mm/gup.c | 234 ++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 149 insertions(+), 85 deletions(-)
 
-diff --git a/fs/userfaultfd.c b/fs/userfaultfd.c
-index 62b827e..2667d0d 100644
---- a/fs/userfaultfd.c
-+++ b/fs/userfaultfd.c
-@@ -458,9 +458,7 @@ static ssize_t userfaultfd_write(struct file *file, const char __user *buf,
- 				 size_t count, loff_t *ppos)
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 2ab183b..917d8c1 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -12,6 +12,12 @@
+ 
+ #include <asm/pgtable.h>
+ 
++/*
++ * Keep irq disabled for no more than BATCH_PAGES pages.
++ * Matches PTRS_PER_PTE (or half in non-PAE kernels).
++ */
++#define BATCH_PAGES	512
++
+ static inline pte_t gup_get_pte(pte_t *ptep)
  {
- 	struct userfaultfd_ctx *ctx = file->private_data;
--	ssize_t res;
- 	__u64 range[2];
--	DECLARE_WAITQUEUE(wait, current);
- 
- 	if (ctx->state == USERFAULTFD_STATE_ASK_PROTOCOL) {
- 		__u64 protocol;
-@@ -488,34 +486,12 @@ static ssize_t userfaultfd_write(struct file *file, const char __user *buf,
- 	if (range[0] >= range[1])
- 		return -ERANGE;
- 
--	spin_lock(&ctx->fd_wqh.lock);
--	__add_wait_queue(&ctx->fd_wqh, &wait);
--	for (;;) {
--		set_current_state(TASK_INTERRUPTIBLE);
--		/* always take the fd_wqh lock before the fault_wqh lock */
--		if (find_userfault(ctx, NULL, POLLOUT)) {
--			if (!wake_userfault(ctx, range)) {
--				res = sizeof(range);
--				break;
--			}
--		}
--		if (signal_pending(current)) {
--			res = -ERESTARTSYS;
--			break;
--		}
--		if (file->f_flags & O_NONBLOCK) {
--			res = -EAGAIN;
--			break;
--		}
--		spin_unlock(&ctx->fd_wqh.lock);
--		schedule();
--		spin_lock(&ctx->fd_wqh.lock);
--	}
--	__remove_wait_queue(&ctx->fd_wqh, &wait);
--	__set_current_state(TASK_RUNNING);
--	spin_unlock(&ctx->fd_wqh.lock);
-+	/* always take the fd_wqh lock before the fault_wqh lock */
-+	if (find_userfault(ctx, NULL, POLLOUT))
-+		if (!wake_userfault(ctx, range))
-+			return sizeof(range);
- 
--	return res;
-+	return -ENOENT;
+ #ifndef CONFIG_X86_PAE
+@@ -250,6 +256,40 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+ 	return 1;
  }
  
- #ifdef CONFIG_PROC_FS
++static inline int __get_user_pages_fast_batch(unsigned long start,
++					      unsigned long end,
++					      int write, struct page **pages)
++{
++	struct mm_struct *mm = current->mm;
++	unsigned long next;
++	unsigned long flags;
++	pgd_t *pgdp;
++	int nr = 0;
++
++	/*
++	 * This doesn't prevent pagetable teardown, but does prevent
++	 * the pagetables and pages from being freed on x86.
++	 *
++	 * So long as we atomically load page table pointers versus teardown
++	 * (which we do on x86, with the above PAE exception), we can follow the
++	 * address down to the the page and take a ref on it.
++	 */
++	local_irq_save(flags);
++	pgdp = pgd_offset(mm, start);
++	do {
++		pgd_t pgd = *pgdp;
++
++		next = pgd_addr_end(start, end);
++		if (pgd_none(pgd))
++			break;
++		if (!gup_pud_range(pgd, start, next, write, pages, &nr))
++			break;
++	} while (pgdp++, start = next, start != end);
++	local_irq_restore(flags);
++
++	return nr;
++}
++
+ /*
+  * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
+  * back to the regular GUP.
+@@ -257,31 +297,55 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			  struct page **pages)
+ {
+-	struct mm_struct *mm = current->mm;
+-	unsigned long addr, len, end;
+-	unsigned long next;
+-	unsigned long flags;
+-	pgd_t *pgdp;
+-	int nr = 0;
++	unsigned long len, end, batch_pages;
++	int nr, ret;
+ 
+ 	start &= PAGE_MASK;
+-	addr = start;
+ 	len = (unsigned long) nr_pages << PAGE_SHIFT;
+ 	end = start + len;
++	/*
++	 * get_user_pages() handles nr_pages == 0 gracefully, but
++	 * gup_fast starts walking the first pagetable in a do {}
++	 * while() fashion so it's not robust to handle nr_pages ==
++	 * 0. There's no point in being permissive about end < start
++	 * either. So this check verifies both nr_pages being non
++	 * zero, and that "end" didn't overflow.
++	 */
++	VM_BUG_ON(end <= start);
+ 	if (unlikely(!access_ok(write ? VERIFY_WRITE : VERIFY_READ,
+ 					(void __user *)start, len)))
+ 		return 0;
+ 
+-	/*
+-	 * XXX: batch / limit 'nr', to avoid large irq off latency
+-	 * needs some instrumenting to determine the common sizes used by
+-	 * important workloads (eg. DB2), and whether limiting the batch size
+-	 * will decrease performance.
+-	 *
+-	 * It seems like we're in the clear for the moment. Direct-IO is
+-	 * the main guy that batches up lots of get_user_pages, and even
+-	 * they are limited to 64-at-a-time which is not so many.
+-	 */
++	ret = 0;
++	for (;;) {
++		batch_pages = nr_pages;
++		if (batch_pages > BATCH_PAGES && !irqs_disabled())
++			batch_pages = BATCH_PAGES;
++		len = (unsigned long) batch_pages << PAGE_SHIFT;
++		end = start + len;
++		nr = __get_user_pages_fast_batch(start, end, write, pages);
++		VM_BUG_ON(nr > batch_pages);
++		nr_pages -= nr;
++		ret += nr;
++		if (!nr_pages || nr != batch_pages)
++			break;
++		start += len;
++		pages += batch_pages;
++	}
++
++	return ret;
++}
++
++static inline int get_user_pages_fast_batch(unsigned long start,
++					    unsigned long end,
++					    int write, struct page **pages)
++{
++	struct mm_struct *mm = current->mm;
++	unsigned long next;
++	pgd_t *pgdp;
++	int nr = 0;
++	unsigned long orig_start = start;
++
+ 	/*
+ 	 * This doesn't prevent pagetable teardown, but does prevent
+ 	 * the pagetables and pages from being freed on x86.
+@@ -290,18 +354,24 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 * (which we do on x86, with the above PAE exception), we can follow the
+ 	 * address down to the the page and take a ref on it.
+ 	 */
+-	local_irq_save(flags);
+-	pgdp = pgd_offset(mm, addr);
++	local_irq_disable();
++	pgdp = pgd_offset(mm, start);
+ 	do {
+ 		pgd_t pgd = *pgdp;
+ 
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none(pgd))
++		next = pgd_addr_end(start, end);
++		if (pgd_none(pgd)) {
++			VM_BUG_ON(nr >= (end-orig_start) >> PAGE_SHIFT);
+ 			break;
+-		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
++		}
++		if (!gup_pud_range(pgd, start, next, write, pages, &nr)) {
++			VM_BUG_ON(nr >= (end-orig_start) >> PAGE_SHIFT);
+ 			break;
+-	} while (pgdp++, addr = next, addr != end);
+-	local_irq_restore(flags);
++		}
++	} while (pgdp++, start = next, start != end);
++	local_irq_enable();
++
++	cond_resched();
+ 
+ 	return nr;
+ }
+@@ -326,80 +396,74 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages)
+ {
+ 	struct mm_struct *mm = current->mm;
+-	unsigned long addr, len, end;
+-	unsigned long next;
+-	pgd_t *pgdp;
+-	int nr = 0;
++	unsigned long len, end, batch_pages;
++	int nr, ret;
++	unsigned long orig_start;
+ 
+ 	start &= PAGE_MASK;
+-	addr = start;
++	orig_start = start;
+ 	len = (unsigned long) nr_pages << PAGE_SHIFT;
+ 
+ 	end = start + len;
+-	if (end < start)
+-		goto slow_irqon;
++	/*
++	 * get_user_pages() handles nr_pages == 0 gracefully, but
++	 * gup_fast starts walking the first pagetable in a do {}
++	 * while() fashion so it's not robust to handle nr_pages ==
++	 * 0. There's no point in being permissive about end < start
++	 * either. So this check verifies both nr_pages being non
++	 * zero, and that "end" didn't overflow.
++	 */
++	VM_BUG_ON(end <= start);
+ 
++	nr = ret = 0;
+ #ifdef CONFIG_X86_64
+ 	if (end >> __VIRTUAL_MASK_SHIFT)
+ 		goto slow_irqon;
+ #endif
++	for (;;) {
++		batch_pages = min(nr_pages, BATCH_PAGES);
++		len = (unsigned long) batch_pages << PAGE_SHIFT;
++		end = start + len;
++		nr = get_user_pages_fast_batch(start, end, write, pages);
++		VM_BUG_ON(nr > batch_pages);
++		nr_pages -= nr;
++		ret += nr;
++		if (!nr_pages)
++			break;
++		if (nr < batch_pages)
++			goto slow_irqon;
++		start += len;
++		pages += batch_pages;
++	}
+ 
+-	/*
+-	 * XXX: batch / limit 'nr', to avoid large irq off latency
+-	 * needs some instrumenting to determine the common sizes used by
+-	 * important workloads (eg. DB2), and whether limiting the batch size
+-	 * will decrease performance.
+-	 *
+-	 * It seems like we're in the clear for the moment. Direct-IO is
+-	 * the main guy that batches up lots of get_user_pages, and even
+-	 * they are limited to 64-at-a-time which is not so many.
+-	 */
+-	/*
+-	 * This doesn't prevent pagetable teardown, but does prevent
+-	 * the pagetables and pages from being freed on x86.
+-	 *
+-	 * So long as we atomically load page table pointers versus teardown
+-	 * (which we do on x86, with the above PAE exception), we can follow the
+-	 * address down to the the page and take a ref on it.
+-	 */
+-	local_irq_disable();
+-	pgdp = pgd_offset(mm, addr);
+-	do {
+-		pgd_t pgd = *pgdp;
+-
+-		next = pgd_addr_end(addr, end);
+-		if (pgd_none(pgd))
+-			goto slow;
+-		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
+-			goto slow;
+-	} while (pgdp++, addr = next, addr != end);
+-	local_irq_enable();
+-
+-	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
+-	return nr;
+-
+-	{
+-		int ret;
++	VM_BUG_ON(ret != (end - orig_start) >> PAGE_SHIFT);
++	return ret;
+ 
+-slow:
+-		local_irq_enable();
+ slow_irqon:
+-		/* Try to get the remaining pages with get_user_pages */
+-		start += nr << PAGE_SHIFT;
+-		pages += nr;
+-
+-		ret = get_user_pages_unlocked(current, mm, start,
+-					      (end - start) >> PAGE_SHIFT,
+-					      write, 0, pages);
+-
+-		/* Have to be a bit careful with return values */
+-		if (nr > 0) {
+-			if (ret < 0)
+-				ret = nr;
+-			else
+-				ret += nr;
+-		}
++	/* Try to get the remaining pages with get_user_pages */
++	start += nr << PAGE_SHIFT;
++	pages += nr;
+ 
+-		return ret;
++	/*
++	 * "nr" was the get_user_pages_fast_batch last retval, "ret"
++	 * was the sum of all get_user_pages_fast_batch retvals, now
++	 * "nr" becomes the sum of all get_user_pages_fast_batch
++	 * retvals and "ret" will become the get_user_pages_unlocked
++	 * retval.
++	 */
++	nr = ret;
++
++	ret = get_user_pages_unlocked(current, mm, start,
++				      (end - start) >> PAGE_SHIFT,
++				      write, 0, pages);
++
++	/* Have to be a bit careful with return values */
++	if (nr > 0) {
++		if (ret < 0)
++			ret = nr;
++		else
++			ret += nr;
+ 	}
++
++	return ret;
+ }
