@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933016AbaJCXUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:20:15 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:46694 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758596AbaJCXUL (ORCPT
+	id S932988AbaJCXTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:19:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46804 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757766AbaJCWNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:20:11 -0400
-Date: Sat, 4 Oct 2014 01:20:08 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        dave@sr71.net, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        eranian@google.com, x86@kernel.org
-Subject: Re: [PATCH 1/2] Use faster check for modules in backtrace on 64bit
-Message-ID: <20141003232008.GF12538@two.firstfloor.org>
-References: <1411774277-4198-1-git-send-email-andi@firstfloor.org>
- <1411774277-4198-2-git-send-email-andi@firstfloor.org>
- <20140929114212.GG5430@worktop>
- <20140929152145.GB1629@tassilo.jf.intel.com>
- <20140929203023.GA8196@two.firstfloor.org>
- <20140930085814.GS5430@worktop>
- <20140930200959.GB8196@two.firstfloor.org>
- <20141002105734.GD2849@worktop.programming.kicks-ass.net>
+	Fri, 3 Oct 2014 18:13:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jaime Velasco Juan <jsagarribay@gmail.com>,
+        Georgios Tsalikis <georgios@tsalikis.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 164/238] Input: atkbd - do not try deactivate keyboard on any LG laptops
+Date: Fri,  3 Oct 2014 14:31:19 -0700
+Message-Id: <20141003212918.924587559@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002105734.GD2849@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If you think I'm wrong please show working code.
-> 
-> That is unrelated to the above, you're just not willing to work on it.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-I'm willing to work on practical suggestions, which this one is not.
+------------------
 
-Speculative data structure research is not on my general agenda,
-and should not be required for Linx contributions.
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-> But the biggest issue is that its x86_64 only.
+commit c01206796139e2b1feb7539bc72174fef1c6dc6e upstream.
 
-Fair enough. I'll look into something that works there too.
+We are getting more and more reports about LG laptops not having
+functioning keyboard if we try to deactivate keyboard during probe.
+Given that having keyboard deactivated is merely "nice to have"
+instead of a hard requirement for probing, let's disable it on all
+LG boxes instead of trying to hunt down particular models.
 
--Andi
+This change is prompted by patches trying to add "LG Electronics"/"ROCKY"
+and "LG Electronics"/"LW60-F27B" to the DMI list.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+https://bugzilla.kernel.org/show_bug.cgi?id=77051
+
+Reported-by: Jaime Velasco Juan <jsagarribay@gmail.com>
+Reported-by: Georgios Tsalikis <georgios@tsalikis.net>
+Tested-by: Jaime Velasco Juan <jsagarribay@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/keyboard/atkbd.c |    8 --------
+ 1 file changed, 8 deletions(-)
+
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -1791,14 +1791,6 @@ static const struct dmi_system_id atkbd_
+ 	{
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
+-		},
+-		.callback = atkbd_deactivate_fixup,
+-	},
+-	{
+-		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
+ 		},
+ 		.callback = atkbd_deactivate_fixup,
+ 	},
+
+
