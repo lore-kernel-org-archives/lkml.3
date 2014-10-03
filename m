@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaJCPgy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:36:54 -0400
-Received: from resqmta-ch2-11v.sys.comcast.net ([69.252.207.43]:38304 "EHLO
-	resqmta-ch2-11v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753459AbaJCPgi (ORCPT
+	id S1754182AbaJCPjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:39:23 -0400
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:49032 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297AbaJCPgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:36:38 -0400
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, dbueso@suse.de, luto@amacapital.net
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/5] selftests/breakpoints: change test to use ksft framework
-Date: Fri,  3 Oct 2014 09:36:17 -0600
-Message-Id: <6e6772fee69e0c71feaf1a48b3f1ebcfc89be966.1412349412.git.shuahkh@osg.samsung.com>
+	Fri, 3 Oct 2014 11:36:48 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linux.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: rtl8723au: Fix "open brace '{' following struct go on the same line" errors
+Date: Fri,  3 Oct 2014 10:36:40 -0500
+Message-Id: <1412350600-30224-1-git-send-email-gdonald@gmail.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1412349412.git.shuahkh@osg.samsung.com>
-References: <cover.1412349412.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1412349412.git.shuahkh@osg.samsung.com>
-References: <cover.1412349412.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change breakpoints test to use kselftest framework to report
-test results.
+Fix checkpatch.pl "open brace '{' following struct go on the same line" errors
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+Signed-off-by: Greg Donald <gdonald@gmail.com>
 ---
- tools/testing/selftests/breakpoints/breakpoint_test.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/staging/rtl8723au/core/rtw_security.c     | 3 +--
+ drivers/staging/rtl8723au/include/rtl8723a_dm.h   | 3 +--
+ drivers/staging/rtl8723au/include/rtl8723a_recv.h | 3 +--
+ drivers/staging/rtl8723au/include/rtw_cmd.h       | 3 +--
+ drivers/staging/rtl8723au/include/rtw_ht.h        | 3 +--
+ drivers/staging/rtl8723au/include/rtw_mlme_ext.h  | 6 ++----
+ 6 files changed, 7 insertions(+), 14 deletions(-)
 
-diff --git a/tools/testing/selftests/breakpoints/breakpoint_test.c b/tools/testing/selftests/breakpoints/breakpoint_test.c
-index a0743f3..120895a 100644
---- a/tools/testing/selftests/breakpoints/breakpoint_test.c
-+++ b/tools/testing/selftests/breakpoints/breakpoint_test.c
-@@ -17,6 +17,8 @@
- #include <sys/types.h>
- #include <sys/wait.h>
+diff --git a/drivers/staging/rtl8723au/core/rtw_security.c b/drivers/staging/rtl8723au/core/rtw_security.c
+index 76371ae..c4c7326 100644
+--- a/drivers/staging/rtl8723au/core/rtw_security.c
++++ b/drivers/staging/rtl8723au/core/rtw_security.c
+@@ -23,8 +23,7 @@
  
-+#include "../kselftest.h"
-+
+ #define CRC32_POLY 0x04c11db7
  
- /* Breakpoint access modes */
- enum {
-@@ -42,7 +44,7 @@ static void set_breakpoint_addr(void *addr, int n)
- 		     offsetof(struct user, u_debugreg[n]), addr);
- 	if (ret) {
- 		perror("Can't set breakpoint addr\n");
--		exit(-1);
-+		ksft_exit_fail();
- 	}
- }
+-struct arc4context
+-{
++struct arc4context {
+ 	u32 x;
+ 	u32 y;
+ 	u8 state[256];
+diff --git a/drivers/staging/rtl8723au/include/rtl8723a_dm.h b/drivers/staging/rtl8723au/include/rtl8723a_dm.h
+index 1811222..bf236e8 100644
+--- a/drivers/staging/rtl8723au/include/rtl8723a_dm.h
++++ b/drivers/staging/rtl8723au/include/rtl8723a_dm.h
+@@ -37,8 +37,7 @@ enum{
+ #define IQK_BB_REG_NUM			9
+ #define HP_THERMAL_NUM		8
+ /*  duplicate code,will move to ODM ######### */
+-struct dm_priv
+-{
++struct dm_priv {
+ 	u32	InitODMFlag;
  
-@@ -105,7 +107,7 @@ static void toggle_breakpoint(int n, int type, int len,
- 		     offsetof(struct user, u_debugreg[7]), dr7);
- 	if (ret) {
- 		perror("Can't set dr7");
--		exit(-1);
-+		ksft_exit_fail();
- 	}
- }
+ 	/*  Upper and Lower Signal threshold for Rate Adaptive*/
+diff --git a/drivers/staging/rtl8723au/include/rtl8723a_recv.h b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
+index 885d4d3..0109052 100644
+--- a/drivers/staging/rtl8723au/include/rtl8723a_recv.h
++++ b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
+@@ -35,8 +35,7 @@
+ #define PHY_LINKQUALITY_SLID_WIN_MAX	20
  
-@@ -275,7 +277,7 @@ static void check_success(const char *msg)
- 			msg2 = "Ok";
- 		if (ptrace(PTRACE_POKEDATA, child_pid, &trapped, 1)) {
- 			perror("Can't poke\n");
--			exit(-1);
-+			ksft_exit_fail();
- 		}
- 	}
  
-@@ -390,5 +392,5 @@ int main(int argc, char **argv)
+-struct phy_stat
+-{
++struct phy_stat {
+ 	unsigned int phydw0;
+ 	unsigned int phydw1;
+ 	unsigned int phydw2;
+diff --git a/drivers/staging/rtl8723au/include/rtw_cmd.h b/drivers/staging/rtl8723au/include/rtw_cmd.h
+index ef67068..8ffe5de 100644
+--- a/drivers/staging/rtl8723au/include/rtw_cmd.h
++++ b/drivers/staging/rtl8723au/include/rtw_cmd.h
+@@ -450,8 +450,7 @@ struct getrfintfs_parm {
+ 	u8	rfintfs;
+ };
  
- 	wait(NULL);
+-struct Tx_Beacon_param
+-{
++struct Tx_Beacon_param {
+ 	struct wlan_bssid_ex network;
+ };
  
--	return 0;
-+	return ksft_exit_pass();
- }
+diff --git a/drivers/staging/rtl8723au/include/rtw_ht.h b/drivers/staging/rtl8723au/include/rtw_ht.h
+index cfc947d..780eb89 100644
+--- a/drivers/staging/rtl8723au/include/rtw_ht.h
++++ b/drivers/staging/rtl8723au/include/rtw_ht.h
+@@ -19,8 +19,7 @@
+ #include "linux/ieee80211.h"
+ #include "wifi.h"
+ 
+-struct ht_priv
+-{
++struct ht_priv {
+ 	bool	ht_option;
+ 	bool	ampdu_enable;/* for enable Tx A-MPDU */
+ 	/* u8	baddbareq_issued[16]; */
+diff --git a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
+index 97c3c44..51dba1f 100644
+--- a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
++++ b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
+@@ -270,8 +270,7 @@ struct action_handler {
+ 	int (*func)(struct rtw_adapter *padapter, struct recv_frame *precv_frame);
+ };
+ 
+-struct	ss_res
+-{
++struct	ss_res {
+ 	int	state;
+ 	int	bss_cnt;
+ 	int	channel_idx;
+@@ -318,8 +317,7 @@ struct FW_Sta_Info {
+  * 5. ... and so on, till survey done.
+  */
+ 
+-struct mlme_ext_info
+-{
++struct mlme_ext_info {
+ 	u32	state;
+ 	u32	reauth_count;
+ 	u32	reassoc_count;
 -- 
 1.9.1
 
