@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933570AbaJDAYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:24:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45328 "EHLO
+	id S1759702AbaJDAYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:24:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45275 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755223AbaJCVnF (ORCPT
+	with ESMTP id S1755971AbaJCVnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:43:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joachim Eastwood <manabian@gmail.com>,
-        Nathan Lynch <nathan_lynch@mentor.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.16 191/357] ARM: 8178/1: fix set_tls for !CONFIG_KUSER_HELPERS
-Date: Fri,  3 Oct 2014 14:29:37 -0700
-Message-Id: <20141003212939.205669548@linuxfoundation.org>
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.16 192/357] MIPS: ZBOOT: add missing <linux/string.h> include
+Date: Fri,  3 Oct 2014 14:29:38 -0700
+Message-Id: <20141003212939.242980927@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,65 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Lynch <nathan_lynch@mentor.com>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit 9cc6d9e5daaa147a9a3e31557efcb331989e77be upstream.
+commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
 
-Joachim Eastwood reports that commit fbfb872f5f41 "ARM: 8148/1: flush
-TLS and thumbee register state during exec" causes a boot-time crash
-on a Cortex-M4 nommu system:
+Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
+moved the string related functions into a separate file, which might
+cause the following build error, depending on the configuration:
 
-Freeing unused kernel memory: 68K (281e5000 - 281f6000)
-Unhandled exception: IPSR = 00000005 LR = fffffff1
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
-task: 29834000 ti: 29832000 task.ti: 29832000
-PC is at flush_thread+0x2e/0x40
-LR is at flush_thread+0x21/0x40
-pc : [<2800954a>] lr : [<2800953d>] psr: 4100000b
-sp : 29833d60 ip : 00000000 fp : 00000001
-r10: 00003cf8 r9 : 29b1f000 r8 : 00000000
-r7 : 29b0bc00 r6 : 29834000 r5 : 29832000 r4 : 29832000
-r3 : ffff0ff0 r2 : 29832000 r1 : 00000000 r0 : 282121f0
-xPSR: 4100000b
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
-[<2800afa5>] (unwind_backtrace) from [<2800a327>] (show_stack+0xb/0xc)
-[<2800a327>] (show_stack) from [<2800a963>] (__invalid_entry+0x4b/0x4c)
+| CC      arch/mips/boot/compressed/decompress.o
+| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
+|                  from linux/arch/mips/boot/compressed/decompress.c:67:
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
+| cc1: some warnings being treated as errors
+| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
+| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
+| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
 
-The problem is that set_tls is attempting to clear the TLS location in
-the kernel-user helper page, which isn't set up on V7M.
+It does not fail with the standard configuration, as when
+CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
+include/linux/dynamic_debug.h. There might be other ways for it to
+get indirectly included.
 
-Fix this by guarding the write to the kuser helper page with
-a CONFIG_KUSER_HELPERS ifdef.
+We can't add the include directly in xz_dec_stream.c as some
+architectures might want to use a different version for the boot/
+directory (see for example arch/x86/boot/string.h).
 
-Fixes: fbfb872f5f41 ARM: 8148/1: flush TLS and thumbee register state during exec
-
-Reported-by: Joachim Eastwood <manabian@gmail.com>
-Tested-by: Joachim Eastwood <manabian@gmail.com>
-Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7420/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/tls.h |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/mips/boot/compressed/decompress.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/include/asm/tls.h
-+++ b/arch/arm/include/asm/tls.h
-@@ -81,6 +81,7 @@ static inline void set_tls(unsigned long
- 			asm("mcr p15, 0, %0, c13, c0, 3"
- 			    : : "r" (val));
- 		} else {
-+#ifdef CONFIG_KUSER_HELPERS
- 			/*
- 			 * User space must never try to access this
- 			 * directly.  Expect your app to break
-@@ -89,6 +90,7 @@ static inline void set_tls(unsigned long
- 			 * entry-armv.S for details)
- 			 */
- 			*((unsigned int *)0xffff0ff0) = val;
-+#endif
- 		}
+--- a/arch/mips/boot/compressed/decompress.c
++++ b/arch/mips/boot/compressed/decompress.c
+@@ -13,6 +13,7 @@
  
- 	}
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/string.h>
+ 
+ #include <asm/addrspace.h>
+ 
 
 
