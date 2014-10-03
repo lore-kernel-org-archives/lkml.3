@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727AbaJCVxX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45712 "EHLO
+	id S932299AbaJDAEB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:04:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaJCVxN (ORCPT
+	with ESMTP id S1756728AbaJCVxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:13 -0400
+	Fri, 3 Oct 2014 17:53:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.16 233/357] Target/iser: Dont put isert_conn inside disconnected handler
-Date: Fri,  3 Oct 2014 14:30:19 -0700
-Message-Id: <20141003212940.507965228@linuxfoundation.org>
+        Anssi Hannula <anssi.hannula@iki.fi>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.16 247/357] dm cache: fix race causing dirty blocks to be marked as clean
+Date: Fri,  3 Oct 2014 14:30:33 -0700
+Message-Id: <20141003212940.920680007@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,41 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sagi Grimberg <sagig@mellanox.com>
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-commit 0fc4ea701fcf5bc51ace4e288af5be741465f776 upstream.
+commit 40aa978eccec61347cd47b97c598df49acde8be5 upstream.
 
-disconnected_handler is invoked on several CM events (such
-as DISCONNECTED, DEVICE_REMOVAL, TIMEWAIT_EXIT...). Since
-multiple  events can occur while before isert_free_conn is
-invoked, we might put all isert_conn references and free
-the connection too early.
+When a writeback or a promotion of a block is completed, the cell of
+that block is removed from the prison, the block is marked as clean, and
+the clear_dirty() callback of the cache policy is called.
 
-Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Unfortunately, performing those actions in this order allows an incoming
+new write bio for that block to come in before clearing the dirty status
+is completed and therefore possibly causing one of these two scenarios:
+
+Scenario A:
+
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called,
+.                               but block already dirty
+.                               => it does nothing
+clear_dirty()                 .
+- block marked clean          .
+- policy clear_dirty() called .
+
+Result: Block is marked clean even though it is actually dirty. No
+writeback will occur.
+
+Scenario B:
+
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+clear_dirty()                 .
+- block marked clean          .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called
+.                             - block marked dirty
+.                             - policy set_dirty() called
+- policy clear_dirty() called .
+
+Result: Block is properly marked as dirty, but policy thinks it is clean
+and therefore never asks us to writeback it.
+This case is visible in "dmsetup status" dirty block count (which
+normally decreases to 0 on a quiet device).
+
+Fix these issues by calling clear_dirty() before calling cell_defer().
+Incoming bios for that block will then be detained in the cell and
+released only after clear_dirty() has completed, so the race will not
+occur.
+
+Found by inspecting the code after noticing spurious dirty counts
+(scenario B).
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-cache-target.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -799,7 +799,6 @@ isert_disconnect_work(struct work_struct
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -873,8 +873,8 @@ static void migration_success_pre_commit
+ 	struct cache *cache = mg->cache;
  
- wake_up:
- 	complete(&isert_conn->conn_wait);
--	isert_put_conn(isert_conn);
+ 	if (mg->writeback) {
+-		cell_defer(cache, mg->old_ocell, false);
+ 		clear_dirty(cache, mg->old_oblock, mg->cblock);
++		cell_defer(cache, mg->old_ocell, false);
+ 		cleanup_migration(mg);
+ 		return;
+ 
+@@ -929,13 +929,13 @@ static void migration_success_post_commi
+ 		}
+ 
+ 	} else {
++		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		if (mg->requeue_holder)
+ 			cell_defer(cache, mg->new_ocell, true);
+ 		else {
+ 			bio_endio(mg->new_ocell->holder, 0);
+ 			cell_defer(cache, mg->new_ocell, false);
+ 		}
+-		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		cleanup_migration(mg);
+ 	}
  }
- 
- static void
-@@ -3235,6 +3234,7 @@ static void isert_wait_conn(struct iscsi
- 	wait_for_completion(&isert_conn->conn_wait_comp_err);
- 
- 	wait_for_completion(&isert_conn->conn_wait);
-+	isert_put_conn(isert_conn);
- }
- 
- static void isert_free_conn(struct iscsi_conn *conn)
 
 
