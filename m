@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603AbaJCWLF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:11:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46695 "EHLO
+	id S1757589AbaJCWLC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:11:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46701 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755607AbaJCWJW (ORCPT
+	with ESMTP id S1755681AbaJCWJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:09:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ross Lagerwall <ross.lagerwall@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: [PATCH 3.14 128/238] xen/manage: Always freeze/thaw processes when suspend/resuming
-Date: Fri,  3 Oct 2014 14:30:43 -0700
-Message-Id: <20141003212917.771403752@linuxfoundation.org>
+        Chris J Arges <chris.j.arges@canonical.com>,
+        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>
+Subject: [PATCH 3.16 340/357] ipvs: fix ipv6 hook registration for local replies
+Date: Fri,  3 Oct 2014 14:32:06 -0700
+Message-Id: <20141003212943.670084697@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,63 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ross Lagerwall <ross.lagerwall@citrix.com>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
+commit eb90b0c734ad793d5f5bf230a9e9a4dcc48df8aa upstream.
 
-Always freeze processes when suspending and thaw processes when resuming
-to prevent a race noticeable with HVM guests.
+commit fc604767613b6d2036cdc35b660bc39451040a47
+("ipvs: changes for local real server") from 2.6.37
+introduced DNAT support to local real server but the
+IPv6 LOCAL_OUT handler ip_vs_local_reply6() is
+registered incorrectly as IPv4 hook causing any outgoing
+IPv4 traffic to be dropped depending on the IP header values.
 
-This prevents a deadlock where the khubd kthread (which is designed to
-be freezable) acquires a usb device lock and then tries to allocate
-memory which requires the disk which hasn't been resumed yet.
-Meanwhile, the xenwatch thread deadlocks waiting for the usb device
-lock.
+Chris tracked down the problem to CONFIG_IP_VS_IPV6=y
+Bug report: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1349768
 
-Freezing processes fixes this because the khubd thread is only thawed
-after the xenwatch thread finishes resuming all the devices.
-
-Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Reported-by: Chris J Arges <chris.j.arges@canonical.com>
+Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/manage.c |    7 -------
- 1 file changed, 7 deletions(-)
+ net/netfilter/ipvs/ip_vs_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -111,16 +111,11 @@ static void do_suspend(void)
- 
- 	shutting_down = SHUTDOWN_SUSPEND;
- 
--#ifdef CONFIG_PREEMPT
--	/* If the kernel is preemptible, we need to freeze all the processes
--	   to prevent them from being in the middle of a pagetable update
--	   during suspend. */
- 	err = freeze_processes();
- 	if (err) {
- 		pr_err("%s: freeze failed %d\n", __func__, err);
- 		goto out;
- 	}
--#endif
- 
- 	err = dpm_suspend_start(PMSG_FREEZE);
- 	if (err) {
-@@ -169,10 +164,8 @@ out_resume:
- 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
- out_thaw:
--#ifdef CONFIG_PREEMPT
- 	thaw_processes();
- out:
--#endif
- 	shutting_down = SHUTDOWN_INVALID;
- }
- #endif	/* CONFIG_HIBERNATE_CALLBACKS */
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -1906,7 +1906,7 @@ static struct nf_hook_ops ip_vs_ops[] __
+ 	{
+ 		.hook		= ip_vs_local_reply6,
+ 		.owner		= THIS_MODULE,
+-		.pf		= NFPROTO_IPV4,
++		.pf		= NFPROTO_IPV6,
+ 		.hooknum	= NF_INET_LOCAL_OUT,
+ 		.priority	= NF_IP6_PRI_NAT_DST + 1,
+ 	},
 
 
