@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720AbaJCXBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:01:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47246 "EHLO
+	id S932798AbaJCXB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:01:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758233AbaJCWX4 (ORCPT
+	with ESMTP id S1757965AbaJCWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Douglas <adouglas@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 035/143] xtensa: fix address checks in dma_{alloc,free}_coherent
-Date: Fri,  3 Oct 2014 14:33:50 -0700
-Message-Id: <20141003213315.546420024@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.10 033/143] drm/radeon: add connector quirk for fujitsu board
+Date: Fri,  3 Oct 2014 14:33:48 -0700
+Message-Id: <20141003213315.490111140@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,55 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Douglas <adouglas@cadence.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 1ca49463c44c970b1ab1d71b0f268bfdf8427a7e upstream.
+commit 1952f24d0fa6292d65f886887af87ba8ac79b3ba upstream.
 
-Virtual address is translated to the XCHAL_KSEG_CACHED region in the
-dma_free_coherent, but is checked to be in the 0...XCHAL_KSEG_SIZE
-range.
+Vbios connector table lists non-existent VGA port.
 
-Change check for end of the range from 'addr >= X' to 'addr > X - 1' to
-handle the case of X == 0.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=83184
 
-Replace 'if (C) BUG();' construct with 'BUG_ON(C);'.
-
-Signed-off-by: Alan Douglas <adouglas@cadence.com>
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/pci-dma.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/xtensa/kernel/pci-dma.c
-+++ b/arch/xtensa/kernel/pci-dma.c
-@@ -49,9 +49,8 @@ dma_alloc_coherent(struct device *dev,si
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -463,6 +463,13 @@ static bool radeon_atom_apply_quirks(str
+ 		}
+ 	}
  
- 	/* We currently don't support coherent memory outside KSEG */
++	/* Fujitsu D3003-S2 board lists DVI-I as DVI-I and VGA */
++	if ((dev->pdev->device == 0x9805) &&
++	    (dev->pdev->subsystem_vendor == 0x1734) &&
++	    (dev->pdev->subsystem_device == 0x11bd)) {
++		if (*connector_type == DRM_MODE_CONNECTOR_VGA)
++			return false;
++	}
  
--	if (ret < XCHAL_KSEG_CACHED_VADDR
--	    || ret >= XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(ret < XCHAL_KSEG_CACHED_VADDR ||
-+	       ret > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
- 
- 
- 	if (ret != 0) {
-@@ -68,10 +67,11 @@ EXPORT_SYMBOL(dma_alloc_coherent);
- void dma_free_coherent(struct device *hwdev, size_t size,
- 			 void *vaddr, dma_addr_t dma_handle)
- {
--	long addr=(long)vaddr+XCHAL_KSEG_CACHED_VADDR-XCHAL_KSEG_BYPASS_VADDR;
-+	unsigned long addr = (unsigned long)vaddr +
-+		XCHAL_KSEG_CACHED_VADDR - XCHAL_KSEG_BYPASS_VADDR;
- 
--	if (addr < 0 || addr >= XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(addr < XCHAL_KSEG_CACHED_VADDR ||
-+	       addr > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
- 
- 	free_pages(addr, get_order(size));
+ 	return true;
  }
 
 
