@@ -1,97 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783AbaJCU5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:57:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939AbaJCU5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:57:48 -0400
-Date: Fri, 3 Oct 2014 16:57:23 -0400
-From: Rafael Aquini <aquini@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: John Stoffel <john@stoffel.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Damien Ramonda <damien.ramonda@intel.com>, Jan Kara <jack@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Larry Woodman <lwoodman@redhat.com>
-Subject: Re: [PATCH] mm readahead: Fix sys_readahead breakage by reverting
- 2MB limit (bug 79111)
-Message-ID: <20141003205722.GB30752@t510.redhat.com>
-References: <1404392547-11648-1-git-send-email-raghavendra.kt@linux.vnet.ibm.com>
- <CA+55aFxOTqUAqEF7+83s890Q18qCHSQqDOxWqWHNjG_25hVhXg@mail.gmail.com>
- <53B59CB5.9060004@linux.vnet.ibm.com>
- <CA+55aFyRgYW6Y8paYKGfqE205enhiPsZ1C8wrKpFavVXq7ZAtA@mail.gmail.com>
- <CA+55aFwwSCrH5QDvrzzyHhRU5R849Mo8A3NdRMwm9OTeWH9diQ@mail.gmail.com>
- <21429.45664.255694.85431@quad.stoffel.home>
- <CA+55aFwhpaTPm+mok0VmypU2T2yvYX=E4hnQwPC4NVdxEzfh0Q@mail.gmail.com>
+	id S1751962AbaJCVC2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:02:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37988 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaJCVCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:02:24 -0400
+Date: Fri, 3 Oct 2014 23:02:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
+Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC
+ filtering
+Message-ID: <20141003210213.GG6324@worktop.programming.kicks-ass.net>
+References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
+ <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
+ <20141003201409.GM10583@worktop.programming.kicks-ass.net>
+ <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
+ <CALCETrWfrWpdMCAYySMAMGCHU3XRkNGmeMTECTE=PXQUfjGPZA@mail.gmail.com>
+ <20141003204443.GP10583@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwhpaTPm+mok0VmypU2T2yvYX=E4hnQwPC4NVdxEzfh0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141003204443.GP10583@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 03, 2014 at 02:58:54PM -0700, Linus Torvalds wrote:
-> On Thu, Jul 3, 2014 at 12:43 PM, John Stoffel <john@stoffel.org> wrote:
-> >
-> > This is one of those perenial questions of how to tune this.  I agree
-> > we should increase the number, but shouldn't it be based on both the
-> > amount of memory in the machine, number of devices (or is it all just
-> > one big pool?) and the speed of the actual device doing readahead?
+On Fri, Oct 03, 2014 at 10:44:43PM +0200, Peter Zijlstra wrote:
+> On Fri, Oct 03, 2014 at 01:27:52PM -0700, Andy Lutomirski wrote:
+> > On Fri, Oct 3, 2014 at 1:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > >
+> > > We could make the rule be that RDPMC is enabled if a perf event is
+> > > mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
+> > > there's an actual performance issue first.  Ideally we can get this
+> > > all working with no API or ABI change at all.
+> > 
+> > No, we can't use that rule.  But we could say that RDPMC is enabled if
+> > a perf event is mmapped and no thread in the mm uses seccomp.  I'll
+> > grumble a little bit about adding yet another piece of seccomp state.
 > 
-> Sure. But I don't trust the throughput data for the backing device at
-> all, especially early at boot. We're supposed to work it out for
-> writeback over time (based on device contention etc), but I never saw
-> that working, and for reading I don't think we have even any code to
-> do so.
-> 
-> And trying to be clever and basing the read-ahead size on the node
-> memory size was what caused problems to begin with (with memory-less
-> nodes) that then made us just hardcode the maximum.
-> 
-> So there are certainly better options - in theory. In practice, I
-> think we don't really care enough, and the better options are
-> questionably implementable.
-> 
-> I _suspect_ the right number is in that 2-8MB range, and I would
-> prefer to keep it at the low end at least until somebody really has
-> numbers (and preferably from different real-life situations).
->
-> I also suspect that read-ahead is less of an issue with non-rotational
-> storage in general, since the only real reason for it tends to be
-> latency reduction (particularly the "readahead()" kind of big-hammer
-> thing that is really just useful for priming caches). So there's some
-> argument to say that it's getting less and less important.
->
+> Well, we could simply disable the RDPMC for everything TIF_SECCOMP.
+> Should be fairly straight fwd.
 
-I believe you're right, but yet we sort of broke the expectation for
-deliberately issued readaheads, and that is what I believe that fellow
-complained (poorly worded) at the bugzilla ticket. We recently got the
-following report: https://bugzilla.redhat.com/show_bug.cgi?id=1103240
-which pretty much is the same thing reported at kernel's BZ. I did some
-empirical tests with iozone (forcing madv_willneed behaviour) as well as
-I double-checked numbers our performance team got while running their
-regression tests and I, honestly, couldn't see any change for better or
-worse that could be directly related to the change in question.
 
-Other than setting a hard ceiling of to 2MB for any issued readahead,
-which might be seen as trouble for certain users, there seems to be no
-other measurable loss here. OTOH, the tangible gain after the change is 
-having the readahead working for NUMA layouts where some CPUs are within
-a memoryless node.
+Something like so.. slightly less ugly and possibly with more
+complicated conditions setting the cr4 if you want to fix tsc vs seccomp
+as well.
 
-I believe we could take David's (Rientjes) early suggestion and, instead
-of fixing a hard limit on max_sane_readahead(), change it to replace
-numa_node_id() by numa_mem_id() calls and follow up the
-CONFIG_HAVE_MEMORYLESS_NODES requirements on PPC to have it working
-properly (which seems to be the reason that approach was left aside).
+---
+ arch/x86/kernel/cpu/perf_event.c | 13 ++++++++++++-
+ arch/x86/kernel/process.c        | 24 +++++++++++++++++-------
+ 2 files changed, 29 insertions(+), 8 deletions(-)
 
-Best regards,
--- Rafael
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 16c73022306e..cfc42ff5d901 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1869,6 +1869,17 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+ 	return count;
+ }
+ 
++void perf_change_rdpmc(bool on, unsigned long *cr4)
++{
++	if (x86_pmu.attr_rdpmc_broken)
++		return;
++
++	if (on)
++		*cr4 |= X86_CR4_PCE;
++	else
++		*cr4 &= ~X86_CR4_PCE;
++}
++
+ static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
+ 
+ static struct attribute *x86_pmu_attrs[] = {
+@@ -1928,7 +1939,7 @@ void arch_perf_update_userpage(struct perf_event_mmap_page *userpg, u64 now)
+ 
+ 	userpg->cap_user_time = 0;
+ 	userpg->cap_user_time_zero = 0;
+-	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
++	userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc && test_thread_flag(TIF_SECCOMP);
+ 	userpg->pmc_width = x86_pmu.cntval_bits;
+ 
+ 	if (!sched_clock_stable())
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index e127ddaa2d5a..b74c0400851e 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -201,12 +201,15 @@ void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
+ 		      struct tss_struct *tss)
+ {
+ 	struct thread_struct *prev, *next;
++	struct thread_info *pi, *ni;
+ 
+ 	prev = &prev_p->thread;
+ 	next = &next_p->thread;
+ 
+-	if (test_tsk_thread_flag(prev_p, TIF_BLOCKSTEP) ^
+-	    test_tsk_thread_flag(next_p, TIF_BLOCKSTEP)) {
++	pi = task_thread_info(prev_p);
++	ni = task_thread_info(next_p);
++
++	if ((pi->flags & _TIF_BLOCKSTEP) ^ (ni->flags & _TIF_BLOCKSTEP)) {
+ 		unsigned long debugctl = get_debugctlmsr();
+ 
+ 		debugctl &= ~DEBUGCTLMSR_BTF;
+@@ -216,13 +219,20 @@ void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
+ 		update_debugctlmsr(debugctl);
+ 	}
+ 
+-	if (test_tsk_thread_flag(prev_p, TIF_NOTSC) ^
+-	    test_tsk_thread_flag(next_p, TIF_NOTSC)) {
++	if ((pi->flags & (_TIF_NOTSC | _TIF_SECCOMP)) ^
++	    (ni->flags & (_TIF_NOTSC | _TIF_SECCOMP))) {
++		extern void perf_change_rdpmc(bool, unsigned long *);
++		unsigned long cr4 = read_cr4();
++
+ 		/* prev and next are different */
+-		if (test_tsk_thread_flag(next_p, TIF_NOTSC))
+-			hard_disable_TSC();
++		if (ni->flags & _TIF_NOTSC)
++			cr4 |= X86_CR4_TSD;
+ 		else
+-			hard_enable_TSC();
++			cr4 &= ~X86_CR4_TSD;
++
++		perf_change_rdpmc(!(ni->flags & _TIF_SECCOMP), &cr4);
++
++		write_cr4(cr4);
+ 	}
+ 
+ 	if (test_tsk_thread_flag(next_p, TIF_IO_BITMAP)) {
