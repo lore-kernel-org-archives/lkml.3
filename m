@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105AbaJCQgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:36:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39939 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139AbaJCQgB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:36:01 -0400
-Date: Fri, 3 Oct 2014 09:35:59 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        fabio.falzoi84@gmail.com
-Subject: Re: [PATCH v3] staging: rts5208: Clean up coding style in rtsx_chip.c
-Message-ID: <20141003163559.GA12903@kroah.com>
-References: <542ECBCD.3050209@gmail.com>
+	id S1754151AbaJCQga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:36:30 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:38056 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752711AbaJCQg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:36:28 -0400
+X-IronPort-AV: E=Sophos;i="5.04,648,1406592000"; 
+   d="scan'208";a="177948840"
+Message-ID: <542ED08A.1090507@citrix.com>
+Date: Fri, 3 Oct 2014 17:36:26 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542ECBCD.3050209@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Ian Campbell <Ian.Campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
+References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com>	 <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com>	 <542EBB2A.6030104@citrix.com>	 <alpine.DEB.2.02.1410031717420.17038@kaball.uk.xensource.com> <1412354047.12695.38.camel@citrix.com>
+In-Reply-To: <1412354047.12695.38.camel@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 07:16:13PM +0300, Giedrius Statkevicius wrote:
-> Make the second line of a divided line match the opening paranthesis.
-> Combine two if's in form of 'if (a) if (b) { [...] }' into one to lower the indentation level.
-> To further lower indentation level and make the code more concise use the ternary operator where possible and sensible.
-> Make the names of labels all lower case to avoid Camel Case.
-> Remove unnecessary parantheses around variables that are after a dereference operator i.e. &(a) => &a
-> Switch the if condition around in 'if (0 == (value & (1 << bit))) {' to make it have the same form as the rest of the code.
-> Remove unnecessary braces in rtsx_enable_aspm() around one statement
+On 03/10/14 17:34, Ian Campbell wrote:
+> On Fri, 2014-10-03 at 17:20 +0100, Stefano Stabellini wrote:
+>> On Fri, 3 Oct 2014, David Vrabel wrote:
+>>> On 03/10/14 15:53, Stefano Stabellini wrote:
+>>>> Introduce support for new hypercall GNTTABOP_cache_flush.
+>>>> Use it to perform cache flashing on pages used for dma when necessary.
+>>> [..]
+>>>>  /* functions called by SWIOTLB */
+>>>> @@ -22,16 +25,31 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+>>>>  		size_t len = left;
+>>>>  		void *vaddr;
+>>>>  	
+>>>> +		if (len + offset > PAGE_SIZE)
+>>>> +			len = PAGE_SIZE - offset;
+>>>> +
+>>>>  		if (!pfn_valid(pfn))
+>>>>  		{
+>>>> -			/* TODO: cache flush */
+>>>> +			struct gnttab_cache_flush cflush;
+>>>> +
+>>>> +			cflush.op = 0;
+>>>> +			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
+>>>> +			cflush.offset = offset;
+>>>> +			cflush.size = len;
+>>>> +
+>>>> +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
+>>>> +				cflush.op = GNTTAB_CACHE_INVAL;
+>>>> +			if (op == dmac_map_area) {
+>>>> +				cflush.op = GNTTAB_CACHE_CLEAN;
+>>>> +				if (dir == DMA_FROM_DEVICE)
+>>>> +					cflush.op |= GNTTAB_CACHE_INVAL;
+>>>> +			}
+>>>
+>>> Are all these cache operations needed?  You do a clean on map regardless
+>>> of the direction and INVAL on map seems unnecessary.
 > 
-> After this patch checkpatch.pl without --strict doesn't complain about rtsx_chip.c at all and with --strict it only complains about the unmatched parantheses.
-> I am reluctant to move that code with unmatched parantheses into another function because I don't have the hardware needed to test this driver and don't have
-> enough experience to do it properly. Doing so would just probably hide the other problems this code has. My patch should be purely about changing the code style without
-> creating more functions and moving code to them. 
+> Isn't the inval on map so that the processor doesn't decide to
+> evict/clean the cache line all over your newly DMA'd data?
+
+Ah, yes that makes sense.
+
+>>> I would have thought it would be:
+>>>
+>>> map && (TO_DEVICE || BOTH)
+>>>    op = CLEAN
+>>>
+>>> unmap && (FROM_DEVICE || BOTH)
+>>>    op = INVAL
+>>
+>> I was trying to do the same thing Linux is already doing on native to
+>> stay on the safe side.
+>>
+>> See arch/arm/mm/cache-v7.S:v7_dma_map_area and
+>> arch/arm/mm/cache-v7.S:v7_dma_unmap_area.
+>>
+>> Unless I misread the assembly they should match.
 > 
-> This patch is against Greg KH's staging-next tree.
+> I think you have, beq doesn't set lr, so the called function will return
+> to its "grandparent". i.e. the caller of v7_dma_map_area in this case
+> (which will have used bl), so:
+> ENTRY(v7_dma_map_area)
+>         add     r1, r1, r0
+>         teq     r2, #DMA_FROM_DEVICE
+>         beq     v7_dma_inv_range
+>         b       v7_dma_clean_range
+> ENDPROC(v7_dma_map_area)
 > 
-> Signed-off-by: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
+> Is actually
+> 	if (dir == from device)
+> 		inv
+> 	else
+> 		clean
+> 
+> which makes much more sense I think.
 
-That is a _lot_ to do in just one patch (also note you should wrap your
-changelog text at 72 characters, like git asked you to...)
+This is how I read the assembler too.
 
-Please break this up into small, logical patches, each only doing one
-thing.  Trying to review a large patch like this is almost impossible.
-
-thanks,
-
-greg k-h
+David
