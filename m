@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072AbaJCXFj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:05:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47030 "EHLO
+	id S932398AbaJCXFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:05:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46891 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755713AbaJCWOH (ORCPT
+	with ESMTP id S1757839AbaJCWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 214/238] md/raid1: clean up request counts properly in close_sync()
-Date: Fri,  3 Oct 2014 14:32:09 -0700
-Message-Id: <20141003212920.502032932@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 213/238] media: adv7604: fix inverted condition
+Date: Fri,  3 Oct 2014 14:32:08 -0700
+Message-Id: <20141003212920.471355594@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,41 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit 669cc7ba77864e7b1ac39c9f2b2afb8730f341f4 upstream.
+commit 77639ff2b3404a913b8037d230a384798b854bae upstream.
 
-If there are outstanding writes when close_sync is called,
-the change to ->start_next_window might cause them to
-decrement the wrong counter when they complete.  Fix this
-by merging the two counters into the one that will be decremented.
+The log_status function should show HDMI information, but the test checking for
+an HDMI input was inverted. Fix this.
 
-Having an incorrect value in a counter can cause raise_barrier()
-to hangs, so this is suitable for -stable.
-
-Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/media/i2c/adv7604.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1548,8 +1548,13 @@ static void close_sync(struct r1conf *co
- 	mempool_destroy(conf->r1buf_pool);
- 	conf->r1buf_pool = NULL;
- 
-+	spin_lock_irq(&conf->resync_lock);
- 	conf->next_resync = 0;
- 	conf->start_next_window = MaxSector;
-+	conf->current_window_requests +=
-+		conf->next_window_requests;
-+	conf->next_window_requests = 0;
-+	spin_unlock_irq(&conf->resync_lock);
- }
- 
- static int raid1_spare_active(struct mddev *mddev)
+--- a/drivers/media/i2c/adv7604.c
++++ b/drivers/media/i2c/adv7604.c
+@@ -1984,7 +1984,7 @@ static int adv7604_log_status(struct v4l
+ 	v4l2_info(sd, "HDCP keys read: %s%s\n",
+ 			(hdmi_read(sd, 0x04) & 0x20) ? "yes" : "no",
+ 			(hdmi_read(sd, 0x04) & 0x10) ? "ERROR" : "");
+-	if (!is_hdmi(sd)) {
++	if (is_hdmi(sd)) {
+ 		bool audio_pll_locked = hdmi_read(sd, 0x04) & 0x01;
+ 		bool audio_sample_packet_detect = hdmi_read(sd, 0x18) & 0x01;
+ 		bool audio_mute = io_read(sd, 0x65) & 0x40;
 
 
