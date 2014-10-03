@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaJCR7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:59:18 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:37858 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaJCR7P (ORCPT
+	id S1754139AbaJCR7k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:59:40 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:41841 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaJCR7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:59:15 -0400
-Date: Fri, 3 Oct 2014 10:59:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 03/15] ACPI: Allow drivers to match using Device Tree
- compatible property
-Message-ID: <20141003175910.GB7507@dtor-ws>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1852462.V1jlbi8OPt@vostro.rjw.lan>
- <3582127.hCPY12ZqpT@vostro.rjw.lan>
- <20141003134303.GK26643@leverpostej>
+	Fri, 3 Oct 2014 13:59:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141003134303.GK26643@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141003174141.GR2342@redhat.com>
+References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
+ <20141003174141.GR2342@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 3 Oct 2014 10:59:15 -0700
+Message-ID: <CALCETrWP7QSb4dFh_phUK+7P-XookgL8UXgvHi-e4icukUF2Og@mail.gmail.com>
+Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC filtering
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Erik Bosman <ebn310@few.vu.nl>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 02:43:03PM +0100, Mark Rutland wrote:
-> Hi Rafael,
-> 
-> On Wed, Oct 01, 2014 at 03:10:40AM +0100, Rafael J. Wysocki wrote:
-> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > 
-> > We have lots of existing Device Tree enabled drivers and allocating
-> > separate _HID for each is not feasible. Instead we allocate special
-> > _HID "PRP0001" that means that the match should be done using Device
-> > Tree compatible property using driver's .of_match_table instead.
-> 
-> That's hopefully not the precise meaning of "PRP0001" unless we're
-> attempting no semblance of OS independence here?
-> 
-> I'm still of the opinion that marrying ACPI to existing (and often
-> ill-defined) DT bindings is a bad idea. While it's expedient, I believe
-> this is going to be a long-term maintenance nightmare.
-> 
-> I'm very concerned with the prospect of model mismatch between the two
-> (e.g. DT clocks properties where ACPI has traditionally been in charge
-> of clock management). I've not seen any high-level guidelines w.r.t.
-> what should live in _DSD properties and what should not (at least not in
-> the ACPI spec itself). There are almost certainly properties that only
-> make sense if !ACPI, and likely there will be some that only make sense
-> if ACPI.
-> 
-> So I think that in its current level of standardisation, _DSD only makes
-> sense for simple device properties, and not relationships between
-> devices, except where ACPI already has some kind of a model (which
-> currently seems to cover interrupts and GPIOs). I'd also hope that we
-> could expose a 'clean' subset of DT bidnings (i.e. those which aren't
-> known to be kept around only for compatibility with legacy DTBs).
-> 
-> I do not believe it makes sense to share such a low-level interface.
-> Given the aforementioned model differences, and the fact that we don't
-> need to support _every_ device tree binding, I don't see why this can't
-> be handled with separate probe paths in the drivers we care about (as we
-> already do for DT vs platform data).
+[cc's re-added]
 
-Because as a driver writer I do not want to implement N+1 ways of
-getting device configuration. I want one API that works independently of
-the underlying platform. The DT vs platform data is bad enough already.
+On Fri, Oct 3, 2014 at 10:41 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> Hi,
+>
+> On Fri, Oct 03, 2014 at 10:18:14AM -0700, Andy Lutomirski wrote:
+>> Weakness 2: On most configurations, most or all userspace processes
+>> have unrestricted access to RDPMC, which is even better than RDTSC
+>> for exploiting timing attacks.
+>
+> "User access of the RDPMC instruction is not guaranteed. Like RDTSC,
+> user access is controlled by a bit in CR4. CR4.PCE (bit-8) controls
+> whether or not a user program can execute the RDPMC instruction
+> without faulting"
+>
+> I don't think there's was a seccomp leak of RDPMC because of this, the
+> rdtsc and rdpmc seems to be linked to the same cr4 tweak.
 
-Thanks.
+RDPMC is controlled by CR4.PCE, whereas RDTSC is controlled by
+CR4.TSD, so, unless there's magic that I'm unaware of, seccomp never
+blocked RDPMC access.  I don't know whether circa-2008 kernels set PCE
+(or perhaps left it set if BIOS set it) at boot, but certainly almost
+everyone on any kernel for the last few years has RDPMC enabled in
+ring 3.
 
--- 
-Dmitry
+>
+> The vsyscall data was leaked right, but you can't compare the
+> two. Sure it's better to block that too but it's not comparable to
+> give tsc access to apps running under seccomp.
+>
+> The time of the day isn't secret either (ok it could be an issue if
+> you intend to run the system on some secret time in the past or future
+> but this sounds not a practical issue).
+>
+> What's not public info and should never be leaked to seccomp
+> sandboxes, is the tsc at that kind of cycle count granularity (and the
+> various gettimeofday variants with nanosecond granularity). I thought
+> RDPMC was blocked too with the same CR4 tweak... if that wasn't the
+> case and you could get tsc granular information into a seccomp
+> sandbox, that's not ok because it allows for covert channel attacks.
+
+The HPET very fine granularity.  It's slow to access, but that isn't
+necessarily a problem for attackers.
+
+I agree that this is problematic, and I want to fix it.  The trouble
+is that I'm not sure it's fixable in a sane manner with the current
+semantics.  CR4.PCE, in particular, will need to be a function of both
+per-thread state (PR_TSC_SIGSEGV) and per-mm state (whether perf_event
+self-monitoring is on).  Getting the context switching logic correct
+without hurting the common case too much will be quite complicated.
+
+On top of this, supporting something like PR_TSC_SIGSEGV per-thread
+using seccomp mode 2 should really be done by redirecting vdso-based
+timing to use syscalls, and that's fundamentally per mm.
+
+Hence my proposal of removing the current insecure model so that
+adding a secure variant will be straightforward, rather than trying to
+shoehorn a fix on top of the current ABI.
+
+The eventual fix could still disable the TSC in a strict seccomp task
+by default if the task is single threaded.  Yes, that won't quite
+cover old Chromium-style sandboxes, but those are rapidly being
+replaced by new designs using seccomp mode 2 anyway.
+
+Also, keep in mind that multithreaded attackers can exploit timing
+attacks without hardware help at all: one thread can just run a timing
+loop.
+
+--Andy
