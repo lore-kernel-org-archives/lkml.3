@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300AbaJCRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:49:26 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:49736 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaJCRtY (ORCPT
+	id S1753683AbaJCR7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:59:18 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:37858 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaJCR7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:49:24 -0400
-Message-ID: <542EE1A3.9050408@codeaurora.org>
-Date: Fri, 03 Oct 2014 10:49:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 3 Oct 2014 13:59:15 -0400
+Date: Fri, 3 Oct 2014 10:59:10 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 03/15] ACPI: Allow drivers to match using Device Tree
+ compatible property
+Message-ID: <20141003175910.GB7507@dtor-ws>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1852462.V1jlbi8OPt@vostro.rjw.lan>
+ <3582127.hCPY12ZqpT@vostro.rjw.lan>
+ <20141003134303.GK26643@leverpostej>
 MIME-Version: 1.0
-To: Georgi Djakov <gdjakov@mm-sol.com>
-CC: mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v1] clk: qcom: Add support for regmap clock dividers
-References: <1412097655-10662-1-git-send-email-gdjakov@mm-sol.com> <542D953F.3030701@codeaurora.org> <542EBCFE.9050602@mm-sol.com>
-In-Reply-To: <542EBCFE.9050602@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141003134303.GK26643@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/14 08:13, Georgi Djakov wrote:
-> On 10/02/2014 09:11 PM, Stephen Boyd wrote:
->> On 09/30/14 10:20, Georgi Djakov wrote:
->> +					unsigned long parent_rate)
->> +{
->> +	struct clk_regmap *rclk = to_clk_regmap(hw);
->> +	struct clkdiv_regmap *clkdiv = to_clkdiv_regmap(rclk);
->> +	unsigned int div, val;
->> +
->> +	regmap_read(rclk->regmap, clkdiv->reg, &val);
->> +	if (!val)
->> +		return parent_rate;
->> +
->> +	div = (val >> clkdiv->shift) & ((1 << clkdiv->width)-1);
->> +
->> +	return parent_rate / div;
->> I don't know if you saw the patch to split out the clk-divider.c logic
->> from the readl/writel patch I sent[1]? That could make this slightly
->> smaller.
->> tabl
-> Could you please provide a link to that patch?
+On Fri, Oct 03, 2014 at 02:43:03PM +0100, Mark Rutland wrote:
+> Hi Rafael,
+> 
+> On Wed, Oct 01, 2014 at 03:10:40AM +0100, Rafael J. Wysocki wrote:
+> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > 
+> > We have lots of existing Device Tree enabled drivers and allocating
+> > separate _HID for each is not feasible. Instead we allocate special
+> > _HID "PRP0001" that means that the match should be done using Device
+> > Tree compatible property using driver's .of_match_table instead.
+> 
+> That's hopefully not the precise meaning of "PRP0001" unless we're
+> attempting no semblance of OS independence here?
+> 
+> I'm still of the opinion that marrying ACPI to existing (and often
+> ill-defined) DT bindings is a bad idea. While it's expedient, I believe
+> this is going to be a long-term maintenance nightmare.
+> 
+> I'm very concerned with the prospect of model mismatch between the two
+> (e.g. DT clocks properties where ACPI has traditionally been in charge
+> of clock management). I've not seen any high-level guidelines w.r.t.
+> what should live in _DSD properties and what should not (at least not in
+> the ACPI spec itself). There are almost certainly properties that only
+> make sense if !ACPI, and likely there will be some that only make sense
+> if ACPI.
+> 
+> So I think that in its current level of standardisation, _DSD only makes
+> sense for simple device properties, and not relationships between
+> devices, except where ACPI already has some kind of a model (which
+> currently seems to cover interrupts and GPIOs). I'd also hope that we
+> could expose a 'clean' subset of DT bidnings (i.e. those which aren't
+> known to be kept around only for compatibility with legacy DTBs).
+> 
+> I do not believe it makes sense to share such a low-level interface.
+> Given the aforementioned model differences, and the fact that we don't
+> need to support _every_ device tree binding, I don't see why this can't
+> be handled with separate probe paths in the drivers we care about (as we
+> already do for DT vs platform data).
 
-Doh, here it is: https://lkml.org/lkml/2014/9/5/762
+Because as a driver writer I do not want to implement N+1 ways of
+getting device configuration. I want one API that works independently of
+the underlying platform. The DT vs platform data is bad enough already.
 
+Thanks.
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Dmitry
