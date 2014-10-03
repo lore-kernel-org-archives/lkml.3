@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758728AbaJCXcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:32:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46457 "EHLO
+	id S933112AbaJCXdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:33:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757373AbaJCWDw (ORCPT
+	with ESMTP id S1757362AbaJCWDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:52 -0400
+	Fri, 3 Oct 2014 18:03:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.16 327/357] media: vb2: fix vb2 state check when start_streaming fails
-Date: Fri,  3 Oct 2014 14:31:53 -0700
-Message-Id: <20141003212943.287825788@linuxfoundation.org>
+        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.14 112/238] ARM: dts: DRA7: fix interrupt-cells for GPIO
+Date: Fri,  3 Oct 2014 14:30:27 -0700
+Message-Id: <20141003212917.259859638@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,66 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit bf3593d939520559774cbfee03ba5f314d909620 upstream.
+commit e49d519c456f4fb6f4a0473bc04ba30bb805fce5 upstream.
 
-Commit bd994ddb2a12a3ff48cd549ec82cdceaea9614df (vb2: Fix stream start and
-buffer completion race) broke the buffer state check in vb2_buffer_done.
+GPIO modules are also interrupt sources. However, they require both the
+GPIO number and IRQ type to function properly.
 
-So accept all three possible states there since I can no longer tell the
-difference between vb2_buffer_done called from start_streaming or from
-elsewhere.
+By declaring that GPIO uses interrupt-cells=<1>, we essentially do not
+allow users of the nodes to use the interrupt property appropritely.
 
-Instead add a WARN_ON at the end of start_streaming that will check whether
-any buffers were added to the done list, since that implies that the wrong
-state was used as well.
+With this change, the following now works:
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+interrupt-parent = <&gpio6>;
+interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+
+Fixes: 6e58b8f1daaf ('ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board')
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/videobuf2-core.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/dra7.dtsi |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -1161,13 +1161,10 @@ void vb2_buffer_done(struct vb2_buffer *
- 	if (WARN_ON(vb->state != VB2_BUF_STATE_ACTIVE))
- 		return;
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -178,7 +178,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
  
--	if (!q->start_streaming_called) {
--		if (WARN_ON(state != VB2_BUF_STATE_QUEUED))
--			state = VB2_BUF_STATE_QUEUED;
--	} else if (WARN_ON(state != VB2_BUF_STATE_DONE &&
--			   state != VB2_BUF_STATE_ERROR)) {
--			state = VB2_BUF_STATE_ERROR;
--	}
-+	if (WARN_ON(state != VB2_BUF_STATE_DONE &&
-+		    state != VB2_BUF_STATE_ERROR &&
-+		    state != VB2_BUF_STATE_QUEUED))
-+		state = VB2_BUF_STATE_ERROR;
+ 		gpio2: gpio@48055000 {
+@@ -189,7 +189,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
  
- #ifdef CONFIG_VIDEO_ADV_DEBUG
- 	/*
-@@ -1774,6 +1771,12 @@ static int vb2_start_streaming(struct vb
- 		/* Must be zero now */
- 		WARN_ON(atomic_read(&q->owned_by_drv_count));
- 	}
-+	/*
-+	 * If done_list is not empty, then start_streaming() didn't call
-+	 * vb2_buffer_done(vb, VB2_BUF_STATE_QUEUED) but STATE_ERROR or
-+	 * STATE_DONE.
-+	 */
-+	WARN_ON(!list_empty(&q->done_list));
- 	return ret;
- }
+ 		gpio3: gpio@48057000 {
+@@ -200,7 +200,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
  
+ 		gpio4: gpio@48059000 {
+@@ -211,7 +211,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio5: gpio@4805b000 {
+@@ -222,7 +222,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio6: gpio@4805d000 {
+@@ -233,7 +233,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio7: gpio@48051000 {
+@@ -244,7 +244,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		gpio8: gpio@48053000 {
+@@ -255,7 +255,7 @@
+ 			gpio-controller;
+ 			#gpio-cells = <2>;
+ 			interrupt-controller;
+-			#interrupt-cells = <1>;
++			#interrupt-cells = <2>;
+ 		};
+ 
+ 		uart1: serial@4806a000 {
 
 
