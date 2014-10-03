@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaJCIbc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 04:31:32 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:59891 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaJCIb1 (ORCPT
+	id S1751488AbaJCIfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 04:35:25 -0400
+Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:47806 "EHLO
+	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750831AbaJCIfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 04:31:27 -0400
-Date: Fri, 3 Oct 2014 10:31:22 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:INTEL DRM DRIVERS..." <intel-gfx@lists.freedesktop.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH RFC 0/4] drm/core: restore suspend/resume calbacks in KMS
- drm drivers
-Message-ID: <20141003083121.GC16117@phenom.ffwll.local>
-Mail-Followup-To: Andrzej Hajda <a.hajda@samsung.com>,
-	"open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-	Kukjin Kim <kgene.kim@samsung.com>,
-	"open list:INTEL DRM DRIVERS..." <intel-gfx@lists.freedesktop.org>,
-	Seung-Woo Kim <sw0312.kim@samsung.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	Kyungmin Park <kyungmin.park@samsung.com>,
-	"moderated list:ARM/S5P EXYNOS AR..." <linux-samsung-soc@vger.kernel.org>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Marek Szyprowski <m.szyprowski@samsung.com>
-References: <1412324653-30677-1-git-send-email-a.hajda@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412324653-30677-1-git-send-email-a.hajda@samsung.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 3 Oct 2014 04:35:21 -0400
+Date: Fri, 3 Oct 2014 03:35:18 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Leon Romanovsky <leon@leon.nu>
+cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch resend] mm: page_alloc: fix zone allocation fairness on
+ UP
+In-Reply-To: <CALq1K=KYYXgtK5mRvBO_+Kdxt8nHmq-cquo1Qqj=UdB+TDrueA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410030333080.7898@gentwo.org>
+References: <20140909131540.GA10568@cmpxchg.org> <CALq1K=LFd_MWYUMGhZxu4yb-u5WcDqb=DvY4N3P+wV0WO3Zq_g@mail.gmail.com> <20140911123632.GA8296@cmpxchg.org> <CALq1K=KYYXgtK5mRvBO_+Kdxt8nHmq-cquo1Qqj=UdB+TDrueA@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 10:24:09AM +0200, Andrzej Hajda wrote:
-> The main intent of this patchset is to allow use of suspend/resume drm driver
-> callbacks in KMS drivers, as these callbacks seems to me the best place
-> to implement suspend/resume functionality in drm driver.
-> Implementing this functionality in master component driver PM ops is problematic
-> as those callbacks can be called asynchronously regardless of state/existence of
-> drm device, thus it would require additional synchronization mechanism.
-> 
-> Callbacks re-enabling requires small changes in i915 and exynos driver.
-> The patchset contains also fix of exynos resume callback.
+On Thu, 11 Sep 2014, Leon Romanovsky wrote:
 
-Nack.
+> >> I think the better way will be to apply Mel's patch
+> >> https://lkml.org/lkml/2014/9/8/214 which fix zone_page_state shadow casting
+> >> issue and convert all atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH])) to
+> >> zone_page__state(zone, NR_ALLOC_BATCH). This move will unify access to
+> >> vm_stat.
+> >
+> > It's not as simple.  The counter can go way negative and we need that
+> > negative number, not 0, to calculate the reset delta.  As I said in
+> > response to Mel's patch, we could make the vmstat API signed but I'm
+> > not convinced that is reasonable, given the 99% majority of usecases.
+> You are right, I missed that NR_ALLOC_BATCH is in use as a part of calculations
+> +                       high_wmark_pages(zone) - low_wmark_pages(zone) -
+> +                       atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
 
-Like completely and totally. The drm core has really no business doing
-hardware stuff, which includes runtime pm, system suspend and all that
-nonsense. It' an interface between userspace and drivers, with a big
-library to back it all up. Everything else just repeats the old midlayer
-mistake.
+How about creating __zone_page_state for zone_page_state without the 0
+check? That would be much nicer and would move the stuff to a central
+place. Given the nastiness of this issue there are bound to be more fixes
+coming up.
 
-If you driver needs this, do it there. Also, the component framework is
-probably the solution you're looking for. And if there are synchronization
-issues with that then we need to fix those instead of reinventing yet
-another half-assed broken wheel.
-
-Aside: With David Herrmann's latest patches to de-midlayer the drm
-init/teardown sequence the driver is in full control of when the drm data
-structures get allocate, initialized and registered. If you convert to
-that plus the component framework I'm pretty sure your problem is solved.
-
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
