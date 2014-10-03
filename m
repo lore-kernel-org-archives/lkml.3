@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441AbaJCSX5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 14:23:57 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:37726 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459AbaJCSXy (ORCPT
+	id S1754486AbaJCSZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 14:25:29 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:39244 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751922AbaJCSZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 14:23:54 -0400
+	Fri, 3 Oct 2014 14:25:28 -0400
+Message-ID: <542EEA13.8090105@kernel.dk>
+Date: Fri, 03 Oct 2014 12:25:23 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1412356087-16115-5-git-send-email-aarcange@redhat.com>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
-	<1412356087-16115-5-git-send-email-aarcange@redhat.com>
-Date: Fri, 3 Oct 2014 11:23:53 -0700
-X-Google-Sender-Auth: O1gSAC5la5rwbUhaxpMs-CIrhB4
-Message-ID: <CA+55aFyuYRuY9fiJQKL=XJ0-BKhGsZbo1HGkGUOJ6DbbxdA-dQ@mail.gmail.com>
-Subject: Re: [PATCH 04/17] mm: gup: make get_user_pages_fast and
- __get_user_pages_fast latency conscious
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: qemu-devel@nongnu.org, KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        "\\Dr. David Alan Gilbert\\" <dgilbert@redhat.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Kent Overstreet <kmo@daterainc.com>
+CC: linux-kernel@vger.kernel.org, Benjamin LaHaise <bcrl@kvack.org>,
+        Zach Brown <zab@zabbo.net>, Jeff Moyer <jmoyer@redhat.com>,
+        Slava Pestov <sp@daterainc.com>
+Subject: Re: [PATCH] aio: Fix return code of io_submit() (RFC)
+References: <1412359693-2535-1-git-send-email-kmo@daterainc.com> <542EE753.20005@kernel.dk> <20141003182151.GD17903@daterainc.com>
+In-Reply-To: <20141003182151.GD17903@daterainc.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 10:07 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> This teaches gup_fast and __gup_fast to re-enable irqs and
-> cond_resched() if possible every BATCH_PAGES.
+On 2014-10-03 12:21, Kent Overstreet wrote:
+> On Fri, Oct 03, 2014 at 12:13:39PM -0600, Jens Axboe wrote:
+>> On 2014-10-03 12:08, Kent Overstreet wrote:
+>>> io_submit() could return -EAGAIN on memory allocation failure when it should
+>>> really have been returning -ENOMEM. This could confuse applications (i.e. fio)
+>>> since -EAGAIN means "too many requests outstanding, wait until completions have
+>>> been reaped" and if the application actually was tracking outstanding
+>>> completions this wouldn't make a lot of sense.
+>>>
+>>> NOTE:
+>>>
+>>> the man page seems to imply that the current behaviour (-EAGAIN on allocation
+>>> failure) has always been the case. I don't think it makes a lot of sense, but
+>>> this should probably be discussed more widely in case applications have somehow
+>>> come to rely on the current behaviour...
+>>
+>> We can't really feasibly fix this, is my worry. Fio does track the pending
+>> requests and does not get into a getevents() forever wait if it gets -EAGAIN
+>> on submission. But before the fix, it would loop forever in submission in
+>> -EAGAIN.
+>>
+>> How are applications supposed to deal with ENOMEM? I think the answer here
+>> is that they can't, it would be a fatal condition. AIO must provide isn't
+>> own guarantee of progress, with a mempool or similar.
+>
+> Well, even though the AIO code doesn't currently return -ENOMEM we definitely do
+> have random other driver/filesystem code that will return -ENOMEM if a random
+> GFP_KERNEL allocation fails (e.g. the dio code, if allocating a struct dio
+> fails). So I think there's precedent for this, and having it be a fatal error
+> when the system is under major memory pressure is not a crazy thing to do too.
+>
+> But OTOH maybe we should just use a mempool there.
+>
+> The argument against making it a mempool would be "we don't want io_submit() to
+> block; even if that's not the case today, we at least have a chance of fixing it
+> with the current setup. If we can't allocate memory for our asynchronous state,
+> we really can't do anything there except block or fail".
 
-This is disgusting.
+It'll block anyway in other places, if we run out of resources there. 
+But good point on the other potential -ENOMEM cases, it's not a new 
+condition (potentially).
 
-Many (most?) __gup_fast() users just want a single page, and the
-stupid overhead of the multi-page version is already unnecessary.
-This just makes things much worse.
+> I'm not sure I have strong feelings one way or the other.
 
-Quite frankly, we should make a single-page version of __gup_fast(),
-and convert existign users to use that. After that, the few multi-page
-users could have this extra latency control stuff.
+Me neither...
 
-And yes, the single-page version of get_user_pages_fast() is actually
-latency-critical. shared futexes hit it hard, and yes, I've seen this
-in profiles.
+-- 
+Jens Axboe
 
-                  Linus
