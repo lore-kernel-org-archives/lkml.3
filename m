@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916AbaJCPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:08:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46796 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753855AbaJCPIV (ORCPT
+	id S1753791AbaJCPJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:09:23 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60588 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245AbaJCPJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:08:21 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: dan.carpenter@oracle.com
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND] net: pxa168_eth: avoid using signed char for bitops
-Date: Fri,  3 Oct 2014 17:08:19 +0200
-Message-Id: <1412348899-20586-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 3 Oct 2014 11:09:20 -0400
+Date: Fri, 3 Oct 2014 16:08:07 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
+Cc: shawn.guo@freescale.com, kernel@pengutronix.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, lgirdwood@gmail.com, perex@perex.cz,
+        tiwai@suse.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20141003150807.GD24441@sirena.org.uk>
+References: <1410854903-26419-1-git-send-email-d.lavnikevich@sam-solutions.com>
+ <1412342336-25700-1-git-send-email-d.lavnikevich@sam-solutions.com>
+ <1412342336-25700-5-git-send-email-d.lavnikevich@sam-solutions.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AkbCVLjbJ9qUtAXD"
+Content-Disposition: inline
+In-Reply-To: <1412342336-25700-5-git-send-email-d.lavnikevich@sam-solutions.com>
+X-Cookie: The coast was clear.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 4/4] ASoC: tlv320aic3x: fix PLL D configuration
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signedness bugs may occur when using signed char for bitops,
-depending on if the highest bit is ever used.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
----
+--AkbCVLjbJ9qUtAXD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Dan reported a static checker warning:
-http://marc.info/?l=kernel-janitors&m=141218246222535&w=2
+On Fri, Oct 03, 2014 at 04:18:56PM +0300, Dmitry Lavnikevich wrote:
+> Current caching implementation during regcache_sync() call bypasses
+> all register writes of values that are already known as default
+> (regmap reg_defaults). Same time in TLV320AIC3x codecs register 5
 
-This patch fixes it. Instead of using sa->sa_data we now use
-dev->dev_addr (of type unsigned char *) to avoid possible
-signedness issues.
+Applied, thanks.  This should really have been sent separately to the
+other patches - it's not in any way specific to the board and there's no
+dependency in either direction.
 
-Resend: this patch was sent alongside another series, an was
-considered part of the thread.
+--AkbCVLjbJ9qUtAXD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- drivers/net/ethernet/marvell/pxa168_eth.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 24de41231593..c3b209cd0660 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -634,12 +634,12 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
- 	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
- 	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
- 
--	mac_h = sa->sa_data[0] << 24;
--	mac_h |= sa->sa_data[1] << 16;
--	mac_h |= sa->sa_data[2] << 8;
--	mac_h |= sa->sa_data[3];
--	mac_l = sa->sa_data[4] << 8;
--	mac_l |= sa->sa_data[5];
-+	mac_h = dev->dev_addr[0] << 24;
-+	mac_h |= dev->dev_addr[1] << 16;
-+	mac_h |= dev->dev_addr[2] << 8;
-+	mac_h |= dev->dev_addr[3];
-+	mac_l = dev->dev_addr[4] << 8;
-+	mac_l |= dev->dev_addr[5];
- 	wrl(pep, MAC_ADDR_HIGH, mac_h);
- 	wrl(pep, MAC_ADDR_LOW, mac_l);
- 
--- 
-1.9.1
+iQEcBAEBAgAGBQJULrvWAAoJECTWi3JdVIfQtooH/j0VRfy0vVnHUBnkWD8aN55h
+H1Mn+9YdAXAGhgyq23BlFndWvmxRvDpj+CwN6vQpQTkn1na4QV9Uw3QKCdP22hBm
+ZUi/Y5BXkmi8dn5L26w0WPcV6/gfwSkemCy3WVPVlb1AFg1W8lkdfwuWlW26yxO2
+shuK8KXJ/BzNH8/N0fDi1aZcimpnxWVOBiYmJcpQc+BmNMm6kMPCNNHwTwq+Ij9h
+oePetN3sBFTm+n/X6tLV7t7nai11O/SWdAYt9/WmVXpCHGXIctdpYtLJ5fDWwocw
+dB2bWHbm263tVElpHhlKnEunGmQ0eGWCnmAbD3TS+FIZRMapq5AHuWdM808QYL8=
+=m9N/
+-----END PGP SIGNATURE-----
 
+--AkbCVLjbJ9qUtAXD--
