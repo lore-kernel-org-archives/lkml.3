@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340AbaJCVfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:35:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45102 "EHLO
+	id S1751583AbaJCVfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:35:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308AbaJCVfH (ORCPT
+	with ESMTP id S1755310AbaJCVfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:07 -0400
+	Fri, 3 Oct 2014 17:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Douglas <adouglas@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.16 102/357] xtensa: fix address checks in dma_{alloc,free}_coherent
-Date: Fri,  3 Oct 2014 14:28:08 -0700
-Message-Id: <20141003212936.540729465@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.16 104/357] xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
+Date: Fri,  3 Oct 2014 14:28:10 -0700
+Message-Id: <20141003212936.598149040@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,55 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Douglas <adouglas@cadence.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 1ca49463c44c970b1ab1d71b0f268bfdf8427a7e upstream.
+commit 7128039fe2dd3d59da9e4ffa036f3aaa3ba87b9f upstream.
 
-Virtual address is translated to the XCHAL_KSEG_CACHED region in the
-dma_free_coherent, but is checked to be in the 0...XCHAL_KSEG_SIZE
-range.
+Current definition of TLBTEMP_BASE_2 is always 32K above the
+TLBTEMP_BASE_1, whereas fast_second_level_miss handler for the TLBTEMP
+region analyzes virtual address bit (PAGE_SHIFT + DCACHE_ALIAS_ORDER)
+to determine TLBTEMP region where the fault happened. The size of the
+TLBTEMP region is also checked incorrectly: not 64K, but twice data
+cache way size (whicht may as well be less than the instruction cache
+way size).
 
-Change check for end of the range from 'addr >= X' to 'addr > X - 1' to
-handle the case of X == 0.
+Fix TLBTEMP_BASE_2 to be TLBTEMP_BASE_1 + data cache way size.
+Provide TLBTEMP_SIZE that is a greater of doubled data cache way size or
+the instruction cache way size, and use it to determine if the second
+level TLB miss occured in the TLBTEMP region.
 
-Replace 'if (C) BUG();' construct with 'BUG_ON(C);'.
+Practical occurence of page faults in the TLBTEMP area is extremely
+rare, this code can be tested by deletion of all w[di]tlb instructions
+in the tlbtemp_mapping region.
 
-Signed-off-by: Alan Douglas <adouglas@cadence.com>
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/kernel/pci-dma.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/xtensa/include/asm/pgtable.h |    7 ++++++-
+ arch/xtensa/kernel/entry.S        |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/arch/xtensa/kernel/pci-dma.c
-+++ b/arch/xtensa/kernel/pci-dma.c
-@@ -49,9 +49,8 @@ dma_alloc_coherent(struct device *dev,si
+--- a/arch/xtensa/include/asm/pgtable.h
++++ b/arch/xtensa/include/asm/pgtable.h
+@@ -67,7 +67,12 @@
+ #define VMALLOC_START		0xC0000000
+ #define VMALLOC_END		0xC7FEFFFF
+ #define TLBTEMP_BASE_1		0xC7FF0000
+-#define TLBTEMP_BASE_2		0xC7FF8000
++#define TLBTEMP_BASE_2		(TLBTEMP_BASE_1 + DCACHE_WAY_SIZE)
++#if 2 * DCACHE_WAY_SIZE > ICACHE_WAY_SIZE
++#define TLBTEMP_SIZE		(2 * DCACHE_WAY_SIZE)
++#else
++#define TLBTEMP_SIZE		ICACHE_WAY_SIZE
++#endif
  
- 	/* We currently don't support coherent memory outside KSEG */
+ /*
+  * For the Xtensa architecture, the PTE layout is as follows:
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1565,7 +1565,7 @@ ENTRY(fast_second_level_miss)
+ 	rsr	a0, excvaddr
+ 	bltu	a0, a3, 2f
  
--	if (ret < XCHAL_KSEG_CACHED_VADDR
--	    || ret >= XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(ret < XCHAL_KSEG_CACHED_VADDR ||
-+	       ret > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
+-	addi	a1, a0, -(2 << (DCACHE_ALIAS_ORDER + PAGE_SHIFT))
++	addi	a1, a0, -TLBTEMP_SIZE
+ 	bgeu	a1, a3, 2f
  
- 
- 	if (ret != 0) {
-@@ -68,10 +67,11 @@ EXPORT_SYMBOL(dma_alloc_coherent);
- void dma_free_coherent(struct device *hwdev, size_t size,
- 			 void *vaddr, dma_addr_t dma_handle)
- {
--	long addr=(long)vaddr+XCHAL_KSEG_CACHED_VADDR-XCHAL_KSEG_BYPASS_VADDR;
-+	unsigned long addr = (unsigned long)vaddr +
-+		XCHAL_KSEG_CACHED_VADDR - XCHAL_KSEG_BYPASS_VADDR;
- 
--	if (addr < 0 || addr >= XCHAL_KSEG_SIZE)
--		BUG();
-+	BUG_ON(addr < XCHAL_KSEG_CACHED_VADDR ||
-+	       addr > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
- 
- 	free_pages(addr, get_order(size));
- }
+ 	/* Check if we have to restore an ITLB mapping. */
 
 
