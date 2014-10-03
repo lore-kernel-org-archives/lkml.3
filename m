@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193AbaJCXpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:45:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
+	id S1758087AbaJCXpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:45:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278AbaJCWDd (ORCPT
+	with ESMTP id S1757275AbaJCWDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Taylor Braun-Jones <taylor.braun-jones@ge.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 089/238] USB: ftdi_sio: Add support for GE Healthcare Nemo Tracker device
-Date: Fri,  3 Oct 2014 14:30:04 -0700
-Message-Id: <20141003212916.527239295@linuxfoundation.org>
+        Aleksey Senin <alekseys@mellanox.com>,
+        Matan Barak <matanb@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.16 300/357] IB/core: When marshaling uverbs path, clear unused fields
+Date: Fri,  3 Oct 2014 14:31:26 -0700
+Message-Id: <20141003212942.492581294@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,45 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Taylor Braun-Jones <taylor.braun-jones@ge.com>
+From: Matan Barak <matanb@mellanox.com>
 
-commit 9c491c372d677b6420e0f8c6361fe422791662cc upstream.
+commit a59c5850f09b4c2d6ad2fc47e5e1be8d654529d6 upstream.
 
-Signed-off-by: Taylor Braun-Jones <taylor.braun-jones@ge.com>
-Cc: Johan Hovold <johan@kernel.org>
+When marsheling a user path to the kernel struct ib_sa_path, need
+to zero smac, dmac and set the vlan id to the "no vlan" value.
+
+Fixes: dd5f03beb4f7 ("IB/core: Ethernet L2 attributes in verbs/cm structures")
+Reported-by: Aleksey Senin <alekseys@mellanox.com>
+Signed-off-by: Matan Barak <matanb@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/infiniband/core/uverbs_marshall.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -952,6 +952,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_EKEY_CONV_USB_PID) },
- 	/* Infineon Devices */
- 	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
-+	/* GE Healthcare devices */
-+	{ USB_DEVICE(GE_HEALTHCARE_VID, GE_HEALTHCARE_NEMO_TRACKER_PID) },
- 	{ }					/* Terminating entry */
- };
- 
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1385,3 +1385,9 @@
-  * ekey biometric systems GmbH (http://ekey.net/)
-  */
- #define FTDI_EKEY_CONV_USB_PID		0xCB08	/* Converter USB */
+--- a/drivers/infiniband/core/uverbs_marshall.c
++++ b/drivers/infiniband/core/uverbs_marshall.c
+@@ -140,5 +140,9 @@ void ib_copy_path_rec_from_user(struct i
+ 	dst->packet_life_time	= src->packet_life_time;
+ 	dst->preference		= src->preference;
+ 	dst->packet_life_time_selector = src->packet_life_time_selector;
 +
-+/*
-+ * GE Healthcare devices
-+ */
-+#define GE_HEALTHCARE_VID		0x1901
-+#define GE_HEALTHCARE_NEMO_TRACKER_PID	0x0015
++	memset(dst->smac, 0, sizeof(dst->smac));
++	memset(dst->dmac, 0, sizeof(dst->dmac));
++	dst->vlan_id = 0xffff;
+ }
+ EXPORT_SYMBOL(ib_copy_path_rec_from_user);
 
 
