@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758560AbaJCWe1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:34:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47763 "EHLO
+	id S1758544AbaJCWeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:34:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755177AbaJCWeF (ORCPT
+	with ESMTP id S1755438AbaJCWeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:05 -0400
+	Fri, 3 Oct 2014 18:34:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <cwang@twopensource.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, Sergey Dyasly <dserrg@gmail.com>,
+        Sameer Nanda <snanda@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 123/143] perf: Fix a race condition in perf_remove_from_context()
-Date: Fri,  3 Oct 2014 14:35:18 -0700
-Message-Id: <20141003213318.177054379@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.10 142/143] oom_kill: add rcu_read_lock() into find_lock_task_mm()
+Date: Fri,  3 Oct 2014 14:35:37 -0700
+Message-Id: <20141003213318.729698290@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -34,63 +38,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <cwang@twopensource.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
+commit 4d4048be8a93769350efa31d2482a038b7de73d0 upstream.
 
-We saw a kernel soft lockup in perf_remove_from_context(),
-it looks like the `perf` process, when exiting, could not go
-out of the retry loop. Meanwhile, the target process was forking
-a child. So either the target process should execute the smp
-function call to deactive the event (if it was running) or it should
-do a context switch which deactives the event.
+find_lock_task_mm() expects it is called under rcu or tasklist lock, but
+it seems that at least oom_unkillable_task()->task_in_mem_cgroup() and
+mem_cgroup_out_of_memory()->oom_badness() can call it lockless.
 
-It seems we optimize out a context switch in perf_event_context_sched_out(),
-and what's more important, we still test an obsolete task pointer when
-retrying, so no one actually would deactive that event in this situation.
-Fix it directly by reloading the task pointer in perf_remove_from_context().
+Perhaps we could fix the callers, but this patch simply adds rcu lock
+into find_lock_task_mm().  This also allows to simplify a bit one of its
+callers, oom_kill_process().
 
-This should cure the above soft lockup.
-
-Signed-off-by: Cong Wang <cwang@twopensource.com>
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: Sergey Dyasly <dserrg@gmail.com>
+Cc: Sameer Nanda <snanda@chromium.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Cc: "Ma, Xindong" <xindong.ma@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ mm/oom_kill.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1398,6 +1398,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
- 	}
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -102,14 +102,19 @@ struct task_struct *find_lock_task_mm(st
+ {
+ 	struct task_struct *t;
  
-@@ -1829,6 +1834,11 @@ retry:
- 	 */
- 	if (ctx->is_active) {
- 		raw_spin_unlock_irq(&ctx->lock);
-+		/*
-+		 * Reload the task pointer, it might have been changed by
-+		 * a concurrent perf_event_context_sched_out().
-+		 */
-+		task = ctx->task;
- 		goto retry;
++	rcu_read_lock();
++
+ 	for_each_thread(p, t) {
+ 		task_lock(t);
+ 		if (likely(t->mm))
+-			return t;
++			goto found;
+ 		task_unlock(t);
  	}
++	t = NULL;
++found:
++	rcu_read_unlock();
  
+-	return NULL;
++	return t;
+ }
+ 
+ /* return true if the task is not adequate as candidate victim task. */
+@@ -461,10 +466,8 @@ void oom_kill_process(struct task_struct
+ 	}
+ 	read_unlock(&tasklist_lock);
+ 
+-	rcu_read_lock();
+ 	p = find_lock_task_mm(victim);
+ 	if (!p) {
+-		rcu_read_unlock();
+ 		put_task_struct(victim);
+ 		return;
+ 	} else if (victim != p) {
+@@ -490,6 +493,7 @@ void oom_kill_process(struct task_struct
+ 	 * That thread will now get access to memory reserves since it has a
+ 	 * pending fatal signal.
+ 	 */
++	rcu_read_lock();
+ 	for_each_process(p)
+ 		if (p->mm == mm && !same_thread_group(p, victim) &&
+ 		    !(p->flags & PF_KTHREAD)) {
 
 
