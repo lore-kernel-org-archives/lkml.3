@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182AbaJCPjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:39:23 -0400
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:49032 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753297AbaJCPgs (ORCPT
+	id S1753500AbaJCPle (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:41:34 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:33830 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489AbaJCPl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:36:48 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linux.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8723au: Fix "open brace '{' following struct go on the same line" errors
-Date: Fri,  3 Oct 2014 10:36:40 -0500
-Message-Id: <1412350600-30224-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 3 Oct 2014 11:41:29 -0400
+Message-ID: <542EC3A3.1060605@gmail.com>
+Date: Fri, 03 Oct 2014 17:41:23 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+To: Benoit Masson <benoitm@perenite.com>
+CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Benoit Masson <yahoo@perenite.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
+References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <-7443282711873112734@unknownmsgid> <20141003141102.GJ3895@titan.lakedaemon.net> <542EBB93.108@gmail.com> <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
+In-Reply-To: <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "open brace '{' following struct go on the same line" errors
+On 10/03/2014 05:29 PM, Benoit Masson wrote:
+> Le 3 oct. 2014 à 17:06, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
+>> On 10/03/2014 04:11 PM, Jason Cooper wrote:
+>>> On Sun, Sep 21, 2014 at 04:11:23PM +0200, Benoit Masson wrote:
+>>>>> Le 19 sept. 2014 à 22:14, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
+[...]
+>>>>> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
+>>>>> a hurry. I only compile tested this, so a formal Tested-by from Benoit
+>>>>> for the ix4 and any other Armada XP board would be great.
+>>>>
+>>>> I'm not sure what to test since I only receive some patch from the
+>>>> series of 8. Should I get all 8 or only those you sent me. I'll be
+>>>> able to test during next week.
+>>>
+>>> Did you ever get a chance to test this series?
+>>
+>> Uhm, I never prepared a branch for Benoit to test. I have pushed the
+>> patches with Thomas Acked-by's and renamed eeprom node based on
+>> v3.17-rc1 to
+>>
+>> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4
+>>
+[...]
+> Also I've noted you did some other patch for Armada XP not related to ix-4-300d,
+ > are they included here or should I get them too ?
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_security.c     | 3 +--
- drivers/staging/rtl8723au/include/rtl8723a_dm.h   | 3 +--
- drivers/staging/rtl8723au/include/rtl8723a_recv.h | 3 +--
- drivers/staging/rtl8723au/include/rtw_cmd.h       | 3 +--
- drivers/staging/rtl8723au/include/rtw_ht.h        | 3 +--
- drivers/staging/rtl8723au/include/rtw_mlme_ext.h  | 6 ++----
- 6 files changed, 7 insertions(+), 14 deletions(-)
+No, they are neither included nor is there any need to test. They are
+about pcie-lanes property but it is more or less unused on Linux.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_security.c b/drivers/staging/rtl8723au/core/rtw_security.c
-index 76371ae..c4c7326 100644
---- a/drivers/staging/rtl8723au/core/rtw_security.c
-+++ b/drivers/staging/rtl8723au/core/rtw_security.c
-@@ -23,8 +23,7 @@
- 
- #define CRC32_POLY 0x04c11db7
- 
--struct arc4context
--{
-+struct arc4context {
- 	u32 x;
- 	u32 y;
- 	u8 state[256];
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_dm.h b/drivers/staging/rtl8723au/include/rtl8723a_dm.h
-index 1811222..bf236e8 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_dm.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_dm.h
-@@ -37,8 +37,7 @@ enum{
- #define IQK_BB_REG_NUM			9
- #define HP_THERMAL_NUM		8
- /*  duplicate code,will move to ODM ######### */
--struct dm_priv
--{
-+struct dm_priv {
- 	u32	InitODMFlag;
- 
- 	/*  Upper and Lower Signal threshold for Rate Adaptive*/
-diff --git a/drivers/staging/rtl8723au/include/rtl8723a_recv.h b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-index 885d4d3..0109052 100644
---- a/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-+++ b/drivers/staging/rtl8723au/include/rtl8723a_recv.h
-@@ -35,8 +35,7 @@
- #define PHY_LINKQUALITY_SLID_WIN_MAX	20
- 
- 
--struct phy_stat
--{
-+struct phy_stat {
- 	unsigned int phydw0;
- 	unsigned int phydw1;
- 	unsigned int phydw2;
-diff --git a/drivers/staging/rtl8723au/include/rtw_cmd.h b/drivers/staging/rtl8723au/include/rtw_cmd.h
-index ef67068..8ffe5de 100644
---- a/drivers/staging/rtl8723au/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8723au/include/rtw_cmd.h
-@@ -450,8 +450,7 @@ struct getrfintfs_parm {
- 	u8	rfintfs;
- };
- 
--struct Tx_Beacon_param
--{
-+struct Tx_Beacon_param {
- 	struct wlan_bssid_ex network;
- };
- 
-diff --git a/drivers/staging/rtl8723au/include/rtw_ht.h b/drivers/staging/rtl8723au/include/rtw_ht.h
-index cfc947d..780eb89 100644
---- a/drivers/staging/rtl8723au/include/rtw_ht.h
-+++ b/drivers/staging/rtl8723au/include/rtw_ht.h
-@@ -19,8 +19,7 @@
- #include "linux/ieee80211.h"
- #include "wifi.h"
- 
--struct ht_priv
--{
-+struct ht_priv {
- 	bool	ht_option;
- 	bool	ampdu_enable;/* for enable Tx A-MPDU */
- 	/* u8	baddbareq_issued[16]; */
-diff --git a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-index 97c3c44..51dba1f 100644
---- a/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-+++ b/drivers/staging/rtl8723au/include/rtw_mlme_ext.h
-@@ -270,8 +270,7 @@ struct action_handler {
- 	int (*func)(struct rtw_adapter *padapter, struct recv_frame *precv_frame);
- };
- 
--struct	ss_res
--{
-+struct	ss_res {
- 	int	state;
- 	int	bss_cnt;
- 	int	channel_idx;
-@@ -318,8 +317,7 @@ struct FW_Sta_Info {
-  * 5. ... and so on, till survey done.
-  */
- 
--struct mlme_ext_info
--{
-+struct mlme_ext_info {
- 	u32	state;
- 	u32	reauth_count;
- 	u32	reassoc_count;
--- 
-1.9.1
+It is too late for v3.18 anyway, so I'll resend them once v3.18-rc1
+drops.
 
+> I'll test those over Sunday night.
+
+Ok, great!
+
+Sebastian
