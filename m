@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272AbaJCVyy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:54:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46026 "EHLO
+	id S1756843AbaJCVyq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:54:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45970 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202AbaJCVxm (ORCPT
+	with ESMTP id S932204AbaJCVxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 061/238] drm/radeon/dpm: set the thermal type properly for special configs
-Date: Fri,  3 Oct 2014 14:29:36 -0700
-Message-Id: <20141003212915.626774302@linuxfoundation.org>
+        Andrey Vagin <avagin@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 275/357] fs/notify: dont show f_handle if exportfs_encode_inode_fh failed
+Date: Fri,  3 Oct 2014 14:31:01 -0700
+Message-Id: <20141003212941.756856200@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,65 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit ff4377924f7e587c61bcbc704eafecf6c7bd2e00 upstream.
+commit 7e8824816bda16bb11ff5ff1e1212d642e57b0b3 upstream.
 
-On systems with special thermal configurations make sure we make
-note of the thermal setup.  This is required for proper firmware
-configuration on these systems.
+Currently we handle only ENOSPC.  In case of other errors the file_handle
+variable isn't filled properly and we will show a part of stack.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   26 +++++++++++++++++++-------
- 1 file changed, 19 insertions(+), 7 deletions(-)
+ fs/notify/fdinfo.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2273,19 +2273,31 @@ static void radeon_atombios_add_pplib_th
- 				 (controller->ucFanParameters &
- 				  ATOM_PP_FANPARAMETERS_NOFAN) ? "without" : "with");
- 			rdev->pm.int_thermal_type = THERMAL_TYPE_KV;
--		} else if ((controller->ucType ==
--			    ATOM_PP_THERMALCONTROLLER_EXTERNAL_GPIO) ||
--			   (controller->ucType ==
--			    ATOM_PP_THERMALCONTROLLER_ADT7473_WITH_INTERNAL) ||
--			   (controller->ucType ==
--			    ATOM_PP_THERMALCONTROLLER_EMC2103_WITH_INTERNAL)) {
--			DRM_INFO("Special thermal controller config\n");
-+		} else if (controller->ucType ==
-+			   ATOM_PP_THERMALCONTROLLER_EXTERNAL_GPIO) {
-+			DRM_INFO("External GPIO thermal controller %s fan control\n",
-+				 (controller->ucFanParameters &
-+				  ATOM_PP_FANPARAMETERS_NOFAN) ? "without" : "with");
-+			rdev->pm.int_thermal_type = THERMAL_TYPE_EXTERNAL_GPIO;
-+		} else if (controller->ucType ==
-+			   ATOM_PP_THERMALCONTROLLER_ADT7473_WITH_INTERNAL) {
-+			DRM_INFO("ADT7473 with internal thermal controller %s fan control\n",
-+				 (controller->ucFanParameters &
-+				  ATOM_PP_FANPARAMETERS_NOFAN) ? "without" : "with");
-+			rdev->pm.int_thermal_type = THERMAL_TYPE_ADT7473_WITH_INTERNAL;
-+		} else if (controller->ucType ==
-+			   ATOM_PP_THERMALCONTROLLER_EMC2103_WITH_INTERNAL) {
-+			DRM_INFO("EMC2103 with internal thermal controller %s fan control\n",
-+				 (controller->ucFanParameters &
-+				  ATOM_PP_FANPARAMETERS_NOFAN) ? "without" : "with");
-+			rdev->pm.int_thermal_type = THERMAL_TYPE_EMC2103_WITH_INTERNAL;
- 		} else if (controller->ucType < ARRAY_SIZE(pp_lib_thermal_controller_names)) {
- 			DRM_INFO("Possible %s thermal controller at 0x%02x %s fan control\n",
- 				 pp_lib_thermal_controller_names[controller->ucType],
- 				 controller->ucI2cAddress >> 1,
- 				 (controller->ucFanParameters &
- 				  ATOM_PP_FANPARAMETERS_NOFAN) ? "without" : "with");
-+			rdev->pm.int_thermal_type = THERMAL_TYPE_EXTERNAL;
- 			i2c_bus = radeon_lookup_i2c_gpio(rdev, controller->ucI2cLine);
- 			rdev->pm.i2c_bus = radeon_i2c_lookup(rdev, &i2c_bus);
- 			if (rdev->pm.i2c_bus) {
+--- a/fs/notify/fdinfo.c
++++ b/fs/notify/fdinfo.c
+@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
+ 	size = f.handle.handle_bytes >> 2;
+ 
+ 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
+-	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
++	if ((ret == FILEID_INVALID) || (ret < 0)) {
+ 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
+ 		return 0;
+ 	}
 
 
