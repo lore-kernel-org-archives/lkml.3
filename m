@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaJCVnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45261 "EHLO
+	id S1755282AbaJCVna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080AbaJCVmj (ORCPT
+	with ESMTP id S1755080AbaJCVnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:39 -0400
+	Fri, 3 Oct 2014 17:43:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 3.16 133/357] usb: hub: take hub->hdev reference when processing from eventlist
-Date: Fri,  3 Oct 2014 14:28:39 -0700
-Message-Id: <20141003212937.466500110@linuxfoundation.org>
+        Rob Clark <robdclark@gmail.com>, Will Deacon <will.deacon@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.16 186/357] ARM: 8149/1: perf: Dont sleep while atomic when enabling per-cpu interrupts
+Date: Fri,  3 Oct 2014 14:29:32 -0700
+Message-Id: <20141003212939.061220222@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,47 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <joe.lawrence@stratus.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit c605f3cdff53a743f6d875b76956b239deca1272 upstream.
+commit 505013bc9065391f09a51d51cd3bf0b06dfb570a upstream.
 
-During surprise device hotplug removal tests, it was observed that
-hub_events may try to call usb_lock_device on a device that has already
-been freed. Protect the usb_device by taking out a reference (under the
-hub_event_lock) when hub_events pulls it off the list, returning the
-reference after hub_events is finished using it.
+Rob Clark reports a sleeping while atomic bug when using perf.
 
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Suggested-by: David Bulkow <david.bulkow@stratus.com> for using kref
-Suggested-by: Alan Stern <stern@rowland.harvard.edu> for placement
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+BUG: sleeping function called from invalid context at ../kernel/locking/mutex.c:583
+in_atomic(): 1, irqs_disabled(): 128, pid: 0, name: swapper/0
+------------[ cut here ]------------
+WARNING: CPU: 2 PID: 4828 at ../kernel/locking/mutex.c:479 mutex_lock_nested+0x3a0/0x3e8()
+DEBUG_LOCKS_WARN_ON(in_interrupt())
+Modules linked in:
+CPU: 2 PID: 4828 Comm: Xorg.bin Tainted: G        W      3.17.0-rc3-00234-gd535c45-dirty #819
+[<c0216690>] (unwind_backtrace) from [<c0212174>] (show_stack+0x10/0x14)
+[<c0212174>] (show_stack) from [<c0867cc0>] (dump_stack+0x98/0xb8)
+[<c0867cc0>] (dump_stack) from [<c02492a4>] (warn_slowpath_common+0x70/0x8c)
+[<c02492a4>] (warn_slowpath_common) from [<c02492f0>] (warn_slowpath_fmt+0x30/0x40)
+[<c02492f0>] (warn_slowpath_fmt) from [<c086a3f8>] (mutex_lock_nested+0x3a0/0x3e8)
+[<c086a3f8>] (mutex_lock_nested) from [<c0294d08>] (irq_find_host+0x20/0x9c)
+[<c0294d08>] (irq_find_host) from [<c0769d50>] (of_irq_get+0x28/0x48)
+[<c0769d50>] (of_irq_get) from [<c057d104>] (platform_get_irq+0x1c/0x8c)
+[<c057d104>] (platform_get_irq) from [<c021a06c>] (cpu_pmu_enable_percpu_irq+0x14/0x38)
+[<c021a06c>] (cpu_pmu_enable_percpu_irq) from [<c02b1634>] (flush_smp_call_function_queue+0x88/0x178)
+[<c02b1634>] (flush_smp_call_function_queue) from [<c0214dc0>] (handle_IPI+0x88/0x160)
+[<c0214dc0>] (handle_IPI) from [<c0208930>] (gic_handle_irq+0x64/0x68)
+[<c0208930>] (gic_handle_irq) from [<c0212d04>] (__irq_svc+0x44/0x5c)
+Exception stack(0xe63ddea0 to 0xe63ddee8)
+dea0: 00000001 00000001 00000000 c2f3b200 c16db380 c032d4a0 e63ddf40 60010013
+dec0: 00000000 001fbfd4 00000100 00000000 00000001 e63ddee8 c0284770 c02a2e30
+dee0: 20010013 ffffffff
+[<c0212d04>] (__irq_svc) from [<c02a2e30>] (ktime_get_ts64+0x1c8/0x200)
+[<c02a2e30>] (ktime_get_ts64) from [<c032d4a0>] (poll_select_set_timeout+0x60/0xa8)
+[<c032d4a0>] (poll_select_set_timeout) from [<c032df64>] (SyS_select+0xa8/0x118)
+[<c032df64>] (SyS_select) from [<c020e8e0>] (ret_fast_syscall+0x0/0x48)
+---[ end trace 0bb583b46342da6f ]---
+INFO: lockdep is turned off.
+
+We don't really need to get the platform irq again when we're
+enabling or disabling the per-cpu irq. Furthermore, we don't
+really need to set and clear bits in the active_irqs bitmask
+because that's only used in the non-percpu irq case to figure out
+when the last CPU PMU has been disabled. Just pass the irq
+directly to the enable/disable functions to clean all this up.
+This should be slightly more efficient and also fix the
+scheduling while atomic bug.
+
+Fixes: bbd64559376f "ARM: perf: support percpu irqs for the CPU PMU"
+
+Reported-by: Rob Clark <robdclark@gmail.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/kernel/perf_event_cpu.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -5008,9 +5008,10 @@ static void hub_events(void)
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -76,21 +76,15 @@ static struct pmu_hw_events *cpu_pmu_get
  
- 		hub = list_entry(tmp, struct usb_hub, event_list);
- 		kref_get(&hub->kref);
-+		hdev = hub->hdev;
-+		usb_get_dev(hdev);
- 		spin_unlock_irq(&hub_event_lock);
+ static void cpu_pmu_enable_percpu_irq(void *data)
+ {
+-	struct arm_pmu *cpu_pmu = data;
+-	struct platform_device *pmu_device = cpu_pmu->plat_device;
+-	int irq = platform_get_irq(pmu_device, 0);
++	int irq = *(int *)data;
  
--		hdev = hub->hdev;
- 		hub_dev = hub->intfdev;
- 		intf = to_usb_interface(hub_dev);
- 		dev_dbg(hub_dev, "state %d ports %d chg %04x evt %04x\n",
-@@ -5123,6 +5124,7 @@ static void hub_events(void)
- 		usb_autopm_put_interface(intf);
-  loop_disconnected:
- 		usb_unlock_device(hdev);
-+		usb_put_dev(hdev);
- 		kref_put(&hub->kref, hub_release);
+ 	enable_percpu_irq(irq, IRQ_TYPE_NONE);
+-	cpumask_set_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
+ }
  
- 	} /* end while (1) */
+ static void cpu_pmu_disable_percpu_irq(void *data)
+ {
+-	struct arm_pmu *cpu_pmu = data;
+-	struct platform_device *pmu_device = cpu_pmu->plat_device;
+-	int irq = platform_get_irq(pmu_device, 0);
++	int irq = *(int *)data;
+ 
+-	cpumask_clear_cpu(smp_processor_id(), &cpu_pmu->active_irqs);
+ 	disable_percpu_irq(irq);
+ }
+ 
+@@ -103,7 +97,7 @@ static void cpu_pmu_free_irq(struct arm_
+ 
+ 	irq = platform_get_irq(pmu_device, 0);
+ 	if (irq >= 0 && irq_is_percpu(irq)) {
+-		on_each_cpu(cpu_pmu_disable_percpu_irq, cpu_pmu, 1);
++		on_each_cpu(cpu_pmu_disable_percpu_irq, &irq, 1);
+ 		free_percpu_irq(irq, &percpu_pmu);
+ 	} else {
+ 		for (i = 0; i < irqs; ++i) {
+@@ -138,7 +132,7 @@ static int cpu_pmu_request_irq(struct ar
+ 				irq);
+ 			return err;
+ 		}
+-		on_each_cpu(cpu_pmu_enable_percpu_irq, cpu_pmu, 1);
++		on_each_cpu(cpu_pmu_enable_percpu_irq, &irq, 1);
+ 	} else {
+ 		for (i = 0; i < irqs; ++i) {
+ 			err = 0;
 
 
