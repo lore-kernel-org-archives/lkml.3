@@ -1,151 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633AbaJCXx0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:53:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63083 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759219AbaJCXxX (ORCPT
+	id S1758985AbaJCXwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:52:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161AbaJCVxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:53:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Date: Sat, 04 Oct 2014 02:13:23 +0200
-Message-ID: <6568619.UkU5qISONv@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141003143547.GP26643@leverpostej>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <7198018.2Bqkjlecz2@vostro.rjw.lan> <20141003143547.GP26643@leverpostej>
+	Fri, 3 Oct 2014 17:53:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Pratyush Anand <pratyush.anand@st.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.16 266/357] usb: dwc3: fix TRB completion when multiple TRBs are started
+Date: Fri,  3 Oct 2014 14:30:52 -0700
+Message-Id: <20141003212941.487301691@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 03, 2014 03:35:47 PM Mark Rutland wrote:
-> On Fri, Oct 03, 2014 at 03:38:49PM +0100, Rafael J. Wysocki wrote:
-> > On Friday, October 03, 2014 02:58:26 PM Mark Rutland wrote:
-> > > On Fri, Oct 03, 2014 at 03:03:51AM +0100, Rafael J. Wysocki wrote:
-> > > > On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
-> > > > > On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
-> > > > > > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
-> > > > 
-> > > > [cut]
-> > > > 
-> > > > > 
-> > > > > Putting everything to a single package results this:
-> > > > > 
-> > > > > 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
-> > > > > 
-> > > > > But I think the below looks better:
-> > > > 
-> > > > I agree.
-> > > > 
-> > > > > 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
-> > > > > 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
-> > > > > 
-> > > > > and it is trivial to match with the corresponding DT fragment.
-> > > > > 
-> > > > > > 	}
-> > > > > > 
-> > > > > > vs.
-> > > > > > 
-> > > > > > 	pwm-slave {
-> > > > > > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
-> > > > > > 		pwm-names = "led-red", "led-green";
-> > > > > > 	};
-> > > > > > 
-> > > > > 
-> > > > > I don't have strong feelings which way it should be. The current
-> > > > > implementation limits references so that you can have only integer
-> > > > > arguments, like {ref0, int, int, ref1, int} but if people think it is
-> > > > > better to allow strings there as well, it can be changed.
-> > > > > 
-> > > > > I would like to get comments from Darren and Rafael about this, though.
-> > > > 
-> > > > In my opinion there needs to be a "canonical" representation of the
-> > > > binding that people always can expect to work.  It seems reasonable to
-> > > > use the one exactly matching the DT representation for that.
-> > > 
-> > > I don't follow. The two forms would share the same high-level accessors,
-> > > but the binary representation is already different. Why should we choose
-> > > the inferior layout given they are already different binary formats?
-> > 
-> > Well, why is it inferior in the first place?  It represents the same information
-> > and I'm not sure why the binary formats matter here?
-> 
-> Because people get the format wrong regardless of documentation. The
-> format:
-> 
-> Package () {
-> 	Package () { ^ref1, data, data },
-> 	Package () { ^ref2, data },
-> 	Package () { ^ref3, data, data, data },
-> }
-> 
-> Is superior to the format:
-> 
-> Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
-> 
-> Because in the former you have delimiters that can be used to verify
-> each tuple. Imagine someone misses a data element for one of these
-> tuples. In the former layout you can detect this easily while in the
-> latter you cannot.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-I agree with this particular thing (although other people seem to have
-problems with too many package nesting levels) but I'm not sure what that
-has to do with the example given above (let me quote again):
+------------------
 
-> Putting everything to a single package results this:
-> 
-> 	Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
-> 
-> But I think the below looks better:
-> 
-> 	Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
-> 	Package () { "pwm-names", Package () {"led-red", "led-green"}}
-> 
-> and it is trivial to match with the corresponding DT fragment.
+From: Felipe Balbi <balbi@ti.com>
 
-that I was commenting.  Both cases contains the
+commit 0b93a4c838fa10370d72f86fe712426ac63804de upstream.
 
-	Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
+After commit 2ec2a8be (usb: dwc3: gadget:
+always enable IOC on bulk/interrupt transfers)
+we created a situation where it was possible to
+hang a bulk/interrupt endpoint if we had more
+than one pending request in our queue and they
+were both started with a single Start Transfer
+command.
 
-format that you don't like, don't they?
+The problems triggers because we had not enabled
+Transfer In Progress event for those endpoints
+and we were not able to process early giveback
+of requests completed without LST bit set.
 
-> Additionally, the former can represent variadic phandle/reference + args
-> formats, which the latter cannot. The DT pinctrl bindings look the way
-> they do because we can't represent variadic args in DT due to a lack of
-> delimiters.
-> 
-> You have the ability to embed structure in the binary format. Throwing
-> this away because it doesn't quite match DT does not to me sounds like
-> the right tradeoff.
-> 
-> > If I'm to create a _DSD with that information and have a DT template, it
-> > surely is easier to copy it exactly than to figure out how to resolve it
-> > to represent something I can actually put in there. 
-> 
-> Sure, you can put something together fast. However, that doesn't make it
-> necessarily better.
-> 
-> If you want to make reusing DT templates easier, why not just embed a
-> DTB and be done with it?
+Fix the problem by finally enabling Xfer In Progress
+event for all endpoint types, except control.
 
-Because that sucks?
+Fixes: 2ec2a8be (usb: dwc3: gadget: always
+	enable IOC on bulk/interrupt transfers)
+Reported-by: Pratyush Anand <pratyush.anand@st.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+
+---
+ drivers/usb/dwc3/gadget.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -527,7 +527,7 @@ static int dwc3_gadget_set_ep_config(str
+ 		dep->stream_capable = true;
+ 	}
+ 
+-	if (usb_endpoint_xfer_isoc(desc))
++	if (!usb_endpoint_xfer_control(desc))
+ 		params.param1 |= DWC3_DEPCFG_XFER_IN_PROGRESS_EN;
+ 
+ 	/*
+@@ -2042,12 +2042,6 @@ static void dwc3_endpoint_interrupt(stru
+ 		dwc3_endpoint_transfer_complete(dwc, dep, event, 1);
+ 		break;
+ 	case DWC3_DEPEVT_XFERINPROGRESS:
+-		if (!usb_endpoint_xfer_isoc(dep->endpoint.desc)) {
+-			dev_dbg(dwc->dev, "%s is not an Isochronous endpoint\n",
+-					dep->name);
+-			return;
+-		}
+-
+ 		dwc3_endpoint_transfer_complete(dwc, dep, event, 0);
+ 		break;
+ 	case DWC3_DEPEVT_XFERNOTREADY:
+
+
