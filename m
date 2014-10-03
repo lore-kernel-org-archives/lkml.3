@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366AbaJCWWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:22:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46906 "EHLO
+	id S1758212AbaJCWWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:22:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46909 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757977AbaJCWOJ (ORCPT
+	with ESMTP id S1757979AbaJCWOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:14:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brassow Jonathan <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 221/238] md/raid1: intialise start_next_window for READ case to avoid hang
-Date: Fri,  3 Oct 2014 14:32:16 -0700
-Message-Id: <20141003212920.734914088@linuxfoundation.org>
+        Julian Anastasov <ja@ssi.bg>, Hans Schillstrom <hans@schillstrom.com>,
+        Simon Horman <horms@verge.net.au>
+Subject: [PATCH 3.14 222/238] ipvs: avoid netns exit crash on ip_vs_conn_drop_conntrack
+Date: Fri,  3 Oct 2014 14:32:17 -0700
+Message-Id: <20141003212920.767365103@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,33 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Julian Anastasov <ja@ssi.bg>
 
-commit f0cc9a057151892b885be21a1d19b0185568281d upstream.
+commit 2627b7e15c5064ddd5e578e4efd948d48d531a3f upstream.
 
-r1_bio->start_next_window is not initialised in the READ
-case, so allow_barrier may incorrectly decrement
-   conf->current_window_requests
-which can cause raise_barrier() to block forever.
+commit 8f4e0a18682d91 ("IPVS netns exit causes crash in conntrack")
+added second ip_vs_conn_drop_conntrack call instead of just adding
+the needed check. As result, the first call still can cause
+crash on netns exit. Remove it.
 
-Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
-Reported-by: Brassow Jonathan <jbrassow@redhat.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Julian Anastasov <ja@ssi.bg>
+Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
+Signed-off-by: Simon Horman <horms@verge.net.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/netfilter/ipvs/ip_vs_conn.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -1185,6 +1185,7 @@ read_again:
- 				   atomic_read(&bitmap->behind_writes) == 0);
- 		}
- 		r1_bio->read_disk = rdisk;
-+		r1_bio->start_next_window = 0;
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -797,7 +797,6 @@ static void ip_vs_conn_expire(unsigned l
+ 			ip_vs_control_del(cp);
  
- 		read_bio = bio_clone_mddev(bio, GFP_NOIO, mddev);
- 		bio_trim(read_bio, r1_bio->sector - bio->bi_iter.bi_sector,
+ 		if (cp->flags & IP_VS_CONN_F_NFCT) {
+-			ip_vs_conn_drop_conntrack(cp);
+ 			/* Do not access conntracks during subsys cleanup
+ 			 * because nf_conntrack_find_get can not be used after
+ 			 * conntrack cleanup for the net.
 
 
