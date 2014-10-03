@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529AbaJCWXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:23:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46760 "EHLO
+	id S932514AbaJCWXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:23:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47041 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757965AbaJCWOI (ORCPT
+	with ESMTP id S1757966AbaJCWOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:14:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.14 218/238] md/raid1: update next_resync under resync_lock.
-Date: Fri,  3 Oct 2014 14:32:13 -0700
-Message-Id: <20141003212920.641752483@linuxfoundation.org>
+Subject: [PATCH 3.14 217/238] md/raid1: Dont use next_resync to determine how far resync has progressed
+Date: Fri,  3 Oct 2014 14:32:12 -0700
+Message-Id: <20141003212920.603420127@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,54 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit c2fd4c94deedb89ac1746c4a53219be499372c06 upstream.
+commit 235549605eb7f1c5a37cef8b09d12e6d412c5cd6 upstream.
 
-raise_barrier() uses next_resync as part of its calculations, so it
-really should be updated first, instead of afterwards.
+next_resync is (approximately) the location for the next resync request.
+However it does *not* reliably determine the earliest location
+at which resync might be happening.
+This is because resync requests can complete out of order, and
+we only limit the number of current requests, not the distance
+from the earliest pending request to the latest.
 
-next_resync is always used under resync_lock so update it under
-resync lock to, just before it is used.  That is safest.
+mddev->curr_resync_completed is a reliable indicator of the earliest
+position at which resync could be happening.   It is updated less
+frequently, but is actually reliable which is more important.
 
-This could cause normal IO and resync IO to interact badly so
-it suitable for -stable.
+So use it to determine if a write request is before the region
+being resynced and so safe from conflict.
+
+This error can allow resync IO to interfere with normal IO which
+could lead to data corruption. Hence: stable.
 
 Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/raid1.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
 --- a/drivers/md/raid1.c
 +++ b/drivers/md/raid1.c
-@@ -827,7 +827,7 @@ static void flush_pending_writes(struct
-  *    there is no normal IO happeing.  It must arrange to call
-  *    lower_barrier when the particular background IO completes.
-  */
--static void raise_barrier(struct r1conf *conf)
-+static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
- {
- 	spin_lock_irq(&conf->resync_lock);
+@@ -875,12 +875,10 @@ static bool need_to_wait_for_sync(struct
+ 	if (conf->array_frozen || !bio)
+ 		wait = true;
+ 	else if (conf->barrier && bio_data_dir(bio) == WRITE) {
+-		if (conf->next_resync < RESYNC_WINDOW_SECTORS)
+-			wait = true;
+-		else if ((conf->next_resync - RESYNC_WINDOW_SECTORS
+-				>= bio_end_sector(bio)) ||
+-			 (conf->next_resync + NEXT_NORMALIO_DISTANCE
+-				<= bio->bi_iter.bi_sector))
++		if ((conf->mddev->curr_resync_completed
++		     >= bio_end_sector(bio)) ||
++		    (conf->next_resync + NEXT_NORMALIO_DISTANCE
++		     <= bio->bi_iter.bi_sector))
+ 			wait = false;
+ 		else
+ 			wait = true;
+@@ -918,7 +916,7 @@ static sector_t wait_barrier(struct r1co
  
-@@ -837,6 +837,7 @@ static void raise_barrier(struct r1conf
- 
- 	/* block any new IO from starting */
- 	conf->barrier++;
-+	conf->next_resync = sector_nr;
- 
- 	/* For these conditions we must wait:
- 	 * A: while the array is in frozen state
-@@ -2542,9 +2543,8 @@ static sector_t sync_request(struct mdde
- 
- 	bitmap_cond_end_sync(mddev->bitmap, sector_nr);
- 	r1_bio = mempool_alloc(conf->r1buf_pool, GFP_NOIO);
--	raise_barrier(conf);
- 
--	conf->next_resync = sector_nr;
-+	raise_barrier(conf, sector_nr);
- 
- 	rcu_read_lock();
- 	/*
+ 	if (bio && bio_data_dir(bio) == WRITE) {
+ 		if (bio->bi_iter.bi_sector >=
+-		    conf->next_resync) {
++		    conf->mddev->curr_resync_completed) {
+ 			if (conf->start_next_window == MaxSector)
+ 				conf->start_next_window =
+ 					conf->next_resync +
 
 
