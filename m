@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761517AbaJDA41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:56:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
+	id S1757994AbaJDA4Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:56:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868AbaJCVca (ORCPT
+	with ESMTP id S1754871AbaJCVca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.16 003/357] carl9170: fix sending URBs with wrong type when using full-speed
-Date: Fri,  3 Oct 2014 14:26:29 -0700
-Message-Id: <20141003212933.570950243@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: [PATCH 3.16 004/357] drm/tegra: add MODULE_DEVICE_TABLEs
+Date: Fri,  3 Oct 2014 14:26:30 -0700
+Message-Id: <20141003212933.606207790@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,102 +29,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ronald Wahl <ronald.wahl@raritan.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 671796dd96b6cd85b75fba9d3007bcf7e5f7c309 upstream.
+commit ef70728c7a6571a1a7115031e932b811f1740b2e upstream.
 
-The driver assumes that endpoint 4 is always an interrupt endpoint.
-Unfortunately the type differs between high-speed and full-speed
-configurations while in the former case it is indeed an interrupt
-endpoint this is not true for the latter case - here it is a bulk
-endpoint. When sending URBs with the wrong type the kernel will
-generate a warning message including backtrace. In this specific
-case there will be a huge amount of warnings which can bring the system
-to freeze.
+When tegra-drm.ko is built as a module, these MODULE_DEVICE_TABLEs allow
+the module to be auto-loaded since the module will match the devices
+instantiated from device tree.
 
-To fix this we are now sending URBs to endpoint 4 using the type
-found in the endpoint descriptor.
+(Notes for stable: in 3.14+, just git rm any conflicting file, since they
+are added in later kernels. For 3.13 and below, manual merging will be
+needed)
 
-A side note: The carl9170 firmware currently specifies endpoint 4 as
-interrupt endpoint even in the full-speed configuration but this has
-no relevance because before this firmware is loaded the endpoint type
-is as described above and after the firmware is running the stick is not
-reenumerated and so the old descriptor is used.
-
-Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/carl9170/carl9170.h |    1 
- drivers/net/wireless/ath/carl9170/usb.c      |   31 +++++++++++++++++++++++----
- 2 files changed, 28 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/tegra/dc.c    |    1 +
+ drivers/gpu/drm/tegra/dpaux.c |    1 +
+ drivers/gpu/drm/tegra/dsi.c   |    1 +
+ drivers/gpu/drm/tegra/gr2d.c  |    1 +
+ drivers/gpu/drm/tegra/gr3d.c  |    1 +
+ drivers/gpu/drm/tegra/hdmi.c  |    1 +
+ drivers/gpu/drm/tegra/sor.c   |    1 +
+ 7 files changed, 7 insertions(+)
 
---- a/drivers/net/wireless/ath/carl9170/carl9170.h
-+++ b/drivers/net/wireless/ath/carl9170/carl9170.h
-@@ -256,6 +256,7 @@ struct ar9170 {
- 	atomic_t rx_work_urbs;
- 	atomic_t rx_pool_urbs;
- 	kernel_ulong_t features;
-+	bool usb_ep_cmd_is_bulk;
- 
- 	/* firmware settings */
- 	struct completion fw_load_wait;
---- a/drivers/net/wireless/ath/carl9170/usb.c
-+++ b/drivers/net/wireless/ath/carl9170/usb.c
-@@ -621,9 +621,16 @@ int __carl9170_exec_cmd(struct ar9170 *a
- 		goto err_free;
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -1303,6 +1303,7 @@ static const struct of_device_id tegra_d
+ 		/* sentinel */
  	}
+ };
++MODULE_DEVICE_TABLE(of, tegra_dc_of_match);
  
--	usb_fill_int_urb(urb, ar->udev, usb_sndintpipe(ar->udev,
--		AR9170_USB_EP_CMD), cmd, cmd->hdr.len + 4,
--		carl9170_usb_cmd_complete, ar, 1);
-+	if (ar->usb_ep_cmd_is_bulk)
-+		usb_fill_bulk_urb(urb, ar->udev,
-+				  usb_sndbulkpipe(ar->udev, AR9170_USB_EP_CMD),
-+				  cmd, cmd->hdr.len + 4,
-+				  carl9170_usb_cmd_complete, ar);
-+	else
-+		usb_fill_int_urb(urb, ar->udev,
-+				 usb_sndintpipe(ar->udev, AR9170_USB_EP_CMD),
-+				 cmd, cmd->hdr.len + 4,
-+				 carl9170_usb_cmd_complete, ar, 1);
- 
- 	if (free_buf)
- 		urb->transfer_flags |= URB_FREE_BUFFER;
-@@ -1032,9 +1039,10 @@ static void carl9170_usb_firmware_step2(
- static int carl9170_usb_probe(struct usb_interface *intf,
- 			      const struct usb_device_id *id)
+ static int tegra_dc_parse_dt(struct tegra_dc *dc)
  {
-+	struct usb_endpoint_descriptor *ep;
- 	struct ar9170 *ar;
- 	struct usb_device *udev;
--	int err;
-+	int i, err;
+--- a/drivers/gpu/drm/tegra/dpaux.c
++++ b/drivers/gpu/drm/tegra/dpaux.c
+@@ -382,6 +382,7 @@ static const struct of_device_id tegra_d
+ 	{ .compatible = "nvidia,tegra124-dpaux", },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_dpaux_of_match);
  
- 	err = usb_reset_device(interface_to_usbdev(intf));
- 	if (err)
-@@ -1050,6 +1058,21 @@ static int carl9170_usb_probe(struct usb
- 	ar->intf = intf;
- 	ar->features = id->driver_info;
+ struct platform_driver tegra_dpaux_driver = {
+ 	.driver = {
+--- a/drivers/gpu/drm/tegra/dsi.c
++++ b/drivers/gpu/drm/tegra/dsi.c
+@@ -982,6 +982,7 @@ static const struct of_device_id tegra_d
+ 	{ .compatible = "nvidia,tegra114-dsi", },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_dsi_of_match);
  
-+	/* We need to remember the type of endpoint 4 because it differs
-+	 * between high- and full-speed configuration. The high-speed
-+	 * configuration specifies it as interrupt and the full-speed
-+	 * configuration as bulk endpoint. This information is required
-+	 * later when sending urbs to that endpoint.
-+	 */
-+	for (i = 0; i < intf->cur_altsetting->desc.bNumEndpoints; ++i) {
-+		ep = &intf->cur_altsetting->endpoint[i].desc;
-+
-+		if (usb_endpoint_num(ep) == AR9170_USB_EP_CMD &&
-+		    usb_endpoint_dir_out(ep) &&
-+		    usb_endpoint_type(ep) == USB_ENDPOINT_XFER_BULK)
-+			ar->usb_ep_cmd_is_bulk = true;
-+	}
-+
- 	usb_set_intfdata(intf, ar);
- 	SET_IEEE80211_DEV(ar->hw, &intf->dev);
+ struct platform_driver tegra_dsi_driver = {
+ 	.driver = {
+--- a/drivers/gpu/drm/tegra/gr2d.c
++++ b/drivers/gpu/drm/tegra/gr2d.c
+@@ -121,6 +121,7 @@ static const struct of_device_id gr2d_ma
+ 	{ .compatible = "nvidia,tegra20-gr2d" },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, gr2d_match);
  
+ static const u32 gr2d_addr_regs[] = {
+ 	GR2D_UA_BASE_ADDR,
+--- a/drivers/gpu/drm/tegra/gr3d.c
++++ b/drivers/gpu/drm/tegra/gr3d.c
+@@ -130,6 +130,7 @@ static const struct of_device_id tegra_g
+ 	{ .compatible = "nvidia,tegra20-gr3d" },
+ 	{ }
+ };
++MODULE_DEVICE_TABLE(of, tegra_gr3d_match);
+ 
+ static const u32 gr3d_addr_regs[] = {
+ 	GR3D_IDX_ATTRIBUTE( 0),
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -1450,6 +1450,7 @@ static const struct of_device_id tegra_h
+ 	{ .compatible = "nvidia,tegra20-hdmi", .data = &tegra20_hdmi_config },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_hdmi_of_match);
+ 
+ static int tegra_hdmi_probe(struct platform_device *pdev)
+ {
+--- a/drivers/gpu/drm/tegra/sor.c
++++ b/drivers/gpu/drm/tegra/sor.c
+@@ -1455,6 +1455,7 @@ static const struct of_device_id tegra_s
+ 	{ .compatible = "nvidia,tegra124-sor", },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(of, tegra_sor_of_match);
+ 
+ struct platform_driver tegra_sor_driver = {
+ 	.driver = {
 
 
