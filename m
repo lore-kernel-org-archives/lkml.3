@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934097AbaJDAob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:44:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44901 "EHLO
+	id S934081AbaJDAo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:44:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44902 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020AbaJCVcs (ORCPT
+	with ESMTP id S1755022AbaJCVcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bill Pringlemeir <bpringlemeir@nbsps.com>,
-        Stefan Agner <stefan@agner.ch>, Shawn Guo <shawn.guo@freescale.com>
-Subject: [PATCH 3.16 038/357] ARM: dts: vf610-twr: Fix pinctrl_esdhc1 pin definitions.
-Date: Fri,  3 Oct 2014 14:27:04 -0700
-Message-Id: <20141003212934.609635150@linuxfoundation.org>
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.16 040/357] arm64: flush TLS registers during exec
+Date: Fri,  3 Oct 2014 14:27:06 -0700
+Message-Id: <20141003212934.667924737@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,40 +29,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bill Pringlemeir <bpringlemeir@nbsps.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 0aa4dcb5b730f5da2540926b94d98636fe7d1cbc upstream.
+commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
 
-Previous version had an extra 'fsl' which made the pins not match
-any entry.  The console message,
+Nathan reports that we leak TLS information from the parent context
+during an exec, as we don't clear the TLS registers when flushing the
+thread state.
 
- vf610-pinctrl 40048000.iomuxc: no fsl,pins property in node \
-    /soc/aips-bus@40000000/iomuxc@40048000/vf610-twr/esdhc1grp
+This patch updates the flushing code so that we:
 
-is displayed without the fix.  The prior version would generally
-work as u-boot sets the pins properly for sdhc.  This change allows
-Linux sdhc use even if u-boot is built without sdhc support.
+  (1) Unconditionally zero the tpidr_el0 register (since this is fully
+      context switched for native tasks and zeroed for compat tasks)
 
-Signed-off-by: Bill Pringlemeir <bpringlemeir@nbsps.com>
-Acked-by: Stefan Agner <stefan@agner.ch>
-Fixes: 0517fe6aa880 ("ARM: dts: vf610-twr: Add support for sdhc1")
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+  (2) Zero the tp_value state in thread_info before clearing the
+      tpidrr0_el0 register for compat tasks (since this is only writable
+      by the set_tls compat syscall and therefore not fully switched).
+
+A missing compiler barrier is also added to the compat set_tls syscall.
+
+Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/vf610-twr.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/kernel/process.c    |   18 ++++++++++++++++++
+ arch/arm64/kernel/sys_compat.c |    6 ++++++
+ 2 files changed, 24 insertions(+)
 
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -168,7 +168,7 @@
- 		};
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -224,9 +224,27 @@ void exit_thread(void)
+ {
+ }
  
- 		pinctrl_esdhc1: esdhc1grp {
--			fsl,fsl,pins = <
-+			fsl,pins = <
- 				VF610_PAD_PTA24__ESDHC1_CLK	0x31ef
- 				VF610_PAD_PTA25__ESDHC1_CMD	0x31ef
- 				VF610_PAD_PTA26__ESDHC1_DAT0	0x31ef
++static void tls_thread_flush(void)
++{
++	asm ("msr tpidr_el0, xzr");
++
++	if (is_compat_task()) {
++		current->thread.tp_value = 0;
++
++		/*
++		 * We need to ensure ordering between the shadow state and the
++		 * hardware state, so that we don't corrupt the hardware state
++		 * with a stale shadow state during context switch.
++		 */
++		barrier();
++		asm ("msr tpidrro_el0, xzr");
++	}
++}
++
+ void flush_thread(void)
+ {
+ 	fpsimd_flush_thread();
++	tls_thread_flush();
+ 	flush_ptrace_hw_breakpoint(current);
+ }
+ 
+--- a/arch/arm64/kernel/sys_compat.c
++++ b/arch/arm64/kernel/sys_compat.c
+@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *
+ 
+ 	case __ARM_NR_compat_set_tls:
+ 		current->thread.tp_value = regs->regs[0];
++
++		/*
++		 * Protect against register corruption from context switch.
++		 * See comment in tls_thread_flush.
++		 */
++		barrier();
+ 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
+ 		return 0;
+ 
 
 
