@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520AbaJCMNd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:13:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430AbaJCMNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:13:31 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <542D77A4.5030606@samsung.com>
-References: <542D77A4.5030606@samsung.com> <20140908153704.28301.41578.stgit@warthog.procyon.org.uk> <20140908153830.28301.37880.stgit@warthog.procyon.org.uk> <542D741D.5070109@samsung.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, keyrings@linux-nfs.org,
-        jwboyer@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, pjones@redhat.com,
-        vgoyal@redhat.com
-Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for asymmetric keys
+	id S1752554AbaJCMOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:14:33 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:64235 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751420AbaJCMOc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:14:32 -0400
+Date: Fri, 3 Oct 2014 08:14:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: (ltc-kernel 10162) Re: [PATCH ftrace/for-next v6] ftracetest:
+ Add POSIX.3 standard and XFAIL result codes
+Message-ID: <20141003081417.4116540d@gandalf.local.home>
+In-Reply-To: <542E8888.9090703@hitachi.com>
+References: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal>
+	<54294C55.3030204@hitachi.com>
+	<542E8888.9090703@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <28451.1412338401.1@warthog.procyon.org.uk>
-Date: Fri, 03 Oct 2014 13:13:21 +0100
-Message-ID: <28452.1412338401@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+On Fri, 03 Oct 2014 20:29:12 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> [  132.820302] CR2: ffffffffffffffea
+> Ping? :)
 
-Looks like I leaked an error number somewhere.
+Haven't forgotten you. It's still a top priority. I was working on
+something else and hit a bug that's in mainline with the ring buffer.
+It's a hard to hit race and it took a while to bisect, but I finally
+found the cause and have the fix. Luckily it was only introduced in
+3.17-rc1. This took priority, but I'm almost done with it.
 
-David
+Your stuff is next on the TODO list.
+
+-- Steve
+
+
+> 
+> (2014/09/29 21:11), Masami Hiramatsu wrote:
+> > Steven, could you pick this instead of old v5 patch?
+> > 
+> > As you pointed, this version shows the log of "unsuppoted" test result.
+> > 
+> > Thank you,
+
