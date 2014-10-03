@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760910AbaJDABg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:01:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1760989AbaJDACc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:02:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630AbaJCVxZ (ORCPT
+	with ESMTP id S1755608AbaJCVxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:25 -0400
+	Fri, 3 Oct 2014 17:53:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Lindgren <simon@aqwary.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 037/238] i2c: at91: Fix a race condition during signal handling in at91_do_twi_xfer.
-Date: Fri,  3 Oct 2014 14:29:12 -0700
-Message-Id: <20141003212914.850775967@linuxfoundation.org>
+        John Sung <penmount.touch@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.16 249/357] Input: serport - add compat handling for SPIOCSTYPE ioctl
+Date: Fri,  3 Oct 2014 14:30:35 -0700
+Message-Id: <20141003212940.985520282@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,51 +25,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Simon Lindgren <simon@aqwary.com>
+From: John Sung <penmount.touch@gmail.com>
 
-commit 6721f28a26efd6368497abbdef5dcfc59608d899 upstream.
+commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
 
-There is a race condition in at91_do_twi_xfer when signals arrive.
-If a signal is recieved while waiting for a transfer to complete
-wait_for_completion_interruptible_timeout() will return -ERESTARTSYS.
-This is not handled correctly resulting in interrupts still being
-enabled and a transfer being in flight when we return.
+When running a 32-bit inputattach utility in a 64-bit system, there will be
+error code "inputattach: can't set device type". This is caused by the
+serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
+fails.
 
-Symptoms include a range of oopses and bus lockups. Oopses can happen
-when the transfer completes because the interrupt handler will corrupt
-the stack. If a new transfer is started before the interrupt fires
-the controller will start a new transfer in the middle of the old one,
-resulting in confused slaves and a locked bus.
-
-To avoid this, use wait_for_completion_io_timeout instead so that we
-don't have to deal with gracefully shutting down the transfer and
-disabling the interrupts.
-
-Signed-off-by: Simon Lindgren <simon@aqwary.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: John Sung <penmount.touch@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-at91.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/serio/serport.c |   45 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 38 insertions(+), 7 deletions(-)
 
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -434,8 +434,8 @@ static int at91_do_twi_transfer(struct a
- 		}
+--- a/drivers/input/serio/serport.c
++++ b/drivers/input/serio/serport.c
+@@ -21,6 +21,7 @@
+ #include <linux/init.h>
+ #include <linux/serio.h>
+ #include <linux/tty.h>
++#include <linux/compat.h>
+ 
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("Input device TTY line discipline");
+@@ -198,28 +199,55 @@ static ssize_t serport_ldisc_read(struct
+ 	return 0;
+ }
+ 
++static void serport_set_type(struct tty_struct *tty, unsigned long type)
++{
++	struct serport *serport = tty->disc_data;
++
++	serport->id.proto = type & 0x000000ff;
++	serport->id.id    = (type & 0x0000ff00) >> 8;
++	serport->id.extra = (type & 0x00ff0000) >> 16;
++}
++
+ /*
+  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
+  */
+ 
+-static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
++static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
++			       unsigned int cmd, unsigned long arg)
+ {
+-	struct serport *serport = (struct serport*) tty->disc_data;
+-	unsigned long type;
+-
+ 	if (cmd == SPIOCSTYPE) {
++		unsigned long type;
++
+ 		if (get_user(type, (unsigned long __user *) arg))
+ 			return -EFAULT;
+ 
+-		serport->id.proto = type & 0x000000ff;
+-		serport->id.id	  = (type & 0x0000ff00) >> 8;
+-		serport->id.extra = (type & 0x00ff0000) >> 16;
++		serport_set_type(tty, type);
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
++#ifdef CONFIG_COMPAT
++#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
++static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
++				       struct file *file,
++				       unsigned int cmd, unsigned long arg)
++{
++	if (cmd == COMPAT_SPIOCSTYPE) {
++		void __user *uarg = compat_ptr(arg);
++		compat_ulong_t compat_type;
++
++		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
++			return -EFAULT;
+ 
++		serport_set_type(tty, compat_type);
+ 		return 0;
  	}
  
--	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
--							dev->adapter.timeout);
-+	ret = wait_for_completion_io_timeout(&dev->cmd_complete,
-+					     dev->adapter.timeout);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		at91_init_twi_bus(dev);
+ 	return -EINVAL;
+ }
++#endif
+ 
+ static void serport_ldisc_write_wakeup(struct tty_struct * tty)
+ {
+@@ -243,6 +271,9 @@ static struct tty_ldisc_ops serport_ldis
+ 	.close =	serport_ldisc_close,
+ 	.read =		serport_ldisc_read,
+ 	.ioctl =	serport_ldisc_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl =	serport_ldisc_compat_ioctl,
++#endif
+ 	.receive_buf =	serport_ldisc_receive,
+ 	.write_wakeup =	serport_ldisc_write_wakeup
+ };
 
 
