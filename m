@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaJCPPG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:15:06 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54249 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783AbaJCPPD (ORCPT
+	id S1753831AbaJCPPR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:15:17 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:55571 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679AbaJCPPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:15:03 -0400
-Date: Fri, 3 Oct 2014 17:14:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
-Subject: Re: [PATCH v6 3/6] sched: add utilization_avg_contrib
-Message-ID: <20141003151451.GJ10583@worktop.programming.kicks-ass.net>
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
- <1411488485-10025-4-git-send-email-vincent.guittot@linaro.org>
- <20141003143634.GL2849@worktop.programming.kicks-ass.net>
- <CAKfTPtDvX=JFf6OBBzTVbo6C76p243za+9CkL-ofSOvHQS5-mQ@mail.gmail.com>
+	Fri, 3 Oct 2014 11:15:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        dan.carpenter@oracle.com, kou.ishizaki@toshiba.co.jp, jens@de.ibm.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] net: spider_net: avoid using signed char for bitops
+Date: Fri, 03 Oct 2014 17:15:05 +0200
+Message-ID: <9201792.OAu7xPjvdN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412348517-20352-4-git-send-email-antoine.tenart@free-electrons.com>
+References: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com> <1412348517-20352-4-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtDvX=JFf6OBBzTVbo6C76p243za+9CkL-ofSOvHQS5-mQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:b6siuZp4WdC7tlkPB4QRI9wTlWJSGHRVhoWBYBRr4Yr
+ AMFtOKSTQuFfbPiFpV7xDhjCpiaY4ty7MZE2CK25k3jQq/3ZAy
+ WlqPe6Sya4bUfSEUeEF/hFD6cMMjKgNy4arGvw1x6+VkVMmBUz
+ 7FEdmGecu+0AfbeI1LQfltQMmMV6VFA8Gmd05dHPuJZe7NaB40
+ 41D5zgPMI3aSoYhg3Dzbv29XhDfYaeHvdR014MNHiwUD7XeNdD
+ CLjymlh0FdWEi4yjz2etGjtjoWavN0W2aGQXHlCG56GWoKhEck
+ VF9B6ECUltn1HRLqxjd84qbrW///XT7b4wd6dxuHFlaWVl4zok
+ a8f71JzgsC4jlr/zv+DQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 04:51:01PM +0200, Vincent Guittot wrote:
-> On 3 October 2014 16:36, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >> +      * utilization_load_avg is the sum of the average running time of the
-> >> +      * sched_entities on the rq.
-> >>        */
-> >
-> > So I think there was some talk about a blocked_utilization thingy, which
-> > would track the avg running time of the tasks currently asleep, right?
-> >
+On Friday 03 October 2014 17:01:56 Antoine Tenart wrote:
+> Signedness bugs may occur when using signed char for bitops,
+> depending on if the highest bit is ever used.
 > 
-> yes. Do you mean that we should anticipate and rename
-> utilization_load_avg into utilization_runnable_avg to make space for a
-> utilization_blocked_avg that could be added in future ?
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> 
 
-nah, just trying to put things straight in my brain, including what is
-'missing'.
+It's probably worth mentioning here that this cannot happen in this
+driver because it's only used in one powerpc-specific chip, and 'char'
+is always 'unsigned' on powerpc.
+
+	Arnd
