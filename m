@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761347AbaJDAre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:47:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44828 "EHLO
+	id S1758697AbaJDArd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:47:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963AbaJCVcl (ORCPT
+	with ESMTP id S1754965AbaJCVcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Aloni <dan@kernelim.com>, Benjamin LaHaise <bcrl@kvack.org>,
-        Kent Overstreet <kmo@daterainc.com>, Mateusz Guzik <mguzik@redhat.com>,
-        Petr Matousek <pmatouse@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 035/357] aio: fix reqs_available handling
-Date: Fri,  3 Oct 2014 14:27:01 -0700
-Message-Id: <20141003212934.522421260@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.16 053/357] ftrace: Use current addr when converting to nop in __ftrace_replace_code()
+Date: Fri,  3 Oct 2014 14:27:19 -0700
+Message-Id: <20141003212935.049931301@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,166 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin LaHaise <bcrl@kvack.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit d856f32a86b2b015ab180ab7a55e455ed8d3ccc5 upstream.
+commit 39b5552cd5090d4c210d278cd2732f493075f033 upstream.
 
-As reported by Dan Aloni, commit f8567a3845ac ("aio: fix aio request
-leak when events are reaped by userspace") introduces a regression when
-user code attempts to perform io_submit() with more events than are
-available in the ring buffer.  Reverting that commit would reintroduce a
-regression when user space event reaping is used.
+In __ftrace_replace_code(), when converting the call to a nop in a function
+it needs to compare against the "curr" (current) value of the ftrace ops, and
+not the "new" one. It currently does not affect x86 which is the only arch
+to do the trampolines with function graph tracer, but when other archs that do
+depend on this code implement the function graph trampoline, it can crash.
 
-Fixing this bug is a bit more involved than the previous attempts to fix
-this regression.  Since we do not have a single point at which we can
-count events as being reaped by user space and io_getevents(), we have
-to track event completion by looking at the number of events left in the
-event ring.  So long as there are as many events in the ring buffer as
-there have been completion events generate, we cannot call
-put_reqs_available().  The code to check for this is now placed in
-refill_reqs_available().
+Here's an example when ARM uses the trampolines (in the future):
 
-A test program from Dan and modified by me for verifying this bug is available
-at http://www.kvack.org/~bcrl/20140824-aio_bug.c .
+ ------------[ cut here ]------------
+ WARNING: CPU: 0 PID: 9 at kernel/trace/ftrace.c:1716 ftrace_bug+0x17c/0x1f4()
+ Modules linked in: omap_rng rng_core ipv6
+ CPU: 0 PID: 9 Comm: migration/0 Not tainted 3.16.0-test-10959-gf0094b28f303-dirty #52
+ [<c02188f4>] (unwind_backtrace) from [<c021343c>] (show_stack+0x20/0x24)
+ [<c021343c>] (show_stack) from [<c095a674>] (dump_stack+0x78/0x94)
+ [<c095a674>] (dump_stack) from [<c02532a0>] (warn_slowpath_common+0x7c/0x9c)
+ [<c02532a0>] (warn_slowpath_common) from [<c02532ec>] (warn_slowpath_null+0x2c/0x34)
+ [<c02532ec>] (warn_slowpath_null) from [<c02cbac4>] (ftrace_bug+0x17c/0x1f4)
+ [<c02cbac4>] (ftrace_bug) from [<c02cc44c>] (ftrace_replace_code+0x80/0x9c)
+ [<c02cc44c>] (ftrace_replace_code) from [<c02cc658>] (ftrace_modify_all_code+0xb8/0x164)
+ [<c02cc658>] (ftrace_modify_all_code) from [<c02cc718>] (__ftrace_modify_code+0x14/0x1c)
+ [<c02cc718>] (__ftrace_modify_code) from [<c02c7244>] (multi_cpu_stop+0xf4/0x134)
+ [<c02c7244>] (multi_cpu_stop) from [<c02c6e90>] (cpu_stopper_thread+0x54/0x130)
+ [<c02c6e90>] (cpu_stopper_thread) from [<c0271cd4>] (smpboot_thread_fn+0x1ac/0x1bc)
+ [<c0271cd4>] (smpboot_thread_fn) from [<c026ddf0>] (kthread+0xe0/0xfc)
+ [<c026ddf0>] (kthread) from [<c020f318>] (ret_from_fork+0x14/0x20)
+ ---[ end trace dc9ce72c5b617d8f ]---
+[   65.047264] ftrace failed to modify [<c0208580>] asm_do_IRQ+0x10/0x1c
+[   65.054070]  actual: 85:1b:00:eb
 
-Reported-by: Dan Aloni <dan@kernelim.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Acked-by: Dan Aloni <dan@kernelim.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Mateusz Guzik <mguzik@redhat.com>
-Cc: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 7413af1fb70e7 "ftrace: Make get_ftrace_addr() and get_ftrace_addr_old() global"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/aio.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 73 insertions(+), 4 deletions(-)
+ kernel/trace/ftrace.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -141,6 +141,7 @@ struct kioctx {
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1809,7 +1809,7 @@ __ftrace_replace_code(struct dyn_ftrace
+ 		return ftrace_make_call(rec, ftrace_addr);
  
- 	struct {
- 		unsigned	tail;
-+		unsigned	completed_events;
- 		spinlock_t	completion_lock;
- 	} ____cacheline_aligned_in_smp;
+ 	case FTRACE_UPDATE_MAKE_NOP:
+-		return ftrace_make_nop(NULL, rec, ftrace_addr);
++		return ftrace_make_nop(NULL, rec, ftrace_old_addr);
  
-@@ -880,6 +881,68 @@ out:
- 	return ret;
- }
- 
-+/* refill_reqs_available
-+ *	Updates the reqs_available reference counts used for tracking the
-+ *	number of free slots in the completion ring.  This can be called
-+ *	from aio_complete() (to optimistically update reqs_available) or
-+ *	from aio_get_req() (the we're out of events case).  It must be
-+ *	called holding ctx->completion_lock.
-+ */
-+static void refill_reqs_available(struct kioctx *ctx, unsigned head,
-+                                  unsigned tail)
-+{
-+	unsigned events_in_ring, completed;
-+
-+	/* Clamp head since userland can write to it. */
-+	head %= ctx->nr_events;
-+	if (head <= tail)
-+		events_in_ring = tail - head;
-+	else
-+		events_in_ring = ctx->nr_events - (head - tail);
-+
-+	completed = ctx->completed_events;
-+	if (events_in_ring < completed)
-+		completed -= events_in_ring;
-+	else
-+		completed = 0;
-+
-+	if (!completed)
-+		return;
-+
-+	ctx->completed_events -= completed;
-+	put_reqs_available(ctx, completed);
-+}
-+
-+/* user_refill_reqs_available
-+ *	Called to refill reqs_available when aio_get_req() encounters an
-+ *	out of space in the completion ring.
-+ */
-+static void user_refill_reqs_available(struct kioctx *ctx)
-+{
-+	spin_lock_irq(&ctx->completion_lock);
-+	if (ctx->completed_events) {
-+		struct aio_ring *ring;
-+		unsigned head;
-+
-+		/* Access of ring->head may race with aio_read_events_ring()
-+		 * here, but that's okay since whether we read the old version
-+		 * or the new version, and either will be valid.  The important
-+		 * part is that head cannot pass tail since we prevent
-+		 * aio_complete() from updating tail by holding
-+		 * ctx->completion_lock.  Even if head is invalid, the check
-+		 * against ctx->completed_events below will make sure we do the
-+		 * safe/right thing.
-+		 */
-+		ring = kmap_atomic(ctx->ring_pages[0]);
-+		head = ring->head;
-+		kunmap_atomic(ring);
-+
-+		refill_reqs_available(ctx, head, ctx->tail);
-+	}
-+
-+	spin_unlock_irq(&ctx->completion_lock);
-+}
-+
- /* aio_get_req
-  *	Allocate a slot for an aio request.
-  * Returns NULL if no requests are free.
-@@ -888,8 +951,11 @@ static inline struct kiocb *aio_get_req(
- {
- 	struct kiocb *req;
- 
--	if (!get_reqs_available(ctx))
--		return NULL;
-+	if (!get_reqs_available(ctx)) {
-+		user_refill_reqs_available(ctx);
-+		if (!get_reqs_available(ctx))
-+			return NULL;
-+	}
- 
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
- 	if (unlikely(!req))
-@@ -948,8 +1014,8 @@ void aio_complete(struct kiocb *iocb, lo
- 	struct kioctx	*ctx = iocb->ki_ctx;
- 	struct aio_ring	*ring;
- 	struct io_event	*ev_page, *event;
-+	unsigned tail, pos, head;
- 	unsigned long	flags;
--	unsigned tail, pos;
- 
- 	/*
- 	 * Special case handling for sync iocbs:
-@@ -1010,10 +1076,14 @@ void aio_complete(struct kiocb *iocb, lo
- 	ctx->tail = tail;
- 
- 	ring = kmap_atomic(ctx->ring_pages[0]);
-+	head = ring->head;
- 	ring->tail = tail;
- 	kunmap_atomic(ring);
- 	flush_dcache_page(ctx->ring_pages[0]);
- 
-+	ctx->completed_events++;
-+	if (ctx->completed_events > 1)
-+		refill_reqs_available(ctx, head, tail);
- 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
- 	pr_debug("added to ring %p at [%u]\n", iocb, tail);
-@@ -1028,7 +1098,6 @@ void aio_complete(struct kiocb *iocb, lo
- 
- 	/* everything turned out well, dispose of the aiocb. */
- 	kiocb_free(iocb);
--	put_reqs_available(ctx, 1);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
+ 	case FTRACE_UPDATE_MODIFY_CALL:
+ 		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
 
 
