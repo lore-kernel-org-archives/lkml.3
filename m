@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760049AbaJDAq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:46:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44851 "EHLO
+	id S1761333AbaJDAq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:46:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44838 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975AbaJCVcm (ORCPT
+	with ESMTP id S1754970AbaJCVcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:42 -0400
+	Fri, 3 Oct 2014 17:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Robbins <drobbins@funtoo.org>,
-        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 057/357] ALSA: dice: fix wrong channel mappping at higher sampling rate
-Date: Fri,  3 Oct 2014 14:27:23 -0700
-Message-Id: <20141003212935.166575993@linuxfoundation.org>
+        Martin Lau <kafai@fb.com>, Josef Bacik <jbacik@fb.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.16 054/357] trace: Fix epoll hang when we race with new entries
+Date: Fri,  3 Oct 2014 14:27:20 -0700
+Message-Id: <20141003212935.079355062@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,55 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 1033eb5b5aeeb526c22068e0fb0cef9f3c14231e upstream.
+commit 4ce97dbf50245227add17c83d87dc838e7ca79d0 upstream.
 
-The channel mapping is initialized by amdtp_stream_set_parameters(), however
-Dice driver set it before calling this function. Furthermore, the setting is
-wrong because the index is the value of array, and vice versa.
+Epoll on trace_pipe can sometimes hang in a weird case.  If the ring buffer is
+empty when we set waiters_pending but an event shows up exactly at that moment
+we can miss being woken up by the ring buffers irq work.  Since
+ring_buffer_empty() is inherently racey we will sometimes think that the buffer
+is not empty.  So we don't get woken up and we don't think there are any events
+even though there were some ready when we added the watch, which makes us hang.
+This patch fixes this by making sure that we are actually on the wait list
+before we set waiters_pending, and add a memory barrier to make sure
+ring_buffer_empty() is going to be correct.
 
-This commit moves codes for channel mapping after the function and set it correctly.
+Link: http://lkml.kernel.org/p/1408989581-23727-1-git-send-email-jbacik@fb.com
 
-Reported-by: Daniel Robbins <drobbins@funtoo.org>
-Fixes: 10550bea44a8 ("ALSA: dice/firewire-lib: Keep dualwire mode but obsolete CIP_HI_DUALWIRE")
-Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Cc: Martin Lau <kafai@fb.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/firewire/dice.c |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ kernel/trace/ring_buffer.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/sound/firewire/dice.c
-+++ b/sound/firewire/dice.c
-@@ -579,11 +579,6 @@ static int dice_hw_params(struct snd_pcm
- 			return err;
- 		}
- 
--		for (i = 0; i < channels; i++) {
--			dice->stream.pcm_positions[i * 2] = i;
--			dice->stream.pcm_positions[i * 2 + 1] = i + channels;
--		}
--
- 		rate /= 2;
- 		channels *= 2;
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -626,8 +626,22 @@ int ring_buffer_poll_wait(struct ring_bu
+ 		work = &cpu_buffer->irq_work;
  	}
-@@ -591,6 +586,15 @@ static int dice_hw_params(struct snd_pcm
- 	mode = rate_index_to_mode(rate_index);
- 	amdtp_stream_set_parameters(&dice->stream, rate, channels,
- 				    dice->rx_midi_ports[mode]);
-+	if (rate_index > 4) {
-+		channels /= 2;
-+
-+		for (i = 0; i < channels; i++) {
-+			dice->stream.pcm_positions[i] = i * 2;
-+			dice->stream.pcm_positions[i + channels] = i * 2 + 1;
-+		}
-+	}
-+
- 	amdtp_stream_set_pcm_format(&dice->stream,
- 				    params_format(hw_params));
  
+-	work->waiters_pending = true;
+ 	poll_wait(filp, &work->waiters, poll_table);
++	work->waiters_pending = true;
++	/*
++	 * There's a tight race between setting the waiters_pending and
++	 * checking if the ring buffer is empty.  Once the waiters_pending bit
++	 * is set, the next event will wake the task up, but we can get stuck
++	 * if there's only a single event in.
++	 *
++	 * FIXME: Ideally, we need a memory barrier on the writer side as well,
++	 * but adding a memory barrier to all events will cause too much of a
++	 * performance hit in the fast path.  We only need a memory barrier when
++	 * the buffer goes from empty to having content.  But as this race is
++	 * extremely small, and it's not a problem if another event comes in, we
++	 * will fix it later.
++	 */
++	smp_mb();
+ 
+ 	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
+ 	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
 
 
