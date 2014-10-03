@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaJCWHt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:07:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46633 "EHLO
+	id S1755628AbaJCWHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:07:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46665 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428AbaJCWGI (ORCPT
+	with ESMTP id S932432AbaJCWGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:06:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Baoquan He <bhe@redhat.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Pavel Machek <pavel@ucw.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 131/238] x86/kaslr: Avoid the setup_data area when picking location
-Date: Fri,  3 Oct 2014 14:30:46 -0700
-Message-Id: <20141003212917.863021462@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.14 132/238] shmem: fix nlink for rename overwrite directory
+Date: Fri,  3 Oct 2014 14:30:47 -0700
+Message-Id: <20141003212917.893404340@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -34,59 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 0cacbfbeb5077b63d5d3cf6df88b14ac12ad584b upstream.
+commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
 
-The KASLR location-choosing logic needs to avoid the setup_data
-list memory areas as well. Without this, it would be possible to
-have the ASLR position stomp on the memory, ultimately causing
-the boot to fail.
+If overwriting an empty directory with rename, then need to drop the extra
+nlink.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Baoquan He <bhe@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140911161931.GA12001@www.outflux.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Test prog:
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <err.h>
+#include <sys/stat.h>
+
+int main(void)
+{
+	const char *test_dir1 = "test-dir1";
+	const char *test_dir2 = "test-dir2";
+	int res;
+	int fd;
+	struct stat statbuf;
+
+	res = mkdir(test_dir1, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir1);
+
+	res = mkdir(test_dir2, 0777);
+	if (res == -1)
+		err(1, "mkdir(\"%s\")", test_dir2);
+
+	fd = open(test_dir2, O_RDONLY);
+	if (fd == -1)
+		err(1, "open(\"%s\")", test_dir2);
+
+	res = rename(test_dir1, test_dir2);
+	if (res == -1)
+		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
+
+	res = fstat(fd, &statbuf);
+	if (res == -1)
+		err(1, "fstat(%i)", fd);
+
+	if (statbuf.st_nlink != 0) {
+		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
+		return 1;
+	}
+
+	return 0;
+}
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/aslr.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ mm/shmem.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/boot/compressed/aslr.c
-+++ b/arch/x86/boot/compressed/aslr.c
-@@ -183,12 +183,27 @@ static void mem_avoid_init(unsigned long
- static bool mem_avoid_overlap(struct mem_vector *img)
- {
- 	int i;
-+	struct setup_data *ptr;
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2143,8 +2143,10 @@ static int shmem_rename(struct inode *ol
  
- 	for (i = 0; i < MEM_AVOID_MAX; i++) {
- 		if (mem_overlaps(img, &mem_avoid[i]))
- 			return true;
- 	}
- 
-+	/* Avoid all entries in the setup_data linked list. */
-+	ptr = (struct setup_data *)(unsigned long)real_mode->hdr.setup_data;
-+	while (ptr) {
-+		struct mem_vector avoid;
-+
-+		avoid.start = (u64)ptr;
-+		avoid.size = sizeof(*ptr) + ptr->len;
-+
-+		if (mem_overlaps(img, &avoid))
-+			return true;
-+
-+		ptr = (struct setup_data *)(unsigned long)ptr->next;
-+	}
-+
- 	return false;
- }
- 
+ 	if (new_dentry->d_inode) {
+ 		(void) shmem_unlink(new_dir, new_dentry);
+-		if (they_are_dirs)
++		if (they_are_dirs) {
++			drop_nlink(new_dentry->d_inode);
+ 			drop_nlink(old_dir);
++		}
+ 	} else if (they_are_dirs) {
+ 		drop_nlink(old_dir);
+ 		inc_nlink(new_dir);
 
 
