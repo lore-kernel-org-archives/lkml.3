@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228AbaJCWDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:03:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45981 "EHLO
+	id S1758919AbaJCXvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:51:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46251 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175AbaJCVxi (ORCPT
+	with ESMTP id S1757231AbaJCWDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:38 -0400
+	Fri, 3 Oct 2014 18:03:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 055/238] imx-drm: ipuv3-plane: fix ipu_plane_dpms()
-Date: Fri,  3 Oct 2014 14:29:30 -0700
-Message-Id: <20141003212915.437497332@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.16 291/357] alarmtimer: Return relative times in timer_gettime
+Date: Fri,  3 Oct 2014 14:31:17 -0700
+Message-Id: <20141003212942.225630893@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,69 +29,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Richard Larocque <rlarocque@google.com>
 
-commit 3a44a2058747d71385eb69691c7f977cb58cc293 upstream.
+commit e86fea764991e00a03ff1e56409ec9cacdbda4c9 upstream.
 
-When unbinding imx-drm, the following oops was observed:
+Returns the time remaining for an alarm timer, rather than the time at
+which it is scheduled to expire.  If the timer has already expired or it
+is not currently scheduled, the it_value's members are set to zero.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000004
-pgd = e995c000
-[00000004] *pgd=4fea5831
-Internal error: Oops: 817 [#1] SMP ARM
-Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma snd_soc_sgtl5000 imx_sdma imx2_wdt imx_ldb(C) imx_thermal snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
-CPU: 1 PID: 779 Comm: bash Tainted: G         C    3.16.0-rc2+ #1230
-task: ea9eb180 ti: ea378000 task.ti: ea378000
-PC is at ipu_dp_put+0x10/0x18
-LR is at ipu_plane_dpms+0x60/0x8c
-pc : [<c0350d20>]    lr : [<c04bd9e8>]    psr: 200f0013
-sp : ea379d80  ip : ea379d90  fp : ea379d8c
-r10: 00100100  r9 : 00000000  r8 : 00200200
-r7 : e9ba0264  r6 : e9ba01f8  r5 : 00000000  r4 : ea34b800
-r3 : 00000000  r2 : 00000000  r1 : 0000009b  r0 : 00000000
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 3995c04a  DAC: 00000015
-Process bash (pid: 779, stack limit = 0xea378240)
-Stack: (0xea379d80 to 0xea37a000)
-...
-Backtrace:
-[<c0350d10>] (ipu_dp_put) from [<c04bd9e8>] (ipu_plane_dpms+0x60/0x8c)
-[<c04bd988>] (ipu_plane_dpms) from [<c04bda40>] (ipu_disable_plane+0x2c/0x60)
-[<c04bda14>] (ipu_disable_plane) from [<c04bda9c>] (ipu_plane_destroy+0x28/0x60)
-[<c04bda74>] (ipu_plane_destroy) from [<c033ff84>] (drm_mode_config_cleanup+0x1b8/0x250)
-[<c033fdcc>] (drm_mode_config_cleanup) from [<c04bc234>] (imx_drm_driver_unload+0x44/0x4c)
-[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
-[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
-[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
-[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
-...
-Code: e1a0c00d e92dd800 e24cb004 e3a03000 (e5c03004)
+This new behavior matches that of the other posix-timers and the POSIX
+specifications.
 
-This is caused by a missing check in ipu_plane_dpms for a NULL pointer.
+This is a change in user-visible behavior, and may break existing
+applications.  Hopefully, few users rely on the old incorrect behavior.
 
-Fixes: b8d181e408af ("staging: drm/imx: add drm plane support")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+[jstultz: minor style tweak]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/imx-drm/ipuv3-plane.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/time/alarmtimer.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/staging/imx-drm/ipuv3-plane.c
-+++ b/drivers/staging/imx-drm/ipuv3-plane.c
-@@ -277,7 +277,8 @@ static void ipu_plane_dpms(struct ipu_pl
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -541,18 +541,22 @@ static int alarm_timer_create(struct k_i
+  * @new_timer: k_itimer pointer
+  * @cur_setting: itimerspec data to fill
+  *
+- * Copies the itimerspec data out from the k_itimer
++ * Copies out the current itimerspec data
+  */
+ static void alarm_timer_get(struct k_itimer *timr,
+ 				struct itimerspec *cur_setting)
+ {
+-	memset(cur_setting, 0, sizeof(struct itimerspec));
++	ktime_t relative_expiry_time =
++		alarm_expires_remaining(&(timr->it.alarm.alarmtimer));
  
- 		ipu_idmac_put(ipu_plane->ipu_ch);
- 		ipu_dmfc_put(ipu_plane->dmfc);
--		ipu_dp_put(ipu_plane->dp);
-+		if (ipu_plane->dp)
-+			ipu_dp_put(ipu_plane->dp);
- 	}
+-	cur_setting->it_interval =
+-			ktime_to_timespec(timr->it.alarm.interval);
+-	cur_setting->it_value =
+-		ktime_to_timespec(timr->it.alarm.alarmtimer.node.expires);
+-	return;
++	if (ktime_to_ns(relative_expiry_time) > 0) {
++		cur_setting->it_value = ktime_to_timespec(relative_expiry_time);
++	} else {
++		cur_setting->it_value.tv_sec = 0;
++		cur_setting->it_value.tv_nsec = 0;
++	}
++
++	cur_setting->it_interval = ktime_to_timespec(timr->it.alarm.interval);
  }
  
+ /**
 
 
