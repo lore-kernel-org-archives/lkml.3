@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577AbaJCRKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:10:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16446 "EHLO mx1.redhat.com"
+	id S1754490AbaJCRJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:09:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753739AbaJCRI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:08:57 -0400
+	id S1753979AbaJCRI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 13:08:58 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-api@vger.kernel.org
@@ -34,56 +34,80 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Stefan Hajnoczi <stefanha@gmail.com>,
         Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
         Juan Quintela <quintela@redhat.com>
-Subject: [PATCH 16/17] powerpc: add remap_anon_pages and userfaultfd
-Date: Fri,  3 Oct 2014 19:08:06 +0200
-Message-Id: <1412356087-16115-17-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 15/17] userfaultfd: make userfaultfd_write non blocking
+Date: Fri,  3 Oct 2014 19:08:05 +0200
+Message-Id: <1412356087-16115-16-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the syscall numbers.
+It is generally inefficient to ask the wakeup of userfault ranges
+where there's not a single userfault address read through
+userfaultfd_read earlier and in turn waiting a wakeup. However it may
+come handy to wakeup the same userfault range twice in case of
+multiple thread faulting on the same address. But we should still
+return an error so if the application thinks this occurrence can never
+happen it will know it hit a bug. So just return -ENOENT instead of
+blocking.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/powerpc/include/asm/systbl.h      | 2 ++
- arch/powerpc/include/asm/unistd.h      | 2 +-
- arch/powerpc/include/uapi/asm/unistd.h | 2 ++
- 3 files changed, 5 insertions(+), 1 deletion(-)
+ fs/userfaultfd.c | 34 +++++-----------------------------
+ 1 file changed, 5 insertions(+), 29 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
-index 7d8a600..ef03a80 100644
---- a/arch/powerpc/include/asm/systbl.h
-+++ b/arch/powerpc/include/asm/systbl.h
-@@ -365,3 +365,5 @@ SYSCALL_SPU(renameat2)
- SYSCALL_SPU(seccomp)
- SYSCALL_SPU(getrandom)
- SYSCALL_SPU(memfd_create)
-+SYSCALL_SPU(remap_anon_pages)
-+SYSCALL_SPU(userfaultfd)
-diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
-index 4e9af3f..36b79c3 100644
---- a/arch/powerpc/include/asm/unistd.h
-+++ b/arch/powerpc/include/asm/unistd.h
-@@ -12,7 +12,7 @@
- #include <uapi/asm/unistd.h>
+diff --git a/fs/userfaultfd.c b/fs/userfaultfd.c
+index 62b827e..2667d0d 100644
+--- a/fs/userfaultfd.c
++++ b/fs/userfaultfd.c
+@@ -458,9 +458,7 @@ static ssize_t userfaultfd_write(struct file *file, const char __user *buf,
+ 				 size_t count, loff_t *ppos)
+ {
+ 	struct userfaultfd_ctx *ctx = file->private_data;
+-	ssize_t res;
+ 	__u64 range[2];
+-	DECLARE_WAITQUEUE(wait, current);
  
+ 	if (ctx->state == USERFAULTFD_STATE_ASK_PROTOCOL) {
+ 		__u64 protocol;
+@@ -488,34 +486,12 @@ static ssize_t userfaultfd_write(struct file *file, const char __user *buf,
+ 	if (range[0] >= range[1])
+ 		return -ERANGE;
  
--#define __NR_syscalls		361
-+#define __NR_syscalls		363
+-	spin_lock(&ctx->fd_wqh.lock);
+-	__add_wait_queue(&ctx->fd_wqh, &wait);
+-	for (;;) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		/* always take the fd_wqh lock before the fault_wqh lock */
+-		if (find_userfault(ctx, NULL, POLLOUT)) {
+-			if (!wake_userfault(ctx, range)) {
+-				res = sizeof(range);
+-				break;
+-			}
+-		}
+-		if (signal_pending(current)) {
+-			res = -ERESTARTSYS;
+-			break;
+-		}
+-		if (file->f_flags & O_NONBLOCK) {
+-			res = -EAGAIN;
+-			break;
+-		}
+-		spin_unlock(&ctx->fd_wqh.lock);
+-		schedule();
+-		spin_lock(&ctx->fd_wqh.lock);
+-	}
+-	__remove_wait_queue(&ctx->fd_wqh, &wait);
+-	__set_current_state(TASK_RUNNING);
+-	spin_unlock(&ctx->fd_wqh.lock);
++	/* always take the fd_wqh lock before the fault_wqh lock */
++	if (find_userfault(ctx, NULL, POLLOUT))
++		if (!wake_userfault(ctx, range))
++			return sizeof(range);
  
- #define __NR__exit __NR_exit
- #define NR_syscalls	__NR_syscalls
-diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
-index 0688fc0..5514c57 100644
---- a/arch/powerpc/include/uapi/asm/unistd.h
-+++ b/arch/powerpc/include/uapi/asm/unistd.h
-@@ -383,5 +383,7 @@
- #define __NR_seccomp		358
- #define __NR_getrandom		359
- #define __NR_memfd_create	360
-+#define __NR_remap_anon_pages	361
-+#define __NR_userfaultfd	362
+-	return res;
++	return -ENOENT;
+ }
  
- #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
+ #ifdef CONFIG_PROC_FS
