@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697AbaJDArd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:47:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44833 "EHLO
+	id S1761354AbaJDAsA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:48:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44822 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965AbaJCVcl (ORCPT
+	with ESMTP id S1754962AbaJCVck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:41 -0400
+	Fri, 3 Oct 2014 17:32:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.16 053/357] ftrace: Use current addr when converting to nop in __ftrace_replace_code()
-Date: Fri,  3 Oct 2014 14:27:19 -0700
-Message-Id: <20141003212935.049931301@linuxfoundation.org>
+        Fan Du <fan.du@intel.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.16 052/357] i2c: ismt: use correct length when copy buffer
+Date: Fri,  3 Oct 2014 14:27:18 -0700
+Message-Id: <20141003212935.021417607@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,57 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Fan Du <fan.du@intel.com>
 
-commit 39b5552cd5090d4c210d278cd2732f493075f033 upstream.
+commit 979bbf7b7ae75cfc06e09d09eda38009a3bdc4a4 upstream.
 
-In __ftrace_replace_code(), when converting the call to a nop in a function
-it needs to compare against the "curr" (current) value of the ftrace ops, and
-not the "new" one. It currently does not affect x86 which is the only arch
-to do the trampolines with function graph tracer, but when other archs that do
-depend on this code implement the function graph trampoline, it can crash.
+In block write mode, when encapsulating dma_buffer, first element is
+'command', the rest is data buffer, so only copy actual data buffer
+starting from block[1] with the size indicating by block[0].
 
-Here's an example when ARM uses the trampolines (in the future):
-
- ------------[ cut here ]------------
- WARNING: CPU: 0 PID: 9 at kernel/trace/ftrace.c:1716 ftrace_bug+0x17c/0x1f4()
- Modules linked in: omap_rng rng_core ipv6
- CPU: 0 PID: 9 Comm: migration/0 Not tainted 3.16.0-test-10959-gf0094b28f303-dirty #52
- [<c02188f4>] (unwind_backtrace) from [<c021343c>] (show_stack+0x20/0x24)
- [<c021343c>] (show_stack) from [<c095a674>] (dump_stack+0x78/0x94)
- [<c095a674>] (dump_stack) from [<c02532a0>] (warn_slowpath_common+0x7c/0x9c)
- [<c02532a0>] (warn_slowpath_common) from [<c02532ec>] (warn_slowpath_null+0x2c/0x34)
- [<c02532ec>] (warn_slowpath_null) from [<c02cbac4>] (ftrace_bug+0x17c/0x1f4)
- [<c02cbac4>] (ftrace_bug) from [<c02cc44c>] (ftrace_replace_code+0x80/0x9c)
- [<c02cc44c>] (ftrace_replace_code) from [<c02cc658>] (ftrace_modify_all_code+0xb8/0x164)
- [<c02cc658>] (ftrace_modify_all_code) from [<c02cc718>] (__ftrace_modify_code+0x14/0x1c)
- [<c02cc718>] (__ftrace_modify_code) from [<c02c7244>] (multi_cpu_stop+0xf4/0x134)
- [<c02c7244>] (multi_cpu_stop) from [<c02c6e90>] (cpu_stopper_thread+0x54/0x130)
- [<c02c6e90>] (cpu_stopper_thread) from [<c0271cd4>] (smpboot_thread_fn+0x1ac/0x1bc)
- [<c0271cd4>] (smpboot_thread_fn) from [<c026ddf0>] (kthread+0xe0/0xfc)
- [<c026ddf0>] (kthread) from [<c020f318>] (ret_from_fork+0x14/0x20)
- ---[ end trace dc9ce72c5b617d8f ]---
-[   65.047264] ftrace failed to modify [<c0208580>] asm_do_IRQ+0x10/0x1c
-[   65.054070]  actual: 85:1b:00:eb
-
-Fixes: 7413af1fb70e7 "ftrace: Make get_ftrace_addr() and get_ftrace_addr_old() global"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Fan Du <fan.du@intel.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/i2c/busses/i2c-ismt.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1809,7 +1809,7 @@ __ftrace_replace_code(struct dyn_ftrace
- 		return ftrace_make_call(rec, ftrace_addr);
- 
- 	case FTRACE_UPDATE_MAKE_NOP:
--		return ftrace_make_nop(NULL, rec, ftrace_addr);
-+		return ftrace_make_nop(NULL, rec, ftrace_old_addr);
- 
- 	case FTRACE_UPDATE_MODIFY_CALL:
- 		return ftrace_modify_call(rec, ftrace_old_addr, ftrace_addr);
+--- a/drivers/i2c/busses/i2c-ismt.c
++++ b/drivers/i2c/busses/i2c-ismt.c
+@@ -497,7 +497,7 @@ static int ismt_access(struct i2c_adapte
+ 			desc->wr_len_cmd = dma_size;
+ 			desc->control |= ISMT_DESC_BLK;
+ 			priv->dma_buffer[0] = command;
+-			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size);
++			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size - 1);
+ 		} else {
+ 			/* Block Read */
+ 			dev_dbg(dev, "I2C_SMBUS_BLOCK_DATA:  READ\n");
+@@ -525,7 +525,7 @@ static int ismt_access(struct i2c_adapte
+ 			desc->wr_len_cmd = dma_size;
+ 			desc->control |= ISMT_DESC_I2C;
+ 			priv->dma_buffer[0] = command;
+-			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size);
++			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size - 1);
+ 		} else {
+ 			/* i2c Block Read */
+ 			dev_dbg(dev, "I2C_SMBUS_I2C_BLOCK_DATA:  READ\n");
 
 
