@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758977AbaJCWta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:49:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47408 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097AbaJCWYK (ORCPT
+	id S1759071AbaJCWuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:50:37 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60477 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756886AbaJCWuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:10 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joe Lawrence <joe.lawrence@stratus.com>
-Subject: [PATCH 3.10 059/143] USB: EHCI: unlink QHs even after the controller has stopped
-Date: Fri,  3 Oct 2014 14:34:14 -0700
-Message-Id: <20141003213316.284416528@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
-References: <20141003213314.470709810@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 18:50:32 -0400
+Date: Fri, 03 Oct 2014 15:52:38 -0700 (PDT)
+Message-Id: <20141003.155238.29455136676718598.davem@davemloft.net>
+To: gang.chen.5i5j@gmail.com
+Cc: f.fainelli@gmail.com, leitec@staticky.com, andrew@lunn.ch,
+        netdev@vger.kernel.org, richard@nod.at, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/dsa/Kconfig: Let NET_DSA_BCM_SF2 depend on
+ HAS_IOMEM
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <542D5DAC.4010001@gmail.com>
+References: <542D5DAC.4010001@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 15:50:31 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s93MofVu019263
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+Date: Thu, 02 Oct 2014 22:14:04 +0800
 
-------------------
+> NET_DSA_BCM_SF2 need HAS_IOMEM, so depend on it, the related error (with
+> allmodconfig under um):
+> 
+>     CC [M]  drivers/net/dsa/bcm_sf2.o
+>   drivers/net/dsa/bcm_sf2.c: In function ¡bcm_sf2_sw_setup¢:
+>   drivers/net/dsa/bcm_sf2.c:487:3: error: implicit declaration of function ¡iounmap¢ [-Werror=implicit-function-declaration]
+>      iounmap(*base);
+>      ^
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-From: Alan Stern <stern@rowland.harvard.edu>
-
-commit 7312b5ddd47fee2356baa78c5516ef8e04eed452 upstream.
-
-Old code in ehci-hcd tries to expedite disabling endpoints after the
-controller has stopped, by destroying the endpoint's associated QH
-without first unlinking the QH.  This was necessary back when the
-driver wasn't so careful about keeping track of the controller's
-state.
-
-But now we are careful about it, and the driver knows that when the
-controller isn't running, no unlinking delay is needed.  Furthermore,
-skipping the unlink step will trigger a BUG() in qh_destroy() when the
-preceding QH is released, because the link pointer will be non-NULL.
-
-Removing the lines that skip the unlinking step and go directly to
-QH_STATE_IDLE fixes the problem.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Tested-by: Joe Lawrence <joe.lawrence@stratus.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/ehci-hcd.c |    2 --
- 1 file changed, 2 deletions(-)
-
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -972,8 +972,6 @@ rescan:
- 	}
- 
- 	qh->exception = 1;
--	if (ehci->rh_state < EHCI_RH_RUNNING)
--		qh->qh_state = QH_STATE_IDLE;
- 	switch (qh->qh_state) {
- 	case QH_STATE_LINKED:
- 	case QH_STATE_COMPLETING:
-
-
+Applied.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
