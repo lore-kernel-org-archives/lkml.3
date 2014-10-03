@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaJCFVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:21:49 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44899 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034AbaJCFVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 01:21:48 -0400
-Date: Fri, 3 Oct 2014 06:21:44 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm i915 and nouveau fixes
-Message-ID: <alpine.DEB.2.00.1410030619490.14293@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752486AbaJCFZs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:25:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60693 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaJCFZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 01:25:47 -0400
+Date: Thu, 2 Oct 2014 22:25:28 -0700
+From: tip-bot for Chang Hyun Park <tipbot@zytor.com>
+Message-ID: <tip-2c82c3ad56921c47f28af9eb8ed96b6d99b47623@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
+        hpa@zytor.com, mingo@kernel.org, heartinpiece@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de,
+        heartinpiece@gmail.com
+In-Reply-To: <1411736041-8017-1-git-send-email-heartinpiece@gmail.com>
+References: <1411736041-8017-1-git-send-email-heartinpiece@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace:
+  Fix mmap return address truncation to 32-bit
+Git-Commit-ID: 2c82c3ad56921c47f28af9eb8ed96b6d99b47623
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  2c82c3ad56921c47f28af9eb8ed96b6d99b47623
+Gitweb:     http://git.kernel.org/tip/2c82c3ad56921c47f28af9eb8ed96b6d99b47623
+Author:     Chang Hyun Park <heartinpiece@gmail.com>
+AuthorDate: Fri, 26 Sep 2014 21:54:01 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 29 Sep 2014 15:25:36 -0300
 
-Hi Linus,
+perf trace: Fix mmap return address truncation to 32-bit
 
-Nothing too major or scary,
+Using 'perf trace' for mmap is truncating return values by stripping the
+top 32 bits, actually printing only the lower 32 bits.
 
-one i915 regression fix, nouveau has a tmds regression fix, along with a 
-regression fix for the runtime pm code for optimus laptops not restoring 
-the display hw correctly.
+This was because the ret value was of an 'int' type and not a 'long'
+type.
 
-Dave.
+  The Problem:
 
-The following changes since commit fe82dcec644244676d55a1384c958d5f67979adb:
+  991258501.244 ( 0.004 ms): mmap(len: 40001536, prot: READ|WRITE, flags: PRIVATE|ANONYMOUS, fd: -1) = 0x56691000
+  991258501.257 ( 0.000 ms): minfault [_int_malloc+0x1038] => //anon@0x7fa056691008 //(d.)
 
-  Linux 3.17-rc7 (2014-09-28 14:29:07 -0700)
+The first line shows an mmap, which succeeds and returns 0x56691000.
 
-are available in the git repository at:
+However the next line shows a memory access to that virtual memory area,
+specifically to 0x7fa056691008. The upper 32 bit is lost due to the
+problem mentioned above, and thus mmap's return value didn't have the
+upper 0x7fa0.
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+Tested on 3.17-rc5 from the linus's tree, and the HEAD of tip/master
 
-for you to fetch changes up to eee0815dabbdd7d584bea8275f5758d25c97cb9b:
+Signed-off-by: Chang Hyun Park <heartinpiece@gmail.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1411736041-8017-1-git-send-email-heartinpiece@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-trace.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-  Merge tag 'drm-intel-fixes-2014-10-02' of git://anongit.freedesktop.org/drm-intel into drm-fixes (2014-10-03 11:38:16 +1000)
-
-----------------------------------------------------------------
-
-Ben Skeggs (4):
-      drm/nv50/disp: fix dpms regression on certain boards
-      drm/nouveau: fix regression on original nv50 board
-      drm/nouveau: punt fbcon resume out to a workqueue
-      drm/nouveau: make sure display hardware is reinitialised on runtime resume
-
-Chris Wilson (1):
-      drm/i915: Flush the PTEs after updating them before suspend
-
-Dave Airlie (2):
-      Merge branch 'linux-3.17' of git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
-      Merge tag 'drm-intel-fixes-2014-10-02' of git://anongit.freedesktop.org/drm-intel into drm-fixes
-
- drivers/gpu/drm/i915/i915_gem_gtt.c             | 14 ++++++-
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c |  3 +-
- drivers/gpu/drm/nouveau/nouveau_chan.c          |  7 +++-
- drivers/gpu/drm/nouveau/nouveau_display.c       | 23 ++++++-----
- drivers/gpu/drm/nouveau/nouveau_display.h       |  5 +--
- drivers/gpu/drm/nouveau/nouveau_drm.c           | 51 +++++++------------------
- drivers/gpu/drm/nouveau/nouveau_fbcon.c         | 23 ++++++++---
- drivers/gpu/drm/nouveau/nouveau_fbcon.h         |  1 +
- 8 files changed, 65 insertions(+), 62 deletions(-)
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index c70e69e..09bcf23 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -1695,7 +1695,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 			   union perf_event *event __maybe_unused,
+ 			   struct perf_sample *sample)
+ {
+-	int ret;
++	long ret;
+ 	u64 duration = 0;
+ 	struct thread *thread;
+ 	int id = perf_evsel__sc_tp_uint(evsel, id, sample);
+@@ -1748,7 +1748,7 @@ static int trace__sys_exit(struct trace *trace, struct perf_evsel *evsel,
+ 
+ 	if (sc->fmt == NULL) {
+ signed_print:
+-		fprintf(trace->output, ") = %d", ret);
++		fprintf(trace->output, ") = %ld", ret);
+ 	} else if (ret < 0 && sc->fmt->errmsg) {
+ 		char bf[STRERR_BUFSIZE];
+ 		const char *emsg = strerror_r(-ret, bf, sizeof(bf)),
+@@ -1758,7 +1758,7 @@ signed_print:
+ 	} else if (ret == 0 && sc->fmt->timeout)
+ 		fprintf(trace->output, ") = 0 Timeout");
+ 	else if (sc->fmt->hexret)
+-		fprintf(trace->output, ") = %#x", ret);
++		fprintf(trace->output, ") = %#lx", ret);
+ 	else
+ 		goto signed_print;
+ 
