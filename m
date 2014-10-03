@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304AbaJCVzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:55:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46048 "EHLO
+	id S1756855AbaJCV4B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:56:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46062 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202AbaJCVzu (ORCPT
+	with ESMTP id S932202AbaJCVzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:55:50 -0400
+	Fri, 3 Oct 2014 17:55:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Rohner <andreas.rohner@gmx.net>,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        David Rientjes <rientjes@google.com>,
+        Andrei Elovikov <a.elovikov@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 276/357] nilfs2: fix data loss with mmap()
-Date: Fri,  3 Oct 2014 14:31:02 -0700
-Message-Id: <20141003212941.786717728@linuxfoundation.org>
+Subject: [PATCH 3.16 278/357] mm, slab: initialize object alignment on cache creation
+Date: Fri,  3 Oct 2014 14:31:04 -0700
+Message-Id: <20141003212941.844778845@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,115 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Rohner <andreas.rohner@gmx.net>
+From: David Rientjes <rientjes@google.com>
 
-commit 56d7acc792c0d98f38f22058671ee715ff197023 upstream.
+commit d4a5fca592b9ab52b90bb261a90af3c8f53be011 upstream.
 
-This bug leads to reproducible silent data loss, despite the use of
-msync(), sync() and a clean unmount of the file system.  It is easily
-reproducible with the following script:
+Since commit 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the
+"ralign" automatic variable in __kmem_cache_create() may be used as
+uninitialized.
 
-  ----------------[BEGIN SCRIPT]--------------------
-  mkfs.nilfs2 -f /dev/sdb
-  mount /dev/sdb /mnt
+The proper alignment defaults to BYTES_PER_WORD and can be overridden by
+SLAB_RED_ZONE or the alignment specified by the caller.
 
-  dd if=/dev/zero bs=1M count=30 of=/mnt/testfile
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
 
-  umount /mnt
-  mount /dev/sdb /mnt
-  CHECKSUM_BEFORE="$(md5sum /mnt/testfile)"
-
-  /root/mmaptest/mmaptest /mnt/testfile 30 10 5
-
-  sync
-  CHECKSUM_AFTER="$(md5sum /mnt/testfile)"
-  umount /mnt
-  mount /dev/sdb /mnt
-  CHECKSUM_AFTER_REMOUNT="$(md5sum /mnt/testfile)"
-  umount /mnt
-
-  echo "BEFORE MMAP:\t$CHECKSUM_BEFORE"
-  echo "AFTER MMAP:\t$CHECKSUM_AFTER"
-  echo "AFTER REMOUNT:\t$CHECKSUM_AFTER_REMOUNT"
-  ----------------[END SCRIPT]--------------------
-
-The mmaptest tool looks something like this (very simplified, with
-error checking removed):
-
-  ----------------[BEGIN mmaptest]--------------------
-  data = mmap(NULL, file_size - file_offset, PROT_READ | PROT_WRITE,
-              MAP_SHARED, fd, file_offset);
-
-  for (i = 0; i < write_count; ++i) {
-        memcpy(data + i * 4096, buf, sizeof(buf));
-        msync(data, file_size - file_offset, MS_SYNC))
-  }
-  ----------------[END mmaptest]--------------------
-
-The output of the script looks something like this:
-
-  BEFORE MMAP:    281ed1d5ae50e8419f9b978aab16de83  /mnt/testfile
-  AFTER MMAP:     6604a1c31f10780331a6850371b3a313  /mnt/testfile
-  AFTER REMOUNT:  281ed1d5ae50e8419f9b978aab16de83  /mnt/testfile
-
-So it is clear, that the changes done using mmap() do not survive a
-remount.  This can be reproduced a 100% of the time.  The problem was
-introduced in commit 136e8770cd5d ("nilfs2: fix issue of
-nilfs_set_page_dirty() for page at EOF boundary").
-
-If the page was read with mpage_readpage() or mpage_readpages() for
-example, then it has no buffers attached to it.  In that case
-page_has_buffers(page) in nilfs_set_page_dirty() will be false.
-Therefore nilfs_set_file_dirty() is never called and the pages are never
-collected and never written to disk.
-
-This patch fixes the problem by also calling nilfs_set_file_dirty() if the
-page has no buffers attached to it.
-
-[akpm@linux-foundation.org: s/PAGE_SHIFT/PAGE_CACHE_SHIFT/]
-Signed-off-by: Andreas Rohner <andreas.rohner@gmx.net>
-Tested-by: Andreas Rohner <andreas.rohner@gmx.net>
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/inode.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ mm/slab.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -24,6 +24,7 @@
- #include <linux/buffer_head.h>
- #include <linux/gfp.h>
- #include <linux/mpage.h>
-+#include <linux/pagemap.h>
- #include <linux/writeback.h>
- #include <linux/aio.h>
- #include "nilfs.h"
-@@ -219,10 +220,10 @@ static int nilfs_writepage(struct page *
- 
- static int nilfs_set_page_dirty(struct page *page)
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2224,7 +2224,8 @@ static int __init_refok setup_cpu_cache(
+ int
+ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
  {
-+	struct inode *inode = page->mapping->host;
- 	int ret = __set_page_dirty_nobuffers(page);
- 
- 	if (page_has_buffers(page)) {
--		struct inode *inode = page->mapping->host;
- 		unsigned nr_dirty = 0;
- 		struct buffer_head *bh, *head;
- 
-@@ -245,6 +246,10 @@ static int nilfs_set_page_dirty(struct p
- 
- 		if (nr_dirty)
- 			nilfs_set_file_dirty(inode, nr_dirty);
-+	} else if (ret) {
-+		unsigned nr_dirty = 1 << (PAGE_CACHE_SHIFT - inode->i_blkbits);
-+
-+		nilfs_set_file_dirty(inode, nr_dirty);
+-	size_t left_over, freelist_size, ralign;
++	size_t left_over, freelist_size;
++	size_t ralign = BYTES_PER_WORD;
+ 	gfp_t gfp;
+ 	int err;
+ 	size_t size = cachep->size;
+@@ -2257,14 +2258,6 @@ __kmem_cache_create (struct kmem_cache *
+ 		size &= ~(BYTES_PER_WORD - 1);
  	}
- 	return ret;
- }
+ 
+-	/*
+-	 * Redzoning and user store require word alignment or possibly larger.
+-	 * Note this will be overridden by architecture or caller mandated
+-	 * alignment if either is greater than BYTES_PER_WORD.
+-	 */
+-	if (flags & SLAB_STORE_USER)
+-		ralign = BYTES_PER_WORD;
+-
+ 	if (flags & SLAB_RED_ZONE) {
+ 		ralign = REDZONE_ALIGN;
+ 		/* If redzoning, ensure that the second redzone is suitably
 
 
