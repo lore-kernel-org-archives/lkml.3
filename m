@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357AbaJCVp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:45:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45643 "EHLO
+	id S1756372AbaJCVqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:46:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45644 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269AbaJCVp3 (ORCPT
+	with ESMTP id S1756270AbaJCVp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Ciocca <denis.ciocca@st.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 228/357] iio:magnetometer: bugfix magnetometers gain values
-Date: Fri,  3 Oct 2014 14:30:14 -0700
-Message-Id: <20141003212940.363914128@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 014/238] drm/radeon: re-enable dpm by default on cayman
+Date: Fri,  3 Oct 2014 14:28:49 -0700
+Message-Id: <20141003212914.121008586@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,106 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Denis CIOCCA <denis.ciocca@st.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
+commit 8f500af4efe347d1a8ac674d115220e8caa84559 upstream.
 
-This patch fix gains values. The first driver was designed using
-engineering samples, in mass production the values are changed.
+This patch depends on:
+b0880e87c1fd038b84498944f52e52c3e86ebe59
+(drm/radeon/dpm: fix vddci setup typo on cayman)
 
-Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=69723
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/st_magn_core.c |   52 ++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 22 deletions(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iio/magnetometer/st_magn_core.c
-+++ b/drivers/iio/magnetometer/st_magn_core.c
-@@ -42,7 +42,8 @@
- #define ST_MAGN_FS_AVL_5600MG			5600
- #define ST_MAGN_FS_AVL_8000MG			8000
- #define ST_MAGN_FS_AVL_8100MG			8100
--#define ST_MAGN_FS_AVL_10000MG			10000
-+#define ST_MAGN_FS_AVL_12000MG			12000
-+#define ST_MAGN_FS_AVL_16000MG			16000
- 
- /* CUSTOM VALUES FOR SENSOR 1 */
- #define ST_MAGN_1_WAI_EXP			0x3c
-@@ -69,20 +70,20 @@
- #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
- #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
- #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
--#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
--#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
--#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
--#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
--#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
--#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
--#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
--#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
--#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
--#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
--#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
--#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
--#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
--#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
- #define ST_MAGN_1_MULTIREAD_BIT			false
- 
- /* CUSTOM VALUES FOR SENSOR 2 */
-@@ -105,10 +106,12 @@
- #define ST_MAGN_2_FS_MASK			0x60
- #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
- #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
--#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
--#define ST_MAGN_2_FS_AVL_4000_GAIN		430
--#define ST_MAGN_2_FS_AVL_8000_GAIN		230
--#define ST_MAGN_2_FS_AVL_10000_GAIN		230
-+#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
-+#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
-+#define ST_MAGN_2_FS_AVL_4000_GAIN		146
-+#define ST_MAGN_2_FS_AVL_8000_GAIN		292
-+#define ST_MAGN_2_FS_AVL_12000_GAIN		438
-+#define ST_MAGN_2_FS_AVL_16000_GAIN		584
- #define ST_MAGN_2_MULTIREAD_BIT			false
- #define ST_MAGN_2_OUT_X_L_ADDR			0x28
- #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
-@@ -266,9 +269,14 @@ static const struct st_sensors st_magn_s
- 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
- 				},
- 				[2] = {
--					.num = ST_MAGN_FS_AVL_10000MG,
--					.value = ST_MAGN_2_FS_AVL_10000_VAL,
--					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
-+					.num = ST_MAGN_FS_AVL_12000MG,
-+					.value = ST_MAGN_2_FS_AVL_12000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
-+				},
-+				[3] = {
-+					.num = ST_MAGN_FS_AVL_16000MG,
-+					.value = ST_MAGN_2_FS_AVL_16000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
- 				},
- 			},
- 		},
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1279,7 +1279,6 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_BARTS:
+ 	case CHIP_TURKS:
+ 	case CHIP_CAICOS:
+-	case CHIP_CAYMAN:
+ 		/* DPM requires the RLC, RV770+ dGPU requires SMC */
+ 		if (!rdev->rlc_fw)
+ 			rdev->pm.pm_method = PM_METHOD_PROFILE;
+@@ -1303,6 +1302,7 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_PALM:
+ 	case CHIP_SUMO:
+ 	case CHIP_SUMO2:
++	case CHIP_CAYMAN:
+ 	case CHIP_ARUBA:
+ 	case CHIP_TAHITI:
+ 	case CHIP_PITCAIRN:
 
 
