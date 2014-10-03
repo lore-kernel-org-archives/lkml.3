@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080AbaJCWQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:16:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47104 "EHLO
+	id S1758089AbaJCWQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:16:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331AbaJCWQS (ORCPT
+	with ESMTP id S1758052AbaJCWQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:16:18 -0400
+	Fri, 3 Oct 2014 18:16:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Assaf Azulay <assaf.azulay@intel.com>,
-        David Spinadel <david.spinadel@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 209/238] nl80211: clear skb cb before passing to netlink
-Date: Fri,  3 Oct 2014 14:32:04 -0700
-Message-Id: <20141003212920.349178713@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+Subject: [PATCH 3.14 231/238] dmaengine: dw: dont perform DMA when dmaengine_submit is called
+Date: Fri,  3 Oct 2014 14:32:26 -0700
+Message-Id: <20141003212921.051229006@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,50 +30,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit bd8c78e78d5011d8111bc2533ee73b13a3bd6c42 upstream.
+commit dd8ecfcac66b4485416b2d1df0ec4798b198d7d6 upstream.
 
-In testmode and vendor command reply/event SKBs we use the
-skb cb data to store nl80211 parameters between allocation
-and sending. This causes the code for CONFIG_NETLINK_MMAP
-to get confused, because it takes ownership of the skb cb
-data when the SKB is handed off to netlink, and it doesn't
-explicitly clear it.
+Accordingly to discussion [1] and followed up documentation the DMA controller
+driver shouldn't start any DMA operations when dmaengine_submit() is called.
 
-Clear the skb cb explicitly when we're done and before it
-gets passed to netlink to avoid this issue.
+This patch fixes the workflow in dw_dmac driver to follow the documentation.
 
-Reported-by: Assaf Azulay <assaf.azulay@intel.com>
-Reported-by: David Spinadel <david.spinadel@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[1] http://www.spinics.net/lists/arm-kernel/msg125987.html
+
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/dma/TODO      |    1 -
+ drivers/dma/dw/core.c |   19 +++++++------------
+ 2 files changed, 7 insertions(+), 13 deletions(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -6796,6 +6796,9 @@ void __cfg80211_send_event_skb(struct sk
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 	enum nl80211_multicast_groups mcgrp = NL80211_MCGRP_TESTMODE;
+--- a/drivers/dma/TODO
++++ b/drivers/dma/TODO
+@@ -7,7 +7,6 @@ TODO for slave dma
+ 	- imx-dma
+ 	- imx-sdma
+ 	- mxs-dma.c
+-	- dw_dmac
+ 	- intel_mid_dma
+ 4. Check other subsystems for dma drivers and merge/move to dmaengine
+ 5. Remove dma_slave_config's dma direction.
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -680,17 +680,9 @@ static dma_cookie_t dwc_tx_submit(struct
+ 	 * possible, perhaps even appending to those already submitted
+ 	 * for DMA. But this is hard to do in a race-free manner.
+ 	 */
+-	if (list_empty(&dwc->active_list)) {
+-		dev_vdbg(chan2dev(tx->chan), "%s: started %u\n", __func__,
+-				desc->txd.cookie);
+-		list_add_tail(&desc->desc_node, &dwc->active_list);
+-		dwc_dostart(dwc, dwc_first_active(dwc));
+-	} else {
+-		dev_vdbg(chan2dev(tx->chan), "%s: queued %u\n", __func__,
+-				desc->txd.cookie);
  
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
-+
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
+-		list_add_tail(&desc->desc_node, &dwc->queue);
+-	}
++	dev_vdbg(chan2dev(tx->chan), "%s: queued %u\n", __func__, desc->txd.cookie);
++	list_add_tail(&desc->desc_node, &dwc->queue);
  
-@@ -9075,6 +9078,9 @@ int cfg80211_vendor_cmd_reply(struct sk_
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
  
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
-+
- 	if (WARN_ON(!rdev->cur_cmd_info)) {
- 		kfree_skb(skb);
- 		return -EINVAL;
+@@ -1095,9 +1087,12 @@ dwc_tx_status(struct dma_chan *chan,
+ static void dwc_issue_pending(struct dma_chan *chan)
+ {
+ 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
++	unsigned long		flags;
+ 
+-	if (!list_empty(&dwc->queue))
+-		dwc_scan_descriptors(to_dw_dma(chan->device), dwc);
++	spin_lock_irqsave(&dwc->lock, flags);
++	if (list_empty(&dwc->active_list))
++		dwc_dostart_first_queued(dwc);
++	spin_unlock_irqrestore(&dwc->lock, flags);
+ }
+ 
+ static int dwc_alloc_chan_resources(struct dma_chan *chan)
 
 
