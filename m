@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761231AbaJDAOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:14:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588AbaJCVxL (ORCPT
+	id S1761240AbaJDAO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:14:59 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:38922 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313AbaJCVpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 230/357] iio: adc: xilinx-xadc: assign auxiliary channels address correctly
-Date: Fri,  3 Oct 2014 14:30:16 -0700
-Message-Id: <20141003212940.421480012@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 17:45:15 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com
+Cc: teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
+        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, mcgrof@suse.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 5/7] driver-core: generalize freeing driver private member
+Date: Fri,  3 Oct 2014 14:44:41 -0700
+Message-Id: <1412372683-2003-6-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-------------------
+This will be used later.
 
-From: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>
-
-commit 1887e724e2b6df06847522fe9dc2ab53639516cc upstream.
-
-This patch fixes incorrect logic for assigning address
-to auxiliary channels of xilinx xadc.
-
-Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- drivers/iio/adc/xilinx-xadc-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/bus.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/iio/adc/xilinx-xadc-core.c
-+++ b/drivers/iio/adc/xilinx-xadc-core.c
-@@ -1126,7 +1126,7 @@ static int xadc_parse_dt(struct iio_dev
- 				chan->address = XADC_REG_VPVN;
- 			} else {
- 				chan->scan_index = 15 + reg;
--				chan->scan_index = XADC_REG_VAUX(reg - 1);
-+				chan->address = XADC_REG_VAUX(reg - 1);
- 			}
- 			num_channels++;
- 			chan++;
-
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 83e910a..a5f41e4 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -657,6 +657,15 @@ static ssize_t uevent_store(struct device_driver *drv, const char *buf,
+ }
+ static DRIVER_ATTR_WO(uevent);
+ 
++static void remove_driver_private(struct device_driver *drv)
++{
++	struct driver_private *priv = drv->p;
++
++	kobject_put(&priv->kobj);
++	kfree(priv);
++	drv->p = NULL;
++}
++
+ /**
+  * bus_add_driver - Add a driver to the bus.
+  * @drv: driver.
+@@ -719,9 +728,7 @@ int bus_add_driver(struct device_driver *drv)
+ 	return 0;
+ 
+ out_unregister:
+-	kobject_put(&priv->kobj);
+-	kfree(drv->p);
+-	drv->p = NULL;
++	remove_driver_private(drv);
+ out_put_bus:
+ 	bus_put(bus);
+ 	return error;
+-- 
+2.1.1
 
