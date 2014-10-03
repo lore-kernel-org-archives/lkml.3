@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754279AbaJCRJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 13:09:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22036 "EHLO mx1.redhat.com"
+	id S1754338AbaJCRJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 13:09:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48305 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaJCRIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 13:08:55 -0400
+	id S1751159AbaJCRI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 13:08:56 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, linux-api@vger.kernel.org
@@ -34,72 +34,143 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Stefan Hajnoczi <stefanha@gmail.com>,
         Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
         Juan Quintela <quintela@redhat.com>
-Subject: [PATCH 11/17] mm: swp_entry_swapcount
-Date: Fri,  3 Oct 2014 19:08:01 +0200
-Message-Id: <1412356087-16115-12-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 03/17] mm: gup: use get_user_pages_unlocked within get_user_pages_fast
+Date: Fri,  3 Oct 2014 19:07:53 +0200
+Message-Id: <1412356087-16115-4-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a new swapfile method for remap_anon_pages to verify the swap
-entry is mapped only in one vma before relocating the swap entry in a
-different virtual address. Otherwise if the swap entry is mapped
-in multiple vmas, when the page is swapped back in, it could get
-mapped in a non linear way in some anon_vma.
-
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/swap.h |  6 ++++++
- mm/swapfile.c        | 13 +++++++++++++
- 2 files changed, 19 insertions(+)
+ arch/mips/mm/gup.c       | 8 +++-----
+ arch/powerpc/mm/gup.c    | 6 ++----
+ arch/s390/kvm/kvm-s390.c | 4 +---
+ arch/s390/mm/gup.c       | 6 ++----
+ arch/sh/mm/gup.c         | 6 ++----
+ arch/sparc/mm/gup.c      | 6 ++----
+ arch/x86/mm/gup.c        | 7 +++----
+ 7 files changed, 15 insertions(+), 28 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 8197452..af9977c 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -458,6 +458,7 @@ extern unsigned int count_swap_pages(int, int);
- extern sector_t map_swap_page(struct page *, struct block_device **);
- extern sector_t swapdev_block(int, pgoff_t);
- extern int page_swapcount(struct page *);
-+extern int swp_entry_swapcount(swp_entry_t entry);
- extern struct swap_info_struct *page_swap_info(struct page *);
- extern int reuse_swap_page(struct page *);
- extern int try_to_free_swap(struct page *);
-@@ -559,6 +560,11 @@ static inline int page_swapcount(struct page *page)
- 	return 0;
+diff --git a/arch/mips/mm/gup.c b/arch/mips/mm/gup.c
+index 06ce17c..20884f5 100644
+--- a/arch/mips/mm/gup.c
++++ b/arch/mips/mm/gup.c
+@@ -301,11 +301,9 @@ slow_irqon:
+ 	start += nr << PAGE_SHIFT;
+ 	pages += nr;
+ 
+-	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, start,
+-				(end - start) >> PAGE_SHIFT,
+-				write, 0, pages, NULL);
+-	up_read(&mm->mmap_sem);
++	ret = get_user_pages_unlocked(current, mm, start,
++				      (end - start) >> PAGE_SHIFT,
++				      write, 0, pages);
+ 
+ 	/* Have to be a bit careful with return values */
+ 	if (nr > 0) {
+diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
+index d874668..b70c34a 100644
+--- a/arch/powerpc/mm/gup.c
++++ b/arch/powerpc/mm/gup.c
+@@ -215,10 +215,8 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-				     nr_pages - nr, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++					      nr_pages - nr, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+index 81b0e11..37ca29a 100644
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -1092,9 +1092,7 @@ long kvm_arch_fault_in_page(struct kvm_vcpu *vcpu, gpa_t gpa, int writable)
+ 	hva = gmap_fault(gpa, vcpu->arch.gmap);
+ 	if (IS_ERR_VALUE(hva))
+ 		return (long)hva;
+-	down_read(&mm->mmap_sem);
+-	rc = get_user_pages(current, mm, hva, 1, writable, 0, NULL, NULL);
+-	up_read(&mm->mmap_sem);
++	rc = get_user_pages_unlocked(current, mm, hva, 1, writable, 0, NULL);
+ 
+ 	return rc < 0 ? rc : 0;
  }
+diff --git a/arch/s390/mm/gup.c b/arch/s390/mm/gup.c
+index 639fce46..5c586c7 100644
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -235,10 +235,8 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	/* Try to get the remaining pages with get_user_pages */
+ 	start += nr << PAGE_SHIFT;
+ 	pages += nr;
+-	down_read(&mm->mmap_sem);
+-	ret = get_user_pages(current, mm, start,
+-			     nr_pages - nr, write, 0, pages, NULL);
+-	up_read(&mm->mmap_sem);
++	ret = get_user_pages_unlocked(current, mm, start,
++			     nr_pages - nr, write, 0, pages);
+ 	/* Have to be a bit careful with return values */
+ 	if (nr > 0)
+ 		ret = (ret < 0) ? nr : ret + nr;
+diff --git a/arch/sh/mm/gup.c b/arch/sh/mm/gup.c
+index 37458f3..e15f52a 100644
+--- a/arch/sh/mm/gup.c
++++ b/arch/sh/mm/gup.c
+@@ -257,10 +257,8 @@ slow_irqon:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
  
-+static inline int swp_entry_swapcount(swp_entry_t entry)
-+{
-+	return 0;
-+}
-+
- #define reuse_swap_page(page)	(page_mapcount(page) == 1)
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++			(end - start) >> PAGE_SHIFT, write, 0, pages);
  
- static inline int try_to_free_swap(struct page *page)
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 8798b2e..4cc9af6 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -874,6 +874,19 @@ int page_swapcount(struct page *page)
- 	return count;
- }
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
+index 1aed043..fa7de7d 100644
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -219,10 +219,8 @@ slow:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
  
-+int swp_entry_swapcount(swp_entry_t entry)
-+{
-+	int count = 0;
-+	struct swap_info_struct *p;
-+
-+	p = swap_info_get(entry);
-+	if (p) {
-+		count = swap_count(p->swap_map[swp_offset(entry)]);
-+		spin_unlock(&p->lock);
-+	}
-+	return count;
-+}
-+
- /*
-  * We can write to an anon page without COW if there are no other references
-  * to it.  And as a side-effect, free up its swap: because the old content
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++			(end - start) >> PAGE_SHIFT, write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
+diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
+index 207d9aef..2ab183b 100644
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -388,10 +388,9 @@ slow_irqon:
+ 		start += nr << PAGE_SHIFT;
+ 		pages += nr;
+ 
+-		down_read(&mm->mmap_sem);
+-		ret = get_user_pages(current, mm, start,
+-			(end - start) >> PAGE_SHIFT, write, 0, pages, NULL);
+-		up_read(&mm->mmap_sem);
++		ret = get_user_pages_unlocked(current, mm, start,
++					      (end - start) >> PAGE_SHIFT,
++					      write, 0, pages);
+ 
+ 		/* Have to be a bit careful with return values */
+ 		if (nr > 0) {
