@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451AbaJCWEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:04:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46279 "EHLO
+	id S1757435AbaJCWEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:04:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757329AbaJCWDj (ORCPT
+	with ESMTP id S1757334AbaJCWDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:39 -0400
+	Fri, 3 Oct 2014 18:03:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Mark Knibbs <markk@clara.co.uk>
-Subject: [PATCH 3.14 097/238] storage: Add single-LUN quirk for Jaz USB Adapter
-Date: Fri,  3 Oct 2014 14:30:12 -0700
-Message-Id: <20141003212916.777612565@linuxfoundation.org>
+Subject: [PATCH 3.14 098/238] USB: storage: Add quirk for Adaptec USBConnect 2000 USB-to-SCSI Adapter
+Date: Fri,  3 Oct 2014 14:30:13 -0700
+Message-Id: <20141003212916.810329047@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,17 +30,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mark <markk@clara.co.uk>
 
-commit c66f1c62e85927357e7b3f4c701614dcb5c498a2 upstream.
+commit 67d365a57a51fb9dece6a5ceb504aa381cae1e5b upstream.
 
-The Iomega Jaz USB Adapter is a SCSI-USB converter cable. The hardware
-seems to be identical to e.g. the Microtech XpressSCSI, using a Shuttle/
-SCM chip set. However its firmware restricts it to only work with Jaz
-drives.
+The Adaptec USBConnect 2000 is another SCSI-USB converter which uses
+Shuttle Technology/SCM Microsystems chips. The US_FL_SCM_MULT_TARG quirk is
+required to use SCSI devices with ID other than 0.
 
-On connecting the cable a message like this appears four times in the log:
- reset full speed USB device number 4 using uhci_hcd
-
-That's non-fatal but the US_FL_SINGLE_LUN quirk fixes it.
+I don't have a USBConnect 2000, but based on the other entries for Shuttle/
+SCM-based converters this patch is very likely correct. I used 0x0000 and
+0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
+bcdDevice value the product uses.
 
 Signed-off-by: Mark Knibbs <markk@clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -51,18 +50,18 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/usb/storage/unusual_devs.h
 +++ b/drivers/usb/storage/unusual_devs.h
-@@ -741,6 +741,12 @@ UNUSUAL_DEV(  0x059b, 0x0001, 0x0100, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_SINGLE_LUN ),
+@@ -101,6 +101,12 @@ UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x
+ 		"PhotoSmart R707",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
  
-+UNUSUAL_DEV(  0x059b, 0x0040, 0x0100, 0x0100,
-+		"Iomega",
-+		"Jaz USB Adapter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_SINGLE_LUN ),
++UNUSUAL_DEV(  0x03f3, 0x0001, 0x0000, 0x9999,
++		"Adaptec",
++		"USBConnect 2000",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
 +
- /* Reported by <Hendryk.Pfeiffer@gmx.de> */
- UNUSUAL_DEV(  0x059f, 0x0643, 0x0000, 0x0000,
- 		"LaCie",
+ /* Reported by Sebastian Kapfer <sebastian_kapfer@gmx.net>
+  * and Olaf Hering <olh@suse.de> (different bcd's, same vendor/product)
+  * for USB floppies that need the SINGLE_LUN enforcement.
 
 
