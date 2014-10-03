@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244AbaJDAyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:54:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44712 "EHLO
+	id S1761484AbaJDAzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:55:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891AbaJCVcc (ORCPT
+	with ESMTP id S1754880AbaJCVcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:32 -0400
+	Fri, 3 Oct 2014 17:32:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Cooper <alcooperx@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: [PATCH 3.16 027/357] of: Allow mem_reserve of memory with a base address of zero
-Date: Fri,  3 Oct 2014 14:26:53 -0700
-Message-Id: <20141003212934.285420425@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Andreas Boll <andreas.boll.dev@gmail.com>
+Subject: [PATCH 3.16 023/357] drm/radeon: tweak ACCEL_WORKING2 query for hawaii
+Date: Fri,  3 Oct 2014 14:26:49 -0700
+Message-Id: <20141003212934.161071981@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,38 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Cooper <alcooperx@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b5f2a8c02697c3685ccbbb66495465742ffa0dc1 upstream.
+commit 3c64bd26f7e9bd589ebe0d1ebec69ef2f784c12d upstream.
 
-__reserved_mem_reserve_reg() won't reserve memory if the base address
-is zero. This change removes the check for a base address of zero and
-allows it to be reserved.
+Return 2 so we can be sure the kernel has the necessary
+changes for acceleration to work.
 
-Allowing the first 4K of memory to be reserved will help solve a
-problem on some ARM systems where the the first 16K of memory is
-unused and becomes allocable memory. This will prevent this memory
-from being used for DMA by drivers like the USB OHCI driver which
-consider a physical address of zero to be illegal.
+Note: This patch depends on these two commits:
+ - drm/radeon: fix cut and paste issue for hawaii.
+ - drm/radeon: use packet2 for nop on hawaii with old firmware
 
-Signed-off-by: Al Cooper <alcooperx@gmail.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Andreas Boll <andreas.boll.dev@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/fdt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_kms.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -453,7 +453,7 @@ static int __init __reserved_mem_reserve
- 		base = dt_mem_next_cell(dt_root_addr_cells, &prop);
- 		size = dt_mem_next_cell(dt_root_size_cells, &prop);
- 
--		if (base && size &&
-+		if (size &&
- 		    early_init_dt_reserve_memory_arch(base, size, nomap) == 0)
- 			pr_debug("Reserved memory: reserved region for node '%s': base %pa, size %ld MiB\n",
- 				uname, &base, (unsigned long)size / SZ_1M);
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -254,7 +254,14 @@ static int radeon_info_ioctl(struct drm_
+ 		}
+ 		break;
+ 	case RADEON_INFO_ACCEL_WORKING2:
+-		*value = rdev->accel_working;
++		if (rdev->family == CHIP_HAWAII) {
++			if (rdev->accel_working)
++				*value = 2;
++			else
++				*value = 0;
++		} else {
++			*value = rdev->accel_working;
++		}
+ 		break;
+ 	case RADEON_INFO_TILING_CONFIG:
+ 		if (rdev->family >= CHIP_BONAIRE)
 
 
