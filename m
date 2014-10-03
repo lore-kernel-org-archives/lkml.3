@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932205AbaJCWSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:18:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47154 "EHLO
+	id S1756851AbaJCWSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:18:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47150 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067AbaJCWQV (ORCPT
+	with ESMTP id S1758068AbaJCWQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:16:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dann Frazier <dann.frazier@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.14 236/238] staging/lustre: disable virtual block device for 64K pages
-Date: Fri,  3 Oct 2014 14:32:31 -0700
-Message-Id: <20141003212921.216769638@linuxfoundation.org>
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.14 235/238] aio: block exit_aio() until all context requests are completed
+Date: Fri,  3 Oct 2014 14:32:30 -0700
+Message-Id: <20141003212921.182959650@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,29 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-commit 0bf22be0da8ea74bc7ccc5b07d7855830be16eca upstream.
+commit 6098b45b32e6baeacc04790773ced9340601d511 upstream.
 
-The lustre virtual block device cannot handle 64K pages and fails at compile
-time. To avoid running into this error, let's disable the Kconfig option
-for this driver in cases it doesn't support.
+It seems that exit_aio() also needs to wait for all iocbs to complete (like
+io_destroy), but we missed the wait step in current implemention, so fix
+it in the same way as we did in io_destroy.
 
-Reported-by: Dann Frazier <dann.frazier@canonical.com>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+[bwh: Backported to 3.16: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
 ---
- drivers/staging/lustre/lustre/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ fs/aio.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -57,4 +57,5 @@ config LUSTRE_TRANSLATE_ERRNOS
- config LUSTRE_LLITE_LLOOP
- 	tristate "Lustre virtual block device"
- 	depends on LUSTRE_FS && BLOCK
-+	depends on !PPC_64K_PAGES && !ARM64_64K_PAGES
- 	default m
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -797,6 +797,9 @@ void exit_aio(struct mm_struct *mm)
+ 	unsigned i = 0;
+ 
+ 	while (1) {
++		struct completion requests_done =
++			COMPLETION_INITIALIZER_ONSTACK(requests_done);
++
+ 		rcu_read_lock();
+ 		table = rcu_dereference(mm->ioctx_table);
+ 
+@@ -824,7 +827,10 @@ void exit_aio(struct mm_struct *mm)
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+-		kill_ioctx(mm, ctx, NULL);
++		kill_ioctx(mm, ctx, &requests_done);
++
++		/* Wait until all IO for the context are done. */
++		wait_for_completion(&requests_done);
+ 	}
+ }
+ 
 
 
