@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933227AbaJCXqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:46:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46292 "EHLO
+	id S1758614AbaJCXqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:46:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46302 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757267AbaJCWDc (ORCPT
+	with ESMTP id S1757268AbaJCWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.14 067/238] xtensa: replace IOCTL code definitions with constants
-Date: Fri,  3 Oct 2014 14:29:42 -0700
-Message-Id: <20141003212915.818171930@linuxfoundation.org>
+        Hante Meuleman <meuleman@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        "Daniel (Deognyoun) Kim" <dekim@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.16 282/357] brcmfmac: handle IF event for P2P_DEVICE interface
+Date: Fri,  3 Oct 2014 14:31:08 -0700
+Message-Id: <20141003212941.961451990@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,81 +29,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit f61bf8e7d19e0a3456a7a9ed97c399e4353698dc upstream.
+commit 87c4790330810fe5caf0172d9320cf24ef19cebe upstream.
 
-This fixes userspace code that builds on other architectures but fails
-on xtensa due to references to structures that other architectures don't
-refer to. E.g. this fixes the following issue with python-2.7.8:
+The firmware notifies about interface changes through the IF event
+which has a NO_IF flag that means host can ignore the event. This
+behaviour was introduced in the driver by:
 
-  python-2.7.8/Modules/termios.c:861:25: error: invalid application
-     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
-     {"TIOCSERGETMULTI", TIOCSERGETMULTI},
-  python-2.7.8/Modules/termios.c:870:25: error: invalid application
-     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
-     {"TIOCSERSETMULTI", TIOCSERSETMULTI},
-  python-2.7.8/Modules/termios.c:900:24: error: invalid application
-     of 'sizeof' to incomplete type 'struct tty_struct'
-     {"TIOCTTYGSTRUCT", TIOCTTYGSTRUCT},
+  commit 2ee8382fc6c763c76396a6aaff77a27089eed3aa
+  Author: Arend van Spriel <arend@broadcom.com>
+  Date:   Sat Aug 10 12:27:24 2013 +0200
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+      brcmfmac: ignore IF event if firmware indicates it
+
+It turns out that the IF event for the P2P_DEVICE also has this
+flag set, but the event should not be ignored in this scenario.
+The mentioned commit caused a regression in 3.12 kernel in creation
+of the P2P_DEVICE interface.
+
+Reviewed-by: Hante Meuleman <meuleman@broadcom.com>
+Reviewed-by: Franky (Zhenhui) Lin <frankyl@broadcom.com>
+Reviewed-by: Daniel (Deognyoun) Kim <dekim@broadcom.com>
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/uapi/asm/ioctls.h |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ drivers/net/wireless/brcm80211/brcmfmac/fweh.c |   12 +++++++++---
+ drivers/net/wireless/brcm80211/brcmfmac/fweh.h |    2 ++
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/arch/xtensa/include/uapi/asm/ioctls.h
-+++ b/arch/xtensa/include/uapi/asm/ioctls.h
-@@ -28,17 +28,17 @@
- #define TCSETSW		0x5403
- #define TCSETSF		0x5404
+--- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
++++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.c
+@@ -185,7 +185,13 @@ static void brcmf_fweh_handle_if_event(s
+ 		  ifevent->action, ifevent->ifidx, ifevent->bssidx,
+ 		  ifevent->flags, ifevent->role);
  
--#define TCGETA		_IOR('t', 23, struct termio)
--#define TCSETA		_IOW('t', 24, struct termio)
--#define TCSETAW		_IOW('t', 25, struct termio)
--#define TCSETAF		_IOW('t', 28, struct termio)
-+#define TCGETA		0x80127417	/* _IOR('t', 23, struct termio) */
-+#define TCSETA		0x40127418	/* _IOW('t', 24, struct termio) */
-+#define TCSETAW		0x40127419	/* _IOW('t', 25, struct termio) */
-+#define TCSETAF		0x4012741C	/* _IOW('t', 28, struct termio) */
+-	if (ifevent->flags & BRCMF_E_IF_FLAG_NOIF) {
++	/* The P2P Device interface event must not be ignored
++	 * contrary to what firmware tells us. The only way to
++	 * distinguish the P2P Device is by looking at the ifidx
++	 * and bssidx received.
++	 */
++	if (!(ifevent->ifidx == 0 && ifevent->bssidx == 1) &&
++	    (ifevent->flags & BRCMF_E_IF_FLAG_NOIF)) {
+ 		brcmf_dbg(EVENT, "event can be ignored\n");
+ 		return;
+ 	}
+@@ -210,12 +216,12 @@ static void brcmf_fweh_handle_if_event(s
+ 				return;
+ 	}
  
- #define TCSBRK		_IO('t', 29)
- #define TCXONC		_IO('t', 30)
- #define TCFLSH		_IO('t', 31)
+-	if (ifevent->action == BRCMF_E_IF_CHANGE)
++	if (ifp && ifevent->action == BRCMF_E_IF_CHANGE)
+ 		brcmf_fws_reset_interface(ifp);
  
--#define TIOCSWINSZ	_IOW('t', 103, struct winsize)
--#define TIOCGWINSZ	_IOR('t', 104, struct winsize)
-+#define TIOCSWINSZ	0x40087467	/* _IOW('t', 103, struct winsize) */
-+#define TIOCGWINSZ	0x80087468	/* _IOR('t', 104, struct winsize) */
- #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
- #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
- #define TIOCOUTQ        _IOR('t', 115, int)     /* output queue size */
-@@ -88,7 +88,6 @@
- #define TIOCSETD	_IOW('T', 35, int)
- #define TIOCGETD	_IOR('T', 36, int)
- #define TCSBRKP		_IOW('T', 37, int)   /* Needed for POSIX tcsendbreak()*/
--#define TIOCTTYGSTRUCT	_IOR('T', 38, struct tty_struct) /* For debugging only*/
- #define TIOCSBRK	_IO('T', 39) 	     /* BSD compatibility */
- #define TIOCCBRK	_IO('T', 40)	     /* BSD compatibility */
- #define TIOCGSID	_IOR('T', 41, pid_t) /* Return the session ID of FD*/
-@@ -114,8 +113,10 @@
- #define TIOCSERGETLSR   _IOR('T', 89, unsigned int) /* Get line status reg. */
-   /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
- # define TIOCSER_TEMT    0x01		     /* Transmitter physically empty */
--#define TIOCSERGETMULTI _IOR('T', 90, struct serial_multiport_struct) /* Get multiport config  */
--#define TIOCSERSETMULTI _IOW('T', 91, struct serial_multiport_struct) /* Set multiport config */
-+#define TIOCSERGETMULTI 0x80a8545a /* Get multiport config  */
-+			/* _IOR('T', 90, struct serial_multiport_struct) */
-+#define TIOCSERSETMULTI 0x40a8545b /* Set multiport config */
-+			/* _IOW('T', 91, struct serial_multiport_struct) */
+ 	err = brcmf_fweh_call_event_handler(ifp, emsg->event_code, emsg, data);
  
- #define TIOCMIWAIT	_IO('T', 92) /* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+-	if (ifevent->action == BRCMF_E_IF_DEL) {
++	if (ifp && ifevent->action == BRCMF_E_IF_DEL) {
+ 		brcmf_fws_del_interface(ifp);
+ 		brcmf_del_if(drvr, ifevent->bssidx);
+ 	}
+--- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
++++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
+@@ -167,6 +167,8 @@ enum brcmf_fweh_event_code {
+ #define BRCMF_E_IF_ROLE_STA			0
+ #define BRCMF_E_IF_ROLE_AP			1
+ #define BRCMF_E_IF_ROLE_WDS			2
++#define BRCMF_E_IF_ROLE_P2P_GO			3
++#define BRCMF_E_IF_ROLE_P2P_CLIENT		4
+ 
+ /**
+  * definitions for event packet validation.
 
 
