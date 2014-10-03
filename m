@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760607AbaJCXnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:43:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46270 "EHLO
+	id S1760591AbaJCXnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:43:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46292 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757295AbaJCWDg (ORCPT
+	with ESMTP id S1757297AbaJCWDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.16 308/357] Revert "PCI: Dont scan random busses in pci_scan_bridge()"
-Date: Fri,  3 Oct 2014 14:31:34 -0700
-Message-Id: <20141003212942.727356256@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.14 093/238] usb: host: xhci: fix compliance mode workaround
+Date: Fri,  3 Oct 2014 14:30:08 -0700
+Message-Id: <20141003212916.651360406@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,74 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 7a0b33d4a45d30b9a838fba4efcd80b7b57d4d16 upstream.
+commit 96908589a8b2584b1185f834d365f5cc360e8226 upstream.
 
-This reverts commit fc1b253141b3 ("PCI: Don't scan random busses in
-pci_scan_bridge()") because it breaks CardBus on some machines.
+Commit 71c731a (usb: host: xhci: Fix Compliance Mode
+on SN65LVP3502CP Hardware) implemented a workaround
+for a known issue with Texas Instruments' USB 3.0
+redriver IC but it left a condition where any xHCI
+host would be taken out of reset if port was placed
+in compliance mode and there was no device connected
+to the port.
 
-David tested a Dell Latitude D505 that worked like this prior to
-fc1b253141b3:
+That condition would trigger a fake connection to a
+non-existent device so that usbcore would trigger a
+warm reset of the port, thus taking the link out of
+reset.
 
-    pci 0000:00:1e.0: PCI bridge to [bus 01]
-    pci 0000:01:01.0: CardBus bridge to [bus 02-05]
+This has the side-effect of preventing any xHCI host
+connected to a Linux machine from starting and running
+the USB 3.0 Electrical Compliance Suite because the
+port will mysteriously taken out of compliance mode
+and, thus, xHCI won't step through the necessary
+compliance patterns for link validation.
 
-Note that the 01:01.0 CardBus bridge has a bus number aperture of
-[bus 02-05], but those buses are all outside the 00:1e.0 PCI bridge bus
-number aperture, so accesses to buses 02-05 never reach CardBus.  This is
-later patched up by yenta_fixup_parent_bridge(), which changes the
-subordinate bus number of the 00:1e.0 PCI bridge:
+This patch fixes the issue by just adding a missing
+check for XHCI_COMP_MODE_QUIRK inside
+xhci_hub_report_usb3_link_state() when PORT_CAS isn't
+set.
 
-    pci_bus 0000:01: Raising subordinate bus# of parent bus (#01) from #01 to #05
+This patch should be backported to all kernels containing
+commit 71c731a.
 
-With fc1b253141b3, pci_scan_bridge() fails immediately when it notices that
-we can't allocate a valid secondary bus number for the CardBus bridge, and
-CardBus doesn't work at all:
-
-    pci 0000:01:01.0: can't allocate child bus 01 from [bus 01]
-
-I'd prefer to fix this by integrating the yenta_fixup_parent_bridge() logic
-into pci_scan_bridge() so we fix the bus number apertures up front.  But
-I don't think we can do that before v3.17, so I'm going to revert this to
-avoid the problem while we're working on the long-term fix.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=83441
-Link: http://lkml.kernel.org/r/1409303414-5196-1-git-send-email-david.henningsson@canonical.com
-Reported-by: David Henningsson <david.henningsson@canonical.com>
-Tested-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Fixes: 71c731a (usb: host: xhci: Fix Compliance Mode on SN65LVP3502CP Hardware)
+Cc: Alexis R. Cortes <alexis.cortes@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/usb/host/xhci-hub.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -838,16 +838,12 @@ int pci_scan_bridge(struct pci_bus *bus,
- 			goto out;
- 		}
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -470,7 +470,8 @@ static void xhci_hub_report_usb2_link_st
+ }
  
--		if (max >= bus->busn_res.end) {
--			dev_warn(&dev->dev, "can't allocate child bus %02x from %pR\n",
--				 max, &bus->busn_res);
--			goto out;
--		}
--
- 		/* Clear errors */
- 		pci_write_config_word(dev, PCI_STATUS, 0xffff);
+ /* Updates Link Status for super Speed port */
+-static void xhci_hub_report_usb3_link_state(u32 *status, u32 status_reg)
++static void xhci_hub_report_usb3_link_state(struct xhci_hcd *xhci,
++		u32 *status, u32 status_reg)
+ {
+ 	u32 pls = status_reg & PORT_PLS_MASK;
  
--		/* The bus will already exist if we are rescanning */
-+		/* Prevent assigning a bus number that already exists.
-+		 * This can happen when a bridge is hot-plugged, so in
-+		 * this case we only re-scan this bus. */
- 		child = pci_find_bus(pci_domain_nr(bus), max+1);
- 		if (!child) {
- 			child = pci_add_new_bus(bus, dev, max+1);
+@@ -509,7 +510,8 @@ static void xhci_hub_report_usb3_link_st
+ 		 * in which sometimes the port enters compliance mode
+ 		 * caused by a delay on the host-device negotiation.
+ 		 */
+-		if (pls == USB_SS_PORT_LS_COMP_MOD)
++		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
++				(pls == USB_SS_PORT_LS_COMP_MOD))
+ 			pls |= USB_PORT_STAT_CONNECTION;
+ 	}
+ 
+@@ -668,7 +670,7 @@ static u32 xhci_get_port_status(struct u
+ 	}
+ 	/* Update Port Link State */
+ 	if (hcd->speed == HCD_USB3) {
+-		xhci_hub_report_usb3_link_state(&status, raw_port_status);
++		xhci_hub_report_usb3_link_state(xhci, &status, raw_port_status);
+ 		/*
+ 		 * Verify if all USB3 Ports Have entered U0 already.
+ 		 * Delete Compliance Mode Timer if so.
 
 
