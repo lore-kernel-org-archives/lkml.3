@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606AbaJDATD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:19:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756149AbaJCVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:44:53 -0400
-Date: Fri, 3 Oct 2014 23:41:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, luto@amacapital.net, dvlasenk@redhat.com,
-        tglx@linutronix.de
-Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using
-	THUNK helpers
-Message-ID: <20141003214124.GA31614@redhat.com>
-References: <20140921184153.GA23727@redhat.com> <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org> <542E2B05.5080607@oracle.com> <20141003083954.10a13a24@as>
+	id S1756143AbaJCVow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:44:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45294 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756065AbaJCVnY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:43:24 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.16 205/357] regmap: Dont attempt block writes when syncing cache on single_rw devices
+Date: Fri,  3 Oct 2014 14:29:51 -0700
+Message-Id: <20141003212939.696237751@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141003083954.10a13a24@as>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Chuck Ebbert wrote:
->
-> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
-> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
-> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
->
-> <snip lots of repeats of this>
->
-> I *think* this is because RBP isn't being saved across task switch
-> anymore?
->
-> Without CONFIG_FRAME_POINTERS that night not be a problem...
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Could you please spell?
+------------------
 
-I don't even understand "RBP isn't being saved", SAVE_CONTEXT/RESTORE_CONTEXT
-do push/pop %rbp?
+From: Mark Brown <broonie@linaro.org>
 
-Thanks,
+commit 5c1ebe7f73f9166893c3459915db8a09d6d1d715 upstream.
 
-Oleg.
+If the device can't support block writes then don't attempt to use raw
+syncing which will automatically generate block writes for adjacent
+registers, use the existing _single() block syncing implementation.
+
+Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Tested-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/base/regmap/regcache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -698,7 +698,7 @@ int regcache_sync_block(struct regmap *m
+ 			unsigned int block_base, unsigned int start,
+ 			unsigned int end)
+ {
+-	if (regmap_can_raw_write(map))
++	if (regmap_can_raw_write(map) && !map->use_single_rw)
+ 		return regcache_sync_block_raw(map, block, cache_present,
+ 					       block_base, start, end);
+ 	else
+
 
