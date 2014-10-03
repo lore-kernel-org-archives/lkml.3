@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933161AbaJCXoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:44:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46368 "EHLO
+	id S1757279AbaJCWDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:03:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756608AbaJCWDe (ORCPT
+	with ESMTP id S932172AbaJCVxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:34 -0400
+	Fri, 3 Oct 2014 17:53:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emanuel Koczwara <poczta@emanuelkoczwara.pl>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 090/238] USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
-Date: Fri,  3 Oct 2014 14:30:05 -0700
-Message-Id: <20141003212916.556774308@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.16 268/357] ftrace: Fix function_profiler and function tracer together
+Date: Fri,  3 Oct 2014 14:30:54 -0700
+Message-Id: <20141003212941.545058749@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,49 +24,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ee444609dbae8afee420c3243ce4c5f442efb622 upstream.
+commit 5f151b240192a1557119d5375af71efc26825bc8 upstream.
 
-Add device id for NOVITUS Bono E thermal printer.
+The latest rewrite of ftrace removed the separate ftrace_ops of
+the function tracer and the function graph tracer and had them
+share the same ftrace_ops. This simplified the accounting by removing
+the multiple layers of functions called, where the global_ops func
+would call a special list that would iterate over the other ops that
+were registered within it (like function and function graph), which
+itself was registered to the ftrace ops list of all functions
+currently active. If that sounds confusing, the code that implemented
+it was also confusing and its removal is a good thing.
 
-Reported-by: Emanuel Koczwara <poczta@emanuelkoczwara.pl>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+The problem with this change was that it assumed that the function
+and function graph tracer can never be used at the same time.
+This is mostly true, but there is an exception. That is when the
+function profiler uses the function graph tracer to profile.
+The function profiler can be activated the same time as the function
+tracer, and this breaks the assumption and the result is that ftrace
+will crash (it detects the error and shuts itself down, it does not
+cause a kernel oops).
+
+To solve this issue, a previous change allowed the hash tables
+for the functions traced by a ftrace_ops to be a pointer and let
+multiple ftrace_ops share the same hash. This allows the function
+and function_graph tracer to have separate ftrace_ops, but still
+share the hash, which is what is done.
+
+Now the function and function graph tracers have separate ftrace_ops
+again, and the function tracer can be run while the function_profile
+is active.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -741,6 +741,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
-+	{ USB_DEVICE(NOVITUS_VID, NOVITUS_BONO_E_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -837,6 +837,12 @@
- #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
+---
+ kernel/trace/ftrace.c |   49 ++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 36 insertions(+), 13 deletions(-)
+
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -68,8 +68,12 @@
+ #define INIT_OPS_HASH(opsname)	\
+ 	.func_hash		= &opsname.local_hash,			\
+ 	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
++#define ASSIGN_OPS_HASH(opsname, val) \
++	.func_hash		= val, \
++	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
+ #else
+ #define INIT_OPS_HASH(opsname)
++#define ASSIGN_OPS_HASH(opsname, val)
+ #endif
  
- /*
-+ * NOVITUS printers
-+ */
-+#define NOVITUS_VID			0x1a28
-+#define NOVITUS_BONO_E_PID		0x6010
+ static struct ftrace_ops ftrace_list_end __read_mostly = {
+@@ -110,6 +114,7 @@ static struct ftrace_ops *ftrace_ops_lis
+ ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
+ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+ static struct ftrace_ops global_ops;
++static struct ftrace_ops graph_ops;
+ static struct ftrace_ops control_ops;
+ 
+ #if ARCH_SUPPORTS_FTRACE_OPS
+@@ -4339,7 +4344,6 @@ void __init ftrace_init(void)
+ static struct ftrace_ops global_ops = {
+ 	.func			= ftrace_stub,
+ 	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
+-	INIT_OPS_HASH(global_ops)
+ };
+ 
+ static int __init ftrace_nodyn_init(void)
+@@ -4877,6 +4881,14 @@ ftrace_enable_sysctl(struct ctl_table *t
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+ 
++static struct ftrace_ops graph_ops = {
++	.func			= ftrace_stub,
++	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
++				   FTRACE_OPS_FL_INITIALIZED |
++				   FTRACE_OPS_FL_STUB,
++	ASSIGN_OPS_HASH(graph_ops, &global_ops.local_hash)
++};
 +
-+/*
-  * RT Systems programming cables for various ham radios
+ static int ftrace_graph_active;
+ 
+ int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
+@@ -5039,12 +5051,28 @@ static int ftrace_graph_entry_test(struc
   */
- #define RTSYSTEMS_VID		0x2100	/* Vendor ID */
+ static void update_function_graph_func(void)
+ {
+-	if (ftrace_ops_list == &ftrace_list_end ||
+-	    (ftrace_ops_list == &global_ops &&
+-	     global_ops.next == &ftrace_list_end))
+-		ftrace_graph_entry = __ftrace_graph_entry;
+-	else
++	struct ftrace_ops *op;
++	bool do_test = false;
++
++	/*
++	 * The graph and global ops share the same set of functions
++	 * to test. If any other ops is on the list, then
++	 * the graph tracing needs to test if its the function
++	 * it should call.
++	 */
++	do_for_each_ftrace_op(op, ftrace_ops_list) {
++		if (op != &global_ops && op != &graph_ops &&
++		    op != &ftrace_list_end) {
++			do_test = true;
++			/* in double loop, break out with goto */
++			goto out;
++		}
++	} while_for_each_ftrace_op(op);
++ out:
++	if (do_test)
+ 		ftrace_graph_entry = ftrace_graph_entry_test;
++	else
++		ftrace_graph_entry = __ftrace_graph_entry;
+ }
+ 
+ static struct notifier_block ftrace_suspend_notifier = {
+@@ -5085,11 +5113,7 @@ int register_ftrace_graph(trace_func_gra
+ 	ftrace_graph_entry = ftrace_graph_entry_test;
+ 	update_function_graph_func();
+ 
+-	/* Function graph doesn't use the .func field of global_ops */
+-	global_ops.flags |= FTRACE_OPS_FL_STUB;
+-
+-	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
+-
++	ret = ftrace_startup(&graph_ops, FTRACE_START_FUNC_RET);
+ out:
+ 	mutex_unlock(&ftrace_lock);
+ 	return ret;
+@@ -5106,8 +5130,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	__ftrace_graph_entry = ftrace_graph_entry_stub;
+-	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
+-	global_ops.flags &= ~FTRACE_OPS_FL_STUB;
++	ftrace_shutdown(&graph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 
 
 
