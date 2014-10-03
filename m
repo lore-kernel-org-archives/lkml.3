@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaJCWyD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:54:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47251 "EHLO
+	id S932318AbaJCWyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:54:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756421AbaJCWYI (ORCPT
+	with ESMTP id S932393AbaJCWYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:08 -0400
+	Fri, 3 Oct 2014 18:24:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Philipp Hahn <hahn@univention.de>
-Subject: [PATCH 3.10 072/143] KVM: x86: handle idiv overflow at kvm_write_tsc
-Date: Fri,  3 Oct 2014 14:34:27 -0700
-Message-Id: <20141003213316.672243000@linuxfoundation.org>
+        Ed Butler <ressy66@ausics.net>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 043/143] USB: option: reduce interrupt-urb logging verbosity
+Date: Fri,  3 Oct 2014 14:33:58 -0700
+Message-Id: <20141003213315.774172458@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,71 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 8915aa27d5efbb9185357175b0acf884325565f9 upstream.
+commit f0e4cba2534cd88476dff920727c81350130f3c5 upstream.
 
-Its possible that idivl overflows (due to large delta stored in usdiff,
-valid scenario).
+Do not log normal interrupt-urb shutdowns as errors.
 
-Create an exception handler to catch the overflow exception (division by zero
-is protected by vcpu->arch.virtual_tsc_khz check), and interpret it accordingly
-(delta is larger than USEC_PER_SEC).
+The option driver has always been logging any nonzero interrupt-urb
+status as an error, including when the urb is killed during normal
+operation.
 
-Fixes https://bugzilla.redhat.com/show_bug.cgi?id=969644
+Commit 9096f1fbba91 ("USB: usb_wwan: fix potential NULL-deref at
+resume") moved the interrupt urb submission from port probe and release
+to open and close, thus potentially increasing the number of these
+false-positive error messages dramatically.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Philipp Hahn <hahn@univention.de>
-Tested-by: Philipp Hahn <hahn@univention.de>
+Reported-by: Ed Butler <ressy66@ausics.net>
+Tested-by: Ed Butler <ressy66@ausics.net>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/x86.c |   23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1196,20 +1196,37 @@ void kvm_write_tsc(struct kvm_vcpu *vcpu
- 	elapsed = ns - kvm->arch.last_tsc_nsec;
- 
- 	if (vcpu->arch.virtual_tsc_khz) {
-+		int faulted = 0;
-+
- 		/* n.b - signed multiplication and division required */
- 		usdiff = data - kvm->arch.last_tsc_write;
- #ifdef CONFIG_X86_64
- 		usdiff = (usdiff * 1000) / vcpu->arch.virtual_tsc_khz;
- #else
- 		/* do_div() only does unsigned */
--		asm("idivl %2; xor %%edx, %%edx"
--		: "=A"(usdiff)
--		: "A"(usdiff * 1000), "rm"(vcpu->arch.virtual_tsc_khz));
-+		asm("1: idivl %[divisor]\n"
-+		    "2: xor %%edx, %%edx\n"
-+		    "   movl $0, %[faulted]\n"
-+		    "3:\n"
-+		    ".section .fixup,\"ax\"\n"
-+		    "4: movl $1, %[faulted]\n"
-+		    "   jmp  3b\n"
-+		    ".previous\n"
-+
-+		_ASM_EXTABLE(1b, 4b)
-+
-+		: "=A"(usdiff), [faulted] "=r" (faulted)
-+		: "A"(usdiff * 1000), [divisor] "rm"(vcpu->arch.virtual_tsc_khz));
-+
- #endif
- 		do_div(elapsed, 1000);
- 		usdiff -= elapsed;
- 		if (usdiff < 0)
- 			usdiff = -usdiff;
-+
-+		/* idivl overflow => difference is larger than USEC_PER_SEC */
-+		if (faulted)
-+			usdiff = USEC_PER_SEC;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1917,6 +1917,8 @@ static void option_instat_callback(struc
+ 			dev_dbg(dev, "%s: type %x req %x\n", __func__,
+ 				req_pkt->bRequestType, req_pkt->bRequest);
+ 		}
++	} else if (status == -ENOENT || status == -ESHUTDOWN) {
++		dev_dbg(dev, "%s: urb stopped: %d\n", __func__, status);
  	} else
- 		usdiff = USEC_PER_SEC; /* disable TSC match window below */
+ 		dev_err(dev, "%s: error %d\n", __func__, status);
  
 
 
