@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324AbaJCVMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:12:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36464 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJCVMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:12:09 -0400
-Date: Fri, 3 Oct 2014 23:12:04 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
-Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC
- filtering
-Message-ID: <20141003211204.GQ10583@worktop.programming.kicks-ass.net>
-References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
- <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
- <20141003201409.GM10583@worktop.programming.kicks-ass.net>
- <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
- <CALCETrWfrWpdMCAYySMAMGCHU3XRkNGmeMTECTE=PXQUfjGPZA@mail.gmail.com>
- <20141003204443.GP10583@worktop.programming.kicks-ass.net>
- <20141003210213.GG6324@worktop.programming.kicks-ass.net>
- <CALCETrW7OCuAiK31iRvXgXJfcf3FE4GKjpKQ0doWFyUpETzT9A@mail.gmail.com>
+	id S1754434AbaJCVMU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:12:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38416 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750780AbaJCVMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:12:16 -0400
+Date: Fri, 3 Oct 2014 23:12:11 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com, teg@jklm.no, rmilasan@suse.com,
+        werner@suse.com, oleg@redhat.com, hare@suse.com, bpoirier@suse.de,
+        santosh@chelsio.com, pmladek@suse.cz, dbueso@suse.com,
+        linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
+	support
+Message-ID: <20141003211211.GX14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com> <20141003201126.GW14081@wotan.suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrW7OCuAiK31iRvXgXJfcf3FE4GKjpKQ0doWFyUpETzT9A@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20141003201126.GW14081@wotan.suse.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 02:04:53PM -0700, Andy Lutomirski wrote:
-> On Fri, Oct 3, 2014 at 2:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-
-> > Something like so.. slightly less ugly and possibly with more
-> > complicated conditions setting the cr4 if you want to fix tsc vs seccomp
-> > as well.
+On Fri, Oct 03, 2014 at 10:11:26PM +0200, Luis R. Rodriguez wrote:
+> On Fri, Sep 26, 2014 at 02:57:17PM -0700, Luis R. Rodriguez wrote:
+> > +	queue_work(system_unbound_wq, &priv->attach_work->work);
 > 
-> This will crash anything that tries rdpmc in an allow-everything
-> seccomp sandbox.  It's also not very compatible with my grand scheme
-> of allowing rdtsc to be turned off without breaking clock_gettime. :)
+> Tejun,
+> 
+> based on my testing so far using system_highpri_wq instead of
+> system_unbound_wq yields close to par / better boot times
+> than synchronous probe support for all modules. How set are
+> you on using system_unbound_wq? About to punt out a new
+> series which also addresses built-in.
 
-Well, we clear cap_user_rdpmc, so everybody who still tries it gets what
-he deserves, no problem there.
+Nevermind, folks can change this later with better empirical
+testing than I can provide and right now the differences I
+see are not too conclusive and I suspect we'll see more of
+a difference once the right built-in drivers are selected
+to probe asynchrounously.
+
+  Luis
