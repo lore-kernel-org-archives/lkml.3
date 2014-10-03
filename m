@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053AbaJCWVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:21:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47114 "EHLO
+	id S932310AbaJCWVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:21:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042AbaJCWQS (ORCPT
+	with ESMTP id S1755963AbaJCWQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:16:18 -0400
+	Fri, 3 Oct 2014 18:16:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Malcolm Priestley <tvboxspy@gmail.com>, Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.14 211/238] media: af9035: new IDs: add support for PCTV 78e and PCTV 79e
-Date: Fri,  3 Oct 2014 14:32:06 -0700
-Message-Id: <20141003212920.410911504@linuxfoundation.org>
+        Aleksey Senin <alekseys@mellanox.com>,
+        Matan Barak <matanb@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [PATCH 3.14 203/238] IB/core: When marshaling uverbs path, clear unused fields
+Date: Fri,  3 Oct 2014 14:31:58 -0700
+Message-Id: <20141003212920.155790745@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,50 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Matan Barak <matanb@mellanox.com>
 
-commit a04646c045cab08a9e62b9be8f01ecbb0632d24e upstream.
+commit a59c5850f09b4c2d6ad2fc47e5e1be8d654529d6 upstream.
 
-add the following IDs
-USB_PID_PCTV_78E (0x025a) for PCTV 78e
-USB_PID_PCTV_79E (0x0262) for PCTV 79e
+When marsheling a user path to the kernel struct ib_sa_path, need
+to zero smac, dmac and set the vlan id to the "no vlan" value.
 
-For these it9135 devices.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Cc: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Antti Palosaari <crope@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Fixes: dd5f03beb4f7 ("IB/core: Ethernet L2 attributes in verbs/cm structures")
+Reported-by: Aleksey Senin <alekseys@mellanox.com>
+Signed-off-by: Matan Barak <matanb@mellanox.com>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/dvb-core/dvb-usb-ids.h  |    2 ++
- drivers/media/usb/dvb-usb-v2/af9035.c |    4 ++++
- 2 files changed, 6 insertions(+)
+ drivers/infiniband/core/uverbs_marshall.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -279,6 +279,8 @@
- #define USB_PID_PCTV_400E				0x020f
- #define USB_PID_PCTV_450E				0x0222
- #define USB_PID_PCTV_452E				0x021f
-+#define USB_PID_PCTV_78E				0x025a
-+#define USB_PID_PCTV_79E				0x0262
- #define USB_PID_REALTEK_RTL2831U			0x2831
- #define USB_PID_REALTEK_RTL2832U			0x2832
- #define USB_PID_TECHNOTREND_CONNECT_S2_3600		0x3007
---- a/drivers/media/usb/dvb-usb-v2/af9035.c
-+++ b/drivers/media/usb/dvb-usb-v2/af9035.c
-@@ -1541,6 +1541,10 @@ static const struct usb_device_id af9035
- 		&af9035_props, "Leadtek WinFast DTV Dongle Dual", NULL) },
- 	{ DVB_USB_DEVICE(USB_VID_HAUPPAUGE, 0xf900,
- 		&af9035_props, "Hauppauge WinTV-MiniStick 2", NULL) },
-+	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_78E,
-+		&af9035_props, "PCTV 78e", RC_MAP_IT913X_V1) },
-+	{ DVB_USB_DEVICE(USB_VID_PCTV, USB_PID_PCTV_79E,
-+		&af9035_props, "PCTV 79e", RC_MAP_IT913X_V2) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, af9035_id_table);
+--- a/drivers/infiniband/core/uverbs_marshall.c
++++ b/drivers/infiniband/core/uverbs_marshall.c
+@@ -140,5 +140,9 @@ void ib_copy_path_rec_from_user(struct i
+ 	dst->packet_life_time	= src->packet_life_time;
+ 	dst->preference		= src->preference;
+ 	dst->packet_life_time_selector = src->packet_life_time_selector;
++
++	memset(dst->smac, 0, sizeof(dst->smac));
++	memset(dst->dmac, 0, sizeof(dst->dmac));
++	dst->vlan_id = 0xffff;
+ }
+ EXPORT_SYMBOL(ib_copy_path_rec_from_user);
 
 
