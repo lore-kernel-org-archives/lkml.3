@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444AbaJCVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:37:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45128 "EHLO
+	id S1755467AbaJCVhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:37:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45110 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316AbaJCVfJ (ORCPT
+	with ESMTP id S1755314AbaJCVfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:09 -0400
+	Fri, 3 Oct 2014 17:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 3.16 108/357] usb: gadget: f_rndis: fix interface id for OS descriptors
-Date: Fri,  3 Oct 2014 14:28:14 -0700
-Message-Id: <20141003212936.719315592@linuxfoundation.org>
+        Jeff Layton <jlayton@primarydata.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.16 106/357] locks: pass correct "before" pointer to locks_unlink_lock in generic_add_lease
+Date: Fri,  3 Oct 2014 14:28:12 -0700
+Message-Id: <20141003212936.661808096@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,36 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+From: Jeff Layton <jlayton@primarydata.com>
 
-commit 4546527350c3c508554dff53e9086e9d3de0b97b upstream.
+commit e0b760ff71be168d4e623f7c3612e98902ab93e9 upstream.
 
-f->os_desc_table[0].if_id is zero by default. If the actual id happens
-to be different then no Feature Descriptors will be returned to the host
-for this interface, so assign if_id as soon as it is known.
+The argument to locks_unlink_lock can't be just any pointer to a
+pointer. It must be a pointer to the fl_next field in the previous
+lock in the list.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Jeff Layton <jlayton@primarydata.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/usb/gadget/f_rndis.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/locks.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -727,6 +727,10 @@ rndis_bind(struct usb_configuration *c,
- 	rndis_control_intf.bInterfaceNumber = status;
- 	rndis_union_desc.bMasterInterface0 = status;
- 
-+	if (cdev->use_os_string)
-+		f->os_desc_table[0].if_id =
-+			rndis_iad_descriptor.bFirstInterface;
-+
- 	status = usb_interface_id(c, f);
- 	if (status < 0)
- 		goto fail;
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1595,7 +1595,7 @@ static int generic_add_lease(struct file
+ 	smp_mb();
+ 	error = check_conflicting_open(dentry, arg);
+ 	if (error)
+-		locks_unlink_lock(flp);
++		locks_unlink_lock(before);
+ out:
+ 	if (is_deleg)
+ 		mutex_unlock(&inode->i_mutex);
 
 
