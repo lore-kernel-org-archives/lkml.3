@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaJCVsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:48:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45664 "EHLO
+	id S1755519AbaJCVuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:50:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518AbaJCVsZ (ORCPT
+	with ESMTP id S1754856AbaJCVpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:48:25 -0400
+	Fri, 3 Oct 2014 17:45:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brennan Ashton <bashton@brennanashton.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 114/357] USB: option: add VIA Telecom CDS7 chipset device id
-Date: Fri,  3 Oct 2014 14:28:20 -0700
-Message-Id: <20141003212936.905632067@linuxfoundation.org>
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 3.16 211/357] KVM: s390/mm: Fix storage key corruption during swapping
+Date: Fri,  3 Oct 2014 14:29:57 -0700
+Message-Id: <20141003212939.869998199@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,43 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brennan Ashton <bashton@brennanashton.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit d77302739d900bbca5e901a3b7ac48c907ee6c93 upstream.
+commit 3e03d4c46daa849880837d802e41c14132a03ef9 upstream.
 
-This VIA Telecom baseband processor is used is used by by u-blox in both the
-FW2770 and FW2760 products and may be used in others as well.
+Since 3.12 or more precisely  commit 0944fe3f4a32 ("s390/mm:
+implement software referenced bits") guest storage keys get
+corrupted during paging. This commit added another valid->invalid
+translation for page tables - namely ptep_test_and_clear_young.
+We have to transfer the storage key into the pgste in that case.
 
-This patch has been tested on both of these modem versions.
-
-Signed-off-by: Brennan Ashton <bashton@brennanashton.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/s390/include/asm/pgtable.h |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -494,6 +494,10 @@ static void option_instat_callback(struc
- #define INOVIA_VENDOR_ID			0x20a6
- #define INOVIA_SEW858				0x1105
+--- a/arch/s390/include/asm/pgtable.h
++++ b/arch/s390/include/asm/pgtable.h
+@@ -1115,7 +1115,7 @@ static inline int ptep_test_and_clear_yo
+ 					    unsigned long addr, pte_t *ptep)
+ {
+ 	pgste_t pgste;
+-	pte_t pte;
++	pte_t pte, oldpte;
+ 	int young;
  
-+/* VIA Telecom */
-+#define VIATELECOM_VENDOR_ID			0x15eb
-+#define VIATELECOM_PRODUCT_CDS7			0x0001
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1724,6 +1728,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
- 	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
-+	{ USB_DEVICE(VIATELECOM_VENDOR_ID, VIATELECOM_PRODUCT_CDS7) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 	if (mm_has_pgste(vma->vm_mm)) {
+@@ -1123,12 +1123,13 @@ static inline int ptep_test_and_clear_yo
+ 		pgste = pgste_ipte_notify(vma->vm_mm, ptep, pgste);
+ 	}
+ 
+-	pte = *ptep;
++	oldpte = pte = *ptep;
+ 	ptep_flush_direct(vma->vm_mm, addr, ptep);
+ 	young = pte_young(pte);
+ 	pte = pte_mkold(pte);
+ 
+ 	if (mm_has_pgste(vma->vm_mm)) {
++		pgste = pgste_update_all(&oldpte, pgste, vma->vm_mm);
+ 		pgste = pgste_set_pte(ptep, pgste, pte);
+ 		pgste_set_unlock(ptep, pgste);
+ 	} else
 
 
