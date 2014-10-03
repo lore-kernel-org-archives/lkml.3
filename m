@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442AbaJCWqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:46:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
+	id S932866AbaJCWqy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:46:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47251 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373AbaJCWYQ (ORCPT
+	with ESMTP id S1756327AbaJCWYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:16 -0400
+	Fri, 3 Oct 2014 18:24:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pavel Shilovsky <pshilovsky@samba.org>,
-        Steve French <smfrench@gmail.com>
-Subject: [PATCH 3.10 077/143] CIFS: Fix SMB2 readdir error handling
-Date: Fri,  3 Oct 2014 14:34:32 -0700
-Message-Id: <20141003213316.823571730@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 092/143] Revert "iwlwifi: dvm: dont enable CTS to self"
+Date: Fri,  3 Oct 2014 14:34:47 -0700
+Message-Id: <20141003213317.260736651@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,157 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <pshilovsky@samba.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 52755808d4525f4d5b86d112d36ffc7a46f3fb48 upstream.
+commit f47f46d7b09cf1d09e4b44b6cc4dd7d68a08028c upstream.
 
-SMB2 servers indicates the end of a directory search with
-STATUS_NO_MORE_FILE error code that is not processed now.
-This causes generic/257 xfstest to fail. Fix this by triggering
-the end of search by this error code in SMB2_query_directory.
+This reverts commit 43d826ca5979927131685cc2092c7ce862cb91cd.
 
-Also when negotiating CIFS protocol we tell the server to close
-the search automatically at the end and there is no need to do
-it itself. In the case of SMB2 protocol, we need to close it
-explicitly - separate close directory checks for different
-protocols.
+This commit caused packet loss.
 
-Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/cifsglob.h     |    2 ++
- fs/cifs/file.c         |    2 +-
- fs/cifs/readdir.c      |    2 +-
- fs/cifs/smb1ops.c      |    7 +++++++
- fs/cifs/smb2maperror.c |    2 +-
- fs/cifs/smb2ops.c      |    8 ++++++++
- fs/cifs/smb2pdu.c      |    9 ++++-----
- 7 files changed, 24 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -375,6 +375,8 @@ struct smb_version_operations {
- 			const char *, u32 *);
- 	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
- 			int);
-+	/* check if we need to issue closedir */
-+	bool (*dir_needs_close)(struct cifsFileInfo *);
- };
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1072,6 +1072,13 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
  
- struct smb_version_values {
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -735,7 +735,7 @@ int cifs_closedir(struct inode *inode, s
- 
- 	cifs_dbg(FYI, "Freeing private data in close dir\n");
- 	spin_lock(&cifs_file_list_lock);
--	if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
-+	if (server->ops->dir_needs_close(cfile)) {
- 		cfile->invalidHandle = true;
- 		spin_unlock(&cifs_file_list_lock);
- 		if (server->ops->close_dir)
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -582,7 +582,7 @@ find_cifs_entry(const unsigned int xid,
- 		/* close and restart search */
- 		cifs_dbg(FYI, "search backing up - close and restart search\n");
- 		spin_lock(&cifs_file_list_lock);
--		if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
-+		if (server->ops->dir_needs_close(cfile)) {
- 			cfile->invalidHandle = true;
- 			spin_unlock(&cifs_file_list_lock);
- 			if (server->ops->close_dir)
---- a/fs/cifs/smb1ops.c
-+++ b/fs/cifs/smb1ops.c
-@@ -885,6 +885,12 @@ cifs_mand_lock(const unsigned int xid, s
- 			   (__u8)type, wait, 0);
- }
- 
-+static bool
-+cifs_dir_needs_close(struct cifsFileInfo *cfile)
-+{
-+	return !cfile->srch_inf.endOfSearch && !cfile->invalidHandle;
-+}
++	/*
++	 * force CTS-to-self frames protection if RTS-CTS is not preferred
++	 * one aggregation protection method
++	 */
++	if (!priv->hw_params.use_rts_for_aggregation)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
 +
- struct smb_version_operations smb1_operations = {
- 	.send_cancel = send_nt_cancel,
- 	.compare_fids = cifs_compare_fids,
-@@ -948,6 +954,7 @@ struct smb_version_operations smb1_opera
- 	.mand_lock = cifs_mand_lock,
- 	.mand_unlock_range = cifs_unlock_range,
- 	.push_mand_locks = cifs_push_mandatory_locks,
-+	.dir_needs_close = cifs_dir_needs_close,
- #ifdef CONFIG_CIFS_XATTR
- 	.query_all_EAs = CIFSSMBQAllEAs,
- 	.set_EA = CIFSSMBSetEA,
---- a/fs/cifs/smb2maperror.c
-+++ b/fs/cifs/smb2maperror.c
-@@ -214,7 +214,7 @@ static const struct status_to_posix_erro
- 	{STATUS_BREAKPOINT, -EIO, "STATUS_BREAKPOINT"},
- 	{STATUS_SINGLE_STEP, -EIO, "STATUS_SINGLE_STEP"},
- 	{STATUS_BUFFER_OVERFLOW, -EIO, "STATUS_BUFFER_OVERFLOW"},
--	{STATUS_NO_MORE_FILES, -EIO, "STATUS_NO_MORE_FILES"},
-+	{STATUS_NO_MORE_FILES, -ENODATA, "STATUS_NO_MORE_FILES"},
- 	{STATUS_WAKE_SYSTEM_DEBUGGER, -EIO, "STATUS_WAKE_SYSTEM_DEBUGGER"},
- 	{STATUS_HANDLES_CLOSED, -EIO, "STATUS_HANDLES_CLOSED"},
- 	{STATUS_NO_INHERITANCE, -EIO, "STATUS_NO_INHERITANCE"},
---- a/fs/cifs/smb2ops.c
-+++ b/fs/cifs/smb2ops.c
-@@ -554,6 +554,12 @@ smb2_new_lease_key(struct cifs_fid *fid)
- 	get_random_bytes(fid->lease_key, SMB2_LEASE_KEY_SIZE);
- }
- 
-+static bool
-+smb2_dir_needs_close(struct cifsFileInfo *cfile)
-+{
-+	return !cfile->invalidHandle;
-+}
-+
- struct smb_version_operations smb21_operations = {
- 	.compare_fids = smb2_compare_fids,
- 	.setup_request = smb2_setup_request,
-@@ -618,6 +624,7 @@ struct smb_version_operations smb21_oper
- 	.set_lease_key = smb2_set_lease_key,
- 	.new_lease_key = smb2_new_lease_key,
- 	.calc_signature = smb2_calc_signature,
-+	.dir_needs_close = smb2_dir_needs_close,
- };
- 
- 
-@@ -685,6 +692,7 @@ struct smb_version_operations smb30_oper
- 	.set_lease_key = smb2_set_lease_key,
- 	.new_lease_key = smb2_new_lease_key,
- 	.calc_signature = smb3_calc_signature,
-+	.dir_needs_close = smb2_dir_needs_close,
- };
- 
- struct smb_version_values smb20_values = {
---- a/fs/cifs/smb2pdu.c
-+++ b/fs/cifs/smb2pdu.c
-@@ -1800,6 +1800,10 @@ SMB2_query_directory(const unsigned int
- 	rsp = (struct smb2_query_directory_rsp *)iov[0].iov_base;
- 
- 	if (rc) {
-+		if (rc == -ENODATA && rsp->hdr.Status == STATUS_NO_MORE_FILES) {
-+			srch_inf->endOfSearch = true;
-+			rc = 0;
-+		}
- 		cifs_stats_fail_inc(tcon, SMB2_QUERY_DIRECTORY_HE);
- 		goto qdir_exit;
- 	}
-@@ -1837,11 +1841,6 @@ SMB2_query_directory(const unsigned int
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1477,6 +1484,11 @@ void iwlagn_bss_info_changed(struct ieee
  	else
- 		cifs_dbg(VFS, "illegal search buffer type\n");
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
  
--	if (rsp->hdr.Status == STATUS_NO_MORE_FILES)
--		srch_inf->endOfSearch = 1;
--	else
--		srch_inf->endOfSearch = 0;
--
- 	return rc;
++	if (bss_conf->use_cts_prot)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
++	else
++		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
++
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
  
- qdir_exit:
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 
 
