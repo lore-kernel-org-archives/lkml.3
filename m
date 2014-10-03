@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759775AbaJCXN0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:13:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46804 "EHLO
+	id S1759828AbaJCXOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:14:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757896AbaJCWNz (ORCPT
+	with ESMTP id S1757891AbaJCWNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:55 -0400
+	Fri, 3 Oct 2014 18:13:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.14 162/238] Input: synaptics - add support for ForcePads
-Date: Fri,  3 Oct 2014 14:31:17 -0700
-Message-Id: <20141003212918.861063342@linuxfoundation.org>
+        Keith Busch <keith.busch@intel.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 158/238] block: Fix dev_t minor allocation lifetime
+Date: Fri,  3 Oct 2014 14:31:13 -0700
+Message-Id: <20141003212918.731259183@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,148 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Keith Busch <keith.busch@intel.com>
 
-commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
+commit 2da78092dda13f1efd26edbbf99a567776913750 upstream.
 
-ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
-physical buttons, instead they generate primary button click when user
-presses somewhat hard on the surface of the touchpad. Unfortunately they
-also report primary button click whenever there are 2 or more contacts
-on the pad, messing up all multi-finger gestures (2-finger scrolling,
-multi-finger tapping, etc). To cope with this behavior we introduce a
-delay (currently 50 msecs) in reporting primary press in case more
-contacts appear.
+Releases the dev_t minor when all references are closed to prevent
+another device from acquiring the same major/minor.
 
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Since the partition's release may be invoked from call_rcu's soft-irq
+context, the ext_dev_idr's mutex had to be replaced with a spinlock so
+as not so sleep.
+
+Signed-off-by: Keith Busch <keith.busch@intel.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/synaptics.c |   68 ++++++++++++++++++++++++++++++----------
- drivers/input/mouse/synaptics.h |   11 ++++++
- 2 files changed, 63 insertions(+), 16 deletions(-)
+ block/genhd.c             |   24 ++++++++++++++----------
+ block/partition-generic.c |    2 +-
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -626,10 +626,61 @@ static int synaptics_parse_hw_state(cons
- 			 ((buf[0] & 0x04) >> 1) |
- 			 ((buf[3] & 0x04) >> 2));
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -28,10 +28,10 @@ struct kobject *block_depr;
+ /* for extended dynamic devt allocation, currently only one major is used */
+ #define NR_EXT_DEVT		(1 << MINORBITS)
  
-+		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
-+			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
-+		    hw->w == 2) {
-+			synaptics_parse_agm(buf, priv, hw);
-+			return 1;
-+		}
-+
-+		hw->x = (((buf[3] & 0x10) << 8) |
-+			 ((buf[1] & 0x0f) << 8) |
-+			 buf[4]);
-+		hw->y = (((buf[3] & 0x20) << 7) |
-+			 ((buf[1] & 0xf0) << 4) |
-+			 buf[5]);
-+		hw->z = buf[2];
-+
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 
--		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
-+		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-+			/*
-+			 * ForcePads, like Clickpads, use middle button
-+			 * bits to report primary button clicks.
-+			 * Unfortunately they report primary button not
-+			 * only when user presses on the pad above certain
-+			 * threshold, but also when there are more than one
-+			 * finger on the touchpad, which interferes with
-+			 * out multi-finger gestures.
-+			 */
-+			if (hw->z == 0) {
-+				/* No contacts */
-+				priv->press = priv->report_press = false;
-+			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
-+				/*
-+				 * Single-finger touch with pressure above
-+				 * the threshold. If pressure stays long
-+				 * enough, we'll start reporting primary
-+				 * button. We rely on the device continuing
-+				 * sending data even if finger does not
-+				 * move.
-+				 */
-+				if  (!priv->press) {
-+					priv->press_start = jiffies;
-+					priv->press = true;
-+				} else if (time_after(jiffies,
-+						priv->press_start +
-+							msecs_to_jiffies(50))) {
-+					priv->report_press = true;
-+				}
-+			} else {
-+				priv->press = false;
-+			}
-+
-+			hw->left = priv->report_press;
-+
-+		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
- 			/*
- 			 * Clickpad's button is transmitted as middle button,
- 			 * however, since it is primary button, we will report
-@@ -648,21 +699,6 @@ static int synaptics_parse_hw_state(cons
- 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
- 		}
- 
--		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
--			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
--		    hw->w == 2) {
--			synaptics_parse_agm(buf, priv, hw);
--			return 1;
--		}
--
--		hw->x = (((buf[3] & 0x10) << 8) |
--			 ((buf[1] & 0x0f) << 8) |
--			 buf[4]);
--		hw->y = (((buf[3] & 0x20) << 7) |
--			 ((buf[1] & 0xf0) << 4) |
--			 buf[5]);
--		hw->z = buf[2];
--
- 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
- 		    ((buf[0] ^ buf[3]) & 0x02)) {
- 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -78,6 +78,11 @@
-  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
-  *					reports 2.
-  * 2	0x20	report min		query 0x0f gives min coord reported
-+ * 2	0x80	forcepad		forcepad is a variant of clickpad that
-+ *					does not have physical buttons but rather
-+ *					uses pressure above certain threshold to
-+ *					report primary clicks. Forcepads also have
-+ *					clickpad bit set.
+-/* For extended devt allocation.  ext_devt_mutex prevents look up
++/* For extended devt allocation.  ext_devt_lock prevents look up
+  * results from going away underneath its user.
   */
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
- #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-@@ -86,6 +91,7 @@
- #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
- #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
-+#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+-static DEFINE_MUTEX(ext_devt_mutex);
++static DEFINE_SPINLOCK(ext_devt_lock);
+ static DEFINE_IDR(ext_devt_idr);
  
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
-@@ -177,6 +183,11 @@ struct synaptics_data {
- 	 */
- 	struct synaptics_hw_state agm;
- 	bool agm_pending;			/* new AGM packet received */
+ static struct device_type disk_type;
+@@ -420,9 +420,13 @@ int blk_alloc_devt(struct hd_struct *par
+ 	}
+ 
+ 	/* allocate ext devt */
+-	mutex_lock(&ext_devt_mutex);
+-	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_KERNEL);
+-	mutex_unlock(&ext_devt_mutex);
++	idr_preload(GFP_KERNEL);
 +
-+	/* ForcePad handling */
-+	unsigned long				press_start;
-+	bool					press;
-+	bool					report_press;
- };
++	spin_lock(&ext_devt_lock);
++	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_NOWAIT);
++	spin_unlock(&ext_devt_lock);
++
++	idr_preload_end();
+ 	if (idx < 0)
+ 		return idx == -ENOSPC ? -EBUSY : idx;
  
- void synaptics_module_init(void);
+@@ -447,9 +451,9 @@ void blk_free_devt(dev_t devt)
+ 		return;
+ 
+ 	if (MAJOR(devt) == BLOCK_EXT_MAJOR) {
+-		mutex_lock(&ext_devt_mutex);
++		spin_lock(&ext_devt_lock);
+ 		idr_remove(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
+-		mutex_unlock(&ext_devt_mutex);
++		spin_unlock(&ext_devt_lock);
+ 	}
+ }
+ 
+@@ -665,7 +669,6 @@ void del_gendisk(struct gendisk *disk)
+ 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
+ 	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
+ 	device_del(disk_to_dev(disk));
+-	blk_free_devt(disk_to_dev(disk)->devt);
+ }
+ EXPORT_SYMBOL(del_gendisk);
+ 
+@@ -690,13 +693,13 @@ struct gendisk *get_gendisk(dev_t devt,
+ 	} else {
+ 		struct hd_struct *part;
+ 
+-		mutex_lock(&ext_devt_mutex);
++		spin_lock(&ext_devt_lock);
+ 		part = idr_find(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
+ 		if (part && get_disk(part_to_disk(part))) {
+ 			*partno = part->partno;
+ 			disk = part_to_disk(part);
+ 		}
+-		mutex_unlock(&ext_devt_mutex);
++		spin_unlock(&ext_devt_lock);
+ 	}
+ 
+ 	return disk;
+@@ -1098,6 +1101,7 @@ static void disk_release(struct device *
+ {
+ 	struct gendisk *disk = dev_to_disk(dev);
+ 
++	blk_free_devt(dev->devt);
+ 	disk_release_events(disk);
+ 	kfree(disk->random);
+ 	disk_replace_part_tbl(disk, NULL);
+--- a/block/partition-generic.c
++++ b/block/partition-generic.c
+@@ -211,6 +211,7 @@ static const struct attribute_group *par
+ static void part_release(struct device *dev)
+ {
+ 	struct hd_struct *p = dev_to_part(dev);
++	blk_free_devt(dev->devt);
+ 	free_part_stats(p);
+ 	free_part_info(p);
+ 	kfree(p);
+@@ -253,7 +254,6 @@ void delete_partition(struct gendisk *di
+ 	rcu_assign_pointer(ptbl->last_lookup, NULL);
+ 	kobject_put(part->holder_dir);
+ 	device_del(part_to_dev(part));
+-	blk_free_devt(part_devt(part));
+ 
+ 	hd_struct_put(part);
+ }
 
 
