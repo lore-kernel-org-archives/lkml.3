@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932511AbaJCXAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:00:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
+	id S932622AbaJCXAd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:00:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001AbaJCWX5 (ORCPT
+	with ESMTP id S932565AbaJCWX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.10 020/143] arm64: ptrace: fix compat hardware watchpoint reporting
-Date: Fri,  3 Oct 2014 14:33:35 -0700
-Message-Id: <20141003213315.091132518@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 022/143] ALSA: hda - Fix COEF setups for ALC1150 codec
+Date: Fri,  3 Oct 2014 14:33:37 -0700
+Message-Id: <20141003213315.155113671@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,49 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
+commit acf08081adb5e8fe0519eb97bb49797ef52614d6 upstream.
 
-I'm not sure what I was on when I wrote this, but when iterating over
-the hardware watchpoint array (hbp_watch_array), our index is off by
-ARM_MAX_BRP, so we walk off the end of our thread_struct...
+ALC1150 codec seems to need the COEF- and PLL-setups just like its
+compatible ALC882 codec.  Some machines (e.g. SunMicro X10SAT) show
+the problem like too low output volumes unless the COEF setup is
+applied.
 
-... except, a dodgy condition in the loop means that it never executes
-at all (bp cannot be NULL).
-
-This patch fixes the code so that we remove the bp check and use the
-correct index for accessing the watchpoint structures.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-and-tested-by: Dana Goyette <danagoyette@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/hw_breakpoint.h |    1 -
- arch/arm64/kernel/ptrace.c             |    3 ++-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm64/include/asm/hw_breakpoint.h
-+++ b/arch/arm64/include/asm/hw_breakpoint.h
-@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 r
-  */
- #define ARM_MAX_BRP		16
- #define ARM_MAX_WRP		16
--#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
- 
- /* Virtual debug register bases. */
- #define AARCH64_DBG_REG_BVR	0
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -103,7 +103,8 @@ static void ptrace_hbptriggered(struct p
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -318,6 +318,7 @@ static void alc_auto_init_amp(struct hda
+ 		case 0x10ec0885:
+ 		case 0x10ec0887:
+ 		/*case 0x10ec0889:*/ /* this causes an SPDIF problem */
++		case 0x10ec0900:
+ 			alc889_coef_init(codec);
  			break;
- 		}
- 	}
--	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
-+
-+	for (i = 0; i < ARM_MAX_WRP; ++i) {
- 		if (current->thread.debug.hbp_watch[i] == bp) {
- 			info.si_errno = -((i << 1) + 1);
- 			break;
+ 		case 0x10ec0888:
+@@ -2252,6 +2253,7 @@ static int patch_alc882(struct hda_codec
+ 	switch (codec->vendor_id) {
+ 	case 0x10ec0882:
+ 	case 0x10ec0885:
++	case 0x10ec0900:
+ 		break;
+ 	default:
+ 		/* ALC883 and variants */
 
 
