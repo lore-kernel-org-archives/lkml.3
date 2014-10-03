@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbaJCPzP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:55:15 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63979 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaJCPzN (ORCPT
+	id S1754155AbaJCP4A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:56:00 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56265 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078AbaJCPz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:55:13 -0400
+	Fri, 3 Oct 2014 11:55:57 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: berlin: Add GPIO leds to Google Chromecast
-Date: Fri,  3 Oct 2014 17:54:57 +0200
-Message-Id: <1412351697-4079-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 02/12] mmc: sdhci-pxav3: Respect MMC_DDR52 timing on uhs signaling
+Date: Fri,  3 Oct 2014 17:55:37 +0200
+Message-Id: <1412351747-4188-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With GPIO support for Marvell Berlin, now add the two gpio-connected
-LEDs on Google Chromecast.
+commit bb8175a8aa42d731a840cd474e348ac3367eb5a0
+  ("mmc: sdhci: clarify DDR timing mode between SD-UHS and eMMC")
+added MMC_DDR52 as eMMC's DDR mode to be distinguished from SD-UHS.
+
+While the differentation may be useful, pxav3 SDHCI controller lacks
+a corresponding check in its custom .set_uhs_signaling callback for
+MMC_DDR52. This patch adds a new switch case for MMC_TIMING_MMC_DDR52
+to MMC_TIMING_UHS_DDR50 case.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
-Cc: devicetree@vger.kernel.org
+Cc: Chris Ball <chris@printf.net> 
+Cc: Ulf Hansson <ulf.hansson@linaro.org> 
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: linux-mmc@vger.kernel.org 
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/berlin2cd-google-chromecast.dts | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/mmc/host/sdhci-pxav3.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-index bcd81ffc495d..0816890a5c0d 100644
---- a/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-+++ b/arch/arm/boot/dts/berlin2cd-google-chromecast.dts
-@@ -11,6 +11,7 @@
- /dts-v1/;
- 
- #include "berlin2cd.dtsi"
-+#include <dt-bindings/gpio/gpio.h>
- 
- / {
- 	model = "Google Chromecast";
-@@ -24,6 +25,22 @@
- 		device_type = "memory";
- 		reg = <0x00000000 0x20000000>; /* 512 MB */
- 	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		white {
-+			label = "white";
-+			gpios = <&portc 1 GPIO_ACTIVE_HIGH>;
-+			default-state = "keep";
-+		};
-+
-+		red {
-+			label = "red";
-+			gpios = <&portc 2 GPIO_ACTIVE_HIGH>;
-+			default-state = "keep";
-+		};
-+	};
- };
- 
- &uart0 { status = "okay"; };
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 5036d7d39529..b55c807982fe 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -211,6 +211,7 @@ static void pxav3_set_uhs_signaling(struct sdhci_host *host, unsigned int uhs)
+ 	case MMC_TIMING_UHS_SDR104:
+ 		ctrl_2 |= SDHCI_CTRL_UHS_SDR104 | SDHCI_CTRL_VDD_180;
+ 		break;
++	case MMC_TIMING_MMC_DDR52:
+ 	case MMC_TIMING_UHS_DDR50:
+ 		ctrl_2 |= SDHCI_CTRL_UHS_DDR50 | SDHCI_CTRL_VDD_180;
+ 		break;
 -- 
 2.1.1
 
