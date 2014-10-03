@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaJCLud (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 07:50:33 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45830 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaJCLub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 07:50:31 -0400
-Date: Fri, 3 Oct 2014 13:50:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141003115020.GG10583@worktop.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <20141002201020.GA8907@redhat.com>
+	id S1752076AbaJCLya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 07:54:30 -0400
+Received: from sauhun.de ([89.238.76.85]:38803 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaJCLy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 07:54:28 -0400
+Date: Fri, 3 Oct 2014 13:55:04 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Anders Berg <anders.berg@avagotech.com>
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3] i2c: axxia: Add I2C driver for AXM55xx
+Message-ID: <20141003115504.GE1349@katana>
+References: <1412334482-20720-1-git-send-email-anders.berg@avagotech.com>
+ <20141003115048.GD1349@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qz2CZ664xQdCRdPu"
 Content-Disposition: inline
-In-Reply-To: <20141002201020.GA8907@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <20141003115048.GD1349@katana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 10:10:20PM +0200, Oleg Nesterov wrote:
-> You know, I already thought about the patch below for other reasons, it
-> can probably simplify other users of kthread_should_stop(). Because this
-> way we can rely on the signal checks in schedule(). (Just in case, the
-> patch is not complete, see TODO).
-> 
-> As for rfcomm_run(), perhaps it can ise it too?
-> 
-> 	set_kthread_wants_signal(true);
-> 
-> 	add_wait_queue(&rfcomm_wq, &wait);
-> 	for (;;) {
-> 		// This is only possible if kthread_should_stop() == T
 
-True because kthreads SIG_IGN everything, right?
+--Qz2CZ664xQdCRdPu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 		if (signal_pending(current))
-> 			break;
-> 
-> 		rfcomm_process_sessions();
-> 		wait_woken(TASK_INTERRUPTIBLE);
-> 	}
-> 
-> Of course, this assumes that rfcomm_process_sessions() can't do something
-> "really bad" if signal_pending() is true.
+On Fri, Oct 03, 2014 at 01:50:48PM +0200, Wolfram Sang wrote:
+> On Fri, Oct 03, 2014 at 01:08:02PM +0200, Anders Berg wrote:
+> > Add I2C bus driver for the controller found in the LSI Axxia family SoC=
+s. The
+> > driver implements 10-bit addressing and SMBus transfer modes via emulat=
+ion
+> > (including SMBus block data read).
+> >=20
+> > Signed-off-by: Anders Berg <anders.berg@avagotech.com>
+>=20
+> Applied to for-next, thanks!
 
-So from what I can think of, everything that does an INTERRUPTIBLE sleep
-will 'malfunction' after that, right? Which might be quite a lot
-actually.
+You missed to move the Kconfig part to embedded. Fixed that for you!
+Nonetheless, was a quite smooth driver submission, thanks.
 
-> What do you think?
 
-Interesting approach, but somewhat risky I tihnk, due to that
-INTERRUPTIBLE thing.
+--Qz2CZ664xQdCRdPu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> --- x/kernel/kthread.c
-> +++ x/kernel/kthread.c
-> @@ -49,6 +49,7 @@ struct kthread {
->  enum KTHREAD_BITS {
->  	KTHREAD_IS_PER_CPU = 0,
->  	KTHREAD_SHOULD_STOP,
-> +	KTHREAD_WANTS_SIGNAL,
->  	KTHREAD_SHOULD_PARK,
->  	KTHREAD_IS_PARKED,
->  };
-> @@ -442,6 +443,21 @@ int kthread_park(struct task_struct *k)
->  	return ret;
->  }
->  
-> +void set_kthread_wants_signal(bool on)
-> +{
-> +	unsigned long *kflags = &to_kthread(current)->flags;
-> +	unsigned long irqflags;
-> +
-> +	if (on) {
-> +		set_bit(KTHREAD_WANTS_SIGNAL, kflags);
-> +	} else {
-> +		spin_lock_irqsave(&current->sighand->siglock, irqflags);
-> +		clear_bit(KTHREAD_WANTS_SIGNAL, kflags);
-> +		recalc_sigpending();
-> +		spin_unlock_irqrestore(&current->sighand->siglock, irqflags);
-> +	}
-> +}
-> +
->  /**
->   * kthread_stop - stop a thread created by kthread_create().
->   * @k: thread created by kthread_create().
-> @@ -469,6 +485,9 @@ int kthread_stop(struct task_struct *k)
->  	if (kthread) {
->  		set_bit(KTHREAD_SHOULD_STOP, &kthread->flags);
->  		__kthread_unpark(k, kthread);
-> +		// TODO: this is racy, we need ->siglock.
-> +		if (test_bit(KTHREAD_WANTS_SIGNAL, &to_kthread(k)->flags))
-> +			 set_tsk_thread_flag(k, TIF_SIGPENDING);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Right, but taking that should not really be a problem afaict, this is a
-slow path if ever there was one.
+iQIcBAEBAgAGBQJULo6YAAoJEBQN5MwUoCm23c8QAJVgFKe33TnG3nOMQ81JeEeM
+LarFUfOlGCoZw7AaPLWjgEM0A3EIrBgUbtNuWchQBv922na3oULLy4DPgCI0dvvG
+8v0S4xZbCDZ4Ws4gOWX1m2mIasUYGHBjrXFTjjDi2QYIp59tt21lddKwbOEClRGP
+JCSPkum/Nq0a44TuhH692uz5utLnN61XLdP/MALvHE7JdKP9R57JcByD3VxchJie
+CTA+gYf5BQcHz9m7NyRGVAB6JvLn3ZeeHIcFLtSokxnv+DxQc9zcWcjO74ueZqQ+
+Eaagf/OvbLf+PpmfsqJZhgBweDkC789gSWiItP9y0zFlRx0FhE9TJd5k0K4Dikv9
+5edRwv8aGfExNQHP/sejx/JtL3kgcuhPC0nFJBXlQwBTvViMIV8wmU6mXmRshG/P
+JEGyj/wFjP2UoNlKUBW9lEekTvI9VvLDuDji3zpHZ5dT232JIiQKJufGN66IXjmi
+RmKqQZvcp+DjLT5S6pXE9LeFVFQ+glEQCB79AvZMJ50auoj4etezrdoKfwgqdliL
+MYso2ZmmWxJb/AO9OFS1/EuRezxIsfNkKcCyZOlQwvd3JRAezgumDN7seP0I0dmD
+fpvzHaQRl+WKcSLrYGAnJXG82gXDj70tlYi41FM/Mze7+MZk0KIsAPWr1Ojna6wL
+fEQo3Jw6thLClZxs7t+4
+=qIQU
+-----END PGP SIGNATURE-----
 
->  		wake_up_process(k);
->  		wait_for_completion(&kthread->exited);
->  	}
-> 
+--Qz2CZ664xQdCRdPu--
