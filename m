@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164AbaJCWUy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:20:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47180 "EHLO
+	id S1758189AbaJCWVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:21:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254AbaJCWTe (ORCPT
+	with ESMTP id S1758053AbaJCWQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:19:34 -0400
+	Fri, 3 Oct 2014 18:16:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 3.10 011/143] drm/i915: read HEAD register back in init_ring_common() to enforce ordering
-Date: Fri,  3 Oct 2014 14:33:26 -0700
-Message-Id: <20141003213314.822947923@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Philippe De Muyter <phdm@macqel.be>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 232/238] partitions: aix.c: off by one bug
+Date: Fri,  3 Oct 2014 14:32:27 -0700
+Message-Id: <20141003212921.081473480@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
-References: <20141003213314.470709810@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,49 +25,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ece4a17d237a79f63fbfaf3f724a12b6d500555c upstream.
+commit d97a86c170b4e432f76db072a827fe30b4d6f659 upstream.
 
-Withtout this, ring initialization fails reliabily during resume with
+The lvip[] array has "state->limit" elements so the condition here
+should be >= instead of >.
 
-	[drm:init_ring_common] *ERROR* render ring initialization failed ctl 0001f001 head ffffff8804 tail 00000000 start 000e4000
-
-This is not a complete fix, but it is verified to make the ring
-initialization failures during resume much less likely.
-
-We were not able to root-cause this bug (likely HW-specific to Gen4 chips)
-yet. This is therefore used as a ducttape before problem is fully
-understood and proper fix created, so that people don't suffer from
-completely unusable systems in the meantime.
-
-The discussion and debugging is happening at
-
-	https://bugs.freedesktop.org/show_bug.cgi?id=76554
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Fixes: 6ceea22bbbc8 ('partitions: add aix lvm partition support files')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Philippe De Muyter <phdm@macqel.be>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c |    3 +++
- 1 file changed, 3 insertions(+)
+ block/partitions/aix.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -396,6 +396,9 @@ static int init_ring_common(struct intel
- 		}
- 	}
- 
-+	/* Enforce ordering by reading HEAD register back */
-+	I915_READ_HEAD(ring);
-+
- 	/* Initialize the ring. This must happen _after_ we've cleared the ring
- 	 * registers with the above sequence (the readback of the HEAD registers
- 	 * also enforces ordering), otherwise the hw might lose the new ring
+--- a/block/partitions/aix.c
++++ b/block/partitions/aix.c
+@@ -253,7 +253,7 @@ int aix_partition(struct parsed_partitio
+ 				continue;
+ 			}
+ 			lv_ix = be16_to_cpu(p->lv_ix) - 1;
+-			if (lv_ix > state->limit) {
++			if (lv_ix >= state->limit) {
+ 				cur_lv_ix = -1;
+ 				continue;
+ 			}
 
 
