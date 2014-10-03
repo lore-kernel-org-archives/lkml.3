@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759011AbaJCWtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:49:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
+	id S1758995AbaJCWtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502AbaJCWYJ (ORCPT
+	with ESMTP id S1756604AbaJCWYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 074/143] shmem: fix nlink for rename overwrite directory
-Date: Fri,  3 Oct 2014 14:34:29 -0700
-Message-Id: <20141003213316.729214547@linuxfoundation.org>
+        Mark Knibbs <markk@clara.co.uk>
+Subject: [PATCH 3.10 058/143] USB: storage: Add quirks for Entrega/Xircom USB to SCSI converters
+Date: Fri,  3 Oct 2014 14:34:13 -0700
+Message-Id: <20141003213316.255764489@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,77 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Mark <markk@clara.co.uk>
 
-commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
+commit c80b4495c61636edc58fe1ce300f09f24db28e10 upstream.
 
-If overwriting an empty directory with rename, then need to drop the extra
-nlink.
+This patch adds quirks for Entrega Technologies (later Xircom PortGear) USB-
+SCSI converters. They use Shuttle Technology EUSB-01/EUSB-S1 chips. The
+US_FL_SCM_MULT_TARG quirk is needed to allow multiple devices on the SCSI
+chain to be accessed. Without it only the (single) device with SCSI ID 0
+can be used.
 
-Test prog:
+The standalone converter sold by Entrega had model number U1-SC25. Xircom
+acquired Entrega and re-branded the product line PortGear. The PortGear USB
+to SCSI Converter (model PGSCSI) is internally identical to the Entrega
+product, but later models may use a different USB ID. The Entrega-branded
+units have USB ID 1645:0007, as does my Xircom PGSCSI, but the Windows and
+Macintosh drivers also support 085A:0028.
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <err.h>
-#include <sys/stat.h>
+Entrega also sold the "Mac USB Dock", which provides two USB ports, a Mac
+(8-pin mini-DIN) serial port and a SCSI port. It appears to the computer as
+a four-port hub, USB-serial, and USB-SCSI converters. The USB-SCSI part may
+have initially used the same ID as the standalone U1-SC25 (1645:0007), but
+later production used 085A:0026.
 
-int main(void)
-{
-	const char *test_dir1 = "test-dir1";
-	const char *test_dir2 = "test-dir2";
-	int res;
-	int fd;
-	struct stat statbuf;
+My Xircom PortGear PGSCSI has bcdDevice=0x0100. Units with bcdDevice=0x0133
+probably also exist.
 
-	res = mkdir(test_dir1, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir1);
+This patch adds quirks for 1645:0007, 085A:0026 and 085A:0028. The Windows
+driver INF file also mentions 085A:0032 "PortStation SCSI Module", but I
+couldn't find any mention of that actually existing in the wild; perhaps it
+was cancelled before release?
 
-	res = mkdir(test_dir2, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir2);
-
-	fd = open(test_dir2, O_RDONLY);
-	if (fd == -1)
-		err(1, "open(\"%s\")", test_dir2);
-
-	res = rename(test_dir1, test_dir2);
-	if (res == -1)
-		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
-
-	res = fstat(fd, &statbuf);
-	if (res == -1)
-		err(1, "fstat(%i)", fd);
-
-	if (statbuf.st_nlink != 0) {
-		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
-		return 1;
-	}
-
-	return 0;
-}
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Mark Knibbs <markk@clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/shmem.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2128,8 +2128,10 @@ static int shmem_rename(struct inode *ol
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1125,6 +1125,18 @@ UNUSUAL_DEV(  0x0851, 0x1543, 0x0200, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_NOT_LOCKABLE),
  
- 	if (new_dentry->d_inode) {
- 		(void) shmem_unlink(new_dir, new_dentry);
--		if (they_are_dirs)
-+		if (they_are_dirs) {
-+			drop_nlink(new_dentry->d_inode);
- 			drop_nlink(old_dir);
-+		}
- 	} else if (they_are_dirs) {
- 		drop_nlink(old_dir);
- 		inc_nlink(new_dir);
++UNUSUAL_DEV(  0x085a, 0x0026, 0x0100, 0x0133,
++		"Xircom",
++		"PortGear USB-SCSI (Mac USB Dock)",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
++UNUSUAL_DEV(  0x085a, 0x0028, 0x0100, 0x0133,
++		"Xircom",
++		"PortGear USB to SCSI Converter",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Submitted by Jan De Luyck <lkml@kcore.org> */
+ UNUSUAL_DEV(  0x08bd, 0x1100, 0x0000, 0x0000,
+ 		"CITIZEN",
+@@ -1957,6 +1969,14 @@ UNUSUAL_DEV(  0x152d, 0x2329, 0x0100, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
+ 
++/* Entrega Technologies U1-SC25 (later Xircom PortGear PGSCSI)
++ * and Mac USB Dock USB-SCSI */
++UNUSUAL_DEV(  0x1645, 0x0007, 0x0100, 0x0133,
++		"Entrega Technologies",
++		"USB to SCSI Converter",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Reported by Robert Schedel <r.schedel@yahoo.de>
+  * Note: this is a 'super top' device like the above 14cd/6600 device */
+ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
 
 
