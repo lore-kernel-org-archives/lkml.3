@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaJCVcu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:32:50 -0400
+	id S1755114AbaJCVdE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:33:04 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:44722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaJCVch (ORCPT
+	with ESMTP id S1755027AbaJCVct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:37 -0400
+	Fri, 3 Oct 2014 17:32:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 034/357] ibmveth: Fix endian issues with rx_no_buffer statistic
-Date: Fri,  3 Oct 2014 14:27:00 -0700
-Message-Id: <20141003212934.493608259@linuxfoundation.org>
+        Filipe Brandenburger <filbranden@google.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Allan McRae <allan@archlinux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 068/357] xattr: fix check for simultaneous glibc header inclusion
+Date: Fri,  3 Oct 2014 14:27:34 -0700
+Message-Id: <20141003212935.513026909@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,65 +32,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Filipe Brandenburger <filbranden@google.com>
 
-commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
+commit bfcfd44cce2774f19daeb59fb4e43fc9aa80e7b8 upstream.
 
-Hidden away in the last 8 bytes of the buffer_list page is a solitary
-statistic. It needs to be byte swapped or else ethtool -S will
-produce numbers that terrify the user.
+The guard was introduced in commit ea1a8217b06b ("xattr: guard against
+simultaneous glibc header inclusion") but it is using #ifdef to check
+for a define that is either set to 1 or 0.  Fix it to use #if instead.
 
-Since we do this in multiple places, create a helper function with a
-comment explaining what is going on.
+* Without this patch:
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  include/uapi/linux/xattr.h:19:0: warning: "XATTR_CREATE" redefined [enabled by default]
+   #define XATTR_CREATE 0x1 /* set value, fail if attr already exists */
+   ^
+  /usr/include/x86_64-linux-gnu/sys/xattr.h:32:0: note: this is the location of the previous definition
+   #define XATTR_CREATE XATTR_CREATE
+   ^
+
+* With this patch:
+
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  (no warnings)
+
+Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Cc: Allan McRae <allan@archlinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ include/uapi/linux/xattr.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -292,6 +292,18 @@ failure:
- 	atomic_add(buffers_added, &(pool->available));
- }
+--- a/include/uapi/linux/xattr.h
++++ b/include/uapi/linux/xattr.h
+@@ -13,7 +13,7 @@
+ #ifndef _UAPI_LINUX_XATTR_H
+ #define _UAPI_LINUX_XATTR_H
  
-+/*
-+ * The final 8 bytes of the buffer list is a counter of frames dropped
-+ * because there was not a buffer in the buffer list capable of holding
-+ * the frame.
-+ */
-+static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
-+{
-+	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
-+
-+	adapter->rx_no_buffer = be64_to_cpup(p);
-+}
-+
- /* replenish routine */
- static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
- {
-@@ -307,8 +319,7 @@ static void ibmveth_replenish_task(struc
- 			ibmveth_replenish_buffer_pool(adapter, pool);
- 	}
+-#ifdef __UAPI_DEF_XATTR
++#if __UAPI_DEF_XATTR
+ #define __USE_KERNEL_XATTR_DEFS
  
--	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- }
- 
- /* empty and free ana buffer pool - also used to do cleanup in error paths */
-@@ -698,8 +709,7 @@ static int ibmveth_close(struct net_devi
- 
- 	free_irq(netdev->irq, netdev);
- 
--	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- 
- 	ibmveth_cleanup(adapter);
- 
+ #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
 
 
