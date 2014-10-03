@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760370AbaJCXfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:35:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46470 "EHLO
+	id S1760356AbaJCXfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:35:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755464AbaJCWDo (ORCPT
+	with ESMTP id S1756483AbaJCWDo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-Subject: [PATCH 3.14 086/238] usb: phy: twl4030-usb: Fix regressions to runtime PM on omaps
-Date: Fri,  3 Oct 2014 14:30:01 -0700
-Message-Id: <20141003212916.434631947@linuxfoundation.org>
+        Thor Thayer <tthayer@opensource.altera.com>,
+        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.16 302/357] spi: dw: Dont use devm_kzalloc in master->setup callback
+Date: Fri,  3 Oct 2014 14:31:28 -0700
+Message-Id: <20141003212942.550855162@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,232 +25,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Axel Lin <axel.lin@ingics.com>
 
-commit 96be39ab34b77c6f6f5cd6ae03aac6c6449ee5c4 upstream.
+commit a97c883a16da7e0691a3be5465926c92a8da4da6 upstream.
 
-Commit 30a70b026b4cd ("usb: musb: fix obex in g_nokia.ko causing kernel
-panic") attempted to fix runtime PM handling for PHYs that are on the
-I2C bus. Commit 3063a12be2b0 ("usb: musb: fix PHY power on/off") then
-changed things around to enable of PHYs that rely on runtime PM.
+device_add() expects that any memory allocated via devm_* API is only
+done in the device's probe function.
 
-These changes however broke idling of the PHY and causes at least
-100 mW extra power consumption on omaps, which is a lot with
-the idle power consumption being below 10 mW range on many devices.
+Fix below boot warning:
+WARNING: CPU: 1 PID: 1 at drivers/base/dd.c:286 driver_probe_device+0x2b4/0x2f4()
+Modules linked in:
+CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.16.0-10474-g835c90b-dirty #160
+[<c0016364>] (unwind_backtrace) from [<c001251c>] (show_stack+0x20/0x24)
+[<c001251c>] (show_stack) from [<c04eaefc>] (dump_stack+0x7c/0x98)
+[<c04eaefc>] (dump_stack) from [<c0023d4c>] (warn_slowpath_common+0x78/0x9c)
+[<c0023d4c>] (warn_slowpath_common) from [<c0023d9c>] (warn_slowpath_null+0x2c/0x34)
+[<c0023d9c>] (warn_slowpath_null) from [<c0302c60>] (driver_probe_device+0x2b4/0x2f4)
+[<c0302c60>] (driver_probe_device) from [<c0302d90>] (__device_attach+0x50/0x54)
+[<c0302d90>] (__device_attach) from [<c0300e60>] (bus_for_each_drv+0x54/0x9c)
+[<c0300e60>] (bus_for_each_drv) from [<c0302958>] (device_attach+0x84/0x90)
+[<c0302958>] (device_attach) from [<c0301f10>] (bus_probe_device+0x94/0xb8)
+[<c0301f10>] (bus_probe_device) from [<c03000c0>] (device_add+0x434/0x4fc)
+[<c03000c0>] (device_add) from [<c0342dd4>] (spi_add_device+0x98/0x164)
+[<c0342dd4>] (spi_add_device) from [<c03444a4>] (spi_register_master+0x598/0x768)
+[<c03444a4>] (spi_register_master) from [<c03446b4>] (devm_spi_register_master+0x40/0x80)
+[<c03446b4>] (devm_spi_register_master) from [<c0346214>] (dw_spi_add_host+0x1a8/0x258)
+[<c0346214>] (dw_spi_add_host) from [<c0346920>] (dw_spi_mmio_probe+0x1d4/0x294)
+[<c0346920>] (dw_spi_mmio_probe) from [<c0304560>] (platform_drv_probe+0x3c/0x6c)
+[<c0304560>] (platform_drv_probe) from [<c0302a98>] (driver_probe_device+0xec/0x2f4)
+[<c0302a98>] (driver_probe_device) from [<c0302d3c>] (__driver_attach+0x9c/0xa0)
+[<c0302d3c>] (__driver_attach) from [<c0300f0c>] (bus_for_each_dev+0x64/0x98)
+[<c0300f0c>] (bus_for_each_dev) from [<c0302518>] (driver_attach+0x2c/0x30)
+[<c0302518>] (driver_attach) from [<c0302134>] (bus_add_driver+0xdc/0x1f4)
+[<c0302134>] (bus_add_driver) from [<c03035c8>] (driver_register+0x88/0x104)
+[<c03035c8>] (driver_register) from [<c030445c>] (__platform_driver_register+0x58/0x6c)
+[<c030445c>] (__platform_driver_register) from [<c0700f00>] (dw_spi_mmio_driver_init+0x18/0x20)
+[<c0700f00>] (dw_spi_mmio_driver_init) from [<c0008914>] (do_one_initcall+0x90/0x1d4)
+[<c0008914>] (do_one_initcall) from [<c06d7d90>] (kernel_init_freeable+0x178/0x248)
+[<c06d7d90>] (kernel_init_freeable) from [<c04e687c>] (kernel_init+0x18/0xfc)
+[<c04e687c>] (kernel_init) from [<c000ecd8>] (ret_from_fork+0x14/0x20)
 
-As calling phy_power_on/off from runtime PM calls in the USB
-causes complicated issues with I2C connected PHYs, let's just let
-the PHY do it's own runtime PM as needed. This leaves out the
-dependency between PHYs and USB controller drivers for runtime
-PM.
-
-Let's fix the regression for twl4030-usb by adding minimal runtime
-PM support. This allows idling the PHY on disconnect.
-
-Note that we are changing to use standard runtime PM handling
-for twl4030_phy_init() as that function just checks the state
-and does not initialize the PHY. The PHY won't get initialized
-until in twl4030_phy_power_on().
-
-Fixes: 30a70b026b4cd ("usb: musb: fix obex in g_nokia.ko causing kernel panic")
-Fixes: 3063a12be2b0 ("usb: musb: fix PHY power on/off")
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Reported-by: Thor Thayer <tthayer@opensource.altera.com>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/phy/phy-twl4030-usb.c |   88 ++++++++++++++++++++++++++++++------------
- 1 file changed, 63 insertions(+), 25 deletions(-)
+ drivers/spi/spi-dw.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/phy/phy-twl4030-usb.c
-+++ b/drivers/phy/phy-twl4030-usb.c
-@@ -34,6 +34,7 @@
- #include <linux/delay.h>
- #include <linux/usb/otg.h>
- #include <linux/phy/phy.h>
-+#include <linux/pm_runtime.h>
- #include <linux/usb/musb-omap.h>
- #include <linux/usb/ulpi.h>
- #include <linux/i2c/twl.h>
-@@ -422,37 +423,55 @@ static void twl4030_phy_power(struct twl
- 	}
- }
- 
--static int twl4030_phy_power_off(struct phy *phy)
-+static int twl4030_usb_runtime_suspend(struct device *dev)
- {
--	struct twl4030_usb *twl = phy_get_drvdata(phy);
-+	struct twl4030_usb *twl = dev_get_drvdata(dev);
- 
-+	dev_dbg(twl->dev, "%s\n", __func__);
- 	if (twl->asleep)
- 		return 0;
- 
- 	twl4030_phy_power(twl, 0);
- 	twl->asleep = 1;
--	dev_dbg(twl->dev, "%s\n", __func__);
-+
+--- a/drivers/spi/spi-dw.c
++++ b/drivers/spi/spi-dw.c
+@@ -547,8 +547,7 @@ static int dw_spi_setup(struct spi_devic
+ 	/* Only alloc on first setup */
+ 	chip = spi_get_ctldata(spi);
+ 	if (!chip) {
+-		chip = devm_kzalloc(&spi->dev, sizeof(struct chip_data),
+-				GFP_KERNEL);
++		chip = kzalloc(sizeof(struct chip_data), GFP_KERNEL);
+ 		if (!chip)
+ 			return -ENOMEM;
+ 		spi_set_ctldata(spi, chip);
+@@ -606,6 +605,14 @@ static int dw_spi_setup(struct spi_devic
  	return 0;
  }
  
--static void __twl4030_phy_power_on(struct twl4030_usb *twl)
-+static int twl4030_usb_runtime_resume(struct device *dev)
- {
-+	struct twl4030_usb *twl = dev_get_drvdata(dev);
++static void dw_spi_cleanup(struct spi_device *spi)
++{
++	struct chip_data *chip = spi_get_ctldata(spi);
 +
-+	dev_dbg(twl->dev, "%s\n", __func__);
-+	if (!twl->asleep)
-+		return 0;
-+
- 	twl4030_phy_power(twl, 1);
--	twl4030_i2c_access(twl, 1);
--	twl4030_usb_set_mode(twl, twl->usb_mode);
--	if (twl->usb_mode == T2_USB_MODE_ULPI)
--		twl4030_i2c_access(twl, 0);
-+	twl->asleep = 0;
-+
-+	return 0;
++	kfree(chip);
++	spi_set_ctldata(spi, NULL);
 +}
 +
-+static int twl4030_phy_power_off(struct phy *phy)
-+{
-+	struct twl4030_usb *twl = phy_get_drvdata(phy);
-+
-+	dev_dbg(twl->dev, "%s\n", __func__);
-+	pm_runtime_mark_last_busy(twl->dev);
-+	pm_runtime_put_autosuspend(twl->dev);
-+
-+	return 0;
- }
- 
- static int twl4030_phy_power_on(struct phy *phy)
+ /* Restart the controller, disable all interrupts, clean rx fifo */
+ static void spi_hw_init(struct dw_spi *dws)
  {
- 	struct twl4030_usb *twl = phy_get_drvdata(phy);
+@@ -661,6 +668,7 @@ int dw_spi_add_host(struct device *dev,
+ 	master->bus_num = dws->bus_num;
+ 	master->num_chipselect = dws->num_cs;
+ 	master->setup = dw_spi_setup;
++	master->cleanup = dw_spi_cleanup;
+ 	master->transfer_one_message = dw_spi_transfer_one_message;
+ 	master->max_speed_hz = dws->max_freq;
  
--	if (!twl->asleep)
--		return 0;
--	__twl4030_phy_power_on(twl);
--	twl->asleep = 0;
- 	dev_dbg(twl->dev, "%s\n", __func__);
-+	pm_runtime_get_sync(twl->dev);
-+	twl4030_i2c_access(twl, 1);
-+	twl4030_usb_set_mode(twl, twl->usb_mode);
-+	if (twl->usb_mode == T2_USB_MODE_ULPI)
-+		twl4030_i2c_access(twl, 0);
- 
- 	/*
- 	 * XXX When VBUS gets driven after musb goes to A mode,
-@@ -558,6 +577,16 @@ static irqreturn_t twl4030_usb_irq(int i
- 		 * USB_LINK_VBUS state.  musb_hdrc won't care until it
- 		 * starts to handle softconnect right.
- 		 */
-+		if ((status == OMAP_MUSB_VBUS_VALID) ||
-+		    (status == OMAP_MUSB_ID_GROUND)) {
-+			if (twl->asleep)
-+				pm_runtime_get_sync(twl->dev);
-+		} else {
-+			if (!twl->asleep) {
-+				pm_runtime_mark_last_busy(twl->dev);
-+				pm_runtime_put_autosuspend(twl->dev);
-+			}
-+		}
- 		omap_musb_mailbox(status);
- 	}
- 
-@@ -586,22 +615,17 @@ static int twl4030_phy_init(struct phy *
- 	struct twl4030_usb *twl = phy_get_drvdata(phy);
- 	enum omap_musb_vbus_id_status status;
- 
--	/*
--	 * Start in sleep state, we'll get called through set_suspend()
--	 * callback when musb is runtime resumed and it's time to start.
--	 */
--	__twl4030_phy_power(twl, 0);
--	twl->asleep = 1;
--
-+	pm_runtime_get_sync(twl->dev);
- 	status = twl4030_usb_linkstat(twl);
- 	twl->linkstat = status;
- 
--	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID) {
-+	if (status == OMAP_MUSB_ID_GROUND || status == OMAP_MUSB_VBUS_VALID)
- 		omap_musb_mailbox(twl->linkstat);
--		twl4030_phy_power_on(phy);
--	}
- 
- 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
-+	pm_runtime_mark_last_busy(twl->dev);
-+	pm_runtime_put_autosuspend(twl->dev);
-+
- 	return 0;
- }
- 
-@@ -637,6 +661,11 @@ static const struct phy_ops ops = {
- 	.owner		= THIS_MODULE,
- };
- 
-+static const struct dev_pm_ops twl4030_usb_pm_ops = {
-+	SET_RUNTIME_PM_OPS(twl4030_usb_runtime_suspend,
-+			   twl4030_usb_runtime_resume, NULL)
-+};
-+
- static int twl4030_usb_probe(struct platform_device *pdev)
- {
- 	struct twl4030_usb_data *pdata = dev_get_platdata(&pdev->dev);
-@@ -713,6 +742,11 @@ static int twl4030_usb_probe(struct plat
- 
- 	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
- 
-+	pm_runtime_use_autosuspend(&pdev->dev);
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, 2000);
-+	pm_runtime_enable(&pdev->dev);
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	/* Our job is to use irqs and status from the power module
- 	 * to keep the transceiver disabled when nothing's connected.
- 	 *
-@@ -731,6 +765,9 @@ static int twl4030_usb_probe(struct plat
- 		return status;
- 	}
- 
-+	pm_runtime_mark_last_busy(&pdev->dev);
-+	pm_runtime_put_autosuspend(twl->dev);
-+
- 	dev_info(&pdev->dev, "Initialized TWL4030 USB module\n");
- 	return 0;
- }
-@@ -740,6 +777,7 @@ static int twl4030_usb_remove(struct pla
- 	struct twl4030_usb *twl = platform_get_drvdata(pdev);
- 	int val;
- 
-+	pm_runtime_get_sync(twl->dev);
- 	cancel_delayed_work(&twl->id_workaround_work);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 
-@@ -759,9 +797,8 @@ static int twl4030_usb_remove(struct pla
- 
- 	/* disable complete OTG block */
- 	twl4030_usb_clear_bits(twl, POWER_CTRL, POWER_CTRL_OTG_ENAB);
--
--	if (!twl->asleep)
--		twl4030_phy_power(twl, 0);
-+	pm_runtime_mark_last_busy(twl->dev);
-+	pm_runtime_put(twl->dev);
- 
- 	return 0;
- }
-@@ -779,6 +816,7 @@ static struct platform_driver twl4030_us
- 	.remove		= twl4030_usb_remove,
- 	.driver		= {
- 		.name	= "twl4030_usb",
-+		.pm	= &twl4030_usb_pm_ops,
- 		.owner	= THIS_MODULE,
- 		.of_match_table = of_match_ptr(twl4030_usb_id_table),
- 	},
 
 
