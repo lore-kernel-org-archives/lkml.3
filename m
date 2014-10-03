@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539AbaJCPuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:50:07 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:43658 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752671AbaJCPuF (ORCPT
+	id S1753721AbaJCPuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:50:39 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:39960 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577AbaJCPui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:50:05 -0400
-X-Sasl-enc: 9K9xqGFmwa+MYtOnwJj81QaEzHkVTrSIZc++ihl7zIiz 1412351402
-Date: Fri, 3 Oct 2014 08:50:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Nathaniel Ting <nathaniel.ting@silabs.com>
-Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial: cp210x: Add Silicon Labs 358x VID and PID.
-Message-ID: <20141003155001.GB10004@kroah.com>
-References: <1412348793-4558-1-git-send-email-nathaniel.ting@silabs.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412348793-4558-1-git-send-email-nathaniel.ting@silabs.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 3 Oct 2014 11:50:38 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MIPS: Alchemy: Remove direct access to prepare_count field of struct clk
+Date: Fri,  3 Oct 2014 17:50:00 +0200
+Message-Id: <1412351404-28818-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 11:06:33AM -0400, Nathaniel Ting wrote:
-> From: Nathaniel Ting <nathaniel.ting@silabs.com>
-> 
-> Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
-> driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
-> connect to host PCs over a USB serial link.
-> 
-> Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
-> ---
->  drivers/usb/serial/cp210x.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-> index e4bb622..ce81fa8 100644
-> --- a/drivers/usb/serial/cp210x.c
-> +++ b/drivers/usb/serial/cp210x.c
-> @@ -154,6 +154,7 @@ static const struct usb_device_id id_table[] = {
->  	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
->  	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
->  	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
-> +        { USB_DEVICE(0x1BA4, 0x0002) }, /* Silicon Labs 358x factory default */
+Replacing it with a call to __clk_is_prepared(), which isn't entirely
+equivalent but in practice shouldn't matter.
 
-Close, but if you ran your patch through checkpatch.pl you would see
-that you used spaces instead of tabs for indentation.
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ arch/mips/alchemy/common/clock.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-At least the tabs on the other lines came through correctly, which is
-good.
+diff --git a/arch/mips/alchemy/common/clock.c b/arch/mips/alchemy/common/clock.c
+index d7557cd..203e440 100644
+--- a/arch/mips/alchemy/common/clock.c
++++ b/arch/mips/alchemy/common/clock.c
+@@ -37,7 +37,6 @@
+ #include <linux/io.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clkdev.h>
+-#include <linux/clk-private.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+@@ -397,10 +396,10 @@ static long alchemy_clk_fgcs_detr(struct clk_hw *hw, unsigned long rate,
+ 			break;
+ 
+ 		/* if this parent is currently unused, remember it.
+-		 * XXX: I know it's a layering violation, but it works
+-		 * so well.. (if (!clk_has_active_children(pc)) )
++		 * XXX: we would actually want clk_has_active_children()
++		 * but this is a good-enough approximation for now.
+ 		 */
+-		if (pc->prepare_count == 0) {
++		if (!__clk_is_prepared(pc)) {
+ 			if (!free)
+ 				free = pc;
+ 		}
+-- 
+1.9.3
 
-Care to fix this up and try again?
-
-thanks,
-
-greg k-h
