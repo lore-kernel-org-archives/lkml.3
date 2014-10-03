@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608AbaJCWiB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:38:01 -0400
+	id S1756422AbaJCWip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:38:45 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:47841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932309AbaJCWeR (ORCPT
+	with ESMTP id S1757077AbaJCWeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:17 -0400
+	Fri, 3 Oct 2014 18:34:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.14 140/238] iio: meter: ade7758: Fix indio_dev->trig assignment
-Date: Fri,  3 Oct 2014 14:30:55 -0700
-Message-Id: <20141003212918.151731657@linuxfoundation.org>
+        John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.16 290/357] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
+Date: Fri,  3 Oct 2014 14:31:16 -0700
+Message-Id: <20141003212942.193505836@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,38 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit 0495081179212b758775df752e657ea71dcae020 upstream.
+commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
 
-This can result in wrong reference count for trigger device, call
-iio_trigger_get to increment reference.
-Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
-with Jonathan.
+In spite of what the GCC manual says, the -mfast-indirect-calls has
+never been supported in the 64-bit parisc compiler. Indirect calls have
+always been done using function descriptors irrespective of the
+-mfast-indirect-calls option.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Recently, it was noticed that a function descriptor was always requested
+when the -mfast-indirect-calls option was specified. This caused
+problems when the option was used in  application code and doesn't make
+any sense because the whole point of the option is to avoid using a
+function descriptor for indirect calls.
+
+Fixing this broke 64-bit kernel builds.
+
+I will fix GCC but for now we need the attached change. This results in
+the same kernel code as before.
+
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_trigger.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/Makefile |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/iio/meter/ade7758_trigger.c
-+++ b/drivers/staging/iio/meter/ade7758_trigger.c
-@@ -85,7 +85,7 @@ int ade7758_probe_trigger(struct iio_dev
- 	ret = iio_trigger_register(st->trig);
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -48,7 +48,12 @@ cflags-y	:= -pipe
  
- 	/* select default trigger */
--	indio_dev->trig = st->trig;
-+	indio_dev->trig = iio_trigger_get(st->trig);
- 	if (ret)
- 		goto error_free_irq;
+ # These flags should be implied by an hppa-linux configuration, but they
+ # are not in gcc 3.2.
+-cflags-y	+= -mno-space-regs -mfast-indirect-calls
++cflags-y	+= -mno-space-regs
++
++# -mfast-indirect-calls is only relevant for 32-bit kernels.
++ifndef CONFIG_64BIT
++cflags-y	+= -mfast-indirect-calls
++endif
  
+ # Currently we save and restore fpregs on all kernel entry/interruption paths.
+ # If that gets optimized, we might need to disable the use of fpregs in the
 
 
