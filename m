@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261AbaJCXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:46:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46282 "EHLO
+	id S933244AbaJCXqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:46:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757260AbaJCWDb (ORCPT
+	with ESMTP id S1757264AbaJCWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:31 -0400
+	Fri, 3 Oct 2014 18:03:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Feiner <pfeiner@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 280/357] mm: softdirty: keep bit when zapping file pte
-Date: Fri,  3 Oct 2014 14:31:06 -0700
-Message-Id: <20141003212941.902530190@linuxfoundation.org>
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>,
+        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.16 281/357] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Date: Fri,  3 Oct 2014 14:31:07 -0700
+Message-Id: <20141003212941.931929299@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -33,45 +34,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Feiner <pfeiner@google.com>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit dbab31aa2ceec2d201966fa0b552f151310ba5f4 upstream.
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
 
-This fixes the same bug as b43790eedd31 ("mm: softdirty: don't forget to
-save file map softdiry bit on unmap") and 9aed8614af5a ("mm/memory.c:
-don't forget to set softdirty on file mapped fault") where the return
-value of pte_*mksoft_dirty was being ignored.
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
 
-To be sure that no other pte/pmd "mk" function return values were being
-ignored, I annotated the functions in arch/x86/include/asm/pgtable.h
-with __must_check and rebuilt.
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
 
-The userspace effect of this bug is that the softdirty mark might be
-lost if a file mapped pte get zapped.
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Jamie Liu <jamieliu@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
+
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
+
+Yasuaki also reported that this can happen on real hardware:
+
+  https://lkml.org/lkml/2014/7/22/1018
+
+His case is here:
+
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/smpboot.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1125,7 +1125,7 @@ again:
- 						addr) != page->index) {
- 				pte_t ptfile = pgoff_to_pte(page->index);
- 				if (pte_soft_dirty(ptent))
--					pte_file_mksoft_dirty(ptfile);
-+					ptfile = pte_file_mksoft_dirty(ptfile);
- 				set_pte_at(mm, addr, pte, ptfile);
- 			}
- 			if (PageAnon(page))
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+ 
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 
 
