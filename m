@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293AbaJCP4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:56:19 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:47735 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119AbaJCP4A (ORCPT
+	id S1754421AbaJCP5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:57:32 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62490 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108AbaJCPz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:56:00 -0400
+	Fri, 3 Oct 2014 11:55:59 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Antoine Tenart <antoine.tenart@free-electrons.com>,
-        linux-mmc@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/12] ARM: dts: berlin: Add SDHCI controller nodes to BG2/BG2CD
-Date: Fri,  3 Oct 2014 17:55:45 +0200
-Message-Id: <1412351747-4188-11-git-send-email-sebastian.hesselbarth@gmail.com>
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 06/12] mmc: sdhci-pxav3: Move I/O clock to private data
+Date: Fri,  3 Oct 2014 17:55:41 +0200
+Message-Id: <1412351747-4188-7-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marvell Berlin BG2 has three, BG2CD just one pxav3 compatible
-sdhci controllers, add them to the corresponding DT SoC
-includes.
+As we are using references to the I/O clock throughout the driver,
+move it to the private data. Also, in preparation for core clock,
+rename it to clk_io.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -32,86 +32,106 @@ Cc: Chris Ball <chris@printf.net>
 Cc: Ulf Hansson <ulf.hansson@linaro.org>
 Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
 Cc: linux-mmc@vger.kernel.org
-Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/berlin2.dtsi   | 34 ++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/berlin2cd.dtsi |  9 +++++++++
- 2 files changed, 43 insertions(+)
+ drivers/mmc/host/sdhci-pxav3.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index d7e81e124de0..2b7baaa77d88 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -53,6 +53,35 @@
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index e52bbbb09d88..a34a589670e6 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -59,6 +59,7 @@
+ #define SDCE_MISC_INT_EN	(1<<1)
  
- 		ranges = <0 0xf7000000 0x1000000>;
+ struct sdhci_pxa {
++	struct clk *clk_io;
+ 	u8	power_mode;
+ };
  
-+		sdhci0: sdhci@ab0000 {
-+			compatible = "mrvl,pxav3-mmc";
-+			reg = <0xab0000 0x200>;
-+			clocks = <&chip CLKID_SDIO0XIN>, <&chip CLKID_SDIO0>;
-+			clock-names = "io", "core";
-+			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-+			status = "disabled";
-+		};
-+
-+		sdhci1: sdhci@ab0800 {
-+			compatible = "mrvl,pxav3-mmc";
-+			reg = <0xab0800 0x200>;
-+			clocks = <&chip CLKID_SDIO1XIN>, <&chip CLKID_SDIO1>;
-+			clock-names = "io", "core";
-+			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-+			status = "disabled";
-+		};
-+
-+		sdhci2: sdhci@ab1000 {
-+			compatible = "mrvl,pxav3-mmc";
-+			reg = <0xab1000 0x200>;
-+			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&chip CLKID_NFC_ECC>, <&chip CLKID_NFC>;
-+			clock-names = "io", "core";
-+			pinctrl-0 = <&emmc_pmux>;
-+			pinctrl-names = "default";
-+			status = "disabled";
-+		};
-+
- 		l2: l2-cache-controller@ac0000 {
- 			compatible = "marvell,tauros3-cache", "arm,pl310-cache";
- 			reg = <0xac0000 0x1000>;
-@@ -253,6 +282,11 @@
- 			reg = <0xea0000 0x400>;
- 			clocks = <&refclk>;
- 			clock-names = "refclk";
-+
-+			emmc_pmux: emmc-pmux {
-+				groups = "G26";
-+				function = "emmc";
-+			};
- 		};
+@@ -288,9 +289,7 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 	struct sdhci_host *host = NULL;
+ 	struct sdhci_pxa *pxa = NULL;
+ 	const struct of_device_id *match;
+-
+ 	int ret;
+-	struct clk *clk;
  
- 		apb@fc0000 {
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index 68f7032b4686..2afb133dc708 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -45,6 +45,15 @@
+ 	pxa = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_pxa), GFP_KERNEL);
+ 	if (!pxa)
+@@ -310,14 +309,14 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 	pltfm_host = sdhci_priv(host);
+ 	pltfm_host->priv = pxa;
  
- 		ranges = <0 0xf7000000 0x1000000>;
+-	clk = devm_clk_get(dev, NULL);
+-	if (IS_ERR(clk)) {
++	pxa->clk_io = devm_clk_get(dev, NULL);
++	if (IS_ERR(pxa->clk_io)) {
+ 		dev_err(dev, "failed to get io clock\n");
+-		ret = PTR_ERR(clk);
++		ret = PTR_ERR(pxa->clk_io);
+ 		goto err_clk_get;
+ 	}
+-	pltfm_host->clk = clk;
+-	clk_prepare_enable(clk);
++	pltfm_host->clk = pxa->clk_io;
++	clk_prepare_enable(pxa->clk_io);
  
-+		sdhci0: sdhci@ab0000 {
-+			compatible = "mrvl,pxav3-mmc";
-+			reg = <0xab0000 0x200>;
-+			clocks = <&chip CLKID_SDIO0XIN>, <&chip CLKID_SDIO0>;
-+			clock-names = "io", "core";
-+			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-+			status = "disabled";
-+		};
-+
- 		l2: l2-cache-controller@ac0000 {
- 			compatible = "arm,pl310-cache";
- 			reg = <0xac0000 0x1000>;
+ 	/* enable 1/8V DDR capable */
+ 	host->mmc->caps |= MMC_CAP_1_8V_DDR;
+@@ -390,7 +389,7 @@ err_add_host:
+ 	pm_runtime_disable(&pdev->dev);
+ err_of_parse:
+ err_cd_req:
+-	clk_disable_unprepare(clk);
++	clk_disable_unprepare(pxa->clk_io);
+ err_clk_get:
+ err_mbus_win:
+ 	sdhci_pltfm_free(pdev);
+@@ -401,12 +400,13 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
+ {
+ 	struct sdhci_host *host = platform_get_drvdata(pdev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 
+ 	pm_runtime_get_sync(&pdev->dev);
+ 	sdhci_remove_host(host, 1);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	clk_disable_unprepare(pltfm_host->clk);
++	clk_disable_unprepare(pxa->clk_io);
+ 
+ 	sdhci_pltfm_free(pdev);
+ 
+@@ -446,13 +446,14 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	host->runtime_suspended = true;
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 
+-	clk_disable_unprepare(pltfm_host->clk);
++	clk_disable_unprepare(pxa->clk_io);
+ 
+ 	return 0;
+ }
+@@ -461,9 +462,10 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
+ {
+ 	struct sdhci_host *host = dev_get_drvdata(dev);
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
++	struct sdhci_pxa *pxa = pltfm_host->priv;
+ 	unsigned long flags;
+ 
+-	clk_prepare_enable(pltfm_host->clk);
++	clk_prepare_enable(pxa->clk_io);
+ 
+ 	spin_lock_irqsave(&host->lock, flags);
+ 	host->runtime_suspended = false;
 -- 
 2.1.1
 
