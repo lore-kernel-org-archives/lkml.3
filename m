@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaJCIZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 04:25:57 -0400
+	id S1752493AbaJCI0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 04:26:39 -0400
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:62932 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJCIYe (ORCPT
+	with ESMTP id S1751696AbaJCIYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 04:24:34 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-55-542e5d3f230c
+	Fri, 3 Oct 2014 04:24:32 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-4f-542e5d3e2e5c
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: dri-devel@lists.freedesktop.org (open list:DRM DRIVERS)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -23,62 +23,62 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         intel-gfx@lists.freedesktop.org (open list:INTEL DRM DRIVERS...)
-Subject: [PATCH RFC 2/4] drm/core: re-enable suspend/resume callbacks for KMS
- drivers
-Date: Fri, 03 Oct 2014 10:24:11 +0200
-Message-id: <1412324653-30677-3-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH RFC 1/4] drm/i915: set PM callbacks only if modeset is turned
+ off
+Date: Fri, 03 Oct 2014 10:24:10 +0200
+Message-id: <1412324653-30677-2-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1412324653-30677-1-git-send-email-a.hajda@samsung.com>
 References: <1412324653-30677-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xq7r2sXohBksmGVrcWneO1aL33Ekm
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t/xq7p2sXohBm9/MlvcWneO1aL33Ekm
 	i+Vn1jFbXPn6ns1i0v0JLBazJ2wGil1ez2jx4t5FFoveBVfZLM42vWG3uLxrDpvFjPP7mCzW
 	HrnLbjFj8ks2Bz6PxXteMnls//aA1WPeyUCP+93HmTz6tqxi9Pi8SS6ALYrLJiU1J7MstUjf
-	LoErY/W7o4wFa7grfnzczNTAuJOzi5GTQ0LARKLpwj8WCFtM4sK99WxdjFwcQgJLGSUmL2pm
-	h3D6mCSWTVvBBlLFJqAp8XfzTSCbg0NEwFri2iRZkBpmgV5WiW9XmplBaoQFwiXaprxmBLFZ
-	BFQlWp/fBOvlFXCWePTtEDvENjmJk8cms4LYnAIuEs97poHZQkA1Nx/8ZpvAyLuAkWEVo2hq
-	aXJBcVJ6rqFecWJucWleul5yfu4mRkiQftnBuPiY1SFGAQ5GJR7ejzd0Q4RYE8uKK3MPMUpw
-	MCuJ8E6O0gsR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwNhnUtC8uPWd1lLO8KfX5m/zOOllbXlu
-	Lr/xnjkPHE31rgdftzpZOHfawUOHTD8teeaZwqZyee2sU+Wzf9qseNlzp+L3Yca5/Ln9xWs8
-	KjIFN+08fU/xfZkP1+P+Sa7RPkJFC9bGT+DI1j7/kM9awGfvV5E989917ZuTvb/62D2WdQ7X
-	H0kmiSkrsRRnJBpqMRcVJwIAlGW69DACAAA=
+	LoEr4+29RYwFG7gqGn/9ZWpgvMrRxcjJISFgInHx11YmCFtM4sK99WxdjFwcQgJLGSUuLlnP
+	BOH0MUmsP3mSHaSKTUBT4u/mm0BVHBwiAtYS1ybJgtQwC/SySny70swMUiMsECwxtaWFBcRm
+	EVCVuDx9DytIPa+As8T9XRoQy+QkTh6bzApicwq4SDzvmQZmCwGV3Hzwm20CI+8CRoZVjKKp
+	pckFxUnpuYZ6xYm5xaV56XrJ+bmbGCEh+mUH4+JjVocYBTgYlXh4P97QDRFiTSwrrsw9xCjB
+	wawkwjs5Si9EiDclsbIqtSg/vqg0J7X4ECMTB6dUA6PPee+lPxiCzj6yk1O3CG4omD5BOviT
+	ZGTww7o63SX/3mxj75jPaj7v+h7Gng2HP/RuOfzKYILF4/f5ks3l+fMrLyxrcF7itqzCLv9M
+	TeHiN4eqzPlTHU9efD3XP2u2Kefdhu3Bks98fy8IFz/lM3Fn/jXDlcHHJrIvKy47dOASu9zm
+	R9NPBTcosRRnJBpqMRcVJwIA/F7Ybi8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implementing suspend/resume functionality in componentized drm drivers using
-master component PM callbacks is problematic because those callbacks can be
-called asynchronously regardless of existence/state of drm device.
-The patch re-enables suspend/resume drm driver callbacks in drivers with
-modeset feature enabled. These callback can be used to implement suspend/resume
-functionality in more convenient way.
-
-The patch should not affect behavior of existing drm drivers.
+Currently suspend and resume callbacks are called only if driver have
+modeset feature disabled.
+This patch moves the check directly to i915 driver, it will allow to
+remove the check from the core in the future.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/drm_sysfs.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_sysfs.c b/drivers/gpu/drm/drm_sysfs.c
-index cc3d6d6..206afc4 100644
---- a/drivers/gpu/drm/drm_sysfs.c
-+++ b/drivers/gpu/drm/drm_sysfs.c
-@@ -45,7 +45,6 @@ static int __drm_class_suspend(struct device *dev, pm_message_t state)
- 		struct drm_device *drm_dev = drm_minor->dev;
+diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
+index 3870c73..481f62f 100644
+--- a/drivers/gpu/drm/i915/i915_drv.c
++++ b/drivers/gpu/drm/i915/i915_drv.c
+@@ -1617,10 +1617,6 @@ static struct drm_driver driver = {
+ 	.postclose = i915_driver_postclose,
+ 	.set_busid = drm_pci_set_busid,
  
- 		if (drm_minor->type == DRM_MINOR_LEGACY &&
--		    !drm_core_check_feature(drm_dev, DRIVER_MODESET) &&
- 		    drm_dev->driver->suspend)
- 			return drm_dev->driver->suspend(drm_dev, state);
- 	}
-@@ -86,7 +85,6 @@ static int drm_class_resume(struct device *dev)
- 		struct drm_device *drm_dev = drm_minor->dev;
+-	/* Used in place of i915_pm_ops for non-DRIVER_MODESET */
+-	.suspend = i915_suspend,
+-	.resume = i915_resume_legacy,
+-
+ 	.device_is_agp = i915_driver_device_is_agp,
+ 	.master_create = i915_master_create,
+ 	.master_destroy = i915_master_destroy,
+@@ -1684,6 +1680,8 @@ static int __init i915_init(void)
  
- 		if (drm_minor->type == DRM_MINOR_LEGACY &&
--		    !drm_core_check_feature(drm_dev, DRIVER_MODESET) &&
- 		    drm_dev->driver->resume)
- 			return drm_dev->driver->resume(drm_dev);
- 	}
+ 	if (!(driver.driver_features & DRIVER_MODESET)) {
+ 		driver.get_vblank_timestamp = NULL;
++		driver.suspend = i915_suspend;
++		driver.resume = i915_resume_legacy;
+ #ifndef CONFIG_DRM_I915_UMS
+ 		/* Silently fail loading to not upset userspace. */
+ 		DRM_DEBUG_DRIVER("KMS and UMS disabled.\n");
 -- 
 1.9.1
 
