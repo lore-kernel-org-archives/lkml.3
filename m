@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360AbaJCPVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:21:45 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:59245 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489AbaJCPVn (ORCPT
+	id S1753333AbaJCPXC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:23:02 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52665 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752498AbaJCPW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:21:43 -0400
-Message-ID: <542EBEF9.1070108@roeck-us.net>
-Date: Fri, 03 Oct 2014 08:21:29 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Fri, 3 Oct 2014 11:22:59 -0400
+Date: Fri, 3 Oct 2014 16:22:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:INTEL DRM DRIVERS..." <intel-gfx@lists.freedesktop.org>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [PATCH RFC 0/4] drm/core: restore suspend/resume calbacks in
+	KMS drm drivers
+Message-ID: <20141003152244.GV5182@n2100.arm.linux.org.uk>
+References: <1412324653-30677-1-git-send-email-a.hajda@samsung.com> <20141003083121.GC16117@phenom.ffwll.local> <542E6F9D.2090005@samsung.com> <CAKMK7uGec2yV89n-RLsg+HqXoXvXBMBVZ6py3Z7puFe+KR6e7A@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com> <1412275071-6417-2-git-send-email-atull@opensource.altera.com> <20141003122736.GH26643@leverpostej> <542E9E9B.4090307@roeck-us.net> <20141003130559.GJ26643@leverpostej>
-In-Reply-To: <20141003130559.GJ26643@leverpostej>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.542EBF06.00B0,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uGec2yV89n-RLsg+HqXoXvXBMBVZ6py3Z7puFe+KR6e7A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2014 06:05 AM, Mark Rutland wrote:
-> On Fri, Oct 03, 2014 at 02:03:23PM +0100, Guenter Roeck wrote:
->> On 10/03/2014 05:27 AM, Mark Rutland wrote:
->>> On Thu, Oct 02, 2014 at 07:37:48PM +0100, atull@opensource.altera.com wrote:
->>>> From: Alan Tull <atull@opensource.altera.com>
->>>>
->>>> Add device tree bindings documentation for ltc2978.
->>>>
->>>> Signed-off-by: Alan Tull <atull@opensource.altera.com>
->>>> ---
->>>> v2: clean whitespace
->>>> ---
->>>>    .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
->>>>    1 file changed, 41 insertions(+)
->>>>    create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
->>>>
->>>> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
->>>> new file mode 100644
->>>> index 0000000..b2d9c4d
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
->>>> @@ -0,0 +1,41 @@
->>>> +ltc2978
->>>> +
->>>> +Required properties:
->>>> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
->>>
->>> Could we please format this like:
->>>
->>> - compatible: should contain one of:
->>>     * "ltc2974"
->>>     * "ltc2977"
->>>     * "ltc2978"
->>>     * "ltc3880"
->>>     * "ltc3883"
->>>     * "ltm4676"
->>>
->>> Given the file name, are these all variants of ltc2978?
->>>
->>
->> All the chips supported by the ltc2978 driver. Some are variants
->> of the ltc2978, some have different functionality.
->
-> Ok.
->
->>
->> [ should those be "linear,ltc2974" and so on ? ]
->
-> Good point; yes they should. That will need a vendor-prefixes.txt
-> addition.
->
-Actually, turns out there already is one, only it is not immediately obvious:
-lltc for "Linear Technology Corporation".
+On Fri, Oct 03, 2014 at 01:39:21PM +0200, Daniel Vetter wrote:
+> On Fri, Oct 3, 2014 at 11:42 AM, Andrzej Hajda <a.hajda@samsung.com> wrote:
+> > But this is an issue closely connected with component framework.
+> > Component framework separates master component probe and drm device
+> > initialization. As a result PM ops which are synchronized with probe
+> > (via device_lock)
+> > are no more synchronized with drm initialization which is usually called
+> > from
+> > .bind callback.
+> 
+> Now I'm confused. component->bind and drm initialization is about
+> driver load, but all this code here is about system suspend/resume
+> really. So I'm rather confused what problem you actually want to fix
+> ..
 
-Guenter
+The component *helper* will disconnect the bind of the master device
+from its probe if the components aren't already known.  If all the
+components are known at the point the master device probes, the
+master device lock will be held (since we'll be operating within the
+master device's probe function.)
 
+The issue here is that while the master device is being probed, the
+per-device lock is held.  Beneath that lock there are locks in the
+component helper which will be taken, and thus will end up depending
+upon the per-device lock.
+
+This means that we pretty much can not guarantee synchronisation between
+PM on the master device and the component helper calling the bind
+callback - if we tried to take the per-device lock here, we would either
+deadlock, or we would end up with AB-BA lock dependencies.
+
+What we /could/ do is expose lock/unlock functions from the component
+helper so that PM implementations can synchronise with binds - or I could
+look at whether we could integrate the component helper into the device
+model.  I suspect the latter would not be met with enthusiasm as it would
+mean adding bloat to the driver core structures, which would not be needed
+in 99% of cases.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
