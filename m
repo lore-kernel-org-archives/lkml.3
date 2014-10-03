@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaJCN6g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 09:58:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64620 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752469AbaJCN6b (ORCPT
+	id S1752590AbaJCOAM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:00:12 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:42768 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaJCOAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 09:58:31 -0400
-Date: Fri, 3 Oct 2014 14:58:26 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Message-ID: <20141003135826.GN26643@leverpostej>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <15893883.nvuW3ndylz@wuerfel>
- <20141002133654.GP1786@lahna.fi.intel.com>
- <26673925.fa6Qhdm5sV@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26673925.fa6Qhdm5sV@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 Oct 2014 10:00:05 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-01-542eabe2939d
+Message-id: <542EABE4.9000101@samsung.com>
+Date: Fri, 03 Oct 2014 17:00:04 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: David Howells <dhowells@redhat.com>
+Cc: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, jmorris@namei.org,
+        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
+Subject: Re: [PATCH 3/4] module: search the key only by keyid
+References: <542E9FE8.2070009@samsung.com>
+ <6d32cecfb3c3f5d041900ce1866bc15134832991.1412327306.git.d.kasatkin@samsung.com>
+ <cover.1412327306.git.d.kasatkin@samsung.com>
+ <cover.1412327306.git.d.kasatkin@samsung.com>
+ <29146.1412340378@warthog.procyon.org.uk> <542E9B68.1010906@samsung.com>
+ <542E9C65.4030208@samsung.com> <13201.1412343605@warthog.procyon.org.uk>
+In-reply-to: <13201.1412343605@warthog.procyon.org.uk>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t/xa7qPVuuFGCy/ImLxruk3i8WXpXUW
+	69YvZrKYveshi8XLGfPYLS7vmsNm8aHnEZvFzWkXWCw+rZjE7MDpsXPWXXaPaSeWsXg8OLSZ
+	xWP3gs9MHj3fkz3e77vK5rFiwwlmj8+b5AI4orhsUlJzMstSi/TtErgytk/fwlLwlr3iwrEt
+	bA2MU9i6GDk5JARMJNZP3MMOYYtJXLi3HijOxSEksJRR4mL7PBYIp5FJ4vWaz4wgVUICsxgl
+	dtxJB7F5BbQkVr5fCDaJRUBVYseln2A1bAJ6Ehuaf4BNFRWIkDh5F2IDr4CgxI/J91hAbBEB
+	dYlHyzYygyxgFnjNKLHxygdWkISwgK3Ek66DUGd8ZpJYPGEFWDengJnEy7vnmboYOYA69CTu
+	X9QCCTMLyEtsXvOWGeI4VYnutWuhXlOUOD35HPMERuFZSHbPQuiehaR7ASPzKkbR1NLkguKk
+	9FxDveLE3OLSvHS95PzcTYyQ6Pqyg3HxMatDjAIcjEo8vB9v6IYIsSaWFVfmHmKU4GBWEuFd
+	sFIvRIg3JbGyKrUoP76oNCe1+BAjEwenVAPjap37y3++Mks19uF9/czVQy6Y/W7T2ZYX53Zt
+	CXd0ubGNOybubFfZptnyNwPkm7V8vCVid+kvKbud/Xd7mPjlh0f+T3r7LbYg/cSB2i0/PWsK
+	ZbiTKxifvXKJUBessita5i/Pxv+9Q3zuhSkvPpvcSe8pFdR8cneeQpTM5MgUTtWd/lpC+1OU
+	WIozEg21mIuKEwHA3lAkjAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 03:03:51AM +0100, Rafael J. Wysocki wrote:
-> On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
-> > On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
-> > > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
-> 
-> [cut]
-> 
-> > 
-> > Putting everything to a single package results this:
-> > 
-> > 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
-> > 
-> > But I think the below looks better:
-> 
-> I agree.
-> 
-> > 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
-> > 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
-> > 
-> > and it is trivial to match with the corresponding DT fragment.
-> > 
-> > > 	}
-> > > 
-> > > vs.
-> > > 
-> > > 	pwm-slave {
-> > > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
-> > > 		pwm-names = "led-red", "led-green";
-> > > 	};
-> > > 
-> > 
-> > I don't have strong feelings which way it should be. The current
-> > implementation limits references so that you can have only integer
-> > arguments, like {ref0, int, int, ref1, int} but if people think it is
-> > better to allow strings there as well, it can be changed.
-> > 
-> > I would like to get comments from Darren and Rafael about this, though.
-> 
-> In my opinion there needs to be a "canonical" representation of the
-> binding that people always can expect to work.  It seems reasonable to
-> use the one exactly matching the DT representation for that.
+On 03/10/14 16:40, David Howells wrote:
+> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+>
+>> BTW. But actually why signer is needed to find the key?
+>> Every key has unique fingerprint.
+> The SKID is by no means guaranteed unique, is not mandatory and has no defined
+> algorithm for generating it.
 
-I don't follow. The two forms would share the same high-level accessors,
-but the binary representation is already different. Why should we choose
-the inferior layout given they are already different binary formats?
+SKID is unique. SKID == SHA1(PK)
 
-Mark.
+I understand that it may be missing for someone. But if it presents in
+the certificate it should not be a problem...
+
+>> Or you say that different certificates might have the same PK?
+>> What I would consider strange. But anyway, if PK is the same, then
+>> verification succeed.
+> Do note: We *do* need to get away from using SKIDs.  We have situations where
+> we have to use a key that doesn't have one.
+>
+> David
+
+I understand that... What I claim is that if there is a SKID, it is
+unique and enough to identify certificate in the keyring...
+
+Integrity subsystem uses partial SKID and it MUST NOT be broken for
+compatibility.
+
+
+Dmitry
+
+
