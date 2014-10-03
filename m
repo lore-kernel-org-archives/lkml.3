@@ -1,136 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326AbaJCM1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:27:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63597 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751282AbaJCM1m (ORCPT
+	id S1752394AbaJCMac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:30:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:45091 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaJCMa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:27:42 -0400
-Date: Fri, 3 Oct 2014 13:27:36 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "broonie@kernel.org" <broonie@kernel.org>
-Cc: "linux@roeck-us.net" <linux@roeck-us.net>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-Message-ID: <20141003122736.GH26643@leverpostej>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+	Fri, 3 Oct 2014 08:30:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141003011433.GG1323@katana>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+	<1411661254-5204-3-git-send-email-octavian.purdila@intel.com>
+	<20141003011433.GG1323@katana>
+Date: Fri, 3 Oct 2014 15:30:28 +0300
+Message-ID: <CAE1zotLmY-UMVCGgJB=1X2MuMgERjdD2f7TsXVonZxE-cWb+kA@mail.gmail.com>
+Subject: Re: [PATCH v6 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Johan Hovold <johan@kernel.org>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 07:37:48PM +0100, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Add device tree bindings documentation for ltc2978.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
-> v2: clean whitespace
-> ---
->  .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
->  1 file changed, 41 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> new file mode 100644
-> index 0000000..b2d9c4d
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> @@ -0,0 +1,41 @@
-> +ltc2978
-> +
-> +Required properties:
-> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
+On Fri, Oct 3, 2014 at 4:14 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> Hi,
+>
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 2ac87fa..6afc17e 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -1021,4 +1021,14 @@ config SCx200_ACB
+>>         This support is also available as a module.  If so, the module
+>>         will be called scx200_acb.
+>>
+>> +config I2C_DLN2
+>> +       tristate "Diolan DLN-2 USB I2C adapter"
+>> +       depends on MFD_DLN2
+>> +       help
+>> +         If you say yes to this option, support will be included for Diolan
+>> +         DLN2, a USB to I2C interface.
+>> +
+>> +         This driver can also be built as a module.  If so, the module
+>> +         will be called i2c-dln2.
+>> +
+>
+> Please keep to the existing sorting.
+>
+>
+>>  endmenu
+>> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+>> index 49bf07e..3118fea 100644
+>> --- a/drivers/i2c/busses/Makefile
+>> +++ b/drivers/i2c/busses/Makefile
+>> @@ -100,5 +100,6 @@ obj-$(CONFIG_I2C_ELEKTOR) += i2c-elektor.o
+>>  obj-$(CONFIG_I2C_PCA_ISA)    += i2c-pca-isa.o
+>>  obj-$(CONFIG_I2C_SIBYTE)     += i2c-sibyte.o
+>>  obj-$(CONFIG_SCx200_ACB)     += scx200_acb.o
+>> +obj-$(CONFIG_I2C_DLN2)               += i2c-dln2.o
+>
+> Ditto!
+>
+>> +static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
+>> +{
+>> +     int ret;
+>> +     u16 cmd;
+>> +
+>> +     if (enable)
+>> +             cmd = DLN2_I2C_ENABLE;
+>> +     else
+>> +             cmd = DLN2_I2C_DISABLE;
+>
+> Ternary operator?
+>
 
-Could we please format this like:
+In the first versions of the patch it was used, but Johan suggested to avoid it.
 
-- compatible: should contain one of:
-  * "ltc2974"
-  * "ltc2977"
-  * "ltc2978"
-  * "ltc3880"
-  * "ltc3883"
-  * "ltm4676"
-
-Given the file name, are these all variants of ltc2978? 
-
-> + - reg: I2C address
-> +
-> +Optional properties:
-> + Name of the optional regulator subnode must be "regulators".
-> +  - #address-cells must be 1.
-
-What's the single address cell used for?
-
-> +  - #size-cells must be 0.
-> +
-> + For each regulator:
-> +  - reg: regulator number
-
-Which can be...?
-
-What does this correspond to in the HW?
-
-> +  - regulator-compatible: must be vout_en<regulator number> such as vout_en3
-> +    valid range is:
-> +      ltc2977, ltc2978 : vout_en0 - vout_en7
-> +      ltc2974          : vout_en0 - vout_en3
-> +      ltc3880, ltm4676 : vout_en0 - vout_en1
-> +      ltc3883          : vout_en0 only
-
-In other bindings I believe I've seen the node name used for this.
-
-Mark, what's the preferred scheme for identifying regulators in a
-container node?
-
-> +  - regulator-name: arbitrary name for regulator
-
-Drop the 'aribtarary'. Either this should be the name of the regulator
-on the board, or it shouldn't be necessary.
-
-Mark.
-
-> +
-> +Example:
-> +ltc2978@5e {
-> +	compatible = "ltc2978";
-> +	reg = <0x5e>;
-> +	regulators {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		vdacp0_reg: regulator@0 {
-> +			reg = <0>;
-> +			regulator-compatible = "vout_en0";
-> +			regulator-name = "FPGA-2.5V";
-> +		};
-> +		vdacp2_reg: regulator@2 {
-> +			reg = <2>;
-> +			regulator-compatible = "vout_en2";
-> +			regulator-name = "FPGA-1.5V";
-> +		};
-> +	};
-> +};
-> -- 
-> 1.7.9.5
-> 
-> 
+I have addressed the rest of you comments, thanks for the review.
