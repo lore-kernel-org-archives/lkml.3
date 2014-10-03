@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932150AbaJCVwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:52:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45587 "EHLO
+	id S1756657AbaJCVwF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:52:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45593 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaJCVpU (ORCPT
+	with ESMTP id S1756216AbaJCVpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 221/357] iio: accel: bma180: Fix indio_dev->trig assignment
-Date: Fri,  3 Oct 2014 14:30:07 -0700
-Message-Id: <20141003212940.159704297@linuxfoundation.org>
+        Alban Crequy <alban.crequy@collabora.co.uk>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.16 206/357] cgroup: reject cgroup names with \n
+Date: Fri,  3 Oct 2014 14:29:52 -0700
+Message-Id: <20141003212939.725161035@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,33 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Alban Crequy <alban.crequy@collabora.co.uk>
 
-commit 0668a4e4d297328ce08b44d91d160537596115e2 upstream.
+commit 71b1fb5c4473a5b1e601d41b109bdfe001ec82e0 upstream.
 
-This can result in wrong reference count for trigger device, call
-iio_trigger_get to increment reference.
-Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
-with Jonathan.
+/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
+allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/accel/bma180.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/cgroup.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/iio/accel/bma180.c
-+++ b/drivers/iio/accel/bma180.c
-@@ -571,7 +571,7 @@ static int bma180_probe(struct i2c_clien
- 	trig->ops = &bma180_trigger_ops;
- 	iio_trigger_set_drvdata(trig, indio_dev);
- 	data->trig = trig;
--	indio_dev->trig = trig;
-+	indio_dev->trig = iio_trigger_get(trig);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4393,6 +4393,11 @@ static int cgroup_mkdir(struct kernfs_no
+ 	struct kernfs_node *kn;
+ 	int ssid, ret;
  
- 	ret = iio_trigger_register(trig);
- 	if (ret)
++	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
++	 */
++	if (strchr(name, '\n'))
++		return -EINVAL;
++
+ 	parent = cgroup_kn_lock_live(parent_kn);
+ 	if (!parent)
+ 		return -ENODEV;
 
 
