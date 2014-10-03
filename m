@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580AbaJCVkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:40:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45154 "EHLO
+	id S1754930AbaJCVhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:37:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaJCViW (ORCPT
+	with ESMTP id S1755318AbaJCVfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:38:22 -0400
+	Fri, 3 Oct 2014 17:35:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 116/357] USB: zte_ev: remove duplicate Gobi PID
-Date: Fri,  3 Oct 2014 14:28:22 -0700
-Message-Id: <20141003212936.963632310@linuxfoundation.org>
+        Mike Chu <Mike-Chu@prolific.com.tw>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 109/357] USB: serial: pl2303: add device id for ztek device
+Date: Fri,  3 Oct 2014 14:28:15 -0700
+Message-Id: <20141003212936.754989517@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,31 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-commit 95be5739588c56a9327e477aa0ba3c81c5cf8631 upstream.
+commit 91fcb1ce420e0a5f8d92d556d7008a78bc6ce1eb upstream.
 
-Remove dublicate Gobi PID 0x9008 which is already handled by the
-qcserial driver since commit f05932c0caf4 ("USB: qcserial: Add extra
-device IDs").
+This adds a new device id to the pl2303 driver for the ZTEK device.
 
-Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Reported-by: Mike Chu <Mike-Chu@prolific.com.tw>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 
 ---
- drivers/usb/serial/zte_ev.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/serial/pl2303.c |    1 +
+ drivers/usb/serial/pl2303.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -275,7 +275,6 @@ static const struct usb_device_id id_tab
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
- 	{ USB_DEVICE(0x05C6, 0x3197) },
--	{ USB_DEVICE(0x05C6, 0x9008) },
- 	{ },
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -45,6 +45,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
++	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_ZTEK) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
+ 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -22,6 +22,7 @@
+ #define PL2303_PRODUCT_ID_GPRS		0x0609
+ #define PL2303_PRODUCT_ID_HCR331	0x331a
+ #define PL2303_PRODUCT_ID_MOTOROLA	0x0307
++#define PL2303_PRODUCT_ID_ZTEK		0xe1f1
+ 
+ #define ATEN_VENDOR_ID		0x0557
+ #define ATEN_VENDOR_ID2		0x0547
 
 
