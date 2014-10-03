@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaJCQta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:49:30 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:38887 "EHLO mailhub1.si.c-s.fr"
+	id S1754060AbaJCQte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:49:34 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:38886 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233AbaJCQt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753134AbaJCQt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 12:49:26 -0400
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Mark Brown <broonie@kernel.org>
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         linux-spi@vger.kernel.org
-Subject: [PATCH v2 0/2] fsl: fsl-spi: Fix CMP1 pram allocation and allow dynamic allocation
-Message-Id: <20141003164916.BA7611AAFC7@localhost.localdomain>
+Subject: [PATCH v2 1/2] spi: fsl-spi: Fix parameter ram offset setup for CPM1
+Message-Id: <20141003164916.DBD631AAFA2@localhost.localdomain>
 Date: Fri,  3 Oct 2014 18:49:16 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset:
-1) Fix parameter ram offset setup for CPM1
-2) Allow dynamic allocation of CPM1 parameter RAM
-
-Tested on MPC885.
+On CPM1, the SPI parameter RAM has a default location. In fsl_spi_cpm_get_pram()
+there was a confusion between the SPI_BASE register and the base of the SPI
+parameter RAM. Fortunatly, it was working properly with MPC866 and MPC885
+because they do set SPI_BASE, but on MPC860 and other old MPC8xx that doesn't
+set SPI_BASE, pram_ofs was not properly set. This patch fixes this confusion.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
-Changes from v1 to v2: using OF compatible instead of compile time option
+Changes from v1 to v2: none
 
- drivers/spi/spi-fsl-cpm.c   | 12 +++++++-----
- drivers/spi/spi-fsl-lib.c   |  2 ++
- include/linux/fsl_devices.h |  1 +
- 3 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/spi/spi-fsl-cpm.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/spi/spi-fsl-cpm.c b/drivers/spi/spi-fsl-cpm.c
+index 54b0637..0f3a912 100644
+--- a/drivers/spi/spi-fsl-cpm.c
++++ b/drivers/spi/spi-fsl-cpm.c
+@@ -262,15 +262,14 @@ static unsigned long fsl_spi_cpm_get_pram(struct mpc8xxx_spi *mspi)
+ 		pram_ofs = cpm_muram_alloc(SPI_PRAM_SIZE, 64);
+ 		out_be16(spi_base, pram_ofs);
+ 	} else {
+-		struct spi_pram __iomem *pram = spi_base;
+-		u16 rpbase = in_be16(&pram->rpbase);
++		u16 rpbase = in_be16(spi_base);
+ 
+-		/* Microcode relocation patch applied? */
++		/* Microcode relocation patch applied | rpbase set by default */
+ 		if (rpbase) {
+ 			pram_ofs = rpbase;
+ 		} else {
+-			pram_ofs = cpm_muram_alloc(SPI_PRAM_SIZE, 64);
+-			out_be16(spi_base, pram_ofs);
++			pram_ofs = offsetof(cpm8xx_t, cp_dparam[PROFF_SPI]) -
++				   offsetof(cpm8xx_t, cp_dpmem[0]);
+ 		}
+ 	}
+ 
+-- 
+2.1.0
+
