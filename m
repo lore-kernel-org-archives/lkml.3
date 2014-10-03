@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761318AbaJDAq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:46:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44842 "EHLO
+	id S1761347AbaJDAre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:47:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971AbaJCVcm (ORCPT
+	with ESMTP id S1754963AbaJCVcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:42 -0400
+	Fri, 3 Oct 2014 17:32:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.16 055/357] arm64: ptrace: fix compat hardware watchpoint reporting
-Date: Fri,  3 Oct 2014 14:27:21 -0700
-Message-Id: <20141003212935.108632703@linuxfoundation.org>
+        Dan Aloni <dan@kernelim.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Kent Overstreet <kmo@daterainc.com>, Mateusz Guzik <mguzik@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 035/357] aio: fix reqs_available handling
+Date: Fri,  3 Oct 2014 14:27:01 -0700
+Message-Id: <20141003212934.522421260@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,49 +31,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Benjamin LaHaise <bcrl@kvack.org>
 
-commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
+commit d856f32a86b2b015ab180ab7a55e455ed8d3ccc5 upstream.
 
-I'm not sure what I was on when I wrote this, but when iterating over
-the hardware watchpoint array (hbp_watch_array), our index is off by
-ARM_MAX_BRP, so we walk off the end of our thread_struct...
+As reported by Dan Aloni, commit f8567a3845ac ("aio: fix aio request
+leak when events are reaped by userspace") introduces a regression when
+user code attempts to perform io_submit() with more events than are
+available in the ring buffer.  Reverting that commit would reintroduce a
+regression when user space event reaping is used.
 
-... except, a dodgy condition in the loop means that it never executes
-at all (bp cannot be NULL).
+Fixing this bug is a bit more involved than the previous attempts to fix
+this regression.  Since we do not have a single point at which we can
+count events as being reaped by user space and io_getevents(), we have
+to track event completion by looking at the number of events left in the
+event ring.  So long as there are as many events in the ring buffer as
+there have been completion events generate, we cannot call
+put_reqs_available().  The code to check for this is now placed in
+refill_reqs_available().
 
-This patch fixes the code so that we remove the bp check and use the
-correct index for accessing the watchpoint structures.
+A test program from Dan and modified by me for verifying this bug is available
+at http://www.kvack.org/~bcrl/20140824-aio_bug.c .
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Dan Aloni <dan@kernelim.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+Acked-by: Dan Aloni <dan@kernelim.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Cc: Mateusz Guzik <mguzik@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/hw_breakpoint.h |    1 -
- arch/arm64/kernel/ptrace.c             |    3 ++-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/aio.c |   77 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 73 insertions(+), 4 deletions(-)
 
---- a/arch/arm64/include/asm/hw_breakpoint.h
-+++ b/arch/arm64/include/asm/hw_breakpoint.h
-@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 r
-  */
- #define ARM_MAX_BRP		16
- #define ARM_MAX_WRP		16
--#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -141,6 +141,7 @@ struct kioctx {
  
- /* Virtual debug register bases. */
- #define AARCH64_DBG_REG_BVR	0
---- a/arch/arm64/kernel/ptrace.c
-+++ b/arch/arm64/kernel/ptrace.c
-@@ -85,7 +85,8 @@ static void ptrace_hbptriggered(struct p
- 			break;
- 		}
- 	}
--	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
+ 	struct {
+ 		unsigned	tail;
++		unsigned	completed_events;
+ 		spinlock_t	completion_lock;
+ 	} ____cacheline_aligned_in_smp;
+ 
+@@ -880,6 +881,68 @@ out:
+ 	return ret;
+ }
+ 
++/* refill_reqs_available
++ *	Updates the reqs_available reference counts used for tracking the
++ *	number of free slots in the completion ring.  This can be called
++ *	from aio_complete() (to optimistically update reqs_available) or
++ *	from aio_get_req() (the we're out of events case).  It must be
++ *	called holding ctx->completion_lock.
++ */
++static void refill_reqs_available(struct kioctx *ctx, unsigned head,
++                                  unsigned tail)
++{
++	unsigned events_in_ring, completed;
 +
-+	for (i = 0; i < ARM_MAX_WRP; ++i) {
- 		if (current->thread.debug.hbp_watch[i] == bp) {
- 			info.si_errno = -((i << 1) + 1);
- 			break;
++	/* Clamp head since userland can write to it. */
++	head %= ctx->nr_events;
++	if (head <= tail)
++		events_in_ring = tail - head;
++	else
++		events_in_ring = ctx->nr_events - (head - tail);
++
++	completed = ctx->completed_events;
++	if (events_in_ring < completed)
++		completed -= events_in_ring;
++	else
++		completed = 0;
++
++	if (!completed)
++		return;
++
++	ctx->completed_events -= completed;
++	put_reqs_available(ctx, completed);
++}
++
++/* user_refill_reqs_available
++ *	Called to refill reqs_available when aio_get_req() encounters an
++ *	out of space in the completion ring.
++ */
++static void user_refill_reqs_available(struct kioctx *ctx)
++{
++	spin_lock_irq(&ctx->completion_lock);
++	if (ctx->completed_events) {
++		struct aio_ring *ring;
++		unsigned head;
++
++		/* Access of ring->head may race with aio_read_events_ring()
++		 * here, but that's okay since whether we read the old version
++		 * or the new version, and either will be valid.  The important
++		 * part is that head cannot pass tail since we prevent
++		 * aio_complete() from updating tail by holding
++		 * ctx->completion_lock.  Even if head is invalid, the check
++		 * against ctx->completed_events below will make sure we do the
++		 * safe/right thing.
++		 */
++		ring = kmap_atomic(ctx->ring_pages[0]);
++		head = ring->head;
++		kunmap_atomic(ring);
++
++		refill_reqs_available(ctx, head, ctx->tail);
++	}
++
++	spin_unlock_irq(&ctx->completion_lock);
++}
++
+ /* aio_get_req
+  *	Allocate a slot for an aio request.
+  * Returns NULL if no requests are free.
+@@ -888,8 +951,11 @@ static inline struct kiocb *aio_get_req(
+ {
+ 	struct kiocb *req;
+ 
+-	if (!get_reqs_available(ctx))
+-		return NULL;
++	if (!get_reqs_available(ctx)) {
++		user_refill_reqs_available(ctx);
++		if (!get_reqs_available(ctx))
++			return NULL;
++	}
+ 
+ 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
+ 	if (unlikely(!req))
+@@ -948,8 +1014,8 @@ void aio_complete(struct kiocb *iocb, lo
+ 	struct kioctx	*ctx = iocb->ki_ctx;
+ 	struct aio_ring	*ring;
+ 	struct io_event	*ev_page, *event;
++	unsigned tail, pos, head;
+ 	unsigned long	flags;
+-	unsigned tail, pos;
+ 
+ 	/*
+ 	 * Special case handling for sync iocbs:
+@@ -1010,10 +1076,14 @@ void aio_complete(struct kiocb *iocb, lo
+ 	ctx->tail = tail;
+ 
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
++	head = ring->head;
+ 	ring->tail = tail;
+ 	kunmap_atomic(ring);
+ 	flush_dcache_page(ctx->ring_pages[0]);
+ 
++	ctx->completed_events++;
++	if (ctx->completed_events > 1)
++		refill_reqs_available(ctx, head, tail);
+ 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
+ 
+ 	pr_debug("added to ring %p at [%u]\n", iocb, tail);
+@@ -1028,7 +1098,6 @@ void aio_complete(struct kiocb *iocb, lo
+ 
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	kiocb_free(iocb);
+-	put_reqs_available(ctx, 1);
+ 
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
 
 
