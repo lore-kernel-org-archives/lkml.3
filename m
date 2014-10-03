@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551AbaJCWhj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:37:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47880 "EHLO
+	id S932427AbaJCWeS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:34:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47800 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147AbaJCWeT (ORCPT
+	with ESMTP id S1755439AbaJCWeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:19 -0400
+	Fri, 3 Oct 2014 18:34:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Wang, Yalin" <yalin.wang@sonymobile.com>,
-        Nicolas Pitre <nico@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Sheng Yong <shengyong1@huawei.com>
-Subject: [PATCH 3.10 134/143] ARM: 7748/1: oabi: handle faults when loading swi instruction from userspace
-Date: Fri,  3 Oct 2014 14:35:29 -0700
-Message-Id: <20141003213318.499257979@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        Aleksei Besogonov <alex.besogonov@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.10 143/143] vm_is_stack: use for_each_thread() rather then buggy while_each_thread()
+Date: Fri,  3 Oct 2014 14:35:38 -0700
+Message-Id: <20141003213318.758273746@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,123 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 1aa2b3b7a6c4f3dbd3671171113a20e6a6190e3b upstream.
+commit 4449a51a7c281602d3a385044ab928322a122a02 upstream.
 
-Running an OABI_COMPAT kernel on an SMP platform can lead to fun and
-games with page aging.
+Aleksei hit the soft lockup during reading /proc/PID/smaps.  David
+investigated the problem and suggested the right fix.
 
-If one CPU issues a swi instruction immediately before another CPU
-decides to mkold the page containing the swi instruction, then we will
-fault attempting to load the instruction during the vector_swi handler
-in order to retrieve its immediate field. Since this fault is not
-currently dealt with by our exception tables, this results in a panic:
+while_each_thread() is racy and should die, this patch updates
+vm_is_stack().
 
-  Unable to handle kernel paging request at virtual address 4020841c
-  pgd = c490c000
-  [4020841c] *pgd=84451831, *pte=bf05859d, *ppte=00000000
-  Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-  Modules linked in: hid_sony(O)
-  CPU: 1    Tainted: G        W  O  (3.4.0-perf-gf496dca-01162-gcbcc62b #1)
-  PC is at vector_swi+0x28/0x88
-  LR is at 0x40208420
-
-This patch wraps all of the swi instruction loads with the USER macro
-and provides a shared exception table entry which simply rewinds the
-saved user PC and returns from the system call (without setting tbl, so
-there's no worries with tracing or syscall restarting). Returning to
-userspace will re-enter the page fault handler, from where we will
-probably send SIGSEGV to the current task.
-
-Reported-by: Wang, Yalin <yalin.wang@sonymobile.com>
-Reviewed-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Sheng Yong <shengyong1@huawei.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Tested-by: Aleksei Besogonov <alex.besogonov@gmail.com>
+Suggested-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/entry-common.S |   42 ++++++++++++++++++++++++++++-------------
- 1 file changed, 29 insertions(+), 13 deletions(-)
+ mm/util.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -362,6 +362,16 @@ ENTRY(vector_swi)
- 	str	r0, [sp, #S_OLD_R0]		@ Save OLD_R0
- 	zero_fp
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -272,17 +272,14 @@ pid_t vm_is_stack(struct task_struct *ta
  
-+#ifdef CONFIG_ALIGNMENT_TRAP
-+	ldr	ip, __cr_alignment
-+	ldr	ip, [ip]
-+	mcr	p15, 0, ip, c1, c0		@ update control register
-+#endif
-+
-+	enable_irq
-+	ct_user_exit
-+	get_thread_info tsk
-+
- 	/*
- 	 * Get the system call number.
- 	 */
-@@ -375,9 +385,9 @@ ENTRY(vector_swi)
- #ifdef CONFIG_ARM_THUMB
- 	tst	r8, #PSR_T_BIT
- 	movne	r10, #0				@ no thumb OABI emulation
--	ldreq	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldreq	r10, [lr, #-4]		)	@ get SWI instruction
- #else
--	ldr	r10, [lr, #-4]			@ get SWI instruction
-+ USER(	ldr	r10, [lr, #-4]		)	@ get SWI instruction
- #endif
- #ifdef CONFIG_CPU_ENDIAN_BE8
- 	rev	r10, r10			@ little endian instruction
-@@ -392,22 +402,13 @@ ENTRY(vector_swi)
- 	/* Legacy ABI only, possibly thumb mode. */
- 	tst	r8, #PSR_T_BIT			@ this is SPSR from save_user_regs
- 	addne	scno, r7, #__NR_SYSCALL_BASE	@ put OS number in
--	ldreq	scno, [lr, #-4]
-+ USER(	ldreq	scno, [lr, #-4]		)
+ 	if (in_group) {
+ 		struct task_struct *t;
+-		rcu_read_lock();
+-		if (!pid_alive(task))
+-			goto done;
  
- #else
- 	/* Legacy ABI only. */
--	ldr	scno, [lr, #-4]			@ get SWI instruction
-+ USER(	ldr	scno, [lr, #-4]		)	@ get SWI instruction
- #endif
- 
--#ifdef CONFIG_ALIGNMENT_TRAP
--	ldr	ip, __cr_alignment
--	ldr	ip, [ip]
--	mcr	p15, 0, ip, c1, c0		@ update control register
--#endif
--	enable_irq
--	ct_user_exit
--
--	get_thread_info tsk
- 	adr	tbl, sys_call_table		@ load syscall table pointer
- 
- #if defined(CONFIG_OABI_COMPAT)
-@@ -442,6 +443,21 @@ local_restart:
- 	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
- 	bcs	arm_syscall	
- 	b	sys_ni_syscall			@ not private func
-+
-+#if defined(CONFIG_OABI_COMPAT) || !defined(CONFIG_AEABI)
-+	/*
-+	 * We failed to handle a fault trying to access the page
-+	 * containing the swi instruction, but we're not really in a
-+	 * position to return -EFAULT. Instead, return back to the
-+	 * instruction and re-enter the user fault handling path trying
-+	 * to page it in. This will likely result in sending SEGV to the
-+	 * current task.
-+	 */
-+9001:
-+	sub	lr, lr, #4
-+	str	lr, [sp, #S_PC]
-+	b	ret_fast_syscall
-+#endif
- ENDPROC(vector_swi)
- 
- 	/*
+-		t = task;
+-		do {
++		rcu_read_lock();
++		for_each_thread(task, t) {
+ 			if (vm_is_stack_for_task(t, vma)) {
+ 				ret = t->pid;
+ 				goto done;
+ 			}
+-		} while_each_thread(task, t);
++		}
+ done:
+ 		rcu_read_unlock();
+ 	}
 
 
