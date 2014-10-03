@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933112AbaJCXdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:33:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46449 "EHLO
+	id S933127AbaJCXdG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:33:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757362AbaJCWDv (ORCPT
+	with ESMTP id S1757360AbaJCWDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 112/238] ARM: dts: DRA7: fix interrupt-cells for GPIO
-Date: Fri,  3 Oct 2014 14:30:27 -0700
-Message-Id: <20141003212917.259859638@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.16 326/357] media: videobuf2-dma-sg: fix for wrong GFP mask to sg_alloc_table_from_pages
+Date: Fri,  3 Oct 2014 14:31:52 -0700
+Message-Id: <20141003212943.258976423@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,107 +26,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit e49d519c456f4fb6f4a0473bc04ba30bb805fce5 upstream.
+commit 47bc59c52b005f546343c373370a7eec6a2b0f84 upstream.
 
-GPIO modules are also interrupt sources. However, they require both the
-GPIO number and IRQ type to function properly.
+sg_alloc_table_from_pages() only allocates a sg_table, so it should just use
+GFP_KERNEL, not gfp_flags. If gfp_flags contains __GFP_DMA32 then mm/sl[au]b.c
+will call BUG_ON:
 
-By declaring that GPIO uses interrupt-cells=<1>, we essentially do not
-allow users of the nodes to use the interrupt property appropritely.
+[  358.027515] ------------[ cut here ]------------
+[  358.027546] kernel BUG at mm/slub.c:1416!
+[  358.027558] invalid opcode: 0000 [#1] PREEMPT SMP
+[  358.027576] Modules linked in: mt2131 s5h1409 tda8290 tuner cx25840 cx23885 btcx_risc altera_ci tda18271 altera_stapl videobuf2_dvb tveeprom cx2341x videobuf2_dma_sg dvb_core rc_core videobuf2_memops videobuf2_core nouveau zr36067 videocodec v4l2_common videodev media x86_pkg_temp_thermal cfbfillrect cfbimgblt cfbcopyarea ttm drm_kms_helper processor button isci
+[  358.027712] CPU: 19 PID: 3654 Comm: cat Not tainted 3.16.0-rc6-telek #167
+[  358.027723] Hardware name: ASUSTeK COMPUTER INC. Z9PE-D8 WS/Z9PE-D8 WS, BIOS 5404 02/10/2014
+[  358.027741] task: ffff880897c7d960 ti: ffff88089b4d4000 task.ti: ffff88089b4d4000
+[  358.027753] RIP: 0010:[<ffffffff81196040>]  [<ffffffff81196040>] new_slab+0x280/0x320
+[  358.027776] RSP: 0018:ffff88089b4d7ae8  EFLAGS: 00010002
+[  358.027787] RAX: ffff880897c7d960 RBX: 0000000000000000 RCX: ffff88089b4d7b50
+[  358.027798] RDX: 00000000ffffffff RSI: 0000000000000004 RDI: ffff88089f803b00
+[  358.027809] RBP: ffff88089b4d7bb8 R08: 0000000000000000 R09: 0000000100400040
+[  358.027821] R10: 0000160000000000 R11: ffff88109bc02c40 R12: 0000000000000001
+[  358.027832] R13: ffff88089f8000c0 R14: ffff88089f803b00 R15: ffff8810bfcf4be0
+[  358.027845] FS:  00007f83fe5c0700(0000) GS:ffff8810bfce0000(0000) knlGS:0000000000000000
+[  358.027858] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  358.027868] CR2: 0000000001dfd568 CR3: 0000001097d5a000 CR4: 00000000000407e0
+[  358.027878] Stack:
+[  358.027885]  ffffffff81198860 ffff8810bfcf4be0 ffff880897c7d960 0000000000001b00
+[  358.027905]  ffff880897c7d960 0000000000000000 ffff8810bfcf4bf0 0000000000000000
+[  358.027924]  0000000000000000 0000000100000100 ffffffff813ef84a 00000004ffffffff
+[  358.027944] Call Trace:
+[  358.027956]  [<ffffffff81198860>] ? __slab_alloc+0x400/0x4e0
+[  358.027973]  [<ffffffff813ef84a>] ? sg_kmalloc+0x1a/0x30
+[  358.027985]  [<ffffffff81198f17>] __kmalloc+0x127/0x150
+[  358.027997]  [<ffffffff813ef84a>] ? sg_kmalloc+0x1a/0x30
+[  358.028009]  [<ffffffff813ef84a>] sg_kmalloc+0x1a/0x30
+[  358.028023]  [<ffffffff813eff84>] __sg_alloc_table+0x74/0x180
+[  358.028035]  [<ffffffff813ef830>] ? sg_kfree+0x20/0x20
+[  358.028048]  [<ffffffff813f00af>] sg_alloc_table+0x1f/0x60
+[  358.028061]  [<ffffffff813f0174>] sg_alloc_table_from_pages+0x84/0x1f0
+[  358.028077]  [<ffffffffa007c3f9>] vb2_dma_sg_alloc+0x159/0x230 [videobuf2_dma_sg]
+[  358.028095]  [<ffffffffa003d55a>] __vb2_queue_alloc+0x10a/0x680 [videobuf2_core]
+[  358.028113]  [<ffffffffa003e110>] __reqbufs.isra.14+0x220/0x3e0 [videobuf2_core]
+[  358.028130]  [<ffffffffa003e79d>] __vb2_init_fileio+0xbd/0x380 [videobuf2_core]
+[  358.028147]  [<ffffffffa003f563>] __vb2_perform_fileio+0x5b3/0x6e0 [videobuf2_core]
+[  358.028164]  [<ffffffffa003f871>] vb2_fop_read+0xb1/0x100 [videobuf2_core]
+[  358.028184]  [<ffffffffa06dd2e5>] v4l2_read+0x65/0xb0 [videodev]
+[  358.028198]  [<ffffffff811a243f>] vfs_read+0x8f/0x170
+[  358.028210]  [<ffffffff811a30a1>] SyS_read+0x41/0xb0
+[  358.028224]  [<ffffffff818f02e9>] system_call_fastpath+0x16/0x1b
+[  358.028234] Code: 66 90 e9 dc fd ff ff 0f 1f 40 00 41 8b 4d 68 e9 d5 fe ff ff 0f 1f 80 00 00 00 00 f0 41 80 4d 00 40 e9 03 ff ff ff 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00 44 89 c6 4c 89 45 d0 e8 0c 82 ff ff 48
+[  358.028415] RIP  [<ffffffff81196040>] new_slab+0x280/0x320
+[  358.028432]  RSP <ffff88089b4d7ae8>
+[  358.032208] ---[ end trace 6443240199c706e4 ]---
 
-With this change, the following now works:
-
-interrupt-parent = <&gpio6>;
-interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
-
-Fixes: 6e58b8f1daaf ('ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board')
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/dra7.dtsi |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/media/v4l2-core/videobuf2-dma-sg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/dra7.dtsi
-+++ b/arch/arm/boot/dts/dra7.dtsi
-@@ -178,7 +178,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -113,7 +113,7 @@ static void *vb2_dma_sg_alloc(void *allo
+ 		goto fail_pages_alloc;
  
- 		gpio2: gpio@48055000 {
-@@ -189,7 +189,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
+ 	ret = sg_alloc_table_from_pages(&buf->sg_table, buf->pages,
+-			buf->num_pages, 0, size, gfp_flags);
++			buf->num_pages, 0, size, GFP_KERNEL);
+ 	if (ret)
+ 		goto fail_table_alloc;
  
- 		gpio3: gpio@48057000 {
-@@ -200,7 +200,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio4: gpio@48059000 {
-@@ -211,7 +211,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio5: gpio@4805b000 {
-@@ -222,7 +222,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio6: gpio@4805d000 {
-@@ -233,7 +233,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio7: gpio@48051000 {
-@@ -244,7 +244,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		gpio8: gpio@48053000 {
-@@ -255,7 +255,7 @@
- 			gpio-controller;
- 			#gpio-cells = <2>;
- 			interrupt-controller;
--			#interrupt-cells = <1>;
-+			#interrupt-cells = <2>;
- 		};
- 
- 		uart1: serial@4806a000 {
 
 
