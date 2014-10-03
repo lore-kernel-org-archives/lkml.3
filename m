@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326AbaJCWTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:19:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47196 "EHLO
+	id S932436AbaJCWUL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:20:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47189 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932267AbaJCWTf (ORCPT
+	with ESMTP id S932266AbaJCWTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:19:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 015/143] ibmveth: Fix endian issues with rx_no_buffer statistic
-Date: Fri,  3 Oct 2014 14:33:30 -0700
-Message-Id: <20141003213314.947550852@linuxfoundation.org>
+        Murali Karicheri <m-karicheri2@ti.com>, Tejun Heo <tj@kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH 3.10 014/143] ahci: add pcid for Marvel 0x9182 controller
+Date: Fri,  3 Oct 2014 14:33:29 -0700
+Message-Id: <20141003213314.916132234@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,65 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Murali Karicheri <m-karicheri2@ti.com>
 
-commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
+commit c5edfff9db6f4d2c35c802acb4abe0df178becee upstream.
 
-Hidden away in the last 8 bytes of the buffer_list page is a solitary
-statistic. It needs to be byte swapped or else ethtool -S will
-produce numbers that terrify the user.
+Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
+for the ID in the ahci driver.
 
-Since we do this in multiple places, create a helper function with a
-comment explaining what is going on.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -293,6 +293,18 @@ failure:
- 	atomic_add(buffers_added, &(pool->available));
- }
- 
-+/*
-+ * The final 8 bytes of the buffer list is a counter of frames dropped
-+ * because there was not a buffer in the buffer list capable of holding
-+ * the frame.
-+ */
-+static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
-+{
-+	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
-+
-+	adapter->rx_no_buffer = be64_to_cpup(p);
-+}
-+
- /* replenish routine */
- static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
- {
-@@ -308,8 +320,7 @@ static void ibmveth_replenish_task(struc
- 			ibmveth_replenish_buffer_pool(adapter, pool);
- 	}
- 
--	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- }
- 
- /* empty and free ana buffer pool - also used to do cleanup in error paths */
-@@ -689,8 +700,7 @@ static int ibmveth_close(struct net_devi
- 
- 	free_irq(netdev->irq, netdev);
- 
--	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
--						4096 - 8);
-+	ibmveth_update_rx_no_buffer(adapter);
- 
- 	ibmveth_cleanup(adapter);
- 
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -449,6 +449,8 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9182 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9182),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
 
 
