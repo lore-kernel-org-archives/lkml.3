@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286AbaJCWAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:00:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46131 "EHLO
+	id S932283AbaJCVzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:55:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757000AbaJCV7J (ORCPT
+	with ESMTP id S932166AbaJCVxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:59:09 -0400
+	Fri, 3 Oct 2014 17:53:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 3.14 074/238] USB: sisusb: add device id for Magic Control USB video
-Date: Fri,  3 Oct 2014 14:29:49 -0700
-Message-Id: <20141003212916.044681991@linuxfoundation.org>
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 273/357] kcmp: fix standard comparison bug
+Date: Fri,  3 Oct 2014 14:30:59 -0700
+Message-Id: <20141003212941.698224302@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,33 +27,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Hemminger <stephen@networkplumber.org>
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-commit 5b6b80aeb21091ed3030b9b6aae597d81326f1aa upstream.
+commit acbbe6fbb240a927ee1f5994f04d31267d422215 upstream.
 
-I have a j5 create (JUA210) USB 2 video device and adding it device id
-to SIS USB video gets it to work.
+The C operator <= defines a perfectly fine total ordering on the set of
+values representable in a long.  However, unlike its namesake in the
+integers, it is not translation invariant, meaning that we do not have
+"b <= c" iff "a+b <= a+c" for all a,b,c.
 
-Signed-off-by: Stephen Hemminger <stephen@networkplumber.org>
+This means that it is always wrong to try to boil down the relationship
+between two longs to a question about the sign of their difference,
+because the resulting relation [a LEQ b iff a-b <= 0] is neither
+anti-symmetric or transitive.  The former is due to -LONG_MIN==LONG_MIN
+(take any two a,b with a-b = LONG_MIN; then a LEQ b and b LEQ a, but a !=
+b).  The latter can either be seen observing that x LEQ x+1 for all x,
+implying x LEQ x+1 LEQ x+2 ...  LEQ x-1 LEQ x; or more directly with the
+simple example a=LONG_MIN, b=0, c=1, for which a-b < 0, b-c < 0, but a-c >
+0.
+
+Note that it makes absolutely no difference that a transmogrying bijection
+has been applied before the comparison is done.  In fact, had the
+obfuscation not been done, one could probably not observe the bug
+(assuming all values being compared always lie in one half of the address
+space, the mathematical value of a-b is always representable in a long).
+As it stands, one can easily obtain three file descriptors exhibiting the
+non-transitivity of kcmp().
+
+Side note 1: I can't see that ensuring the MSB of the multiplier is
+set serves any purpose other than obfuscating the obfuscating code.
+
+Side note 2:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
+#include <sys/syscall.h>
+
+enum kcmp_type {
+        KCMP_FILE,
+        KCMP_VM,
+        KCMP_FILES,
+        KCMP_FS,
+        KCMP_SIGHAND,
+        KCMP_IO,
+        KCMP_SYSVSEM,
+        KCMP_TYPES,
+};
+pid_t pid;
+
+int kcmp(pid_t pid1, pid_t pid2, int type,
+	 unsigned long idx1, unsigned long idx2)
+{
+	return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
+}
+int cmp_fd(int fd1, int fd2)
+{
+	int c = kcmp(pid, pid, KCMP_FILE, fd1, fd2);
+	if (c < 0) {
+		perror("kcmp");
+		exit(1);
+	}
+	assert(0 <= c && c < 3);
+	return c;
+}
+int cmp_fdp(const void *a, const void *b)
+{
+	static const int normalize[] = {0, -1, 1};
+	return normalize[cmp_fd(*(int*)a, *(int*)b)];
+}
+#define MAX 100 /* This is plenty; I've seen it trigger for MAX==3 */
+int main(int argc, char *argv[])
+{
+	int r, s, count = 0;
+	int REL[3] = {0,0,0};
+	int fd[MAX];
+	pid = getpid();
+	while (count < MAX) {
+		r = open("/dev/null", O_RDONLY);
+		if (r < 0)
+			break;
+		fd[count++] = r;
+	}
+	printf("opened %d file descriptors\n", count);
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+	qsort(fd, count, sizeof(fd[0]), cmp_fdp);
+	memset(REL, 0, sizeof(REL));
+
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+	return (REL[0] + REL[2] != 0);
+}
+
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+"Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/misc/sisusbvga/sisusb.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/kcmp.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3248,6 +3248,7 @@ static const struct usb_device_id sisusb
- 	{ USB_DEVICE(0x0711, 0x0918) },
- 	{ USB_DEVICE(0x0711, 0x0920) },
- 	{ USB_DEVICE(0x0711, 0x0950) },
-+	{ USB_DEVICE(0x0711, 0x5200) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
+--- a/kernel/kcmp.c
++++ b/kernel/kcmp.c
+@@ -44,11 +44,12 @@ static long kptr_obfuscate(long v, int t
+  */
+ static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
+ {
+-	long ret;
++	long t1, t2;
+ 
+-	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
++	t1 = kptr_obfuscate((long)v1, type);
++	t2 = kptr_obfuscate((long)v2, type);
+ 
+-	return (ret < 0) | ((ret > 0) << 1);
++	return (t1 < t2) | ((t1 > t2) << 1);
+ }
+ 
+ /* The caller must have pinned the task */
 
 
