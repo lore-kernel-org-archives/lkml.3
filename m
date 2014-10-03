@@ -1,89 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaJCAqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 20:46:06 -0400
-Received: from sauhun.de ([89.238.76.85]:34528 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751219AbaJCAqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 20:46:01 -0400
-Date: Fri, 3 Oct 2014 02:46:31 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Carl Peng <carlpeng008@gmail.com>, Huang Rui <ray.huang@amd.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Romain Baeriswyl <Romain.Baeriswyl@abilis.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] i2c: designware: Add support for AMD I2C
- controller
-Message-ID: <20141003004631.GD1323@katana>
-References: <1412071495-15323-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1752171AbaJCAqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 20:46:37 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:61658 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaJCAqg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 2 Oct 2014 20:46:36 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
-Content-Disposition: inline
-In-Reply-To: <1412071495-15323-1-git-send-email-mika.westerberg@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140930081412.GF9561@wfg-t540p.sh.intel.com>
+References: <20140930081412.GF9561@wfg-t540p.sh.intel.com>
+Date: Thu, 2 Oct 2014 17:46:34 -0700
+Message-ID: <CAKbGBLhyXOdy9cbyabDRf0RQEinzz5nqqhh7FVfrs9sWDTmu0A@mail.gmail.com>
+Subject: Re: [compiler/gcc4] a9f180345f5: -100.0% last_state.is_incomplete_run
+From: Steven Noonan <steven@uplinklabs.net>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Sep 30, 2014 at 1:14 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Steven,
+>
+> FYI, we noticed that your commit a9f180345f5378ac87d80ed0bea55ba421d83859
+> ("compiler/gcc4: Make quirk for asm_volatile_goto() unconditional") fixed
+> a number of machine boot failures in our LKP test farm. This is really helpful!
+> Our gcc version is 4.9.1 (Debian 4.9.1-11).
 
---2Z2K0IlrPCVsbNpk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hey cool, that's good news!
 
-On Tue, Sep 30, 2014 at 01:04:52PM +0300, Mika Westerberg wrote:
-> This is second iteration of the patch series. First version is here:
->=20
->  http://patchwork.ozlabs.org/patch/390694/
->  http://patchwork.ozlabs.org/patch/390695/
->=20
-> In order to get source clock to the core driver we need some way of
-> creating it in the first place. For Intel LPSS it is done in
-> drivers/acpi/acpi_lpss.c but that is not applicable for AMD I2C host
-> controller which is too different from private parts to the LPSS one.
->=20
-> We solve this by creating the clock in ACPI parts of the platform driver
-> when we detect the AMD I2C host controller. Doing this requires small
-> refactoring to be done to the probe() which is what patches [1-2/3] are
-> doing.
->=20
-> Changes to the previous version:
->  * Rebased on top of i2c/for-next branch
->  * New patch defaulting ACPI probe to fast mode
->  * Instead of direct dependency to COMMON_CLK we depend on (ACPI &&
->    COMMON_CLK) || ACPI. (suggested by Wolfram)
->=20
-> Carl, can you test that this still works on your machine?
+I rather wish we could find the root cause of the miscompiles, though,
+so we could conditionalize the quirk on something again. I'm terrible
+at debugging GCC behavior, though, so I'm not the right person for it.
 
-Yes, Carl that would be helpful.
+- Steven
 
-Patches look good to me.
-
-Thanks!
-
-
---2Z2K0IlrPCVsbNpk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJULfHnAAoJEBQN5MwUoCm2kscP/RcpZpUg53J/x5d5Yzpk3Gil
-BMhljwDAD2CZk/BAgDEA8X2rU/j+HGxFRoaHR/5di1k7In8DE92gkE1d53/8k5KK
-BPH0fmDzgWr0NEH62x4n9ShubKE/T3jXC+5meF8a+g/jsGq2BkCymz6zwHsD2mnR
-+K8o4JBcioZz7RrEM4Y1SfV5YpQRfSEfgkf2qgjuyoo0MBTtMrJrHOXSM+6zr1jP
-Lqr1puNiPTbnNnUuwuhI7XbaykhkH66T3mgW7VayXwXrXQlvtI9hr6OVA2r1tbVY
-rEycQiCtzog221qRjRjMkj4c/GCC5/c04tY4Sn6lZ5EehNsozB5e5vQBpnUFuyuQ
-XuhFbxp3bpL9+OamWks7dIKwUPHmxFb/rdlGWYYhuiPssIe/w4ZGS1pXwVZoTRh0
-8wseN2XlwtBwVQZFkcM5n4noo0L3l+NT15MlWoAp7Iv0gmoxvI56TcFcIIj2EVAs
-4HXQHnbqudjQaJEQWGJN4vxai/pgw3Z8C57IcHJyULw62LeAlhFbPj7TjkVLqVwJ
-+94+kPK2l3qhiRamsB4cLWyaKRD+ijoiual65A91ZhT9l1a88p2ORKm5pcdpigQz
-rDfJpmthWwySdZ5v9b+ZFvL2NYxd4rmzjaQNyACW0p3hXJwrKQlF3MUL3QHDmXqK
-ekclJ6NLuMAQoYkjYCAg
-=2cG3
------END PGP SIGNATURE-----
-
---2Z2K0IlrPCVsbNpk--
+>
+> 569d6557ab957d6  a9f180345f5378ac87d80ed0b
+> ---------------  -------------------------
+>      %stddev        %change               %stddev
+>             \          |                 /
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
+>          1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.kernel_BUG_at_fs/nfs/pagelist.c
+>
+> 569d6557ab957d6  a9f180345f5378ac87d80ed0b
+> ---------------  -------------------------
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
+>          1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.Kernel_panic-not_syncing:Fatal_exception
+>
+> 569d6557ab957d6  a9f180345f5378ac87d80ed0b
+> ---------------  -------------------------
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
+>          1 ± 0%    -100.0%          0 ± 0%  TOTAL dmesg.invalid_opcode
+>
+> 569d6557ab957d6  a9f180345f5378ac87d80ed0b
+> ---------------  -------------------------
+>          1 ± 0%    -100.0%          0 ± 0%  ivb42/will-it-scale/futex4
+>          1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-1t-1HDD-xfs-4M-60G-NoSync
+>          1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-64t-1BRD_48G-btrfs-4M-40G-fsyncBeforeClose
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-bdw01/blogbench/1SSD-btrfs
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-hsw01/vm-scalability/300s-anon-rx-rand-mt
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/futex3
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/page_fault3
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
+>          8 ± 0%    -100.0%          0 ± 0%  TOTAL last_state.is_incomplete_run
+>
+> 569d6557ab957d6  a9f180345f5378ac87d80ed0b
+> ---------------  -------------------------
+>          1 ± 0%    -100.0%          0 ± 0%  ivb42/will-it-scale/futex4
+>          1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-1t-1HDD-xfs-4M-60G-NoSync
+>          1 ± 0%    -100.0%          0 ± 0%  ivb44/fsmark/1x-64t-1BRD_48G-btrfs-4M-40G-fsyncBeforeClose
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-bdw01/blogbench/1SSD-btrfs
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-hsw01/vm-scalability/300s-anon-rx-rand-mt
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/futex3
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-sbx04/will-it-scale/page_fault3
+>          1 ± 0%    -100.0%          0 ± 0%  lkp-st02/dd-write/5m-11HDD-RAID5-cfq-btrfs-100dd
+>          8 ± 0%    -100.0%          0 ± 0%  TOTAL last_state.booting
+>
+> Thanks,
+> Fengguang
