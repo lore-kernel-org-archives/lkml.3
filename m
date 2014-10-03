@@ -1,69 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933014AbaJDAdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:33:10 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:39348 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755394AbaJDAdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 20:33:06 -0400
-Message-ID: <542F403F.1010807@osg.samsung.com>
-Date: Fri, 03 Oct 2014 18:33:03 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
-References: <20141003212933.458851516@linuxfoundation.org>
+	id S1761306AbaJDAce (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:32:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45374 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755916AbaJCVmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:42:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Weston Andros Adamson <dros@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 166/357] nfs: clear_request_commit while holding i_lock
+Date: Fri,  3 Oct 2014 14:29:12 -0700
+Message-Id: <20141003212938.459480621@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2014 03:26 PM, Greg Kroah-Hartman wrote:
-> ---------------------------------
-> Note: This is a big stable release.  Mostly my fault for being on the
-> road last week, combined with an unusually large number of patches being
-> tagged for the stable tree.  Anyway, I've caught up with all pending
-> patches before 3.17-rc7, so if you have marked something for the stable
-> tree that I have not applied, or emailed the stable@v.k.o list asking
-> for a patch, that is not here, please let me know.
-> ---------------------------------
-> 
-> This is the start of the stable review cycle for the 3.16.4 release.
-> There are 357 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.4-rc1.gz
-> and the diffstat can be found below.
-> 
-> thanks,
-> 
-> greg k-h
-> 
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Compiled and booted on my test system. No dmesg regressions.
+------------------
 
-Looking better than the previous with clean dmesg err
 
-drm:ivb_err_int_handlererrors I was seeing went away.
-Must be changes in drivers/gpu/drm/i915
+From: Weston Andros Adamson <dros@primarydata.com>
 
--- Shuah
+commit 411a99adffb4f993eee29759f744de01487044ac upstream.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ fs/nfs/filelayout/filelayout.c |    5 ++---
+ fs/nfs/write.c                 |   15 ++++-----------
+ 2 files changed, 6 insertions(+), 14 deletions(-)
+
+--- a/fs/nfs/filelayout/filelayout.c
++++ b/fs/nfs/filelayout/filelayout.c
+@@ -1015,6 +1015,7 @@ static u32 select_bucket_index(struct nf
+ 
+ /* The generic layer is about to remove the req from the commit list.
+  * If this will make the bucket empty, it will need to put the lseg reference.
++ * Note this is must be called holding the inode (/cinfo) lock
+  */
+ static void
+ filelayout_clear_request_commit(struct nfs_page *req,
+@@ -1022,7 +1023,6 @@ filelayout_clear_request_commit(struct n
+ {
+ 	struct pnfs_layout_segment *freeme = NULL;
+ 
+-	spin_lock(cinfo->lock);
+ 	if (!test_and_clear_bit(PG_COMMIT_TO_DS, &req->wb_flags))
+ 		goto out;
+ 	cinfo->ds->nwritten--;
+@@ -1037,8 +1037,7 @@ filelayout_clear_request_commit(struct n
+ 	}
+ out:
+ 	nfs_request_remove_commit_list(req, cinfo);
+-	spin_unlock(cinfo->lock);
+-	pnfs_put_lseg(freeme);
++	pnfs_put_lseg_async(freeme);
+ }
+ 
+ static struct list_head *
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -379,8 +379,6 @@ nfs_destroy_unlinked_subrequests(struct
+ 		subreq->wb_head = subreq;
+ 		subreq->wb_this_page = subreq;
+ 
+-		nfs_clear_request_commit(subreq);
+-
+ 		/* subreq is now totally disconnected from page group or any
+ 		 * write / commit lists. last chance to wake any waiters */
+ 		nfs_unlock_request(subreq);
+@@ -490,7 +488,7 @@ try_again:
+ 	 * Commit list removal accounting is done after locks are dropped */
+ 	subreq = head;
+ 	do {
+-		nfs_list_remove_request(subreq);
++		nfs_clear_request_commit(subreq);
+ 		subreq = subreq->wb_this_page;
+ 	} while (subreq != head);
+ 
+@@ -520,15 +518,11 @@ try_again:
+ 
+ 	nfs_page_group_unlock(head);
+ 
+-	/* drop lock to clear_request_commit the head req and clean up
+-	 * requests on destroy list */
++	/* drop lock to clean uprequests on destroy list */
+ 	spin_unlock(&inode->i_lock);
+ 
+ 	nfs_destroy_unlinked_subrequests(destroy_list, head);
+ 
+-	/* clean up commit list state */
+-	nfs_clear_request_commit(head);
+-
+ 	/* still holds ref on head from nfs_page_find_head_request_locked
+ 	 * and still has lock on head from lock loop */
+ 	return head;
+@@ -810,6 +804,7 @@ nfs_clear_page_commit(struct page *page)
+ 	dec_bdi_stat(page_file_mapping(page)->backing_dev_info, BDI_RECLAIMABLE);
+ }
+ 
++/* Called holding inode (/cinfo) lock */
+ static void
+ nfs_clear_request_commit(struct nfs_page *req)
+ {
+@@ -819,9 +814,7 @@ nfs_clear_request_commit(struct nfs_page
+ 
+ 		nfs_init_cinfo_from_inode(&cinfo, inode);
+ 		if (!pnfs_clear_request_commit(req, &cinfo)) {
+-			spin_lock(cinfo.lock);
+ 			nfs_request_remove_commit_list(req, &cinfo);
+-			spin_unlock(cinfo.lock);
+ 		}
+ 		nfs_clear_page_commit(req->wb_page);
+ 	}
+@@ -1040,9 +1033,9 @@ static struct nfs_page *nfs_try_to_updat
+ 	else
+ 		req->wb_bytes = rqend - req->wb_offset;
+ out_unlock:
+-	spin_unlock(&inode->i_lock);
+ 	if (req)
+ 		nfs_clear_request_commit(req);
++	spin_unlock(&inode->i_lock);
+ 	return req;
+ out_flushme:
+ 	spin_unlock(&inode->i_lock);
+
+
