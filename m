@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620AbaJCWMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:12:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46628 "EHLO
+	id S1757720AbaJCWNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:13:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46615 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757525AbaJCWGG (ORCPT
+	with ESMTP id S1755609AbaJCWGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:06:06 -0400
+	Fri, 3 Oct 2014 18:06:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 3.14 119/238] MIPS: mcount: Adjust stack pointer for static trace in MIPS32
-Date: Fri,  3 Oct 2014 14:30:34 -0700
-Message-Id: <20141003212917.485230712@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.16 330/357] md/raid1:  be more cautious where we read-balance during resync.
+Date: Fri,  3 Oct 2014 14:31:56 -0700
+Message-Id: <20141003212943.374230886@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,75 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 8a574cfa2652545eb95595d38ac2a0bb501af0ae upstream.
+commit c6d119cf1b5a778e9ed60a006e2a434fcc4471a2 upstream.
 
-Every mcount() call in the MIPS 32-bit kernel is done as follows:
+commit 79ef3a8aa1cb1523cc231c9a90a278333c21f761 made
+it possible for reads to happen concurrently with resync.
+This means that we need to be more careful where read_balancing
+is allowed during resync - we can no longer be sure that any
+resync that has already started will definitely finish.
 
-[...]
-move at, ra
-jal _mcount
-addiu sp, sp, -8
-[...]
+So keep read_balancing to before recovery_cp, which is conservative
+but safe.
 
-but upon returning from the mcount() function, the stack pointer
-is not adjusted properly. This is explained in details in 58b69401c797
-(MIPS: Function tracer: Fix broken function tracing).
+This bug makes it possible to read from a device that doesn't
+have up-to-date data, so it can cause data corruption.
+So it is suitable for any kernel since 3.11.
 
-Commit ad8c396936e3 ("MIPS: Unbreak function tracer for 64-bit kernel.)
-fixed the stack manipulation for 64-bit but it didn't fix it completely
-for MIPS32.
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/7792/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/kernel/mcount.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/md/raid1.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/arch/mips/kernel/mcount.S
-+++ b/arch/mips/kernel/mcount.S
-@@ -123,7 +123,11 @@ NESTED(_mcount, PT_SIZE, ra)
- 	 nop
- #endif
- 	b	ftrace_stub
-+#ifdef CONFIG_32BIT
-+	 addiu sp, sp, 8
-+#else
- 	 nop
-+#endif
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -540,11 +540,7 @@ static int read_balance(struct r1conf *c
+ 	has_nonrot_disk = 0;
+ 	choose_next_idle = 0;
  
- static_trace:
- 	MCOUNT_SAVE_REGS
-@@ -133,6 +137,9 @@ static_trace:
- 	 move	a1, AT		/* arg2: parent's return address */
+-	if (conf->mddev->recovery_cp < MaxSector &&
+-	    (this_sector + sectors >= conf->next_resync))
+-		choose_first = 1;
+-	else
+-		choose_first = 0;
++	choose_first = (conf->mddev->recovery_cp < this_sector + sectors);
  
- 	MCOUNT_RESTORE_REGS
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
- 	.globl ftrace_stub
- ftrace_stub:
- 	RETURN_BACK
-@@ -177,6 +184,11 @@ NESTED(ftrace_graph_caller, PT_SIZE, ra)
- 	jal	prepare_ftrace_return
- 	 nop
- 	MCOUNT_RESTORE_REGS
-+#ifndef CONFIG_DYNAMIC_FTRACE
-+#ifdef CONFIG_32BIT
-+	addiu sp, sp, 8
-+#endif
-+#endif
- 	RETURN_BACK
- 	END(ftrace_graph_caller)
- 
+ 	for (disk = 0 ; disk < conf->raid_disks * 2 ; disk++) {
+ 		sector_t dist;
 
 
