@@ -1,310 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737AbaJCXLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:11:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916AbaJCWN6 (ORCPT
+	id S1759689AbaJCXMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:12:19 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46008 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758390AbaJCXLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guy Martin <gmsoft@tuxicoman.be>, Helge Deller <deller@gmx.de>
-Subject: [PATCH 3.14 194/238] parisc: Implement new LWS CAS supporting 64 bit operations.
-Date: Fri,  3 Oct 2014 14:31:49 -0700
-Message-Id: <20141003212919.867043243@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 19:11:14 -0400
+Date: Sat, 4 Oct 2014 01:11:10 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>
+Cc: dtor@mail.ru, linux-input@vger.kernel.org
+Subject: 3.17-rc5: kernel oops when exiting X under heavy load
+Message-ID: <20141003231109.GA4530@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hi!
 
-------------------
-
-From: Guy Martin <gmsoft@tuxicoman.be>
-
-commit 89206491201cbd1571009b36292af781cef74c1b upstream.
-
-The current LWS cas only works correctly for 32bit. The new LWS allows
-for CAS operations of variable size.
-
-Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
-Signed-off-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/parisc/kernel/syscall.S |  233 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 229 insertions(+), 4 deletions(-)
-
---- a/arch/parisc/kernel/syscall.S
-+++ b/arch/parisc/kernel/syscall.S
-@@ -74,7 +74,7 @@ ENTRY(linux_gateway_page)
- 	/* ADDRESS 0xb0 to 0xb8, lws uses two insns for entry */
- 	/* Light-weight-syscall entry must always be located at 0xb0 */
- 	/* WARNING: Keep this number updated with table size changes */
--#define __NR_lws_entries (2)
-+#define __NR_lws_entries (3)
- 
- lws_entry:
- 	gate	lws_start, %r0		/* increase privilege */
-@@ -502,7 +502,7 @@ lws_exit:
- 
- 	
- 	/***************************************************
--		Implementing CAS as an atomic operation:
-+		Implementing 32bit CAS as an atomic operation:
- 
- 		%r26 - Address to examine
- 		%r25 - Old value to check (old)
-@@ -659,6 +659,230 @@ cas_action:
- 	ASM_EXCEPTIONTABLE_ENTRY(2b-linux_gateway_page, 3b-linux_gateway_page)
- 
- 
-+	/***************************************************
-+		New CAS implementation which uses pointers and variable size
-+		information. The value pointed by old and new MUST NOT change
-+		while performing CAS. The lock only protect the value at %r26.
-+
-+		%r26 - Address to examine
-+		%r25 - Pointer to the value to check (old)
-+		%r24 - Pointer to the value to set (new)
-+		%r23 - Size of the variable (0/1/2/3 for 8/16/32/64 bit)
-+		%r28 - Return non-zero on failure
-+		%r21 - Kernel error code
-+
-+		%r21 has the following meanings:
-+
-+		EAGAIN - CAS is busy, ldcw failed, try again.
-+		EFAULT - Read or write failed.
-+
-+		Scratch: r20, r22, r28, r29, r1, fr4 (32bit for 64bit CAS only)
-+
-+	****************************************************/
-+
-+	/* ELF32 Process entry path */
-+lws_compare_and_swap_2:
-+#ifdef CONFIG_64BIT
-+	/* Clip the input registers */
-+	depdi	0, 31, 32, %r26
-+	depdi	0, 31, 32, %r25
-+	depdi	0, 31, 32, %r24
-+	depdi	0, 31, 32, %r23
-+#endif
-+
-+	/* Check the validity of the size pointer */
-+	subi,>>= 4, %r23, %r0
-+	b,n	lws_exit_nosys
-+
-+	/* Jump to the functions which will load the old and new values into
-+	   registers depending on the their size */
-+	shlw	%r23, 2, %r29
-+	blr	%r29, %r0
-+	nop
-+
-+	/* 8bit load */
-+4:	ldb	0(%sr3,%r25), %r25
-+	b	cas2_lock_start
-+5:	ldb	0(%sr3,%r24), %r24
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+
-+	/* 16bit load */
-+6:	ldh	0(%sr3,%r25), %r25
-+	b	cas2_lock_start
-+7:	ldh	0(%sr3,%r24), %r24
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+
-+	/* 32bit load */
-+8:	ldw	0(%sr3,%r25), %r25
-+	b	cas2_lock_start
-+9:	ldw	0(%sr3,%r24), %r24
-+	nop
-+	nop
-+	nop
-+	nop
-+	nop
-+
-+	/* 64bit load */
-+#ifdef CONFIG_64BIT
-+10:	ldd	0(%sr3,%r25), %r25
-+11:	ldd	0(%sr3,%r24), %r24
-+#else
-+	/* Load new value into r22/r23 - high/low */
-+10:	ldw	0(%sr3,%r25), %r22
-+11:	ldw	4(%sr3,%r25), %r23
-+	/* Load new value into fr4 for atomic store later */
-+12:	flddx	0(%sr3,%r24), %fr4
-+#endif
-+
-+cas2_lock_start:
-+	/* Load start of lock table */
-+	ldil	L%lws_lock_start, %r20
-+	ldo	R%lws_lock_start(%r20), %r28
-+
-+	/* Extract four bits from r26 and hash lock (Bits 4-7) */
-+	extru  %r26, 27, 4, %r20
-+
-+	/* Find lock to use, the hash is either one of 0 to
-+	   15, multiplied by 16 (keep it 16-byte aligned)
-+	   and add to the lock table offset. */
-+	shlw	%r20, 4, %r20
-+	add	%r20, %r28, %r20
-+
-+	rsm	PSW_SM_I, %r0			/* Disable interrupts */
-+	/* COW breaks can cause contention on UP systems */
-+	LDCW	0(%sr2,%r20), %r28		/* Try to acquire the lock */
-+	cmpb,<>,n	%r0, %r28, cas2_action	/* Did we get it? */
-+cas2_wouldblock:
-+	ldo	2(%r0), %r28			/* 2nd case */
-+	ssm	PSW_SM_I, %r0
-+	b	lws_exit			/* Contended... */
-+	ldo	-EAGAIN(%r0), %r21		/* Spin in userspace */
-+
-+	/*
-+		prev = *addr;
-+		if ( prev == old )
-+		  *addr = new;
-+		return prev;
-+	*/
-+
-+	/* NOTES:
-+		This all works becuse intr_do_signal
-+		and schedule both check the return iasq
-+		and see that we are on the kernel page
-+		so this process is never scheduled off
-+		or is ever sent any signal of any sort,
-+		thus it is wholly atomic from usrspaces
-+		perspective
-+	*/
-+cas2_action:
-+	/* Jump to the correct function */
-+	blr	%r29, %r0
-+	/* Set %r28 as non-zero for now */
-+	ldo	1(%r0),%r28
-+
-+	/* 8bit CAS */
-+13:	ldb,ma	0(%sr3,%r26), %r29
-+	sub,=	%r29, %r25, %r0
-+	b,n	cas2_end
-+14:	stb,ma	%r24, 0(%sr3,%r26)
-+	b	cas2_end
-+	copy	%r0, %r28
-+	nop
-+	nop
-+
-+	/* 16bit CAS */
-+15:	ldh,ma	0(%sr3,%r26), %r29
-+	sub,=	%r29, %r25, %r0
-+	b,n	cas2_end
-+16:	sth,ma	%r24, 0(%sr3,%r26)
-+	b	cas2_end
-+	copy	%r0, %r28
-+	nop
-+	nop
-+
-+	/* 32bit CAS */
-+17:	ldw,ma	0(%sr3,%r26), %r29
-+	sub,=	%r29, %r25, %r0
-+	b,n	cas2_end
-+18:	stw,ma	%r24, 0(%sr3,%r26)
-+	b	cas2_end
-+	copy	%r0, %r28
-+	nop
-+	nop
-+
-+	/* 64bit CAS */
-+#ifdef CONFIG_64BIT
-+19:	ldd,ma	0(%sr3,%r26), %r29
-+	sub,=	%r29, %r25, %r0
-+	b,n	cas2_end
-+20:	std,ma	%r24, 0(%sr3,%r26)
-+	copy	%r0, %r28
-+#else
-+	/* Compare first word */
-+19:	ldw,ma	0(%sr3,%r26), %r29
-+	sub,=	%r29, %r22, %r0
-+	b,n	cas2_end
-+	/* Compare second word */
-+20:	ldw,ma	4(%sr3,%r26), %r29
-+	sub,=	%r29, %r23, %r0
-+	b,n	cas2_end
-+	/* Perform the store */
-+21:	fstdx	%fr4, 0(%sr3,%r26)
-+	copy	%r0, %r28
-+#endif
-+
-+cas2_end:
-+	/* Free lock */
-+	stw,ma	%r20, 0(%sr2,%r20)
-+	/* Enable interrupts */
-+	ssm	PSW_SM_I, %r0
-+	/* Return to userspace, set no error */
-+	b	lws_exit
-+	copy	%r0, %r21
-+
-+22:
-+	/* Error occurred on load or store */
-+	/* Free lock */
-+	stw	%r20, 0(%sr2,%r20)
-+	ssm	PSW_SM_I, %r0
-+	ldo	1(%r0),%r28
-+	b	lws_exit
-+	ldo	-EFAULT(%r0),%r21	/* set errno */
-+	nop
-+	nop
-+	nop
-+
-+	/* Exception table entries, for the load and store, return EFAULT.
-+	   Each of the entries must be relocated. */
-+	ASM_EXCEPTIONTABLE_ENTRY(4b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(5b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(6b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(7b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(8b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(9b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(10b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(11b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(13b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(14b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(15b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(16b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(17b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(18b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(19b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(20b-linux_gateway_page, 22b-linux_gateway_page)
-+#ifndef CONFIG_64BIT
-+	ASM_EXCEPTIONTABLE_ENTRY(12b-linux_gateway_page, 22b-linux_gateway_page)
-+	ASM_EXCEPTIONTABLE_ENTRY(21b-linux_gateway_page, 22b-linux_gateway_page)
-+#endif
-+
- 	/* Make sure nothing else is placed on this page */
- 	.align PAGE_SIZE
- END(linux_gateway_page)
-@@ -675,8 +899,9 @@ ENTRY(end_linux_gateway_page)
- 	/* Light-weight-syscall table */
- 	/* Start of lws table. */
- ENTRY(lws_table)
--	LWS_ENTRY(compare_and_swap32)	/* 0 - ELF32 Atomic compare and swap */
--	LWS_ENTRY(compare_and_swap64)	/* 1 - ELF64 Atomic compare and swap */
-+	LWS_ENTRY(compare_and_swap32)		/* 0 - ELF32 Atomic 32bit CAS */
-+	LWS_ENTRY(compare_and_swap64)		/* 1 - ELF64 Atomic 32bit CAS */
-+	LWS_ENTRY(compare_and_swap_2)		/* 2 - ELF32 Atomic 64bit CAS */
- END(lws_table)
- 	/* End of lws table */
- 
+>From the backtrace, it looks evdev related...?
 
 
+Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: SME: Trying to authenticate with 00:11:95:05:30:d7 (SSID='pavel' freq=2412 MHz)
+Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: Trying to associate with 00:11:95:05:30:d7 (SSID='pavel' freq=2412 MHz)
+Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: scanning -> authenticating
+Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: Associated with 00:11:95:05:30:d7
+Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: CTRL-EVENT-CONNECTED - Connection to 00:11:95:05:30:d7 completed (reauth) [id=0 id_str=]
+Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: authenticating -> associating
+Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: associating -> completed
+Oct  4 00:59:55 duo kernel: BUG: unable to handle kernel paging request at f47b5000
+Oct  4 00:59:55 duo kernel: IP: [<c42765ff>] memcpy+0xf/0x20
+Oct  4 00:59:55 duo kernel: *pde = 373f3067 *pte = 347b5060 
+Oct  4 00:59:55 duo kernel: Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+Oct  4 00:59:55 duo kernel: Modules linked in:
+Oct  4 00:59:55 duo kernel: CPU: 0 PID: 22293 Comm: Xorg Not tainted 3.17.0-rc5+ #399
+Oct  4 00:59:55 duo kernel: Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD8WW (2.19 ) 03/31/2011
+Oct  4 00:59:55 duo kernel: task: eb4b1580 ti: ec6a2000 task.ti: ec6a2000
+Oct  4 00:59:55 duo kernel: EIP: 0060:[<c42765ff>] EFLAGS: 00213006 CPU: 0
+Oct  4 00:59:55 duo kernel: EIP is at memcpy+0xf/0x20
+Oct  4 00:59:55 duo kernel: EAX: f5c42000 EBX: 00000bfc ECX: 00000146 EDX: f47b491c
+Oct  4 00:59:55 duo kernel: ESI: f47b5000 EDI: f5c426e4 EBP: ec6a3e80 ESP: ec6a3e74
+Oct  4 00:59:55 duo kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Oct  4 00:59:55 duo kernel: CR0: 80050033 CR2: f47b5000 CR3: 2c77d000 CR4: 00000710
+Oct  4 00:59:55 duo kernel: Stack:
+Oct  4 00:59:55 duo kernel: ec409800 f47b499c 00000bfc ec6a3ec4 c451f154 ec40980c f5c42000 c47ee121
+Oct  4 00:59:55 duo kernel: 00000001 00000001 00000000 00203246 c47ef168 c451f367 f47cdcb4 eb4b1580
+Oct  4 00:59:55 duo kernel: 00203246 eab3eec0 ec409800 ec409800 ec6a3f2c c451f468 f47b491c 000002ff
+Oct  4 00:59:55 duo kernel: Call Trace:
+Oct  4 00:59:55 duo kernel: [<c451f154>] evdev_handle_get_val.isra.7+0x54/0x240
+Oct  4 00:59:55 duo kernel: [<c47ee121>] ? mutex_lock_interruptible_nested+0x31/0x330
+Oct  4 00:59:55 duo kernel: [<c47ef168>] ? mutex_unlock+0x8/0x10
+Oct  4 00:59:55 duo kernel: [<c451f367>] ? evdev_ioctl+0x27/0x7f0
+Oct  4 00:59:55 duo kernel: [<c451f468>] evdev_ioctl+0x128/0x7f0
+Oct  4 00:59:55 duo kernel: [<c40e9c5c>] ? cache_free_debugcheck+0x2ac/0x340
+Oct  4 00:59:55 duo kernel: [<c451f340>] ? evdev_handle_get_val.isra.7+0x240/0x240
+Oct  4 00:59:55 duo kernel: [<c40fead2>] do_vfs_ioctl+0x2f2/0x520
+Oct  4 00:59:55 duo kernel: [<c40f8178>] ? final_putname+0x18/0x40
+Oct  4 00:59:55 duo kernel: [<c40f8178>] ? final_putname+0x18/0x40
+Oct  4 00:59:55 duo kernel: [<c40ee12a>] ? do_sys_open+0x17a/0x200
+Oct  4 00:59:55 duo kernel: [<c40fed36>] SyS_ioctl+0x36/0x70
+Oct  4 00:59:55 duo kernel: [<c47f105e>] syscall_call+0x7/0x7
+Oct  4 00:59:55 duo kernel: [<c47f0000>] ? hrtimer_nanosleep_restart+0x60/0xa0
+Oct  4 00:59:55 duo kernel: Code: fb ff ff 8b 43 54 2b 43 50 88 43 4e 5b 5d f3 c3 90 90 90 90 90 90 90 90 90 90 90 90 55 89 e5 57 89 c7 56 89 d6 53 89 cb c1 e9 02 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 5b 5e 5f 5d c3 90 55 89 e5 57
+Oct  4 00:59:55 duo kernel: EIP: [<c42765ff>] memcpy+0xf/0x20 SS:ESP 0068:ec6a3e74
+Oct  4 00:59:55 duo kernel: CR2: 00000000f47b5000
+Oct  4 00:59:55 duo kernel: ---[ end trace fee349319591dc44 ]---
+Oct  4 01:04:08 duo rsyslogd: [origin software="rsyslogd" swVersion="8.4.0" x-pid="3490" x-info="http://www.rsyslog.com"] start
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
