@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758192AbaJCWza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:55:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47291 "EHLO
+	id S1758061AbaJCW4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:56:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582AbaJCWYE (ORCPT
+	with ESMTP id S932592AbaJCWYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:04 -0400
+	Fri, 3 Oct 2014 18:24:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 042/143] USB: serial: fix potential heap buffer overflow
-Date: Fri,  3 Oct 2014 14:33:57 -0700
-Message-Id: <20141003213315.745554376@linuxfoundation.org>
+        Mark Knibbs <markk@clara.co.uk>
+Subject: [PATCH 3.10 055/143] storage: Add single-LUN quirk for Jaz USB Adapter
+Date: Fri,  3 Oct 2014 14:34:10 -0700
+Message-Id: <20141003213316.139767502@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,38 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Mark <markk@clara.co.uk>
 
-commit 5654699fb38512bdbfc0f892ce54fce75bdc2bab upstream.
+commit c66f1c62e85927357e7b3f4c701614dcb5c498a2 upstream.
 
-Make sure to verify the number of ports requested by subdriver to avoid
-writing beyond the end of fixed-size array in interface data.
+The Iomega Jaz USB Adapter is a SCSI-USB converter cable. The hardware
+seems to be identical to e.g. the Microtech XpressSCSI, using a Shuttle/
+SCM chip set. However its firmware restricts it to only work with Jaz
+drives.
 
-The current usb-serial implementation is limited to eight ports per
-interface but failed to verify that the number of ports requested by a
-subdriver (which could have been determined from device descriptors) did
-not exceed this limit.
+On connecting the cable a message like this appears four times in the log:
+ reset full speed USB device number 4 using uhci_hcd
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
+That's non-fatal but the US_FL_SINGLE_LUN quirk fixes it.
+
+Signed-off-by: Mark Knibbs <markk@clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/storage/unusual_devs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -876,6 +876,11 @@ static int usb_serial_probe(struct usb_i
- 			num_ports = type->num_ports;
- 	}
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -741,6 +741,12 @@ UNUSUAL_DEV(  0x059b, 0x0001, 0x0100, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_SINGLE_LUN ),
  
-+	if (num_ports > MAX_NUM_PORTS) {
-+		dev_warn(ddev, "too many ports requested: %d\n", num_ports);
-+		num_ports = MAX_NUM_PORTS;
-+	}
++UNUSUAL_DEV(  0x059b, 0x0040, 0x0100, 0x0100,
++		"Iomega",
++		"Jaz USB Adapter",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_SINGLE_LUN ),
 +
- 	serial->num_ports = num_ports;
- 	serial->num_bulk_in = num_bulk_in;
- 	serial->num_bulk_out = num_bulk_out;
+ /* Reported by <Hendryk.Pfeiffer@gmx.de> */
+ UNUSUAL_DEV(  0x059f, 0x0643, 0x0000, 0x0000,
+ 		"LaCie",
 
 
