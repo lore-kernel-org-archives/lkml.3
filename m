@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258AbaJCVx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:58 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:48947 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932090AbaJCVxv (ORCPT
+	id S932223AbaJCVxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:53:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808AbaJCVx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:51 -0400
-From: Giedrius Statkevicius <giedrius.statkevicius@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: micky_ching@realsil.com.cn, fabio.falzoi84@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] staging: rts5208: clean up coding style in rtsx_chip.c
-Date: Sat,  4 Oct 2014 00:53:08 +0300
-Message-Id: <cover.1412372293.git.giedrius.statkevicius@gmail.com>
+	Fri, 3 Oct 2014 17:53:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jason Robinson <mail@jasonrobinson.me>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.16 253/357] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
+Date: Fri,  3 Oct 2014 14:30:39 -0700
+Message-Id: <20141003212941.107739911@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Giedrius Statkevičius <giedrius.statkevicius@gmail.com>
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-This patch set is a general code style clean up for rtsx_chip.c. After
-this patch set checkpatch.pl without --strict doesn't complain anything
-about at all and with --strict it only complains about unmatched
-parantheses in those few places where I can't fix them because I don't
-have the hardware to test the bigger changes nor do I have enough
-experience to make such bigger changes flawlessly.
+------------------
 
-(Sorry for littering the mailing list. You can delete my other threads.
-I somehow accidentaly managed to reply to my older thread. This is
-really embarassing.)
+From: Hans de Goede <hdegoede@redhat.com>
 
-Giedrius Statkevičius (5):
-  staging: rts5208: combine ifs where possible
-  staging: rts5208: get rid of Camel Case, remove unneeded lines and
-    parantheses
-  staging: rts5208: align divided lines to opening paranthesis
-  staging: rts5208: divide lines to make them less than 80 characters
-    long
-  staging: rts5208: use ternary operators to reduce indentation level
+commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
 
- drivers/staging/rts5208/rtsx_chip.c | 322 +++++++++++++++---------------------
- 1 file changed, 136 insertions(+), 186 deletions(-)
+https://bugzilla.kernel.org/show_bug.cgi?id=69731
 
--- 
-2.1.2
+Reported-by: Jason Robinson <mail@jasonrobinson.me>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/serio/i8042-x86ia64io.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -608,6 +608,14 @@ static const struct dmi_system_id __init
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Fujitsu U574 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
++		},
++	},
+ 	{ }
+ };
+ 
+
+
