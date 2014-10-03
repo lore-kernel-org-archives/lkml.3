@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696AbaJCXIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:08:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46909 "EHLO
+	id S1759549AbaJCXIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:08:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757935AbaJCWOB (ORCPT
+	with ESMTP id S1757936AbaJCWOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:01 -0400
+	Fri, 3 Oct 2014 18:14:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Moni Shoua <monis@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 202/238] IB/mlx4: Dont duplicate the default RoCE GID
-Date: Fri,  3 Oct 2014 14:31:57 -0700
-Message-Id: <20141003212920.124619735@linuxfoundation.org>
+        Andrey Vagin <avagin@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 182/238] fsnotify/fdinfo: use named constants instead of hardcoded values
+Date: Fri,  3 Oct 2014 14:31:37 -0700
+Message-Id: <20141003212919.494285213@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,50 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Moni Shoua <monis@mellanox.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit f5c4834d9328c4ed9fe5dcbec6128d6da16db69a upstream.
+commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
 
-When reading the IPv6 addresses from the net-device, make sure to
-avoid adding a duplicate entry to the GID table because of equality
-between the default GID we generate and the default IPv6 link-local
-address of the device.
+MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
+bytes, so exportfs_encode_inode_fh can return an error.
 
-Fixes: acc4fccf4eff ("IB/mlx4: Make sure GID index 0 is always occupied")
-Signed-off-by: Moni Shoua <monis@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx4/main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/notify/fdinfo.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/mlx4/main.c
-+++ b/drivers/infiniband/hw/mlx4/main.c
-@@ -1622,6 +1622,7 @@ static void mlx4_ib_get_dev_addr(struct
- 	struct inet6_dev *in6_dev;
- 	union ib_gid  *pgid;
- 	struct inet6_ifaddr *ifp;
-+	union ib_gid default_gid;
- #endif
- 	union ib_gid gid;
+--- a/fs/notify/fdinfo.c
++++ b/fs/notify/fdinfo.c
+@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_
+ {
+ 	struct {
+ 		struct file_handle handle;
+-		u8 pad[64];
++		u8 pad[MAX_HANDLE_SZ];
+ 	} f;
+ 	int size, ret, i;
  
-@@ -1642,12 +1643,15 @@ static void mlx4_ib_get_dev_addr(struct
- 		in_dev_put(in_dev);
+@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
+ 	size = f.handle.handle_bytes >> 2;
+ 
+ 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
+-	if ((ret == 255) || (ret == -ENOSPC)) {
++	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
+ 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
+ 		return 0;
  	}
- #if IS_ENABLED(CONFIG_IPV6)
-+	mlx4_make_default_gid(dev, &default_gid);
- 	/* IPv6 gids */
- 	in6_dev = in6_dev_get(dev);
- 	if (in6_dev) {
- 		read_lock_bh(&in6_dev->lock);
- 		list_for_each_entry(ifp, &in6_dev->addr_list, if_list) {
- 			pgid = (union ib_gid *)&ifp->addr;
-+			if (!memcmp(pgid, &default_gid, sizeof(*pgid)))
-+				continue;
- 			update_gid_table(ibdev, port, pgid, 0, 0);
- 		}
- 		read_unlock_bh(&in6_dev->lock);
 
 
