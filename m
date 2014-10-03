@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaJCUxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:53:51 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:65083 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaJCUxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751889AbaJCUxr (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 3 Oct 2014 16:53:47 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:8271 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750750AbaJCUxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 16:53:46 -0400
+Date: Fri, 3 Oct 2014 16:53:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: (ltc-kernel 10162) Re: [PATCH ftrace/for-next v6] ftracetest:
+ Add POSIX.3 standard and XFAIL result codes
+Message-ID: <20141003165337.21043dee@gandalf.local.home>
+In-Reply-To: <542E8888.9090703@hitachi.com>
+References: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal>
+	<54294C55.3030204@hitachi.com>
+	<542E8888.9090703@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141003204256.GO10583@worktop.programming.kicks-ass.net>
-References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
- <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
- <20141003201409.GM10583@worktop.programming.kicks-ass.net>
- <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com> <20141003204256.GO10583@worktop.programming.kicks-ass.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 3 Oct 2014 13:53:24 -0700
-Message-ID: <CALCETrXrcBDOq0zBkgtNDfD1qjhq4rcXR1Txta8KksREZeQg0g@mail.gmail.com>
-Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC filtering
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 1:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Oct 03, 2014 at 01:22:22PM -0700, Andy Lutomirski wrote:
->> > So the problem with the default deny is that its:
->> >  1) pointless -- the attacker can do sys_perf_event_open() just fine;
->>
->> Not if the attacker is in a seccomp sandbox.
->
-> Clearly :-)
->
->> >  2) and expensive -- the people trying to measure performance get the
->> >     penalty of the CR4 write.
->>
->> Does this matter for performance measuring?  I'm not 100% clear on how all
->> the perf_event stuff gets used in practice, but, by my very vague
->> understanding, there are two main workflows:
->>
->> a) perf record, etc: one process creates a ringbuffer and wakes up
->> rarely to record the contents.  The process being recorded doesn't
->> have a perf_event mapped, so the cr4 switch will only happen when
->> waking up the perf process.
->>
->> perf record prints stuff like "[ perf record: Woken up 1 times to
->> write data ]", which seems to confirm my understanding.
->>
->> b) self-monitoring.  A task mmaps a perf_event, does rdpmc, does
->> something, and does rdpmc again.  In that case, there's no context
->> switch.
->
-> Agreed, but with the default disable, the self-monitoring task will get
-> CR4 writes to its context switches and will be slower.
->
-> Whereas if we default on and only disable with seccomp then only the
-> seccomp tasks will suffer the burden of a CR4 write at context switch
-> time.
->
-> And I don't see a security implication in the default.
+On Fri, 03 Oct 2014 20:29:12 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-I don't see a security implication, but we can fight over whether
-seccomp performance or perf self monitoring performance is more
-important.  I spent a bunch of time making seccomp *much* faster for
-3.18, and things like Chromium (the browser) could have lots of
-context switched into and out of seccomp. :)
+> Ping? :)
 
-I suspect that the overhead only really matters when running as a VM guest.
+Just to make sure. This is just the one patch that I missed before,
+right?
 
-Hmm.  Can we switch lazily?  I don't really like the idea, but
-non-seccomp, non-perf-event tasks could, in principle, just inherit
-the PCE value from whatever had the CPU last.
+I pulled it and now testing it (running the tests). I'll push it to my
+linux-next branch sometime later today. You'll probably see it as you
+wake up ;-)
 
->
->> > So I would suggest a default on, but allow a disable for the seccomp
->> > users, which might have also disabled the syscall. Note that is is
->> > possible to disable RDPMC while still allowing the syscall.
->>
->> Disabling RDPMC per-process while still allowing the syscall will need
->> a bunch of work, right?
->
-> Not much, all you need to do is make
-> perf_event_mmmap_page::cap_user_rdpmc be 0 and userspace should never
-> use rdpmc. Currently we set that bit based on the global sysfs rdpmc
-> value, but we could easy bitwise AND it with a per process value.
->
->> What happens if the same perf_event is mapped
->> by two different users?
->
-> Not entirely clear on what you mean here.
+-- Steve
 
-Can you open a perf_event fd, fork, and mmap it in the child?  What if
-you map it in the parent and the child?  Then cap_user_rdpmc has to
-match for both mappings.  Or is this impossible?
-
->
->> We could make the rule be that RDPMC is enabled if a perf event is
->> mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
->> there's an actual performance issue first.  Ideally we can get this
->> all working with no API or ABI change at all.
->
-> Well I just want to not have extra CR4 writes by default (and by default
-> I don't care about seccomp).
->
->> P.S. Hey, Intel, let us context switch RDPMC accessibility of the
->> individual counters, please :)
->
-> Ha sure, make it more complicated why don't you ;-) But yes, that has
-> come up before.
-
---Andy
+> 
+> (2014/09/29 21:11), Masami Hiramatsu wrote:
+> > Steven, could you pick this instead of old v5 patch?
+> > 
+> > As you pointed, this version shows the log of "unsuppoted" test result.
+> > 
+> > Thank you,
+> > 
+> > (2014/09/29 21:02), Masami Hiramatsu wrote:
+> >> Add XFAIL and POSIX 1003.3 standard codes (UNRESOLVED/
+> >> UNTESTED/UNSUPPORTED) as result codes. These are used for the
+> >> results that test case is expected to fail or unsupported
+> >> feature (by config).
+> >>
+> >> To return these result code, this introduces exit_unresolved,
+> >> exit_untested, exit_unsupported and exit_xfail functions,
+> >> which use real-time signals to notify the result code to
+> >> ftracetest.
+> >>
+> >> This also set "errexit" option for the testcases, so that
+> >> the tests don't need to exit explicitly.
+> >>
+> >> Note that if the test returns UNRESOLVED/UNSUPPORTED/FAIL,
+> >> its test log including executed commands is shown on console
+> >> and main logfile as below.
