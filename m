@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761180AbaJDAOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:14:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1761199AbaJDAO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:14:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755246AbaJCVxM (ORCPT
+	with ESMTP id S1755644AbaJCVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 018/238] drm/radeon/atom: add new voltage fetch function for hawaii
-Date: Fri,  3 Oct 2014 14:28:53 -0700
-Message-Id: <20141003212914.246746342@linuxfoundation.org>
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.16 231/357] iio: adc: at91: dont use the last converted data register
+Date: Fri,  3 Oct 2014 14:30:17 -0700
+Message-Id: <20141003212940.450260955@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,80 +27,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit e9f274b2a1bd4ecc569b823b1e7942e9bf92593e upstream.
+commit d4f51956ac8ad302db9b0c4e4232775b1baa7b44 upstream.
 
-Some hawaii boards use a different method for fetching the
-voltage information from the vbios.
+If touchscreen mode is enabled and a conversion is requested on another
+channel, the result in the last converted data register can be a
+touchscreen relative value. Starting a conversion involves to do a
+conversion for all active channel. It starts with ADC channels and ends
+with touchscreen channels. Then if ADC_LCD register is not read quickly,
+its content may be a touchscreen conversion.
+To remove this temporal constraint, the conversion value is taken from
+the channel data register.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon.h          |    3 ++
- drivers/gpu/drm/radeon/radeon_atombios.c |   35 +++++++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+ drivers/iio/adc/at91_adc.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -294,6 +294,9 @@ int radeon_atom_get_leakage_vddc_based_o
- 							 u16 *vddc, u16 *vddci,
- 							 u16 virtual_voltage_id,
- 							 u16 vbios_voltage_id);
-+int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
-+				u16 virtual_voltage_id,
-+				u16 *voltage);
- int radeon_atom_round_to_true_voltage(struct radeon_device *rdev,
- 				      u8 voltage_type,
- 				      u16 nominal_voltage,
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -3228,6 +3228,41 @@ int radeon_atom_get_leakage_vddc_based_o
- 	return 0;
- }
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -196,6 +196,7 @@ struct at91_adc_state {
+ 	bool			done;
+ 	int			irq;
+ 	u16			last_value;
++	int			chnb;
+ 	struct mutex		lock;
+ 	u8			num_channels;
+ 	void __iomem		*reg_base;
+@@ -274,7 +275,7 @@ void handle_adc_eoc_trigger(int irq, str
+ 		disable_irq_nosync(irq);
+ 		iio_trigger_poll(idev->trig, iio_get_time_ns());
+ 	} else {
+-		st->last_value = at91_adc_readl(st, AT91_ADC_LCDR);
++		st->last_value = at91_adc_readl(st, AT91_ADC_CHAN(st, st->chnb));
+ 		st->done = true;
+ 		wake_up_interruptible(&st->wq_data_avail);
+ 	}
+@@ -351,7 +352,7 @@ static irqreturn_t at91_adc_rl_interrupt
+ 	unsigned int reg;
  
-+union get_voltage_info {
-+	struct  _GET_VOLTAGE_INFO_INPUT_PARAMETER_V1_2 in;
-+	struct  _GET_EVV_VOLTAGE_INFO_OUTPUT_PARAMETER_V1_2 evv_out;
-+};
-+
-+int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
-+				u16 virtual_voltage_id,
-+				u16 *voltage)
-+{
-+	int index = GetIndexIntoMasterTable(COMMAND, GetVoltageInfo);
-+	u32 entry_id;
-+	u32 count = rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.count;
-+	union get_voltage_info args;
-+
-+	for (entry_id = 0; entry_id < count; entry_id++) {
-+		if (rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].v ==
-+		    virtual_voltage_id)
-+			break;
-+	}
-+
-+	if (entry_id >= count)
-+		return -EINVAL;
-+
-+	args.in.ucVoltageType = VOLTAGE_TYPE_VDDC;
-+	args.in.ucVoltageMode = ATOM_GET_VOLTAGE_EVV_VOLTAGE;
-+	args.in.ulSCLKFreq =
-+		cpu_to_le32(rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].clk);
-+
-+	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
-+
-+	*voltage = le16_to_cpu(args.evv_out.usVoltageLevel);
-+
-+	return 0;
-+}
-+
- int radeon_atom_get_voltage_gpio_settings(struct radeon_device *rdev,
- 					  u16 voltage_level, u8 voltage_type,
- 					  u32 *gpio_value, u32 *gpio_mask)
+ 	status &= at91_adc_readl(st, AT91_ADC_IMR);
+-	if (status & st->registers->drdy_mask)
++	if (status & GENMASK(st->num_channels - 1, 0))
+ 		handle_adc_eoc_trigger(irq, idev);
+ 
+ 	if (status & AT91RL_ADC_IER_PEN) {
+@@ -418,7 +419,7 @@ static irqreturn_t at91_adc_9x5_interrup
+ 		AT91_ADC_IER_YRDY |
+ 		AT91_ADC_IER_PRDY;
+ 
+-	if (status & st->registers->drdy_mask)
++	if (status & GENMASK(st->num_channels - 1, 0))
+ 		handle_adc_eoc_trigger(irq, idev);
+ 
+ 	if (status & AT91_ADC_IER_PEN) {
+@@ -689,9 +690,10 @@ static int at91_adc_read_raw(struct iio_
+ 	case IIO_CHAN_INFO_RAW:
+ 		mutex_lock(&st->lock);
+ 
++		st->chnb = chan->channel;
+ 		at91_adc_writel(st, AT91_ADC_CHER,
+ 				AT91_ADC_CH(chan->channel));
+-		at91_adc_writel(st, AT91_ADC_IER, st->registers->drdy_mask);
++		at91_adc_writel(st, AT91_ADC_IER, BIT(chan->channel));
+ 		at91_adc_writel(st, AT91_ADC_CR, AT91_ADC_START);
+ 
+ 		ret = wait_event_interruptible_timeout(st->wq_data_avail,
+@@ -708,7 +710,7 @@ static int at91_adc_read_raw(struct iio_
+ 
+ 		at91_adc_writel(st, AT91_ADC_CHDR,
+ 				AT91_ADC_CH(chan->channel));
+-		at91_adc_writel(st, AT91_ADC_IDR, st->registers->drdy_mask);
++		at91_adc_writel(st, AT91_ADC_IDR, BIT(chan->channel));
+ 
+ 		st->last_value = 0;
+ 		st->done = false;
 
 
