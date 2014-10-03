@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647AbaJCWjF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:39:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47838 "EHLO
+	id S1758676AbaJCWjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:39:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527AbaJCWeQ (ORCPT
+	with ESMTP id S1756316AbaJCWeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:16 -0400
+	Fri, 3 Oct 2014 18:34:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.14 075/238] USB: serial: fix potential heap buffer overflow
-Date: Fri,  3 Oct 2014 14:29:50 -0700
-Message-Id: <20141003212916.074259339@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 062/238] drm/radeon: add connector quirk for fujitsu board
+Date: Fri,  3 Oct 2014 14:29:37 -0700
+Message-Id: <20141003212915.657452202@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,38 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 5654699fb38512bdbfc0f892ce54fce75bdc2bab upstream.
+commit 1952f24d0fa6292d65f886887af87ba8ac79b3ba upstream.
 
-Make sure to verify the number of ports requested by subdriver to avoid
-writing beyond the end of fixed-size array in interface data.
+Vbios connector table lists non-existent VGA port.
 
-The current usb-serial implementation is limited to eight ports per
-interface but failed to verify that the number of ports requested by a
-subdriver (which could have been determined from device descriptors) did
-not exceed this limit.
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=83184
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -862,6 +862,11 @@ static int usb_serial_probe(struct usb_i
- 			num_ports = type->num_ports;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -447,6 +447,13 @@ static bool radeon_atom_apply_quirks(str
+ 		}
  	}
  
-+	if (num_ports > MAX_NUM_PORTS) {
-+		dev_warn(ddev, "too many ports requested: %d\n", num_ports);
-+		num_ports = MAX_NUM_PORTS;
++	/* Fujitsu D3003-S2 board lists DVI-I as DVI-I and VGA */
++	if ((dev->pdev->device == 0x9805) &&
++	    (dev->pdev->subsystem_vendor == 0x1734) &&
++	    (dev->pdev->subsystem_device == 0x11bd)) {
++		if (*connector_type == DRM_MODE_CONNECTOR_VGA)
++			return false;
 +	}
-+
- 	serial->num_ports = num_ports;
- 	serial->num_bulk_in = num_bulk_in;
- 	serial->num_bulk_out = num_bulk_out;
+ 
+ 	return true;
+ }
 
 
