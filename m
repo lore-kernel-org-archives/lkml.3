@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759038AbaJCXiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:38:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46453 "EHLO
+	id S1757991AbaJCXiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:38:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46457 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756476AbaJCWDm (ORCPT
+	with ESMTP id S1757311AbaJCWDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:42 -0400
+	Fri, 3 Oct 2014 18:03:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Gouders <dirk@gouders.net>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3.16 316/357] Revert "PCI: Make sure bus number resources stay within their parents bounds"
-Date: Fri,  3 Oct 2014 14:31:42 -0700
-Message-Id: <20141003212942.965215279@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 317/357] cpufreq: release policy->rwsem on error
+Date: Fri,  3 Oct 2014 14:31:43 -0700
+Message-Id: <20141003212942.993873302@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,99 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Prarit Bhargava <prarit@redhat.com>
 
-commit 12d8706963f073fffad16c7c24160ef20d9aeaff upstream.
+commit 7106e02baed4a72fb23de56b02ad4d31daa74d95 upstream.
 
-This reverts commit 1820ffdccb9b ("PCI: Make sure bus number resources stay
-within their parents bounds") because it breaks some systems with LSI Logic
-FC949ES Fibre Channel Adapters, apparently by exposing a defect in those
-adapters.
+While debugging a cpufreq-related hardware failure on a system I saw the
+following lockdep warning:
 
-Dirk tested a Tyan VX50 (B4985) with this device that worked like this
-prior to 1820ffdccb9b:
+ =========================
+ [ BUG: held lock freed! ] 3.17.0-rc4+ #1 Tainted: G            E
+ -------------------------
+ insmod/2247 is freeing memory ffff88006e1b1400-ffff88006e1b17ff, with a lock still held there!
+  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
+ 3 locks held by insmod/2247:
+  #0:  (subsys mutex#5){+.+.+.}, at: [<ffffffff81485579>] subsys_interface_register+0x69/0x120
+  #1:  (cpufreq_rwsem){.+.+.+}, at: [<ffffffff8156cf73>] __cpufreq_add_dev.isra.21+0x73/0xb80
+  #2:  (&policy->rwsem){+.+...}, at: [<ffffffff8156d37d>] __cpufreq_add_dev.isra.21+0x47d/0xb80
 
-    bus: [bus 00-7f] on node 0 link 1
-    ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-07])
-    pci 0000:00:0e.0: PCI bridge to [bus 0a]
-    pci_bus 0000:0a: busn_res: can not insert [bus 0a] under [bus 00-07] (conflicts with (null) [bus 00-07])
-    pci 0000:0a:00.0: [1000:0646] type 00 class 0x0c0400 (FC adapter)
+ stack backtrace:
+ CPU: 0 PID: 2247 Comm: insmod Tainted: G            E  3.17.0-rc4+ #1
+ Hardware name: HP ProLiant MicroServer Gen8, BIOS J06 08/24/2013
+  0000000000000000 000000008f3063c4 ffff88006f87bb30 ffffffff8171b358
+  ffff88006bcf3750 ffff88006f87bb68 ffffffff810e09e1 ffff88006e1b1400
+  ffffea0001b86c00 ffffffff8156d327 ffff880073003500 0000000000000246
+ Call Trace:
+  [<ffffffff8171b358>] dump_stack+0x4d/0x66
+  [<ffffffff810e09e1>] debug_check_no_locks_freed+0x171/0x180
+  [<ffffffff8156d327>] ? __cpufreq_add_dev.isra.21+0x427/0xb80
+  [<ffffffff8121412b>] kfree+0xab/0x2b0
+  [<ffffffff8156d327>] __cpufreq_add_dev.isra.21+0x427/0xb80
+  [<ffffffff81724cf7>] ? _raw_spin_unlock+0x27/0x40
+  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
+  [<ffffffff8156da8e>] cpufreq_add_dev+0xe/0x10
+  [<ffffffff814855d1>] subsys_interface_register+0xc1/0x120
+  [<ffffffff8156bcf2>] cpufreq_register_driver+0x112/0x340
+  [<ffffffff8121415a>] ? kfree+0xda/0x2b0
+  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
+  [<ffffffffa003562e>] pcc_cpufreq_init+0x4af/0xe81 [pcc_cpufreq]
+  [<ffffffffa003517f>] ? pcc_cpufreq_do_osc+0x17f/0x17f [pcc_cpufreq]
+  [<ffffffff81002144>] do_one_initcall+0xd4/0x210
+  [<ffffffff811f7472>] ? __vunmap+0xd2/0x120
+  [<ffffffff81127155>] load_module+0x1315/0x1b70
+  [<ffffffff811222a0>] ? store_uevent+0x70/0x70
+  [<ffffffff811229d9>] ? copy_module_from_fd.isra.44+0x129/0x180
+  [<ffffffff81127b86>] SyS_finit_module+0xa6/0xd0
+  [<ffffffff81725b69>] system_call_fastpath+0x16/0x1b
+ cpufreq: __cpufreq_add_dev: ->get() failed
+insmod: ERROR: could not insert module pcc-cpufreq.ko: No such device
 
-Note that the root bridge [bus 00-07] aperture is wrong; this is a BIOS
-defect in the PCI0 _CRS method.  But prior to 1820ffdccb9b, we didn't
-enforce that aperture, and the FC adapter worked fine at 0a:00.0.
+The warning occurs in the __cpufreq_add_dev() code which does
 
-After 1820ffdccb9b, we notice that 00:0e.0's aperture is not contained in
-the root bridge's aperture, so we reconfigure it so it *is* contained:
+        down_write(&policy->rwsem);
+	...
+        if (cpufreq_driver->get && !cpufreq_driver->setpolicy) {
+                policy->cur = cpufreq_driver->get(policy->cpu);
+                if (!policy->cur) {
+                        pr_err("%s: ->get() failed\n", __func__);
+                        goto err_get_freq;
+                }
 
-    pci 0000:00:0e.0: bridge configuration invalid ([bus 0a-0a]), reconfiguring
-    pci 0000:00:0e.0: PCI bridge to [bus 06-07]
+If cpufreq_driver->get(policy->cpu) returns an error we execute the
+code at err_get_freq, which does not up the policy->rwsem.  This causes
+the lockdep warning.
 
-This effectively moves the FC device from 0a:00.0 to 07:00.0, which should
-be legal.  But when we enumerate bus 06, the FC device doesn't respond, so
-we don't find anything.  This is probably a defect in the FC device.
+Trivial patch to up the policy->rwsem in the error path.
 
-Possible fixes (due to Yinghai):
+After the patch has been applied, and an error occurs in the
+cpufreq_driver->get(policy->cpu) call we will now see
 
-    1) Add a quirk to fix the _CRS information based on what amd_bus.c read
-       from the hardware
+cpufreq: __cpufreq_add_dev: ->get() failed
+cpufreq: __cpufreq_add_dev: ->get() failed
+modprobe: ERROR: could not insert 'pcc_cpufreq': No such device
 
-    2) Reset the FC device after we change its bus number
-
-    3) Revert 1820ffdccb9b
-
-Fix 1 would be relatively easy, but it does sweep the LSI FC issue under
-the rug.  We might want to reconfigure bus numbers in the future for some
-other reason, e.g., hotplug, and then we could trip over this again.
-
-For that reason, I like fix 2, but we don't know whether it actually works,
-and we don't have a patch for it yet.
-
-This revert is fix 3, which also sweeps the LSI FC issue under the rug.
-
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=84281
-Reported-by: Dirk Gouders <dirk@gouders.net>
-Tested-by: Dirk Gouders <dirk@gouders.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yinghai Lu <yinghai@kernel.org>
+Fixes: 4e97b631f24c (cpufreq: Initialize governor for a new policy under policy->rwsem)
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ drivers/cpufreq/cpufreq.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -775,7 +775,7 @@ int pci_scan_bridge(struct pci_bus *bus,
- 	/* Check if setup is sensible at all */
- 	if (!pass &&
- 	    (primary != bus->number || secondary <= bus->number ||
--	     secondary > subordinate || subordinate > bus->busn_res.end)) {
-+	     secondary > subordinate)) {
- 		dev_info(&dev->dev, "bridge configuration invalid ([bus %02x-%02x]), reconfiguring\n",
- 			 secondary, subordinate);
- 		broken = 1;
-@@ -849,8 +849,7 @@ int pci_scan_bridge(struct pci_bus *bus,
- 			child = pci_add_new_bus(bus, dev, max+1);
- 			if (!child)
- 				goto out;
--			pci_bus_insert_busn_res(child, max+1,
--						bus->busn_res.end);
-+			pci_bus_insert_busn_res(child, max+1, 0xff);
- 		}
- 		max++;
- 		buses = (buses & 0xff000000)
-@@ -909,11 +908,6 @@ int pci_scan_bridge(struct pci_bus *bus,
- 		/*
- 		 * Set the subordinate bus number to its real value.
- 		 */
--		if (max > bus->busn_res.end) {
--			dev_warn(&dev->dev, "max busn %02x is outside %pR\n",
--				 max, &bus->busn_res);
--			max = bus->busn_res.end;
--		}
- 		pci_bus_update_busn_res_end(child, max);
- 		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
- 	}
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1279,6 +1279,8 @@ err_get_freq:
+ 		per_cpu(cpufreq_cpu_data, j) = NULL;
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
++	up_write(&policy->rwsem);
++
+ 	if (cpufreq_driver->exit)
+ 		cpufreq_driver->exit(policy);
+ err_set_policy_cpu:
 
 
