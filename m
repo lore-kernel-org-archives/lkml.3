@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716AbaJCMWx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:22:53 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:63168 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421AbaJCMWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:22:49 -0400
+	id S1752781AbaJCMXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:23:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752262AbaJCMXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:23:02 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com>
+References: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com> <20140908153704.28301.41578.stgit@warthog.procyon.org.uk> <20140908153830.28301.37880.stgit@warthog.procyon.org.uk> <542D741D.5070109@samsung.com> <542D77A4.5030606@samsung.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        keyrings <keyrings@linux-nfs.org>, Josh Boyer <jwboyer@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        pjones@redhat.com, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for asymmetric keys
 MIME-Version: 1.0
-In-Reply-To: <CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
-References: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
-	<CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
-Date: Fri, 3 Oct 2014 14:22:47 +0200
-X-Google-Sender-Auth: SmvfX9PtG9RZLEvLD362RJfEsIM
-Message-ID: <CAMuHMdWwEoK__-qTdUmzx6vJJSQ1+XdvL3nZukUX_RjM1tDVGA@mail.gmail.com>
-Subject: Re: [PATCH] serial/core: Initialize the console pm state
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Sudhir Sreedharan <ssreedharan@mvista.com>, linux-serial@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <28686.1412338969.1@warthog.procyon.org.uk>
+Date: Fri, 03 Oct 2014 13:22:49 +0100
+Message-ID: <28687.1412338969@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 7:27 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> On Sun, Sep 21, 2014 at 11:30 PM, Sudhir Sreedharan
-> <ssreedharan@mvista.com> wrote:
->> For console devices having UART_CAP_SLEEP capability, the uart_pm_state has
->> to be initialized to UART_PM_STATE_ON. Otherwise the LCR regiser values
->> are reinitialized when uart_change_pm is called from uart_configure_port.
->>
->> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
->
-> Multiple boot failures on ARM[1] were bisected down to this patch.
->
-> How was this patch tested, and on which platforms?
->
-> Also, the changelog states that this should be done only for
-> UART_CAP_SLEEP, but the patch does it for every UART.
->
-> Greg, I suggest this patch be dropped from tty-next until it has been
-> better described and tested.
->
-> Kevin
->
-> [1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-October/005550.html
+Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
 
-Perhaps it should call "uart_change_pm(state, UART_PM_STATE_ON)"
-instead, so the driver's .pm() method is called?
+> Does it still support searching for the key by partially matching
+> Subject Key Identifier?
 
-UART_CAP_SLEEP seems to be an 8250-only flag.
+No, not at this time.  Adding partial matching support wouldn't be hard, and
+given that the subjKeyId is the first part of the second key ID, that would
+then work.
 
-BTW, this was the first commit I reverted when I had an issue with a serial
-console yesterday, but it didn't seem to have any influence (for me).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+David
