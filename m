@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583AbaJCXTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:19:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46796 "EHLO
+	id S933002AbaJCXT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:19:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757831AbaJCWNr (ORCPT
+	with ESMTP id S1757822AbaJCWNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:47 -0400
+	Fri, 3 Oct 2014 18:13:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eliad Peller <eliadx.peller@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 154/238] iwlwifi: increase DEFAULT_MAX_TX_POWER
-Date: Fri,  3 Oct 2014 14:31:09 -0700
-Message-Id: <20141003212918.606707294@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 139/238] iio: inv_mpu6050: Fix indio_dev->trig assignment
+Date: Fri,  3 Oct 2014 14:30:54 -0700
+Message-Id: <20141003212918.119666905@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,52 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 22d059a5c7c5de61e53c88e30b65e55fbfd91e91 upstream.
+commit b07e3b3850b2e1f09c19f54d3ed7210d9f529e2c upstream.
 
-The chip is able to transmit up to 22dBm, so set
-the constant appropriately.
+This can result in wrong reference count for trigger device, call
+iio_trigger_get to increment reference.
+Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
+with Jonathan.
 
-Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-config.h    |    2 ++
- drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    4 +---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/iio/imu/inv_mpu6050/inv_mpu_trigger.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-config.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-config.h
-@@ -119,6 +119,8 @@ enum iwl_led_mode {
- #define IWL_LONG_WD_TIMEOUT	10000
- #define IWL_MAX_WD_TIMEOUT	120000
+--- a/drivers/iio/imu/inv_mpu6050/inv_mpu_trigger.c
++++ b/drivers/iio/imu/inv_mpu6050/inv_mpu_trigger.c
+@@ -135,7 +135,7 @@ int inv_mpu6050_probe_trigger(struct iio
+ 	ret = iio_trigger_register(st->trig);
+ 	if (ret)
+ 		goto error_free_irq;
+-	indio_dev->trig = st->trig;
++	indio_dev->trig = iio_trigger_get(st->trig);
  
-+#define IWL_DEFAULT_MAX_TX_POWER 22
-+
- /* Antenna presence definitions */
- #define	ANT_NONE	0x0
- #define	ANT_A		BIT(0)
---- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
-@@ -118,8 +118,6 @@ static const u8 iwl_nvm_channels[] = {
- #define LAST_2GHZ_HT_PLUS	9
- #define LAST_5GHZ_HT		161
+ 	return 0;
  
--#define DEFAULT_MAX_TX_POWER 16
--
- /* rate data (static) */
- static struct ieee80211_rate iwl_cfg80211_rates[] = {
- 	{ .bitrate = 1 * 10, .hw_value = 0, .hw_value_short = 0, },
-@@ -242,7 +240,7 @@ static int iwl_init_channel_map(struct d
- 		 * Default value - highest tx power value.  max_power
- 		 * is not used in mvm, and is used for backwards compatibility
- 		 */
--		channel->max_power = DEFAULT_MAX_TX_POWER;
-+		channel->max_power = IWL_DEFAULT_MAX_TX_POWER;
- 		is_5ghz = channel->band == IEEE80211_BAND_5GHZ;
- 		IWL_DEBUG_EEPROM(dev,
- 				 "Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x %ddBm): Ad-Hoc %ssupported\n",
 
 
