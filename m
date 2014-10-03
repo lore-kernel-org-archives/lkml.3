@@ -1,118 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaJCUTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:19:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43301 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaJCUTm (ORCPT
+	id S1754408AbaJCUUu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:20:50 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:62721 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750750AbaJCUUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:19:42 -0400
-Subject: Patch "arm: armv7: perf: fix armv7 ref-cycles error" has been added to the 3.16-stable tree
-To: zhangzhiqiang.zhang@huawei.com, cov@codeaurora.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com, mark.rutland@arm.com, stable@vger.kernel.org,
-        wangnan0@huawei.com, will.deacon@arm.com
-Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
-From: <gregkh@linuxfoundation.org>
-Date: Fri, 03 Oct 2014 13:19:40 -0700
-In-Reply-To: <54251956.6010407@huawei.com>
-Message-ID: <14123675803376@kroah.com>
+	Fri, 3 Oct 2014 16:20:46 -0400
+Date: Fri, 3 Oct 2014 16:20:43 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [GIT PULL] ring-buffer: Fix infinite spin in reading buffer
+Message-ID: <20141003162043.6817a486@gandalf.local.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ANSI_X3.4-1968
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is a note to let you know that I've just added the patch titled
+Linus,
 
-    arm: armv7: perf: fix armv7 ref-cycles error
+While testing some new changes for 3.18, I kept hitting a bug every so
+often in the ring buffer. At first I thought it had to do with some
+of the changes I was working on, but then testing something else I
+realized that the bug was in 3.17 itself. I ran several bisects as the
+bug was not very reproducible, and finally came up with the commit
+that I could reproduce easily within a few minutes, and without the change
+I could run the tests over an hour without issue. The change fit the
+bug and I figured out a fix. That bad commit was:
 
-to the 3.16-stable tree which can be found at:
-    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+Commit 651e22f2701b "ring-buffer: Always reset iterator to reader page"
 
-The filename of the patch is:
-     arm-armv7-perf-fix-armv7-ref-cycles-error.patch
-and it can be found in the queue-3.16 subdirectory.
-
-If you, or anyone else, feels it should not be added to the stable tree,
-please let <stable@vger.kernel.org> know about it.
-
-
->From zhangzhiqiang.zhang@huawei.com  Fri Oct  3 13:04:46 2014
-From: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
-Date: Fri, 26 Sep 2014 15:44:22 +0800
-Subject: arm: armv7: perf: fix armv7 ref-cycles error
-To: <gregkh@linuxfoundation.org>, <lizefan@huawei.com>, <wangnan0@huawei.com>, <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Message-ID: <54251956.6010407@huawei.com>
+This commit fixed a bug, but in the process created another one. It used
+the wrong value as the cached value that is used to see if things changed
+while an iterator was in use. This made it look like a change always
+happened, and could cause the iterator to go into an infinite loop.
 
 
-From: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+Greg (and stable et al),
 
-ref-cycles event is specially to Intel core, but can still used in arm
-architecture with the wrong return value with 3.10 stable. this patch fix the
-bug and make it return NOT SUPPORTED distinctly.
+This fixes a commit that was marked for stable as far back as 2.6.28.
+This patch needs to be added to all stable trees that included the
+first fix. Obviously after Linus applies it.
 
-In upstream this bug has been fixed by other way, which changes more than one
-file and more than 1000 lines. the primary commit is
-6b7658ec8a100b608e59e3cde353434db51f5be0.  besides we can not simply
-cherry-pick.
+Please pull the latest trace-fixes-v3.17-rc7 tree, which can be found at:
 
-Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
-Cc: Mark Rutland <mark.rutland@arm.com
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Christopher Covington <cov@codeaurora.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/arm/kernel/perf_event_v7.c |    5 +++++
- 1 file changed, 5 insertions(+)
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.17-rc7
 
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -157,6 +157,7 @@ static const unsigned armv7_a8_perf_map[
- 	[PERF_COUNT_HW_BUS_CYCLES]		= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= ARMV7_A8_PERFCTR_STALL_ISIDE,
- 	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_REF_CPU_CYCLES]	= HW_OP_UNSUPPORTED,
- };
+Tag SHA1: 0c08f2a68c694e7d95dcf2109dc08772056b4746
+Head SHA1: 24607f114fd14f2f37e3e0cb3d47bce96e81e848
+
+
+Steven Rostedt (Red Hat) (1):
+      ring-buffer: Fix infinite spin in reading buffer
+
+----
+ kernel/trace/ring_buffer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---------------------------
+commit 24607f114fd14f2f37e3e0cb3d47bce96e81e848
+Author: Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+Date:   Thu Oct 2 16:51:18 2014 -0400
+
+    ring-buffer: Fix infinite spin in reading buffer
+    
+    Commit 651e22f2701b "ring-buffer: Always reset iterator to reader page"
+    fixed one bug but in the process caused another one. The reset is to
+    update the header page, but that fix also changed the way the cached
+    reads were updated. The cache reads are used to test if an iterator
+    needs to be updated or not.
+    
+    A ring buffer iterator, when created, disables writes to the ring buffer
+    but does not stop other readers or consuming reads from happening.
+    Although all readers are synchronized via a lock, they are only
+    synchronized when in the ring buffer functions. Those functions may
+    be called by any number of readers. The iterator continues down when
+    its not interrupted by a consuming reader. If a consuming read
+    occurs, the iterator starts from the beginning of the buffer.
+    
+    The way the iterator sees that a consuming read has happened since
+    its last read is by checking the reader "cache". The cache holds the
+    last counts of the read and the reader page itself.
+    
+    Commit 651e22f2701b changed what was saved by the cache_read when
+    the rb_iter_reset() occurred, making the iterator never match the cache.
+    Then if the iterator calls rb_iter_reset(), it will go into an
+    infinite loop by checking if the cache doesn't match, doing the reset
+    and retrying, just to see that the cache still doesn't match! Which
+    should never happen as the reset is suppose to set the cache to the
+    current value and there's locks that keep a consuming reader from
+    having access to the data.
+    
+    Fixes: 651e22f2701b "ring-buffer: Always reset iterator to reader page"
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index b38fb2b9e237..2d75c94ae87d 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3359,7 +3359,7 @@ static void rb_iter_reset(struct ring_buffer_iter *iter)
+ 	iter->head = cpu_buffer->reader_page->read;
  
- static const unsigned armv7_a8_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-@@ -281,6 +282,7 @@ static const unsigned armv7_a9_perf_map[
- 	[PERF_COUNT_HW_BUS_CYCLES]		= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= ARMV7_A9_PERFCTR_STALL_ICACHE,
- 	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= ARMV7_A9_PERFCTR_STALL_DISPATCH,
-+	[PERF_COUNT_HW_REF_CPU_CYCLES]	= HW_OP_UNSUPPORTED,
- };
+ 	iter->cache_reader_page = iter->head_page;
+-	iter->cache_read = iter->head;
++	iter->cache_read = cpu_buffer->read;
  
- static const unsigned armv7_a9_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-@@ -405,6 +407,7 @@ static const unsigned armv7_a5_perf_map[
- 	[PERF_COUNT_HW_BUS_CYCLES]		= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_REF_CPU_CYCLES] = HW_OP_UNSUPPORTED,
- };
- 
- static const unsigned armv7_a5_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-@@ -527,6 +530,7 @@ static const unsigned armv7_a15_perf_map
- 	[PERF_COUNT_HW_BUS_CYCLES]		= ARMV7_PERFCTR_BUS_CYCLES,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_REF_CPU_CYCLES] = HW_OP_UNSUPPORTED,
- };
- 
- static const unsigned armv7_a15_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-@@ -651,6 +655,7 @@ static const unsigned armv7_a7_perf_map[
- 	[PERF_COUNT_HW_BUS_CYCLES]		= ARMV7_PERFCTR_BUS_CYCLES,
- 	[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= HW_OP_UNSUPPORTED,
- 	[PERF_COUNT_HW_STALLED_CYCLES_BACKEND]	= HW_OP_UNSUPPORTED,
-+	[PERF_COUNT_HW_REF_CPU_CYCLES] = HW_OP_UNSUPPORTED,
- };
- 
- static const unsigned armv7_a7_perf_cache_map[PERF_COUNT_HW_CACHE_MAX]
-
-
-Patches currently in stable-queue which might be from zhangzhiqiang.zhang@huawei.com are
-
-queue-3.16/arm-armv7-perf-fix-armv7-ref-cycles-error.patch
+ 	if (iter->head)
+ 		iter->read_stamp = cpu_buffer->read_stamp;
