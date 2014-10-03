@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837AbaJCVml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:42:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44740 "EHLO
+	id S1760005AbaJDAla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:41:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45275 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbaJCVc6 (ORCPT
+	with ESMTP id S1755823AbaJCVml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:58 -0400
+	Fri, 3 Oct 2014 17:42:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Robbins <drobbins@funtoo.org>,
-        Takashi Sakamoto <o-takashi@sakamocchi.jp>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 058/357] ALSA: firewire-lib/dice: add arrangements of PCM pointer and interrupts for Dice quirk
-Date: Fri,  3 Oct 2014 14:27:24 -0700
-Message-Id: <20141003212935.195382929@linuxfoundation.org>
+        Thierry Reding <treding@nvidia.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.16 120/357] usb: phy: tegra: Avoid use of sizeof(void)
+Date: Fri,  3 Oct 2014 14:28:26 -0700
+Message-Id: <20141003212937.084181089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,95 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+From: Thierry Reding <treding@nvidia.com>
 
-commit 65845f29bec6bc17f80eff25c3bc39bcf3be9bf9 upstream.
+commit 9ce9ec95fb9b82e09b55a52f1bb8a362bf8f74d8 upstream.
 
-In IEC 61883-6, one data block transfers one event. In ALSA, the event equals one PCM frame,
-hence one data block transfers one PCM frame. But Dice has a quirk at higher sampling rate
-(176.4/192.0 kHz) that one data block transfers two PCM frames.
+The PHY configuration is stored in an opaque "config" field, but when
+allocating the structure, its proper size needs to be known. In the case
+of UTMI, the proper structure is tegra_utmip_config of which a local
+variable already exists, so we can use that to obtain the size from.
 
-Commit 10550bea44a8 ("ALSA: dice/firewire-lib: Keep dualwire mode but obsolete
-CIP_HI_DUALWIRE") moved some codes related to this quirk into Dice driver. But the commit
-forgot to add arrangements for PCM period interrupts and DMA pointer updates. As a result, Dice
-driver cannot work correctly at higher sampling rate.
+Fixes the following warning from the sparse checker:
 
-This commit adds 'double_pcm_frames' parameter to amdtp structure for this quirk. When this
-parameter is set, PCM period interrupts and DMA pointer updates occur at double speed than in
-IEC 61883-6.
+	drivers/usb/phy/phy-tegra-usb.c:882:17: warning: expression using sizeof(void)
 
-Reported-by: Daniel Robbins <drobbins@funtoo.org>
-Fixes: 10550bea44a8 ("ALSA: dice/firewire-lib: Keep dualwire mode but obsolete CIP_HI_DUALWIRE")
-Signed-off-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 81d5dfe6d8b3 (usb: phy: tegra: Read UTMIP parameters from device tree)
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/firewire/amdtp.c |   11 ++++++++++-
- sound/firewire/amdtp.h |    1 +
- sound/firewire/dice.c  |   15 +++++++++++----
- 3 files changed, 22 insertions(+), 5 deletions(-)
+ drivers/usb/phy/phy-tegra-usb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/firewire/amdtp.c
-+++ b/sound/firewire/amdtp.c
-@@ -507,7 +507,16 @@ static void amdtp_pull_midi(struct amdtp
- static void update_pcm_pointers(struct amdtp_stream *s,
- 				struct snd_pcm_substream *pcm,
- 				unsigned int frames)
--{	unsigned int ptr;
-+{
-+	unsigned int ptr;
-+
-+	/*
-+	 * In IEC 61883-6, one data block represents one event. In ALSA, one
-+	 * event equals to one PCM frame. But Dice has a quirk to transfer
-+	 * two PCM frames in one data block.
-+	 */
-+	if (s->double_pcm_frames)
-+		frames *= 2;
- 
- 	ptr = s->pcm_buffer_pointer + frames;
- 	if (ptr >= pcm->runtime->buffer_size)
---- a/sound/firewire/amdtp.h
-+++ b/sound/firewire/amdtp.h
-@@ -125,6 +125,7 @@ struct amdtp_stream {
- 	unsigned int pcm_buffer_pointer;
- 	unsigned int pcm_period_pointer;
- 	bool pointer_flush;
-+	bool double_pcm_frames;
- 
- 	struct snd_rawmidi_substream *midi[AMDTP_MAX_CHANNELS_FOR_MIDI * 8];
- 
---- a/sound/firewire/dice.c
-+++ b/sound/firewire/dice.c
-@@ -567,10 +567,14 @@ static int dice_hw_params(struct snd_pcm
- 		return err;
- 
- 	/*
--	 * At rates above 96 kHz, pretend that the stream runs at half the
--	 * actual sample rate with twice the number of channels; two samples
--	 * of a channel are stored consecutively in the packet. Requires
--	 * blocking mode and PCM buffer size should be aligned to SYT_INTERVAL.
-+	 * At 176.4/192.0 kHz, Dice has a quirk to transfer two PCM frames in
-+	 * one data block of AMDTP packet. Thus sampling transfer frequency is
-+	 * a half of PCM sampling frequency, i.e. PCM frames at 192.0 kHz are
-+	 * transferred on AMDTP packets at 96 kHz. Two successive samples of a
-+	 * channel are stored consecutively in the packet. This quirk is called
-+	 * as 'Dual Wire'.
-+	 * For this quirk, blocking mode is required and PCM buffer size should
-+	 * be aligned to SYT_INTERVAL.
- 	 */
- 	channels = params_channels(hw_params);
- 	if (rate_index > 4) {
-@@ -581,6 +585,9 @@ static int dice_hw_params(struct snd_pcm
- 
- 		rate /= 2;
- 		channels *= 2;
-+		dice->stream.double_pcm_frames = true;
-+	} else {
-+		dice->stream.double_pcm_frames = false;
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -881,8 +881,8 @@ static int utmi_phy_probe(struct tegra_u
+ 		return -ENOMEM;
  	}
  
- 	mode = rate_index_to_mode(rate_index);
+-	tegra_phy->config = devm_kzalloc(&pdev->dev,
+-		sizeof(*tegra_phy->config), GFP_KERNEL);
++	tegra_phy->config = devm_kzalloc(&pdev->dev, sizeof(*config),
++					 GFP_KERNEL);
+ 	if (!tegra_phy->config) {
+ 		dev_err(&pdev->dev,
+ 			"unable to allocate memory for USB UTMIP config\n");
 
 
