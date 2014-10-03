@@ -1,44 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227AbaJCF1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:27:50 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37344 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753089AbaJCF1l (ORCPT
+	id S1753275AbaJCF2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:28:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60815 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaJCF2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 01:27:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ak4uAMcyLlR5LDjwPGdsb2JhbABggw6BK4IyhQevKQEBAQaVaYVqBAICgQkXAQYBAQEBODmEBAEBBDocIxAIAxgJJQ8FJQMHGhOIPb5KGBiFfYoRB4RLAQSdPJlxKy+CSgEBAQ
-Date: Fri, 3 Oct 2014 15:27:37 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Thanos Makatos <thanos.makatos@citrix.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        jlayton@poochiereds.net, bfields@fieldses.org, jack@suse.cz
-Subject: Re: [PATCH RFC] introduce ioctl to completely invalidate page cache
-Message-ID: <20141003052737.GL24490@dastard>
-References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
- <542DAEAC.8010203@kernel.dk>
+	Fri, 3 Oct 2014 01:28:06 -0400
+Date: Thu, 2 Oct 2014 22:27:13 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-9c2b9d30e28559a78c9e431cdd7f2c6bf5a9ee67@git.kernel.org>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        acme@kernel.org, atomlin@redhat.com, riel@redhat.com,
+        akpm@linux-foundation.org, sylvain.hitier@gmail.com,
+        tglx@linutronix.de, oleg@redhat.com, vdavydov@parallels.com,
+        rientjes@google.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        paulus@samba.org, daeseok.youn@gmail.com, stable@vger.kernel.org,
+        keescook@chromium.org
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, atomlin@redhat.com, acme@kernel.org,
+        riel@redhat.com, akpm@linux-foundation.org, sylvain.hitier@gmail.com,
+        oleg@redhat.com, tglx@linutronix.de, rientjes@google.com,
+        vdavydov@parallels.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        paulus@samba.org, daeseok.youn@gmail.com, stable@vger.kernel.org,
+        keescook@chromium.org
+In-Reply-To: <20140929101201.GE5430@worktop>
+References: <20140929101201.GE5430@worktop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Fix perf bug in fork()
+Git-Commit-ID: 9c2b9d30e28559a78c9e431cdd7f2c6bf5a9ee67
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <542DAEAC.8010203@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 01:59:40PM -0600, Jens Axboe wrote:
-> On 10/02/2014 10:09 AM, Thanos Makatos wrote:
-> > This patch introduces a new ioctl called BLKFLUSHBUFS2, which is pretty
+Commit-ID:  9c2b9d30e28559a78c9e431cdd7f2c6bf5a9ee67
+Gitweb:     http://git.kernel.org/tip/9c2b9d30e28559a78c9e431cdd7f2c6bf5a9ee67
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Mon, 29 Sep 2014 12:12:01 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 3 Oct 2014 05:41:08 +0200
 
-What a horrible name. Whatever happened to naming ioctls interfaces
-after their function? i.e. BLKFLUSHINVAL?
+perf: Fix perf bug in fork()
 
-Cheers,
+Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
+calling perf_event_free_task() when failing sched_fork() we will not yet
+have done the memset() on ->perf_event_ctxp[] and will therefore try and
+'free' the inherited contexts, which are still in use by the parent
+process.
 
-Dave?
+This is bad and might explain some outstanding fuzzer failures ...
 
--- 
-Dave Chinner
-david@fromorbit.com
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Aaron Tomlin <atomlin@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+Cc: <stable@vger.kernel.org>
+Link: http://lkml.kernel.org/r/20140929101201.GE5430@worktop
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/events/core.c | 4 +++-
+ kernel/fork.c        | 5 +++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index afdd9e1..658f232 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7956,8 +7956,10 @@ int perf_event_init_task(struct task_struct *child)
+ 
+ 	for_each_task_context_nr(ctxn) {
+ 		ret = perf_event_init_context(child, ctxn);
+-		if (ret)
++		if (ret) {
++			perf_event_free_task(child);
+ 			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 0cf9cdb..a91e47d 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1360,7 +1360,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto bad_fork_cleanup_policy;
+ 	retval = audit_alloc(p);
+ 	if (retval)
+-		goto bad_fork_cleanup_policy;
++		goto bad_fork_cleanup_perf;
+ 	/* copy all the process information */
+ 	shm_init_task(p);
+ 	retval = copy_semundo(clone_flags, p);
+@@ -1566,8 +1566,9 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+ 	perf_event_free_task(p);
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+ bad_fork_cleanup_threadgroup_lock:
