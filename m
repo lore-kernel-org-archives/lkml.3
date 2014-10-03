@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaJCKz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 06:55:57 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:63234 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaJCKzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 06:55:53 -0400
+	id S1751789AbaJCLDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 07:03:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaJCLDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 07:03:50 -0400
+Message-ID: <542E828A.6010305@redhat.com>
+Date: Fri, 03 Oct 2014 13:03:38 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-In-Reply-To: <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>
-	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>
-	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com>
-Date: Fri, 3 Oct 2014 13:55:51 +0300
-Message-ID: <CACVxJT98EJvw1E+o6mpu8ugMz3Ztqz7pJOwZeZW9A41P0AhB_g@mail.gmail.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the directory entries
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>, rui.xiang@huawei.com,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>, kirill.shutemov@linux.intel.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Thierry Herbelot <thierry.herbelot@6wind.com>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>,
+        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately
+ after first invalid packet
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410031205.42927@pali> <542E780B.7030103@redhat.com> <201410031223.10608@pali>
+In-Reply-To: <201410031223.10608@pali>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 6:25 PM, Nicolas Dichtel
-<nicolas.dichtel@6wind.com> wrote:
-> --- a/fs/proc/generic.c
-> +++ b/fs/proc/generic.c
-> @@ -81,10 +81,13 @@ static int __xlate_proc_name(const char *name, struct proc_dir_entry **ret,
+Hi,
 
-> +       if (!S_ISDIR(de->mode))
-> +               return -EINVAL;
+On 10/03/2014 12:23 PM, Pali Rohár wrote:
+> On Friday 03 October 2014 12:18:51 Hans de Goede wrote:
+>>> On my E6440 machine it somehow working. When driver
+>>> doing ps/2 reset keyboard, touchpad and trackstick not
+>>> responding.
+>>
+>> Right, but I would expect that to be for only a short period
+>> of time, or does the whole reset take a significant amount of
+>> time ?
+>>
+> 
+> It is one or two seconds which is OK for me.
 
-There are way too many S_ISDIR checks.
-In lookup and readdir, it is guaranteed that PDE is directory.
+Hmm, 1-2 seconds is quite long, not good. Lets see if the solution
+we've been discussing by private mail yields better results.
 
-I'd say all of them aren't needed because non-directories have
-->subdir = NULL and
-directories have ->subdir != NULL which transforms into hashtable or
-rbtree or whatever,
-so you only need to guarantee only directories appear where they are
-expected and
-fearlessly use your new data structure traversing directories.
+Regards,
 
-    Alexey
+Hans
