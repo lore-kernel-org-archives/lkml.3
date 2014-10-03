@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725AbaJCWeI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:34:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47777 "EHLO
+	id S1758685AbaJCWlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:41:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426AbaJCWeF (ORCPT
+	with ESMTP id S932644AbaJCWYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:05 -0400
+	Fri, 3 Oct 2014 18:24:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Altaparmakov <aia21@cantab.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 125/143] Fix nasty 32-bit overflow bug in buffer i/o code.
-Date: Fri,  3 Oct 2014 14:35:20 -0700
-Message-Id: <20141003213318.241094537@linuxfoundation.org>
+        Nico Baggus <nico-linux@noci.xs4all.nl>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 106/143] rtlwifi: rtl8192cu: Add new ID
+Date: Fri,  3 Oct 2014 14:35:01 -0700
+Message-Id: <20141003213317.680581858@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,73 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Altaparmakov <aia21@cam.ac.uk>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit f2d5a94436cc7cc0221b9a81bba2276a25187dd3 upstream.
+commit c66517165610b911e4c6d268f28d8c640832dbd1 upstream.
 
-On 32-bit architectures, the legacy buffer_head functions are not always
-handling the sector number with the proper 64-bit types, and will thus
-fail on 4TB+ disks.
+The Sitecom WLA-2102 adapter uses this driver.
 
-Any code that uses __getblk() (and thus bread(), breadahead(),
-sb_bread(), sb_breadahead(), sb_getblk()), and calls it using a 64-bit
-block on a 32-bit arch (where "long" is 32-bit) causes an inifinite loop
-in __getblk_slow() with an infinite stream of errors logged to dmesg
-like this:
-
-  __find_get_block_slow() failed. block=6740375944, b_blocknr=2445408648
-  b_state=0x00000020, b_size=512
-  device sda1 blocksize: 512
-
-Note how in hex block is 0x191C1F988 and b_blocknr is 0x91C1F988 i.e. the
-top 32-bits are missing (in this case the 0x1 at the top).
-
-This is because grow_dev_page() is broken and has a 32-bit overflow due
-to shifting the page index value (a pgoff_t - which is just 32 bits on
-32-bit architectures) left-shifted as the block number.  But the top
-bits to get lost as the pgoff_t is not type cast to sector_t / 64-bit
-before the shift.
-
-This patch fixes this issue by type casting "index" to sector_t before
-doing the left shift.
-
-Note this is not a theoretical bug but has been seen in the field on a
-4TiB hard drive with logical sector size 512 bytes.
-
-This patch has been verified to fix the infinite loop problem on 3.17-rc5
-kernel using a 4TB disk image mounted using "-o loop".  Without this patch
-doing a "find /nt" where /nt is an NTFS volume causes the inifinite loop
-100% reproducibly whilst with the patch it works fine as expected.
-
-Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Nico Baggus <nico-linux@noci.xs4all.nl>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Nico Baggus <nico-linux@noci.xs4all.nl>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/buffer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -985,7 +985,8 @@ grow_dev_page(struct block_device *bdev,
- 		bh = page_buffers(page);
- 		if (bh->b_size == size) {
- 			end_block = init_page_buffers(page, bdev,
--						index << sizebits, size);
-+						(sector_t)index << sizebits,
-+						size);
- 			goto done;
- 		}
- 		if (!try_to_free_buffers(page))
-@@ -1006,7 +1007,8 @@ grow_dev_page(struct block_device *bdev,
- 	 */
- 	spin_lock(&inode->i_mapping->private_lock);
- 	link_dev_buffers(page, bh);
--	end_block = init_page_buffers(page, bdev, index << sizebits, size);
-+	end_block = init_page_buffers(page, bdev, (sector_t)index << sizebits,
-+			size);
- 	spin_unlock(&inode->i_mapping->private_lock);
- done:
- 	ret = (block < end_block) ? 1 : -ENXIO;
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -316,6 +316,7 @@ static struct usb_device_id rtl8192c_usb
+ 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
+ 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
++	{RTL_USB_DEVICE(0x0df6, 0x0070, rtl92cu_hal_cfg)}, /*Sitecom - 150N */
+ 	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
+ 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
+ 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
 
 
