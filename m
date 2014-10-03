@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589AbaJCWLC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:11:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46701 "EHLO
+	id S1757620AbaJCWMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:12:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46628 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681AbaJCWJW (ORCPT
+	with ESMTP id S1757525AbaJCWGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:09:22 -0400
+	Fri, 3 Oct 2014 18:06:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        Julian Anastasov <ja@ssi.bg>, Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.16 340/357] ipvs: fix ipv6 hook registration for local replies
-Date: Fri,  3 Oct 2014 14:32:06 -0700
-Message-Id: <20141003212943.670084697@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.14 119/238] MIPS: mcount: Adjust stack pointer for static trace in MIPS32
+Date: Fri,  3 Oct 2014 14:30:34 -0700
+Message-Id: <20141003212917.485230712@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,44 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Julian Anastasov <ja@ssi.bg>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit eb90b0c734ad793d5f5bf230a9e9a4dcc48df8aa upstream.
+commit 8a574cfa2652545eb95595d38ac2a0bb501af0ae upstream.
 
-commit fc604767613b6d2036cdc35b660bc39451040a47
-("ipvs: changes for local real server") from 2.6.37
-introduced DNAT support to local real server but the
-IPv6 LOCAL_OUT handler ip_vs_local_reply6() is
-registered incorrectly as IPv4 hook causing any outgoing
-IPv4 traffic to be dropped depending on the IP header values.
+Every mcount() call in the MIPS 32-bit kernel is done as follows:
 
-Chris tracked down the problem to CONFIG_IP_VS_IPV6=y
-Bug report: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1349768
+[...]
+move at, ra
+jal _mcount
+addiu sp, sp, -8
+[...]
 
-Reported-by: Chris J Arges <chris.j.arges@canonical.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+but upon returning from the mcount() function, the stack pointer
+is not adjusted properly. This is explained in details in 58b69401c797
+(MIPS: Function tracer: Fix broken function tracing).
+
+Commit ad8c396936e3 ("MIPS: Unbreak function tracer for 64-bit kernel.)
+fixed the stack manipulation for 64-bit but it didn't fix it completely
+for MIPS32.
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7792/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/kernel/mcount.S |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_core.c
-+++ b/net/netfilter/ipvs/ip_vs_core.c
-@@ -1906,7 +1906,7 @@ static struct nf_hook_ops ip_vs_ops[] __
- 	{
- 		.hook		= ip_vs_local_reply6,
- 		.owner		= THIS_MODULE,
--		.pf		= NFPROTO_IPV4,
-+		.pf		= NFPROTO_IPV6,
- 		.hooknum	= NF_INET_LOCAL_OUT,
- 		.priority	= NF_IP6_PRI_NAT_DST + 1,
- 	},
+--- a/arch/mips/kernel/mcount.S
++++ b/arch/mips/kernel/mcount.S
+@@ -123,7 +123,11 @@ NESTED(_mcount, PT_SIZE, ra)
+ 	 nop
+ #endif
+ 	b	ftrace_stub
++#ifdef CONFIG_32BIT
++	 addiu sp, sp, 8
++#else
+ 	 nop
++#endif
+ 
+ static_trace:
+ 	MCOUNT_SAVE_REGS
+@@ -133,6 +137,9 @@ static_trace:
+ 	 move	a1, AT		/* arg2: parent's return address */
+ 
+ 	MCOUNT_RESTORE_REGS
++#ifdef CONFIG_32BIT
++	addiu sp, sp, 8
++#endif
+ 	.globl ftrace_stub
+ ftrace_stub:
+ 	RETURN_BACK
+@@ -177,6 +184,11 @@ NESTED(ftrace_graph_caller, PT_SIZE, ra)
+ 	jal	prepare_ftrace_return
+ 	 nop
+ 	MCOUNT_RESTORE_REGS
++#ifndef CONFIG_DYNAMIC_FTRACE
++#ifdef CONFIG_32BIT
++	addiu sp, sp, 8
++#endif
++#endif
+ 	RETURN_BACK
+ 	END(ftrace_graph_caller)
+ 
 
 
