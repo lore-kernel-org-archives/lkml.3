@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502AbaJDALW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:11:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45712 "EHLO
+	id S1761090AbaJDAMe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:12:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677AbaJCVxP (ORCPT
+	with ESMTP id S1756215AbaJCVxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:15 -0400
+	Fri, 3 Oct 2014 17:53:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
+        Sebastian Herbszt <herbszt@gmx.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.16 236/357] iscsi-target: Fix memory corruption in iscsit_logout_post_handler_diffcid
-Date: Fri,  3 Oct 2014 14:30:22 -0700
-Message-Id: <20141003212940.601963737@linuxfoundation.org>
+Subject: [PATCH 3.16 234/357] target: Fix inverted logic in SE_DEV_ALUA_SUPPORT_STATE_STORE
+Date: Fri,  3 Oct 2014 14:30:20 -0700
+Message-Id: <20141003212940.537319828@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,49 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Sebastian Herbszt <herbszt@gmx.de>
 
-commit b53b0d99d6fbf7d44330395349a895521cfdbc96 upstream.
+commit 1f0b030c45c781f9fe568e5e2a813d6c8567a051 upstream.
 
-This patch fixes a bug in iscsit_logout_post_handler_diffcid() where
-a pointer used as storage for list_for_each_entry() was incorrectly
-being used to determine if no matching entry had been found.
+Fix inverted logic in SE_DEV_ALUA_SUPPORT_STATE_STORE for setting
+the supported ALUA access states via configfs, originally introduced
+in commit b0a382c5.
 
-This patch changes iscsit_logout_post_handler_diffcid() to key off
-bool conn_found to determine if the function needs to exit early.
+A value of 1 should enable the support, not disable it.
 
-Reported-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Sebastian Herbszt <herbszt@gmx.de>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/target/target_core_configfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -4540,6 +4540,7 @@ static void iscsit_logout_post_handler_d
- {
- 	struct iscsi_conn *l_conn;
- 	struct iscsi_session *sess = conn->sess;
-+	bool conn_found = false;
- 
- 	if (!sess)
- 		return;
-@@ -4548,12 +4549,13 @@ static void iscsit_logout_post_handler_d
- 	list_for_each_entry(l_conn, &sess->sess_conn_list, conn_list) {
- 		if (l_conn->cid == cid) {
- 			iscsit_inc_conn_usage_count(l_conn);
-+			conn_found = true;
- 			break;
- 		}
- 	}
- 	spin_unlock_bh(&sess->conn_lock);
- 
--	if (!l_conn)
-+	if (!conn_found)
- 		return;
- 
- 	if (l_conn->sock)
+--- a/drivers/target/target_core_configfs.c
++++ b/drivers/target/target_core_configfs.c
+@@ -2363,7 +2363,7 @@ static ssize_t target_core_alua_tg_pt_gp
+ 		pr_err("Invalid value '%ld', must be '0' or '1'\n", tmp); \
+ 		return -EINVAL;						\
+ 	}								\
+-	if (!tmp)							\
++	if (tmp)							\
+ 		t->_var |= _bit;					\
+ 	else								\
+ 		t->_var &= ~_bit;					\
 
 
