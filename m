@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbaJCV6A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:58:00 -0400
+	id S1756968AbaJCV54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:57:56 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291AbaJCVzw (ORCPT
+	with ESMTP id S932307AbaJCVzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:55:52 -0400
+	Fri, 3 Oct 2014 17:55:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Vittitoe <scvitti@google.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.14 048/238] HID: magicmouse: sanity check report size in raw_event() callback
-Date: Fri,  3 Oct 2014 14:29:23 -0700
-Message-Id: <20141003212915.215902274@linuxfoundation.org>
+        Johannes Stezenbach <js@sig21.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.16 283/357] ath9k_htc: fix random decryption failure
+Date: Fri,  3 Oct 2014 14:31:09 -0700
+Message-Id: <20141003212941.990350809@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,51 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Johannes Stezenbach <js@sig21.net>
 
-commit c54def7bd64d7c0b6993336abcffb8444795bf38 upstream.
+commit d21ccfd0a60ea3dece3e1d142f52694abf87a0b1 upstream.
 
-The report passed to us from transport driver could potentially be
-arbitrarily large, therefore we better sanity-check it so that
-magicmouse_emit_touch() gets only valid values of raw_id.
+In v3.15 the driver stopped to accept network packets after successful
+authentification, which could be worked around by passing the
+nohwcrypt=1 module parameter.  This was not reproducible by
+everyone, and showed random behaviour in some tests.
+It was caused by an uninitialized variable introduced
+in 4ed1a8d4a257 ("ath9k_htc: use ath9k_cmn_rx_accept") and
+used in 341b29b9cd2f ("ath9k_htc: use ath9k_cmn_rx_skb_postprocess").
 
-Reported-by: Steven Vittitoe <scvitti@google.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=78581
+Fixes: 341b29b9cd2f ("ath9k_htc: use ath9k_cmn_rx_skb_postprocess")
+Signed-off-by: Johannes Stezenbach <js@sig21.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-magicmouse.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -290,6 +290,11 @@ static int magicmouse_raw_event(struct h
- 		if (size < 4 || ((size - 4) % 9) != 0)
- 			return 0;
- 		npoints = (size - 4) / 9;
-+		if (npoints > 15) {
-+			hid_warn(hdev, "invalid size value (%d) for TRACKPAD_REPORT_ID\n",
-+					size);
-+			return 0;
-+		}
- 		msc->ntouches = 0;
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
-@@ -307,6 +312,11 @@ static int magicmouse_raw_event(struct h
- 		if (size < 6 || ((size - 6) % 8) != 0)
- 			return 0;
- 		npoints = (size - 6) / 8;
-+		if (npoints > 15) {
-+			hid_warn(hdev, "invalid size value (%d) for MOUSE_REPORT_ID\n",
-+					size);
-+			return 0;
-+		}
- 		msc->ntouches = 0;
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -978,7 +978,7 @@ static bool ath9k_rx_prepare(struct ath9
+ 	struct ath_hw *ah = common->ah;
+ 	struct ath_htc_rx_status *rxstatus;
+ 	struct ath_rx_status rx_stats;
+-	bool decrypt_error;
++	bool decrypt_error = false;
+ 
+ 	if (skb->len < HTC_RX_FRAME_HEADER_SIZE) {
+ 		ath_err(common, "Corrupted RX frame, dropping (len: %d)\n",
 
 
