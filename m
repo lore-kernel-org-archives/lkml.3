@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932958AbaJCXTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:19:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46754 "EHLO
+	id S1758583AbaJCXTt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46796 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757841AbaJCWNt (ORCPT
+	with ESMTP id S1757831AbaJCWNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:49 -0400
+	Fri, 3 Oct 2014 18:13:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Murat Ilsever <murat.ilsever@gmail.com>,
-        Robert Coulson <rob.coulson@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3.14 167/238] hwmon: (ds1621) Update zbits after conversion rate change
-Date: Fri,  3 Oct 2014 14:31:22 -0700
-Message-Id: <20141003212919.015301286@linuxfoundation.org>
+        Eliad Peller <eliadx.peller@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 154/238] iwlwifi: increase DEFAULT_MAX_TX_POWER
+Date: Fri,  3 Oct 2014 14:31:09 -0700
+Message-Id: <20141003212918.606707294@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,32 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Coulson <rob.coulson@gmail.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 39c627a084475e8a690a4a9e7601410ca173ddd2 upstream.
+commit 22d059a5c7c5de61e53c88e30b65e55fbfd91e91 upstream.
 
-After the conversion rate is changed, the zbits are not updated,
-but should be, since they are used later in the set_temp function.
+The chip is able to transmit up to 22dBm, so set
+the constant appropriately.
 
-Fixes: a50d9a4d9ad3 ("hwmon: (ds1621) Fix temperature rounding operations")
-Reported-by: Murat Ilsever <murat.ilsever@gmail.com>
-Signed-off-by: Robert Coulson <rob.coulson@gmail.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Eliad Peller <eliadx.peller@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/ds1621.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/iwl-config.h    |    2 ++
+ drivers/net/wireless/iwlwifi/iwl-nvm-parse.c |    4 +---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/hwmon/ds1621.c
-+++ b/drivers/hwmon/ds1621.c
-@@ -309,6 +309,7 @@ static ssize_t set_convrate(struct devic
- 	data->conf |= (resol << DS1621_REG_CONFIG_RESOL_SHIFT);
- 	i2c_smbus_write_byte_data(client, DS1621_REG_CONF, data->conf);
- 	data->update_interval = ds1721_convrates[resol];
-+	data->zbits = 7 - resol;
- 	mutex_unlock(&data->update_lock);
+--- a/drivers/net/wireless/iwlwifi/iwl-config.h
++++ b/drivers/net/wireless/iwlwifi/iwl-config.h
+@@ -119,6 +119,8 @@ enum iwl_led_mode {
+ #define IWL_LONG_WD_TIMEOUT	10000
+ #define IWL_MAX_WD_TIMEOUT	120000
  
- 	return count;
++#define IWL_DEFAULT_MAX_TX_POWER 22
++
+ /* Antenna presence definitions */
+ #define	ANT_NONE	0x0
+ #define	ANT_A		BIT(0)
+--- a/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
++++ b/drivers/net/wireless/iwlwifi/iwl-nvm-parse.c
+@@ -118,8 +118,6 @@ static const u8 iwl_nvm_channels[] = {
+ #define LAST_2GHZ_HT_PLUS	9
+ #define LAST_5GHZ_HT		161
+ 
+-#define DEFAULT_MAX_TX_POWER 16
+-
+ /* rate data (static) */
+ static struct ieee80211_rate iwl_cfg80211_rates[] = {
+ 	{ .bitrate = 1 * 10, .hw_value = 0, .hw_value_short = 0, },
+@@ -242,7 +240,7 @@ static int iwl_init_channel_map(struct d
+ 		 * Default value - highest tx power value.  max_power
+ 		 * is not used in mvm, and is used for backwards compatibility
+ 		 */
+-		channel->max_power = DEFAULT_MAX_TX_POWER;
++		channel->max_power = IWL_DEFAULT_MAX_TX_POWER;
+ 		is_5ghz = channel->band == IEEE80211_BAND_5GHZ;
+ 		IWL_DEBUG_EEPROM(dev,
+ 				 "Ch. %d [%sGHz] %s%s%s%s%s%s(0x%02x %ddBm): Ad-Hoc %ssupported\n",
 
 
