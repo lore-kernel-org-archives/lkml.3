@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930AbaJCVhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:37:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45131 "EHLO
+	id S1755601AbaJCVlC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:41:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45102 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318AbaJCVfJ (ORCPT
+	with ESMTP id S1755311AbaJCVfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:35:09 -0400
+	Fri, 3 Oct 2014 17:35:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Chu <Mike-Chu@prolific.com.tw>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 109/357] USB: serial: pl2303: add device id for ztek device
-Date: Fri,  3 Oct 2014 14:28:15 -0700
-Message-Id: <20141003212936.754989517@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.16 105/357] xtensa: fix a6 and a7 handling in fast_syscall_xtensa
+Date: Fri,  3 Oct 2014 14:28:11 -0700
+Message-Id: <20141003212936.626563666@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,40 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 91fcb1ce420e0a5f8d92d556d7008a78bc6ce1eb upstream.
+commit d1b6ba82a50cecf94be540a3a153aa89d97511a0 upstream.
 
-This adds a new device id to the pl2303 driver for the ZTEK device.
+Remove restoring a6 on some return paths and instead modify and restore
+it in a single place, using symbolic name.
+Correctly restore a7 from PT_AREG7 in case of illegal a6 value.
 
-Reported-by: Mike Chu <Mike-Chu@prolific.com.tw>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Johan Hovold <johan@kernel.org>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    1 +
- 2 files changed, 2 insertions(+)
+ arch/xtensa/kernel/entry.S |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -45,6 +45,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
- 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
-+	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_ZTEK) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
- 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
- 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -22,6 +22,7 @@
- #define PL2303_PRODUCT_ID_GPRS		0x0609
- #define PL2303_PRODUCT_ID_HCR331	0x331a
- #define PL2303_PRODUCT_ID_MOTOROLA	0x0307
-+#define PL2303_PRODUCT_ID_ZTEK		0xe1f1
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1001,9 +1001,8 @@ ENTRY(fast_syscall_xtensa)
+ 	movi	a7, 4			# sizeof(unsigned int)
+ 	access_ok a3, a7, a0, a2, .Leac	# a0: scratch reg, a2: sp
  
- #define ATEN_VENDOR_ID		0x0557
- #define ATEN_VENDOR_ID2		0x0547
+-	addi	a6, a6, -1		# assuming SYS_XTENSA_ATOMIC_SET = 1
+-	_bgeui	a6, SYS_XTENSA_COUNT - 1, .Lill
+-	_bnei	a6, SYS_XTENSA_ATOMIC_CMP_SWP - 1, .Lnswp
++	_bgeui	a6, SYS_XTENSA_COUNT, .Lill
++	_bnei	a6, SYS_XTENSA_ATOMIC_CMP_SWP, .Lnswp
+ 
+ 	/* Fall through for ATOMIC_CMP_SWP. */
+ 
+@@ -1015,27 +1014,26 @@ TRY	s32i	a5, a3, 0		# different, modify
+ 	l32i	a7, a2, PT_AREG7	# restore a7
+ 	l32i	a0, a2, PT_AREG0	# restore a0
+ 	movi	a2, 1			# and return 1
+-	addi	a6, a6, 1		# restore a6 (really necessary?)
+ 	rfe
+ 
+ 1:	l32i	a7, a2, PT_AREG7	# restore a7
+ 	l32i	a0, a2, PT_AREG0	# restore a0
+ 	movi	a2, 0			# return 0 (note that we cannot set
+-	addi	a6, a6, 1		# restore a6 (really necessary?)
+ 	rfe
+ 
+ .Lnswp:	/* Atomic set, add, and exg_add. */
+ 
+ TRY	l32i	a7, a3, 0		# orig
++	addi	a6, a6, -SYS_XTENSA_ATOMIC_SET
+ 	add	a0, a4, a7		# + arg
+ 	moveqz	a0, a4, a6		# set
++	addi	a6, a6, SYS_XTENSA_ATOMIC_SET
+ TRY	s32i	a0, a3, 0		# write new value
+ 
+ 	mov	a0, a2
+ 	mov	a2, a7
+ 	l32i	a7, a0, PT_AREG7	# restore a7
+ 	l32i	a0, a0, PT_AREG0	# restore a0
+-	addi	a6, a6, 1		# restore a6 (really necessary?)
+ 	rfe
+ 
+ CATCH
+@@ -1044,7 +1042,7 @@ CATCH
+ 	movi	a2, -EFAULT
+ 	rfe
+ 
+-.Lill:	l32i	a7, a2, PT_AREG0	# restore a7
++.Lill:	l32i	a7, a2, PT_AREG7	# restore a7
+ 	l32i	a0, a2, PT_AREG0	# restore a0
+ 	movi	a2, -EINVAL
+ 	rfe
 
 
