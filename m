@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785AbaJCW0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:26:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47556 "EHLO
+	id S1757062AbaJCW0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:26:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47561 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280AbaJCW0b (ORCPT
+	with ESMTP id S1755437AbaJCW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:26:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jason Robinson <mail@jasonrobinson.me>,
-        Hans de Goede <hdegoede@redhat.com>,
+        Hugo P <saurosii@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 100/143] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-Date: Fri,  3 Oct 2014 14:34:55 -0700
-Message-Id: <20141003213317.489290239@linuxfoundation.org>
+Subject: [PATCH 3.10 101/143] Input: i8042 - add nomux quirk for Avatar AVIU-145A6
+Date: Fri,  3 Oct 2014 14:34:56 -0700
+Message-Id: <20141003213317.524636694@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -32,31 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hans de Goede <hdegoede@redhat.com>
 
-commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
+commit d2682118f4bb3ceb835f91c1a694407a31bb7378 upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=69731
+The sys_vendor / product_name are somewhat generic unfortunately, so this
+may lead to some false positives. But nomux usually does no harm, where as
+not having it clearly is causing problems on the Avatar AVIU-145A6.
 
-Reported-by: Jason Robinson <mail@jasonrobinson.me>
+https://bugzilla.kernel.org/show_bug.cgi?id=77391
+
+Reported-by: Hugo P <saurosii@gmail.com>
 Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
 --- a/drivers/input/serio/i8042-x86ia64io.h
 +++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -601,6 +601,14 @@ static const struct dmi_system_id __init
+@@ -458,6 +458,13 @@ static const struct dmi_system_id __init
  			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
  		},
  	},
 +	{
-+		/* Fujitsu U574 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		/* Avatar AVIU-145A6 */
 +		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
++			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "IC4I"),
 +		},
 +	},
  	{ }
