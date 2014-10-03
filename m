@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482AbaJCWEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:04:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46465 "EHLO
+	id S1757517AbaJCWF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:05:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757423AbaJCWEC (ORCPT
+	with ESMTP id S1752322AbaJCWEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:04:02 -0400
+	Fri, 3 Oct 2014 18:04:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Hosie <simon.hosie@arm.com>, Robin Murphy <robin.murphy@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.14 116/238] ARM: 8165/1: alignment: dont break misaligned NEON load/store
-Date: Fri,  3 Oct 2014 14:30:31 -0700
-Message-Id: <20141003212917.387060762@linuxfoundation.org>
+        Xishi Qiu <qiuxishi@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 123/238] memblock, memhotplug: fix wrong type in memblock_find_in_range_node().
+Date: Fri,  3 Oct 2014 14:30:38 -0700
+Message-Id: <20141003212917.615672620@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,42 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Murphy <robin.murphy@arm.com>
+From: Tang Chen <tangchen@cn.fujitsu.com>
 
-commit 5ca918e5e3f9df4634077c06585c42bc6a8d699a upstream.
+commit 0cfb8f0c3e21e36d4a6e472e4c419d58ba848698 upstream.
 
-The alignment fixup incorrectly decodes faulting ARM VLDn/VSTn
-instructions (where the optional alignment hint is given but incorrect)
-as LDR/STR, leading to register corruption. Detect these and correctly
-treat them as unhandled, so that userspace gets the fault it expects.
+In memblock_find_in_range_node(), we defined ret as int.  But it should
+be phys_addr_t because it is used to store the return value from
+__memblock_find_range_bottom_up().
 
-Reported-by: Simon Hosie <simon.hosie@arm.com>
-Signed-off-by: Robin Murphy <robin.murphy@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+The bug has not been triggered because when allocating low memory near
+the kernel end, the "int ret" won't turn out to be negative.  When we
+started to allocate memory on other nodes, and the "int ret" could be
+minus.  Then the kernel will panic.
+
+A simple way to reproduce this: comment out the following code in
+numa_init(),
+
+        memblock_set_bottom_up(false);
+
+and the kernel won't boot.
+
+Reported-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Tested-by: Xishi Qiu <qiuxishi@huawei.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/alignment.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/memblock.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/arm/mm/alignment.c
-+++ b/arch/arm/mm/alignment.c
-@@ -40,6 +40,7 @@
-  * This code is not portable to processors with late data abort handling.
-  */
- #define CODING_BITS(i)	(i & 0x0e000000)
-+#define COND_BITS(i)	(i & 0xf0000000)
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -183,8 +183,7 @@ phys_addr_t __init_memblock memblock_fin
+ 					phys_addr_t align, phys_addr_t start,
+ 					phys_addr_t end, int nid)
+ {
+-	int ret;
+-	phys_addr_t kernel_end;
++	phys_addr_t kernel_end, ret;
  
- #define LDST_I_BIT(i)	(i & (1 << 26))		/* Immediate constant	*/
- #define LDST_P_BIT(i)	(i & (1 << 24))		/* Preindex		*/
-@@ -817,6 +818,8 @@ do_alignment(unsigned long addr, unsigne
- 		break;
- 
- 	case 0x04000000:	/* ldr or str immediate */
-+		if (COND_BITS(instr) == 0xf0000000) /* NEON VLDn, VSTn */
-+			goto bad;
- 		offset.un = OFFSET_BITS(instr);
- 		handler = do_alignment_ldrstr;
- 		break;
+ 	/* pump up @end */
+ 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
 
 
