@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684AbaJDA2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:28:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45369 "EHLO
+	id S933756AbaJDA2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:28:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755068AbaJCVm7 (ORCPT
+	with ESMTP id S1755943AbaJCVm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:59 -0400
+	Fri, 3 Oct 2014 17:42:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 160/357] nfs: move nfs_pgio_data and remove nfs_rw_header
-Date: Fri,  3 Oct 2014 14:29:06 -0700
-Message-Id: <20141003212938.276640975@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.16 178/357] ARM: 8129/1: errata: work around Cortex-A15 erratum 830321 using dummy strex
+Date: Fri,  3 Oct 2014 14:29:24 -0700
+Message-Id: <20141003212938.823698574@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,484 +29,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weston Andros Adamson <dros@primarydata.com>
+From: Mark Rutland <mark.rutland@arm.com>
 
-commit 1e7f3a485922211b6e4a082ebc6bf05810b0b6ea upstream.
+commit 2c32c65e3726c773760038910be30cce1b4d4149 upstream.
 
-nfs_rw_header was used to allocate an nfs_pgio_header along with an
-nfs_pgio_data, because a _header would need at least one _data.
+On revisions of Cortex-A15 prior to r3p3, a CLREX instruction at PL1 may
+falsely trigger a watchpoint exception, leading to potential data aborts
+during exception return and/or livelock.
 
-Now there is only ever one nfs_pgio_data for each nfs_pgio_header -- move
-it to nfs_pgio_header and get rid of nfs_rw_header.
+This patch resolves the issue in the following ways:
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+  - Replacing our uses of CLREX with a dummy STREX sequence instead (as
+    we did for v6 CPUs).
+
+  - Removing the clrex code from v7_exit_coherency_flush and derivatives,
+    since this only exists as a minor performance improvement when
+    non-cached exclusives are in use (Linux doesn't use these).
+
+Benchmarking on a variety of ARM cores revealed no measurable
+performance difference with this change applied, so the change is
+performed unconditionally and no new Kconfig entry is added.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/direct.c          |    8 ++--
- fs/nfs/internal.h        |    6 +--
- fs/nfs/pagelist.c        |   94 ++++++++++++++---------------------------------
- fs/nfs/pnfs.c            |   24 +++++-------
- fs/nfs/read.c            |    6 +--
- fs/nfs/write.c           |   10 ++---
- include/linux/nfs_page.h |    4 +-
- include/linux/nfs_xdr.h  |   38 ++++++++-----------
- 8 files changed, 71 insertions(+), 119 deletions(-)
 
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -148,8 +148,8 @@ static void nfs_direct_set_hdr_verf(stru
- {
- 	struct nfs_writeverf *verfp;
+---
+ arch/arm/include/asm/cacheflush.h  |    1 -
+ arch/arm/kernel/entry-header.S     |   29 +++++++++++++++--------------
+ arch/arm/mach-exynos/mcpm-exynos.c |    1 -
+ 3 files changed, 15 insertions(+), 16 deletions(-)
+
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -472,7 +472,6 @@ static inline void __sync_cache_range_r(
+ 	"mcr	p15, 0, r0, c1, c0, 0	@ set SCTLR \n\t" \
+ 	"isb	\n\t" \
+ 	"bl	v7_flush_dcache_"__stringify(level)" \n\t" \
+-	"clrex	\n\t" \
+ 	"mrc	p15, 0, r0, c1, c0, 1	@ get ACTLR \n\t" \
+ 	"bic	r0, r0, #(1 << 6)	@ disable local coherency \n\t" \
+ 	"mcr	p15, 0, r0, c1, c0, 1	@ set ACTLR \n\t" \
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -208,26 +208,21 @@
+ #endif
+ 	.endif
+ 	msr	spsr_cxsf, \rpsr
+-#if defined(CONFIG_CPU_V6)
+-	ldr	r0, [sp]
+-	strex	r1, r2, [sp]			@ clear the exclusive monitor
+-	ldmib	sp, {r1 - pc}^			@ load r1 - pc, cpsr
+-#elif defined(CONFIG_CPU_32v6K)
+-	clrex					@ clear the exclusive monitor
+-	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
+-#else
+-	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
++#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
++	@ We must avoid clrex due to Cortex-A15 erratum #830321
++	sub	r0, sp, #4			@ uninhabited address
++	strex	r1, r2, [r0]			@ clear the exclusive monitor
+ #endif
++	ldmia	sp, {r0 - pc}^			@ load r0 - pc, cpsr
+ 	.endm
  
--	verfp = nfs_direct_select_verf(dreq, hdr->data->ds_clp,
--				      hdr->data->ds_idx);
-+	verfp = nfs_direct_select_verf(dreq, hdr->data.ds_clp,
-+				      hdr->data.ds_idx);
- 	WARN_ON_ONCE(verfp->committed >= 0);
- 	memcpy(verfp, &hdr->verf, sizeof(struct nfs_writeverf));
- 	WARN_ON_ONCE(verfp->committed < 0);
-@@ -169,8 +169,8 @@ static int nfs_direct_set_or_cmp_hdr_ver
- {
- 	struct nfs_writeverf *verfp;
- 
--	verfp = nfs_direct_select_verf(dreq, hdr->data->ds_clp,
--					 hdr->data->ds_idx);
-+	verfp = nfs_direct_select_verf(dreq, hdr->data.ds_clp,
-+					 hdr->data.ds_idx);
- 	if (verfp->committed < 0) {
- 		nfs_direct_set_hdr_verf(dreq, hdr);
- 		return 0;
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -238,9 +238,9 @@ void nfs_set_pgio_error(struct nfs_pgio_
- int nfs_iocounter_wait(struct nfs_io_counter *c);
- 
- extern const struct nfs_pageio_ops nfs_pgio_rw_ops;
--struct nfs_rw_header *nfs_rw_header_alloc(const struct nfs_rw_ops *);
--void nfs_rw_header_free(struct nfs_pgio_header *);
--void nfs_pgio_data_release(struct nfs_pgio_data *);
-+struct nfs_pgio_header *nfs_pgio_header_alloc(const struct nfs_rw_ops *);
-+void nfs_pgio_header_free(struct nfs_pgio_header *);
-+void nfs_pgio_data_destroy(struct nfs_pgio_data *);
- int nfs_generic_pgio(struct nfs_pageio_descriptor *, struct nfs_pgio_header *);
- int nfs_initiate_pgio(struct rpc_clnt *, struct nfs_pgio_data *,
- 		      const struct rpc_call_ops *, int, int);
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -462,95 +462,61 @@ size_t nfs_generic_pg_test(struct nfs_pa
- }
- EXPORT_SYMBOL_GPL(nfs_generic_pg_test);
- 
--static inline struct nfs_rw_header *NFS_RW_HEADER(struct nfs_pgio_header *hdr)
-+struct nfs_pgio_header *nfs_pgio_header_alloc(const struct nfs_rw_ops *ops)
- {
--	return container_of(hdr, struct nfs_rw_header, header);
--}
--
--/**
-- * nfs_rw_header_alloc - Allocate a header for a read or write
-- * @ops: Read or write function vector
-- */
--struct nfs_rw_header *nfs_rw_header_alloc(const struct nfs_rw_ops *ops)
--{
--	struct nfs_rw_header *header = ops->rw_alloc_header();
--
--	if (header) {
--		struct nfs_pgio_header *hdr = &header->header;
-+	struct nfs_pgio_header *hdr = ops->rw_alloc_header();
- 
-+	if (hdr) {
- 		INIT_LIST_HEAD(&hdr->pages);
- 		spin_lock_init(&hdr->lock);
- 		atomic_set(&hdr->refcnt, 0);
- 		hdr->rw_ops = ops;
- 	}
--	return header;
-+	return hdr;
- }
--EXPORT_SYMBOL_GPL(nfs_rw_header_alloc);
-+EXPORT_SYMBOL_GPL(nfs_pgio_header_alloc);
- 
- /*
-- * nfs_rw_header_free - Free a read or write header
-+ * nfs_pgio_header_free - Free a read or write header
-  * @hdr: The header to free
-  */
--void nfs_rw_header_free(struct nfs_pgio_header *hdr)
-+void nfs_pgio_header_free(struct nfs_pgio_header *hdr)
- {
--	hdr->rw_ops->rw_free_header(NFS_RW_HEADER(hdr));
-+	hdr->rw_ops->rw_free_header(hdr);
- }
--EXPORT_SYMBOL_GPL(nfs_rw_header_free);
-+EXPORT_SYMBOL_GPL(nfs_pgio_header_free);
- 
- /**
-  * nfs_pgio_data_alloc - Allocate pageio data
-  * @hdr: The header making a request
-  * @pagecount: Number of pages to create
-  */
--static struct nfs_pgio_data *nfs_pgio_data_alloc(struct nfs_pgio_header *hdr,
--						 unsigned int pagecount)
-+static bool nfs_pgio_data_init(struct nfs_pgio_header *hdr,
-+			       unsigned int pagecount)
- {
--	struct nfs_pgio_data *data, *prealloc;
--
--	prealloc = &NFS_RW_HEADER(hdr)->rpc_data;
--	if (prealloc->header == NULL)
--		data = prealloc;
--	else
--		data = kzalloc(sizeof(*data), GFP_KERNEL);
--	if (!data)
--		goto out;
--
--	if (nfs_pgarray_set(&data->pages, pagecount)) {
--		data->header = hdr;
-+	if (nfs_pgarray_set(&hdr->data.pages, pagecount)) {
-+		hdr->data.header = hdr;
- 		atomic_inc(&hdr->refcnt);
--	} else {
--		if (data != prealloc)
--			kfree(data);
--		data = NULL;
-+		return true;
- 	}
--out:
--	return data;
-+	return false;
- }
- 
- /**
-- * nfs_pgio_data_release - Properly free pageio data
-- * @data: The data to release
-+ * nfs_pgio_data_destroy - Properly free pageio data
-+ * @data: The data to destroy
-  */
--void nfs_pgio_data_release(struct nfs_pgio_data *data)
-+void nfs_pgio_data_destroy(struct nfs_pgio_data *data)
- {
- 	struct nfs_pgio_header *hdr = data->header;
--	struct nfs_rw_header *pageio_header = NFS_RW_HEADER(hdr);
- 
- 	put_nfs_open_context(data->args.context);
- 	if (data->pages.pagevec != data->pages.page_array)
- 		kfree(data->pages.pagevec);
--	if (data == &pageio_header->rpc_data) {
--		data->header = NULL;
--		data = NULL;
--	}
- 	if (atomic_dec_and_test(&hdr->refcnt))
- 		hdr->completion_ops->completion(hdr);
--	/* Note: we only free the rpc_task after callbacks are done.
--	 * See the comment in rpc_free_task() for why
--	 */
--	kfree(data);
- }
--EXPORT_SYMBOL_GPL(nfs_pgio_data_release);
-+EXPORT_SYMBOL_GPL(nfs_pgio_data_destroy);
- 
- /**
-  * nfs_pgio_rpcsetup - Set up arguments for a pageio call
-@@ -665,8 +631,7 @@ static int nfs_pgio_error(struct nfs_pag
- 			  struct nfs_pgio_header *hdr)
- {
- 	set_bit(NFS_IOHDR_REDO, &hdr->flags);
--	nfs_pgio_data_release(hdr->data);
--	hdr->data = NULL;
-+	nfs_pgio_data_destroy(&hdr->data);
- 	desc->pg_completion_ops->error_cleanup(&desc->pg_list);
- 	return -ENOMEM;
- }
-@@ -680,7 +645,7 @@ static void nfs_pgio_release(void *calld
- 	struct nfs_pgio_data *data = calldata;
- 	if (data->header->rw_ops->rw_release)
- 		data->header->rw_ops->rw_release(data);
--	nfs_pgio_data_release(data);
-+	nfs_pgio_data_destroy(data);
- }
- 
- /**
-@@ -756,11 +721,11 @@ int nfs_generic_pgio(struct nfs_pageio_d
- 	struct list_head *head = &desc->pg_list;
- 	struct nfs_commit_info cinfo;
- 
--	data = nfs_pgio_data_alloc(hdr, nfs_page_array_len(desc->pg_base,
--							   desc->pg_count));
--	if (!data)
-+	if (!nfs_pgio_data_init(hdr, nfs_page_array_len(desc->pg_base,
-+			   desc->pg_count)))
- 		return nfs_pgio_error(desc, hdr);
- 
-+	data = &hdr->data;
- 	nfs_init_cinfo(&cinfo, desc->pg_inode, desc->pg_dreq);
- 	pages = data->pages.pagevec;
- 	while (!list_empty(head)) {
-@@ -776,7 +741,6 @@ int nfs_generic_pgio(struct nfs_pageio_d
- 
- 	/* Set up the argument struct */
- 	nfs_pgio_rpcsetup(data, desc->pg_count, 0, desc->pg_ioflags, &cinfo);
--	hdr->data = data;
- 	desc->pg_rpc_callops = &nfs_pgio_common_ops;
- 	return 0;
- }
-@@ -784,22 +748,20 @@ EXPORT_SYMBOL_GPL(nfs_generic_pgio);
- 
- static int nfs_generic_pg_pgios(struct nfs_pageio_descriptor *desc)
- {
--	struct nfs_rw_header *rw_hdr;
- 	struct nfs_pgio_header *hdr;
- 	int ret;
- 
--	rw_hdr = nfs_rw_header_alloc(desc->pg_rw_ops);
--	if (!rw_hdr) {
-+	hdr = nfs_pgio_header_alloc(desc->pg_rw_ops);
-+	if (!hdr) {
- 		desc->pg_completion_ops->error_cleanup(&desc->pg_list);
- 		return -ENOMEM;
- 	}
--	hdr = &rw_hdr->header;
--	nfs_pgheader_init(desc, hdr, nfs_rw_header_free);
-+	nfs_pgheader_init(desc, hdr, nfs_pgio_header_free);
- 	atomic_inc(&hdr->refcnt);
- 	ret = nfs_generic_pgio(desc, hdr);
- 	if (ret == 0)
- 		ret = nfs_initiate_pgio(NFS_CLIENT(hdr->inode),
--					hdr->data, desc->pg_rpc_callops,
-+					&hdr->data, desc->pg_rpc_callops,
- 					desc->pg_ioflags, 0);
- 	if (atomic_dec_and_test(&hdr->refcnt))
- 		hdr->completion_ops->completion(hdr);
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -1546,7 +1546,7 @@ pnfs_write_through_mds(struct nfs_pageio
- 		nfs_pageio_reset_write_mds(desc);
- 		desc->pg_recoalesce = 1;
- 	}
--	nfs_pgio_data_release(data);
-+	nfs_pgio_data_destroy(data);
- }
- 
- static enum pnfs_try_status
-@@ -1575,7 +1575,7 @@ static void
- pnfs_do_write(struct nfs_pageio_descriptor *desc,
- 	      struct nfs_pgio_header *hdr, int how)
- {
--	struct nfs_pgio_data *data = hdr->data;
-+	struct nfs_pgio_data *data = &hdr->data;
- 	const struct rpc_call_ops *call_ops = desc->pg_rpc_callops;
- 	struct pnfs_layout_segment *lseg = desc->pg_lseg;
- 	enum pnfs_try_status trypnfs;
-@@ -1590,25 +1590,23 @@ pnfs_do_write(struct nfs_pageio_descript
- static void pnfs_writehdr_free(struct nfs_pgio_header *hdr)
- {
- 	pnfs_put_lseg(hdr->lseg);
--	nfs_rw_header_free(hdr);
-+	nfs_pgio_header_free(hdr);
- }
- EXPORT_SYMBOL_GPL(pnfs_writehdr_free);
- 
- int
- pnfs_generic_pg_writepages(struct nfs_pageio_descriptor *desc)
- {
--	struct nfs_rw_header *whdr;
- 	struct nfs_pgio_header *hdr;
- 	int ret;
- 
--	whdr = nfs_rw_header_alloc(desc->pg_rw_ops);
--	if (!whdr) {
-+	hdr = nfs_pgio_header_alloc(desc->pg_rw_ops);
-+	if (!hdr) {
- 		desc->pg_completion_ops->error_cleanup(&desc->pg_list);
- 		pnfs_put_lseg(desc->pg_lseg);
- 		desc->pg_lseg = NULL;
- 		return -ENOMEM;
- 	}
--	hdr = &whdr->header;
- 	nfs_pgheader_init(desc, hdr, pnfs_writehdr_free);
- 	hdr->lseg = pnfs_get_lseg(desc->pg_lseg);
- 	atomic_inc(&hdr->refcnt);
-@@ -1696,7 +1694,7 @@ pnfs_read_through_mds(struct nfs_pageio_
- 		nfs_pageio_reset_read_mds(desc);
- 		desc->pg_recoalesce = 1;
- 	}
--	nfs_pgio_data_release(data);
-+	nfs_pgio_data_destroy(data);
- }
- 
- /*
-@@ -1727,7 +1725,7 @@ pnfs_try_to_read_data(struct nfs_pgio_da
- static void
- pnfs_do_read(struct nfs_pageio_descriptor *desc, struct nfs_pgio_header *hdr)
- {
--	struct nfs_pgio_data *data = hdr->data;
-+	struct nfs_pgio_data *data = &hdr->data;
- 	const struct rpc_call_ops *call_ops = desc->pg_rpc_callops;
- 	struct pnfs_layout_segment *lseg = desc->pg_lseg;
- 	enum pnfs_try_status trypnfs;
-@@ -1742,26 +1740,24 @@ pnfs_do_read(struct nfs_pageio_descripto
- static void pnfs_readhdr_free(struct nfs_pgio_header *hdr)
- {
- 	pnfs_put_lseg(hdr->lseg);
--	nfs_rw_header_free(hdr);
-+	nfs_pgio_header_free(hdr);
- }
- EXPORT_SYMBOL_GPL(pnfs_readhdr_free);
- 
- int
- pnfs_generic_pg_readpages(struct nfs_pageio_descriptor *desc)
- {
--	struct nfs_rw_header *rhdr;
- 	struct nfs_pgio_header *hdr;
- 	int ret;
- 
--	rhdr = nfs_rw_header_alloc(desc->pg_rw_ops);
--	if (!rhdr) {
-+	hdr = nfs_pgio_header_alloc(desc->pg_rw_ops);
-+	if (!hdr) {
- 		desc->pg_completion_ops->error_cleanup(&desc->pg_list);
- 		ret = -ENOMEM;
- 		pnfs_put_lseg(desc->pg_lseg);
- 		desc->pg_lseg = NULL;
- 		return ret;
- 	}
--	hdr = &rhdr->header;
- 	nfs_pgheader_init(desc, hdr, pnfs_readhdr_free);
- 	hdr->lseg = pnfs_get_lseg(desc->pg_lseg);
- 	atomic_inc(&hdr->refcnt);
---- a/fs/nfs/read.c
-+++ b/fs/nfs/read.c
-@@ -33,12 +33,12 @@ static const struct nfs_rw_ops nfs_rw_re
- 
- static struct kmem_cache *nfs_rdata_cachep;
- 
--static struct nfs_rw_header *nfs_readhdr_alloc(void)
-+static struct nfs_pgio_header *nfs_readhdr_alloc(void)
- {
- 	return kmem_cache_zalloc(nfs_rdata_cachep, GFP_KERNEL);
- }
- 
--static void nfs_readhdr_free(struct nfs_rw_header *rhdr)
-+static void nfs_readhdr_free(struct nfs_pgio_header *rhdr)
- {
- 	kmem_cache_free(nfs_rdata_cachep, rhdr);
- }
-@@ -404,7 +404,7 @@ out:
- int __init nfs_init_readpagecache(void)
- {
- 	nfs_rdata_cachep = kmem_cache_create("nfs_read_data",
--					     sizeof(struct nfs_rw_header),
-+					     sizeof(struct nfs_pgio_header),
- 					     0, SLAB_HWCACHE_ALIGN,
- 					     NULL);
- 	if (nfs_rdata_cachep == NULL)
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -71,18 +71,18 @@ void nfs_commit_free(struct nfs_commit_d
- }
- EXPORT_SYMBOL_GPL(nfs_commit_free);
- 
--static struct nfs_rw_header *nfs_writehdr_alloc(void)
-+static struct nfs_pgio_header *nfs_writehdr_alloc(void)
- {
--	struct nfs_rw_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
-+	struct nfs_pgio_header *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
- 
- 	if (p)
- 		memset(p, 0, sizeof(*p));
- 	return p;
- }
- 
--static void nfs_writehdr_free(struct nfs_rw_header *whdr)
-+static void nfs_writehdr_free(struct nfs_pgio_header *hdr)
- {
--	mempool_free(whdr, nfs_wdata_mempool);
-+	mempool_free(hdr, nfs_wdata_mempool);
- }
- 
- static void nfs_context_set_write_error(struct nfs_open_context *ctx, int error)
-@@ -1884,7 +1884,7 @@ int nfs_migrate_page(struct address_spac
- int __init nfs_init_writepagecache(void)
- {
- 	nfs_wdata_cachep = kmem_cache_create("nfs_write_data",
--					     sizeof(struct nfs_rw_header),
-+					     sizeof(struct nfs_pgio_header),
- 					     0, SLAB_HWCACHE_ALIGN,
- 					     NULL);
- 	if (nfs_wdata_cachep == NULL)
---- a/include/linux/nfs_page.h
-+++ b/include/linux/nfs_page.h
-@@ -62,8 +62,8 @@ struct nfs_pageio_ops {
- 
- struct nfs_rw_ops {
- 	const fmode_t rw_mode;
--	struct nfs_rw_header *(*rw_alloc_header)(void);
--	void (*rw_free_header)(struct nfs_rw_header *);
-+	struct nfs_pgio_header *(*rw_alloc_header)(void);
-+	void (*rw_free_header)(struct nfs_pgio_header *);
- 	void (*rw_release)(struct nfs_pgio_data *);
- 	int  (*rw_done)(struct rpc_task *, struct nfs_pgio_data *, struct inode *);
- 	void (*rw_result)(struct rpc_task *, struct nfs_pgio_data *);
---- a/include/linux/nfs_xdr.h
-+++ b/include/linux/nfs_xdr.h
-@@ -1257,13 +1257,27 @@ enum {
- 	NFS_IOHDR_NEED_RESCHED,
- };
- 
--struct nfs_pgio_data;
-+struct nfs_pgio_data {
-+	struct nfs_pgio_header	*header;
-+	struct list_head	list;
-+	struct rpc_task		task;
-+	struct nfs_fattr	fattr;
-+	struct nfs_writeverf	verf;		/* Used for writes */
-+	struct nfs_pgio_args	args;		/* argument struct */
-+	struct nfs_pgio_res	res;		/* result struct */
-+	unsigned long		timestamp;	/* For lease renewal */
-+	int (*pgio_done_cb)(struct rpc_task *task, struct nfs_pgio_data *data);
-+	__u64			mds_offset;	/* Filelayout dense stripe */
-+	struct nfs_page_array	pages;
-+	struct nfs_client	*ds_clp;	/* pNFS data server */
-+	int			ds_idx;		/* ds index if ds_clp is set */
-+};
- 
- struct nfs_pgio_header {
- 	struct inode		*inode;
- 	struct rpc_cred		*cred;
- 	struct list_head	pages;
--	struct nfs_pgio_data	*data;
-+	struct nfs_pgio_data	data;
- 	atomic_t		refcnt;
- 	struct nfs_page		*req;
- 	struct nfs_writeverf	verf;		/* Used for writes */
-@@ -1283,26 +1297,6 @@ struct nfs_pgio_header {
- 	unsigned long		flags;
- };
- 
--struct nfs_pgio_data {
--	struct nfs_pgio_header	*header;
--	struct rpc_task		task;
--	struct nfs_fattr	fattr;
--	struct nfs_writeverf	verf;		/* Used for writes */
--	struct nfs_pgio_args	args;		/* argument struct */
--	struct nfs_pgio_res	res;		/* result struct */
--	unsigned long		timestamp;	/* For lease renewal */
--	int (*pgio_done_cb) (struct rpc_task *task, struct nfs_pgio_data *data);
--	__u64			mds_offset;	/* Filelayout dense stripe */
--	struct nfs_page_array	pages;
--	struct nfs_client	*ds_clp;	/* pNFS data server */
--	int			ds_idx;		/* ds index if ds_clp is set */
--};
--
--struct nfs_rw_header {
--	struct nfs_pgio_header	header;
--	struct nfs_pgio_data	rpc_data;
--};
--
- struct nfs_mds_commit_info {
- 	atomic_t rpcs_out;
- 	unsigned long		ncommit;
+ 	.macro	restore_user_regs, fast = 0, offset = 0
+ 	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
+ 	ldr	lr, [sp, #\offset + S_PC]!	@ get pc
+ 	msr	spsr_cxsf, r1			@ save in spsr_svc
+-#if defined(CONFIG_CPU_V6)
++#if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
++	@ We must avoid clrex due to Cortex-A15 erratum #830321
+ 	strex	r1, r2, [sp]			@ clear the exclusive monitor
+-#elif defined(CONFIG_CPU_32v6K)
+-	clrex					@ clear the exclusive monitor
+ #endif
+ 	.if	\fast
+ 	ldmdb	sp, {r1 - lr}^			@ get calling r1 - lr
+@@ -267,7 +262,10 @@
+ 	.endif
+ 	ldr	lr, [sp, #S_SP]			@ top of the stack
+ 	ldrd	r0, r1, [sp, #S_LR]		@ calling lr and pc
+-	clrex					@ clear the exclusive monitor
++
++	@ We must avoid clrex due to Cortex-A15 erratum #830321
++	strex	r2, r1, [sp, #S_LR]		@ clear the exclusive monitor
++
+ 	stmdb	lr!, {r0, r1, \rpsr}		@ calling lr and rfe context
+ 	ldmia	sp, {r0 - r12}
+ 	mov	sp, lr
+@@ -288,13 +286,16 @@
+ 	.endm
+ #else	/* ifdef CONFIG_CPU_V7M */
+ 	.macro	restore_user_regs, fast = 0, offset = 0
+-	clrex					@ clear the exclusive monitor
+ 	mov	r2, sp
+ 	load_user_sp_lr r2, r3, \offset + S_SP	@ calling sp, lr
+ 	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
+ 	ldr	lr, [sp, #\offset + S_PC]	@ get pc
+ 	add	sp, sp, #\offset + S_SP
+ 	msr	spsr_cxsf, r1			@ save in spsr_svc
++
++	@ We must avoid clrex due to Cortex-A15 erratum #830321
++	strex	r1, r2, [sp]			@ clear the exclusive monitor
++
+ 	.if	\fast
+ 	ldmdb	sp, {r1 - r12}			@ get calling r1 - r12
+ 	.else
+--- a/arch/arm/mach-exynos/mcpm-exynos.c
++++ b/arch/arm/mach-exynos/mcpm-exynos.c
+@@ -39,7 +39,6 @@
+ 	"mcr	p15, 0, r0, c1, c0, 0	@ set SCTLR\n\t" \
+ 	"isb\n\t"\
+ 	"bl	v7_flush_dcache_"__stringify(level)"\n\t" \
+-	"clrex\n\t"\
+ 	"mrc	p15, 0, r0, c1, c0, 1	@ get ACTLR\n\t" \
+ 	"bic	r0, r0, #(1 << 6)	@ disable local coherency\n\t" \
+ 	/* Dummy Load of a device register to avoid Erratum 799270 */ \
 
 
