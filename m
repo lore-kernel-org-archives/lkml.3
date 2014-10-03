@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757062AbaJCW0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:26:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47561 "EHLO
+	id S932800AbaJCW0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:26:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47570 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755437AbaJCW0b (ORCPT
+	with ESMTP id S1756425AbaJCW0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:26:31 -0400
+	Fri, 3 Oct 2014 18:26:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugo P <saurosii@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 101/143] Input: i8042 - add nomux quirk for Avatar AVIU-145A6
-Date: Fri,  3 Oct 2014 14:34:56 -0700
-Message-Id: <20141003213317.524636694@linuxfoundation.org>
+        Joseph Qi <joseph.qi@huawei.com>, "joyce.xue" <xuejiufei@huawei.com>,
+        Guozhonghua <guozhonghua@h3c.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 117/143] ocfs2/dlm: do not get resource spinlock if lockres is new
+Date: Fri,  3 Oct 2014 14:35:12 -0700
+Message-Id: <20141003213318.004687121@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,40 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit d2682118f4bb3ceb835f91c1a694407a31bb7378 upstream.
+commit 5760a97c7143c208fa3a8f8cad0ed7dd672ebd28 upstream.
 
-The sys_vendor / product_name are somewhat generic unfortunately, so this
-may lead to some false positives. But nomux usually does no harm, where as
-not having it clearly is causing problems on the Avatar AVIU-145A6.
+There is a deadlock case which reported by Guozhonghua:
+  https://oss.oracle.com/pipermail/ocfs2-devel/2014-September/010079.html
 
-https://bugzilla.kernel.org/show_bug.cgi?id=77391
+This case is caused by &res->spinlock and &dlm->master_lock
+misordering in different threads.
 
-Reported-by: Hugo P <saurosii@gmail.com>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+It was introduced by commit 8d400b81cc83 ("ocfs2/dlm: Clean up refmap
+helpers").  Since lockres is new, it doesn't not require the
+&res->spinlock.  So remove it.
+
+Fixes: 8d400b81cc83 ("ocfs2/dlm: Clean up refmap helpers")
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: joyce.xue <xuejiufei@huawei.com>
+Reported-by: Guozhonghua <guozhonghua@h3c.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/ocfs2/dlm/dlmmaster.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -458,6 +458,13 @@ static const struct dmi_system_id __init
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Avatar AVIU-145A6 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "IC4I"),
-+		},
-+	},
- 	{ }
- };
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -653,12 +653,9 @@ void dlm_lockres_clear_refmap_bit(struct
+ 	clear_bit(bit, res->refmap);
+ }
  
+-
+-void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++static void __dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+-	assert_spin_locked(&res->spinlock);
+-
+ 	res->inflight_locks++;
+ 
+ 	mlog(0, "%s: res %.*s, inflight++: now %u, %ps()\n", dlm->name,
+@@ -666,6 +663,13 @@ void dlm_lockres_grab_inflight_ref(struc
+ 	     __builtin_return_address(0));
+ }
+ 
++void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++				   struct dlm_lock_resource *res)
++{
++	assert_spin_locked(&res->spinlock);
++	__dlm_lockres_grab_inflight_ref(dlm, res);
++}
++
+ void dlm_lockres_drop_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+@@ -855,10 +859,8 @@ lookup:
+ 	/* finally add the lockres to its hash bucket */
+ 	__dlm_insert_lockres(dlm, res);
+ 
+-	/* Grab inflight ref to pin the resource */
+-	spin_lock(&res->spinlock);
+-	dlm_lockres_grab_inflight_ref(dlm, res);
+-	spin_unlock(&res->spinlock);
++	/* since this lockres is new it doesn't not require the spinlock */
++	__dlm_lockres_grab_inflight_ref(dlm, res);
+ 
+ 	/* get an extra ref on the mle in case this is a BLOCK
+ 	 * if so, the creator of the BLOCK may try to put the last
 
 
