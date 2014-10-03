@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044AbaJCXZJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:25:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S1760056AbaJCXZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:25:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757767AbaJCWNk (ORCPT
+	with ESMTP id S1757768AbaJCWNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:13:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 3.16 355/357] clk: qcom: Fix MN frequency tables, parent map, and jpegd
-Date: Fri,  3 Oct 2014 14:32:21 -0700
-Message-Id: <20141003212944.120261125@linuxfoundation.org>
+        Denis Ciocca <denis.ciocca@st.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 143/238] iio:magnetometer: bugfix magnetometers gain values
+Date: Fri,  3 Oct 2014 14:30:58 -0700
+Message-Id: <20141003212918.261213109@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,168 +25,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Denis CIOCCA <denis.ciocca@st.com>
 
-commit ff20783f7b9f35b29e768d8ecc7076c1ca1a60ca upstream.
+commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
 
-Clocks that don't have a pre-divider don't list any pre-divider
-in their frequency tables, but their tables are initialized using
-aggregate initializers. Use tagged initializers so we properly
-assign the m and n values for each frequency. Furthermore, the
-mmcc_pxo_pll8_pll2_pll3 array improperly mapped the second
-element to pll2 instead of pll8, causing the clock driver to
-recalculate the wrong rate for any clocks using this array along
-with a rate that uses pll2. Plus the .num_parents field is 3
-instead of 4 so you can't even switch the parent to pll3. Finally
-I noticed that the jpegd clock improperly indicates that the
-pre-divider width is only 2, when it's actually 4 bits wide.
+This patch fix gains values. The first driver was designed using
+engineering samples, in mass production the values are changed.
 
-Fixes: 6d00b56fe "clk: qcom: Add support for MSM8960's multimedia clock controller (MMCC)"
-Tested-by: Rob Clark <robdclark@gmail.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/mmcc-msm8960.c |   82 ++++++++++++++++++++--------------------
- 1 file changed, 42 insertions(+), 40 deletions(-)
+ drivers/iio/magnetometer/st_magn_core.c |   52 ++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 22 deletions(-)
 
---- a/drivers/clk/qcom/mmcc-msm8960.c
-+++ b/drivers/clk/qcom/mmcc-msm8960.c
-@@ -38,6 +38,8 @@
- #define P_PLL2	2
- #define P_PLL3	3
+--- a/drivers/iio/magnetometer/st_magn_core.c
++++ b/drivers/iio/magnetometer/st_magn_core.c
+@@ -42,7 +42,8 @@
+ #define ST_MAGN_FS_AVL_5600MG			5600
+ #define ST_MAGN_FS_AVL_8000MG			8000
+ #define ST_MAGN_FS_AVL_8100MG			8100
+-#define ST_MAGN_FS_AVL_10000MG			10000
++#define ST_MAGN_FS_AVL_12000MG			12000
++#define ST_MAGN_FS_AVL_16000MG			16000
  
-+#define F_MN(f, s, _m, _n) { .freq = f, .src = s, .m = _m, .n = _n }
-+
- static u8 mmcc_pxo_pll8_pll2_map[] = {
- 	[P_PXO]		= 0,
- 	[P_PLL8]	= 2,
-@@ -59,8 +61,8 @@ static u8 mmcc_pxo_pll8_pll2_pll3_map[]
+ /* CUSTOM VALUES FOR SENSOR 1 */
+ #define ST_MAGN_1_WAI_EXP			0x3c
+@@ -69,20 +70,20 @@
+ #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
+ #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
+ #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
++#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
++#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
++#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
++#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
++#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
++#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
++#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
++#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
++#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
++#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
++#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
++#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
++#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
++#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
+ #define ST_MAGN_1_MULTIREAD_BIT			false
  
- static const char *mmcc_pxo_pll8_pll2_pll3[] = {
- 	"pxo",
--	"pll2",
- 	"pll8_vote",
-+	"pll2",
- 	"pll3",
- };
- 
-@@ -710,18 +712,18 @@ static struct clk_branch csiphy2_timer_c
- };
- 
- static struct freq_tbl clk_tbl_gfx2d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
- 	{ }
- };
- 
-@@ -842,22 +844,22 @@ static struct clk_branch gfx2d1_clk = {
- };
- 
- static struct freq_tbl clk_tbl_gfx3d[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54857000, P_PLL8, 1,  7 },
--	{  64000000, P_PLL8, 1,  6 },
--	{  76800000, P_PLL8, 1,  5 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 128000000, P_PLL8, 1,  3 },
--	{ 145455000, P_PLL2, 2, 11 },
--	{ 160000000, P_PLL2, 1,  5 },
--	{ 177778000, P_PLL2, 2,  9 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228571000, P_PLL2, 2,  7 },
--	{ 266667000, P_PLL2, 1,  3 },
--	{ 300000000, P_PLL3, 1,  4 },
--	{ 320000000, P_PLL2, 2,  5 },
--	{ 400000000, P_PLL2, 1,  2 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54857000, P_PLL8, 1,  7),
-+	F_MN( 64000000, P_PLL8, 1,  6),
-+	F_MN( 76800000, P_PLL8, 1,  5),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(128000000, P_PLL8, 1,  3),
-+	F_MN(145455000, P_PLL2, 2, 11),
-+	F_MN(160000000, P_PLL2, 1,  5),
-+	F_MN(177778000, P_PLL2, 2,  9),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228571000, P_PLL2, 2,  7),
-+	F_MN(266667000, P_PLL2, 1,  3),
-+	F_MN(300000000, P_PLL3, 1,  4),
-+	F_MN(320000000, P_PLL2, 2,  5),
-+	F_MN(400000000, P_PLL2, 1,  2),
- 	{ }
- };
- 
-@@ -897,7 +899,7 @@ static struct clk_dyn_rcg gfx3d_src = {
- 		.hw.init = &(struct clk_init_data){
- 			.name = "gfx3d_src",
- 			.parent_names = mmcc_pxo_pll8_pll2_pll3,
--			.num_parents = 3,
-+			.num_parents = 4,
- 			.ops = &clk_dyn_rcg_ops,
+ /* CUSTOM VALUES FOR SENSOR 2 */
+@@ -105,10 +106,12 @@
+ #define ST_MAGN_2_FS_MASK			0x60
+ #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
+ #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
+-#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
+-#define ST_MAGN_2_FS_AVL_4000_GAIN		430
+-#define ST_MAGN_2_FS_AVL_8000_GAIN		230
+-#define ST_MAGN_2_FS_AVL_10000_GAIN		230
++#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
++#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
++#define ST_MAGN_2_FS_AVL_4000_GAIN		146
++#define ST_MAGN_2_FS_AVL_8000_GAIN		292
++#define ST_MAGN_2_FS_AVL_12000_GAIN		438
++#define ST_MAGN_2_FS_AVL_16000_GAIN		584
+ #define ST_MAGN_2_MULTIREAD_BIT			false
+ #define ST_MAGN_2_OUT_X_L_ADDR			0x28
+ #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
+@@ -266,9 +269,14 @@ static const struct st_sensors st_magn_s
+ 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
+ 				},
+ 				[2] = {
+-					.num = ST_MAGN_FS_AVL_10000MG,
+-					.value = ST_MAGN_2_FS_AVL_10000_VAL,
+-					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
++					.num = ST_MAGN_FS_AVL_12000MG,
++					.value = ST_MAGN_2_FS_AVL_12000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
++				},
++				[3] = {
++					.num = ST_MAGN_FS_AVL_16000MG,
++					.value = ST_MAGN_2_FS_AVL_16000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
+ 				},
+ 			},
  		},
- 	},
-@@ -995,7 +997,7 @@ static struct clk_rcg jpegd_src = {
- 	.ns_reg = 0x00ac,
- 	.p = {
- 		.pre_div_shift = 12,
--		.pre_div_width = 2,
-+		.pre_div_width = 4,
- 	},
- 	.s = {
- 		.src_sel_shift = 0,
-@@ -1342,15 +1344,15 @@ static struct clk_branch hdmi_app_clk =
- };
- 
- static struct freq_tbl clk_tbl_vcodec[] = {
--	{  27000000, P_PXO,  1,  0 },
--	{  32000000, P_PLL8, 1, 12 },
--	{  48000000, P_PLL8, 1,  8 },
--	{  54860000, P_PLL8, 1,  7 },
--	{  96000000, P_PLL8, 1,  4 },
--	{ 133330000, P_PLL2, 1,  6 },
--	{ 200000000, P_PLL2, 1,  4 },
--	{ 228570000, P_PLL2, 2,  7 },
--	{ 266670000, P_PLL2, 1,  3 },
-+	F_MN( 27000000, P_PXO,  1,  0),
-+	F_MN( 32000000, P_PLL8, 1, 12),
-+	F_MN( 48000000, P_PLL8, 1,  8),
-+	F_MN( 54860000, P_PLL8, 1,  7),
-+	F_MN( 96000000, P_PLL8, 1,  4),
-+	F_MN(133330000, P_PLL2, 1,  6),
-+	F_MN(200000000, P_PLL2, 1,  4),
-+	F_MN(228570000, P_PLL2, 2,  7),
-+	F_MN(266670000, P_PLL2, 1,  3),
- 	{ }
- };
- 
 
 
