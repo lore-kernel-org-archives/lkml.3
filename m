@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759706AbaJCXMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:12:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46921 "EHLO
+	id S1759794AbaJCXN2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:13:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46898 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757906AbaJCWN4 (ORCPT
+	with ESMTP id S1757894AbaJCWNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:56 -0400
+	Fri, 3 Oct 2014 18:13:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>
-Subject: [PATCH 3.14 190/238] powerpc/perf: Fix ABIv2 kernel backtraces
-Date: Fri,  3 Oct 2014 14:31:45 -0700
-Message-Id: <20141003212919.741381715@linuxfoundation.org>
+        John Sung <penmount.touch@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 161/238] Input: serport - add compat handling for SPIOCSTYPE ioctl
+Date: Fri,  3 Oct 2014 14:31:16 -0700
+Message-Id: <20141003212918.830493038@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,85 +29,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: John Sung <penmount.touch@gmail.com>
 
-commit 85101af13bb854a6572fa540df7c7201958624b9 upstream.
+commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
 
-ABIv2 kernels are failing to backtrace through the kernel. An example:
+When running a 32-bit inputattach utility in a 64-bit system, there will be
+error code "inputattach: can't set device type". This is caused by the
+serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
+fails.
 
-39.30%  readseek2_proce  [kernel.kallsyms]    [k] find_get_entry
-            |
-            --- find_get_entry
-               __GI___libc_read
-
-The problem is in valid_next_sp() where we check that the new stack
-pointer is at least STACK_FRAME_OVERHEAD below the previous one.
-
-ABIv1 has a minimum stack frame size of 112 bytes consisting of 48 bytes
-and 64 bytes of parameter save area. ABIv2 changes that to 32 bytes
-with no paramter save area.
-
-STACK_FRAME_OVERHEAD is in theory the minimum stack frame size,
-but we over 240 uses of it, some of which assume that it includes
-space for the parameter area.
-
-We need to work through all our stack defines and rationalise them
-but let's fix perf now by creating STACK_FRAME_MIN_SIZE and using
-in valid_next_sp(). This fixes the issue:
-
-30.64%  readseek2_proce  [kernel.kallsyms]    [k] find_get_entry
-            |
-            --- find_get_entry
-               pagecache_get_page
-               generic_file_read_iter
-               new_sync_read
-               vfs_read
-               sys_read
-               syscall_exit
-               __GI___libc_read
-
-Reported-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: John Sung <penmount.touch@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/ptrace.h |    7 +++++++
- arch/powerpc/perf/callchain.c     |    2 +-
- 2 files changed, 8 insertions(+), 1 deletion(-)
+ drivers/input/serio/serport.c |   45 +++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 38 insertions(+), 7 deletions(-)
 
---- a/arch/powerpc/include/asm/ptrace.h
-+++ b/arch/powerpc/include/asm/ptrace.h
-@@ -47,6 +47,12 @@
- 				 STACK_FRAME_OVERHEAD + KERNEL_REDZONE_SIZE)
- #define STACK_FRAME_MARKER	12
+--- a/drivers/input/serio/serport.c
++++ b/drivers/input/serio/serport.c
+@@ -21,6 +21,7 @@
+ #include <linux/init.h>
+ #include <linux/serio.h>
+ #include <linux/tty.h>
++#include <linux/compat.h>
  
-+#if defined(_CALL_ELF) && _CALL_ELF == 2
-+#define STACK_FRAME_MIN_SIZE	32
-+#else
-+#define STACK_FRAME_MIN_SIZE	STACK_FRAME_OVERHEAD
-+#endif
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("Input device TTY line discipline");
+@@ -198,28 +199,55 @@ static ssize_t serport_ldisc_read(struct
+ 	return 0;
+ }
+ 
++static void serport_set_type(struct tty_struct *tty, unsigned long type)
++{
++	struct serport *serport = tty->disc_data;
 +
- /* Size of dummy stack frame allocated when calling signal handler. */
- #define __SIGNAL_FRAMESIZE	128
- #define __SIGNAL_FRAMESIZE32	64
-@@ -60,6 +66,7 @@
- #define STACK_FRAME_REGS_MARKER	ASM_CONST(0x72656773)
- #define STACK_INT_FRAME_SIZE	(sizeof(struct pt_regs) + STACK_FRAME_OVERHEAD)
- #define STACK_FRAME_MARKER	2
-+#define STACK_FRAME_MIN_SIZE	STACK_FRAME_OVERHEAD
++	serport->id.proto = type & 0x000000ff;
++	serport->id.id    = (type & 0x0000ff00) >> 8;
++	serport->id.extra = (type & 0x00ff0000) >> 16;
++}
++
+ /*
+  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
+  */
  
- /* Size of stack frame allocated when calling signal handler. */
- #define __SIGNAL_FRAMESIZE	64
---- a/arch/powerpc/perf/callchain.c
-+++ b/arch/powerpc/perf/callchain.c
-@@ -35,7 +35,7 @@ static int valid_next_sp(unsigned long s
- 		return 0;		/* must be 16-byte aligned */
- 	if (!validate_sp(sp, current, STACK_FRAME_OVERHEAD))
+-static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
++static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
++			       unsigned int cmd, unsigned long arg)
+ {
+-	struct serport *serport = (struct serport*) tty->disc_data;
+-	unsigned long type;
+-
+ 	if (cmd == SPIOCSTYPE) {
++		unsigned long type;
++
+ 		if (get_user(type, (unsigned long __user *) arg))
+ 			return -EFAULT;
+ 
+-		serport->id.proto = type & 0x000000ff;
+-		serport->id.id	  = (type & 0x0000ff00) >> 8;
+-		serport->id.extra = (type & 0x00ff0000) >> 16;
++		serport_set_type(tty, type);
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
++#ifdef CONFIG_COMPAT
++#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
++static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
++				       struct file *file,
++				       unsigned int cmd, unsigned long arg)
++{
++	if (cmd == COMPAT_SPIOCSTYPE) {
++		void __user *uarg = compat_ptr(arg);
++		compat_ulong_t compat_type;
++
++		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
++			return -EFAULT;
+ 
++		serport_set_type(tty, compat_type);
  		return 0;
--	if (sp >= prev_sp + STACK_FRAME_OVERHEAD)
-+	if (sp >= prev_sp + STACK_FRAME_MIN_SIZE)
- 		return 1;
- 	/*
- 	 * sp could decrease when we jump off an interrupt stack
+ 	}
+ 
+ 	return -EINVAL;
+ }
++#endif
+ 
+ static void serport_ldisc_write_wakeup(struct tty_struct * tty)
+ {
+@@ -243,6 +271,9 @@ static struct tty_ldisc_ops serport_ldis
+ 	.close =	serport_ldisc_close,
+ 	.read =		serport_ldisc_read,
+ 	.ioctl =	serport_ldisc_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl =	serport_ldisc_compat_ioctl,
++#endif
+ 	.receive_buf =	serport_ldisc_receive,
+ 	.write_wakeup =	serport_ldisc_write_wakeup
+ };
 
 
