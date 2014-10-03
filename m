@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaJCHYp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 03:24:45 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:48054 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731AbaJCHYn (ORCPT
+	id S1751380AbaJCH0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 03:26:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:11435 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751257AbaJCH0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 03:24:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141002165745.GA28662@e103034-lin>
-References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
- <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org> <20141002165745.GA28662@e103034-lin>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 3 Oct 2014 09:24:23 +0200
-Message-ID: <CAKfTPtA5XTwT0fTqXZJWWwfUQ8SfVxiqmQwSWqFKpbb1XpriRw@mail.gmail.com>
-Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>,
-        "bsegall@google.com" <bsegall@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 3 Oct 2014 03:26:36 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-75-542e4fa9ce93
+Date: Fri, 03 Oct 2014 09:26:29 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] thermal: step_wise: fix: Prevent from binary overflow
+ when trend is dropping
+Message-id: <20141003092629.01afdab7@amdc2363>
+In-reply-to: <20141002211325.GA5016@developer>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
+ <20141002211325.GA5016@developer>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t9jAd1V/nohBguusFhsnLGe1WL+lWus
+	Fm8ecVtc3jWHzeJz7xFGiycP+9gc2Dx2zrrL7rF4z0smj3XT3jJ79G1ZxejxeZNcAGsUl01K
+	ak5mWWqRvl0CV8bGS/OYClYLV/y8n9LAuIy/i5GTQ0LARGJPwyQWCFtM4sK99WxdjFwcQgKL
+	GCXe3pnKDuH8YpQ4ePkoO0gVi4CqxPUJV8A62AT0JD7ffcoEYosIaEmcuLQdzGYWOM8osWe/
+	SRcjB4ewQLpExxpLkDAvUPnVK0sYQWxOIHvD21/MEPOXM0q8+XKAFSTBLyAp0f7vBzPERXYS
+	5z5tYIdoFpT4MfkeC8R8LYnN25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihO
+	Ss811CtOzC0uzUvXS87P3cQIDvhnUjsYVzZYHGIU4GBU4uH9cEM3RIg1say4MvcQowQHs5II
+	70djvRAh3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjCtX
+	qykZz5ym4SBm0nu0zz7SfGF6+E7BaM3f53sFZjBN5N237qqjwF09zXPqC2+7tZU88rx4M7Pq
+	zKMAvp8nlN/kmGRfmrbxak/ahNxDfW6rikxO/DhzWL9xSeDL981C3+bJaWWKqHFVZvF0fdqo
+	eTXzH3P8gQi2nV2Kct/fWc/59mcmp9pWTyWW4oxEQy3mouJEAIMSUs10AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 October 2014 18:57, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Tue, Sep 23, 2014 at 05:08:04PM +0100, Vincent Guittot wrote:
->> Below are two examples to illustrate the problem that this patch solves:
->>
->> 1 - capacity_factor makes the assumption that max capacity of a CPU is
->> SCHED_CAPACITY_SCALE and the load of a thread is always is
->> SCHED_LOAD_SCALE. It compares the output of these figures with the sum
->> of nr_running to decide if a group is overloaded or not.
->>
->> But if the default capacity of a CPU is less than SCHED_CAPACITY_SCALE
->> (640 as an example), a group of 3 CPUS will have a max capacity_factor
->> of 2 ( div_round_closest(3x640/1024) = 2) which means that it will be
->> seen as overloaded if we have only one task per CPU.
->
-> I did some testing on TC2 which has the setup you describe above on the
-> A7 cluster when the clock-frequency property is set in DT. The two A15s
-> have max capacities above 1024. When using sysbench with five threads I
-> still get three tasks on the two A15s and two tasks on the three A7
-> leaving one cpu idle (on average).
->
-> Using cpu utilization (usage) does correctly identify the A15 cluster as
-> overloaded and it even gets as far as selecting the A15 running two
-> tasks as the source cpu in load_balance(). However, load_balance() bails
-> out without pulling the task due to calculate_imbalance() returning a
-> zero imbalance. calculate_imbalance() bails out just before the hunk you
-> changed due to comparison of the sched_group avg_loads. sgs->avg_load is
-> basically the sum of load in the group divided by its capacity. Since
-> load isn't scaled the avg_load of the overloaded A15 group is slightly
-> _lower_ than the partially idle A7 group. Hence calculate_imbalance()
-> bails out, which isn't what we want.
->
-> I think we need to have a closer look at the imbalance calculation code
-> and any other users of sgs->avg_load to get rid of all code making
-> assumptions about cpu capacity.
+Hi Eduardo,
 
-We already had this discussion during the review of a previous version
-https://lkml.org/lkml/2014/6/3/422
-and my answer has not changed; This patch is necessary to solve the 1
-task per CPU issue of the HMP system but is not enough. I have a patch
-for solving the imbalance calculation issue and i have planned to send
-it once this patch will be in a good shape for being accepted by
-Peter.
+> Hello Lukasz,
+> 
+> On Wed, Sep 24, 2014 at 10:27:10AM +0200, Lukasz Majewski wrote:
+> > It turns out that some boards can have instance->lower greater than
+> > 0 and when thermal trend is dropping it results with next_target
+> > equal to -1.
+> > 
+> > Since the next_target is defined as unsigned long it is interpreted
+> > as 0xFFFFFFFF and larger than instance->upper.
+> > As a result the next_target is set to instance->upper which ramps
+> > up to maximal cooling device target when the temperature is
+> > steadily decreasing.
+> > 
+> 
+> Thanks for finding a problem and sending a fix.
+> 
+> Can you please explain a little more on how next_target reaches -1
+> when lower is greater than 0?
 
-I don't want to mix this patch and the next one because there are
-addressing different problem: this one is how evaluate the capacity of
-a system and detect when a group is overloaded and the next one will
-handle the case when the balance of the system can't rely on the
-average load figures of the group because we have a significant
-capacity difference between groups. Not that i haven't specifically
-mentioned HMP for the last patch because SMP system can also take
-advantage of it
+During testing I've created a fan based cooling device with
+"instance->lower" = 1 and "instance->upper" = 3.
 
-Regards,
-Vincent
+On the system the ordinary cpu_cooling device is also present.
 
->
-> Morten
+With step_wise.c it happens that at "THERMAL_TREND_DROPPING" the
+cur_state = 0, so the first if condition is false (line 80) and
+cur_state, which is defined as unsigned long, is decremented. This
+means that next_target equals to 0xFFFFFFFF because it also is defined
+as unsigned long.
+Such value is apparently bigger than "instance->upper" (line 85) and
+therefore the maximal cooling state is chosen. As a result, even when
+the thermal trend is dropping, the cooling device increase the cooling
+state to maximum.
+
+This behavior has been discovered during my work on adapting exynos
+thermal driver to reuse the of-thermal. I will send patches for this
+work after the weekend.
+
+> 
+> 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > ---
+> >  drivers/thermal/step_wise.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/thermal/step_wise.c
+> > b/drivers/thermal/step_wise.c index 3b54c2c..fdd1f52 100644
+> > --- a/drivers/thermal/step_wise.c
+> > +++ b/drivers/thermal/step_wise.c
+> > @@ -77,7 +77,7 @@ static unsigned long get_target_state(struct
+> > thermal_instance *instance, next_target = instance->upper;
+> >  		break;
+> >  	case THERMAL_TREND_DROPPING:
+> > -		if (cur_state == instance->lower) {
+> > +		if (cur_state <= instance->lower) {
+> >  			if (!throttle)
+> >  				next_target = THERMAL_NO_TARGET;
+> >  		} else {
+> > -- 
+> > 2.0.0.rc2
+> > 
+> 
+> 
+> Eduardo
+
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
