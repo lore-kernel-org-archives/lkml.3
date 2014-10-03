@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279AbaJCWDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:03:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45898 "EHLO
+	id S933209AbaJCXpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:45:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172AbaJCVxi (ORCPT
+	with ESMTP id S1757270AbaJCWDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:38 -0400
+	Fri, 3 Oct 2014 18:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.16 268/357] ftrace: Fix function_profiler and function tracer together
-Date: Fri,  3 Oct 2014 14:30:54 -0700
-Message-Id: <20141003212941.545058749@linuxfoundation.org>
+        Joseph Qi <joseph.qi@huawei.com>, "joyce.xue" <xuejiufei@huawei.com>,
+        Guozhonghua <guozhonghua@h3c.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 277/357] ocfs2/dlm: do not get resource spinlock if lockres is new
+Date: Fri,  3 Oct 2014 14:31:03 -0700
+Message-Id: <20141003212941.815580120@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,149 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit 5f151b240192a1557119d5375af71efc26825bc8 upstream.
+commit 5760a97c7143c208fa3a8f8cad0ed7dd672ebd28 upstream.
 
-The latest rewrite of ftrace removed the separate ftrace_ops of
-the function tracer and the function graph tracer and had them
-share the same ftrace_ops. This simplified the accounting by removing
-the multiple layers of functions called, where the global_ops func
-would call a special list that would iterate over the other ops that
-were registered within it (like function and function graph), which
-itself was registered to the ftrace ops list of all functions
-currently active. If that sounds confusing, the code that implemented
-it was also confusing and its removal is a good thing.
+There is a deadlock case which reported by Guozhonghua:
+  https://oss.oracle.com/pipermail/ocfs2-devel/2014-September/010079.html
 
-The problem with this change was that it assumed that the function
-and function graph tracer can never be used at the same time.
-This is mostly true, but there is an exception. That is when the
-function profiler uses the function graph tracer to profile.
-The function profiler can be activated the same time as the function
-tracer, and this breaks the assumption and the result is that ftrace
-will crash (it detects the error and shuts itself down, it does not
-cause a kernel oops).
+This case is caused by &res->spinlock and &dlm->master_lock
+misordering in different threads.
 
-To solve this issue, a previous change allowed the hash tables
-for the functions traced by a ftrace_ops to be a pointer and let
-multiple ftrace_ops share the same hash. This allows the function
-and function_graph tracer to have separate ftrace_ops, but still
-share the hash, which is what is done.
+It was introduced by commit 8d400b81cc83 ("ocfs2/dlm: Clean up refmap
+helpers").  Since lockres is new, it doesn't not require the
+&res->spinlock.  So remove it.
 
-Now the function and function graph tracers have separate ftrace_ops
-again, and the function tracer can be run while the function_profile
-is active.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Fixes: 8d400b81cc83 ("ocfs2/dlm: Clean up refmap helpers")
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: joyce.xue <xuejiufei@huawei.com>
+Reported-by: Guozhonghua <guozhonghua@h3c.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- kernel/trace/ftrace.c |   49 ++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 36 insertions(+), 13 deletions(-)
+ fs/ocfs2/dlm/dlmmaster.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -68,8 +68,12 @@
- #define INIT_OPS_HASH(opsname)	\
- 	.func_hash		= &opsname.local_hash,			\
- 	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
-+#define ASSIGN_OPS_HASH(opsname, val) \
-+	.func_hash		= val, \
-+	.local_hash.regex_lock	= __MUTEX_INITIALIZER(opsname.local_hash.regex_lock),
- #else
- #define INIT_OPS_HASH(opsname)
-+#define ASSIGN_OPS_HASH(opsname, val)
- #endif
- 
- static struct ftrace_ops ftrace_list_end __read_mostly = {
-@@ -110,6 +114,7 @@ static struct ftrace_ops *ftrace_ops_lis
- ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
- ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
-+static struct ftrace_ops graph_ops;
- static struct ftrace_ops control_ops;
- 
- #if ARCH_SUPPORTS_FTRACE_OPS
-@@ -4339,7 +4344,6 @@ void __init ftrace_init(void)
- static struct ftrace_ops global_ops = {
- 	.func			= ftrace_stub,
- 	.flags			= FTRACE_OPS_FL_RECURSION_SAFE | FTRACE_OPS_FL_INITIALIZED,
--	INIT_OPS_HASH(global_ops)
- };
- 
- static int __init ftrace_nodyn_init(void)
-@@ -4877,6 +4881,14 @@ ftrace_enable_sysctl(struct ctl_table *t
- 
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
-+static struct ftrace_ops graph_ops = {
-+	.func			= ftrace_stub,
-+	.flags			= FTRACE_OPS_FL_RECURSION_SAFE |
-+				   FTRACE_OPS_FL_INITIALIZED |
-+				   FTRACE_OPS_FL_STUB,
-+	ASSIGN_OPS_HASH(graph_ops, &global_ops.local_hash)
-+};
-+
- static int ftrace_graph_active;
- 
- int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
-@@ -5039,12 +5051,28 @@ static int ftrace_graph_entry_test(struc
-  */
- static void update_function_graph_func(void)
- {
--	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list == &global_ops &&
--	     global_ops.next == &ftrace_list_end))
--		ftrace_graph_entry = __ftrace_graph_entry;
--	else
-+	struct ftrace_ops *op;
-+	bool do_test = false;
-+
-+	/*
-+	 * The graph and global ops share the same set of functions
-+	 * to test. If any other ops is on the list, then
-+	 * the graph tracing needs to test if its the function
-+	 * it should call.
-+	 */
-+	do_for_each_ftrace_op(op, ftrace_ops_list) {
-+		if (op != &global_ops && op != &graph_ops &&
-+		    op != &ftrace_list_end) {
-+			do_test = true;
-+			/* in double loop, break out with goto */
-+			goto out;
-+		}
-+	} while_for_each_ftrace_op(op);
-+ out:
-+	if (do_test)
- 		ftrace_graph_entry = ftrace_graph_entry_test;
-+	else
-+		ftrace_graph_entry = __ftrace_graph_entry;
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -655,12 +655,9 @@ void dlm_lockres_clear_refmap_bit(struct
+ 	clear_bit(bit, res->refmap);
  }
  
- static struct notifier_block ftrace_suspend_notifier = {
-@@ -5085,11 +5113,7 @@ int register_ftrace_graph(trace_func_gra
- 	ftrace_graph_entry = ftrace_graph_entry_test;
- 	update_function_graph_func();
- 
--	/* Function graph doesn't use the .func field of global_ops */
--	global_ops.flags |= FTRACE_OPS_FL_STUB;
 -
--	ret = ftrace_startup(&global_ops, FTRACE_START_FUNC_RET);
+-void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++static void __dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+-	assert_spin_locked(&res->spinlock);
 -
-+	ret = ftrace_startup(&graph_ops, FTRACE_START_FUNC_RET);
- out:
- 	mutex_unlock(&ftrace_lock);
- 	return ret;
-@@ -5106,8 +5130,7 @@ void unregister_ftrace_graph(void)
- 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
- 	ftrace_graph_entry = ftrace_graph_entry_stub;
- 	__ftrace_graph_entry = ftrace_graph_entry_stub;
--	ftrace_shutdown(&global_ops, FTRACE_STOP_FUNC_RET);
--	global_ops.flags &= ~FTRACE_OPS_FL_STUB;
-+	ftrace_shutdown(&graph_ops, FTRACE_STOP_FUNC_RET);
- 	unregister_pm_notifier(&ftrace_suspend_notifier);
- 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
+ 	res->inflight_locks++;
  
+ 	mlog(0, "%s: res %.*s, inflight++: now %u, %ps()\n", dlm->name,
+@@ -668,6 +665,13 @@ void dlm_lockres_grab_inflight_ref(struc
+ 	     __builtin_return_address(0));
+ }
+ 
++void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++				   struct dlm_lock_resource *res)
++{
++	assert_spin_locked(&res->spinlock);
++	__dlm_lockres_grab_inflight_ref(dlm, res);
++}
++
+ void dlm_lockres_drop_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+@@ -894,10 +898,8 @@ lookup:
+ 	/* finally add the lockres to its hash bucket */
+ 	__dlm_insert_lockres(dlm, res);
+ 
+-	/* Grab inflight ref to pin the resource */
+-	spin_lock(&res->spinlock);
+-	dlm_lockres_grab_inflight_ref(dlm, res);
+-	spin_unlock(&res->spinlock);
++	/* since this lockres is new it doesn't not require the spinlock */
++	__dlm_lockres_grab_inflight_ref(dlm, res);
+ 
+ 	/* get an extra ref on the mle in case this is a BLOCK
+ 	 * if so, the creator of the BLOCK may try to put the last
 
 
