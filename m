@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578AbaJCWJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:09:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46689 "EHLO
+	id S1757555AbaJCWJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:09:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845AbaJCWJV (ORCPT
+	with ESMTP id S1755585AbaJCWJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:09:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 3.14 127/238] KVM: s390/mm: try a cow on read only pages for key ops
-Date: Fri,  3 Oct 2014 14:30:42 -0700
-Message-Id: <20141003212917.739881982@linuxfoundation.org>
+        Alexey Perevalov <a.perevalov@samsung.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [PATCH 3.16 339/357] netfilter: x_tables: allow to use default cgroup match
+Date: Fri,  3 Oct 2014 14:32:05 -0700
+Message-Id: <20141003212943.640730648@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,49 +26,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit ab3f285f227fec62868037e9b1b1fd18294a83b8 upstream.
+commit caa8ad94edf686d02b555c65a6162c0d1b434958 upstream.
 
-The PFMF instruction handler  blindly wrote the storage key even if
-the page was mapped R/O in the host. Lets try a COW before continuing
-and bail out in case of errors.
+There's actually no good reason why we cannot use cgroup id 0,
+so lets just remove this artificial barrier.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Reported-by: Alexey Perevalov <a.perevalov@samsung.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Alexey Perevalov <a.perevalov@samsung.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/mm/pgtable.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ net/netfilter/xt_cgroup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -810,11 +810,21 @@ int set_guest_storage_key(struct mm_stru
- 	pte_t *ptep;
+--- a/net/netfilter/xt_cgroup.c
++++ b/net/netfilter/xt_cgroup.c
+@@ -31,7 +31,7 @@ static int cgroup_mt_check(const struct
+ 	if (info->invert & ~1)
+ 		return -EINVAL;
  
- 	down_read(&mm->mmap_sem);
-+retry:
- 	ptep = get_locked_pte(current->mm, addr, &ptl);
- 	if (unlikely(!ptep)) {
- 		up_read(&mm->mmap_sem);
- 		return -EFAULT;
- 	}
-+	if (!(pte_val(*ptep) & _PAGE_INVALID) &&
-+	     (pte_val(*ptep) & _PAGE_PROTECT)) {
-+			pte_unmap_unlock(*ptep, ptl);
-+			if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
-+				up_read(&mm->mmap_sem);
-+				return -EFAULT;
-+			}
-+			goto retry;
-+		}
+-	return info->id ? 0 : -EINVAL;
++	return 0;
+ }
  
- 	new = old = pgste_get_lock(ptep);
- 	pgste_val(new) &= ~(PGSTE_GR_BIT | PGSTE_GC_BIT |
+ static bool
 
 
