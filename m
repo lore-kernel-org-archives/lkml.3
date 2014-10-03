@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbaJCUoJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:44:09 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:48317 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJCUoH (ORCPT
+	id S1754645AbaJCUow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:44:52 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35784 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaJCUot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:44:07 -0400
-Date: Fri, 3 Oct 2014 15:43:59 -0500
-From: Michael Welling <mwelling@ieee.org>
-To: David Miller <davem@davemloft.net>
-Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:ethernet:davinci_emac.c:Fixes flaw in mac
- address handling.
-Message-ID: <20141003204359.GA10110@sysresccd>
-References: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
- <20141003.130305.2216770567363258603.davem@davemloft.net>
+	Fri, 3 Oct 2014 16:44:49 -0400
+Date: Fri, 3 Oct 2014 22:44:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
+Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC
+ filtering
+Message-ID: <20141003204443.GP10583@worktop.programming.kicks-ass.net>
+References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
+ <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
+ <20141003201409.GM10583@worktop.programming.kicks-ass.net>
+ <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
+ <CALCETrWfrWpdMCAYySMAMGCHU3XRkNGmeMTECTE=PXQUfjGPZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141003.130305.2216770567363258603.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrWfrWpdMCAYySMAMGCHU3XRkNGmeMTECTE=PXQUfjGPZA@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 01:03:05PM -0700, David Miller wrote:
-> From: Michael Welling <mwelling@ieee.org>
-> Date: Wed,  1 Oct 2014 21:32:05 -0500
+On Fri, Oct 03, 2014 at 01:27:52PM -0700, Andy Lutomirski wrote:
+> On Fri, Oct 3, 2014 at 1:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> > We could make the rule be that RDPMC is enabled if a perf event is
+> > mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
+> > there's an actual performance issue first.  Ideally we can get this
+> > all working with no API or ABI change at all.
 > 
-> > The code currently checks the mac_addr variable that is clearly
-> > zero'd out during allocation.
-> > 
-> > Further code is added to bring the mac_addr from the partial pdata.
-> > 
-> > Signed-off-by: Michael Welling <mwelling@ieee.org>
-> 
-> I don't see anyone specifying a MAC address in the partial pdata,
-> so better to just delete that field.
-> 
-> Even if people did, I am not so sure that the partial pdata should
-> unconditionally trump an OF provided MAC address.
+> No, we can't use that rule.  But we could say that RDPMC is enabled if
+> a perf event is mmapped and no thread in the mm uses seccomp.  I'll
+> grumble a little bit about adding yet another piece of seccomp state.
 
-So should I just leave the code for handling the mac_addr field from the
-partial pdata out or make it such that the mac_addr field is overriden 
-if specified from the devicetree?
-
+Well, we could simply disable the RDPMC for everything TIF_SECCOMP.
+Should be fairly straight fwd.
