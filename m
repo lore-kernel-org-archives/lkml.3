@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaJCWaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:30:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47618 "EHLO
+	id S1758315AbaJCWaP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:30:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47643 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755453AbaJCW3r (ORCPT
+	with ESMTP id S1757131AbaJCW3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:29:47 -0400
+	Fri, 3 Oct 2014 18:29:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
-Subject: [PATCH 3.10 135/143] serial: 8250_dma: check the result of TX buffer mapping
-Date: Fri,  3 Oct 2014 14:35:30 -0700
-Message-Id: <20141003213318.528372443@linuxfoundation.org>
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michal Hocko <mhocko@suse.cz>, Pavel Emelyanov <xemul@parallels.com>,
+        Sergey Dyasly <dserrg@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Li Zefan <lizefan@huawei.com>
+Subject: [PATCH 3.10 138/143] kernel/fork.c:copy_process(): unify CLONE_THREAD-or-thread_group_leader code
+Date: Fri,  3 Oct 2014 14:35:33 -0700
+Message-Id: <20141003213318.613357435@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,56 +34,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d4089a332883ad969700aac5dd4dd5f1c4fee825 upstream.
+commit 80628ca06c5d42929de6bc22c0a41589a834d151 upstream.
 
-Using dma_mapping_error() to make sure the mapping did not
-fail.
+Cleanup and preparation for the next changes.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+Move the "if (clone_flags & CLONE_THREAD)" code down under "if
+(likely(p->pid))" and turn it into into the "else" branch.  This makes the
+process/thread initialization more symmetrical and removes one check.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Sergey Dyasly <dserrg@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_dma.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ kernel/fork.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -192,21 +192,28 @@ int serial8250_request_dma(struct uart_8
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1448,14 +1448,6 @@ static struct task_struct *copy_process(
+ 		goto bad_fork_free_pid;
+ 	}
  
- 	dma->rx_buf = dma_alloc_coherent(dma->rxchan->device->dev, dma->rx_size,
- 					&dma->rx_addr, GFP_KERNEL);
--	if (!dma->rx_buf) {
--		dma_release_channel(dma->rxchan);
--		dma_release_channel(dma->txchan);
--		return -ENOMEM;
+-	if (clone_flags & CLONE_THREAD) {
+-		current->signal->nr_threads++;
+-		atomic_inc(&current->signal->live);
+-		atomic_inc(&current->signal->sigcnt);
+-		p->group_leader = current->group_leader;
+-		list_add_tail_rcu(&p->thread_group, &p->group_leader->thread_group);
 -	}
-+	if (!dma->rx_buf)
-+		goto err;
+-
+ 	if (likely(p->pid)) {
+ 		ptrace_init_task(p, (clone_flags & CLONE_PTRACE) || trace);
  
- 	/* TX buffer */
- 	dma->tx_addr = dma_map_single(dma->txchan->device->dev,
- 					p->port.state->xmit.buf,
- 					UART_XMIT_SIZE,
- 					DMA_TO_DEVICE);
-+	if (dma_mapping_error(dma->txchan->device->dev, dma->tx_addr)) {
-+		dma_free_coherent(dma->rxchan->device->dev, dma->rx_size,
-+				  dma->rx_buf, dma->rx_addr);
-+		goto err;
-+	}
- 
- 	dev_dbg_ratelimited(p->port.dev, "got both dma channels\n");
- 
- 	return 0;
-+err:
-+	dma_release_channel(dma->rxchan);
-+	dma_release_channel(dma->txchan);
-+
-+	return -ENOMEM;
- }
- EXPORT_SYMBOL_GPL(serial8250_request_dma);
- 
+@@ -1472,6 +1464,13 @@ static struct task_struct *copy_process(
+ 			list_add_tail(&p->sibling, &p->real_parent->children);
+ 			list_add_tail_rcu(&p->tasks, &init_task.tasks);
+ 			__this_cpu_inc(process_counts);
++		} else {
++			current->signal->nr_threads++;
++			atomic_inc(&current->signal->live);
++			atomic_inc(&current->signal->sigcnt);
++			p->group_leader = current->group_leader;
++			list_add_tail_rcu(&p->thread_group,
++					  &p->group_leader->thread_group);
+ 		}
+ 		attach_pid(p, PIDTYPE_PID, pid);
+ 		nr_threads++;
 
 
