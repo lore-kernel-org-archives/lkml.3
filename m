@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128AbaJCX3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:29:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46275 "EHLO
+	id S1760115AbaJCX3S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:29:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757337AbaJCWD5 (ORCPT
+	with ESMTP id S1757350AbaJCWD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Jorge A. Ventura" <jorge.araujo.ventura@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.14 108/238] spi/omap-mcspi: Fix the spi task hangs waiting dma_rx
-Date: Fri,  3 Oct 2014 14:30:23 -0700
-Message-Id: <20141003212917.132919709@linuxfoundation.org>
+        "Lee, Chun-Yi" <jlee@suse.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 103/238] ACPI / RTC: Fix CMOS RTC opregion handler accesses to wrong addresses
+Date: Fri,  3 Oct 2014 14:30:18 -0700
+Message-Id: <20141003212916.971298386@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,31 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Jorge A. Ventura" <jorge.araujo.ventura@gmail.com>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-commit 3d0763c006f8da1b44a9f5f9a21187f5b8f674f4 upstream.
+commit 9389f46e9782ea5e56fbd7b2e59ba7c08f3ba86b upstream.
 
-The spi hangs waiting the completion of omap2_mcspi_rx_callback.
+The value64 parameter is an u64 point that used to transfer the value
+for write to CMOS, or used to return the value that's read from CMOS.
 
-Signed-off-by: Jorge A. Ventura <jorge.araujo.ventura@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The value64 is an u64 point, so don't need get address again. It causes
+acpi_cmos_rtc_space_handler always return 0 to reader and didn't write
+expected value to CMOS.
+
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-omap2-mcspi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/acpi_cmos_rtc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -321,7 +321,8 @@ static void omap2_mcspi_set_fifo(const s
- disable_fifo:
- 	if (t->rx_buf != NULL)
- 		chconf &= ~OMAP2_MCSPI_CHCONF_FFER;
--	else
-+
-+	if (t->tx_buf != NULL)
- 		chconf &= ~OMAP2_MCSPI_CHCONF_FFET;
+--- a/drivers/acpi/acpi_cmos_rtc.c
++++ b/drivers/acpi/acpi_cmos_rtc.c
+@@ -35,7 +35,7 @@ acpi_cmos_rtc_space_handler(u32 function
+ 		      void *handler_context, void *region_context)
+ {
+ 	int i;
+-	u8 *value = (u8 *)&value64;
++	u8 *value = (u8 *)value64;
  
- 	mcspi_write_chconf0(spi, chconf);
+ 	if (address > 0xff || !value64)
+ 		return AE_BAD_PARAMETER;
 
 
