@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaJCVcp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:32:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44721 "EHLO
+	id S1755011AbaJCVcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:32:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754931AbaJCVcg (ORCPT
+	with ESMTP id S1753233AbaJCVcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.16 013/357] drm/ttm: Choose a pool to shrink correctly in ttm_dma_pool_shrink_scan().
-Date: Fri,  3 Oct 2014 14:26:39 -0700
-Message-Id: <20141003212933.866732517@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.16 022/357] drm/radeon/atom: add new voltage fetch function for hawaii
+Date: Fri,  3 Oct 2014 14:26:48 -0700
+Message-Id: <20141003212934.132202202@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,45 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 46c2df68f03a236b30808bba361f10900c88d95e upstream.
+commit e9f274b2a1bd4ecc569b823b1e7942e9bf92593e upstream.
 
-We can use "unsigned int" instead of "atomic_t" by updating start_pool
-variable under _manager->lock. This patch will make it possible to avoid
-skipping when choosing a pool to shrink in round-robin style, after next
-patch changes mutex_lock(_manager->lock) to !mutex_trylock(_manager->lork).
+Some hawaii boards use a different method for fetching the
+voltage information from the vbios.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon.h          |    3 ++
+ drivers/gpu/drm/radeon/radeon_atombios.c |   35 +++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
 
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1004,9 +1004,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
- static unsigned long
- ttm_dma_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- {
--	static atomic_t start_pool = ATOMIC_INIT(0);
-+	static unsigned start_pool;
- 	unsigned idx = 0;
--	unsigned pool_offset = atomic_add_return(1, &start_pool);
-+	unsigned pool_offset;
- 	unsigned shrink_pages = sc->nr_to_scan;
- 	struct device_pools *p;
- 	unsigned long freed = 0;
-@@ -1017,7 +1017,7 @@ ttm_dma_pool_shrink_scan(struct shrinker
- 	mutex_lock(&_manager->lock);
- 	if (!_manager->npools)
- 		goto out;
--	pool_offset = pool_offset % _manager->npools;
-+	pool_offset = ++start_pool % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
+--- a/drivers/gpu/drm/radeon/radeon.h
++++ b/drivers/gpu/drm/radeon/radeon.h
+@@ -304,6 +304,9 @@ int radeon_atom_get_leakage_vddc_based_o
+ 							 u16 *vddc, u16 *vddci,
+ 							 u16 virtual_voltage_id,
+ 							 u16 vbios_voltage_id);
++int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
++				u16 virtual_voltage_id,
++				u16 *voltage);
+ int radeon_atom_round_to_true_voltage(struct radeon_device *rdev,
+ 				      u8 voltage_type,
+ 				      u16 nominal_voltage,
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -3236,6 +3236,41 @@ int radeon_atom_get_leakage_vddc_based_o
+ 	return 0;
+ }
  
++union get_voltage_info {
++	struct  _GET_VOLTAGE_INFO_INPUT_PARAMETER_V1_2 in;
++	struct  _GET_EVV_VOLTAGE_INFO_OUTPUT_PARAMETER_V1_2 evv_out;
++};
++
++int radeon_atom_get_voltage_evv(struct radeon_device *rdev,
++				u16 virtual_voltage_id,
++				u16 *voltage)
++{
++	int index = GetIndexIntoMasterTable(COMMAND, GetVoltageInfo);
++	u32 entry_id;
++	u32 count = rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.count;
++	union get_voltage_info args;
++
++	for (entry_id = 0; entry_id < count; entry_id++) {
++		if (rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].v ==
++		    virtual_voltage_id)
++			break;
++	}
++
++	if (entry_id >= count)
++		return -EINVAL;
++
++	args.in.ucVoltageType = VOLTAGE_TYPE_VDDC;
++	args.in.ucVoltageMode = ATOM_GET_VOLTAGE_EVV_VOLTAGE;
++	args.in.ulSCLKFreq =
++		cpu_to_le32(rdev->pm.dpm.dyn_state.vddc_dependency_on_sclk.entries[entry_id].clk);
++
++	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
++
++	*voltage = le16_to_cpu(args.evv_out.usVoltageLevel);
++
++	return 0;
++}
++
+ int radeon_atom_get_voltage_gpio_settings(struct radeon_device *rdev,
+ 					  u16 voltage_level, u8 voltage_type,
+ 					  u32 *gpio_value, u32 *gpio_mask)
 
 
