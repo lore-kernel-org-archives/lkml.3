@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932593AbaJDAFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:05:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
+	id S932630AbaJDAGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:06:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713AbaJCVxV (ORCPT
+	with ESMTP id S1755081AbaJCVxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:21 -0400
+	Fri, 3 Oct 2014 17:53:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.14 032/238] arm64: use irq_set_affinity with force=false when migrating irqs
-Date: Fri,  3 Oct 2014 14:29:07 -0700
-Message-Id: <20141003212914.691503781@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Luciano Coelho <luciano.coelho@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.16 243/357] iwlwifi: mvm: set MAC_FILTER_IN_BEACON correctly for STA/P2P client
+Date: Fri,  3 Oct 2014 14:30:29 -0700
+Message-Id: <20141003212940.803833037@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,83 +26,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+From: Luciano Coelho <luciano.coelho@intel.com>
 
-commit 3d8afe3099ebc602848aa7f09235cce3a9a023ce upstream.
+commit 7c8b3bc688bdcfd7789efbd17da4d85b104ad351 upstream.
 
-The arm64 interrupt migration code on cpu offline calls
-irqchip.irq_set_affinity() with the argument force=true. Originally
-this argument had no effect because it was not used by any interrupt
-chip driver and there was no semantics defined.
+In commit cad3f08c (iwlwifi: mvm: enable MAC_FILTER_IN_BEACON when
+forced_assoc_off is set) the code to set the MAC_FILTER_IN_BEACON flag
+was accidentally moved to the main block of the if statement, while it
+should be in the else block instead.  Move it to the right place.
 
-This changed with commit 01f8fa4f01d8 ("genirq: Allow forcing cpu
-affinity of interrupts") which made the force argument useful to route
-interrupts to not yet online cpus without checking the target cpu
-against the cpu online mask. The following commit ffde1de64012
-("irqchip: gic: Support forced affinity setting") implemented this for
-the GIC interrupt controller.
-
-As a consequence the cpu offline irq migration fails if CPU0 is
-offlined, because CPU0 is still set in the affinity mask and the
-validation against cpu online mask is skipped to the force argument
-being true. The following first_cpu(mask) selection always selects
-CPU0 as the target.
-
-Commit 601c942176d8("arm64: use cpu_online_mask when using forced
-irq_set_affinity") intended to fix the above mentioned issue but
-introduced another issue where affinity can be migrated to a wrong
-CPU due to unconditional copy of cpu_online_mask.
-
-As with for arm, solve the issue by calling irq_set_affinity() with
-force=false from the CPU offline irq migration code so the GIC driver
-validates the affinity mask against CPU online mask and therefore
-removes CPU0 from the possible target candidates. Also revert the
-changes done in the commit 601c942176d8 as it's no longer needed.
-
-Tested on Juno platform.
-
-Fixes: 601c942176d8("arm64: use cpu_online_mask when using forced
-	irq_set_affinity")
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Fixes: cad3f08c23de ("iwlwifi: mvm: enable MAC_FILTER_IN_BEACON when forced_assoc_off is set")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/irq.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/arm64/kernel/irq.c
-+++ b/arch/arm64/kernel/irq.c
-@@ -97,19 +97,15 @@ static bool migrate_one_irq(struct irq_d
- 	if (irqd_is_per_cpu(d) || !cpumask_test_cpu(smp_processor_id(), affinity))
- 		return false;
+--- a/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac-ctxt.c
+@@ -720,11 +720,6 @@ static int iwl_mvm_mac_ctxt_cmd_sta(stru
+ 	    !force_assoc_off) {
+ 		u32 dtim_offs;
  
--	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids)
-+	if (cpumask_any_and(affinity, cpu_online_mask) >= nr_cpu_ids) {
-+		affinity = cpu_online_mask;
- 		ret = true;
-+	}
+-		/* Allow beacons to pass through as long as we are not
+-		 * associated, or we do not have dtim period information.
+-		 */
+-		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_BEACON);
+-
+ 		/*
+ 		 * The DTIM count counts down, so when it is N that means N
+ 		 * more beacon intervals happen until the DTIM TBTT. Therefore
+@@ -758,6 +753,11 @@ static int iwl_mvm_mac_ctxt_cmd_sta(stru
+ 		ctxt_sta->is_assoc = cpu_to_le32(1);
+ 	} else {
+ 		ctxt_sta->is_assoc = cpu_to_le32(0);
++
++		/* Allow beacons to pass through as long as we are not
++		 * associated, or we do not have dtim period information.
++		 */
++		cmd.filter_flags |= cpu_to_le32(MAC_FILTER_IN_BEACON);
+ 	}
  
--	/*
--	 * when using forced irq_set_affinity we must ensure that the cpu
--	 * being offlined is not present in the affinity mask, it may be
--	 * selected as the target CPU otherwise
--	 */
--	affinity = cpu_online_mask;
- 	c = irq_data_get_irq_chip(d);
- 	if (!c->irq_set_affinity)
- 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
--	else if (c->irq_set_affinity(d, affinity, true) == IRQ_SET_MASK_OK && ret)
-+	else if (c->irq_set_affinity(d, affinity, false) == IRQ_SET_MASK_OK && ret)
- 		cpumask_copy(d->affinity, affinity);
- 
- 	return ret;
+ 	ctxt_sta->bi = cpu_to_le32(vif->bss_conf.beacon_int);
 
 
