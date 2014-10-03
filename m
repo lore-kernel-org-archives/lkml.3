@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745AbaJDAm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:42:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45256 "EHLO
+	id S1759985AbaJDAm0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:42:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45263 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720AbaJCVmj (ORCPT
+	with ESMTP id S1755819AbaJCVmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:39 -0400
+	Fri, 3 Oct 2014 17:42:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Imre Deak <imre.deak@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.16 132/357] xhci: fix oops when xhci resumes from hibernate with hw lpm capable devices
-Date: Fri,  3 Oct 2014 14:28:38 -0700
-Message-Id: <20141003212937.437616937@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 117/357] USB: zte_ev: remove duplicate Qualcom PID
+Date: Fri,  3 Oct 2014 14:28:23 -0700
+Message-Id: <20141003212936.991764457@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,55 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 96044694b8511bc2b04df0776b4ba295cfe005c0 upstream.
+commit 754eb21c0bbbbc4b8830a9a864b286323b84225f upstream.
 
-Resuming from hibernate (S4) will restart and re-initialize xHC.
-The device contexts are freed and will be re-allocated later during device reset.
+Remove dublicate Qualcom PID 0x3197 which is already handled by the
+moto-modem driver since commit 6986a978eec7 ("USB: add new moto_modem
+driver for some Morotola phones").
 
-Usb core will disable link pm in device resume before device reset, which will
-try to change the max exit latency, accessing the device contexts before they are re-allocated.
-
-There is no need to zero (disable) the max exit latency when disabling hw lpm
-for a freshly re-initialized xHC. So check that device context exists before
-doing anything. The max exit latency will be set again after device reset when usb core
-enables the link pm.
-
-Reported-by: Imre Deak <imre.deak@intel.com>
-Tested-by: Imre Deak <imre.deak@intel.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/serial/zte_ev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -3982,13 +3982,21 @@ static int __maybe_unused xhci_change_ma
- 	int ret;
- 
- 	spin_lock_irqsave(&xhci->lock, flags);
--	if (max_exit_latency == xhci->devs[udev->slot_id]->current_mel) {
-+
-+	virt_dev = xhci->devs[udev->slot_id];
-+
-+	/*
-+	 * virt_dev might not exists yet if xHC resumed from hibernate (S4) and
-+	 * xHC was re-initialized. Exit latency will be set later after
-+	 * hub_port_finish_reset() is done and xhci->devs[] are re-allocated
-+	 */
-+
-+	if (!virt_dev || max_exit_latency == virt_dev->current_mel) {
- 		spin_unlock_irqrestore(&xhci->lock, flags);
- 		return 0;
- 	}
- 
- 	/* Attempt to issue an Evaluate Context command to change the MEL. */
--	virt_dev = xhci->devs[udev->slot_id];
- 	command = xhci->lpm_command;
- 	ctrl_ctx = xhci_get_input_control_ctx(xhci, command->in_ctx);
- 	if (!ctrl_ctx) {
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -274,7 +274,6 @@ static void zte_ev_usb_serial_close(stru
+ static const struct usb_device_id id_table[] = {
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+-	{ USB_DEVICE(0x05C6, 0x3197) },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
