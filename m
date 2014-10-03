@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932383AbaJCWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:25:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
+	id S932785AbaJCW0h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:26:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932277AbaJCWYX (ORCPT
+	with ESMTP id S1755280AbaJCW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:23 -0400
+	Fri, 3 Oct 2014 18:26:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 115/143] fs/notify: dont show f_handle if exportfs_encode_inode_fh failed
-Date: Fri,  3 Oct 2014 14:35:10 -0700
-Message-Id: <20141003213317.946660559@linuxfoundation.org>
+        Jason Robinson <mail@jasonrobinson.me>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 100/143] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
+Date: Fri,  3 Oct 2014 14:34:55 -0700
+Message-Id: <20141003213317.489290239@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -32,34 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 7e8824816bda16bb11ff5ff1e1212d642e57b0b3 upstream.
+commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
 
-Currently we handle only ENOSPC.  In case of other errors the file_handle
-variable isn't filled properly and we will show a part of stack.
+https://bugzilla.kernel.org/show_bug.cgi?id=69731
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Jason Robinson <mail@jasonrobinson.me>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fdinfo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/serio/i8042-x86ia64io.h |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
- 	size = f.handle.handle_bytes >> 2;
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -601,6 +601,14 @@ static const struct dmi_system_id __init
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Fujitsu U574 laptop */
++		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
++		},
++	},
+ 	{ }
+ };
  
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
--	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
-+	if ((ret == FILEID_INVALID) || (ret < 0)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
- 		return 0;
- 	}
 
 
