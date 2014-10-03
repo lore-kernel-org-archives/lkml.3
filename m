@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399AbaJCVgb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:36:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45110 "EHLO
+	id S1755433AbaJCVgh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:36:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755327AbaJCVfK (ORCPT
+	with ESMTP id S1755322AbaJCVfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:35:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 112/357] USB: serial: fix potential heap buffer overflow
-Date: Fri,  3 Oct 2014 14:28:18 -0700
-Message-Id: <20141003212936.847712758@linuxfoundation.org>
+Subject: [PATCH 3.16 110/357] USB: serial: fix potential stack buffer overflow
+Date: Fri,  3 Oct 2014 14:28:16 -0700
+Message-Id: <20141003212936.783804533@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,36 +30,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <johan@kernel.org>
 
-commit 5654699fb38512bdbfc0f892ce54fce75bdc2bab upstream.
+commit d979e9f9ecab04c1ecca741370e30a8a498893f5 upstream.
 
-Make sure to verify the number of ports requested by subdriver to avoid
-writing beyond the end of fixed-size array in interface data.
+Make sure to verify the maximum number of endpoints per type to avoid
+writing beyond the end of a stack-allocated array.
 
 The current usb-serial implementation is limited to eight ports per
-interface but failed to verify that the number of ports requested by a
-subdriver (which could have been determined from device descriptors) did
-not exceed this limit.
+interface but failed to verify that the number of endpoints of a certain
+type reported by a device did not exceed this limit.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/usb-serial.c |   32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
 
 --- a/drivers/usb/serial/usb-serial.c
 +++ b/drivers/usb/serial/usb-serial.c
-@@ -862,6 +862,11 @@ static int usb_serial_probe(struct usb_i
- 			num_ports = type->num_ports;
+@@ -764,29 +764,39 @@ static int usb_serial_probe(struct usb_i
+ 		if (usb_endpoint_is_bulk_in(endpoint)) {
+ 			/* we found a bulk in endpoint */
+ 			dev_dbg(ddev, "found bulk in on endpoint %d\n", i);
+-			bulk_in_endpoint[num_bulk_in] = endpoint;
+-			++num_bulk_in;
++			if (num_bulk_in < MAX_NUM_PORTS) {
++				bulk_in_endpoint[num_bulk_in] = endpoint;
++				++num_bulk_in;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_bulk_out(endpoint)) {
+ 			/* we found a bulk out endpoint */
+ 			dev_dbg(ddev, "found bulk out on endpoint %d\n", i);
+-			bulk_out_endpoint[num_bulk_out] = endpoint;
+-			++num_bulk_out;
++			if (num_bulk_out < MAX_NUM_PORTS) {
++				bulk_out_endpoint[num_bulk_out] = endpoint;
++				++num_bulk_out;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_int_in(endpoint)) {
+ 			/* we found a interrupt in endpoint */
+ 			dev_dbg(ddev, "found interrupt in on endpoint %d\n", i);
+-			interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-			++num_interrupt_in;
++			if (num_interrupt_in < MAX_NUM_PORTS) {
++				interrupt_in_endpoint[num_interrupt_in] =
++						endpoint;
++				++num_interrupt_in;
++			}
+ 		}
+ 
+ 		if (usb_endpoint_is_int_out(endpoint)) {
+ 			/* we found an interrupt out endpoint */
+ 			dev_dbg(ddev, "found interrupt out on endpoint %d\n", i);
+-			interrupt_out_endpoint[num_interrupt_out] = endpoint;
+-			++num_interrupt_out;
++			if (num_interrupt_out < MAX_NUM_PORTS) {
++				interrupt_out_endpoint[num_interrupt_out] =
++						endpoint;
++				++num_interrupt_out;
++			}
+ 		}
  	}
  
-+	if (num_ports > MAX_NUM_PORTS) {
-+		dev_warn(ddev, "too many ports requested: %d\n", num_ports);
-+		num_ports = MAX_NUM_PORTS;
-+	}
-+
- 	serial->num_ports = num_ports;
- 	serial->num_bulk_in = num_bulk_in;
- 	serial->num_bulk_out = num_bulk_out;
+@@ -809,8 +819,10 @@ static int usb_serial_probe(struct usb_i
+ 				if (usb_endpoint_is_int_in(endpoint)) {
+ 					/* we found a interrupt in endpoint */
+ 					dev_dbg(ddev, "found interrupt in for Prolific device on separate interface\n");
+-					interrupt_in_endpoint[num_interrupt_in] = endpoint;
+-					++num_interrupt_in;
++					if (num_interrupt_in < MAX_NUM_PORTS) {
++						interrupt_in_endpoint[num_interrupt_in] = endpoint;
++						++num_interrupt_in;
++					}
+ 				}
+ 			}
+ 		}
 
 
