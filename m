@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748AbaJCWYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:24:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
+	id S932732AbaJCWYh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:24:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932612AbaJCWYG (ORCPT
+	with ESMTP id S1755041AbaJCWYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:06 -0400
+	Fri, 3 Oct 2014 18:24:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 036/143] xtensa: fix access to THREAD_RA/THREAD_SP/THREAD_DS
-Date: Fri,  3 Oct 2014 14:33:51 -0700
-Message-Id: <20141003213315.574492502@linuxfoundation.org>
+        Bob Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 070/143] ACPICA: Update to GPIO region handler interface.
+Date: Fri,  3 Oct 2014 14:34:25 -0700
+Message-Id: <20141003213316.614501137@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,80 +29,260 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Bob Moore <Robert.Moore@intel.com>
 
-commit 52247123749cc3cbc30168b33ad8c69515c96d23 upstream.
+commit 75ec6e55f1384548311a13ce4fcb39c516053314 upstream.
 
-With SMP and a lot of debug options enabled task_struct::thread gets out
-of reach of s32i/l32i instructions with base pointing at task_struct,
-breaking build with the following messages:
+Changes to correct several GPIO issues:
 
-  arch/xtensa/kernel/entry.S: Assembler messages:
-  arch/xtensa/kernel/entry.S:1002: Error: operand 3 of 'l32i.n' has invalid value '1048'
-  arch/xtensa/kernel/entry.S:1831: Error: operand 3 of 's32i.n' has invalid value '1040'
-  arch/xtensa/kernel/entry.S:1832: Error: operand 3 of 's32i.n' has invalid value '1044'
+1) The update_rule in a GPIO field definition is now ignored;
+a read-modify-write operation is never performed for GPIO fields.
+(Internally, this means that the field assembly/disassembly
+code is completely bypassed for GPIO.)
 
-Change base to point to task_struct::thread in such cases.
-Don't use a10 in _switch_to to save/restore prev pointer as a2 is not
-clobbered.
+2) The Address parameter passed to a GPIO region handler is
+now the bit offset of the field from a previous Connection()
+operator. Thus, it becomes a "Pin Number Index" into the
+Connection() resource descriptor.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+3) The bit_width parameter passed to a GPIO region handler is
+now the exact bit width of the GPIO field. Thus, it can be
+interpreted as "number of pins".
+
+Overall, we can now say that the region handler interface
+to GPIO handlers is a raw "bit/pin" addressed interface, not
+a byte-addressed interface like the system_memory handler interface.
+
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/asm/uaccess.h |    5 +++++
- arch/xtensa/kernel/entry.S        |   12 ++++++++----
- 2 files changed, 13 insertions(+), 4 deletions(-)
+ drivers/acpi/acpica/aclocal.h  |    1 
+ drivers/acpi/acpica/acobject.h |    1 
+ drivers/acpi/acpica/dsfield.c  |    2 +
+ drivers/acpi/acpica/evregion.c |   47 ++++++++++++++++++----------
+ drivers/acpi/acpica/exfield.c  |   67 +++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/acpica/exprep.c   |    2 +
+ 6 files changed, 104 insertions(+), 16 deletions(-)
 
---- a/arch/xtensa/include/asm/uaccess.h
-+++ b/arch/xtensa/include/asm/uaccess.h
-@@ -52,7 +52,12 @@
-  */
- 	.macro	get_fs	ad, sp
- 	GET_CURRENT(\ad,\sp)
-+#if THREAD_CURRENT_DS > 1020
-+	addi	\ad, \ad, TASK_THREAD
-+	l32i	\ad, \ad, THREAD_CURRENT_DS - TASK_THREAD
-+#else
- 	l32i	\ad, \ad, THREAD_CURRENT_DS
-+#endif
- 	.endm
+--- a/drivers/acpi/acpica/aclocal.h
++++ b/drivers/acpi/acpica/aclocal.h
+@@ -254,6 +254,7 @@ struct acpi_create_field_info {
+ 	u32 field_bit_position;
+ 	u32 field_bit_length;
+ 	u16 resource_length;
++	u16 pin_number_index;
+ 	u8 field_flags;
+ 	u8 attribute;
+ 	u8 field_type;
+--- a/drivers/acpi/acpica/acobject.h
++++ b/drivers/acpi/acpica/acobject.h
+@@ -263,6 +263,7 @@ struct acpi_object_region_field {
+ 	ACPI_OBJECT_COMMON_HEADER ACPI_COMMON_FIELD_INFO u16 resource_length;
+ 	union acpi_operand_object *region_obj;	/* Containing op_region object */
+ 	u8 *resource_buffer;	/* resource_template for serial regions/fields */
++	u16 pin_number_index;	/* Index relative to previous Connection/Template */
+ };
  
- /*
---- a/arch/xtensa/kernel/entry.S
-+++ b/arch/xtensa/kernel/entry.S
-@@ -1961,7 +1961,6 @@ ENTRY(_switch_to)
+ struct acpi_object_bank_field {
+--- a/drivers/acpi/acpica/dsfield.c
++++ b/drivers/acpi/acpica/dsfield.c
+@@ -360,6 +360,7 @@ acpi_ds_get_field_names(struct acpi_crea
+ 			 */
+ 			info->resource_buffer = NULL;
+ 			info->connection_node = NULL;
++			info->pin_number_index = 0;
  
- 	entry	a1, 16
+ 			/*
+ 			 * A Connection() is either an actual resource descriptor (buffer)
+@@ -437,6 +438,7 @@ acpi_ds_get_field_names(struct acpi_crea
+ 			}
  
--	mov	a10, a2			# preserve 'prev' (a2)
- 	mov	a11, a3			# and 'next' (a3)
+ 			info->field_bit_position += info->field_bit_length;
++			info->pin_number_index++;	/* Index relative to previous Connection() */
+ 			break;
  
- 	l32i	a4, a2, TASK_THREAD_INFO
-@@ -1969,8 +1968,14 @@ ENTRY(_switch_to)
+ 		default:
+--- a/drivers/acpi/acpica/evregion.c
++++ b/drivers/acpi/acpica/evregion.c
+@@ -141,6 +141,7 @@ acpi_ev_address_space_dispatch(union acp
+ 	union acpi_operand_object *region_obj2;
+ 	void *region_context = NULL;
+ 	struct acpi_connection_info *context;
++	acpi_physical_address address;
  
- 	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 	ACPI_FUNCTION_TRACE(ev_address_space_dispatch);
  
--	s32i	a0, a10, THREAD_RA	# save return address
--	s32i	a1, a10, THREAD_SP	# save stack pointer
-+#if THREAD_RA > 1020 || THREAD_SP > 1020
-+	addi	a10, a2, TASK_THREAD
-+	s32i	a0, a10, THREAD_RA - TASK_THREAD	# save return address
-+	s32i	a1, a10, THREAD_SP - TASK_THREAD	# save stack pointer
-+#else
-+	s32i	a0, a2, THREAD_RA	# save return address
-+	s32i	a1, a2, THREAD_SP	# save stack pointer
-+#endif
+@@ -235,25 +236,32 @@ acpi_ev_address_space_dispatch(union acp
+ 	/* We have everything we need, we can invoke the address space handler */
  
- 	/* Disable ints while we manipulate the stack pointer. */
+ 	handler = handler_desc->address_space.handler;
+-
+-	ACPI_DEBUG_PRINT((ACPI_DB_OPREGION,
+-			  "Handler %p (@%p) Address %8.8X%8.8X [%s]\n",
+-			  &region_obj->region.handler->address_space, handler,
+-			  ACPI_FORMAT_NATIVE_UINT(region_obj->region.address +
+-						  region_offset),
+-			  acpi_ut_get_region_name(region_obj->region.
+-						  space_id)));
++	address = (region_obj->region.address + region_offset);
  
-@@ -2011,7 +2016,6 @@ ENTRY(_switch_to)
- 	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 	/*
+ 	 * Special handling for generic_serial_bus and general_purpose_io:
+ 	 * There are three extra parameters that must be passed to the
+ 	 * handler via the context:
+-	 *   1) Connection buffer, a resource template from Connection() op.
+-	 *   2) Length of the above buffer.
+-	 *   3) Actual access length from the access_as() op.
++	 *   1) Connection buffer, a resource template from Connection() op
++	 *   2) Length of the above buffer
++	 *   3) Actual access length from the access_as() op
++	 *
++	 * In addition, for general_purpose_io, the Address and bit_width fields
++	 * are defined as follows:
++	 *   1) Address is the pin number index of the field (bit offset from
++	 *      the previous Connection)
++	 *   2) bit_width is the actual bit length of the field (number of pins)
+ 	 */
+-	if (((region_obj->region.space_id == ACPI_ADR_SPACE_GSBUS) ||
+-	     (region_obj->region.space_id == ACPI_ADR_SPACE_GPIO)) &&
++	if ((region_obj->region.space_id == ACPI_ADR_SPACE_GSBUS) &&
++	    context && field_obj) {
++
++		/* Get the Connection (resource_template) buffer */
++
++		context->connection = field_obj->field.resource_buffer;
++		context->length = field_obj->field.resource_length;
++		context->access_length = field_obj->field.access_length;
++	}
++	if ((region_obj->region.space_id == ACPI_ADR_SPACE_GPIO) &&
+ 	    context && field_obj) {
  
- 	wsr	a14, ps
--	mov	a2, a10			# return 'prev'
- 	rsync
+ 		/* Get the Connection (resource_template) buffer */
+@@ -261,8 +269,17 @@ acpi_ev_address_space_dispatch(union acp
+ 		context->connection = field_obj->field.resource_buffer;
+ 		context->length = field_obj->field.resource_length;
+ 		context->access_length = field_obj->field.access_length;
++		address = field_obj->field.pin_number_index;
++		bit_width = field_obj->field.bit_length;
+ 	}
  
- 	retw
++	ACPI_DEBUG_PRINT((ACPI_DB_OPREGION,
++			  "Handler %p (@%p) Address %8.8X%8.8X [%s]\n",
++			  &region_obj->region.handler->address_space, handler,
++			  ACPI_FORMAT_NATIVE_UINT(address),
++			  acpi_ut_get_region_name(region_obj->region.
++						  space_id)));
++
+ 	if (!(handler_desc->address_space.handler_flags &
+ 	      ACPI_ADDR_HANDLER_DEFAULT_INSTALLED)) {
+ 		/*
+@@ -275,9 +292,7 @@ acpi_ev_address_space_dispatch(union acp
+ 
+ 	/* Call the handler */
+ 
+-	status = handler(function,
+-			 (region_obj->region.address + region_offset),
+-			 bit_width, value, context,
++	status = handler(function, address, bit_width, value, context,
+ 			 region_obj2->extra.region_context);
+ 
+ 	if (ACPI_FAILURE(status)) {
+--- a/drivers/acpi/acpica/exfield.c
++++ b/drivers/acpi/acpica/exfield.c
+@@ -178,6 +178,37 @@ acpi_ex_read_data_from_field(struct acpi
+ 		buffer = &buffer_desc->integer.value;
+ 	}
+ 
++	if ((obj_desc->common.type == ACPI_TYPE_LOCAL_REGION_FIELD) &&
++	    (obj_desc->field.region_obj->region.space_id ==
++	     ACPI_ADR_SPACE_GPIO)) {
++		/*
++		 * For GPIO (general_purpose_io), the Address will be the bit offset
++		 * from the previous Connection() operator, making it effectively a
++		 * pin number index. The bit_length is the length of the field, which
++		 * is thus the number of pins.
++		 */
++		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
++				  "GPIO FieldRead [FROM]:  Pin %u Bits %u\n",
++				  obj_desc->field.pin_number_index,
++				  obj_desc->field.bit_length));
++
++		/* Lock entire transaction if requested */
++
++		acpi_ex_acquire_global_lock(obj_desc->common_field.field_flags);
++
++		/* Perform the write */
++
++		status = acpi_ex_access_region(obj_desc, 0,
++					       (u64 *)buffer, ACPI_READ);
++		acpi_ex_release_global_lock(obj_desc->common_field.field_flags);
++		if (ACPI_FAILURE(status)) {
++			acpi_ut_remove_reference(buffer_desc);
++		} else {
++			*ret_buffer_desc = buffer_desc;
++		}
++		return_ACPI_STATUS(status);
++	}
++
+ 	ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
+ 			  "FieldRead [TO]:   Obj %p, Type %X, Buf %p, ByteLen %X\n",
+ 			  obj_desc, obj_desc->common.type, buffer,
+@@ -325,6 +356,42 @@ acpi_ex_write_data_to_field(union acpi_o
+ 
+ 		*result_desc = buffer_desc;
+ 		return_ACPI_STATUS(status);
++	} else if ((obj_desc->common.type == ACPI_TYPE_LOCAL_REGION_FIELD) &&
++		   (obj_desc->field.region_obj->region.space_id ==
++		    ACPI_ADR_SPACE_GPIO)) {
++		/*
++		 * For GPIO (general_purpose_io), we will bypass the entire field
++		 * mechanism and handoff the bit address and bit width directly to
++		 * the handler. The Address will be the bit offset
++		 * from the previous Connection() operator, making it effectively a
++		 * pin number index. The bit_length is the length of the field, which
++		 * is thus the number of pins.
++		 */
++		if (source_desc->common.type != ACPI_TYPE_INTEGER) {
++			return_ACPI_STATUS(AE_AML_OPERAND_TYPE);
++		}
++
++		ACPI_DEBUG_PRINT((ACPI_DB_BFIELD,
++				  "GPIO FieldWrite [FROM]: (%s:%X), Val %.8X  [TO]:  Pin %u Bits %u\n",
++				  acpi_ut_get_type_name(source_desc->common.
++							type),
++				  source_desc->common.type,
++				  (u32)source_desc->integer.value,
++				  obj_desc->field.pin_number_index,
++				  obj_desc->field.bit_length));
++
++		buffer = &source_desc->integer.value;
++
++		/* Lock entire transaction if requested */
++
++		acpi_ex_acquire_global_lock(obj_desc->common_field.field_flags);
++
++		/* Perform the write */
++
++		status = acpi_ex_access_region(obj_desc, 0,
++					       (u64 *)buffer, ACPI_WRITE);
++		acpi_ex_release_global_lock(obj_desc->common_field.field_flags);
++		return_ACPI_STATUS(status);
+ 	}
+ 
+ 	/* Get a pointer to the data to be written */
+--- a/drivers/acpi/acpica/exprep.c
++++ b/drivers/acpi/acpica/exprep.c
+@@ -479,6 +479,8 @@ acpi_status acpi_ex_prep_field_value(str
+ 			obj_desc->field.resource_length = info->resource_length;
+ 		}
+ 
++		obj_desc->field.pin_number_index = info->pin_number_index;
++
+ 		/* Allow full data read from EC address space */
+ 
+ 		if ((obj_desc->field.region_obj->region.space_id ==
 
 
