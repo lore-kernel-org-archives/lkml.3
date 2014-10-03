@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295AbaJCXrg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:47:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46275 "EHLO
+	id S1757252AbaJCWD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:03:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45986 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaJCWDa (ORCPT
+	with ESMTP id S932173AbaJCVxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:03:30 -0400
+	Fri, 3 Oct 2014 17:53:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Moni Shoua <monis@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.16 298/357] IB/mlx4: Avoid null pointer dereference in mlx4_ib_scan_netdevs()
-Date: Fri,  3 Oct 2014 14:31:24 -0700
-Message-Id: <20141003212942.434979300@linuxfoundation.org>
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Mark Sheldon <markshel@vmware.com>,
+        Jakob Bornecrantz <jakob@vmware.com>
+Subject: [PATCH 3.14 056/238] drm/vmwgfx: Fix a potential infinite spin waiting for fifo idle
+Date: Fri,  3 Oct 2014 14:29:31 -0700
+Message-Id: <20141003212915.467426144@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,91 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Moni Shoua <monis@mellanox.com>
+From: Thomas Hellstrom <thellstrom@vmware.com>
 
-commit e381835cf1b8e3b2857277dbc3b77d8c5350f70a upstream.
+commit f01ea0c3d9db536c64d47922716d8b3b8f21d850 upstream.
 
-When Ethernet netdev is not present for a port (e.g. when the link
-layer type of the port is InfiniBand) it's possible to dereference a
-null pointer when we do netdevice scanning.
+The code waiting for fifo idle was incorrect and could possibly spin
+forever under certain circumstances.
 
-To fix that, we move a section of code that needs to run only when
-netdev is present to a proper if () statement.
-
-Fixes: ad4885d279b6 ("IB/mlx4: Build the port IBoE GID table properly under bonding")
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Moni Shoua <monis@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
+Reported-by: Mark Sheldon <markshel@vmware.com>
+Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+Reivewed-by: Mark Sheldon <markshel@vmware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx4/main.c |   49 ++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 23 deletions(-)
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/hw/mlx4/main.c
-+++ b/drivers/infiniband/hw/mlx4/main.c
-@@ -1788,31 +1788,34 @@ static void mlx4_ib_scan_netdevs(struct
- 			port_state = (netif_running(curr_netdev) && netif_carrier_ok(curr_netdev)) ?
- 						IB_PORT_ACTIVE : IB_PORT_DOWN;
- 			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--		} else {
--			reset_gid_table(ibdev, port);
--		}
--		/* if using bonding/team and a slave port is down, we don't the bond IP
--		 * based gids in the table since flows that select port by gid may get
--		 * the down port.
--		 */
--		if (curr_master && (port_state == IB_PORT_DOWN)) {
--			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--		}
--		/* if bonding is used it is possible that we add it to masters
--		 * only after IP address is assigned to the net bonding
--		 * interface.
--		*/
--		if (curr_master && (old_master != curr_master)) {
--			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--			mlx4_ib_get_dev_addr(curr_master, ibdev, port);
--		}
-+			/* if using bonding/team and a slave port is down, we
-+			 * don't the bond IP based gids in the table since
-+			 * flows that select port by gid may get the down port.
-+			 */
-+			if (curr_master && (port_state == IB_PORT_DOWN)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+			}
-+			/* if bonding is used it is possible that we add it to
-+			 * masters only after IP address is assigned to the
-+			 * net bonding interface.
-+			*/
-+			if (curr_master && (old_master != curr_master)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+				mlx4_ib_get_dev_addr(curr_master, ibdev, port);
-+			}
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c
+@@ -180,8 +180,9 @@ void vmw_fifo_release(struct vmw_private
  
--		if (!curr_master && (old_master != curr_master)) {
-+			if (!curr_master && (old_master != curr_master)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+				mlx4_ib_get_dev_addr(curr_netdev, ibdev, port);
-+			}
-+		} else {
- 			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--			mlx4_ib_get_dev_addr(curr_netdev, ibdev, port);
- 		}
- 	}
+ 	mutex_lock(&dev_priv->hw_mutex);
+ 
++	vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
+ 	while (vmw_read(dev_priv, SVGA_REG_BUSY) != 0)
+-		vmw_write(dev_priv, SVGA_REG_SYNC, SVGA_SYNC_GENERIC);
++		;
+ 
+ 	dev_priv->last_read_seqno = ioread32(fifo_mem + SVGA_FIFO_FENCE);
  
 
 
