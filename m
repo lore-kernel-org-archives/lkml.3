@@ -1,71 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaJCMPR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:15:17 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51407 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752147AbaJCMPO (ORCPT
+	id S1752373AbaJCMRl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:17:41 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:34780 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527AbaJCMRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:15:14 -0400
-Message-ID: <1412338512.19413.85.camel@x220>
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters
- overflow within 50 days
-From: Paul Bolle <pebolle@tiscali.nl>
+	Fri, 3 Oct 2014 08:17:38 -0400
+Date: Fri, 3 Oct 2014 14:17:31 +0200
+From: Richard Cochran <richardcochran@gmail.com>
 To: Christoph Lameter <cl@linux.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Date: Fri, 03 Oct 2014 14:15:12 +0200
-In-Reply-To: <alpine.DEB.2.11.1410030653040.8496@gentwo.org>
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters
+ overflow within 50 days
+Message-ID: <20141003121731.GB6652@localhost.localdomain>
 References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org>
-	 <alpine.DEB.2.11.1410031231420.4383@nanos>
-	 <alpine.DEB.2.11.1410030653040.8496@gentwo.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Oct 2014 12:15:12.0561 (UTC) FILETIME=[AEAEA210:01CFDF03]
-X-RcptDomain: vger.kernel.org
+ <alpine.DEB.2.11.1410031231420.4383@nanos>
+ <alpine.DEB.2.11.1410030653040.8496@gentwo.org>
+ <20141003120345.GA6652@localhost.localdomain>
+ <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 06:54 -0500, Christoph Lameter wrote:
-> On Fri, 3 Oct 2014, Thomas Gleixner wrote:
-> 
-> > > Is this the way its intended or should the counters be expanded to 64 bit?
-> >
-> > There is no reason why we cannot or should not expand them.
-> 
-> Ok here is a patch to do just that:
-> 
-> 
-> Subject: Increase irq counters to 64 bit
-> 
-> 
-> Irq counters can overflow easily if they are just 32 bit.
-> 
-> For example the timer interrupt occurs 1000 times per second, so
-> it is predictable that the timer interrupt will overflow in
-> 
-> 
-> 2^ 32 / 1000 [interrupts per second] / 86400 [seconds in a day]
-> 
-> which results in 46 days.
+On Fri, Oct 03, 2014 at 07:07:46AM -0500, Christoph Lameter wrote:
+> I thought I better leave it alone on 32 bit.
 
-dc -e "1 k 2 32 ^ 1000 / 86400 / p"
-49.7
+Fine, but the subject line sounded different.
 
-(That was the number I remembered from stories about a ancient Windows
-lockup.)
-
-> Other irq counters for devices may wrap even faster for example
-> those for high speed networking devices.
-> 
-> This patch is needed to avoid the counter overflow by increasing
-> the counters to 64 bit.
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-
-
-Paul Bolle
-
+Thanks,
+Richard
 
