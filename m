@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758573AbaJCWed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:34:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47752 "EHLO
+	id S1758560AbaJCWe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:34:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755125AbaJCWeE (ORCPT
+	with ESMTP id S1755177AbaJCWeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:04 -0400
+	Fri, 3 Oct 2014 18:34:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>,
-        Richard Larocque <rlarocque@google.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 122/143] alarmtimer: Lock k_itimer during timer callback
-Date: Fri,  3 Oct 2014 14:35:17 -0700
-Message-Id: <20141003213318.148534120@linuxfoundation.org>
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 123/143] perf: Fix a race condition in perf_remove_from_context()
+Date: Fri,  3 Oct 2014 14:35:18 -0700
+Message-Id: <20141003213318.177054379@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -33,59 +34,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Larocque <rlarocque@google.com>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 474e941bed9262f5fa2394f9a4a67e24499e5926 upstream.
+commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
 
-Locks the k_itimer's it_lock member when handling the alarm timer's
-expiry callback.
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-The regular posix timers defined in posix-timers.c have this lock held
-during timout processing because their callbacks are routed through
-posix_timer_fn().  The alarm timers follow a different path, so they
-ought to grab the lock somewhere else.
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: Richard Larocque <rlarocque@google.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+This should cure the above soft lockup.
+
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/alarmtimer.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ kernel/events/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -419,8 +419,12 @@ static enum alarmtimer_type clock2alarm(
- static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
- 							ktime_t now)
- {
-+	unsigned long flags;
- 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
- 						it.alarm.alarmtimer);
-+	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
-+
-+	spin_lock_irqsave(&ptr->it_lock, flags);
- 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
- 		if (posix_timer_event(ptr, 0) != 0)
- 			ptr->it_overrun++;
-@@ -430,9 +434,11 @@ static enum alarmtimer_restart alarm_han
- 	if (ptr->it.alarm.interval.tv64) {
- 		ptr->it_overrun += alarm_forward(alarm, now,
- 						ptr->it.alarm.interval);
--		return ALARMTIMER_RESTART;
-+		result = ALARMTIMER_RESTART;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1398,6 +1398,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
  	}
--	return ALARMTIMER_NORESTART;
-+	spin_unlock_irqrestore(&ptr->it_lock, flags);
-+
-+	return result;
- }
  
- /**
+@@ -1829,6 +1834,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
 
 
