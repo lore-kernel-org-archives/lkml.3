@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407AbaJCWE6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:04:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46457 "EHLO
+	id S932166AbaJCWE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:04:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418AbaJCWEC (ORCPT
+	with ESMTP id S1757421AbaJCWEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:04:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3.14 124/238] regmap: Fix handling of volatile registers for format_write() chips
-Date: Fri,  3 Oct 2014 14:30:39 -0700
-Message-Id: <20141003212917.647012915@linuxfoundation.org>
+        Nathan Lynch <nathan_lynch@mentor.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.14 115/238] ARM: 8148/1: flush TLS and thumbee register state during exec
+Date: Fri,  3 Oct 2014 14:30:30 -0700
+Message-Id: <20141003212917.356418383@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,39 +30,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: Nathan Lynch <nathan_lynch@mentor.com>
 
-commit 5844a8b9d98ec11ce1d77610daacf3f0a0e14715 upstream.
+commit fbfb872f5f417cea48760c535e0ff027c88b507a upstream.
 
-A previous over-zealous factorisation of code means that we only treat
-registers as volatile if they are readable. For most devices this is fine
-since normally most registers can be read and volatility implies
-readability but for format_write() devices where there is no readback from
-the hardware and we use volatility to mean simply uncacheability this means
-that we end up treating all registers as cacheble.
+The TPIDRURO and TPIDRURW registers need to be flushed during exec;
+otherwise TLS information is potentially leaked.  TPIDRURO in
+particular needs careful treatment.  Since flush_thread basically
+needs the same code used to set the TLS in arm_syscall, pull that into
+a common set_tls helper in tls.h and use it in both places.
 
-A bigger refactoring of the code to clarify this is in order but as a fix
-make a minimal change and only check readability when checking volatility
-if there is no format_write() operation defined for the device.
+Similarly, TEEHBR needs to be cleared during exec as well.  Clearing
+its save slot in thread_info isn't right as there is no guarantee
+that a thread switch will occur before the new program runs.  Just
+setting the register directly is sufficient.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Tested-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/tls.h |   62 +++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/process.c  |    2 +
+ arch/arm/kernel/thumbee.c  |    2 -
+ arch/arm/kernel/traps.c    |   17 ------------
+ 4 files changed, 66 insertions(+), 17 deletions(-)
 
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -105,7 +105,7 @@ bool regmap_readable(struct regmap *map,
+--- a/arch/arm/include/asm/tls.h
++++ b/arch/arm/include/asm/tls.h
+@@ -1,6 +1,9 @@
+ #ifndef __ASMARM_TLS_H
+ #define __ASMARM_TLS_H
  
- bool regmap_volatile(struct regmap *map, unsigned int reg)
++#include <linux/compiler.h>
++#include <asm/thread_info.h>
++
+ #ifdef __ASSEMBLY__
+ #include <asm/asm-offsets.h>
+ 	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+@@ -50,6 +53,47 @@
+ #endif
+ 
+ #ifndef __ASSEMBLY__
++
++static inline void set_tls(unsigned long val)
++{
++	struct thread_info *thread;
++
++	thread = current_thread_info();
++
++	thread->tp_value[0] = val;
++
++	/*
++	 * This code runs with preemption enabled and therefore must
++	 * be reentrant with respect to switch_tls.
++	 *
++	 * We need to ensure ordering between the shadow state and the
++	 * hardware state, so that we don't corrupt the hardware state
++	 * with a stale shadow state during context switch.
++	 *
++	 * If we're preempted here, switch_tls will load TPIDRURO from
++	 * thread_info upon resuming execution and the following mcr
++	 * is merely redundant.
++	 */
++	barrier();
++
++	if (!tls_emu) {
++		if (has_tls_reg) {
++			asm("mcr p15, 0, %0, c13, c0, 3"
++			    : : "r" (val));
++		} else {
++			/*
++			 * User space must never try to access this
++			 * directly.  Expect your app to break
++			 * eventually if you do so.  The user helper
++			 * at 0xffff0fe0 must be used instead.  (see
++			 * entry-armv.S for details)
++			 */
++			*((unsigned int *)0xffff0ff0) = val;
++		}
++
++	}
++}
++
+ static inline unsigned long get_tpuser(void)
  {
--	if (!regmap_readable(map, reg))
-+	if (!map->format.format_write && !regmap_readable(map, reg))
- 		return false;
+ 	unsigned long reg = 0;
+@@ -59,5 +103,23 @@ static inline unsigned long get_tpuser(v
  
- 	if (map->volatile_reg)
+ 	return reg;
+ }
++
++static inline void set_tpuser(unsigned long val)
++{
++	/* Since TPIDRURW is fully context-switched (unlike TPIDRURO),
++	 * we need not update thread_info.
++	 */
++	if (has_tls_reg && !tls_emu) {
++		asm("mcr p15, 0, %0, c13, c0, 2"
++		    : : "r" (val));
++	}
++}
++
++static inline void flush_tls(void)
++{
++	set_tls(0);
++	set_tpuser(0);
++}
++
+ #endif
+ #endif	/* __ASMARM_TLS_H */
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -334,6 +334,8 @@ void flush_thread(void)
+ 	memset(&tsk->thread.debug, 0, sizeof(struct debug_info));
+ 	memset(&thread->fpstate, 0, sizeof(union fp_state));
+ 
++	flush_tls();
++
+ 	thread_notify(THREAD_NOTIFY_FLUSH, thread);
+ }
+ 
+--- a/arch/arm/kernel/thumbee.c
++++ b/arch/arm/kernel/thumbee.c
+@@ -45,7 +45,7 @@ static int thumbee_notifier(struct notif
+ 
+ 	switch (cmd) {
+ 	case THREAD_NOTIFY_FLUSH:
+-		thread->thumbee_state = 0;
++		teehbr_write(0);
+ 		break;
+ 	case THREAD_NOTIFY_SWITCH:
+ 		current_thread_info()->thumbee_state = teehbr_read();
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -578,7 +578,6 @@ do_cache_op(unsigned long start, unsigne
+ #define NR(x) ((__ARM_NR_##x) - __ARM_NR_BASE)
+ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+ {
+-	struct thread_info *thread = current_thread_info();
+ 	siginfo_t info;
+ 
+ 	if ((no >> 16) != (__ARM_NR_BASE>> 16))
+@@ -629,21 +628,7 @@ asmlinkage int arm_syscall(int no, struc
+ 		return regs->ARM_r0;
+ 
+ 	case NR(set_tls):
+-		thread->tp_value[0] = regs->ARM_r0;
+-		if (tls_emu)
+-			return 0;
+-		if (has_tls_reg) {
+-			asm ("mcr p15, 0, %0, c13, c0, 3"
+-				: : "r" (regs->ARM_r0));
+-		} else {
+-			/*
+-			 * User space must never try to access this directly.
+-			 * Expect your app to break eventually if you do so.
+-			 * The user helper at 0xffff0fe0 must be used instead.
+-			 * (see entry-armv.S for details)
+-			 */
+-			*((unsigned int *)0xffff0ff0) = regs->ARM_r0;
+-		}
++		set_tls(regs->ARM_r0);
+ 		return 0;
+ 
+ #ifdef CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG
 
 
