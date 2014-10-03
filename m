@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564AbaJCN4R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 09:56:17 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64568 "EHLO
+	id S1752878AbaJCN6g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 09:58:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64620 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751282AbaJCN4P (ORCPT
+	by vger.kernel.org with ESMTP id S1752469AbaJCN6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 09:56:15 -0400
-Date: Fri, 3 Oct 2014 14:56:10 +0100
+	Fri, 3 Oct 2014 09:58:31 -0400
+Date: Fri, 3 Oct 2014 14:58:26 +0100
 From: Mark Rutland <mark.rutland@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
 Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Arnd Bergmann <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
@@ -23,55 +23,64 @@ Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
         "grant.likely@linaro.org" <grant.likely@linaro.org>,
         Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
 Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Message-ID: <20141003135610.GM26643@leverpostej>
+Message-ID: <20141003135826.GN26643@leverpostej>
 References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <3986527.L7rDZAb4g5@wuerfel>
- <20141002143809.GQ1786@lahna.fi.intel.com>
- <2072038.Vir4futZot@wuerfel>
+ <15893883.nvuW3ndylz@wuerfel>
+ <20141002133654.GP1786@lahna.fi.intel.com>
+ <26673925.fa6Qhdm5sV@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2072038.Vir4futZot@wuerfel>
-Thread-Topic: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
+In-Reply-To: <26673925.fa6Qhdm5sV@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 03:55:56PM +0100, Arnd Bergmann wrote:
-> On Thursday 02 October 2014 17:38:09 Mika Westerberg wrote:
-> > On Thu, Oct 02, 2014 at 04:29:03PM +0200, Arnd Bergmann wrote:
-> > > Is this a limitation in the way that the AML syntax and compiler works,
-> > > or is this a decision you made specifically for the _DSD syntax and that
-> > > could still be changed if there is an overwhelming interest?
-> > 
-> > It is only limitation of the _DSD device property UUID specification and
-> > our implementation. It can be changed if needed.
+On Fri, Oct 03, 2014 at 03:03:51AM +0100, Rafael J. Wysocki wrote:
+> On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
+> > On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
+> > > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
 > 
-> Ok, I see. I think it would be nice if this could be changed in order
-> to avoid having to copy the #xxx-cells and xxx-names properties from
-> DT, by providing a more natural syntax.
+> [cut]
+> 
+> > 
+> > Putting everything to a single package results this:
+> > 
+> > 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
+> > 
+> > But I think the below looks better:
+> 
+> I agree.
+> 
+> > 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
+> > 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
+> > 
+> > and it is trivial to match with the corresponding DT fragment.
+> > 
+> > > 	}
+> > > 
+> > > vs.
+> > > 
+> > > 	pwm-slave {
+> > > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
+> > > 		pwm-names = "led-red", "led-green";
+> > > 	};
+> > > 
+> > 
+> > I don't have strong feelings which way it should be. The current
+> > implementation limits references so that you can have only integer
+> > arguments, like {ref0, int, int, ref1, int} but if people think it is
+> > better to allow strings there as well, it can be changed.
+> > 
+> > I would like to get comments from Darren and Rafael about this, though.
+> 
+> In my opinion there needs to be a "canonical" representation of the
+> binding that people always can expect to work.  It seems reasonable to
+> use the one exactly matching the DT representation for that.
 
-I'd certainly not like to see #foo-cells in _DSD given it should be
-possible with a package to have a package description like the
-following:
-
-	Package () {
-		Package () { ^ref1, data, data }, 
-		Package () { ^ref2, dta, data, data },
-	}
-
-Where the #foo-cells is implicit in each instance. That makes variadic
-properties possible, and makes it possible to perform validation on each
-tuple even in the binary format, which we can't do with a DTB
-
-I'm not so sure on foo-names unless we made names an explicit
-requirement from the start (which I wish was the case on the DT side).
-Even then we might need other parallel properties anyway (think
-clock-indicies).
+I don't follow. The two forms would share the same high-level accessors,
+but the binary representation is already different. Why should we choose
+the inferior layout given they are already different binary formats?
 
 Mark.
-
