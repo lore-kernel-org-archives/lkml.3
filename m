@@ -1,53 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367AbaJDAUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:20:35 -0400
-Received: from any239.rev.netart.pl ([85.128.233.239]:17607 "EHLO
-	any239.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258AbaJDAUc convert rfc822-to-8bit (ORCPT
+	id S932671AbaJDAUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:20:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45377 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053AbaJCVnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 20:20:32 -0400
-X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Oct 2014 20:20:32 EDT
-Reply-To: "Doradca Kredytowy" <biuro@centrumpomocykredytowej.pl>
-From: "Doradca Kredytowy" <biuro@mailingkredytowy.pl>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-2?Q?Pozwolenie_na_wys=B3anie_Oferty_kredytowej?=
-Message-ID: <15A86DB3B51A27AE5589B941E4FD5659@giada>
-Date: Sat, 4 Oct 2014 02:11:49 +0200
-Organization: AnoMail - oprogramowanie do emailingow
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
+	Fri, 3 Oct 2014 17:43:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Markus Niebel <Markus.Niebel@tq-group.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3.16 188/357] ARM: DT: imx53: fix lvds channel 1 port
+Date: Fri,  3 Oct 2014 14:29:34 -0700
+Message-Id: <20141003212939.118823445@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
-Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 141003-0, 2014-10-03), Outbound message
-X-Antivirus-Status: Clean
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Witam,
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Mam do zaoferowania  kredyty firmowe które zawieraja m.in.
+------------------
 
-kredyt bez za¶wiadczeñ z ZUS i US,
-3 letnie limity w rachunku bie¿±cym,
-kredyt na o¶wiadczenie do 500 tys PLN,
-kredyt pod zabezpieczenie ( Bez weryfikacji Bik )
-Prosimy o odpowied¼ zwrotn± TAK w przypadku chêci otrzymania oferty.
+From: Markus Niebel <Markus.Niebel@tq-group.com>
 
-Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
+commit 1b134c9c4b555342be667f144ee714af1c3f6a9f upstream.
 
-z powa¿aniem
-Przemys³aw Majakowski
-tel. 530-512-382
+using LVDS channel 1 on an i.MX53 leads to following error:
 
+imx-ldb 53fa8008.ldb: unable to set di0 parent clock to ldb_di1
 
+This comes from imx_ldb_set_clock with mux = 0. Mux parameter must be "1" for
+reparenting di1 clock to ldb_di1. The value of the mux param comes from device
+tree port settings.
+
+On i.MX5, the internal two-input-multiplexer is used. Due to hardware limitations,
+only one port (port@[0,1]) can be used for each channel (lvds-channel@[0,1],
+respectively)
+
+Documentation update suggested by Philipp Zabel <p.zabel@pengutronix.de>
+
+Signed-off-by: Markus Niebel <Markus.Niebel@tq-group.com>
+Fixes: e05c8c9a790a ("ARM: dts: imx53: Add IPU DI ports and endpoints, move imx-drm node to dtsi")
+Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
-Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
-http://www.avast.com
+ Documentation/devicetree/bindings/staging/imx-drm/ldb.txt |   15 ++++++++++++--
+ arch/arm/boot/dts/imx53.dtsi                              |   12 +++++++++--
+ 2 files changed, 23 insertions(+), 4 deletions(-)
+
+--- a/Documentation/devicetree/bindings/staging/imx-drm/ldb.txt
++++ b/Documentation/devicetree/bindings/staging/imx-drm/ldb.txt
+@@ -56,6 +56,9 @@ Required properties:
+  - fsl,data-width : should be <18> or <24>
+  - port: A port node with endpoint definitions as defined in
+    Documentation/devicetree/bindings/media/video-interfaces.txt.
++   On i.MX5, the internal two-input-multiplexer is used.
++   Due to hardware limitations, only one port (port@[0,1])
++   can be used for each channel (lvds-channel@[0,1], respectively)
+    On i.MX6, there should be four ports (port@[0-3]) that correspond
+    to the four LVDS multiplexer inputs.
+ 
+@@ -78,6 +81,8 @@ ldb: ldb@53fa8008 {
+ 		      "di0", "di1";
+ 
+ 	lvds-channel@0 {
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 		reg = <0>;
+ 		fsl,data-mapping = "spwg";
+ 		fsl,data-width = <24>;
+@@ -86,7 +91,9 @@ ldb: ldb@53fa8008 {
+ 			/* ... */
+ 		};
+ 
+-		port {
++		port@0 {
++			reg = <0>;
++
+ 			lvds0_in: endpoint {
+ 				remote-endpoint = <&ipu_di0_lvds0>;
+ 			};
+@@ -94,6 +101,8 @@ ldb: ldb@53fa8008 {
+ 	};
+ 
+ 	lvds-channel@1 {
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 		reg = <1>;
+ 		fsl,data-mapping = "spwg";
+ 		fsl,data-width = <24>;
+@@ -102,7 +111,9 @@ ldb: ldb@53fa8008 {
+ 			/* ... */
+ 		};
+ 
+-		port {
++		port@1 {
++			reg = <1>;
++
+ 			lvds1_in: endpoint {
+ 				remote-endpoint = <&ipu_di1_lvds1>;
+ 			};
+--- a/arch/arm/boot/dts/imx53.dtsi
++++ b/arch/arm/boot/dts/imx53.dtsi
+@@ -419,10 +419,14 @@
+ 				status = "disabled";
+ 
+ 				lvds-channel@0 {
++					#address-cells = <1>;
++					#size-cells = <0>;
+ 					reg = <0>;
+ 					status = "disabled";
+ 
+-					port {
++					port@0 {
++						reg = <0>;
++
+ 						lvds0_in: endpoint {
+ 							remote-endpoint = <&ipu_di0_lvds0>;
+ 						};
+@@ -430,10 +434,14 @@
+ 				};
+ 
+ 				lvds-channel@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
+ 					reg = <1>;
+ 					status = "disabled";
+ 
+-					port {
++					port@1 {
++						reg = <1>;
++
+ 						lvds1_in: endpoint {
+ 							remote-endpoint = <&ipu_di1_lvds1>;
+ 						};
+
 
