@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaJCWIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:08:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46643 "EHLO
+	id S1753798AbaJCWIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:08:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46651 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423AbaJCWGH (ORCPT
+	with ESMTP id S932426AbaJCWGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:06:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Maydell <peter.maydell@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: [PATCH 3.16 342/357] mmc: mmci: Reverse IRQ handling for the arm_variant
-Date: Fri,  3 Oct 2014 14:32:08 -0700
-Message-Id: <20141003212943.727897468@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+Subject: [PATCH 3.16 343/357] dmaengine: dw: introduce dwc_dostart_first_queued() helper
+Date: Fri,  3 Oct 2014 14:32:09 -0700
+Message-Id: <20141003212943.757667934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -32,78 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulf Hansson <ulf.hansson@linaro.org>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 7878289b269d41c8e611aa6d4519feae706e49f3 upstream.
+commit e7637c6c0382485f4d2e20715d058dae6f2b6a7c upstream.
 
-Commit "mmc: mmci: Handle CMD irq before DATA irq", caused an issue
-when using the ARM model of the PL181 and running QEMU.
+We have a duplicate code which starts first descriptor in the queue. Let's make
+this as a separate helper that can be used in future as well.
 
-The bug was reported for the following QEMU version:
-$ qemu-system-arm -version
-QEMU emulator version 2.0.0 (Debian 2.0.0+dfsg-2ubuntu1.1), Copyright
-(c) 2003-2008 Fabrice Bellard
-
-To resolve the problem, let's restore the old behavior were the DATA
-irq is handled prior the CMD irq, but only for the arm_variant, which
-the problem was reported for.
-
-Reported-by: John Stultz <john.stultz@linaro.org>
-Cc: Peter Maydell <peter.maydell@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Tested-by: Kees Cook <keescook@chromium.org>
-Tested-by: John Stultz <john.stultz@linaro.org>
-Cc: <stable@vger.kernel.org> # v3.15+
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
-[kees: backported to 3.16]
-Signed-off-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/mmci.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/dma/dw/core.c |   19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -65,6 +65,7 @@ static unsigned int fmax = 515633;
-  * @pwrreg_clkgate: MMCIPOWER register must be used to gate the clock
-  * @busy_detect: true if busy detection on dat0 is supported
-  * @pwrreg_nopower: bits in MMCIPOWER don't controls ext. power supply
-+ * @reversed_irq_handling: handle data irq before cmd irq.
-  */
- struct variant_data {
- 	unsigned int		clkreg;
-@@ -80,6 +81,7 @@ struct variant_data {
- 	bool			pwrreg_clkgate;
- 	bool			busy_detect;
- 	bool			pwrreg_nopower;
-+	bool			reversed_irq_handling;
- };
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -279,6 +279,15 @@ static void dwc_dostart(struct dw_dma_ch
+ 	channel_set_bit(dw, CH_EN, dwc->mask);
+ }
  
- static struct variant_data variant_arm = {
-@@ -87,6 +89,7 @@ static struct variant_data variant_arm =
- 	.fifohalfsize		= 8 * 4,
- 	.datalength_bits	= 16,
- 	.pwrreg_powerup		= MCI_PWR_UP,
-+	.reversed_irq_handling	= true,
- };
++static void dwc_dostart_first_queued(struct dw_dma_chan *dwc)
++{
++	if (list_empty(&dwc->queue))
++		return;
++
++	list_move(dwc->queue.next, &dwc->active_list);
++	dwc_dostart(dwc, dwc_first_active(dwc));
++}
++
+ /*----------------------------------------------------------------------*/
  
- static struct variant_data variant_arm_extended_fifo = {
-@@ -1163,8 +1166,13 @@ static irqreturn_t mmci_irq(int irq, voi
+ static void
+@@ -335,10 +344,7 @@ static void dwc_complete_all(struct dw_d
+ 	 * the completed ones.
+ 	 */
+ 	list_splice_init(&dwc->active_list, &list);
+-	if (!list_empty(&dwc->queue)) {
+-		list_move(dwc->queue.next, &dwc->active_list);
+-		dwc_dostart(dwc, dwc_first_active(dwc));
+-	}
++	dwc_dostart_first_queued(dwc);
  
- 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
  
--		mmci_cmd_irq(host, host->cmd, status);
--		mmci_data_irq(host, host->data, status);
-+		if (host->variant->reversed_irq_handling) {
-+			mmci_data_irq(host, host->data, status);
-+			mmci_cmd_irq(host, host->cmd, status);
-+		} else {
-+			mmci_cmd_irq(host, host->cmd, status);
-+			mmci_data_irq(host, host->data, status);
-+		}
+@@ -467,10 +473,7 @@ static void dwc_scan_descriptors(struct
+ 	/* Try to continue after resetting the channel... */
+ 	dwc_chan_disable(dw, dwc);
  
- 		/* Don't poll for busy completion in irq context. */
- 		if (host->busy_status)
+-	if (!list_empty(&dwc->queue)) {
+-		list_move(dwc->queue.next, &dwc->active_list);
+-		dwc_dostart(dwc, dwc_first_active(dwc));
+-	}
++	dwc_dostart_first_queued(dwc);
+ 	spin_unlock_irqrestore(&dwc->lock, flags);
+ }
+ 
 
 
