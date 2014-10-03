@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759AbaJCW0D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:26:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47408 "EHLO
+	id S932383AbaJCWZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:25:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932669AbaJCWYW (ORCPT
+	with ESMTP id S932277AbaJCWYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:22 -0400
+	Fri, 3 Oct 2014 18:24:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 114/143] fsnotify/fdinfo: use named constants instead of hardcoded values
-Date: Fri,  3 Oct 2014 14:35:09 -0700
-Message-Id: <20141003213317.918043844@linuxfoundation.org>
+Subject: [PATCH 3.10 115/143] fs/notify: dont show f_handle if exportfs_encode_inode_fh failed
+Date: Fri,  3 Oct 2014 14:35:10 -0700
+Message-Id: <20141003213317.946660559@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -34,10 +34,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrey Vagin <avagin@openvz.org>
 
-commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
+commit 7e8824816bda16bb11ff5ff1e1212d642e57b0b3 upstream.
 
-MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
-bytes, so exportfs_encode_inode_fh can return an error.
+Currently we handle only ENOSPC.  In case of other errors the file_handle
+variable isn't filled properly and we will show a part of stack.
 
 Signed-off-by: Andrey Vagin <avagin@openvz.org>
 Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
@@ -47,26 +47,17 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/notify/fdinfo.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/notify/fdinfo.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 --- a/fs/notify/fdinfo.c
 +++ b/fs/notify/fdinfo.c
-@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_
- {
- 	struct {
- 		struct file_handle handle;
--		u8 pad[64];
-+		u8 pad[MAX_HANDLE_SZ];
- 	} f;
- 	int size, ret, i;
- 
 @@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
  	size = f.handle.handle_bytes >> 2;
  
  	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
--	if ((ret == 255) || (ret == -ENOSPC)) {
-+	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
+-	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
++	if ((ret == FILEID_INVALID) || (ret < 0)) {
  		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
  		return 0;
  	}
