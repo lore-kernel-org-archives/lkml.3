@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaJCLla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 07:41:30 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:60584 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194AbaJCLk2 (ORCPT
+	id S1751908AbaJCLqO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 07:46:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:58778 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaJCLqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 07:40:28 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-39-542e8b2936dd
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v2 2/4] ima: no need to allocate entry for comment
-Date: Fri, 03 Oct 2014 14:40:19 +0300
-Message-id: <115f415354083d858d8ea15fff52910d622f8caf.1412336062.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1412336062.git.d.kasatkin@samsung.com>
-References: <cover.1412336062.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1412336062.git.d.kasatkin@samsung.com>
-References: <cover.1412336062.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjluLIzCtJLcpLzFFi42I5/e/4VV3Nbr0QgyvnGS1u/d3LbPFlaZ3F
-	yxnz2C0u75rDZvGh5xGbxacVk5gd2Dx2zrrL7vHg0GYWj90LPjN59G1ZxejxeZNcAGsUl01K
-	ak5mWWqRvl0CV8aerQ+ZCo5xVEy53MXSwPiVrYuRk0NCwETizK1zULaYxIV764FsLg4hgaWM
-	EiunL2aBcDqZJFZu2MQCUsUmoCexofkHO4gtIpAjMenMBWYQm1kgXeLTpF6wuLCAk8Suqy/B
-	6lkEVCUmTrgIVsMrECdxrGUj1DY5iZPHJrN2MXJwcApYSazr8wcJCwlYSnRefcCGQ3gCI/8C
-	RoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCFh92UH4+JjVocYBTgYlXh4P97QDRFiTSwr
-	rsw9xCjBwawkwivdpBcixJuSWFmVWpQfX1Sak1p8iJGJg1OqgbFuZ5S905tTj/e2uq3LD1Wa
-	WnH00AeNF1sDgn8lLfQ+l5+jFfQ7Vec+e/vF+1cv1Hu92uPWe0aDW0nzKm/hXe3tn5Q6lJPi
-	59QcXHZbyob1U/b0F4YPtr1cYhUivCSrb22zz373YmbT41POZMiHWW5sPuvPcOj8ZaaF7eJ3
-	xK1b9PWvr/5j9UKJpTgj0VCLuag4EQAY3lERGQIAAA==
+	Fri, 3 Oct 2014 07:46:11 -0400
+Date: Fri, 3 Oct 2014 13:46:03 +0200 (CEST)
+From: Stefan Wahren <stefan.wahren@i2se.com>
+Reply-To: Stefan Wahren <stefan.wahren@i2se.com>
+To: Mark Rutland <mark.rutland@arm.com>, festevam@gmail.com
+Cc: "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Message-ID: <20237989.191677.1412336763673.JavaMail.open-xchange@oxbaltgw03.schlund.de>
+In-Reply-To: <20140929132334.GE2432@leverpostej>
+References: <1411779588-22031-1-git-send-email-stefan.wahren@i2se.com> <1411779588-22031-2-git-send-email-stefan.wahren@i2se.com> <20140929110919.GB2432@leverpostej> <54294832.8000702@i2se.com> <20140929124137.GD2432@leverpostej> <54295A2F.3070700@i2se.com> <20140929132334.GE2432@leverpostej>
+Subject: Re: [PATCH 1/2] DT: add binding for mxs regulator
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.6.0-Rev19
+X-Originating-Client: com.openexchange.ox.gui.dhtml
+X-Provags-ID: V02:K0:AntQyUDkJgDwnCso/prW0IFegDNYHvHKfGSxNc//1Lj
+ Q0kov3hiiU/17vomh/mL42FiYTY1mkuOeLwdtgHwy+81DmSVlA
+ u/f+jXGpTxXPFhmDiTg/4eUDmBaLQwrU/r8kmUrngZ+0/MERui
+ R89tSO6AfzR5yLA5muTRNCcYMRUxB8VyQs5SOE+Z0DHXNVUPCZ
+ T4F7xYXVAXG64sHA3bnfsF1IPzhHEG4HNaFB+mIc0+p1jjAw5c
+ uu8uDn6j5+TcJtypo8Ky9pDMGw3Vbj6Hx/2UawOi0uj2cJfOQz
+ b/hTM7mLhEyaeRWdLYBrB+qmmzW+4HTSg6tfRNDho15ViVVNt3
+ T1ledNrZDkyXnNAqAG0JE1XZV67UDqHHJFdcKtsbAjqwjuBZRd
+ gvsXzHPsjd9Z5P3bf/powWk7Bec3vM5i/arXFfA3Ej3HrD+ZNA
+ Iys4m
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rule is a comment, there is no need to allocate entry.
-Move checking for comment before allocating entry.
+Hi Mark,
+hi Fabio,
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/ima/ima_policy.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+> Mark Rutland <mark.rutland@arm.com> hat am 29. September 2014 um 15:23
+> geschrieben:
+>
+> I would prefer a top level node for the subsystem that is not a
+> simple-bus.
+>
+> Give it a compatible string and a well-defined set of base properties
+> (looks like you just need the reg for now). Match that and probe the
+> child nodes as appropriate.
+>
+> > >> Do we need a extra driver?
+> > > Perhaps, but it's relatively simple to match on a compatible string and
+> > > probe children if you just wantto start small for now.
+>
+> Mark.
 
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index cdc620b..bf232b9 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -694,6 +694,12 @@ ssize_t ima_parse_add_rule(char *rule)
- 		return -EACCES;
- 	}
- 
-+	p = strsep(&rule, "\n");
-+	len = strlen(p) + 1;
-+
-+	if (*p == '#')
-+		return len;
-+
- 	entry = kzalloc(sizeof(*entry), GFP_KERNEL);
- 	if (!entry) {
- 		integrity_audit_msg(AUDIT_INTEGRITY_STATUS, NULL,
-@@ -703,14 +709,6 @@ ssize_t ima_parse_add_rule(char *rule)
- 
- 	INIT_LIST_HEAD(&entry->list);
- 
--	p = strsep(&rule, "\n");
--	len = strlen(p) + 1;
--
--	if (*p == '#') {
--		kfree(entry);
--		return len;
--	}
--
- 	result = ima_parse_rule(p, entry);
- 	if (result) {
- 		kfree(entry);
--- 
-1.9.1
+i would name the driver for the power subsystem "mxs_power.c" and use the
+compatibel string "fsl,imx28-power" for i.MX28.
 
+Now the question: where should i take?
+
+arch/arm/mach-mxs/ or drivers/power/
+
+Regards
+
+Stefan
