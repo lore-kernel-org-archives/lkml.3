@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaJCUqg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:46:36 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:40142 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaJCUqe (ORCPT
+	id S1753304AbaJCUxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:53:51 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:65083 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaJCUxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:46:34 -0400
+	Fri, 3 Oct 2014 16:53:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141003204443.GP10583@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141003204256.GO10583@worktop.programming.kicks-ass.net>
 References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
  <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com>
  <20141003201409.GM10583@worktop.programming.kicks-ass.net>
- <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
- <CALCETrWfrWpdMCAYySMAMGCHU3XRkNGmeMTECTE=PXQUfjGPZA@mail.gmail.com> <20141003204443.GP10583@worktop.programming.kicks-ass.net>
+ <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com> <20141003204256.GO10583@worktop.programming.kicks-ass.net>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 3 Oct 2014 13:46:13 -0700
-Message-ID: <CALCETrUEHzqdoOW6QM8RXCxBHTEy+m_zL5Bg6T1BbBB6o1bSEg@mail.gmail.com>
+Date: Fri, 3 Oct 2014 13:53:24 -0700
+Message-ID: <CALCETrXrcBDOq0zBkgtNDfD1qjhq4rcXR1Txta8KksREZeQg0g@mail.gmail.com>
 Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC filtering
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -32,25 +31,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 1:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Oct 03, 2014 at 01:27:52PM -0700, Andy Lutomirski wrote:
->> On Fri, Oct 3, 2014 at 1:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> >
->> > We could make the rule be that RDPMC is enabled if a perf event is
->> > mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
->> > there's an actual performance issue first.  Ideally we can get this
->> > all working with no API or ABI change at all.
+On Fri, Oct 3, 2014 at 1:42 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Oct 03, 2014 at 01:22:22PM -0700, Andy Lutomirski wrote:
+>> > So the problem with the default deny is that its:
+>> >  1) pointless -- the attacker can do sys_perf_event_open() just fine;
 >>
->> No, we can't use that rule.  But we could say that RDPMC is enabled if
->> a perf event is mmapped and no thread in the mm uses seccomp.  I'll
->> grumble a little bit about adding yet another piece of seccomp state.
+>> Not if the attacker is in a seccomp sandbox.
 >
-> Well, we could simply disable the RDPMC for everything TIF_SECCOMP.
-> Should be fairly straight fwd.
+> Clearly :-)
+>
+>> >  2) and expensive -- the people trying to measure performance get the
+>> >     penalty of the CR4 write.
+>>
+>> Does this matter for performance measuring?  I'm not 100% clear on how all
+>> the perf_event stuff gets used in practice, but, by my very vague
+>> understanding, there are two main workflows:
+>>
+>> a) perf record, etc: one process creates a ringbuffer and wakes up
+>> rarely to record the contents.  The process being recorded doesn't
+>> have a perf_event mapped, so the cr4 switch will only happen when
+>> waking up the perf process.
+>>
+>> perf record prints stuff like "[ perf record: Woken up 1 times to
+>> write data ]", which seems to confirm my understanding.
+>>
+>> b) self-monitoring.  A task mmaps a perf_event, does rdpmc, does
+>> something, and does rdpmc again.  In that case, there's no context
+>> switch.
+>
+> Agreed, but with the default disable, the self-monitoring task will get
+> CR4 writes to its context switches and will be slower.
+>
+> Whereas if we default on and only disable with seccomp then only the
+> seccomp tasks will suffer the burden of a CR4 write at context switch
+> time.
+>
+> And I don't see a security implication in the default.
 
-That won't work.  I bet there are plenty of existing users of fairly
-wide-open seccomp sandboxes that allow perf_event in.
+I don't see a security implication, but we can fight over whether
+seccomp performance or perf self monitoring performance is more
+important.  I spent a bunch of time making seccomp *much* faster for
+3.18, and things like Chromium (the browser) could have lots of
+context switched into and out of seccomp. :)
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I suspect that the overhead only really matters when running as a VM guest.
+
+Hmm.  Can we switch lazily?  I don't really like the idea, but
+non-seccomp, non-perf-event tasks could, in principle, just inherit
+the PCE value from whatever had the CPU last.
+
+>
+>> > So I would suggest a default on, but allow a disable for the seccomp
+>> > users, which might have also disabled the syscall. Note that is is
+>> > possible to disable RDPMC while still allowing the syscall.
+>>
+>> Disabling RDPMC per-process while still allowing the syscall will need
+>> a bunch of work, right?
+>
+> Not much, all you need to do is make
+> perf_event_mmmap_page::cap_user_rdpmc be 0 and userspace should never
+> use rdpmc. Currently we set that bit based on the global sysfs rdpmc
+> value, but we could easy bitwise AND it with a per process value.
+>
+>> What happens if the same perf_event is mapped
+>> by two different users?
+>
+> Not entirely clear on what you mean here.
+
+Can you open a perf_event fd, fork, and mmap it in the child?  What if
+you map it in the parent and the child?  Then cap_user_rdpmc has to
+match for both mappings.  Or is this impossible?
+
+>
+>> We could make the rule be that RDPMC is enabled if a perf event is
+>> mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
+>> there's an actual performance issue first.  Ideally we can get this
+>> all working with no API or ABI change at all.
+>
+> Well I just want to not have extra CR4 writes by default (and by default
+> I don't care about seccomp).
+>
+>> P.S. Hey, Intel, let us context switch RDPMC accessibility of the
+>> individual counters, please :)
+>
+> Ha sure, make it more complicated why don't you ;-) But yes, that has
+> come up before.
+
+--Andy
