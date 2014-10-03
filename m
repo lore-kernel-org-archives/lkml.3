@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbaJCWep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:34:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47847 "EHLO
+	id S1758573AbaJCWed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:34:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301AbaJCWeT (ORCPT
+	with ESMTP id S1755125AbaJCWeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:34:19 -0400
+	Fri, 3 Oct 2014 18:34:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jaime Velasco Juan <jsagarribay@gmail.com>,
-        Georgios Tsalikis <georgios@tsalikis.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.10 099/143] Input: atkbd - do not try deactivate keyboard on any LG laptops
-Date: Fri,  3 Oct 2014 14:34:54 -0700
-Message-Id: <20141003213317.460963543@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.10 122/143] alarmtimer: Lock k_itimer during timer callback
+Date: Fri,  3 Oct 2014 14:35:17 -0700
+Message-Id: <20141003213318.148534120@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -30,47 +33,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Richard Larocque <rlarocque@google.com>
 
-commit c01206796139e2b1feb7539bc72174fef1c6dc6e upstream.
+commit 474e941bed9262f5fa2394f9a4a67e24499e5926 upstream.
 
-We are getting more and more reports about LG laptops not having
-functioning keyboard if we try to deactivate keyboard during probe.
-Given that having keyboard deactivated is merely "nice to have"
-instead of a hard requirement for probing, let's disable it on all
-LG boxes instead of trying to hunt down particular models.
+Locks the k_itimer's it_lock member when handling the alarm timer's
+expiry callback.
 
-This change is prompted by patches trying to add "LG Electronics"/"ROCKY"
-and "LG Electronics"/"LW60-F27B" to the DMI list.
+The regular posix timers defined in posix-timers.c have this lock held
+during timout processing because their callbacks are routed through
+posix_timer_fn().  The alarm timers follow a different path, so they
+ought to grab the lock somewhere else.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=77051
-
-Reported-by: Jaime Velasco Juan <jsagarribay@gmail.com>
-Reported-by: Georgios Tsalikis <georgios@tsalikis.net>
-Tested-by: Jaime Velasco Juan <jsagarribay@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/keyboard/atkbd.c |    8 --------
- 1 file changed, 8 deletions(-)
+ kernel/time/alarmtimer.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -1791,14 +1791,6 @@ static const struct dmi_system_id atkbd_
- 	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
--		},
--		.callback = atkbd_deactivate_fixup,
--	},
--	{
--		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
- 		},
- 		.callback = atkbd_deactivate_fixup,
- 	},
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -419,8 +419,12 @@ static enum alarmtimer_type clock2alarm(
+ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 							ktime_t now)
+ {
++	unsigned long flags;
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
++	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
++
++	spin_lock_irqsave(&ptr->it_lock, flags);
+ 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
+ 		if (posix_timer_event(ptr, 0) != 0)
+ 			ptr->it_overrun++;
+@@ -430,9 +434,11 @@ static enum alarmtimer_restart alarm_han
+ 	if (ptr->it.alarm.interval.tv64) {
+ 		ptr->it_overrun += alarm_forward(alarm, now,
+ 						ptr->it.alarm.interval);
+-		return ALARMTIMER_RESTART;
++		result = ALARMTIMER_RESTART;
+ 	}
+-	return ALARMTIMER_NORESTART;
++	spin_unlock_irqrestore(&ptr->it_lock, flags);
++
++	return result;
+ }
+ 
+ /**
 
 
