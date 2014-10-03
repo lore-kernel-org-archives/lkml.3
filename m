@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758399AbaJCWb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:31:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47654 "EHLO
+	id S1758447AbaJCWcd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:32:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151AbaJCW3s (ORCPT
+	with ESMTP id S1756764AbaJCW3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:29:48 -0400
+	Fri, 3 Oct 2014 18:29:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Sergey Dyasly <dserrg@gmail.com>,
-        Sameer Nanda <snanda@chromium.org>,
+        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>,
+        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.10 139/143] introduce for_each_thread() to replace the buggy while_each_thread()
-Date: Fri,  3 Oct 2014 14:35:34 -0700
-Message-Id: <20141003213318.642469790@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 118/143] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Date: Fri,  3 Oct 2014 14:35:13 -0700
+Message-Id: <20141003213318.033621658@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -38,156 +34,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit 0c740d0afc3bff0a097ad03a1c8df92757516f5c upstream.
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
 
-while_each_thread() and next_thread() should die, almost every lockless
-usage is wrong.
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
 
-1. Unless g == current, the lockless while_each_thread() is not safe.
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
 
-   while_each_thread(g, t) can loop forever if g exits, next_thread()
-   can't reach the unhashed thread in this case. Note that this can
-   happen even if g is the group leader, it can exec.
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
 
-2. Even if while_each_thread() itself was correct, people often use
-   it wrongly.
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
 
-   It was never safe to just take rcu_read_lock() and loop unless
-   you verify that pid_alive(g) == T, even the first next_thread()
-   can point to the already freed/reused memory.
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
 
-This patch adds signal_struct->thread_head and task->thread_node to
-create the normal rcu-safe list with the stable head.  The new
-for_each_thread(g, t) helper is always safe under rcu_read_lock() as
-long as this task_struct can't go away.
+Yasuaki also reported that this can happen on real hardware:
 
-Note: of course it is ugly to have both task_struct->thread_node and the
-old task_struct->thread_group, we will kill it later, after we change
-the users of while_each_thread() to use for_each_thread().
+  https://lkml.org/lkml/2014/7/22/1018
 
-Perhaps we can kill it even before we convert all users, we can
-reimplement next_thread(t) using the new thread_head/thread_node.  But
-we can't do this right now because this will lead to subtle behavioural
-changes.  For example, do/while_each_thread() always sees at least one
-task, while for_each_thread() can do nothing if the whole thread group
-has died.  Or thread_group_empty(), currently its semantics is not clear
-unless thread_group_leader(p) and we need to audit the callers before we
-can change it.
+His case is here:
 
-So this patch adds the new interface which has to coexist with the old
-one for some time, hopefully the next changes will be more or less
-straightforward and the old one will go away soon.
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Sergey Dyasly <dserrg@gmail.com>
-Tested-by: Sergey Dyasly <dserrg@gmail.com>
-Reviewed-by: Sameer Nanda <snanda@chromium.org>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>
-Cc: "Ma, Xindong" <xindong.ma@intel.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/init_task.h |    2 ++
- include/linux/sched.h     |   12 ++++++++++++
- kernel/exit.c             |    1 +
- kernel/fork.c             |    7 +++++++
- 4 files changed, 22 insertions(+)
+ arch/x86/kernel/smpboot.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -40,6 +40,7 @@ extern struct fs_struct init_fs;
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1284,6 +1284,9 @@ static void remove_siblinginfo(int cpu)
  
- #define INIT_SIGNALS(sig) {						\
- 	.nr_threads	= 1,						\
-+	.thread_head	= LIST_HEAD_INIT(init_task.thread_node),	\
- 	.wait_chldexit	= __WAIT_QUEUE_HEAD_INITIALIZER(sig.wait_chldexit),\
- 	.shared_pending	= { 						\
- 		.list = LIST_HEAD_INIT(sig.shared_pending.list),	\
-@@ -213,6 +214,7 @@ extern struct task_group root_task_group
- 		[PIDTYPE_SID]  = INIT_PID_LINK(PIDTYPE_SID),		\
- 	},								\
- 	.thread_group	= LIST_HEAD_INIT(tsk.thread_group),		\
-+	.thread_node	= LIST_HEAD_INIT(init_signals.thread_head),	\
- 	INIT_IDS							\
- 	INIT_PERF_EVENTS(tsk)						\
- 	INIT_TRACE_IRQFLAGS						\
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -480,6 +480,7 @@ struct signal_struct {
- 	atomic_t		sigcnt;
- 	atomic_t		live;
- 	int			nr_threads;
-+	struct list_head	thread_head;
- 
- 	wait_queue_head_t	wait_chldexit;	/* for wait4() */
- 
-@@ -1160,6 +1161,7 @@ struct task_struct {
- 	/* PID/PID hash table linkage. */
- 	struct pid_link pids[PIDTYPE_MAX];
- 	struct list_head thread_group;
-+	struct list_head thread_node;
- 
- 	struct completion *vfork_done;		/* for vfork() */
- 	int __user *set_child_tid;		/* CLONE_CHILD_SETTID */
-@@ -2167,6 +2169,16 @@ extern bool current_is_single_threaded(v
- #define while_each_thread(g, t) \
- 	while ((t = next_thread(t)) != g)
- 
-+#define __for_each_thread(signal, t)	\
-+	list_for_each_entry_rcu(t, &(signal)->thread_head, thread_node)
-+
-+#define for_each_thread(p, t)		\
-+	__for_each_thread((p)->signal, t)
-+
-+/* Careful: this is a double loop, 'break' won't work as expected. */
-+#define for_each_process_thread(p, t)	\
-+	for_each_process(p) for_each_thread(p, t)
-+
- static inline int get_nr_threads(struct task_struct *tsk)
- {
- 	return tsk->signal->nr_threads;
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -74,6 +74,7 @@ static void __unhash_process(struct task
- 		__this_cpu_dec(process_counts);
- 	}
- 	list_del_rcu(&p->thread_group);
-+	list_del_rcu(&p->thread_node);
- }
- 
- /*
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1045,6 +1045,11 @@ static int copy_signal(unsigned long clo
- 	sig->nr_threads = 1;
- 	atomic_set(&sig->live, 1);
- 	atomic_set(&sig->sigcnt, 1);
-+
-+	/* list_add(thread_node, thread_head) without INIT_LIST_HEAD() */
-+	sig->thread_head = (struct list_head)LIST_HEAD_INIT(tsk->thread_node);
-+	tsk->thread_node = (struct list_head)LIST_HEAD_INIT(sig->thread_head);
-+
- 	init_waitqueue_head(&sig->wait_chldexit);
- 	sig->curr_target = tsk;
- 	init_sigpending(&sig->shared_pending);
-@@ -1471,6 +1476,8 @@ static struct task_struct *copy_process(
- 			p->group_leader = current->group_leader;
- 			list_add_tail_rcu(&p->thread_group,
- 					  &p->group_leader->thread_group);
-+			list_add_tail_rcu(&p->thread_node,
-+					  &p->signal->thread_head);
- 		}
- 		attach_pid(p, PIDTYPE_PID, pid);
- 		nr_threads++;
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 
 
