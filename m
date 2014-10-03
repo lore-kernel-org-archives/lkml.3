@@ -1,111 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaJCFtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:49:32 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48447 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaJCFt3 (ORCPT
+	id S1752438AbaJCGEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 02:04:30 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:38455 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaJCGE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 01:49:29 -0400
-Date: Thu, 2 Oct 2014 22:49:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
-Subject: Re: mmotm 2014-10-02-16-22 uploaded
-Message-ID: <20141003054923.GA13328@roeck-us.net>
-References: <542dde4c.uoQAbw1Ng2akSWKx%akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542dde4c.uoQAbw1Ng2akSWKx%akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 3 Oct 2014 02:04:28 -0400
+Message-ID: <1412316263.5149.9.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] sched,idle: teach select_idle_sibling about idle
+ states
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Date: Fri, 03 Oct 2014 08:04:23 +0200
+In-Reply-To: <20141002131548.6cd377d5@cuia.bos.redhat.com>
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
+	 <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+	 <542B277D.7050103@redhat.com>
+	 <alpine.LFD.2.11.1409301904150.5311@knanqh.ubzr>
+	 <20141002131548.6cd377d5@cuia.bos.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 04:22:52PM -0700, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2014-10-02-16-22 has been uploaded to
+On Thu, 2014-10-02 at 13:15 -0400, Rik van Riel wrote:
+
+> This patch is ugly. I have not bothered cleaning it up, because it
+> causes a regression with hackbench. Apparently for hackbench (and
+> potentially other sync wakeups), locality is more important than
+> idleness.
 > 
->    http://www.ozlabs.org/~akpm/mmotm/
+> We may need to add a third clause before the search, something
+> along the lines of, to ensure target gets selected if neither
+> target or i are idle and the wakeup is synchronous...
 > 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
-Build summary:
-	total: 133 pass: 127 fail: 6
-Failed builds:
-	arm:cm_x2xx_defconfig
-	avr32:defconfig
-	m68k:allmodconfig
-	mn10300:asb2303_defconfig
-	sparc64:allmodconfig
-	um:defconfig
+>     if (sync_wakeup && cpu_of(target)->nr_running == 1)
+> 	return target;
 
-Qemu tests:
-	total: 26 pass: 26 fail: 0
+I recommend you forget that trusting sync hint ever sprang to mind, it
+is often a big fat lie.
 
----
-avr32:defconfig has a new build failure.
+-Mike
 
-drivers/input/leds.o: In function `init_module':
-leds.c:(.init.text+0x0): multiple definition of `init_module'
-drivers/input/input.o:input.c:(.init.text+0x0): first defined here
-drivers/input/leds.o: In function `cleanup_module':
-leds.c:(.exit.text+0x0): multiple definition of `cleanup_module'
-drivers/input/input.o:input.c:(.exit.text+0x0): first defined here
-make[2]: *** [drivers/input/input-core.o] Error 1
-
----
-powerpc qemu tests create a number of tracebacks, all similar to the following.
-
-------------[ cut here ]------------
-WARNING: at kernel/workqueue.c:1360
-Modules linked in:
-CPU: 0 PID: 32 Comm: kadbprobe Not tainted 3.17.0-rc7-mm1-yocto-standard+ #1
-task: c79f29a0 ti: c7ac2000 task.ti: c7ac2000
-NIP: c0045274 LR: c004533c CTR: c04af658
-REGS: c7ac3ae0 TRAP: 0700   Not tainted  (3.17.0-rc7-mm1-yocto-standard+)
-MSR: 00021032 <ME,IR,DR,RI>  CR: 82008082  XER: 00000000
-
-GPR00: c004533c c7ac3b90 c79f29a0 00000001 00000000 c099c140 00000000 c0900000 
-GPR08: 00000000 00000001 00000002 00000000 82008082 00000000 c004bdd8 c79d1a20 
-GPR16: 00000000 00000000 00000000 00000003 00000000 c79daa5c 00000001 c08e89e4 
-GPR24: c08e7fa4 00000000 c08f784c c7ac2000 c099c144 c781cc00 c0aab500 c099c140 
-NIP [c0045274] __queue_work+0xf8/0x3e8
-LR [c004533c] __queue_work+0x1c0/0x3e8
-Call Trace:
-[c7ac3b90] [c004533c] __queue_work+0x1c0/0x3e8 (unreliable)
-[c7ac3bc0] [c00455cc] queue_work_on+0x68/0x88
-[c7ac3bd0] [c05113dc] led_trigger_event+0x4c/0xa8
-[c7ac3bf0] [c0434660] kbd_ledstate_trigger_activate+0x7c/0xa4
-[c7ac3c00] [c0511594] led_trigger_set+0x15c/0x1dc
-[c7ac3c30] [c0511840] led_trigger_set_default+0x90/0xd4
-[c7ac3c50] [c0511004] led_classdev_register+0x108/0x12c
-[c7ac3c60] [c04af8fc] input_led_connect+0xd4/0x250
-[c7ac3ca0] [c04ac350] input_register_device+0x42c/0x4b4
-[c7ac3cc0] [c045ecac] adbhid_input_register+0x4e0/0x62c
-[c7ac3d00] [c045eea0] adbhid_input_reregister+0xa8/0xac
-[c7ac3d20] [c045efdc] adbhid_probe+0x138/0x4fc
-[c7ac3de0] [c045f860] adb_message_handler+0x30/0xec
-[c7ac3e00] [c004ceb8] notifier_call_chain+0x78/0xc0
-[c7ac3e20] [c004d424] __blocking_notifier_call_chain+0x5c/0x80
-[c7ac3e40] [c0460eb0] do_adb_reset_bus+0x11c/0x3c4
-[c7ac3ee0] [c0461180] adb_probe_task+0x28/0x58
-[c7ac3ef0] [c004bea0] kthread+0xc8/0xdc
-[c7ac3f40] [c00106fc] ret_from_kernel_thread+0x5c/0x64
-Instruction dump:
-419e019c 3f40c08f 3b5a784c 813a0018 2f890000 419d021c 813f0004 3b9f0004 
-7f894a78 7d290034 5529d97e 69290001 <0f090000> 2f890000 409e008c 80be0008 
----[ end trace 76dca08f6b486638 ]---
-
----
-
-Guenter
