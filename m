@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570AbaJDAcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:32:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45377 "EHLO
+	id S933827AbaJDAeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:34:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722AbaJCVmv (ORCPT
+	with ESMTP id S1755900AbaJCVmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:51 -0400
+	Fri, 3 Oct 2014 17:42:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Weston Andros Adamson <dros@primarydata.com>,
-        Peng Tao <tao.peng@primarydata.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 168/357] nfs: fix nonblocking calls to nfs_page_group_lock
-Date: Fri,  3 Oct 2014 14:29:14 -0700
-Message-Id: <20141003212938.526421447@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.16 142/357] usb: dwc3: omap: fix ordering for runtime pm calls
+Date: Fri,  3 Oct 2014 14:28:48 -0700
+Message-Id: <20141003212937.742942982@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,64 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Felipe Balbi <balbi@ti.com>
 
-From: Weston Andros Adamson <dros@primarydata.com>
+commit 81a60b7f5c143ab3cdcd9943c9b4b7c63c32fc31 upstream.
 
-commit bc8a309e88a86205fc3e17f06e42a2e56fc6f807 upstream.
+we don't to gate clocks until our children are
+done with their remove path.
 
-nfs_page_group_lock was calling wait_on_bit_lock even when told not to
-block. Fix by first trying test_and_set_bit, followed by wait_on_bit_lock
-if and only if blocking is allowed.  Return -EAGAIN if nonblocking and the
-test_and_set of the bit was already locked.
-
-Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
-Reviewed-by: Peng Tao <tao.peng@primarydata.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fixes: af310e9 (usb: dwc3: omap: use runtime API's to enable clocks)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/pagelist.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
 
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -149,24 +149,29 @@ static int nfs_wait_bit_uninterruptible(
-  *
-  * this lock must be held if modifying the page group list
-  *
-- * returns result from wait_on_bit_lock: 0 on success, < 0 on error
-+ * return 0 on success, < 0 on error: -EDELAY if nonblocking or the
-+ * result from wait_on_bit_lock
-+ *
-+ * NOTE: calling with nonblock=false should always have set the
-+ *       lock bit (see fs/buffer.c and other uses of wait_on_bit_lock
-+ *       with TASK_UNINTERRUPTIBLE), so there is no need to check the result.
-  */
- int
- nfs_page_group_lock(struct nfs_page *req, bool nonblock)
- {
- 	struct nfs_page *head = req->wb_head;
--	int ret;
+---
+ drivers/usb/dwc3/dwc3-omap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/dwc3/dwc3-omap.c
++++ b/drivers/usb/dwc3/dwc3-omap.c
+@@ -576,9 +576,9 @@ static int dwc3_omap_remove(struct platf
+ 	if (omap->extcon_id_dev.edev)
+ 		extcon_unregister_interest(&omap->extcon_id_dev);
+ 	dwc3_omap_disable_irqs(omap);
++	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+-	device_for_each_child(&pdev->dev, NULL, dwc3_omap_remove_core);
  
- 	WARN_ON_ONCE(head != head->wb_head);
- 
--	do {
--		ret = wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
--			nfs_wait_bit_uninterruptible,
--			TASK_UNINTERRUPTIBLE);
--	} while (!nonblock && ret != 0);
-+	if (!test_and_set_bit(PG_HEADLOCK, &head->wb_flags))
-+		return 0;
-+
-+	if (!nonblock)
-+		return wait_on_bit_lock(&head->wb_flags, PG_HEADLOCK,
-+				nfs_wait_bit_uninterruptible,
-+				TASK_UNINTERRUPTIBLE);
- 
--	WARN_ON_ONCE(ret > 0);
--	return ret;
-+	return -EAGAIN;
+ 	return 0;
  }
- 
- /*
 
 
