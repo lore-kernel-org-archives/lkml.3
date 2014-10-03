@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaJCMVM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:21:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454AbaJCMVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:21:09 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com>
-References: <CACE9dm8ZmVJe7qadrLwXEQHYrmau_Mbahnz4FSBaWD4GB==JMw@mail.gmail.com> <20140908153704.28301.41578.stgit@warthog.procyon.org.uk> <20140908153830.28301.37880.stgit@warthog.procyon.org.uk> <542D741D.5070109@samsung.com> <542D77A4.5030606@samsung.com>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: dhowells@redhat.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        keyrings <keyrings@linux-nfs.org>, Josh Boyer <jwboyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        pjones@redhat.com, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for asymmetric keys
+	id S1752661AbaJCMWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:22:35 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46688 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752421AbaJCMW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:22:29 -0400
+Message-ID: <542E9502.1040104@6wind.com>
+Date: Fri, 03 Oct 2014 14:22:26 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <28662.1412338855.1@warthog.procyon.org.uk>
-Date: Fri, 03 Oct 2014 13:20:55 +0100
-Message-ID: <28663.1412338855@warthog.procyon.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        davem@davemloft.net, stephen@networkplumber.org,
+        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
+Subject: Re: [RFC PATCH net-next v3 1/4] netns: add genl cmd to add and get
+ peer netns ids
+References: <542D5726.8070308@6wind.com>	<1412257690-31253-1-git-send-email-nicolas.dichtel@6wind.com>	<1412257690-31253-2-git-send-email-nicolas.dichtel@6wind.com> <87tx3mmflp.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87tx3mmflp.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-
-> What is this 6865612e68326732?
-
-It's the tail of the first ID attached to the key (there may be more than
-one).  As this is derived from an X.509 cert, that will be the serial number
-plus the ASN.1 encoded issuer name.
-
-To quote from the description in the patch:
-
- (1) Use the previously created asymmetric_key_id struct to hold the following
-     key IDs derived from the X.509 certificate or PKCS#7 message:
-
-	id: serial number + issuer
-	skid: subjKeyId + subject
-	authority: authKeyId + issuer
-
- (2) Replace the hex fingerprint attached to key->type_data[1] with an
-     asymmetric_key_ids struct containing the id and the skid (if present).
-
-If you turn the hex into chars, you will see "hea.h2g2"
-
-I'm open to suggestions about the best way to represent the auxiliary IDs in
-/proc/keys - but don't forget there can be more than one.
-
-David
+Le 02/10/2014 21:33, Eric W. Biederman a écrit :
+> Nicolas Dichtel <nicolas.dichtel@6wind.com> writes:
+>
+>> With this patch, a user can define an id for a peer netns by providing a FD or a
+>> PID. These ids are local to netns (ie valid only into one netns).
+>>
+>> This will be useful for netlink messages when a x-netns interface is
+>> dumped.
+>
+> You have a "id -> struct net *" table but you don't have a
+> "struct net * -> id" table which looks like it will impact the
+> performance of peernet2id at scale.
+It is indirectly stores in 'struct idr'. It can be optimized later, with a
+proper algorithm to find quickly this 'struct net *' (hash table? something
+else?). A basic algorithm will not be more scalable than the current
+idr_for_each().
