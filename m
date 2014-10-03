@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213AbaJCNK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 09:10:58 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:35317 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752025AbaJCNKy (ORCPT
+	id S1752758AbaJCNNP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 09:13:15 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46870 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbaJCNNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 09:10:54 -0400
-Message-ID: <542EA05B.4010107@6wind.com>
-Date: Fri, 03 Oct 2014 15:10:51 +0200
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reply-To: nicolas.dichtel@6wind.com
-Organization: 6WIND
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 3 Oct 2014 09:13:13 -0400
+Message-ID: <542EA0B7.5040007@roeck-us.net>
+Date: Fri, 03 Oct 2014 06:12:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Stephen Hemminger <stephen@networkplumber.org>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        ebiederm@xmission.com, akpm@linux-foundation.org, adobriyan@gmail.com,
-        rui.xiang@huawei.com, viro@zeniv.linux.org.uk, oleg@redhat.com,
-        gorcunov@openvz.org, kirill.shutemov@linux.intel.com,
-        grant.likely@secretlab.ca, tytso@mit.edu,
-        Thierry Herbelot <thierry.herbelot@6wind.com>
-Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the directory
- entries
-References: <20131003.150947.2179820478039260398.davem@davemloft.net>	<1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com>	<1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com> <20141002094657.1e28e027@urahara>
-In-Reply-To: <20141002094657.1e28e027@urahara>
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [RFC PATCH 05/16] arm64: support poweroff through poweroff handler
+ call chain
+References: <1412100056-15517-1-git-send-email-linux@roeck-us.net> <1412100056-15517-6-git-send-email-linux@roeck-us.net> <20141003103056.GB14110@localhost>
+In-Reply-To: <20141003103056.GB14110@localhost>
 Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.542EA0E9.0119,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 11
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 02/10/2014 18:46, Stephen Hemminger a écrit :
-> On Thu,  2 Oct 2014 17:25:01 +0200
-> Nicolas Dichtel <nicolas.dichtel@6wind.com> wrote:
+On 10/03/2014 03:30 AM, Catalin Marinas wrote:
+> On Tue, Sep 30, 2014 at 07:00:45PM +0100, Guenter Roeck wrote:
+>> The kernel core now supports a poweroff handler call chain
+>> to remove power from the system. Call it if pm_power_off
+>> is set to NULL.
+>>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Cc: Will Deacon <will.deacon@arm.com>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>>   arch/arm64/kernel/process.c | 2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+>> index 398ab05..cc0c63e 100644
+>> --- a/arch/arm64/kernel/process.c
+>> +++ b/arch/arm64/kernel/process.c
+>> @@ -157,6 +157,8 @@ void machine_power_off(void)
+>>   	smp_send_stop();
+>>   	if (pm_power_off)
+>>   		pm_power_off();
+>> +	else
+>> +		do_kernel_poweroff();
 >
->> From: Thierry Herbelot <thierry.herbelot@6wind.com>
->>
->> The current implementation for the directories in /proc is using a single
->> linked list. This is slow when handling directories with large numbers of
->> entries (eg netdevice-related entries when lots of tunnels are opened).
->>
->> This patch enables multiple linked lists. A hash based on the entry name is
->> used to select the linked list for one given entry.
->>
->> The speed creation of netdevices is faster as shorter linked lists must be
->> scanned when adding a new netdevice.
->>
->> Here are some numbers:
->>
->> dummy30000.batch contains 30 000 times 'link add type dummy'.
->>
->> Before the patch:
->> time ip -b dummy30000.batch
->> real    2m32.221s
->> user    0m0.380s
->> sys     2m30.610s
->>
->> After the patch:
->> time ip -b dummy30000.batch
->> real    1m57.190s
->> user    0m0.350s
->> sys     1m56.120s
->>
->> The single 'subdir' list head is replaced by a subdir hash table. The subdir
->> hash buckets are only allocated for directories. The number of hash buckets
->> is a compile-time parameter.
->>
->> For all functions which handle directory entries, an additional check on the
->> directory nature of the dir entry ensures that pde_hash_buckets was allocated.
->> This check was not needed as subdir was present for all dir entries, whether
->> actual directories or simple files.
->>
->> Signed-off-by: Thierry Herbelot <thierry.herbelot@6wind.com>
->> Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 >
-> I think the speed up is a good idea and makes sense.
-> It would be better to use exist hlist macros for hash table rather than
-> open coding it.
+> As others already stated, I think we should eventually remove
+> pm_power_off entirely.
 >
-Right, I will rework this after looking at rbtree.
+
+Hi Catalin,
+yes, already working on it. As suggested by others, I'll move pm_power_off
+to a central location (no need to declare the same variable for each
+architecture) and hide the call to it in do_kernel_poweroff() as a
+first step. You'll see this in the next version of the series.
+This will make it much easier to remove it later on.
+
+Thanks,
+Guenter
+
