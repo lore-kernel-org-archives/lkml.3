@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869AbaJCV4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:56:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46106 "EHLO
+	id S1756885AbaJCV4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:56:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325AbaJCVz4 (ORCPT
+	with ESMTP id S932319AbaJCVz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:55:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.14 070/238] xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
-Date: Fri,  3 Oct 2014 14:29:45 -0700
-Message-Id: <20141003212915.909319072@linuxfoundation.org>
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.16 285/357] powerpc: Add smp_mb() to arch_spin_is_locked()
+Date: Fri,  3 Oct 2014 14:31:11 -0700
+Message-Id: <20141003212942.048600828@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,65 +25,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
 
-commit 7128039fe2dd3d59da9e4ffa036f3aaa3ba87b9f upstream.
+commit 51d7d5205d3389a32859f9939f1093f267409929 upstream.
 
-Current definition of TLBTEMP_BASE_2 is always 32K above the
-TLBTEMP_BASE_1, whereas fast_second_level_miss handler for the TLBTEMP
-region analyzes virtual address bit (PAGE_SHIFT + DCACHE_ALIAS_ORDER)
-to determine TLBTEMP region where the fault happened. The size of the
-TLBTEMP region is also checked incorrectly: not 64K, but twice data
-cache way size (whicht may as well be less than the instruction cache
-way size).
+The kernel defines the function spin_is_locked(), which can be used to
+check if a spinlock is currently locked.
 
-Fix TLBTEMP_BASE_2 to be TLBTEMP_BASE_1 + data cache way size.
-Provide TLBTEMP_SIZE that is a greater of doubled data cache way size or
-the instruction cache way size, and use it to determine if the second
-level TLB miss occured in the TLBTEMP region.
+Using spin_is_locked() on a lock you don't hold is obviously racy. That
+is, even though you may observe that the lock is unlocked, it may become
+locked at any time.
 
-Practical occurence of page faults in the TLBTEMP area is extremely
-rare, this code can be tested by deletion of all w[di]tlb instructions
-in the tlbtemp_mapping region.
+There is (at least) one exception to that, which is if two locks are
+used as a pair, and the holder of each checks the status of the other
+before doing any update.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Assuming *A and *B are two locks, and *COUNTER is a shared non-atomic
+value:
+
+The first CPU does:
+
+	spin_lock(*A)
+
+	if spin_is_locked(*B)
+		# nothing
+	else
+		smp_mb()
+		LOAD r = *COUNTER
+		r++
+		STORE *COUNTER = r
+
+	spin_unlock(*A)
+
+And the second CPU does:
+
+	spin_lock(*B)
+
+	if spin_is_locked(*A)
+		# nothing
+	else
+		smp_mb()
+		LOAD r = *COUNTER
+		r++
+		STORE *COUNTER = r
+
+	spin_unlock(*B)
+
+Although this is a strange locking construct, it should work.
+
+It seems to be understood, but not documented, that spin_is_locked() is
+not a memory barrier, so in the examples above and below the caller
+inserts its own memory barrier before acting on the result of
+spin_is_locked().
+
+For now we assume spin_is_locked() is implemented as below, and we break
+it out in our examples:
+
+	bool spin_is_locked(*LOCK) {
+		LOAD l = *LOCK
+		return l.locked
+	}
+
+Our intuition is that there should be no problem even if the two code
+sequences run simultaneously such as:
+
+	CPU 0			CPU 1
+	==================================================
+	spin_lock(*A)		spin_lock(*B)
+	LOAD b = *B		LOAD a = *A
+	if b.locked # true	if a.locked # true
+	# nothing		# nothing
+	spin_unlock(*A)		spin_unlock(*B)
+
+If one CPU gets the lock before the other then it will do the update and
+the other CPU will back off:
+
+	CPU 0			CPU 1
+	==================================================
+	spin_lock(*A)
+	LOAD b = *B
+				spin_lock(*B)
+	if b.locked # false	LOAD a = *A
+	else			if a.locked # true
+	smp_mb()		# nothing
+	LOAD r1 = *COUNTER	spin_unlock(*B)
+	r1++
+	STORE *COUNTER = r1
+	spin_unlock(*A)
+
+However in reality spin_lock() itself is not indivisible. On powerpc we
+implement it as a load-and-reserve and store-conditional.
+
+Ignoring the retry logic for the lost reservation case, it boils down to:
+	spin_lock(*LOCK) {
+		LOAD l = *LOCK
+		l.locked = true
+		STORE *LOCK = l
+		ACQUIRE_BARRIER
+	}
+
+The ACQUIRE_BARRIER is required to give spin_lock() ACQUIRE semantics as
+defined in memory-barriers.txt:
+
+     This acts as a one-way permeable barrier.  It guarantees that all
+     memory operations after the ACQUIRE operation will appear to happen
+     after the ACQUIRE operation with respect to the other components of
+     the system.
+
+On modern powerpc systems we use lwsync for ACQUIRE_BARRIER. lwsync is
+also know as "lightweight sync", or "sync 1".
+
+As described in Power ISA v2.07 section B.2.1.1, in this scenario the
+lwsync is not the barrier itself. It instead causes the LOAD of *LOCK to
+act as the barrier, preventing any loads or stores in the locked region
+from occurring prior to the load of *LOCK.
+
+Whether this behaviour is in accordance with the definition of ACQUIRE
+semantics in memory-barriers.txt is open to discussion, we may switch to
+a different barrier in future.
+
+What this means in practice is that the following can occur:
+
+	CPU 0			CPU 1
+	==================================================
+	LOAD a = *A 		LOAD b = *B
+	a.locked = true		b.locked = true
+	LOAD b = *B		LOAD a = *A
+	STORE *A = a		STORE *B = b
+	if b.locked # false	if a.locked # false
+	else			else
+	smp_mb()		smp_mb()
+	LOAD r1 = *COUNTER	LOAD r2 = *COUNTER
+	r1++			r2++
+	STORE *COUNTER = r1
+				STORE *COUNTER = r2	# Lost update
+	spin_unlock(*A)		spin_unlock(*B)
+
+That is, the load of *B can occur prior to the store that makes *A
+visibly locked. And similarly for CPU 1. The result is both CPUs hold
+their lock and believe the other lock is unlocked.
+
+The easiest fix for this is to add a full memory barrier to the start of
+spin_is_locked(), so adding to our previous definition would give us:
+
+	bool spin_is_locked(*LOCK) {
+		smp_mb()
+		LOAD l = *LOCK
+		return l.locked
+	}
+
+The new barrier orders the store to the lock we are locking vs the load
+of the other lock:
+
+	CPU 0			CPU 1
+	==================================================
+	LOAD a = *A 		LOAD b = *B
+	a.locked = true		b.locked = true
+	STORE *A = a		STORE *B = b
+	smp_mb()		smp_mb()
+	LOAD b = *B		LOAD a = *A
+	if b.locked # true	if a.locked # true
+	# nothing		# nothing
+	spin_unlock(*A)		spin_unlock(*B)
+
+Although the above example is theoretical, there is code similar to this
+example in sem_lock() in ipc/sem.c. This commit in addition to the next
+commit appears to be a fix for crashes we are seeing in that code where
+we believe this race happens in practice.
+
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/asm/pgtable.h |    7 ++++++-
- arch/xtensa/kernel/entry.S        |    2 +-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/spinlock.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/xtensa/include/asm/pgtable.h
-+++ b/arch/xtensa/include/asm/pgtable.h
-@@ -67,7 +67,12 @@
- #define VMALLOC_START		0xC0000000
- #define VMALLOC_END		0xC7FEFFFF
- #define TLBTEMP_BASE_1		0xC7FF0000
--#define TLBTEMP_BASE_2		0xC7FF8000
-+#define TLBTEMP_BASE_2		(TLBTEMP_BASE_1 + DCACHE_WAY_SIZE)
-+#if 2 * DCACHE_WAY_SIZE > ICACHE_WAY_SIZE
-+#define TLBTEMP_SIZE		(2 * DCACHE_WAY_SIZE)
-+#else
-+#define TLBTEMP_SIZE		ICACHE_WAY_SIZE
-+#endif
+--- a/arch/powerpc/include/asm/spinlock.h
++++ b/arch/powerpc/include/asm/spinlock.h
+@@ -61,6 +61,7 @@ static __always_inline int arch_spin_val
  
- /*
-  * For the Xtensa architecture, the PTE layout is as follows:
---- a/arch/xtensa/kernel/entry.S
-+++ b/arch/xtensa/kernel/entry.S
-@@ -1565,7 +1565,7 @@ ENTRY(fast_second_level_miss)
- 	rsr	a0, excvaddr
- 	bltu	a0, a3, 2f
+ static inline int arch_spin_is_locked(arch_spinlock_t *lock)
+ {
++	smp_mb();
+ 	return !arch_spin_value_unlocked(*lock);
+ }
  
--	addi	a1, a0, -(2 << (DCACHE_ALIAS_ORDER + PAGE_SHIFT))
-+	addi	a1, a0, -TLBTEMP_SIZE
- 	bgeu	a1, a3, 2f
- 
- 	/* Check if we have to restore an ITLB mapping. */
 
 
