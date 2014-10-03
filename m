@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910AbaJDAbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:31:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45341 "EHLO
+	id S933782AbaJDAbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:31:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921AbaJCVmx (ORCPT
+	with ESMTP id S1755723AbaJCVmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:53 -0400
+	Fri, 3 Oct 2014 17:42:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Dickson <steved@redhat.com>,
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Weston Andros Adamson <dros@primarydata.com>,
+        Peng Tao <tao.peng@primarydata.com>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 157/357] NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
-Date: Fri,  3 Oct 2014 14:29:03 -0700
-Message-Id: <20141003212938.188301550@linuxfoundation.org>
+Subject: [PATCH 3.16 169/357] nfs: use blocking page_group_lock in add_request
+Date: Fri,  3 Oct 2014 14:29:15 -0700
+Message-Id: <20141003212938.556406898@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,101 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Dickson <steved@redhat.com>
 
-commit 080af20cc945d110f9912d01cf6b66f94a375b8d upstream.
+From: Weston Andros Adamson <dros@primarydata.com>
 
-There is a race between nfs4_state_manager() and
-nfs_server_remove_lists() that happens during a nfsv3 mount.
+commit bfd484a5606d6a0379a0a2f04251b1e5c1f8995c upstream.
 
-The v3 mount notices there is already a supper block so
-nfs_server_remove_lists() called which uses the nfs_client_lock
-spin lock to synchronize access to the client list.
+__nfs_pageio_add_request was calling nfs_page_group_lock nonblocking, but
+this can return -EAGAIN which would end up passing -EIO to the application.
 
-At the same time nfs4_state_manager() is running through
-the client list looking for work to do, using the same
-lock. When nfs4_state_manager() wins the race to the
-list, a v3 client pointer is found and not ignored
-properly which causes the panic.
+There is no reason not to block in this path, so change the two calls to
+do so. Also, there is no need to check the return value of
+nfs_page_group_lock when nonblock=false, so remove the error handling code.
 
-Moving some protocol checks before the state checking
-avoids the panic.
-
-Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Weston Andros Adamson <dros@primarydata.com>
+Reviewed-by: Peng Tao <tao.peng@primarydata.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/nfs4client.c |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ fs/nfs/pagelist.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -482,6 +482,16 @@ int nfs40_walk_client_list(struct nfs_cl
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -873,13 +873,8 @@ static int __nfs_pageio_add_request(stru
+ 	struct nfs_page *subreq;
+ 	unsigned int bytes_left = 0;
+ 	unsigned int offset, pgbase;
+-	int ret;
  
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
-+
-+		if (pos->rpc_ops != new->rpc_ops)
-+			continue;
-+
-+		if (pos->cl_proto != new->cl_proto)
-+			continue;
-+
-+		if (pos->cl_minorversion != new->cl_minorversion)
-+			continue;
-+
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos" */
- 		if (pos->cl_cons_state > NFS_CS_READY) {
-@@ -501,15 +511,6 @@ int nfs40_walk_client_list(struct nfs_cl
- 		if (pos->cl_cons_state != NFS_CS_READY)
+-	ret = nfs_page_group_lock(req, true);
+-	if (ret < 0) {
+-		desc->pg_error = ret;
+-		return 0;
+-	}
++	nfs_page_group_lock(req, false);
+ 
+ 	subreq = req;
+ 	bytes_left = subreq->wb_bytes;
+@@ -901,11 +896,7 @@ static int __nfs_pageio_add_request(stru
+ 			if (desc->pg_recoalesce)
+ 				return 0;
+ 			/* retry add_request for this subreq */
+-			ret = nfs_page_group_lock(req, true);
+-			if (ret < 0) {
+-				desc->pg_error = ret;
+-				return 0;
+-			}
++			nfs_page_group_lock(req, false);
  			continue;
- 
--		if (pos->rpc_ops != new->rpc_ops)
--			continue;
--
--		if (pos->cl_proto != new->cl_proto)
--			continue;
--
--		if (pos->cl_minorversion != new->cl_minorversion)
--			continue;
--
- 		if (pos->cl_clientid != new->cl_clientid)
- 			continue;
- 
-@@ -622,6 +623,16 @@ int nfs41_walk_client_list(struct nfs_cl
- 
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
-+
-+		if (pos->rpc_ops != new->rpc_ops)
-+			continue;
-+
-+		if (pos->cl_proto != new->cl_proto)
-+			continue;
-+
-+		if (pos->cl_minorversion != new->cl_minorversion)
-+			continue;
-+
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos", especially the client
- 		 * ID and serverowner fields.  Wait for CREATE_SESSION
-@@ -647,15 +658,6 @@ int nfs41_walk_client_list(struct nfs_cl
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
- 
--		if (pos->rpc_ops != new->rpc_ops)
--			continue;
--
--		if (pos->cl_proto != new->cl_proto)
--			continue;
--
--		if (pos->cl_minorversion != new->cl_minorversion)
--			continue;
--
- 		if (!nfs4_match_clientids(pos, new))
- 			continue;
+ 		}
  
 
 
