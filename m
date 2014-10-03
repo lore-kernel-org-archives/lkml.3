@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932077AbaJCVnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45319 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822AbaJCVnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.16 187/357] ARM: dts: dra7-evm: Fix NAND GPMC timings
-Date: Fri,  3 Oct 2014 14:29:33 -0700
-Message-Id: <20141003212939.090170796@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S932103AbaJCVoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:44:21 -0400
+Received: from mta-out1.inet.fi ([62.71.2.226]:37028 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755080AbaJCVoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:44:18 -0400
+Date: Sat, 4 Oct 2014 00:43:59 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Jan Kara <jack@suse.cz>,
+        Eric Paris <eparis@parisplace.org>,
+        John McCutchon <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>
+Subject: Re: [PATCH 1/1] truncate: generate fanotify and inotify events
+Message-ID: <20141003214359.GA19171@node.dhcp.inet.fi>
+References: <1412371996-1265-1-git-send-email-xypron.glpk@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412371996-1265-1-git-send-email-xypron.glpk@gmx.de>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Oct 03, 2014 at 11:33:16PM +0200, Heinrich Schuchardt wrote:
+> The fanotify and the inotify API can be used to monitor changes of the file
+> system.
+> 
+> System call truncate modifies files. Hence it should trigger the corresponding
+> fanotify and inotify events.
+> 
+> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> ---
+>  fs/open.c                |  5 +++
+>  include/linux/fsnotify.h | 87 ++++++++++++++++++++++++++++++++----------------
+>  security/security.c      |  7 +++-
+>  3 files changed, 70 insertions(+), 29 deletions(-)
+> 
+> diff --git a/fs/open.c b/fs/open.c
+> index d6fd3ac..be45e58 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -104,12 +104,17 @@ long vfs_truncate(struct path *path, loff_t length)
+>  	if (!error)
+>  		error = security_path_truncate(path);
+>  	if (!error)
+> +		fsnotify_open_path(path);
+>  		error = do_truncate(path->dentry, length, 0, NULL);
 
-------------------
+This is obviously broken.
 
-From: Roger Quadros <rogerq@ti.com>
-
-commit 5990047cef0c6a36eefcb166bd32d99a8f95c75b upstream.
-
-The nand timings were scaled down by 2 to account for
-the 2x rate returned by clk_get_rate(gpmc_fclk).
-
-As the clock data got fixed by [1], revert back to actual
-timings (i.e. scale them up by 2).
-
-Without this NAND doesn't work on dra7-evm.
-
-[1] - commit dd94324b983afe114ba9e7ee3649313b451f63ce
-    ARM: dts: dra7xx-clocks: Fix the l3 and l4 clock rates
-
-Fixes: ff66a3c86e00 ("ARM: dts: dra7: add support for parallel NAND flash")
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/boot/dts/dra7-evm.dts |   27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
-
---- a/arch/arm/boot/dts/dra7-evm.dts
-+++ b/arch/arm/boot/dts/dra7-evm.dts
-@@ -427,22 +427,19 @@
- 		gpmc,device-width = <2>;
- 		gpmc,sync-clk-ps = <0>;
- 		gpmc,cs-on-ns = <0>;
--		gpmc,cs-rd-off-ns = <40>;
--		gpmc,cs-wr-off-ns = <40>;
-+		gpmc,cs-rd-off-ns = <80>;
-+		gpmc,cs-wr-off-ns = <80>;
- 		gpmc,adv-on-ns = <0>;
--		gpmc,adv-rd-off-ns = <30>;
--		gpmc,adv-wr-off-ns = <30>;
--		gpmc,we-on-ns = <5>;
--		gpmc,we-off-ns = <25>;
--		gpmc,oe-on-ns = <2>;
--		gpmc,oe-off-ns = <20>;
--		gpmc,access-ns = <20>;
--		gpmc,wr-access-ns = <40>;
--		gpmc,rd-cycle-ns = <40>;
--		gpmc,wr-cycle-ns = <40>;
--		gpmc,wait-pin = <0>;
--		gpmc,wait-on-read;
--		gpmc,wait-on-write;
-+		gpmc,adv-rd-off-ns = <60>;
-+		gpmc,adv-wr-off-ns = <60>;
-+		gpmc,we-on-ns = <10>;
-+		gpmc,we-off-ns = <50>;
-+		gpmc,oe-on-ns = <4>;
-+		gpmc,oe-off-ns = <40>;
-+		gpmc,access-ns = <40>;
-+		gpmc,wr-access-ns = <80>;
-+		gpmc,rd-cycle-ns = <80>;
-+		gpmc,wr-cycle-ns = <80>;
- 		gpmc,bus-turnaround-ns = <0>;
- 		gpmc,cycle2cycle-delay-ns = <0>;
- 		gpmc,clk-activation-ns = <0>;
-
-
+-- 
+ Kirill A. Shutemov
