@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852AbaJCXO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:14:27 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32952 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaJCXOW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:14:22 -0400
-Date: Sat, 4 Oct 2014 00:13:34 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Message-ID: <20141003231334.GA4609@sirena.org.uk>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
- <20141003122736.GH26643@leverpostej>
- <542EDCDB.6040406@roeck-us.net>
+	id S1759876AbaJCXOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:14:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42087 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759858AbaJCXOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 19:14:44 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrVw69Q+=BTQhPshmMj7Cs9Y=6Aei=RDz3U9-me1BzYx3Q@mail.gmail.com>
+References: <20140921184153.GA23727@redhat.com> <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org> <542E2B05.5080607@oracle.com> <20141003083954.10a13a24@as> <20141003214124.GA31614@redhat.com> <20141003174814.6829cf26@as> <CALCETrVw69Q+=BTQhPshmMj7Cs9Y=6Aei=RDz3U9-me1BzYx3Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-In-Reply-To: <542EDCDB.6040406@roeck-us.net>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using THUNK helpers
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 03 Oct 2014 16:13:38 -0700
+To: Andy Lutomirski <luto@amacapital.net>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <4F1460E2-2B1B-4587-8ACF-6709C63D1FC6@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yes, it is.
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On October 3, 2014 3:53:08 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On Fri, Oct 3, 2014 at 3:48 PM, Chuck Ebbert <cebbert.lkml@gmail.com>
+>wrote:
+>> On Fri, 3 Oct 2014 23:41:24 +0200
+>> Oleg Nesterov <oleg@redhat.com> wrote:
+>>
+>>> On 10/03, Chuck Ebbert wrote:
+>>> >
+>>> > > [  921.917752] ? ___preempt_schedule_context
+>(arch/x86/lib/thunk_64.S:44)
+>>> > > [  921.917752] ? preempt_schedule_context
+>(kernel/context_tracking.c:145)
+>>> > > [  921.917752] ? ___preempt_schedule_context
+>(arch/x86/lib/thunk_64.S:44)
+>>> > > [  921.917752] ? preempt_schedule_context
+>(kernel/context_tracking.c:145)
+>>> > > [  921.917752] ? ___preempt_schedule_context
+>(arch/x86/lib/thunk_64.S:44)
+>>> > > [  921.917752] ? preempt_schedule_context
+>(kernel/context_tracking.c:145)
+>>> > > [  921.917752] ? ___preempt_schedule_context
+>(arch/x86/lib/thunk_64.S:44)
+>>> > > [  921.917752] ? preempt_schedule_context
+>(kernel/context_tracking.c:145)
+>>> > > [  921.917752] ? ___preempt_schedule_context
+>(arch/x86/lib/thunk_64.S:44)
+>>> > > [  921.917752] ? preempt_schedule_context
+>(kernel/context_tracking.c:145)
+>>> >
+>>> > <snip lots of repeats of this>
+>>> >
+>>> > I *think* this is because RBP isn't being saved across task switch
+>>> > anymore?
+>>> >
+>>> > Without CONFIG_FRAME_POINTERS that night not be a problem...
+>>>
+>>> Could you please spell?
+>>>
+>>> I don't even understand "RBP isn't being saved",
+>SAVE_CONTEXT/RESTORE_CONTEXT
+>>> do push/pop %rbp?
+>>>
+>>
+>> SAVE_ARGS/RESTORE_ARGS, which is what THUNK uses, doesn't push/pop
+>%rbp
+>>
+>> Before, SAVE_ALL/RESTORE_ALL were being used around the call to
+>> preempt_schedule(). So from the symptoms I thought this was the
+>problem.
+>
+>rbp is callee-saved no matter what, unless my memory of the ABI is
+>*waaaaay* off.
+>
+>--Andy
 
-On Fri, Oct 03, 2014 at 10:28:59AM -0700, Guenter Roeck wrote:
-> On 10/03/2014 05:27 AM, Mark Rutland wrote:
-
-> >>+Optional properties:
-> >>+ Name of the optional regulator subnode must be "regulators".
-> >>+  - #address-cells must be 1.
-
-> >What's the single address cell used for?
-
-> I think this is required by the regulator bindings.
-> Other regulators use the same, though they don't typically
-> mention it in the properties list but only in the examples.
-
-Nope, nothing to do with regulator that I'm aware of and I've not seen
-any examples (but I don't tend to review users too often).
-
-> >Mark, what's the preferred scheme for identifying regulators in a
-> >container node?
-
-> >>+  - regulator-name: arbitrary name for regulator
-
-> >Drop the 'aribtarary'. Either this should be the name of the regulator
-> >on the board, or it shouldn't be necessary.
-
-> Not sure if it even needs to be documented here. It is already documented
-> in Documentation/devicetree/bindings/regulator/regulator.txt.
-
-Document by reference then?  It really should be the name of the supply
-provided by the regulator, that wording is probably good.  Given that
-it's a standard regulator property I'd not document it here at all, just
-refer to the generic bindings and say any suitable properties there can
-be used.
-
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJULy2dAAoJECTWi3JdVIfQJgUH/iGxSy0sCJT8+tCSidfBjYQA
-zNd9zjqXv89bDKeuWLOCR8TXi3Qx5bLigrgEH/NaC0RBrt+XcfvVOnr2oiXiMwbn
-bDHQV++qynsvScxjJ99FO9GYTyVdnzwDs8ek1XRDDbH39W407uIEHgBkCXzdxj1l
-oyD1tXjkMb+VBOMDi1LKBML2MI4kXcBWybk/yUQkeQTDtCmOi0oEq5slLJKrTvI9
-OsM0/pJ8GnzuxrHpmKisghKsKuALEZKDQq0jBR+5OREelhmZgyg/6wLkiVyw4mt5
-Jas4gNN9z6fMn0E+x1Fl89XgzPcL8ETuKp2gDuvaagBcazUzDb80q+O6/lCJCLA=
-=aDrK
------END PGP SIGNATURE-----
-
---PEIAKu/WMn1b1Hv9--
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
