@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845AbaJCWs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:48:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47450 "EHLO
+	id S1758877AbaJCWtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758245AbaJCWYO (ORCPT
+	with ESMTP id S1756631AbaJCWYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:14 -0400
+	Fri, 3 Oct 2014 18:24:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Pointner <johannes.pointner@br-automation.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 085/143] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
-Date: Fri,  3 Oct 2014 14:34:40 -0700
-Message-Id: <20141003213317.059288987@linuxfoundation.org>
+        Mark Knibbs <markk@clara.co.uk>
+Subject: [PATCH 3.10 056/143] USB: storage: Add quirk for Adaptec USBConnect 2000 USB-to-SCSI Adapter
+Date: Fri,  3 Oct 2014 14:34:11 -0700
+Message-Id: <20141003213316.168951457@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -30,34 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Pointner <johannes.pointner@gmail.com>
+From: Mark <markk@clara.co.uk>
 
-commit 872687f626e033b4ddfaec1e410057cfc6636d77 upstream.
+commit 67d365a57a51fb9dece6a5ceb504aa381cae1e5b upstream.
 
-Fixes: a2c12493ed7e ('iio: of_iio_channel_get_by_name() returns non-null pointers for error legs')
+The Adaptec USBConnect 2000 is another SCSI-USB converter which uses
+Shuttle Technology/SCM Microsystems chips. The US_FL_SCM_MULT_TARG quirk is
+required to use SCSI devices with ID other than 0.
 
-which improperly assumes that of_iio_channel_get_by_name must always
-return NULL and thus now hides -EPROBE_DEFER.
+I don't have a USBConnect 2000, but based on the other entries for Shuttle/
+SCM-based converters this patch is very likely correct. I used 0x0000 and
+0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
+bcdDevice value the product uses.
 
-Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Mark Knibbs <markk@clara.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/inkern.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/iio/inkern.c
-+++ b/drivers/iio/inkern.c
-@@ -178,7 +178,7 @@ static struct iio_channel *of_iio_channe
- 			index = of_property_match_string(np, "io-channel-names",
- 							 name);
- 		chan = of_iio_channel_get(np, index);
--		if (!IS_ERR(chan))
-+		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
- 			break;
- 		else if (name && index >= 0) {
- 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -101,6 +101,12 @@ UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x
+ 		"PhotoSmart R707",
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
+ 
++UNUSUAL_DEV(  0x03f3, 0x0001, 0x0000, 0x9999,
++		"Adaptec",
++		"USBConnect 2000",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Reported by Sebastian Kapfer <sebastian_kapfer@gmx.net>
+  * and Olaf Hering <olh@suse.de> (different bcd's, same vendor/product)
+  * for USB floppies that need the SINGLE_LUN enforcement.
 
 
