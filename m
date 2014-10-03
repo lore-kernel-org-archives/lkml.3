@@ -1,238 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaJCOm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 10:42:27 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42344 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaJCOlz (ORCPT
+	id S1753083AbaJCOox (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:44:53 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60539 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJCOov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 10:41:55 -0400
-From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/2] perf tools: Add option to copy events when queueing
-Date: Fri,  3 Oct 2014 18:40:11 +0400
-Message-Id: <1412347212-28237-2-git-send-email-yarygin@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412347212-28237-1-git-send-email-yarygin@linux.vnet.ibm.com>
-References: <1412347212-28237-1-git-send-email-yarygin@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100314-8372-0000-0000-00000168BABE
+	Fri, 3 Oct 2014 10:44:51 -0400
+Date: Fri, 3 Oct 2014 15:44:20 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Marcelo Tosatti <marcelo@kvack.org>,
+        Vitaly Bordug <vitb@kernel.crashing.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-spi@vger.kernel.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        scottwood@freescale.com
+Message-ID: <20141003144420.GC24441@sirena.org.uk>
+References: <20141003125609.5BEA11AB276@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ghzN8eJ9Qlbqn3iT"
+Content-Disposition: inline
+In-Reply-To: <20141003125609.5BEA11AB276@localhost.localdomain>
+X-Cookie: The coast was clear.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: fsl-spi: Allow dynamic allocation of CPM1
+ parameter RAM
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When processing events the session code has an ordered samples queue which is
-used to time-sort events coming in across multiple mmaps. At a later point in
-time samples on the queue are flushed up to some timestamp at which point the
-event is actually processed.
 
-When analyzing events live (ie., record/analysis path in the same command)
-there is a race that leads to corrupted events and parse errors which cause
-perf to terminate. The problem is that when the event is placed in the ordered
-samples queue it is only a reference to the event which is really sitting in
-the mmap buffer. Even though the event is queued for later processing the mmap
-tail pointer is updated which indicates to the kernel that the event has been
-processed. The race is flushing the event from the queue before it gets
-overwritten by some other event. For commands trying to process events live
-(versus just writing to a file) and processing a high rate of events this leads
-to parse failures and perf terminates.
+--ghzN8eJ9Qlbqn3iT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Examples hitting this problem are 'perf kvm stat live', especially with nested
-VMs which generate 100,000+ traces per second, and a command processing
-scheduling events with a high rate of context switching -- e.g., running
-'perf bench sched pipe'.
+On Fri, Oct 03, 2014 at 02:56:09PM +0200, Christophe Leroy wrote:
 
-This patch offers live commands an option to copy the event when it is placed in
-the ordered samples queue.
+> +config CPM1_RELOCSPI
+> +	bool "Dynamic SPI relocation"
+> +	default n
+> +	help
+> +	  On recent MPC8xx (at least MPC866 and MPC885) SPI can be relocated
+> +	  without micropatch. This activates relocation to a dynamically
+> +	  allocated area in the CPM Dual port RAM.
+> +	  When combined with SPI relocation patch (for older MPC8xx) it avoids
+> +	  the "loss" of additional Dual port RAM space just above the patch,
+> +	  which might be needed for example when using the CPM QMC.
 
-Based on a patch from David Ahern <dsahern@gmail.com>
+Something like this shouldn't be a compile time option.  Either it
+should be unconditional or it should be triggered in some system
+specific manner (from DT, from knowing about other users or similar).
 
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/ordered-events.c | 49 ++++++++++++++++++++++++++++++++++++----
- tools/perf/util/ordered-events.h | 10 +++++++-
- tools/perf/util/session.c        |  5 ++--
- 3 files changed, 56 insertions(+), 8 deletions(-)
+--ghzN8eJ9Qlbqn3iT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-index 706ce1a..fd4be94 100644
---- a/tools/perf/util/ordered-events.c
-+++ b/tools/perf/util/ordered-events.c
-@@ -1,5 +1,6 @@
- #include <linux/list.h>
- #include <linux/compiler.h>
-+#include <linux/string.h>
- #include "ordered-events.h"
- #include "evlist.h"
- #include "session.h"
-@@ -57,11 +58,45 @@ static void queue_event(struct ordered_events *oe, struct ordered_event *new)
- 	}
- }
- 
-+static union perf_event *__dup_event(struct ordered_events *oe,
-+				     union perf_event *event)
-+{
-+	union perf_event *new_event = NULL;
-+
-+	if (oe->cur_alloc_size < oe->max_alloc_size) {
-+		new_event = memdup(event, event->header.size);
-+		if (new_event)
-+			oe->cur_alloc_size += event->header.size;
-+	}
-+
-+	return new_event;
-+}
-+
-+static union perf_event *dup_event(struct ordered_events *oe,
-+				   union perf_event *event)
-+{
-+	return oe->copy_on_queue ? __dup_event(oe, event) : event;
-+}
-+
-+static void free_dup_event(struct ordered_events *oe, union perf_event *event)
-+{
-+	if (oe->copy_on_queue) {
-+		oe->cur_alloc_size -= event->header.size;
-+		free(event);
-+	}
-+}
-+
- #define MAX_SAMPLE_BUFFER	(64 * 1024 / sizeof(struct ordered_event))
--static struct ordered_event *alloc_event(struct ordered_events *oe)
-+static struct ordered_event *alloc_event(struct ordered_events *oe,
-+					 union perf_event *event)
- {
- 	struct list_head *cache = &oe->cache;
- 	struct ordered_event *new = NULL;
-+	union perf_event *new_event;
-+
-+	new_event = dup_event(oe, event);
-+	if (!new_event)
-+		return NULL;
- 
- 	if (!list_empty(cache)) {
- 		new = list_entry(cache->next, struct ordered_event, list);
-@@ -74,8 +109,10 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		size_t size = MAX_SAMPLE_BUFFER * sizeof(*new);
- 
- 		oe->buffer = malloc(size);
--		if (!oe->buffer)
-+		if (!oe->buffer) {
-+			free_dup_event(oe, new_event);
- 			return NULL;
-+		}
- 
- 		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
- 		   oe->cur_alloc_size, size, oe->max_alloc_size);
-@@ -90,15 +127,17 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
- 		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
- 	}
- 
-+	new->event = new_event;
- 	return new;
- }
- 
- struct ordered_event *
--ordered_events__new(struct ordered_events *oe, u64 timestamp)
-+ordered_events__new(struct ordered_events *oe, u64 timestamp,
-+		    union perf_event *event)
- {
- 	struct ordered_event *new;
- 
--	new = alloc_event(oe);
-+	new = alloc_event(oe, event);
- 	if (new) {
- 		new->timestamp = timestamp;
- 		queue_event(oe, new);
-@@ -111,6 +150,7 @@ void ordered_events__delete(struct ordered_events *oe, struct ordered_event *eve
- {
- 	list_move(&event->list, &oe->cache);
- 	oe->nr_events--;
-+	free_dup_event(oe, event->event);
- }
- 
- static int __ordered_events__flush(struct perf_session *s,
-@@ -240,6 +280,7 @@ void ordered_events__free(struct ordered_events *oe)
- 
- 		event = list_entry(oe->to_free.next, struct ordered_event, list);
- 		list_del(&event->list);
-+		free_dup_event(oe, event->event);
- 		free(event);
- 	}
- }
-diff --git a/tools/perf/util/ordered-events.h b/tools/perf/util/ordered-events.h
-index 3b2f205..7b8f9b0 100644
---- a/tools/perf/util/ordered-events.h
-+++ b/tools/perf/util/ordered-events.h
-@@ -34,9 +34,11 @@ struct ordered_events {
- 	int			buffer_idx;
- 	unsigned int		nr_events;
- 	enum oe_flush		last_flush_type;
-+	bool                    copy_on_queue;
- };
- 
--struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp);
-+struct ordered_event *ordered_events__new(struct ordered_events *oe, u64 timestamp,
-+					  union perf_event *event);
- void ordered_events__delete(struct ordered_events *oe, struct ordered_event *event);
- int ordered_events__flush(struct perf_session *s, struct perf_tool *tool,
- 			  enum oe_flush how);
-@@ -48,4 +50,10 @@ void ordered_events__set_alloc_size(struct ordered_events *oe, u64 size)
- {
- 	oe->max_alloc_size = size;
- }
-+
-+static inline
-+void ordered_events__set_copy_on_queue(struct ordered_events *oe, bool copy)
-+{
-+	oe->copy_on_queue = copy;
-+}
- #endif /* __ORDERED_EVENTS_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6d2d50d..976064d 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -532,17 +532,16 @@ int perf_session_queue_event(struct perf_session *s, union perf_event *event,
- 			return -EINVAL;
- 	}
- 
--	new = ordered_events__new(oe, timestamp);
-+	new = ordered_events__new(oe, timestamp, event);
- 	if (!new) {
- 		ordered_events__flush(s, tool, OE_FLUSH__HALF);
--		new = ordered_events__new(oe, timestamp);
-+		new = ordered_events__new(oe, timestamp, event);
- 	}
- 
- 	if (!new)
- 		return -ENOMEM;
- 
- 	new->file_offset = file_offset;
--	new->event = event;
- 	return 0;
- }
- 
--- 
-1.9.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQEcBAEBAgAGBQJULrZDAAoJECTWi3JdVIfQbywH/0vlIbyDtXeXSo8Qg0xKxfu+
+NmGzbVSizdDFhjhq8+LRSFjKdl6u8cXF+Vuyt+hGXsvAc1c6Vc2XNSWO0eXbq+kg
+soGV9Y9UfLx4smuhdcuWqri1qZOJG2k7058AzSZwDWfEwTQ88Sb47cGHv8L69jhn
+s7TR2SMnMZ+Gk4JWiZ/lETGbVYspRnKSAnKtu4ubsPRG34wJnhQvc9V9WhGynlKu
+hhA/5II3+8grWKmEdWTK/mTQBMoikxJxElN8FPQnogoApnJONM6fsmLH/1O4979K
+o/3DAS80NGnPDC23k65b+iOHg2EIXnzfFSYdHXaSUAiWvN5Rjg4hrxyC1IBgxpw=
+=cnSl
+-----END PGP SIGNATURE-----
+
+--ghzN8eJ9Qlbqn3iT--
