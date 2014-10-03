@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462AbaJCXDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:03:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
+	id S1759431AbaJCXDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:03:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756167AbaJCWXx (ORCPT
+	with ESMTP id S1757018AbaJCWXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:53 -0400
+	Fri, 3 Oct 2014 18:23:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marek Roszko <mark.roszko@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.10 017/143] i2c: at91: add bound checking on SMBus block length bytes
-Date: Fri,  3 Oct 2014 14:33:32 -0700
-Message-Id: <20141003213315.005939598@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 028/143] HID: logitech-dj: prevent false errors to be shown
+Date: Fri,  3 Oct 2014 14:33:43 -0700
+Message-Id: <20141003213315.338928967@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -30,87 +29,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Roszko <mark.roszko@gmail.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 75b81f339c6af43f6f4a1b3eabe0603321dade65 upstream.
+commit 5abfe85c1d4694d5d4bbd13ecc166262b937adf0 upstream.
 
-The driver was not bound checking the received length byte to ensure it was within the
-the buffer size that is allocated for SMBus blocks. This resulted in buffer overflows
-whenever an invalid length byte was received.
-It also failed to ensure the length byte was not zero. If it received zero, it would end up
-in an infinite loop as the at91_twi_read_next_byte function returned immediately without
-allowing RHR to be read to clear the RXRDY interrupt.
+Commit "HID: logitech: perform bounds checking on device_id early
+enough" unfortunately leaks some errors to dmesg which are not real
+ones:
+- if the report is not a DJ one, then there is not point in checking
+  the device_id
+- the receiver (index 0) can also receive some notifications which
+  can be safely ignored given the current implementation
 
-Tested agaisnt a SMBus compliant battery.
+Move out the test regarding the report_id and also discards
+printing errors when the receiver got notified.
 
-Signed-off-by: Marek Roszko <mark.roszko@gmail.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Fixes: ad3e14d7c5268c2e24477c6ef54bbdf88add5d36
+
+Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-at91.c |   28 ++++++++++++++++++++++++----
- 1 file changed, 24 insertions(+), 4 deletions(-)
+ drivers/hid/hid-logitech-dj.c |   43 ++++++++++++++++++++++++------------------
+ drivers/hid/hid-logitech-dj.h |    1 
+ 2 files changed, 26 insertions(+), 18 deletions(-)
 
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -102,6 +102,7 @@ struct at91_twi_dev {
- 	unsigned twi_cwgr_reg;
- 	struct at91_twi_pdata *pdata;
- 	bool use_dma;
-+	bool recv_len_abort;
- 	struct at91_twi_dma dma;
- };
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -679,7 +679,6 @@ static int logi_dj_raw_event(struct hid_
+ 	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
+ 	struct dj_report *dj_report = (struct dj_report *) data;
+ 	unsigned long flags;
+-	bool report_processed = false;
  
-@@ -268,12 +269,24 @@ static void at91_twi_read_next_byte(stru
- 	*dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
- 	--dev->buf_len;
+ 	dbg_hid("%s, size:%d\n", __func__, size);
  
-+	/* return if aborting, we only needed to read RHR to clear RXRDY*/
-+	if (dev->recv_len_abort)
-+		return;
+@@ -706,34 +705,42 @@ static int logi_dj_raw_event(struct hid_
+ 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
+ 	 * anything else with it.
+ 	 */
 +
- 	/* handle I2C_SMBUS_BLOCK_DATA */
- 	if (unlikely(dev->msg->flags & I2C_M_RECV_LEN)) {
--		dev->msg->flags &= ~I2C_M_RECV_LEN;
--		dev->buf_len += *dev->buf;
--		dev->msg->len = dev->buf_len + 1;
--		dev_dbg(dev->dev, "received block length %d\n", dev->buf_len);
-+		/* ensure length byte is a valid value */
-+		if (*dev->buf <= I2C_SMBUS_BLOCK_MAX && *dev->buf > 0) {
-+			dev->msg->flags &= ~I2C_M_RECV_LEN;
-+			dev->buf_len += *dev->buf;
-+			dev->msg->len = dev->buf_len + 1;
-+			dev_dbg(dev->dev, "received block length %d\n",
-+					 dev->buf_len);
-+		} else {
-+			/* abort and send the stop by reading one more byte */
-+			dev->recv_len_abort = true;
-+			dev->buf_len = 1;
-+		}
++	/* case 1) */
++	if (data[0] != REPORT_ID_DJ_SHORT)
++		return false;
++
+ 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
+ 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
+-		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
++		/*
++		 * Device index is wrong, bail out.
++		 * This driver can ignore safely the receiver notifications,
++		 * so ignore those reports too.
++		 */
++		if (dj_report->device_index != DJ_RECEIVER_INDEX)
++			dev_err(&hdev->dev, "%s: invalid device index:%d\n",
+ 				__func__, dj_report->device_index);
+ 		return false;
  	}
  
- 	/* send stop if second but last byte has been read */
-@@ -445,6 +458,12 @@ static int at91_do_twi_transfer(struct a
- 		ret = -EIO;
- 		goto error;
+ 	spin_lock_irqsave(&djrcv_dev->lock, flags);
+-	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
+-		switch (dj_report->report_type) {
+-		case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
+-		case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
+-			logi_dj_recv_queue_notification(djrcv_dev, dj_report);
+-			break;
+-		case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
+-			if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
+-			    STATUS_LINKLOSS) {
+-				logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
+-			}
+-			break;
+-		default:
+-			logi_dj_recv_forward_report(djrcv_dev, dj_report);
++	switch (dj_report->report_type) {
++	case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
++	case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
++		logi_dj_recv_queue_notification(djrcv_dev, dj_report);
++		break;
++	case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
++		if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
++		    STATUS_LINKLOSS) {
++			logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
+ 		}
+-		report_processed = true;
++		break;
++	default:
++		logi_dj_recv_forward_report(djrcv_dev, dj_report);
  	}
-+	if (dev->recv_len_abort) {
-+		dev_err(dev->dev, "invalid smbus block length recvd\n");
-+		ret = -EPROTO;
-+		goto error;
-+	}
-+
- 	dev_dbg(dev->dev, "transfer complete\n");
+ 	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
  
- 	return 0;
-@@ -501,6 +520,7 @@ static int at91_twi_xfer(struct i2c_adap
- 	dev->buf_len = m_start->len;
- 	dev->buf = m_start->buf;
- 	dev->msg = m_start;
-+	dev->recv_len_abort = false;
+-	return report_processed;
++	return true;
+ }
  
- 	ret = at91_do_twi_transfer(dev);
+ static int logi_dj_probe(struct hid_device *hdev,
+--- a/drivers/hid/hid-logitech-dj.h
++++ b/drivers/hid/hid-logitech-dj.h
+@@ -27,6 +27,7 @@
+ 
+ #define DJ_MAX_PAIRED_DEVICES			6
+ #define DJ_MAX_NUMBER_NOTIFICATIONS		8
++#define DJ_RECEIVER_INDEX			0
+ #define DJ_DEVICE_INDEX_MIN 			1
+ #define DJ_DEVICE_INDEX_MAX 			6
  
 
 
