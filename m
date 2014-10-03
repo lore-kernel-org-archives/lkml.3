@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448AbaJCFA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:00:27 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:25196 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaJCFA0 (ORCPT
+	id S1751861AbaJCFQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:16:46 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:49862 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaJCFQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 01:00:26 -0400
-Message-ID: <542E2D56.6090007@oracle.com>
-Date: Fri, 03 Oct 2014 01:00:06 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: pipe/page fault oddness.
-References: <20140930033327.GA14558@redhat.com>	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>	<20140930160510.GA15903@redhat.com>	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>	<20140930162201.GC15903@redhat.com>	<20140930164047.GA18354@redhat.com>	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>	<20140930182059.GA24431@redhat.com>	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>	<542C7B5E.2020000@oracle.com>	<CA+55aFy7Y+pmhyEHTJg=K8gLKzLHxzz6j9FBJMt7_Fazfong6g@mail.gmail.com>	<542D6981.3080405@oracle.com> <CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.co!
- m>
-In-Reply-To: <CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Fri, 3 Oct 2014 01:16:45 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] perf: Fix typos in sample code in the perf_event.h header
+Date: Thu,  2 Oct 2014 22:16:36 -0700
+Message-Id: <320ba26391a8123cc16e5f02d24d34bd404332fd.1412313343.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 12:10 PM, Linus Torvalds wrote:
-> On Thu, Oct 2, 2014 at 8:04 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> >
->> > I have a new one for you. I know it doesn't say "numa" anywhere, but I
->> > haven't ever seen that trace before so I'll just go ahead and blame it
->> > on your patch...
-> Fair enough, but the oops doesn't really give even a hint of what
-> could be wrong.
-> 
-> The stack is clearly too deep:
-> 
->   Thread overran stack, or stack corrupted
->   task.ti: ffff880dba2ec000
->     RSP: ffff880dba2ebf48
-> 
-> but my patch shouldn't have added any deeper call-chains anywhere.
+struct perf_event_mmap_page has members called "index" and
+"cap_user_rdpmc".  Spell them correctly in the examples.
 
-For the record, I tweaked the environment to put some more pressure on the
-scheduler and found out what broke (which is not related to this thread at
-all).
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
+ include/uapi/linux/perf_event.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-For the curious ones: https://lkml.org/lkml/2014/10/3/5
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 9269de254874..9d845404d875 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -364,7 +364,7 @@ struct perf_event_mmap_page {
+ 	/*
+ 	 * Bits needed to read the hw events in user-space.
+ 	 *
+-	 *   u32 seq, time_mult, time_shift, idx, width;
++	 *   u32 seq, time_mult, time_shift, index, width;
+ 	 *   u64 count, enabled, running;
+ 	 *   u64 cyc, time_offset;
+ 	 *   s64 pmc = 0;
+@@ -383,11 +383,11 @@ struct perf_event_mmap_page {
+ 	 *       time_shift  = pc->time_shift;
+ 	 *     }
+ 	 *
+-	 *     idx = pc->index;
++	 *     index = pc->index;
+ 	 *     count = pc->offset;
+-	 *     if (pc->cap_usr_rdpmc && idx) {
++	 *     if (pc->cap_user_rdpmc && index) {
+ 	 *       width = pc->pmc_width;
+-	 *       pmc = rdpmc(idx - 1);
++	 *       pmc = rdpmc(index - 1);
+ 	 *     }
+ 	 *
+ 	 *     barrier();
+@@ -415,7 +415,7 @@ struct perf_event_mmap_page {
+ 	};
+ 
+ 	/*
+-	 * If cap_usr_rdpmc this field provides the bit-width of the value
++	 * If cap_user_rdpmc this field provides the bit-width of the value
+ 	 * read using the rdpmc() or equivalent instruction. This can be used
+ 	 * to sign extend the result like:
+ 	 *
+@@ -439,10 +439,10 @@ struct perf_event_mmap_page {
+ 	 *
+ 	 * Where time_offset,time_mult,time_shift and cyc are read in the
+ 	 * seqcount loop described above. This delta can then be added to
+-	 * enabled and possible running (if idx), improving the scaling:
++	 * enabled and possible running (if index), improving the scaling:
+ 	 *
+ 	 *   enabled += delta;
+-	 *   if (idx)
++	 *   if (index)
+ 	 *     running += delta;
+ 	 *
+ 	 *   quot = count / running;
+-- 
+1.9.3
 
-
-Thanks,
-Sasha
