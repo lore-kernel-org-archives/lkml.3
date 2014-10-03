@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949AbaJCXSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:18:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
+	id S932974AbaJCXTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:19:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757844AbaJCWNt (ORCPT
+	with ESMTP id S1757758AbaJCWNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:49 -0400
+	Fri, 3 Oct 2014 18:13:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 168/238] ata_piix: Add Device IDs for Intel 9 Series PCH
-Date: Fri,  3 Oct 2014 14:31:23 -0700
-Message-Id: <20141003212919.045976006@linuxfoundation.org>
+        Hugo P <saurosii@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.14 166/238] Input: i8042 - add nomux quirk for Avatar AVIU-145A6
+Date: Fri,  3 Oct 2014 14:31:21 -0700
+Message-Id: <20141003212918.985401729@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,36 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 6cad1376954e591c3c41500c4e586e183e7ffe6d upstream.
+commit d2682118f4bb3ceb835f91c1a694407a31bb7378 upstream.
 
-This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
+The sys_vendor / product_name are somewhat generic unfortunately, so this
+may lead to some false positives. But nomux usually does no harm, where as
+not having it clearly is causing problems on the Avatar AVIU-145A6.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+https://bugzilla.kernel.org/show_bug.cgi?id=77391
+
+Reported-by: Hugo P <saurosii@gmail.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -340,6 +340,14 @@ static const struct pci_device_id piix_p
- 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
- 	/* SATA Controller IDE (Coleto Creek) */
- 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
-+	/* SATA Controller IDE (9 Series) */
-+	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 
- 	{ }	/* terminate list */
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -458,6 +458,13 @@ static const struct dmi_system_id __init
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
+ 		},
+ 	},
++	{
++		/* Avatar AVIU-145A6 */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "IC4I"),
++		},
++	},
+ 	{ }
  };
+ 
 
 
