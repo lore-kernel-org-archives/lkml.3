@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934019AbaJDAjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:39:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45300 "EHLO
+	id S934004AbaJDAjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:39:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850AbaJCVmn (ORCPT
+	with ESMTP id S1755853AbaJCVmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:42:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Knibbs <markk@clara.co.uk>
-Subject: [PATCH 3.16 135/357] storage: Add single-LUN quirk for Jaz USB Adapter
-Date: Fri,  3 Oct 2014 14:28:41 -0700
-Message-Id: <20141003212937.525777007@linuxfoundation.org>
+        Kamil Debski <k.debski@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 3.16 144/357] usb: dwc2/gadget: fix phy initialization sequence
+Date: Fri,  3 Oct 2014 14:28:50 -0700
+Message-Id: <20141003212937.799715870@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,41 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark <markk@clara.co.uk>
+From: Kamil Debski <k.debski@samsung.com>
 
-commit c66f1c62e85927357e7b3f4c701614dcb5c498a2 upstream.
+commit ca2c5ba80f823a38c4aae506e2f03c1afb076b0a upstream.
 
-The Iomega Jaz USB Adapter is a SCSI-USB converter cable. The hardware
-seems to be identical to e.g. the Microtech XpressSCSI, using a Shuttle/
-SCM chip set. However its firmware restricts it to only work with Jaz
-drives.
+In the Generic PHY Framework a NULL phy is considered to be a valid phy
+thus the "if (hsotg->phy)" check does not give us the information whether
+the Generic PHY Framework is used.
 
-On connecting the cable a message like this appears four times in the log:
- reset full speed USB device number 4 using uhci_hcd
+In addition to the above this patch also removes phy_init from probe and
+phy_exit from remove. This is not necessary when init/exit is done in the
+s3c_hsotg_phy_enable/disable functions.
 
-That's non-fatal but the US_FL_SINGLE_LUN quirk fixes it.
-
-Signed-off-by: Mark Knibbs <markk@clara.co.uk>
+Signed-off-by: Kamil Debski <k.debski@samsung.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/dwc2/gadget.c |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -741,6 +741,12 @@ UNUSUAL_DEV(  0x059b, 0x0001, 0x0100, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_SINGLE_LUN ),
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2748,13 +2748,14 @@ static void s3c_hsotg_phy_enable(struct
  
-+UNUSUAL_DEV(  0x059b, 0x0040, 0x0100, 0x0100,
-+		"Iomega",
-+		"Jaz USB Adapter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_SINGLE_LUN ),
-+
- /* Reported by <Hendryk.Pfeiffer@gmx.de> */
- UNUSUAL_DEV(  0x059f, 0x0643, 0x0000, 0x0000,
- 		"LaCie",
+ 	dev_dbg(hsotg->dev, "pdev 0x%p\n", pdev);
+ 
+-	if (hsotg->phy) {
+-		phy_init(hsotg->phy);
+-		phy_power_on(hsotg->phy);
+-	} else if (hsotg->uphy)
++	if (hsotg->uphy)
+ 		usb_phy_init(hsotg->uphy);
+-	else if (hsotg->plat->phy_init)
++	else if (hsotg->plat && hsotg->plat->phy_init)
+ 		hsotg->plat->phy_init(pdev, hsotg->plat->phy_type);
++	else {
++		phy_init(hsotg->phy);
++		phy_power_on(hsotg->phy);
++	}
+ }
+ 
+ /**
+@@ -2768,13 +2769,14 @@ static void s3c_hsotg_phy_disable(struct
+ {
+ 	struct platform_device *pdev = to_platform_device(hsotg->dev);
+ 
+-	if (hsotg->phy) {
+-		phy_power_off(hsotg->phy);
+-		phy_exit(hsotg->phy);
+-	} else if (hsotg->uphy)
++	if (hsotg->uphy)
+ 		usb_phy_shutdown(hsotg->uphy);
+-	else if (hsotg->plat->phy_exit)
++	else if (hsotg->plat && hsotg->plat->phy_exit)
+ 		hsotg->plat->phy_exit(pdev, hsotg->plat->phy_type);
++	else {
++		phy_power_off(hsotg->phy);
++		phy_exit(hsotg->phy);
++	}
+ }
+ 
+ /**
+@@ -3489,9 +3491,6 @@ static int s3c_hsotg_probe(struct platfo
+ 	if (hsotg->phy && (phy_get_bus_width(phy) == 8))
+ 		hsotg->phyif = GUSBCFG_PHYIF8;
+ 
+-	if (hsotg->phy)
+-		phy_init(hsotg->phy);
+-
+ 	/* usb phy enable */
+ 	s3c_hsotg_phy_enable(hsotg);
+ 
+@@ -3584,8 +3583,6 @@ static int s3c_hsotg_remove(struct platf
+ 		usb_gadget_unregister_driver(hsotg->driver);
+ 	}
+ 
+-	if (hsotg->phy)
+-		phy_exit(hsotg->phy);
+ 	clk_disable_unprepare(hsotg->clk);
+ 
+ 	return 0;
 
 
