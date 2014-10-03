@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaJCKXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 06:23:15 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51904 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaJCKXN (ORCPT
+	id S1751815AbaJCKbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 06:31:12 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40876 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaJCKbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 06:23:13 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately after first invalid packet
-Date: Fri, 3 Oct 2014 12:23:10 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Tommy Will <tommywill2011@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <201410031205.42927@pali> <542E780B.7030103@redhat.com>
-In-Reply-To: <542E780B.7030103@redhat.com>
+	Fri, 3 Oct 2014 06:31:10 -0400
+Date: Fri, 3 Oct 2014 11:30:56 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [RFC PATCH 05/16] arm64: support poweroff through poweroff
+ handler call chain
+Message-ID: <20141003103056.GB14110@localhost>
+References: <1412100056-15517-1-git-send-email-linux@roeck-us.net>
+ <1412100056-15517-6-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1869901.lScz0Yih5A";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410031223.10608@pali>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412100056-15517-6-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1869901.lScz0Yih5A
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 30, 2014 at 07:00:45PM +0100, Guenter Roeck wrote:
+> The kernel core now supports a poweroff handler call chain
+> to remove power from the system. Call it if pm_power_off
+> is set to NULL.
+> 
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  arch/arm64/kernel/process.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+> index 398ab05..cc0c63e 100644
+> --- a/arch/arm64/kernel/process.c
+> +++ b/arch/arm64/kernel/process.c
+> @@ -157,6 +157,8 @@ void machine_power_off(void)
+>  	smp_send_stop();
+>  	if (pm_power_off)
+>  		pm_power_off();
+> +	else
+> +		do_kernel_poweroff();
 
-On Friday 03 October 2014 12:18:51 Hans de Goede wrote:
-> > On my E6440 machine it somehow working. When driver
-> > doing ps/2 reset keyboard, touchpad and trackstick not
-> > responding.
->=20
-> Right, but I would expect that to be for only a short period
-> of time, or does the whole reset take a significant amount of
-> time ?
->=20
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-It is one or two seconds which is OK for me.
+As others already stated, I think we should eventually remove
+pm_power_off entirely.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1869901.lScz0Yih5A
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlQueQ4ACgkQi/DJPQPkQ1JvlwCfdbiMLw4YyC1MTaEG9a3f9xYT
-crsAn0n8CTo9Tn5LY0z4XdeBXKexewiA
-=HUe4
------END PGP SIGNATURE-----
-
---nextPart1869901.lScz0Yih5A--
+Catalin
