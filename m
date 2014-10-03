@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652AbaJCXyV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:54:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	id S1760637AbaJCXyT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:54:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756808AbaJCVxe (ORCPT
+	with ESMTP id S1756809AbaJCVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.16 264/357] lockdep: Revert lockdep check in raw_seqcount_begin()
-Date: Fri,  3 Oct 2014 14:30:50 -0700
-Message-Id: <20141003212941.429439082@linuxfoundation.org>
+        Filipe Brandenburger <filbranden@google.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Allan McRae <allan@archlinux.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 050/238] xattr: fix check for simultaneous glibc header inclusion
+Date: Fri,  3 Oct 2014 14:29:25 -0700
+Message-Id: <20141003212915.278925301@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -31,60 +28,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Filipe Brandenburger <filbranden@google.com>
 
-commit 22fdcf02f6e80d64a927f702dd9d631a927d87d4 upstream.
+commit bfcfd44cce2774f19daeb59fb4e43fc9aa80e7b8 upstream.
 
-This commit reverts the addition of lockdep checking to raw_seqcount_begin
-for the following reasons:
+The guard was introduced in commit ea1a8217b06b ("xattr: guard against
+simultaneous glibc header inclusion") but it is using #ifdef to check
+for a define that is either set to 1 or 0.  Fix it to use #if instead.
 
- 1) It violates the naming convention that raw_* functions should not
-    do lockdep checks (a convention that is also followed by the other
-    raw_*_seqcount_begin functions).
+* Without this patch:
 
- 2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
-    deadlock in very special circumstances (for instance if a lock
-    is held across the entire raw_seqcount_begin()+read_seqcount_retry()
-    loop while also being taken inside the write_seqcount protected area).
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  include/uapi/linux/xattr.h:19:0: warning: "XATTR_CREATE" redefined [enabled by default]
+   #define XATTR_CREATE 0x1 /* set value, fail if attr already exists */
+   ^
+  /usr/include/x86_64-linux-gnu/sys/xattr.h:32:0: note: this is the location of the previous definition
+   #define XATTR_CREATE XATTR_CREATE
+   ^
 
- 3) It is causing false positives with some existing callers, and there
-    is no non-lockdep alternative for those callers to use.
+* With this patch:
 
-None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
-the NFS state code) appear to use the function in a manner that is ABBA
-deadlock prone.
+  $ { echo "#include <sys/xattr.h>"; echo "#include <linux/xattr.h>"; } | gcc -E -Iinclude/uapi - >/dev/null
+  (no warnings)
 
-Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Cc: Allan McRae <allan@archlinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/seqlock.h |    2 --
- 1 file changed, 2 deletions(-)
+ include/uapi/linux/xattr.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -164,8 +164,6 @@ static inline unsigned read_seqcount_beg
- static inline unsigned raw_seqcount_begin(const seqcount_t *s)
- {
- 	unsigned ret = ACCESS_ONCE(s->sequence);
--
--	seqcount_lockdep_reader_access(s);
- 	smp_rmb();
- 	return ret & ~1;
- }
+--- a/include/uapi/linux/xattr.h
++++ b/include/uapi/linux/xattr.h
+@@ -13,7 +13,7 @@
+ #ifndef _UAPI_LINUX_XATTR_H
+ #define _UAPI_LINUX_XATTR_H
+ 
+-#ifdef __UAPI_DEF_XATTR
++#if __UAPI_DEF_XATTR
+ #define __USE_KERNEL_XATTR_DEFS
+ 
+ #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
 
 
