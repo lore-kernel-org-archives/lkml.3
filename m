@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaJCSQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 14:16:56 -0400
-Received: from mout.gmx.net ([212.227.17.20]:59726 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754073AbaJCSQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 14:16:55 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Eric Paris <eparis@parisplace.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] ftruncate: create FAN_MODIFY and IN_MODIFY events
-Date: Fri,  3 Oct 2014 20:16:30 +0200
-Message-Id: <1412360190-1507-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 2.1.0
-X-Provags-ID: V03:K0:LvuOp1KjzTKo0hdUGC5bgPZ62Hg4sfHs17uUx+5QhsRbUkmIr7e
- cREKn9fbk5k/Kuuo/0aB9mfJ5kaT7doby/ZhomOzsUUbnOwI2k77TMx0iJUie+DJjY1iHT6
- PC3zx6gsz90KofCncDIBk0o9fjaMImfNJXbeAM0q/pZj53H4m7E6b2A+Hdey55u4iC5HUrm
- HDvx2wpEhxy+UGM5wauZQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754678AbaJCSRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 14:17:46 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:53537 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630AbaJCSRn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 14:17:43 -0400
+From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+To: Christoph Hellwig <hch@infradead.org>,
+        Douglas Gilbert <dgilbert@interlog.com>
+CC: SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        James Bottomley <james.bottomley@hansenpartnership.com>,
+        Milan Broz <gmazyland@gmail.com>
+Subject: RE: [PATCH] scsi_debug: deadlock between completions and surprise
+ module removal
+Thread-Topic: [PATCH] scsi_debug: deadlock between completions and surprise
+ module removal
+Thread-Index: AQHPxXC6SimyL4UyC0aeWTPajWncPpwR6UuAgAzaCwA=
+Date: Fri, 3 Oct 2014 18:16:26 +0000
+Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958CCCE2C@G4W3202.americas.hpqcorp.net>
+References: <5403AB47.3040706@interlog.com>
+ <20140925121317.GA16303@infradead.org>
+In-Reply-To: <20140925121317.GA16303@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.37]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fanotify and the inotify API can be used to monitor changes of the file
-system.
 
-System call ftruncate modifies files. Hence it should trigger the corresponding
-fanotify (FAN_MODIFY) and inotify (IN_MODIFY) events.
 
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- fs/open.c | 2 ++
- 1 file changed, 2 insertions(+)
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Christoph Hellwig
+> Sent: Thursday, 25 September, 2014 7:13 AM
+> To: Douglas Gilbert
+> Cc: SCSI development list; linux-kernel; James Bottomley; Christoph Hellwig;
+> Milan Broz
+> Subject: Re: [PATCH] scsi_debug: deadlock between completions and surprise
+> module removal
+> 
+> Review ping again?
+> 
+> While I think the shutdown code in scsi_debug needs a bit more of an
+> overhault I'd really like to include the fix at least for 3.18 and
+> 3.17-stable now that we have missed the 3.17 window.
+> 
+> On Sun, Aug 31, 2014 at 07:09:59PM -0400, Douglas Gilbert wrote:
+> > A deadlock has been reported when the completion
+> > of SCSI commands (simulated by a timer) was surprised
+> > by a module removal. This patch removes one half of
+> > the offending locks around timer deletions. This fix
+> > is applied both to stop_all_queued() which is were
+> > the deadlock was discovered and stop_queued_cmnd()
+> > which has very similar logic.
+> >
+> > This patch should be applied both to the lk 3.17 tree
+> > and Christoph's drivers-for-3.18 tree.
+> >
+> > Tested-and-reported-by: Milan Broz <gmazyland@gmail.com>
+> > Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
 
-diff --git a/fs/open.c b/fs/open.c
-index d6fd3ac..e36f26e 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -189,6 +189,8 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
- 		error = security_path_truncate(&f.file->f_path);
- 	if (!error)
- 		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, f.file);
-+	if (!error) 
-+		fsnotify_modify(f.file);
- 	sb_end_write(inode->i_sb);
- out_putf:
- 	fdput(f);
--- 
-2.1.0
+Reviewed-by: Robert Elliott <elliott@hp.com>
+
+
 
