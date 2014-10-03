@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447AbaJCWcd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:32:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47626 "EHLO
+	id S1758496AbaJCWdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:33:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764AbaJCW3r (ORCPT
+	with ESMTP id S932656AbaJCWYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:29:47 -0400
+	Fri, 3 Oct 2014 18:24:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>,
-        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 118/143] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
-Date: Fri,  3 Oct 2014 14:35:13 -0700
-Message-Id: <20141003213318.033621658@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.10 109/143] usb: host: xhci: fix compliance mode workaround
+Date: Fri,  3 Oct 2014 14:35:04 -0700
+Message-Id: <20141003213317.772423414@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -34,120 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+commit 96908589a8b2584b1185f834d365f5cc360e8226 upstream.
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+Commit 71c731a (usb: host: xhci: Fix Compliance Mode
+on SN65LVP3502CP Hardware) implemented a workaround
+for a known issue with Texas Instruments' USB 3.0
+redriver IC but it left a condition where any xHCI
+host would be taken out of reset if port was placed
+in compliance mode and there was no device connected
+to the port.
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+That condition would trigger a fake connection to a
+non-existent device so that usbcore would trigger a
+warm reset of the port, thus taking the link out of
+reset.
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
+This has the side-effect of preventing any xHCI host
+connected to a Linux machine from starting and running
+the USB 3.0 Electrical Compliance Suite because the
+port will mysteriously taken out of compliance mode
+and, thus, xHCI won't step through the necessary
+compliance patterns for link validation.
 
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
+This patch fixes the issue by just adding a missing
+check for XHCI_COMP_MODE_QUIRK inside
+xhci_hub_report_usb3_link_state() when PORT_CAS isn't
+set.
 
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
+This patch should be backported to all kernels containing
+commit 71c731a.
 
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 71c731a (usb: host: xhci: Fix Compliance Mode on SN65LVP3502CP Hardware)
+Cc: Alexis R. Cortes <alexis.cortes@ti.com>
+Cc: <stable@vger.kernel.org> # v3.2+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/x86/kernel/smpboot.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1284,6 +1284,9 @@ static void remove_siblinginfo(int cpu)
+---
+ drivers/usb/host/xhci-hub.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -462,7 +462,8 @@ void xhci_test_and_clear_bit(struct xhci
+ }
  
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+ /* Updates Link Status for super Speed port */
+-static void xhci_hub_report_link_state(u32 *status, u32 status_reg)
++static void xhci_hub_report_link_state(struct xhci_hcd *xhci,
++		u32 *status, u32 status_reg)
+ {
+ 	u32 pls = status_reg & PORT_PLS_MASK;
+ 
+@@ -501,7 +502,8 @@ static void xhci_hub_report_link_state(u
+ 		 * in which sometimes the port enters compliance mode
+ 		 * caused by a delay on the host-device negotiation.
+ 		 */
+-		if (pls == USB_SS_PORT_LS_COMP_MOD)
++		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
++				(pls == USB_SS_PORT_LS_COMP_MOD))
+ 			pls |= USB_PORT_STAT_CONNECTION;
+ 	}
+ 
+@@ -686,7 +688,7 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 		}
+ 		/* Update Port Link State for super speed ports*/
+ 		if (hcd->speed == HCD_USB3) {
+-			xhci_hub_report_link_state(&status, temp);
++			xhci_hub_report_link_state(xhci, &status, temp);
+ 			/*
+ 			 * Verify if all USB3 Ports Have entered U0 already.
+ 			 * Delete Compliance Mode Timer if so.
 
 
