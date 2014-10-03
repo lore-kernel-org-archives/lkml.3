@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096AbaJCXG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:06:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S1758317AbaJCXHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:07:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46923 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757948AbaJCWOF (ORCPT
+	with ESMTP id S1757817AbaJCWOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:05 -0400
+	Fri, 3 Oct 2014 18:14:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Feiner <pfeiner@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
-        Hugh Dickins <hughd@google.com>,
+        Joseph Qi <joseph.qi@huawei.com>, "joyce.xue" <xuejiufei@huawei.com>,
+        Guozhonghua <guozhonghua@h3c.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 187/238] mm: softdirty: keep bit when zapping file pte
-Date: Fri,  3 Oct 2014 14:31:42 -0700
-Message-Id: <20141003212919.648599103@linuxfoundation.org>
+Subject: [PATCH 3.14 185/238] ocfs2/dlm: do not get resource spinlock if lockres is new
+Date: Fri,  3 Oct 2014 14:31:40 -0700
+Message-Id: <20141003212919.586540885@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -33,45 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Feiner <pfeiner@google.com>
+From: Joseph Qi <joseph.qi@huawei.com>
 
-commit dbab31aa2ceec2d201966fa0b552f151310ba5f4 upstream.
+commit 5760a97c7143c208fa3a8f8cad0ed7dd672ebd28 upstream.
 
-This fixes the same bug as b43790eedd31 ("mm: softdirty: don't forget to
-save file map softdiry bit on unmap") and 9aed8614af5a ("mm/memory.c:
-don't forget to set softdirty on file mapped fault") where the return
-value of pte_*mksoft_dirty was being ignored.
+There is a deadlock case which reported by Guozhonghua:
+  https://oss.oracle.com/pipermail/ocfs2-devel/2014-September/010079.html
 
-To be sure that no other pte/pmd "mk" function return values were being
-ignored, I annotated the functions in arch/x86/include/asm/pgtable.h
-with __must_check and rebuilt.
+This case is caused by &res->spinlock and &dlm->master_lock
+misordering in different threads.
 
-The userspace effect of this bug is that the softdirty mark might be
-lost if a file mapped pte get zapped.
+It was introduced by commit 8d400b81cc83 ("ocfs2/dlm: Clean up refmap
+helpers").  Since lockres is new, it doesn't not require the
+&res->spinlock.  So remove it.
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Jamie Liu <jamieliu@google.com>
-Cc: Hugh Dickins <hughd@google.com>
+Fixes: 8d400b81cc83 ("ocfs2/dlm: Clean up refmap helpers")
+Signed-off-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: joyce.xue <xuejiufei@huawei.com>
+Reported-by: Guozhonghua <guozhonghua@h3c.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ocfs2/dlm/dlmmaster.c |   18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1120,7 +1120,7 @@ again:
- 						addr) != page->index) {
- 				pte_t ptfile = pgoff_to_pte(page->index);
- 				if (pte_soft_dirty(ptent))
--					pte_file_mksoft_dirty(ptfile);
-+					ptfile = pte_file_mksoft_dirty(ptfile);
- 				set_pte_at(mm, addr, pte, ptfile);
- 			}
- 			if (PageAnon(page))
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -650,12 +650,9 @@ void dlm_lockres_clear_refmap_bit(struct
+ 	clear_bit(bit, res->refmap);
+ }
+ 
+-
+-void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++static void __dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+-	assert_spin_locked(&res->spinlock);
+-
+ 	res->inflight_locks++;
+ 
+ 	mlog(0, "%s: res %.*s, inflight++: now %u, %ps()\n", dlm->name,
+@@ -663,6 +660,13 @@ void dlm_lockres_grab_inflight_ref(struc
+ 	     __builtin_return_address(0));
+ }
+ 
++void dlm_lockres_grab_inflight_ref(struct dlm_ctxt *dlm,
++				   struct dlm_lock_resource *res)
++{
++	assert_spin_locked(&res->spinlock);
++	__dlm_lockres_grab_inflight_ref(dlm, res);
++}
++
+ void dlm_lockres_drop_inflight_ref(struct dlm_ctxt *dlm,
+ 				   struct dlm_lock_resource *res)
+ {
+@@ -852,10 +856,8 @@ lookup:
+ 	/* finally add the lockres to its hash bucket */
+ 	__dlm_insert_lockres(dlm, res);
+ 
+-	/* Grab inflight ref to pin the resource */
+-	spin_lock(&res->spinlock);
+-	dlm_lockres_grab_inflight_ref(dlm, res);
+-	spin_unlock(&res->spinlock);
++	/* since this lockres is new it doesn't not require the spinlock */
++	__dlm_lockres_grab_inflight_ref(dlm, res);
+ 
+ 	/* get an extra ref on the mle in case this is a BLOCK
+ 	 * if so, the creator of the BLOCK may try to put the last
 
 
