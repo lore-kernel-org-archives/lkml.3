@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889AbaJCVmr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:42:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44895 "EHLO
+	id S1755913AbaJCVmv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:42:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233AbaJCVc5 (ORCPT
+	with ESMTP id S1755072AbaJCVc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:57 -0400
+	Fri, 3 Oct 2014 17:32:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Steven Vittitoe <scvitti@google.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.16 066/357] HID: magicmouse: sanity check report size in raw_event() callback
-Date: Fri,  3 Oct 2014 14:27:32 -0700
-Message-Id: <20141003212935.448677600@linuxfoundation.org>
+Subject: [PATCH 3.16 065/357] HID: picolcd: sanity check report size in raw_event() callback
+Date: Fri,  3 Oct 2014 14:27:31 -0700
+Message-Id: <20141003212935.412773594@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,45 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Kosina <jkosina@suse.cz>
 
-commit c54def7bd64d7c0b6993336abcffb8444795bf38 upstream.
+commit 844817e47eef14141cf59b8d5ac08dd11c0a9189 upstream.
 
 The report passed to us from transport driver could potentially be
-arbitrarily large, therefore we better sanity-check it so that
-magicmouse_emit_touch() gets only valid values of raw_id.
+arbitrarily large, therefore we better sanity-check it so that raw_data
+that we hold in picolcd_pending structure are always kept within proper
+bounds.
 
 Reported-by: Steven Vittitoe <scvitti@google.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-magicmouse.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/hid/hid-picolcd_core.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -290,6 +290,11 @@ static int magicmouse_raw_event(struct h
- 		if (size < 4 || ((size - 4) % 9) != 0)
- 			return 0;
- 		npoints = (size - 4) / 9;
-+		if (npoints > 15) {
-+			hid_warn(hdev, "invalid size value (%d) for TRACKPAD_REPORT_ID\n",
-+					size);
-+			return 0;
-+		}
- 		msc->ntouches = 0;
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 9 + 4);
-@@ -307,6 +312,11 @@ static int magicmouse_raw_event(struct h
- 		if (size < 6 || ((size - 6) % 8) != 0)
- 			return 0;
- 		npoints = (size - 6) / 8;
-+		if (npoints > 15) {
-+			hid_warn(hdev, "invalid size value (%d) for MOUSE_REPORT_ID\n",
-+					size);
-+			return 0;
-+		}
- 		msc->ntouches = 0;
- 		for (ii = 0; ii < npoints; ii++)
- 			magicmouse_emit_touch(msc, ii, data + ii * 8 + 6);
+--- a/drivers/hid/hid-picolcd_core.c
++++ b/drivers/hid/hid-picolcd_core.c
+@@ -350,6 +350,12 @@ static int picolcd_raw_event(struct hid_
+ 	if (!data)
+ 		return 1;
+ 
++	if (size > 64) {
++		hid_warn(hdev, "invalid size value (%d) for picolcd raw event\n",
++				size);
++		return 0;
++	}
++
+ 	if (report->id == REPORT_KEY_STATE) {
+ 		if (data->input_keys)
+ 			ret = picolcd_raw_keypad(data, report, raw_data+1, size-1);
 
 
