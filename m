@@ -1,55 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbaJCTnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 15:43:00 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:39280 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979AbaJCTm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 15:42:57 -0400
-Message-ID: <542EFC36.1010306@osg.samsung.com>
-Date: Fri, 03 Oct 2014 13:42:46 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754561AbaJCTog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 15:44:36 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:33420 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823AbaJCTof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 15:44:35 -0400
+Date: Fri, 3 Oct 2014 21:44:29 +0200
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+To: linux-kernel@vger.kernel.org
+Subject: Slowdown due to threads bouncing between HT cores
+Message-ID: <20141003194428.GA27084@sesse.net>
 MIME-Version: 1.0
-To: Davidlohr Bueso <dave@stgolabs.net>
-CC: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        colin.king@canonical.com, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuahkh@osg.samsung.com>
-Subject: Re: [PATCH v3 3/5] selftests/ipc: change test to use ksft framework
-References: <cover.1412349412.git.shuahkh@osg.samsung.com> <fb7ed86d44adbc7f97f9e42b314e4fce5616959e.1412349412.git.shuahkh@osg.samsung.com> <1412357993.20838.4.camel@linux-t7sj.site>
-In-Reply-To: <1412357993.20838.4.camel@linux-t7sj.site>
 Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+X-Operating-System: Linux 3.16.3 on a x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2014 11:39 AM, Davidlohr Bueso wrote:
-> On Fri, 2014-10-03 at 09:36 -0600, Shuah Khan wrote:
->>  	msgque.key = ftok(argv[0], 822155650);
->>  	if (msgque.key == -1) {
->> -		printf("Can't make key\n");
->> -		return -errno;
->> +		printf("Can't make key: %d\n", -errno);
-> 
-> So printing a numeric value is quite useless when users actually run
-> into these errors -- which is why I like err() so much. How about using
-> strerror() instead?
-> 
+Hi,
 
-Yes. using perror() does give better information. There are other
-places in this file that use errno. How about I make that a separate
-patch and catch all of them at once to use perror() as a follow-up
-change? That way I fix all at once without adding more changes to
-this patch.
+I did a chess benchmark of my new machine (2x E5-2650v3, so 20x2.3GHz
+Haswell-EP), and it performed a bit worse than comparable Windows setups.
+It looks like the scheduler somehow doesn't perform as well with
+hyperthreading; HT is on in the BIOS, but I'm only using 20 threads
+(chess scales sublinearly, so using all 40 usually isn't a good idea),
+so really, the threads should just get one core each and that's it.
+It looks like they are bouncing between cores, reducing overall performance
+by ~20% for some reason. (The machine is otherwise generally idle.)
 
-thanks,
--- Shuah
+First some details to reproduce more easily. Kernel version is 3.16.3, 64-bit
+x86, Debian stable (so gcc 4.7.2). The benchmark binary is a chess engine
+knows as Stockfish; this is the compile I used (because that's what everyone
+else is benchmarking with):
 
+  http://abrok.eu/stockfish/builds/dbd6156fceaf9bec8e9ff14f99c325c36b284079/linux64modernsse/stockfish_13111907_x64_modern_sse42
+
+Stockfish is GPL, so the source is readily available if you should need it.
+
+The benchmark is run with by just running the binary, then giving it these
+commands one by one:
+
+uci
+setoption name Threads value 20
+setoption name Hash value 1024
+position fen rnbq1rk1/pppnbppp/4p3/3pP1B1/3P3P/2N5/PPP2PP1/R2QKBNR w KQ – 0 7
+go wtime 7200000 winc 30000 btime 7200000 binc 30000
+
+After ~3 minutes, it will output “bestmove d1g4 ponder f8e8”. A few lines
+above that, you'll see a line with something similar to “nps 13266463”.
+That's nodes per second, and you want it to be higher.
+
+So, benchmark:
+
+ - Default: 13266 kN/sec
+ - Change from ondemand to performance on all cores: 14600 kN/sec
+ - taskset -c 0-19 (locking affinity to only one set of hyperthreads):
+   17512 kN/sec
+
+There is some local variation, but it's typically within a few percent.
+Does anyone know what's going on? I have CONFIG_SCHED_SMT=y and
+CONFIG_SCHED_MC=y.
+
+/* Steinar */
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Homepage: http://www.sesse.net/
