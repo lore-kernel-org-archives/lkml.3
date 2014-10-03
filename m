@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649AbaJCUBB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:01:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:59012 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaJCUA7 (ORCPT
+	id S1754748AbaJCUBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:01:34 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:52571 "EHLO
+	homiemail-a99.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754426AbaJCUB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:00:59 -0400
-Date: Fri, 03 Oct 2014 13:03:05 -0700 (PDT)
-Message-Id: <20141003.130305.2216770567363258603.davem@davemloft.net>
-To: mwelling@ieee.org
-Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:ethernet:davinci_emac.c:Fixes flaw in mac
- address handling.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
-References: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 3 Oct 2014 16:01:29 -0400
+Message-ID: <1412366467.20838.5.camel@linux-t7sj.site>
+Subject: Re: [PATCH v3 3/5] selftests/ipc: change test to use ksft framework
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        colin.king@canonical.com, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 03 Oct 2014 13:01:07 -0700
+In-Reply-To: <542EFC36.1010306@osg.samsung.com>
+References: <cover.1412349412.git.shuahkh@osg.samsung.com>
+	 <fb7ed86d44adbc7f97f9e42b314e4fce5616959e.1412349412.git.shuahkh@osg.samsung.com>
+	 <1412357993.20838.4.camel@linux-t7sj.site>
+	 <542EFC36.1010306@osg.samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 13:00:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Welling <mwelling@ieee.org>
-Date: Wed,  1 Oct 2014 21:32:05 -0500
-
-> The code currently checks the mac_addr variable that is clearly
-> zero'd out during allocation.
+On Fri, 2014-10-03 at 13:42 -0600, Shuah Khan wrote:
+> On 10/03/2014 11:39 AM, Davidlohr Bueso wrote:
+> > On Fri, 2014-10-03 at 09:36 -0600, Shuah Khan wrote:
+> >>  	msgque.key = ftok(argv[0], 822155650);
+> >>  	if (msgque.key == -1) {
+> >> -		printf("Can't make key\n");
+> >> -		return -errno;
+> >> +		printf("Can't make key: %d\n", -errno);
+> > 
+> > So printing a numeric value is quite useless when users actually run
+> > into these errors -- which is why I like err() so much. How about using
+> > strerror() instead?
+> > 
 > 
-> Further code is added to bring the mac_addr from the partial pdata.
-> 
-> Signed-off-by: Michael Welling <mwelling@ieee.org>
+> Yes. using perror() does give better information. There are other
+> places in this file that use errno. How about I make that a separate
+> patch and catch all of them at once to use perror() as a follow-up
+> change? That way I fix all at once without adding more changes to
+> this patch.
 
-I don't see anyone specifying a MAC address in the partial pdata,
-so better to just delete that field.
+Sounds good.
 
-Even if people did, I am not so sure that the partial pdata should
-unconditionally trump an OF provided MAC address.
