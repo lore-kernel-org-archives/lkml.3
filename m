@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840AbaJCWqD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:46:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47291 "EHLO
+	id S932442AbaJCWqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:46:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758256AbaJCWYQ (ORCPT
+	with ESMTP id S932373AbaJCWYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Mike Anderson <mike.anderson@us.ibm.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Gustavo Luiz Duarte <gduarte@redhat.com>,
-        Tomas Henzl <thenzl@redhat.com>
-Subject: [PATCH 3.10 093/143] workqueue: apply __WQ_ORDERED to create_singlethread_workqueue()
-Date: Fri,  3 Oct 2014 14:34:48 -0700
-Message-Id: <20141003213317.288973269@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.10 077/143] CIFS: Fix SMB2 readdir error handling
+Date: Fri,  3 Oct 2014 14:34:32 -0700
+Message-Id: <20141003213316.823571730@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,67 +29,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit e09c2c295468476a239d13324ce9042ec4de05eb upstream.
+commit 52755808d4525f4d5b86d112d36ffc7a46f3fb48 upstream.
 
-create_singlethread_workqueue() is a compat interface for single
-threaded workqueue which maps to ordered workqueue w/ rescuer in the
-current implementation.  create_singlethread_workqueue() currently
-implemented by invoking alloc_workqueue() w/ appropriate parameters.
+SMB2 servers indicates the end of a directory search with
+STATUS_NO_MORE_FILE error code that is not processed now.
+This causes generic/257 xfstest to fail. Fix this by triggering
+the end of search by this error code in SMB2_query_directory.
 
-8719dceae2f9 ("workqueue: reject adjusting max_active or applying
-attrs to ordered workqueues") introduced __WQ_ORDERED to protect
-ordered workqueues against dynamic attribute changes which can break
-ordering guarantees but forgot to apply it to
-create_singlethread_workqueue().  This in itself is okay as nobody
-currently uses dynamic attribute change on workqueues created with
-create_singlethread_workqueue().
+Also when negotiating CIFS protocol we tell the server to close
+the search automatically at the end and there is no need to do
+it itself. In the case of SMB2 protocol, we need to close it
+explicitly - separate close directory checks for different
+protocols.
 
-However, 4c16bd327c ("workqueue: implement NUMA affinity for unbound
-workqueues") broke singlethreaded guarantee for ordered workqueues
-through allocating a separate pool_workqueue on each NUMA node by
-default.  A later change 8a2b75384444 ("workqueue: fix ordered
-workqueues in NUMA setups") fixed it by allocating only one global
-pool_workqueue if __WQ_ORDERED is set.
-
-Combined, the __WQ_ORDERED omission in create_singlethread_workqueue()
-became critical breaking its single threadedness and ordering
-guarantee.
-
-Let's make create_singlethread_workqueue() wrap
-alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
-can implicitly track future ordered_workqueue changes.
-
-v2: I missed that __WQ_ORDERED now protects against pwq splitting
-    across NUMA nodes and incorrectly described the patch as a
-    nice-to-have fix to protect against future dynamic attribute
-    usages.  Oleg pointed out that this is actually a critical
-    breakage due to 8a2b75384444 ("workqueue: fix ordered workqueues
-    in NUMA setups").
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mike Anderson <mike.anderson@us.ibm.com>
-Cc: Oleg Nesterov <onestero@redhat.com>
-Cc: Gustavo Luiz Duarte <gduarte@redhat.com>
-Cc: Tomas Henzl <thenzl@redhat.com>
-Fixes: 4c16bd327c ("workqueue: implement NUMA affinity for unbound workqueues")
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/workqueue.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/cifsglob.h     |    2 ++
+ fs/cifs/file.c         |    2 +-
+ fs/cifs/readdir.c      |    2 +-
+ fs/cifs/smb1ops.c      |    7 +++++++
+ fs/cifs/smb2maperror.c |    2 +-
+ fs/cifs/smb2ops.c      |    8 ++++++++
+ fs/cifs/smb2pdu.c      |    9 ++++-----
+ 7 files changed, 24 insertions(+), 8 deletions(-)
 
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -414,7 +414,7 @@ __alloc_workqueue_key(const char *fmt, u
- #define create_freezable_workqueue(name)				\
- 	alloc_workqueue((name), WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
- #define create_singlethread_workqueue(name)				\
--	alloc_workqueue((name), WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
-+	alloc_ordered_workqueue("%s", WQ_MEM_RECLAIM, name)
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -375,6 +375,8 @@ struct smb_version_operations {
+ 			const char *, u32 *);
+ 	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
+ 			int);
++	/* check if we need to issue closedir */
++	bool (*dir_needs_close)(struct cifsFileInfo *);
+ };
  
- extern void destroy_workqueue(struct workqueue_struct *wq);
+ struct smb_version_values {
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -735,7 +735,7 @@ int cifs_closedir(struct inode *inode, s
  
+ 	cifs_dbg(FYI, "Freeing private data in close dir\n");
+ 	spin_lock(&cifs_file_list_lock);
+-	if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
++	if (server->ops->dir_needs_close(cfile)) {
+ 		cfile->invalidHandle = true;
+ 		spin_unlock(&cifs_file_list_lock);
+ 		if (server->ops->close_dir)
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -582,7 +582,7 @@ find_cifs_entry(const unsigned int xid,
+ 		/* close and restart search */
+ 		cifs_dbg(FYI, "search backing up - close and restart search\n");
+ 		spin_lock(&cifs_file_list_lock);
+-		if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
++		if (server->ops->dir_needs_close(cfile)) {
+ 			cfile->invalidHandle = true;
+ 			spin_unlock(&cifs_file_list_lock);
+ 			if (server->ops->close_dir)
+--- a/fs/cifs/smb1ops.c
++++ b/fs/cifs/smb1ops.c
+@@ -885,6 +885,12 @@ cifs_mand_lock(const unsigned int xid, s
+ 			   (__u8)type, wait, 0);
+ }
+ 
++static bool
++cifs_dir_needs_close(struct cifsFileInfo *cfile)
++{
++	return !cfile->srch_inf.endOfSearch && !cfile->invalidHandle;
++}
++
+ struct smb_version_operations smb1_operations = {
+ 	.send_cancel = send_nt_cancel,
+ 	.compare_fids = cifs_compare_fids,
+@@ -948,6 +954,7 @@ struct smb_version_operations smb1_opera
+ 	.mand_lock = cifs_mand_lock,
+ 	.mand_unlock_range = cifs_unlock_range,
+ 	.push_mand_locks = cifs_push_mandatory_locks,
++	.dir_needs_close = cifs_dir_needs_close,
+ #ifdef CONFIG_CIFS_XATTR
+ 	.query_all_EAs = CIFSSMBQAllEAs,
+ 	.set_EA = CIFSSMBSetEA,
+--- a/fs/cifs/smb2maperror.c
++++ b/fs/cifs/smb2maperror.c
+@@ -214,7 +214,7 @@ static const struct status_to_posix_erro
+ 	{STATUS_BREAKPOINT, -EIO, "STATUS_BREAKPOINT"},
+ 	{STATUS_SINGLE_STEP, -EIO, "STATUS_SINGLE_STEP"},
+ 	{STATUS_BUFFER_OVERFLOW, -EIO, "STATUS_BUFFER_OVERFLOW"},
+-	{STATUS_NO_MORE_FILES, -EIO, "STATUS_NO_MORE_FILES"},
++	{STATUS_NO_MORE_FILES, -ENODATA, "STATUS_NO_MORE_FILES"},
+ 	{STATUS_WAKE_SYSTEM_DEBUGGER, -EIO, "STATUS_WAKE_SYSTEM_DEBUGGER"},
+ 	{STATUS_HANDLES_CLOSED, -EIO, "STATUS_HANDLES_CLOSED"},
+ 	{STATUS_NO_INHERITANCE, -EIO, "STATUS_NO_INHERITANCE"},
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -554,6 +554,12 @@ smb2_new_lease_key(struct cifs_fid *fid)
+ 	get_random_bytes(fid->lease_key, SMB2_LEASE_KEY_SIZE);
+ }
+ 
++static bool
++smb2_dir_needs_close(struct cifsFileInfo *cfile)
++{
++	return !cfile->invalidHandle;
++}
++
+ struct smb_version_operations smb21_operations = {
+ 	.compare_fids = smb2_compare_fids,
+ 	.setup_request = smb2_setup_request,
+@@ -618,6 +624,7 @@ struct smb_version_operations smb21_oper
+ 	.set_lease_key = smb2_set_lease_key,
+ 	.new_lease_key = smb2_new_lease_key,
+ 	.calc_signature = smb2_calc_signature,
++	.dir_needs_close = smb2_dir_needs_close,
+ };
+ 
+ 
+@@ -685,6 +692,7 @@ struct smb_version_operations smb30_oper
+ 	.set_lease_key = smb2_set_lease_key,
+ 	.new_lease_key = smb2_new_lease_key,
+ 	.calc_signature = smb3_calc_signature,
++	.dir_needs_close = smb2_dir_needs_close,
+ };
+ 
+ struct smb_version_values smb20_values = {
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -1800,6 +1800,10 @@ SMB2_query_directory(const unsigned int
+ 	rsp = (struct smb2_query_directory_rsp *)iov[0].iov_base;
+ 
+ 	if (rc) {
++		if (rc == -ENODATA && rsp->hdr.Status == STATUS_NO_MORE_FILES) {
++			srch_inf->endOfSearch = true;
++			rc = 0;
++		}
+ 		cifs_stats_fail_inc(tcon, SMB2_QUERY_DIRECTORY_HE);
+ 		goto qdir_exit;
+ 	}
+@@ -1837,11 +1841,6 @@ SMB2_query_directory(const unsigned int
+ 	else
+ 		cifs_dbg(VFS, "illegal search buffer type\n");
+ 
+-	if (rsp->hdr.Status == STATUS_NO_MORE_FILES)
+-		srch_inf->endOfSearch = 1;
+-	else
+-		srch_inf->endOfSearch = 0;
+-
+ 	return rc;
+ 
+ qdir_exit:
 
 
