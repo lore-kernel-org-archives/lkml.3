@@ -1,110 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619AbaJCBld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 21:41:33 -0400
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:37177 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751965AbaJCBlb (ORCPT
+	id S1752659AbaJCBnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 21:43:13 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:38929 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaJCBnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 21:41:31 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2110:2194:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3865:3867:3868:3870:3871:3872:3873:3874:4321:4605:5007:6119:7514:7652:7903:8603:9036:9108:10004:10400:10848:10967:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12740:13071:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: air83_4721e90ce414e
-X-Filterd-Recvd-Size: 3665
-Message-ID: <1412300487.3247.91.camel@joe-AO725>
-Subject: Re: [PATCH] Fixed all coding style issues for
- drivers/staging/media/lirc/
-From: Joe Perches <joe@perches.com>
-To: Antti Palosaari <crope@iki.fi>
-Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Amber Thrall <amber.rose.thrall@gmail.com>, jarod@wilsonet.com,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 02 Oct 2014 18:41:27 -0700
-In-Reply-To: <542DE6B5.1060906@iki.fi>
-References: <1412224802-28431-1-git-send-email-amber.rose.thrall@gmail.com>
-	 <20141002102938.2b762583@recife.lan> <1412268351.3247.68.camel@joe-AO725>
-	 <542DE6B5.1060906@iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 2 Oct 2014 21:43:11 -0400
+MIME-Version: 1.0
+Reply-To: rajatxjain@gmail.com
+In-Reply-To: <20141002063423.GA1405@katana>
+References: <542A3593.4020108@gmail.com>
+	<CAErSpo7BkXDHOZwHzwEu2BN3=39xFwQOyrjgVo6afWKMsnYT=A@mail.gmail.com>
+	<20140930211339.GA1264@katana>
+	<CAA93t1out+gJO29_0tn1zLJv_MUwJ458XKNT3Lo6WW+mH9XeRQ@mail.gmail.com>
+	<20141001072949.GA1322@katana>
+	<CAA93t1qjzAWQqkZQcJYFZxvuhy6o1N2gJ+j=AKgcqE=zup=BJw@mail.gmail.com>
+	<20141002063423.GA1405@katana>
+Date: Thu, 2 Oct 2014 18:43:10 -0700
+Message-ID: <CAA93t1p-gj4FzbpaVVzWzcFmZHooVcrr3+XLNv1YyYssScep4Q@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Driver for talking to PLX PEX8xxx PCIe switch over I2C
+From: Rajat Jain <rajatxjain@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiri Kosina <jkosina@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-i2c <linux-i2c@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 02:58 +0300, Antti Palosaari wrote:
-> On 10/02/2014 07:45 PM, Joe Perches wrote:
-> > On Thu, 2014-10-02 at 10:29 -0300, Mauro Carvalho Chehab wrote:
-> >> Em Wed, 01 Oct 2014 21:40:02 -0700 Amber Thrall <amber.rose.thrall@gmail.com> escreveu:
-> >>> Fixed various coding style issues, including strings over 80 characters long and many
-> >>> deprecated printk's have been replaced with proper methods.
-> > []
-> >>> diff --git a/drivers/staging/media/lirc/lirc_imon.c b/drivers/staging/media/lirc/lirc_imon.c
-> > []
-> >>> @@ -623,8 +623,8 @@ static void imon_incoming_packet(struct imon_context *context,
-> >>>   	if (debug) {
-> >>>   		dev_info(dev, "raw packet: ");
-> >>>   		for (i = 0; i < len; ++i)
-> >>> -			printk("%02x ", buf[i]);
-> >>> -		printk("\n");
-> >>> +			dev_info(dev, "%02x ", buf[i]);
-> >>> +		dev_info(dev, "\n");
-> >>>   	}
-> >>
-> >> This is wrong, as the second printk should be printk_cont.
-> >>
-> >> The best here would be to change all above to use %*ph.
-> >> So, just:
-> >>
-> >> 	dev_debug(dev, "raw packet: %*ph\n", len, buf);
-> >
-> > Not quite.
-> >
-> > %*ph is length limited and only useful for lengths < 30 or so.
-> > Even then, it's pretty ugly.
-> >
-> > print_hex_dump_debug() is generally better.
-> 
-> That is place where you print 8 debug bytes, which are received remote 
-> controller code. IMHO %*ph format is just what you like in that case.
+Hi Wolfram,
 
-Hi Antti.
+Thanks a lot for your review and comments. I understand and will
+update with those APIs and send out a V2.
 
-I stand by my statement as I only looked at the
-patch snippet itself, not any function real code.
+Thanks & Best Regards,
 
-In the actual code, there's a test above it:
+Rajat Jain
 
-	if (len != 8) {
-		dev_warn(dev, "imon %s: invalid incoming packet size (len = %d, intf%d)\n",
-			__func__, len, intf);
-		return;
-	}
-
-So in my opinion, this would be better/smaller as:
-
-	dev_dbg(dev, "raw packet: %8ph\n", urb->transfer_buffer);
-
-> Why print_hex_dump_debug() is better? IIRC it could not be even 
-> controlled like those dynamic debug printings.
-
-Nope, it is. (from printk.h)
-
-#if defined(CONFIG_DYNAMIC_DEBUG)
-#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,	\
-			     groupsize, buf, len, ascii)	\
-	dynamic_hex_dump(prefix_str, prefix_type, rowsize,	\
-			 groupsize, buf, len, ascii)
-#else
-#define print_hex_dump_debug(prefix_str, prefix_type, rowsize,		\
-			     groupsize, buf, len, ascii)		\
-	print_hex_dump(KERN_DEBUG, prefix_str, prefix_type, rowsize,	\
-		       groupsize, buf, len, ascii)
-#endif /* defined(CONFIG_DYNAMIC_DEBUG) */
-
-It prints multiple lines when the length is > 16.
-It prints the ascii along with the hex if desired.
-
-cheers, Joe
-
+On Wed, Oct 1, 2014 at 11:34 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>
+>> I understand and agree. In fact in the internal version of this driver
+>> (that I have not yet sent out for review), we do have APIs added
+>> similar to what you mention above. Currently I have APIs that:
+>> - Enable / Disable PCIe links.
+>> - Change the upstream port.
+>> - Enable / Disable Non-transparent mode etc.
+>
+> Now, that sounds better to me...
+>
+>> However, I did not send them all out for review because I don't have
+>> the hardware to try and test them out on ALL the supported devices
+>> (also would require considerable amount of time). I have tested those
+>> APIs on PEX8713 only, because for e.g.I only have PEX8713 in a HW that
+>> connects to 2 CPUs at the same time.
+>
+> That is a common problem to not have enough hardware to test. You could
+> ask on the PCI mailing list for testers. The solution usually lies in
+> showing the code rather than not showing the code.
+>
+>> the switch. Yes, I agree that we can have another layer of abstraction
+>> so that we have:
+>>
+>> - The Core logic code (that knows "How do we want the switch to behave")
+>> - A PEX8xxx driver (that knows "which registers to program")
+>> - A PEX8xxx I2C driver ("How to program those registers") - this driver.
+>>
+>> I do understand that your suggestion is to include and bundle the
+>> latter two into this same driver.
+>
+> It definately should be this way. Nobody else than the PEX8xxx driver
+> should be able to send I2C messeges to the device! And this is
+> absolutely standard, the logic how to talk to a device knows also how to
+> prepare the I2C messages. One reason where it could be factored out is
+> if there are multiple ways of transportation possible, like I2C or SPI.
+>
+>> However since the possibilities
+>> (about which APIs to provide) are too much and not enough hardware to
+>> test it, would it be acceptable if I include those APIs, but support
+>> them for only 1 device (and return error for others)?
+>
+> Start with what YOU need and show us (all of it). From there, we can
+> decide: do we start with one driver and factor out later, do we start
+> with a sub-subsystem right away, etc... And there is still the question
+> what APIs you provide, how they are implemented and if we really should
+> have them in-kernel. I think that question will be more interesting for
+> Bjorn because I don't really know much about switches in the PCI world.
+>
+>> with those APIs, I feel exposing the Read/Write APIs will be useful -
+>> because what core logic wants to achieve can be highly device and
+>> platform specific.
+>
+> That could also be solved by fixup-callbacks, but we'd need to see the
+> core to tell, really.
+>
+>> Also, a sysfs interface for this switch is proving
+>> to be a very helpful development aid :-) (personal experience :-))
+>
+> Sure, but such development aids don't need to be upstream. Especially if
+> they create ABI such as sysfs-entries.
+>
+> Thanks and regards,
+>
+>    Wolfram
