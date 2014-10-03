@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaJCWyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:54:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
+	id S932605AbaJCWYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:24:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932608AbaJCWYF (ORCPT
+	with ESMTP id S932393AbaJCWXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:05 -0400
+	Fri, 3 Oct 2014 18:23:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lei Liu <liu.lei78@zte.com.cn>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 045/143] Revert "USB: option,zte_ev: move most ZTE CDMA devices to zte_ev"
-Date: Fri,  3 Oct 2014 14:34:00 -0700
-Message-Id: <20141003213315.837275032@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.10 008/143] drm/ttm: Fix possible division by 0 in ttm_dma_pool_shrink_scan().
+Date: Fri,  3 Oct 2014 14:33:23 -0700
+Message-Id: <20141003213314.729682018@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,140 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 63a901c06e3c2c45bd601916fe04e870e9ccae1e upstream.
+commit 11e504cc705e8ccb06ac93a276e11b5e8fee4d40 upstream.
 
-This reverts commit 73228a0538a7 ("USB: option,zte_ev: move most ZTE
-CDMA devices to zte_ev").
+list_empty(&_manager->pools) being false before taking _manager->lock
+does not guarantee that _manager->npools != 0 after taking _manager->lock
+because _manager->npools is updated under _manager->lock.
 
-Move the IDs of the devices that were previously driven by the option
-driver back to that driver.
-
-As several users have reported, the zte_ev driver is causing random
-disconnects as well as reconnect failures.
-
-A closer analysis of the zte_ev setup code reveals that it consists of
-standard CDC requests (SET/GET_LINE_CODING and SET_CONTROL_LINE_STATE)
-but unfortunately fails to get some of those right. In particular, as
-reported by Liu Lei, it fails to lower DTR/RTS on close. It also appears
-that the control requests lack the interface argument.
-
-Note that the zte_ev driver is based on code (once) distributed by ZTE
-that still appears to originally have been reverse-engineered and bolted
-onto the generic driver.
-
-Since line control is already handled properly by the option driver, and
-the SET/GET_LINE_CODING requests appears to be redundant (amounts to a
-SET 9600 8N1), this is a first step in ultimately removing the redundant
-zte_ev driver.
-
-Note that AC2726 had already been moved back to option, and that some
-IDs were in the device table of both drivers prior to the commit being
-reverted.
-
-Reported-by: Lei Liu <liu.lei78@zte.com.cn>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |   24 +++++++++++++++++++++---
- drivers/usb/serial/zte_ev.c |   18 ------------------
- 2 files changed, 21 insertions(+), 21 deletions(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -275,8 +275,12 @@ static void option_instat_callback(struc
- #define ZTE_PRODUCT_MF622			0x0001
- #define ZTE_PRODUCT_MF628			0x0015
- #define ZTE_PRODUCT_MF626			0x0031
--#define ZTE_PRODUCT_MC2718			0xffe8
- #define ZTE_PRODUCT_AC2726			0xfff1
-+#define ZTE_PRODUCT_CDMA_TECH			0xfffe
-+#define ZTE_PRODUCT_AC8710T			0xffff
-+#define ZTE_PRODUCT_MC2718			0xffe8
-+#define ZTE_PRODUCT_AD3812			0xffeb
-+#define ZTE_PRODUCT_MC2716			0xffed
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1016,6 +1016,8 @@ static int ttm_dma_pool_mm_shrink(struct
+ 		return 0;
  
- #define BENQ_VENDOR_ID				0x04a5
- #define BENQ_PRODUCT_H10			0x4068
-@@ -531,10 +535,18 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_ad3812_z_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1) | BIT(2),
-+};
-+
- static const struct option_blacklist_info zte_mc2718_z_blacklist = {
- 	.sendsetup = BIT(1) | BIT(2) | BIT(3) | BIT(4),
- };
- 
-+static const struct option_blacklist_info zte_mc2716_z_blacklist = {
-+	.sendsetup = BIT(1) | BIT(2) | BIT(3),
-+};
-+
- static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
-@@ -1074,6 +1086,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_INTERFACE_CLASS(BANDRICH_VENDOR_ID, BANDRICH_PRODUCT_1012, 0xff) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC650) },
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
-@@ -1548,13 +1561,18 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
- 
--	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
- 	 .driver_info = (kernel_ulong_t)&zte_mc2718_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AD3812, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
-+	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
- 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
- 
- 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
- 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
---- a/drivers/usb/serial/zte_ev.c
-+++ b/drivers/usb/serial/zte_ev.c
-@@ -273,27 +273,9 @@ static void zte_ev_usb_serial_close(stru
- }
- 
- static const struct usb_device_id id_table[] = {
--	/* AC8710, AC8710T */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffff, 0xff, 0xff, 0xff) },
--	 /* AC8700 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfffe, 0xff, 0xff, 0xff) },
- 	/* MG880 */
- 	{ USB_DEVICE(0x19d2, 0xfffd) },
--	{ USB_DEVICE(0x19d2, 0xfffc) },
--	{ USB_DEVICE(0x19d2, 0xfffb) },
--	/* AC8710_V3 */
--	{ USB_DEVICE(0x19d2, 0xfff6) },
--	{ USB_DEVICE(0x19d2, 0xfff7) },
--	{ USB_DEVICE(0x19d2, 0xfff8) },
--	{ USB_DEVICE(0x19d2, 0xfff9) },
--	{ USB_DEVICE(0x19d2, 0xffee) },
--	/* AC2716, MC2716 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffed, 0xff, 0xff, 0xff) },
--	/* AD3812 */
--	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffeb, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE(0x19d2, 0xffec) },
- 	{ USB_DEVICE(0x05C6, 0x3197) },
--	{ USB_DEVICE(0x05C6, 0x6000) },
- 	{ USB_DEVICE(0x05C6, 0x9008) },
- 	{ },
- };
+ 	mutex_lock(&_manager->lock);
++	if (!_manager->npools)
++		goto out;
+ 	pool_offset = pool_offset % _manager->npools;
+ 	list_for_each_entry(p, &_manager->pools, pools) {
+ 		unsigned nr_free;
+@@ -1033,6 +1035,7 @@ static int ttm_dma_pool_mm_shrink(struct
+ 			 p->pool->dev_name, p->pool->name, current->pid,
+ 			 nr_free, shrink_pages);
+ 	}
++out:
+ 	mutex_unlock(&_manager->lock);
+ 	/* return estimated number of unused pages in pool */
+ 	return ttm_dma_pool_get_num_unused_pages();
 
 
