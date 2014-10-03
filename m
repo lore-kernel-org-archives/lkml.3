@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738AbaJCWmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:42:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
+	id S932637AbaJCWYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:24:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641AbaJCWYT (ORCPT
+	with ESMTP id S932287AbaJCWYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:19 -0400
+	Fri, 3 Oct 2014 18:24:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Ciocca <denis.ciocca@st.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.10 084/143] iio:magnetometer: bugfix magnetometers gain values
-Date: Fri,  3 Oct 2014 14:34:39 -0700
-Message-Id: <20141003213317.030761308@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        linux-mips@linux-mips.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.10 069/143] MIPS: mcount: Adjust stack pointer for static trace in MIPS32
+Date: Fri,  3 Oct 2014 14:34:24 -0700
+Message-Id: <20141003213316.586033870@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,102 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis CIOCCA <denis.ciocca@st.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
+commit 8a574cfa2652545eb95595d38ac2a0bb501af0ae upstream.
 
-This patch fix gains values. The first driver was designed using
-engineering samples, in mass production the values are changed.
+Every mcount() call in the MIPS 32-bit kernel is done as follows:
 
-Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+[...]
+move at, ra
+jal _mcount
+addiu sp, sp, -8
+[...]
+
+but upon returning from the mcount() function, the stack pointer
+is not adjusted properly. This is explained in details in 58b69401c797
+(MIPS: Function tracer: Fix broken function tracing).
+
+Commit ad8c396936e3 ("MIPS: Unbreak function tracer for 64-bit kernel.)
+fixed the stack manipulation for 64-bit but it didn't fix it completely
+for MIPS32.
+
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7792/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iio/magnetometer/st_magn_core.c |   52 ++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 22 deletions(-)
+ arch/mips/kernel/mcount.S |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/iio/magnetometer/st_magn_core.c
-+++ b/drivers/iio/magnetometer/st_magn_core.c
-@@ -40,7 +40,8 @@
- #define ST_MAGN_FS_AVL_5600MG			5600
- #define ST_MAGN_FS_AVL_8000MG			8000
- #define ST_MAGN_FS_AVL_8100MG			8100
--#define ST_MAGN_FS_AVL_10000MG			10000
-+#define ST_MAGN_FS_AVL_12000MG			12000
-+#define ST_MAGN_FS_AVL_16000MG			16000
+--- a/arch/mips/kernel/mcount.S
++++ b/arch/mips/kernel/mcount.S
+@@ -123,7 +123,11 @@ NESTED(_mcount, PT_SIZE, ra)
+ 	 nop
+ #endif
+ 	b	ftrace_stub
++#ifdef CONFIG_32BIT
++	 addiu sp, sp, 8
++#else
+ 	 nop
++#endif
  
- /* CUSTOM VALUES FOR SENSOR 1 */
- #define ST_MAGN_1_WAI_EXP			0x3c
-@@ -67,20 +68,20 @@
- #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
- #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
- #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
--#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
--#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
--#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
--#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
--#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
--#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
--#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
--#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
--#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
--#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
--#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
--#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
--#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
--#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
-+#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
-+#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
-+#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
-+#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
-+#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
-+#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
-+#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
- #define ST_MAGN_1_MULTIREAD_BIT			false
+ static_trace:
+ 	MCOUNT_SAVE_REGS
+@@ -133,6 +137,9 @@ static_trace:
+ 	 move	a1, AT		/* arg2: parent's return address */
  
- /* CUSTOM VALUES FOR SENSOR 2 */
-@@ -103,10 +104,12 @@
- #define ST_MAGN_2_FS_MASK			0x60
- #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
- #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
--#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
--#define ST_MAGN_2_FS_AVL_4000_GAIN		430
--#define ST_MAGN_2_FS_AVL_8000_GAIN		230
--#define ST_MAGN_2_FS_AVL_10000_GAIN		230
-+#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
-+#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
-+#define ST_MAGN_2_FS_AVL_4000_GAIN		146
-+#define ST_MAGN_2_FS_AVL_8000_GAIN		292
-+#define ST_MAGN_2_FS_AVL_12000_GAIN		438
-+#define ST_MAGN_2_FS_AVL_16000_GAIN		584
- #define ST_MAGN_2_MULTIREAD_BIT			false
- #define ST_MAGN_2_OUT_X_L_ADDR			0x28
- #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
-@@ -252,9 +255,14 @@ static const struct st_sensors st_magn_s
- 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
- 				},
- 				[2] = {
--					.num = ST_MAGN_FS_AVL_10000MG,
--					.value = ST_MAGN_2_FS_AVL_10000_VAL,
--					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
-+					.num = ST_MAGN_FS_AVL_12000MG,
-+					.value = ST_MAGN_2_FS_AVL_12000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
-+				},
-+				[3] = {
-+					.num = ST_MAGN_FS_AVL_16000MG,
-+					.value = ST_MAGN_2_FS_AVL_16000_VAL,
-+					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
- 				},
- 			},
- 		},
+ 	MCOUNT_RESTORE_REGS
++#ifdef CONFIG_32BIT
++	addiu sp, sp, 8
++#endif
+ 	.globl ftrace_stub
+ ftrace_stub:
+ 	RETURN_BACK
+@@ -181,6 +188,11 @@ NESTED(ftrace_graph_caller, PT_SIZE, ra)
+ 	jal	prepare_ftrace_return
+ 	 nop
+ 	MCOUNT_RESTORE_REGS
++#ifndef CONFIG_DYNAMIC_FTRACE
++#ifdef CONFIG_32BIT
++	addiu sp, sp, 8
++#endif
++#endif
+ 	RETURN_BACK
+ 	END(ftrace_graph_caller)
+ 
 
 
