@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357AbaJCW65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:58:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
+	id S1759322AbaJCW6u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:58:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573AbaJCWX7 (ORCPT
+	with ESMTP id S932391AbaJCWYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:59 -0400
+	Fri, 3 Oct 2014 18:24:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.10 016/143] arm64: flush TLS registers during exec
-Date: Fri,  3 Oct 2014 14:33:31 -0700
-Message-Id: <20141003213314.976356280@linuxfoundation.org>
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 046/143] USB: zte_ev: remove duplicate Gobi PID
+Date: Fri,  3 Oct 2014 14:34:01 -0700
+Message-Id: <20141003213315.865419612@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,79 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
+commit 95be5739588c56a9327e477aa0ba3c81c5cf8631 upstream.
 
-Nathan reports that we leak TLS information from the parent context
-during an exec, as we don't clear the TLS registers when flushing the
-thread state.
+Remove dublicate Gobi PID 0x9008 which is already handled by the
+qcserial driver since commit f05932c0caf4 ("USB: qcserial: Add extra
+device IDs").
 
-This patch updates the flushing code so that we:
-
-  (1) Unconditionally zero the tpidr_el0 register (since this is fully
-      context switched for native tasks and zeroed for compat tasks)
-
-  (2) Zero the tp_value state in thread_info before clearing the
-      tpidrr0_el0 register for compat tasks (since this is only writable
-      by the set_tls compat syscall and therefore not fully switched).
-
-A missing compiler barrier is also added to the compat set_tls syscall.
-
-Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/process.c    |   18 ++++++++++++++++++
- arch/arm64/kernel/sys_compat.c |    6 ++++++
- 2 files changed, 24 insertions(+)
+ drivers/usb/serial/zte_ev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -172,9 +172,27 @@ void exit_thread(void)
- {
- }
- 
-+static void tls_thread_flush(void)
-+{
-+	asm ("msr tpidr_el0, xzr");
-+
-+	if (is_compat_task()) {
-+		current->thread.tp_value = 0;
-+
-+		/*
-+		 * We need to ensure ordering between the shadow state and the
-+		 * hardware state, so that we don't corrupt the hardware state
-+		 * with a stale shadow state during context switch.
-+		 */
-+		barrier();
-+		asm ("msr tpidrro_el0, xzr");
-+	}
-+}
-+
- void flush_thread(void)
- {
- 	fpsimd_flush_thread();
-+	tls_thread_flush();
- 	flush_ptrace_hw_breakpoint(current);
- }
- 
---- a/arch/arm64/kernel/sys_compat.c
-+++ b/arch/arm64/kernel/sys_compat.c
-@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *
- 
- 	case __ARM_NR_compat_set_tls:
- 		current->thread.tp_value = regs->regs[0];
-+
-+		/*
-+		 * Protect against register corruption from context switch.
-+		 * See comment in tls_thread_flush.
-+		 */
-+		barrier();
- 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
- 		return 0;
- 
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -276,7 +276,6 @@ static const struct usb_device_id id_tab
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+ 	{ USB_DEVICE(0x05C6, 0x3197) },
+-	{ USB_DEVICE(0x05C6, 0x9008) },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
