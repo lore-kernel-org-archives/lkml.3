@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814AbaJCW0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:26:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47567 "EHLO
+	id S1757122AbaJCW0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:26:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756979AbaJCW0e (ORCPT
+	with ESMTP id S1755446AbaJCW0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:26:34 -0400
+	Fri, 3 Oct 2014 18:26:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Gartrell <agartrell@fb.com>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>
-Subject: [PATCH 3.10 129/143] ipvs: Maintain all DSCP and ECN bits for ipv6 tun forwarding
-Date: Fri,  3 Oct 2014 14:35:24 -0700
-Message-Id: <20141003213318.354416785@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 102/143] ata_piix: Add Device IDs for Intel 9 Series PCH
+Date: Fri,  3 Oct 2014 14:34:57 -0700
+Message-Id: <20141003213317.552929863@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,34 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Gartrell <agartrell@fb.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 76f084bc10004b3050b2cff9cfac29148f1f6088 upstream.
+commit 6cad1376954e591c3c41500c4e586e183e7ffe6d upstream.
 
-Previously, only the four high bits of the tclass were maintained in the
-ipv6 case.  This matches the behavior of ipv4, though whether or not we
-should reflect ECN bits may be up for debate.
+This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
 
-Signed-off-by: Alex Gartrell <agartrell@fb.com>
-Acked-by: Julian Anastasov <ja@ssi.bg>
-Signed-off-by: Simon Horman <horms@verge.net.au>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/netfilter/ipvs/ip_vs_xmit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/net/netfilter/ipvs/ip_vs_xmit.c
-+++ b/net/netfilter/ipvs/ip_vs_xmit.c
-@@ -967,8 +967,8 @@ ip_vs_tunnel_xmit_v6(struct sk_buff *skb
- 	iph->nexthdr		=	IPPROTO_IPV6;
- 	iph->payload_len	=	old_iph->payload_len;
- 	be16_add_cpu(&iph->payload_len, sizeof(*old_iph));
--	iph->priority		=	old_iph->priority;
- 	memset(&iph->flow_lbl, 0, sizeof(iph->flow_lbl));
-+	ipv6_change_dsfield(iph, 0, ipv6_get_dsfield(old_iph));
- 	iph->daddr = cp->daddr.in6;
- 	iph->saddr = saddr;
- 	iph->hop_limit		=	old_iph->hop_limit;
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -340,6 +340,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	/* SATA Controller IDE (Coleto Creek) */
+ 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 
+ 	{ }	/* terminate list */
+ };
 
 
