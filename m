@@ -1,40 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaJCQIx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:08:53 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:38388 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489AbaJCQIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:08:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141002195253.GU5015@linux.vnet.ibm.com>
-References: <1411140752-27028-1-git-send-email-bobby.prani@gmail.com>
- <1411140752-27028-3-git-send-email-bobby.prani@gmail.com> <20141002195253.GU5015@linux.vnet.ibm.com>
-From: Pranith Kumar <bobby.prani@gmail.com>
-Date: Fri, 3 Oct 2014 12:08:19 -0400
-Message-ID: <CAJhHMCCmjQidUxNbArPepk41Tq+-X+UfnmWqodjh+ze12buVRQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] doc: Document RCU self test boot params
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753331AbaJCQPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:15:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52029 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489AbaJCQPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:15:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="395172428"
+From: kan.liang@intel.com
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V7 0/4] perf tools: pmu event new style format fix
+Date: Fri,  3 Oct 2014 12:09:04 -0400
+Message-Id: <1412352548-7603-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 3:52 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Fri, Sep 19, 2014 at 11:32:30AM -0400, Pranith Kumar wrote:
->> Document the RCU self test boot parameters in kernel-parameters.txt.
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->
-> I have this one queued, please let me know if this is an update.
->
+From: Kan Liang <kan.liang@intel.com>
 
-Hi Paul, this is the same one you have queued. Thanks!
+There are two types of pmu event stytle formats, "pmu_event_name"
+or "cpu/pmu_event_name/". However, there is a bug on supporting these
+two formats, especially when they mixed with other perf events.
+The patch set intends to fix this issue.
+
+The patch set has been tested on my haswell.
+Here is the test script I used for this issue.
+(Note: please make sure that your test system support TSX and
+L1-dcache-loads events. Otherwise, you may want to change the events
+to other pmu events.)
+
+[lk@localhost ~]$ cat perf_style_test.sh
+#hardware events + kernel pmu event with different style
+perf stat -x, -e cycles,mem-stores,tx-start sleep 2
+perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
+perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
+perf stat -x, -e instructions,cpu/tx-start/ sleep 2
+perf stat -x, -e '{cycles,tx-start}' sleep 2
+perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
+
+#HW Cache event + kernel pmu event with different style
+perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
+perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
+perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
+perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
+
+#Raw event + kernel pmu event with different style:
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
+perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
+
+Changes since V1:
+Read kernel PMU events from sysfs at runtime
+
+Changes since V2:
+Use strlcpy to replace strncpy
+
+Changes since V3:
+rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+
+Changes since V4:
+scan kernel pmu events from sysfs only needed
+rename the init/check/clenup functions and related struct.
+allocate each symbol string separatelly
+Use ALLOC_LIST
+
+Changes since V5:
+Using perf_pmu__find to instead of perf_pmu__scan
+Don't scan all the time if the system doesn't support kernel pmu events
+
+Changes since V6:
+Add test case in automated tests suite
+Use strdup and macro to refine the code
+Add sep_dc for PMU event to support PE_MODIFIER_EVENT
+Some minor changes for code style
+
+Kan Liang (4):
+  Revert "perf tools: Default to cpu// for events v5"
+  perf tools: parse the pmu event prefix and suffix
+  perf tools: Add support to new style format of kernel PMU event
+  perf tools: Add test case for pmu event new style format
+
+ tools/perf/tests/parse-events.c        |  36 +++++++++
+ tools/perf/util/include/linux/string.h |   1 -
+ tools/perf/util/parse-events.c         | 131 +++++++++++++++++++++++++++------
+ tools/perf/util/parse-events.h         |  14 ++++
+ tools/perf/util/parse-events.l         |  30 +++++++-
+ tools/perf/util/parse-events.y         |  40 ++++++++++
+ tools/perf/util/pmu.c                  |  10 ---
+ tools/perf/util/pmu.h                  |  10 +++
+ tools/perf/util/string.c               |  24 ------
+ 9 files changed, 238 insertions(+), 58 deletions(-)
 
 -- 
-Pranith
+1.8.3.2
+
