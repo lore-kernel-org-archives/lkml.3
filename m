@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaJCP6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:58:07 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35191 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105AbaJCPz6 (ORCPT
+	id S1754495AbaJCP6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:58:04 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54499 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107AbaJCPz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 11:55:58 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -13,18 +13,18 @@ Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Antoine Tenart <antoine.tenart@free-electrons.com>,
         linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] mmc: sdhci-pxav3: Remove checks for mandatory host clock
-Date: Fri,  3 Oct 2014 17:55:40 +0200
-Message-Id: <1412351747-4188-6-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 07/12] mmc: sdhci-pxav3: Try to get named I/O clock first
+Date: Fri,  3 Oct 2014 17:55:42 +0200
+Message-Id: <1412351747-4188-8-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NULL-checking a struct clk it not only wrong but also not required as
-for PXAv3 driver the corresponding clock is mandatory. Remove the
-checks from sdhci_pxav3_runtime_{suspend,resume}.
+With support for more than one clock, we'll need to distinguish between
+the clock by name. Change clock probing to first try to get "io" clock
+before falling back to unnamed clock.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -35,49 +35,24 @@ Cc: linux-mmc@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/mmc/host/sdhci-pxav3.c | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ drivers/mmc/host/sdhci-pxav3.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-index d1f63d32b2cd..e52bbbb09d88 100644
+index a34a589670e6..3dfd97977515 100644
 --- a/drivers/mmc/host/sdhci-pxav3.c
 +++ b/drivers/mmc/host/sdhci-pxav3.c
-@@ -448,13 +448,11 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
- 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
- 	unsigned long flags;
+@@ -309,7 +309,9 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+ 	pltfm_host = sdhci_priv(host);
+ 	pltfm_host->priv = pxa;
  
--	if (pltfm_host->clk) {
--		spin_lock_irqsave(&host->lock, flags);
--		host->runtime_suspended = true;
--		spin_unlock_irqrestore(&host->lock, flags);
-+	spin_lock_irqsave(&host->lock, flags);
-+	host->runtime_suspended = true;
-+	spin_unlock_irqrestore(&host->lock, flags);
- 
--		clk_disable_unprepare(pltfm_host->clk);
--	}
-+	clk_disable_unprepare(pltfm_host->clk);
- 
- 	return 0;
- }
-@@ -465,13 +463,11 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
- 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
- 	unsigned long flags;
- 
--	if (pltfm_host->clk) {
--		clk_prepare_enable(pltfm_host->clk);
-+	clk_prepare_enable(pltfm_host->clk);
- 
--		spin_lock_irqsave(&host->lock, flags);
--		host->runtime_suspended = false;
--		spin_unlock_irqrestore(&host->lock, flags);
--	}
-+	spin_lock_irqsave(&host->lock, flags);
-+	host->runtime_suspended = false;
-+	spin_unlock_irqrestore(&host->lock, flags);
- 
- 	return 0;
- }
+-	pxa->clk_io = devm_clk_get(dev, NULL);
++	pxa->clk_io = devm_clk_get(dev, "io");
++	if (IS_ERR(pxa->clk_io))
++		pxa->clk_io = devm_clk_get(dev, NULL);
+ 	if (IS_ERR(pxa->clk_io)) {
+ 		dev_err(dev, "failed to get io clock\n");
+ 		ret = PTR_ERR(pxa->clk_io);
 -- 
 2.1.1
 
