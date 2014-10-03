@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580AbaJCXA3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:00:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47291 "EHLO
+	id S1759402AbaJCXAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:00:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238AbaJCWX5 (ORCPT
+	with ESMTP id S932568AbaJCWX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:57 -0400
+	Fri, 3 Oct 2014 18:23:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Lau <kafai@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 019/143] trace: Fix epoll hang when we race with new entries
-Date: Fri,  3 Oct 2014 14:33:34 -0700
-Message-Id: <20141003213315.062520983@linuxfoundation.org>
+        Adam Richter <adam_richter2004@yahoo.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 023/143] ALSA: hda - Fix invalid pin powermap without jack detection
+Date: Fri,  3 Oct 2014 14:33:38 -0700
+Message-Id: <20141003213315.183088766@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,56 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 4ce97dbf50245227add17c83d87dc838e7ca79d0 upstream.
+commit 7a9744cb455e6faa287e148394b4b422a6f3c5c4 upstream.
 
-Epoll on trace_pipe can sometimes hang in a weird case.  If the ring buffer is
-empty when we set waiters_pending but an event shows up exactly at that moment
-we can miss being woken up by the ring buffers irq work.  Since
-ring_buffer_empty() is inherently racey we will sometimes think that the buffer
-is not empty.  So we don't get woken up and we don't think there are any events
-even though there were some ready when we added the watch, which makes us hang.
-This patch fixes this by making sure that we are actually on the wait list
-before we set waiters_pending, and add a memory barrier to make sure
-ring_buffer_empty() is going to be correct.
+When a driver is set up without the jack detection explicitly (either
+by passing a model option or via a specific fixup), the pin powermap
+of IDT/STAC codecs is set up wrongly, resulting in the silence
+output.  It's because of a logic failure in stac_init_power_map().
+It tries to avoid creating a callback for the pins that have other
+auto-hp and auto-mic callbacks, but the check is done in a wrong way
+at a wrong time.  The stac_init_power_map() should be called after
+creating other jack detection ctls, and the jack callback should be
+created only for jack-detectable widgets.
 
-Link: http://lkml.kernel.org/p/1408989581-23727-1-git-send-email-jbacik@fb.com
+This patch fixes the check in stac_init_power_map() and its callee
+at the right place, after snd_hda_gen_build_controls().
 
-Cc: Martin Lau <kafai@fb.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Adam Richter <adam_richter2004@yahoo.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ring_buffer.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -626,8 +626,22 @@ int ring_buffer_poll_wait(struct ring_bu
- 		work = &cpu_buffer->irq_work;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -539,8 +539,8 @@ static void stac_init_power_map(struct h
+ 		if (snd_hda_jack_tbl_get(codec, nid))
+ 			continue;
+ 		if (def_conf == AC_JACK_PORT_COMPLEX &&
+-		    !(spec->vref_mute_led_nid == nid ||
+-		      is_jack_detectable(codec, nid))) {
++		    spec->vref_mute_led_nid != nid &&
++		    is_jack_detectable(codec, nid)) {
+ 			snd_hda_jack_detect_enable_callback(codec, nid,
+ 							    STAC_PWR_EVENT,
+ 							    jack_update_power);
+@@ -3647,11 +3647,18 @@ static int stac_parse_auto_config(struct
+ 			return err;
  	}
  
--	work->waiters_pending = true;
- 	poll_wait(filp, &work->waiters, poll_table);
-+	work->waiters_pending = true;
-+	/*
-+	 * There's a tight race between setting the waiters_pending and
-+	 * checking if the ring buffer is empty.  Once the waiters_pending bit
-+	 * is set, the next event will wake the task up, but we can get stuck
-+	 * if there's only a single event in.
-+	 *
-+	 * FIXME: Ideally, we need a memory barrier on the writer side as well,
-+	 * but adding a memory barrier to all events will cause too much of a
-+	 * performance hit in the fast path.  We only need a memory barrier when
-+	 * the buffer goes from empty to having content.  But as this race is
-+	 * extremely small, and it's not a problem if another event comes in, we
-+	 * will fix it later.
-+	 */
-+	smp_mb();
+-	stac_init_power_map(codec);
+-
+ 	return 0;
+ }
  
- 	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
- 	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
++static int stac_build_controls(struct hda_codec *codec)
++{
++	int err = snd_hda_gen_build_controls(codec);
++
++	if (err < 0)
++		return err;
++	stac_init_power_map(codec);
++	return 0;
++}
+ 
+ static int stac_init(struct hda_codec *codec)
+ {
+@@ -3794,7 +3801,7 @@ static void stac_set_power_state(struct
+ #endif /* CONFIG_PM */
+ 
+ static const struct hda_codec_ops stac_patch_ops = {
+-	.build_controls = snd_hda_gen_build_controls,
++	.build_controls = stac_build_controls,
+ 	.build_pcms = snd_hda_gen_build_pcms,
+ 	.init = stac_init,
+ 	.free = stac_free,
 
 
