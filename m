@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934081AbaJDAo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:44:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44902 "EHLO
+	id S934064AbaJDAo1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:44:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022AbaJCVcs (ORCPT
+	with ESMTP id S1755023AbaJCVcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.16 040/357] arm64: flush TLS registers during exec
-Date: Fri,  3 Oct 2014 14:27:06 -0700
-Message-Id: <20141003212934.667924737@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Thierry Reding <thierry.reding@gmail.com>
+Subject: [PATCH 3.16 033/357] pwm: Fix period and polarity in pwm_get() for non-perfect matches
+Date: Fri,  3 Oct 2014 14:26:59 -0700
+Message-Id: <20141003212934.464999120@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,79 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
+commit d717ea73e36dd5659640fae82605ad85c4117f4d upstream.
 
-Nathan reports that we leak TLS information from the parent context
-during an exec, as we don't clear the TLS registers when flushing the
-thread state.
+If pwm_get() finds a look-up entry with a perfect match (both dev_id and
+con_id match), the loop is aborted, and "p" still points to the correct
+struct pwm_lookup.
 
-This patch updates the flushing code so that we:
+If only an entry with a matching dev_id or con_id is found, the loop
+terminates after traversing the whole list, and "p" now points to
+arbitrary memory, not part of the pwm_lookup list.
+Then pwm_set_period() and pwm_set_polarity() will set random values for
+period resp. polarity.
 
-  (1) Unconditionally zero the tpidr_el0 register (since this is fully
-      context switched for native tasks and zeroed for compat tasks)
+To fix this, save period and polarity when finding a new best match,
+just like is done for chip (for the provider) and index.
 
-  (2) Zero the tp_value state in thread_info before clearing the
-      tpidrr0_el0 register for compat tasks (since this is only writable
-      by the set_tls compat syscall and therefore not fully switched).
+This fixes the LCD backlight on r8a7740/armadillo-legacy, which was fed
+period 0 and polarity -1068821144 instead of 33333 resp. 1.
 
-A missing compiler barrier is also added to the compat set_tls syscall.
-
-Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Fixes: 3796ce1d4d4b ("pwm: add period and polarity to struct pwm_lookup")
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/process.c    |   18 ++++++++++++++++++
- arch/arm64/kernel/sys_compat.c |    6 ++++++
- 2 files changed, 24 insertions(+)
+ drivers/pwm/core.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -224,9 +224,27 @@ void exit_thread(void)
- {
- }
+--- a/drivers/pwm/core.c
++++ b/drivers/pwm/core.c
+@@ -606,6 +606,8 @@ struct pwm_device *pwm_get(struct device
+ 	unsigned int best = 0;
+ 	struct pwm_lookup *p;
+ 	unsigned int match;
++	unsigned int period;
++	enum pwm_polarity polarity;
  
-+static void tls_thread_flush(void)
-+{
-+	asm ("msr tpidr_el0, xzr");
-+
-+	if (is_compat_task()) {
-+		current->thread.tp_value = 0;
-+
-+		/*
-+		 * We need to ensure ordering between the shadow state and the
-+		 * hardware state, so that we don't corrupt the hardware state
-+		 * with a stale shadow state during context switch.
-+		 */
-+		barrier();
-+		asm ("msr tpidrro_el0, xzr");
-+	}
-+}
-+
- void flush_thread(void)
- {
- 	fpsimd_flush_thread();
-+	tls_thread_flush();
- 	flush_ptrace_hw_breakpoint(current);
- }
+ 	/* look up via DT first */
+ 	if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
+@@ -653,6 +655,8 @@ struct pwm_device *pwm_get(struct device
+ 		if (match > best) {
+ 			chip = pwmchip_find_by_name(p->provider);
+ 			index = p->index;
++			period = p->period;
++			polarity = p->polarity;
  
---- a/arch/arm64/kernel/sys_compat.c
-+++ b/arch/arm64/kernel/sys_compat.c
-@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *
+ 			if (match != 3)
+ 				best = match;
+@@ -668,8 +672,8 @@ struct pwm_device *pwm_get(struct device
+ 	if (IS_ERR(pwm))
+ 		return pwm;
  
- 	case __ARM_NR_compat_set_tls:
- 		current->thread.tp_value = regs->regs[0];
-+
-+		/*
-+		 * Protect against register corruption from context switch.
-+		 * See comment in tls_thread_flush.
-+		 */
-+		barrier();
- 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
- 		return 0;
+-	pwm_set_period(pwm, p->period);
+-	pwm_set_polarity(pwm, p->polarity);
++	pwm_set_period(pwm, period);
++	pwm_set_polarity(pwm, polarity);
  
+ 
+ 	return pwm;
 
 
