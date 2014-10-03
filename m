@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934AbaJCXSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:18:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46760 "EHLO
+	id S932949AbaJCXSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:18:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757849AbaJCWNt (ORCPT
+	with ESMTP id S1757844AbaJCWNt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:13:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Honggang Li <enjoymindful@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.14 169/238] percpu: free percpu allocation info for uniprocessor system
-Date: Fri,  3 Oct 2014 14:31:24 -0700
-Message-Id: <20141003212919.082746336@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 168/238] ata_piix: Add Device IDs for Intel 9 Series PCH
+Date: Fri,  3 Oct 2014 14:31:23 -0700
+Message-Id: <20141003212919.045976006@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,32 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Honggang Li <enjoymindful@gmail.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 3189eddbcafcc4d827f7f19facbeddec4424eba8 upstream.
+commit 6cad1376954e591c3c41500c4e586e183e7ffe6d upstream.
 
-Currently, only SMP system free the percpu allocation info.
-Uniprocessor system should free it too. For example, one x86 UML
-virtual machine with 256MB memory, UML kernel wastes one page memory.
+This patch adds the IDE mode SATA Device IDs for the Intel 9 Series PCH.
 
-Signed-off-by: Honggang Li <enjoymindful@gmail.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1917,6 +1917,8 @@ void __init setup_per_cpu_areas(void)
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -340,6 +340,14 @@ static const struct pci_device_id piix_p
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	/* SATA Controller IDE (Coleto Creek) */
+ 	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c88, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c89, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c80, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
++	/* SATA Controller IDE (9 Series) */
++	{ 0x8086, 0x8c81, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
  
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
-+
-+	pcpu_free_alloc_info(ai);
- }
- 
- #endif	/* CONFIG_SMP */
+ 	{ }	/* terminate list */
+ };
 
 
