@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649AbaJCNGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 09:06:05 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64021 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751663AbaJCNGE (ORCPT
+	id S1752787AbaJCNHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 09:07:07 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42363 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaJCNHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 09:06:04 -0400
-Date: Fri, 3 Oct 2014 14:05:59 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-Message-ID: <20141003130559.GJ26643@leverpostej>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
- <20141003122736.GH26643@leverpostej>
- <542E9E9B.4090307@roeck-us.net>
+	Fri, 3 Oct 2014 09:07:04 -0400
+Message-ID: <542E9F75.6070407@6wind.com>
+Date: Fri, 03 Oct 2014 15:07:01 +0200
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reply-To: nicolas.dichtel@6wind.com
+Organization: 6WIND
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542E9E9B.4090307@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        ebiederm@xmission.com, akpm@linux-foundation.org, rui.xiang@huawei.com,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, gorcunov@openvz.org,
+        kirill.shutemov@linux.intel.com, grant.likely@secretlab.ca,
+        tytso@mit.edu, Thierry Herbelot <thierry.herbelot@6wind.com>
+Subject: Re: [RFC PATCH linux 2/2] fs/proc: use a hash table for the directory
+ entries
+References: <20131003.150947.2179820478039260398.davem@davemloft.net> <1412263501-6572-1-git-send-email-nicolas.dichtel@6wind.com> <1412263501-6572-3-git-send-email-nicolas.dichtel@6wind.com> <20141002172814.GA2435@p183.telecom.by>
+In-Reply-To: <20141002172814.GA2435@p183.telecom.by>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 02:03:23PM +0100, Guenter Roeck wrote:
-> On 10/03/2014 05:27 AM, Mark Rutland wrote:
-> > On Thu, Oct 02, 2014 at 07:37:48PM +0100, atull@opensource.altera.com wrote:
-> >> From: Alan Tull <atull@opensource.altera.com>
-> >>
-> >> Add device tree bindings documentation for ltc2978.
-> >>
-> >> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> >> ---
-> >> v2: clean whitespace
-> >> ---
-> >>   .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
-> >>   1 file changed, 41 insertions(+)
-> >>   create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> >> new file mode 100644
-> >> index 0000000..b2d9c4d
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
-> >> @@ -0,0 +1,41 @@
-> >> +ltc2978
-> >> +
-> >> +Required properties:
-> >> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
-> >
-> > Could we please format this like:
-> >
-> > - compatible: should contain one of:
-> >    * "ltc2974"
-> >    * "ltc2977"
-> >    * "ltc2978"
-> >    * "ltc3880"
-> >    * "ltc3883"
-> >    * "ltm4676"
-> >
-> > Given the file name, are these all variants of ltc2978?
-> >
-> 
-> All the chips supported by the ltc2978 driver. Some are variants
-> of the ltc2978, some have different functionality.
+Le 02/10/2014 19:28, Alexey Dobriyan a écrit :
+> On Thu, Oct 02, 2014 at 05:25:01PM +0200, Nicolas Dichtel wrote:
+>> +static inline unsigned int proc_pde_name_hash(const unsigned char *name,
+>> +					      const unsigned int len)
+>> +{
+>> +	return full_name_hash(name, len) & PROC_PDE_HASH_MASK;
+>> +}
+>
+> PDE already stands for "proc dir entry" :^)
+>
+> 	Alexey
+>
+Oops, will fix it in v2.
 
-Ok.
 
-> 
-> [ should those be "linear,ltc2974" and so on ? ]
-
-Good point; yes they should. That will need a vendor-prefixes.txt
-addition.
+Thank you,
+Nicolas
