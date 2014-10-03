@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaJCVih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:38:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45169 "EHLO
+	id S1755509AbaJCVif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:38:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45173 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266AbaJCViY (ORCPT
+	with ESMTP id S1755476AbaJCViY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:38:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Pugliese <thomas.pugliese@gmail.com>
-Subject: [PATCH 3.16 128/357] uwb: init beacon cache entry before registering uwb device
-Date: Fri,  3 Oct 2014 14:28:34 -0700
-Message-Id: <20141003212937.322490424@linuxfoundation.org>
+        "Alexis R. Cortes" <alexis.cortes@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.16 129/357] usb: host: xhci: fix compliance mode workaround
+Date: Fri,  3 Oct 2014 14:28:35 -0700
+Message-Id: <20141003212937.351114816@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,57 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Pugliese <thomas.pugliese@gmail.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 675f0ab2fe5a0f7325208e60b617a5f32b86d72c upstream.
+commit 96908589a8b2584b1185f834d365f5cc360e8226 upstream.
 
-Make sure the uwb_dev->bce entry is set before calling uwb_dev_add in
-uwbd_dev_onair so that usermode will only see the device after it is
-properly initialized.  This fixes a kernel panic that can occur if
-usermode tries to access the IEs sysfs attribute of a UWB device before
-the driver has had a chance to set the beacon cache entry.
+Commit 71c731a (usb: host: xhci: Fix Compliance Mode
+on SN65LVP3502CP Hardware) implemented a workaround
+for a known issue with Texas Instruments' USB 3.0
+redriver IC but it left a condition where any xHCI
+host would be taken out of reset if port was placed
+in compliance mode and there was no device connected
+to the port.
 
-Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+That condition would trigger a fake connection to a
+non-existent device so that usbcore would trigger a
+warm reset of the port, thus taking the link out of
+reset.
+
+This has the side-effect of preventing any xHCI host
+connected to a Linux machine from starting and running
+the USB 3.0 Electrical Compliance Suite because the
+port will mysteriously taken out of compliance mode
+and, thus, xHCI won't step through the necessary
+compliance patterns for link validation.
+
+This patch fixes the issue by just adding a missing
+check for XHCI_COMP_MODE_QUIRK inside
+xhci_hub_report_usb3_link_state() when PORT_CAS isn't
+set.
+
+This patch should be backported to all kernels containing
+commit 71c731a.
+
+Fixes: 71c731a (usb: host: xhci: Fix Compliance Mode on SN65LVP3502CP Hardware)
+Cc: Alexis R. Cortes <alexis.cortes@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/uwb/lc-dev.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/usb/host/xhci-hub.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/uwb/lc-dev.c
-+++ b/drivers/uwb/lc-dev.c
-@@ -431,16 +431,19 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
- 	uwb_dev->mac_addr = *bce->mac_addr;
- 	uwb_dev->dev_addr = bce->dev_addr;
- 	dev_set_name(&uwb_dev->dev, "%s", macbuf);
-+
-+	/* plug the beacon cache */
-+	bce->uwb_dev = uwb_dev;
-+	uwb_dev->bce = bce;
-+	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
-+
- 	result = uwb_dev_add(uwb_dev, &rc->uwb_dev.dev, rc);
- 	if (result < 0) {
- 		dev_err(dev, "new device %s: cannot instantiate device\n",
- 			macbuf);
- 		goto error_dev_add;
- 	}
--	/* plug the beacon cache */
--	bce->uwb_dev = uwb_dev;
--	uwb_dev->bce = bce;
--	uwb_bce_get(bce);		/* released in uwb_dev_sys_release() */
-+
- 	dev_info(dev, "uwb device (mac %s dev %s) connected to %s %s\n",
- 		 macbuf, devbuf, rc->uwb_dev.dev.parent->bus->name,
- 		 dev_name(rc->uwb_dev.dev.parent));
-@@ -448,6 +451,8 @@ void uwbd_dev_onair(struct uwb_rc *rc, s
- 	return;
- 
- error_dev_add:
-+	bce->uwb_dev = NULL;
-+	uwb_bce_put(bce);
- 	kfree(uwb_dev);
- 	return;
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -468,7 +468,8 @@ static void xhci_hub_report_usb2_link_st
  }
+ 
+ /* Updates Link Status for super Speed port */
+-static void xhci_hub_report_usb3_link_state(u32 *status, u32 status_reg)
++static void xhci_hub_report_usb3_link_state(struct xhci_hcd *xhci,
++		u32 *status, u32 status_reg)
+ {
+ 	u32 pls = status_reg & PORT_PLS_MASK;
+ 
+@@ -507,7 +508,8 @@ static void xhci_hub_report_usb3_link_st
+ 		 * in which sometimes the port enters compliance mode
+ 		 * caused by a delay on the host-device negotiation.
+ 		 */
+-		if (pls == USB_SS_PORT_LS_COMP_MOD)
++		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
++				(pls == USB_SS_PORT_LS_COMP_MOD))
+ 			pls |= USB_PORT_STAT_CONNECTION;
+ 	}
+ 
+@@ -666,7 +668,7 @@ static u32 xhci_get_port_status(struct u
+ 	}
+ 	/* Update Port Link State */
+ 	if (hcd->speed == HCD_USB3) {
+-		xhci_hub_report_usb3_link_state(&status, raw_port_status);
++		xhci_hub_report_usb3_link_state(xhci, &status, raw_port_status);
+ 		/*
+ 		 * Verify if all USB3 Ports Have entered U0 already.
+ 		 * Delete Compliance Mode Timer if so.
 
 
