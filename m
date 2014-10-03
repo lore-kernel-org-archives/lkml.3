@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380AbaJCXsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:48:05 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:53717 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933360AbaJCXr7 (ORCPT
+	id S933396AbaJCXsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:48:22 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:34987 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933376AbaJCXsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:47:59 -0400
-X-Originating-IP: 75.92.167.159
-Date: Fri, 3 Oct 2014 16:47:44 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Matt Turner <mattst88@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        =?utf-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
-        Tejun Heo <tj@kernel.org>, Fabian Frederick <fabf@skynet.be>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up
- the EXPERT menu
-Message-ID: <20141003234743.GA16233@thin>
-References: <20141003233139.GA16079@thin>
- <542F3304.4000703@infradead.org>
+	Fri, 3 Oct 2014 19:48:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542F3304.4000703@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrVVeuVc7JC7w3Z_2pCx0y_HAFtm4=FmEp_xNkn3tvnR+A@mail.gmail.com>
+References: <20140921184153.GA23727@redhat.com>
+	<tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org>
+	<542E2B05.5080607@oracle.com>
+	<20141003083954.10a13a24@as>
+	<20141003214124.GA31614@redhat.com>
+	<CALCETrVVeuVc7JC7w3Z_2pCx0y_HAFtm4=FmEp_xNkn3tvnR+A@mail.gmail.com>
+Date: Fri, 3 Oct 2014 16:48:17 -0700
+X-Google-Sender-Auth: hTOnf636kkKVHq5BHjfT5OGwS0U
+Message-ID: <CA+55aFx7n9nsfMYELGN0Kev13pHUgzMBtPyovyBf8-LUYTC9bg@mail.gmail.com>
+Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using THUNK helpers
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Oleg Nesterov <oleg@redhat.com>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 04:36:36PM -0700, Randy Dunlap wrote:
-> On 10/03/14 16:31, Josh Triplett wrote:
-> > commit 03b8c7b623c80af264c4c8d6111e5c6289933666 ("futex: Allow
-> > architectures to skip futex_atomic_cmpxchg_inatomic() test") added the
-> > HAVE_FUTEX_CMPXCHG symbol right below FUTEX.  This placed it right in
-> > the middle of the options for the EXPERT menu.  However,
-> > HAVE_FUTEX_CMPXCHG does not depend on EXPERT or FUTEX, so Kconfig stops
-> > placing items in the EXPERT menu, and displays the remaining several
-> > EXPERT items (starting with EPOLL) directly in the General Setup menu.
-> > 
-> > Since both users of HAVE_FUTEX_CMPXCHG only select it "if FUTEX", make
-> > HAVE_FUTEX_CMPXCHG itself depend on FUTEX.  With this change, the
-> > subsequent items display as part of the EXPERT menu again; the EMBEDDED
-> > menu now appears as the next top-level item in the General Setup menu,
-> > which makes General Setup much shorter and more usable.
-> > 
-> > Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> > ---
-> > 
-> > Posting for review.  I can upstream this through the tiny tree.
-> > 
-> > Personally, I'd consider this a bit of a bug in Kconfig; ideally,
-> > Kconfig should only consider symbols with prompt strings when
-> > considering what to display in a menu.  However, in the interim, this
-> > one-line patch drastically improves the usability of the "General Setup"
-> > config menu.
-> 
-> Good catch.  Thanks.
-> 
-> I would prefer to see both of your patches merged quickly into 3.17 no matter
-> how they get there.
-> 
-> both patches:
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+On Fri, Oct 3, 2014 at 2:56 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>
+> Is this thing missing a flags or cc clobber:
+>
+> # define __preempt_schedule() asm ("call ___preempt_schedule")
 
-Both of the fixes are entirely about Kconfig usability, don't affect the
-built kernel, and have existed for quite a few kernel releases, so I
-hadn't planned to get them into 3.17 at the last minute.  I'd just
-planned to submit them during the 3.18 merge window when that opens.
+Yes, it should probably have a cc clobber. Although I think thet gcc
+actually assumes all asms clobber flags on x86, so it shouldn't
+matter.
 
-Do you really think they should be pushed into 3.17 at this point?
+> Is this all just to make the call sequence for preempt_schedule shorter?
 
-If you'd like, I could get them into 3.18 and mark them for stable,
-instead.
+Not so much the call sequence, but the code around the call - not
+havign to spill live registers etc. But yes.
 
-- Josh Triplett
+              Linus
