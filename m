@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759073AbaJDAKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:10:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
+	id S1761047AbaJDAL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:11:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45718 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286AbaJCVxQ (ORCPT
+	with ESMTP id S1756671AbaJCVxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:16 -0400
+	Fri, 3 Oct 2014 17:53:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 225/357] iio: meter: ade7758: Fix indio_dev->trig assignment
-Date: Fri,  3 Oct 2014 14:30:11 -0700
-Message-Id: <20141003212940.277088997@linuxfoundation.org>
+        Joern Engel <joern@logfs.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.16 235/357] iscsi-target: avoid NULL pointer in iscsi_copy_param_list failure
+Date: Fri,  3 Oct 2014 14:30:21 -0700
+Message-Id: <20141003212940.566624518@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,66 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Joern Engel <joern@logfs.org>
 
-commit 0495081179212b758775df752e657ea71dcae020 upstream.
+commit 8ae757d09c45102b347a1bc2867f54ffc1ab8fda upstream.
 
-This can result in wrong reference count for trigger device, call
-iio_trigger_get to increment reference.
-Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
-with Jonathan.
+In iscsi_copy_param_list() a failed iscsi_param_list memory allocation
+currently invokes iscsi_release_param_list() to cleanup, and will promptly
+trigger a NULL pointer dereference.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Instead, go ahead and return for the first iscsi_copy_param_list()
+failure case.
+
+Found by coverity.
+
+Signed-off-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/iio/meter/ade7758_trigger.c |    2 +-
+ drivers/target/iscsi/iscsi_target_parameters.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/iio/meter/ade7758_trigger.c
-+++ b/drivers/staging/iio/meter/ade7758_trigger.c
-@@ -85,7 +85,7 @@ int ade7758_probe_trigger(struct iio_dev
- 	ret = iio_trigger_register(st->trig);
- 
- 	/* select default trigger */
--	indio_dev->trig = st->trig;
-+	indio_dev->trig = iio_trigger_get(st->trig);
- 	if (ret)
- 		goto error_free_irq;
- 
-
-
-tm_page_alloc.c
-@@ -391,14 +391,17 @@ out:
- static unsigned long
- ttm_pool_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- {
--	static atomic_t start_pool = ATOMIC_INIT(0);
-+	static DEFINE_MUTEX(lock);
-+	static unsigned start_pool;
- 	unsigned i;
--	unsigned pool_offset = atomic_add_return(1, &start_pool);
-+	unsigned pool_offset;
- 	struct ttm_page_pool *pool;
- 	int shrink_pages = sc->nr_to_scan;
- 	unsigned long freed = 0;
- 
--	pool_offset = pool_offset % NUM_POOLS;
-+	if (!mutex_trylock(&lock))
-+		return SHRINK_STOP;
-+	pool_offset = ++start_pool % NUM_POOLS;
- 	/* select start pool in round robin fashion */
- 	for (i = 0; i < NUM_POOLS; ++i) {
- 		unsigned nr_free = shrink_pages;
-@@ -408,6 +411,7 @@ ttm_pool_shrink_scan(struct shrinker *sh
- 		shrink_pages = ttm_page_pool_free(pool, nr_free);
- 		freed += nr_free - shrink_pages;
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -601,7 +601,7 @@ int iscsi_copy_param_list(
+ 	param_list = kzalloc(sizeof(struct iscsi_param_list), GFP_KERNEL);
+ 	if (!param_list) {
+ 		pr_err("Unable to allocate memory for struct iscsi_param_list.\n");
+-		goto err_out;
++		return -1;
  	}
-+	mutex_unlock(&lock);
- 	return freed;
- }
- 
+ 	INIT_LIST_HEAD(&param_list->param_list);
+ 	INIT_LIST_HEAD(&param_list->extra_response_list);
 
 
