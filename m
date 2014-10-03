@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120AbaJCWdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:33:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
+	id S932666AbaJCWYV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:24:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667AbaJCWYW (ORCPT
+	with ESMTP id S932627AbaJCWYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:22 -0400
+	Fri, 3 Oct 2014 18:24:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luciano Coelho <luciano.coelho@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 112/143] Revert "mac80211: disable uAPSD if all ACs are under ACM"
-Date: Fri,  3 Oct 2014 14:35:07 -0700
-Message-Id: <20141003213317.860472840@linuxfoundation.org>
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 3.10 068/143] MIPS: ZBOOT: add missing <linux/string.h> include
+Date: Fri,  3 Oct 2014 14:34:23 -0700
+Message-Id: <20141003213316.556590036@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,38 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit bb512ad0732232f1d2693bb68f31a76bed8f22ae upstream.
+commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
 
-This reverts commit 24aa11ab8ae03292d38ec0dbd9bc2ac49fe8a6dd.
+Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
+moved the string related functions into a separate file, which might
+cause the following build error, depending on the configuration:
 
-That commit was wrong since it uses data that hasn't even been set
-up yet, but might be a hold-over from a previous connection.
+| CC      arch/mips/boot/compressed/decompress.o
+| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
+|                  from linux/arch/mips/boot/compressed/decompress.c:67:
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
+| cc1: some warnings being treated as errors
+| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
+| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
+| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
 
-Additionally, it seems like a driver-specific workaround that
-shouldn't have been in mac80211 to start with.
+It does not fail with the standard configuration, as when
+CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
+include/linux/dynamic_debug.h. There might be other ways for it to
+get indirectly included.
 
-Fixes: 24aa11ab8ae0 ("mac80211: disable uAPSD if all ACs are under ACM")
-Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+We can't add the include directly in xz_dec_stream.c as some
+architectures might want to use a different version for the boot/
+directory (see for example arch/x86/boot/string.h).
+
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7420/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/mips/boot/compressed/decompress.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -4395,8 +4395,7 @@ int ieee80211_mgd_assoc(struct ieee80211
- 	rcu_read_unlock();
+--- a/arch/mips/boot/compressed/decompress.c
++++ b/arch/mips/boot/compressed/decompress.c
+@@ -13,6 +13,7 @@
  
- 	if (bss->wmm_used && bss->uapsd_supported &&
--	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD) &&
--	    sdata->wmm_acm != 0xff) {
-+	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD)) {
- 		assoc_data->uapsd = true;
- 		ifmgd->flags |= IEEE80211_STA_UAPSD_ENABLED;
- 	} else {
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/string.h>
+ 
+ #include <asm/addrspace.h>
+ 
 
 
