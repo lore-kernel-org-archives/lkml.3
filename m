@@ -1,85 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaJCMyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:54:01 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:64510 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaJCMx6 (ORCPT
+	id S1752674AbaJCMzS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:55:18 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55561 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490AbaJCMzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:53:58 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-45-542e9c639766
-Message-id: <542E9C65.4030208@samsung.com>
-Date: Fri, 03 Oct 2014 15:53:57 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 3/4] module: search the key only by keyid
-References: <6d32cecfb3c3f5d041900ce1866bc15134832991.1412327306.git.d.kasatkin@samsung.com>
- <cover.1412327306.git.d.kasatkin@samsung.com>
- <cover.1412327306.git.d.kasatkin@samsung.com>
- <29146.1412340378@warthog.procyon.org.uk> <542E9B68.1010906@samsung.com>
-In-reply-to: <542E9B68.1010906@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFLMWRmVeSWpSXmKPExsVy+t/xq7rJc/RCDPb2mVu8a/rNYvFlaZ3F
-	uvWLmSxm73rIYvFyxjx2i8u75rBZfOh5xGZxc9oFFotPKyYxO3B67Jx1l91j2ollLB4PDm1m
-	8di94DOTR8/3ZI/3+66yeazYcILZ4/MmuQCOKC6blNSczLLUIn27BK6MNV+fshec4qr49Gwe
-	UwPjPY4uRk4OCQETiSMH3rNC2GISF+6tZ+ti5OIQEljKKNH4Zi0jhNPIJPF2y3UoZxajxK//
-	39lAWngFtCR2dexjB7FZBFQlHq14yAxiswnoSWxo/gEWFxWIkDh5dw87RL2gxI/J91hAbBEB
-	dYlHyzYygwxlFnjNKLHxygewO4QFbCWedB2EuqOTSWLrgj6wDk4BbYlZtyczdTFyAHXoSdy/
-	qAUSZhaQl9i85i3YYiGgI7rXrmWD+EdR4vTkc8wTGIVnIdk9C6F7FpLuBYzMqxhFU0uTC4qT
-	0nON9IoTc4tL89L1kvNzNzFC4uvrDsalx6wOMQpwMCrx8H64oRsixJpYVlyZe4hRgoNZSYRX
-	ukkvRIg3JbGyKrUoP76oNCe1+BAjEwenVAPjoUnXV67LujdLpS1P2k7Zf9tSfSHp8o7ldlM9
-	dR1kZvVunJbhclpdM7VMpuFQicORgIXcDP//n52/kfv29+5exXRbvuMfNq7n/ManwpPM+Mja
-	1+xzicCzGSaBbq/9uZzcHr0LaD6Q8VNrSv0CtqxWt0U7DlQ7RW7Y6NjA+Gpz6TLhid2it7mU
-	WIozEg21mIuKEwEPQesyjQIAAA==
+	Fri, 3 Oct 2014 08:55:15 -0400
+Message-ID: <542E9CAC.3080108@hitachi.com>
+Date: Fri, 03 Oct 2014 21:55:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v2 3/5] perf/sdt: Show SDT cache contents
+References: <20141001023723.28985.39736.stgit@hemant-fedora> <20141001024815.28985.8980.stgit@hemant-fedora>
+In-Reply-To: <20141001024815.28985.8980.stgit@hemant-fedora>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/14 15:49, Dmitry Kasatkin wrote:
-> On 03/10/14 15:46, David Howells wrote:
->> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->>
->>> Latest KEYS code change the way keys identified and module
->>> signing keys are not searchable anymore with original id.
->>>
->>> This patch fixes this problem without change module signature
->>> data.
->> This isn't sufficient.  The key search must also include the signer.
->>
-> IMA uses "id:<id>" partial matching.. There is no signer in the signature.
-> It is added as "last resort"
->
-> It is here... the same but I renamed with finger print..
->
-> http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/commit/?h=keys-fixes&id=f036bb9a4c1b3c548f315226d3284e6a91d284e7
->
-> - Dmitry
->
->
+(2014/10/01 11:48), Hemant Kumar wrote:
+> @@ -35,10 +45,13 @@ int cmd_sdt_cache(int argc, const char **argv, const char *prefix __maybe_unused
+>  		OPT_CALLBACK('a', "add", NULL, "filename",
+>  			     "add SDT events from a file.",
+>  			     opt_add_sdt_events),
+> +		OPT_CALLBACK_NOOPT('s', "dump", NULL, "show SDT events",
+> +				   "Read SDT events from cache and display.",
+> +				   opt_show_sdt_events),
 
-For module actually I made it as a fix because it was broken.
-Other requires changes in module signature format...
+Just one note here. -s and --dump are a bit odd. how about using -D for short ops?
 
-- Dmitry
+Thank you,
 
->> David
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
