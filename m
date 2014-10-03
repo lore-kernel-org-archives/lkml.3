@@ -1,101 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752364AbaJCMrJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:47:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107AbaJCMq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:46:57 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <c772cac8c103bbb734a4614d5338ae7cdf4803d9.1412327306.git.d.kasatkin@samsung.com>
-References: <c772cac8c103bbb734a4614d5338ae7cdf4803d9.1412327306.git.d.kasatkin@samsung.com> <cover.1412327306.git.d.kasatkin@samsung.com> <cover.1412327306.git.d.kasatkin@samsung.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, zohar@linux.vnet.ibm.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 1/4] KEYS: handle error code encoded in pointer
+	id S1752552AbaJCMrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:47:16 -0400
+Received: from smtp89.iad3a.emailsrvr.com ([173.203.187.89]:47197 "EHLO
+	smtp89.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752408AbaJCMrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:47:11 -0400
+X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Oct 2014 08:47:11 EDT
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <542E8AF2.4030708@mev.co.uk>
+Date: Fri, 03 Oct 2014 12:39:30 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <29158.1412340393.1@warthog.procyon.org.uk>
-Date: Fri, 03 Oct 2014 13:46:33 +0100
-Message-ID: <29159.1412340393@warthog.procyon.org.uk>
+To: Chen Gang <gang.chen.5i5j@gmail.com>, hsweeten@visionengravers.com,
+        gregkh@linuxfoundation.org, luca.ellero@brickedbrain.com,
+        lisovy@gmail.com
+CC: devel@driverdev.osuosl.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Weinberger <richard@nod.at>
+Subject: Re: [PATCH] drivers/staging/comedi/Kconfig: Let COMEDI_II_PCI20KC
+ depend on HAS_IOMEM
+References: <542D640E.6010200@gmail.com>
+In-Reply-To: <542D640E.6010200@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+On 02/10/2014 15:41, Chen Gang wrote:
+> COMEDI_II_PCI20KC needs HAS_IOMEM, so depend on it. The related error (
+> with allmodconfig under um):
+>
+>      CC [M]  drivers/staging/comedi/drivers/ii_pci20kc.o
+>    drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_attach’:
+>    drivers/staging/comedi/drivers/ii_pci20kc.c:442:2: error: implicit declaration of function ‘ioremap’ [-Werror=implicit-function-declaration]
+>      dev->mmio = ioremap(membase, II20K_SIZE);
+>      ^
+>    drivers/staging/comedi/drivers/ii_pci20kc.c:442:12: warning: assignment makes pointer from integer without a cast [enabled by default]
+>      dev->mmio = ioremap(membase, II20K_SIZE);
+>                ^
+>    drivers/staging/comedi/drivers/ii_pci20kc.c: In function ‘ii20k_detach’:
+>    drivers/staging/comedi/drivers/ii_pci20kc.c:512:3: error: implicit declaration of function ‘iounmap’ [-Werror=implicit-function-declaration]
+>       iounmap(dev->mmio);
+>       ^
+>
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-> If hexlen is odd then function returns an error.
-> Use IS_ERR to check for error, otherwise invalid pointer
-> is used and kernel gives oops:
-> 
-> [  132.816522] BUG: unable to handle kernel paging request at
-> ffffffffffffffea
-> [  132.819902] IP: [<ffffffff812bfc20>] asymmetric_key_id_same+0x14/0x36
-> [  132.820302] PGD 1a12067 PUD 1a14067 PMD 0
-> [  132.820302] Oops: 0000 [#1] SMP
-> [  132.820302] Modules linked in: bridge(E) stp(E) llc(E) evdev(E)
-> serio_raw(E) i2c_piix4(E) button(E) fuse(E)
-> [  132.820302] CPU: 0 PID: 2993 Comm: cat Tainted: G            E
-> 3.16.0-kds+ #2847
-> [  132.820302] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> [  132.820302] task: ffff88004249a430 ti: ffff880056640000 task.ti:
-> ffff880056640000
-> [  132.820302] RIP: 0010:[<ffffffff812bfc20>]  [<ffffffff812bfc20>]
-> asymmetric_key_id_same+0x14/0x36
-> [  132.820302] RSP: 0018:ffff880056643930  EFLAGS: 00010246
-> [  132.820302] RAX: 0000000000000000 RBX: ffffffffffffffea RCX:
-> ffff880056643ae0
-> [  132.820302] RDX: 000000000000005e RSI: ffffffffffffffea RDI:
-> ffff88005bac9300
-> [  132.820302] RBP: ffff880056643948 R08: 0000000000000003 R09:
-> 00000007504aa01a
-> [  132.820302] R10: 0000000000000000 R11: 0000000000000000 R12:
-> ffff88005d68ca40
-> [  132.820302] R13: 0000000000000101 R14: 0000000000000000 R15:
-> ffff88005bac5280
-> [  132.820302] FS:  00007f67a153c740(0000) GS:ffff88005da00000(0000)
-> knlGS:0000000000000000
-> [  132.820302] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  132.820302] CR2: ffffffffffffffea CR3: 000000002e663000 CR4:
-> 00000000000006f0
-> [  132.820302] Stack:
-> [  132.820302]  ffffffff812bfc66 ffff880056643ae0 ffff88005bac5280
-> ffff880056643958
-> [  132.820302]  ffffffff812bfc9d ffff880056643980 ffffffff812971d9
-> ffff88005ce930c1
-> [  132.820302]  ffff88005ce930c0 0000000000000000 ffff8800566439c8
-> ffffffff812fb753
-> [  132.820302] Call Trace:
-> [  132.820302]  [<ffffffff812bfc66>] ? asymmetric_match_key_ids+0x24/0x42
-> [  132.820302]  [<ffffffff812bfc9d>] asymmetric_key_cmp+0x19/0x1b
-> [  132.820302]  [<ffffffff812971d9>] keyring_search_iterator+0x74/0xd7
-> [  132.820302]  [<ffffffff812fb753>] assoc_array_subtree_iterate+0x67/0xd2
-> [  132.820302]  [<ffffffff81297165>] ? key_default_cmp+0x20/0x20
-> [  132.820302]  [<ffffffff812fbaa1>] assoc_array_iterate+0x19/0x1e
-> [  132.820302]  [<ffffffff81297332>] search_nested_keyrings+0xf6/0x2b6
-> [  132.820302]  [<ffffffff810728da>] ? sched_clock_cpu+0x91/0xa2
-> [  132.820302]  [<ffffffff810860d2>] ? mark_held_locks+0x58/0x6e
-> [  132.820302]  [<ffffffff810a137d>] ? current_kernel_time+0x77/0xb8
-> [  132.820302]  [<ffffffff81297871>] keyring_search_aux+0xe1/0x14c
-> [  132.820302]  [<ffffffff812977fc>] ? keyring_search_aux+0x6c/0x14c
-> [  132.820302]  [<ffffffff8129796b>] keyring_search+0x8f/0xb6
-> [  132.820302]  [<ffffffff812bfc84>] ? asymmetric_match_key_ids+0x42/0x42
-> [  132.820302]  [<ffffffff81297165>] ? key_default_cmp+0x20/0x20
-> [  132.820302]  [<ffffffff812ab9e3>] asymmetric_verify+0xa4/0x214
-> [  132.820302]  [<ffffffff812ab90e>] integrity_digsig_verify+0xb1/0xe2
-> [  132.820302]  [<ffffffff812abe41>] ? evm_verifyxattr+0x6a/0x7a
-> [  132.820302]  [<ffffffff812b0390>] ima_appraise_measurement+0x160/0x370
-> [  132.820302]  [<ffffffff81161db2>] ? d_absolute_path+0x5b/0x7a
-> [  132.820302]  [<ffffffff812ada30>] process_measurement+0x322/0x404
-> 
-> Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-
-Applied.
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
