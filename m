@@ -1,64 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066AbaJCM7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:59:13 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:43336 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912AbaJCM7I (ORCPT
+	id S1752283AbaJCNDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 09:03:38 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46080 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaJCNDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:59:08 -0400
+	Fri, 3 Oct 2014 09:03:36 -0400
+Message-ID: <542E9E9B.4090307@roeck-us.net>
+Date: Fri, 03 Oct 2014 06:03:23 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1411685122-21867-1-git-send-email-behanw@converseincode.com>
-References: <5774775.2EcFmuR4sV@wuerfel>
-	<1411685122-21867-1-git-send-email-behanw@converseincode.com>
-Date: Fri, 3 Oct 2014 14:59:07 +0200
-Message-ID: <CAPDyKFruar4iax_goZUmCbyoAM9BwNFLzyss1Fc+pZVkse+a7A@mail.gmail.com>
-Subject: Re: [PATCH v3] mmc, sdhci, bcm-kona, LLVMLinux: Remove use of __initconst
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Behan Webster <behanw@converseincode.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Chris Ball <chris@printf.net>,
-        Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
+To: Mark Rutland <mark.rutland@arm.com>,
+        "atull@opensource.altera.com" <atull@opensource.altera.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+CC: "jdelvare@suse.de" <jdelvare@suse.de>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com> <1412275071-6417-2-git-send-email-atull@opensource.altera.com> <20141003122736.GH26643@leverpostej>
+In-Reply-To: <20141003122736.GH26643@leverpostej>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.542E9EA7.01F5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2014 00:45, Behan Webster <behanw@converseincode.com> wrote:
-> The __initconst is in the wrong place, and when moved to the correct place
-> it uncovers an error where the variable is used by non-init data structures.
+On 10/03/2014 05:27 AM, Mark Rutland wrote:
+> On Thu, Oct 02, 2014 at 07:37:48PM +0100, atull@opensource.altera.com wrote:
+>> From: Alan Tull <atull@opensource.altera.com>
+>>
+>> Add device tree bindings documentation for ltc2978.
+>>
+>> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+>> ---
+>> v2: clean whitespace
+>> ---
+>>   .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
+>>   1 file changed, 41 insertions(+)
+>>   create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+>> new file mode 100644
+>> index 0000000..b2d9c4d
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+>> @@ -0,0 +1,41 @@
+>> +ltc2978
+>> +
+>> +Required properties:
+>> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
 >
-> Instead merely make them const and put the const in the right spot.
+> Could we please format this like:
 >
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Matt Porter <mporter@linaro.org>
+> - compatible: should contain one of:
+>    * "ltc2974"
+>    * "ltc2977"
+>    * "ltc2978"
+>    * "ltc3880"
+>    * "ltc3883"
+>    * "ltm4676"
+>
+> Given the file name, are these all variants of ltc2978?
+>
 
-Thanks! Applied for next.
+All the chips supported by the ltc2978 driver. Some are variants
+of the ltc2978, some have different functionality.
 
-Kind regards
-Uffe
+[ should those be "linear,ltc2974" and so on ? ]
 
-> ---
->  drivers/mmc/host/sdhci-bcm-kona.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Guenter
+
+>> + - reg: I2C address
+>> +
+>> +Optional properties:
+>> + Name of the optional regulator subnode must be "regulators".
+>> +  - #address-cells must be 1.
 >
-> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
-> index dd780c3..d085dfe 100644
-> --- a/drivers/mmc/host/sdhci-bcm-kona.c
-> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
-> @@ -225,7 +225,7 @@ static struct sdhci_pltfm_data sdhci_pltfm_data_kona = {
->                 SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
->  };
+> What's the single address cell used for?
 >
-> -static struct __initconst of_device_id sdhci_bcm_kona_of_match[] = {
-> +static const struct of_device_id sdhci_bcm_kona_of_match[] = {
->         { .compatible = "brcm,kona-sdhci"},
->         { .compatible = "bcm,kona-sdhci"}, /* deprecated name */
->         {}
-> --
-> 1.9.1
+>> +  - #size-cells must be 0.
+>> +
+>> + For each regulator:
+>> +  - reg: regulator number
 >
+> Which can be...?
+>
+> What does this correspond to in the HW?
+>
+>> +  - regulator-compatible: must be vout_en<regulator number> such as vout_en3
+>> +    valid range is:
+>> +      ltc2977, ltc2978 : vout_en0 - vout_en7
+>> +      ltc2974          : vout_en0 - vout_en3
+>> +      ltc3880, ltm4676 : vout_en0 - vout_en1
+>> +      ltc3883          : vout_en0 only
+>
+> In other bindings I believe I've seen the node name used for this.
+>
+> Mark, what's the preferred scheme for identifying regulators in a
+> container node?
+>
+>> +  - regulator-name: arbitrary name for regulator
+>
+> Drop the 'aribtarary'. Either this should be the name of the regulator
+> on the board, or it shouldn't be necessary.
+>
+> Mark.
+>
+>> +
+>> +Example:
+>> +ltc2978@5e {
+>> +	compatible = "ltc2978";
+>> +	reg = <0x5e>;
+>> +	regulators {
+>> +		#address-cells = <1>;
+>> +		#size-cells = <0>;
+>> +
+>> +		vdacp0_reg: regulator@0 {
+>> +			reg = <0>;
+>> +			regulator-compatible = "vout_en0";
+>> +			regulator-name = "FPGA-2.5V";
+>> +		};
+>> +		vdacp2_reg: regulator@2 {
+>> +			reg = <2>;
+>> +			regulator-compatible = "vout_en2";
+>> +			regulator-name = "FPGA-1.5V";
+>> +		};
+>> +	};
+>> +};
+>> --
+>> 1.7.9.5
+>>
+>>
+>
+
