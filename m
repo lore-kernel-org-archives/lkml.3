@@ -1,180 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaJCKhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 06:37:06 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39336 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751462AbaJCKhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 06:37:04 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Heinrich Schuchardt <xypron.debian@gmx.de>,
-        Jan Kara <jack@suse.cz>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: [PATCH] fs: don't remove inotify watchers from alive inode-s (v3)
-Date: Fri,  3 Oct 2014 14:35:23 +0400
-Message-Id: <1412332523-25212-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.3
+	id S1751806AbaJCKlZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 06:41:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12322 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaJCKlX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 06:41:23 -0400
+X-AuditID: cbfee61b-f79d76d0000024d6-28-542e7d50b04f
+Date: Fri, 03 Oct 2014 12:40:54 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>, Zhang Rui <rui.zhang@intel.com>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] thermal: core: fix: Check return code of the
+ ->get_max_state() callback
+Message-id: <20141003124054.404ac26c@amdc2363>
+In-reply-to: <20141002222441.GA11510@developer>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1411547232-21493-4-git-send-email-l.majewski@samsung.com>
+ <20141002222441.GA11510@developer>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t9jQd2AWr0Qg5VPrCw2zljPajH/yjVW
+	izePuC0u75rDZvG59wijxZOHfWwObB47Z91l91i85yWTx7ppb5k9+rasYvT4vEkugDWKyyYl
+	NSezLLVI3y6BK2P+2SfsBVNFKuZubmNrYPzO38XIySEhYCLR/PwYG4QtJnHh3nogm4tDSGA6
+	o8SuzzfAEkICvxgl7p8Da2ARUJXYsnYfE4jNJqAn8fnuUzBbRMBb4vW+6YwgzcwC6xglFu3f
+	xQySEBZIkngz/zsLiM0L1PD4fC/YUE4BfYnelvfMENtWMEpMfjQZLMEvICnR/u8HM8RJdhLn
+	Pm1gh2gWlPgx+R7YIGYBLYnN25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihO
+	Ss810itOzC0uzUvXS87P3cQIDvpn0jsYVzVYHGIU4GBU4uH9cEM3RIg1say4MvcQowQHs5II
+	768CvRAh3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1MLUotgskwcnFINjEbd
+	uvPsY7facTyfpMRwTWCGxYarX49Fujx+s/zpTO8zoldPF5xUsD/3WNe9VzUp+/aswwwLtEW+
+	HBKxZOH/yCdjw/nyYuPycKHvVROkVYtEdsedXvfk+OyjnAcjj7lP/vc1bWHV1k+zXj5Yttaa
+	wW3HCylLb6Gvnh4637ylrCas2l+UJ8uTtUeJpTgj0VCLuag4EQADGosHdgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently watchers are removed in dentry_iput(), if n_link is zero.  But
-other detries can be linked with this inode.
+Hi Eduardo, Rui,
 
-For example if we create two hard links, open the first one and set an
-inotify watcher on one of them.  Then if we remove the opened file and
-then another file, the inotify watcher will be removed. But we will have
-the alive file descriptor, which allows us to generate more events.
+> On Wed, Sep 24, 2014 at 10:27:12AM +0200, Lukasz Majewski wrote:
+> > Without this check it was possible to execute cooling device
+> > binding code even when wrong max cooling state was read.
+> > 
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> 
+> Acked-by: Eduardo Valentin <edubezval@gmail.com>
+> 
+> Rui, are you taking these patches? Do you prefer me to collect them?
 
-And here is another behaviour, if files are removed in another order.
-The watcher will not be removed and we will keep getting inotify events
-for that inode.
+I'd like to ask you NOT to apply those patches.
 
-This patch removes difference of behaviours for these cases. Watchers
-are removed, only if nlink is zero and i_dentry list is empty. The
-resulting behaviour is the same with what has been described in the
-second case.
+In short: It will cause regression on all non Exynos boards.
 
-Look at a following example:
+Explanation:
 
-	fd = inotify_init1(IN_NONBLOCK);
-	deleted = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
-	link(path, path_link);
+Up till now the cpu_cooling device was bind even when the
+get_max_state() returned -EINVAL and everything worked after late
+cpufreq policy initialization.
 
-	wd_deleted = inotify_add_watch(fd, path_link, IN_ALL_EVENTS);
+However, during this time window the thermal driver is not properly
+configured.
 
-	unlink(path);
-	unlink(path_link);
+Applying PATCH2/3 and PATCH3/3 would cause bind error without any
+further occasion for re-bind. As a result THERAL will not be present
+on the target system.
 
-	printf(" --- unlink path, path_link\n");
-	read_evetns(fd);
+It works on the Exynos boards, since at the report_trigger() function, 
+when first trip point is reached, it is checked if cpu_cooling device
+is bind. If it is not (due to "fixes" at PATCH2/3 and PATCH3/3) it
+is rebind then.
 
-	close(deleted);
-	printf(" --- close\n");
-	read_evetns(fd);
-	printf(" --- end\n");
+Due to above, I think that it would be best to leave things as they are
+now and prepare proper fix as suggested by Eduardo.
 
-We expect to get the same set of events for this case and for the
-case, when files are deleted in another order. But now we get the
-different set of events.
+> 
+> Cheers
+> 
+> Eduardo
+> 
+> > ---
+> >  drivers/thermal/thermal_core.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/thermal/thermal_core.c
+> > b/drivers/thermal/thermal_core.c index 747618a..8a4dc35 100644
+> > --- a/drivers/thermal/thermal_core.c
+> > +++ b/drivers/thermal/thermal_core.c
+> > @@ -928,7 +928,7 @@ int thermal_zone_bind_cooling_device(struct
+> > thermal_zone_device *tz, struct thermal_zone_device *pos1;
+> >  	struct thermal_cooling_device *pos2;
+> >  	unsigned long max_state = 0;
+> > -	int result;
+> > +	int result, ret;
+> >  
+> >  	if (trip >= tz->trips || (trip < 0 && trip !=
+> > THERMAL_TRIPS_NONE)) return -EINVAL;
+> > @@ -945,7 +945,9 @@ int thermal_zone_bind_cooling_device(struct
+> > thermal_zone_device *tz, if (tz != pos1 || cdev != pos2)
+> >  		return -EINVAL;
+> >  
+> > -	cdev->ops->get_max_state(cdev, &max_state);
+> > +	ret = cdev->ops->get_max_state(cdev, &max_state);
+> > +	if (ret)
+> > +		return ret;
+> >  
+> >  	/* lower default 0, upper default max_state */
+> >  	lower = lower == THERMAL_NO_LIMIT ? 0 : lower;
+> > -- 
+> > 2.0.0.rc2
+> > 
 
-The first case, when "path" is deleted before "path_link"
- --- unlink path, path_link
-4	(IN_ATTRIB)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- close
- --- end
 
-and for the case, when "path_link" is deleted before "path"
- --- unlink path_link, path
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
 
-With this patch we have the same output for both cases:
- --- unlink
-4	(IN_ATTRIB)
- --- close
-8	(IN_CLOSE_WRITE)
-400	(IN_DELETE_SELF)
-8000	(IN_IGNORED)
- --- end
-PASS
-
-So without the patch you don't receive some events if the file has at
-least 2 hardlinks and then gets unlinked. I think the risk that some
-application relies on *not* getting those events is pretty low
-(especially since in the common case of file without hardlinks you will
-get all those events). // Jan Kara
-
-In CRIU we are suffering from the current situation. We found this weird
-behaviour while been testing the results of restore of deleted files.
-When criu observes opened descriptor on deleted file its contents get
-written into criu image file which we call "ghost" files.  On restore we
-create a temporary ghost file with some unique name. Then we restore
-file descriptors which were opened at the moment of checkpoint: we
-create a hardlink to this ghost file, then open it and this is done for
-every descriptor we need to recover. Then if there were a watch mark on
-the ghost file we restore them as well but at the end we need to do a
-cleanup and finally remove the ghost file itself which cause the
-problem. When we remove ghost file inode->n_link becomes 0 thus our
-restored inotify are dropped off by the kernel while here still opened
-files are floating around. I can't say that it's catastrophical but if
-there a chance to fix it on kernel level making events flow more sane,
-this would be just great, also our primary target is to make c/r process
-transparent to the userspace and without the patch i fear we can't reach
-it. // Cyrill Gorcunov and me.
-
-v2: generate IN_DELETE_SELF when the last link to the file is removed
-v3: expand the changelog
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Heinrich Schuchardt <xypron.debian@gmx.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: John McCutchan <john@johnmccutchan.com>
-Cc: Robert Love <rlove@rlove.org>
-Cc: Eric Paris <eparis@parisplace.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/dcache.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 7a5b514..3a0e3bc 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -278,12 +278,15 @@ static void dentry_iput(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	if (inode) {
- 		dentry->d_inode = NULL;
- 		hlist_del_init(&dentry->d_alias);
-+		last_dentry = hlist_empty(&inode->i_dentry);
- 		spin_unlock(&dentry->d_lock);
- 		spin_unlock(&inode->i_lock);
--		if (!inode->i_nlink)
-+		if (!inode->i_nlink && last_dentry)
- 			fsnotify_inoderemove(inode);
- 		if (dentry->d_op && dentry->d_op->d_iput)
- 			dentry->d_op->d_iput(dentry, inode);
-@@ -303,13 +306,16 @@ static void dentry_unlink_inode(struct dentry * dentry)
- 	__releases(dentry->d_inode->i_lock)
- {
- 	struct inode *inode = dentry->d_inode;
-+	bool last_dentry;
-+
- 	__d_clear_type(dentry);
- 	dentry->d_inode = NULL;
- 	hlist_del_init(&dentry->d_alias);
- 	dentry_rcuwalk_barrier(dentry);
-+	last_dentry = hlist_empty(&inode->i_dentry);
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&inode->i_lock);
--	if (!inode->i_nlink)
-+	if (!inode->i_nlink && last_dentry)
- 		fsnotify_inoderemove(inode);
- 	if (dentry->d_op && dentry->d_op->d_iput)
- 		dentry->d_op->d_iput(dentry, inode);
 -- 
-1.9.3
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
