@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933773AbaJDAbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:31:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45300 "EHLO
+	id S932910AbaJDAbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:31:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45341 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918AbaJCVmx (ORCPT
+	with ESMTP id S1755921AbaJCVmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:42:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Jorge A. Ventura" <jorge.araujo.ventura@gmail.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.16 174/357] spi/omap-mcspi: Fix the spi task hangs waiting dma_rx
-Date: Fri,  3 Oct 2014 14:29:20 -0700
-Message-Id: <20141003212938.707205922@linuxfoundation.org>
+        Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 157/357] NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
+Date: Fri,  3 Oct 2014 14:29:03 -0700
+Message-Id: <20141003212938.188301550@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,31 +29,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Jorge A. Ventura" <jorge.araujo.ventura@gmail.com>
+From: Steve Dickson <steved@redhat.com>
 
-commit 3d0763c006f8da1b44a9f5f9a21187f5b8f674f4 upstream.
+commit 080af20cc945d110f9912d01cf6b66f94a375b8d upstream.
 
-The spi hangs waiting the completion of omap2_mcspi_rx_callback.
+There is a race between nfs4_state_manager() and
+nfs_server_remove_lists() that happens during a nfsv3 mount.
 
-Signed-off-by: Jorge A. Ventura <jorge.araujo.ventura@gmail.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+The v3 mount notices there is already a supper block so
+nfs_server_remove_lists() called which uses the nfs_client_lock
+spin lock to synchronize access to the client list.
+
+At the same time nfs4_state_manager() is running through
+the client list looking for work to do, using the same
+lock. When nfs4_state_manager() wins the race to the
+list, a v3 client pointer is found and not ignored
+properly which causes the panic.
+
+Moving some protocol checks before the state checking
+avoids the panic.
+
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-omap2-mcspi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4client.c |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -329,7 +329,8 @@ static void omap2_mcspi_set_fifo(const s
- disable_fifo:
- 	if (t->rx_buf != NULL)
- 		chconf &= ~OMAP2_MCSPI_CHCONF_FFER;
--	else
-+
-+	if (t->tx_buf != NULL)
- 		chconf &= ~OMAP2_MCSPI_CHCONF_FFET;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -482,6 +482,16 @@ int nfs40_walk_client_list(struct nfs_cl
  
- 	mcspi_write_chconf0(spi, chconf);
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
++
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
++
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos" */
+ 		if (pos->cl_cons_state > NFS_CS_READY) {
+@@ -501,15 +511,6 @@ int nfs40_walk_client_list(struct nfs_cl
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+ 
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (pos->cl_clientid != new->cl_clientid)
+ 			continue;
+ 
+@@ -622,6 +623,16 @@ int nfs41_walk_client_list(struct nfs_cl
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
++
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
++
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos", especially the client
+ 		 * ID and serverowner fields.  Wait for CREATE_SESSION
+@@ -647,15 +658,6 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+ 
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (!nfs4_match_clientids(pos, new))
+ 			continue;
+ 
 
 
