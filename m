@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855AbaJCV4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:56:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46062 "EHLO
+	id S932328AbaJCVz4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:55:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202AbaJCVzy (ORCPT
+	with ESMTP id S932305AbaJCVzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:55:54 -0400
+	Fri, 3 Oct 2014 17:55:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Andrei Elovikov <a.elovikov@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 278/357] mm, slab: initialize object alignment on cache creation
-Date: Fri,  3 Oct 2014 14:31:04 -0700
-Message-Id: <20141003212941.844778845@linuxfoundation.org>
+        Adam Richter <adam_richter2004@yahoo.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 044/238] ALSA: hda - Fix invalid pin powermap without jack detection
+Date: Fri,  3 Oct 2014 14:29:19 -0700
+Message-Id: <20141003212915.068332733@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,62 +25,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d4a5fca592b9ab52b90bb261a90af3c8f53be011 upstream.
+commit 7a9744cb455e6faa287e148394b4b422a6f3c5c4 upstream.
 
-Since commit 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the
-"ralign" automatic variable in __kmem_cache_create() may be used as
-uninitialized.
+When a driver is set up without the jack detection explicitly (either
+by passing a model option or via a specific fixup), the pin powermap
+of IDT/STAC codecs is set up wrongly, resulting in the silence
+output.  It's because of a logic failure in stac_init_power_map().
+It tries to avoid creating a callback for the pins that have other
+auto-hp and auto-mic callbacks, but the check is done in a wrong way
+at a wrong time.  The stac_init_power_map() should be called after
+creating other jack detection ctls, and the jack callback should be
+created only for jack-detectable widgets.
 
-The proper alignment defaults to BYTES_PER_WORD and can be overridden by
-SLAB_RED_ZONE or the alignment specified by the caller.
+This patch fixes the check in stac_init_power_map() and its callee
+at the right place, after snd_hda_gen_build_controls().
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
-
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Adam Richter <adam_richter2004@yahoo.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slab.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2224,7 +2224,8 @@ static int __init_refok setup_cpu_cache(
- int
- __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- {
--	size_t left_over, freelist_size, ralign;
-+	size_t left_over, freelist_size;
-+	size_t ralign = BYTES_PER_WORD;
- 	gfp_t gfp;
- 	int err;
- 	size_t size = cachep->size;
-@@ -2257,14 +2258,6 @@ __kmem_cache_create (struct kmem_cache *
- 		size &= ~(BYTES_PER_WORD - 1);
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -559,8 +559,8 @@ static void stac_init_power_map(struct h
+ 		if (snd_hda_jack_tbl_get(codec, nid))
+ 			continue;
+ 		if (def_conf == AC_JACK_PORT_COMPLEX &&
+-		    !(spec->vref_mute_led_nid == nid ||
+-		      is_jack_detectable(codec, nid))) {
++		    spec->vref_mute_led_nid != nid &&
++		    is_jack_detectable(codec, nid)) {
+ 			snd_hda_jack_detect_enable_callback(codec, nid,
+ 							    STAC_PWR_EVENT,
+ 							    jack_update_power);
+@@ -4212,11 +4212,18 @@ static int stac_parse_auto_config(struct
+ 			return err;
  	}
  
--	/*
--	 * Redzoning and user store require word alignment or possibly larger.
--	 * Note this will be overridden by architecture or caller mandated
--	 * alignment if either is greater than BYTES_PER_WORD.
--	 */
--	if (flags & SLAB_STORE_USER)
--		ralign = BYTES_PER_WORD;
+-	stac_init_power_map(codec);
 -
- 	if (flags & SLAB_RED_ZONE) {
- 		ralign = REDZONE_ALIGN;
- 		/* If redzoning, ensure that the second redzone is suitably
+ 	return 0;
+ }
+ 
++static int stac_build_controls(struct hda_codec *codec)
++{
++	int err = snd_hda_gen_build_controls(codec);
++
++	if (err < 0)
++		return err;
++	stac_init_power_map(codec);
++	return 0;
++}
+ 
+ static int stac_init(struct hda_codec *codec)
+ {
+@@ -4328,7 +4335,7 @@ static int stac_suspend(struct hda_codec
+ #endif /* CONFIG_PM */
+ 
+ static const struct hda_codec_ops stac_patch_ops = {
+-	.build_controls = snd_hda_gen_build_controls,
++	.build_controls = stac_build_controls,
+ 	.build_pcms = snd_hda_gen_build_pcms,
+ 	.init = stac_init,
+ 	.free = stac_free,
 
 
