@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574AbaJCWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:10:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46706 "EHLO
+	id S1757603AbaJCWLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:11:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755697AbaJCWJW (ORCPT
+	with ESMTP id S1755607AbaJCWJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:09:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Bader <stefan.bader@canonical.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Subject: [PATCH 3.14 129/238] x86/xen: dont copy bogus duplicate entries into kernel page tables
-Date: Fri,  3 Oct 2014 14:30:44 -0700
-Message-Id: <20141003212917.801667086@linuxfoundation.org>
+        Ross Lagerwall <ross.lagerwall@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: [PATCH 3.14 128/238] xen/manage: Always freeze/thaw processes when suspend/resuming
+Date: Fri,  3 Oct 2014 14:30:43 -0700
+Message-Id: <20141003212917.771403752@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,131 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Bader <stefan.bader@canonical.com>
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
 
-commit 0b5a50635fc916cf46e3de0b819a61fc3f17e7ee upstream.
+commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
 
-When RANDOMIZE_BASE (KASLR) is enabled; or the sum of all loaded
-modules exceeds 512 MiB, then loading modules fails with a warning
-(and hence a vmalloc allocation failure) because the PTEs for the
-newly-allocated vmalloc address space are not zero.
+Always freeze processes when suspending and thaw processes when resuming
+to prevent a race noticeable with HVM guests.
 
-  WARNING: CPU: 0 PID: 494 at linux/mm/vmalloc.c:128
-           vmap_page_range_noflush+0x2a1/0x360()
+This prevents a deadlock where the khubd kthread (which is designed to
+be freezable) acquires a usb device lock and then tries to allocate
+memory which requires the disk which hasn't been resumed yet.
+Meanwhile, the xenwatch thread deadlocks waiting for the usb device
+lock.
 
-This is caused by xen_setup_kernel_pagetables() copying
-level2_kernel_pgt into level2_fixmap_pgt, overwriting many non-present
-entries.
+Freezing processes fixes this because the khubd thread is only thawed
+after the xenwatch thread finishes resuming all the devices.
 
-Without KASLR, the normal kernel image size only covers the first half
-of level2_kernel_pgt and module space starts after that.
-
-L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[  0..255]->kernel
-                                                  [256..511]->module
-                          [511]->level2_fixmap_pgt[  0..505]->module
-
-This allows 512 MiB of of module vmalloc space to be used before
-having to use the corrupted level2_fixmap_pgt entries.
-
-With KASLR enabled, the kernel image uses the full PUD range of 1G and
-module space starts in the level2_fixmap_pgt. So basically:
-
-L4[511]->level3_kernel_pgt[510]->level2_kernel_pgt[0..511]->kernel
-                          [511]->level2_fixmap_pgt[0..505]->module
-
-And now no module vmalloc space can be used without using the corrupt
-level2_fixmap_pgt entries.
-
-Fix this by properly converting the level2_fixmap_pgt entries to MFNs,
-and setting level1_fixmap_pgt as read-only.
-
-A number of comments were also using the the wrong L3 offset for
-level2_kernel_pgt.  These have been corrected.
-
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reviewed-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/pgtable_64.h |    1 +
- arch/x86/xen/mmu.c                |   27 ++++++++++++---------------
- 2 files changed, 13 insertions(+), 15 deletions(-)
+ drivers/xen/manage.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/arch/x86/include/asm/pgtable_64.h
-+++ b/arch/x86/include/asm/pgtable_64.h
-@@ -19,6 +19,7 @@ extern pud_t level3_ident_pgt[512];
- extern pmd_t level2_kernel_pgt[512];
- extern pmd_t level2_fixmap_pgt[512];
- extern pmd_t level2_ident_pgt[512];
-+extern pte_t level1_fixmap_pgt[512];
- extern pgd_t init_level4_pgt[];
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -111,16 +111,11 @@ static void do_suspend(void)
  
- #define swapper_pg_dir init_level4_pgt
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1866,12 +1866,11 @@ static void __init check_pt_base(unsigne
-  *
-  * We can construct this by grafting the Xen provided pagetable into
-  * head_64.S's preconstructed pagetables.  We copy the Xen L2's into
-- * level2_ident_pgt, level2_kernel_pgt and level2_fixmap_pgt.  This
-- * means that only the kernel has a physical mapping to start with -
-- * but that's enough to get __va working.  We need to fill in the rest
-- * of the physical mapping once some sort of allocator has been set
-- * up.
-- * NOTE: for PVH, the page tables are native.
-+ * level2_ident_pgt, and level2_kernel_pgt.  This means that only the
-+ * kernel has a physical mapping to start with - but that's enough to
-+ * get __va working.  We need to fill in the rest of the physical
-+ * mapping once some sort of allocator has been set up.  NOTE: for
-+ * PVH, the page tables are native.
-  */
- void __init xen_setup_kernel_pagetable(pgd_t *pgd, unsigned long max_pfn)
- {
-@@ -1902,8 +1901,11 @@ void __init xen_setup_kernel_pagetable(p
- 		/* L3_i[0] -> level2_ident_pgt */
- 		convert_pfn_mfn(level3_ident_pgt);
- 		/* L3_k[510] -> level2_kernel_pgt
--		 * L3_i[511] -> level2_fixmap_pgt */
-+		 * L3_k[511] -> level2_fixmap_pgt */
- 		convert_pfn_mfn(level3_kernel_pgt);
-+
-+		/* L3_k[511][506] -> level1_fixmap_pgt */
-+		convert_pfn_mfn(level2_fixmap_pgt);
+ 	shutting_down = SHUTDOWN_SUSPEND;
+ 
+-#ifdef CONFIG_PREEMPT
+-	/* If the kernel is preemptible, we need to freeze all the processes
+-	   to prevent them from being in the middle of a pagetable update
+-	   during suspend. */
+ 	err = freeze_processes();
+ 	if (err) {
+ 		pr_err("%s: freeze failed %d\n", __func__, err);
+ 		goto out;
  	}
- 	/* We get [511][511] and have Xen's version of level2_kernel_pgt */
- 	l3 = m2v(pgd[pgd_index(__START_KERNEL_map)].pgd);
-@@ -1913,21 +1915,15 @@ void __init xen_setup_kernel_pagetable(p
- 	addr[1] = (unsigned long)l3;
- 	addr[2] = (unsigned long)l2;
- 	/* Graft it onto L4[272][0]. Note that we creating an aliasing problem:
--	 * Both L4[272][0] and L4[511][511] have entries that point to the same
-+	 * Both L4[272][0] and L4[511][510] have entries that point to the same
- 	 * L2 (PMD) tables. Meaning that if you modify it in __va space
- 	 * it will be also modified in the __ka space! (But if you just
- 	 * modify the PMD table to point to other PTE's or none, then you
- 	 * are OK - which is what cleanup_highmap does) */
- 	copy_page(level2_ident_pgt, l2);
--	/* Graft it onto L4[511][511] */
-+	/* Graft it onto L4[511][510] */
- 	copy_page(level2_kernel_pgt, l2);
+-#endif
  
--	/* Get [511][510] and graft that in level2_fixmap_pgt */
--	l3 = m2v(pgd[pgd_index(__START_KERNEL_map + PMD_SIZE)].pgd);
--	l2 = m2v(l3[pud_index(__START_KERNEL_map + PMD_SIZE)].pud);
--	copy_page(level2_fixmap_pgt, l2);
--	/* Note that we don't do anything with level1_fixmap_pgt which
--	 * we don't need. */
- 	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
- 		/* Make pagetable pieces RO */
- 		set_page_prot(init_level4_pgt, PAGE_KERNEL_RO);
-@@ -1937,6 +1933,7 @@ void __init xen_setup_kernel_pagetable(p
- 		set_page_prot(level2_ident_pgt, PAGE_KERNEL_RO);
- 		set_page_prot(level2_kernel_pgt, PAGE_KERNEL_RO);
- 		set_page_prot(level2_fixmap_pgt, PAGE_KERNEL_RO);
-+		set_page_prot(level1_fixmap_pgt, PAGE_KERNEL_RO);
+ 	err = dpm_suspend_start(PMSG_FREEZE);
+ 	if (err) {
+@@ -169,10 +164,8 @@ out_resume:
+ 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
  
- 		/* Pin down new L4 */
- 		pin_pagetable_pfn(MMUEXT_PIN_L4_TABLE,
+ out_thaw:
+-#ifdef CONFIG_PREEMPT
+ 	thaw_processes();
+ out:
+-#endif
+ 	shutting_down = SHUTDOWN_INVALID;
+ }
+ #endif	/* CONFIG_HIBERNATE_CALLBACKS */
 
 
