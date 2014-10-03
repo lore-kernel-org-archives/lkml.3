@@ -1,51 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759123AbaJCWuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:50:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60489 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759090AbaJCWum (ORCPT
+	id S1758931AbaJCWtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47418 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758242AbaJCWYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:50:42 -0400
-Date: Fri, 03 Oct 2014 15:52:49 -0700 (PDT)
-Message-Id: <20141003.155249.1949814662829849172.davem@davemloft.net>
-To: gang.chen.5i5j@gmail.com
-Cc: samuel@sortiz.org, richard@nod.at, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/irda/Kconfig: Let SH_IRDA depend on
- HAS_IOMEM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <542D6218.3040609@gmail.com>
-References: <542D6218.3040609@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 15:50:42 -0700 (PDT)
+	Fri, 3 Oct 2014 18:24:11 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 062/143] NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
+Date: Fri,  3 Oct 2014 14:34:17 -0700
+Message-Id: <20141003213316.384249517@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
+References: <20141003213314.470709810@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s93Moscv019271
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-Date: Thu, 02 Oct 2014 22:32:56 +0800
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> SH_IRDA needs HAS_IOMEM, so depend on it. The related error(with
-> allmodconfig under um):
-> 
->     CC [M]  drivers/net/irda/sh_irda.o
->   drivers/net/irda/sh_irda.c: In function ¡sh_irda_probe¢:
->   drivers/net/irda/sh_irda.c:776:2: error: implicit declaration of function ¡ioremap_nocache¢ [-Werror=implicit-function-declaration]
->     self->membase = ioremap_nocache(res->start, resource_size(res));
->     ^
->   drivers/net/irda/sh_irda.c:776:16: warning: assignment makes pointer from integer without a cast [enabled by default]
->     self->membase = ioremap_nocache(res->start, resource_size(res));
->                   ^
->   drivers/net/irda/sh_irda.c:821:2: error: implicit declaration of function ¡iounmap¢ [-Werror=implicit-function-declaration]
->     iounmap(self->membase);
->     ^
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+------------------
 
-Applied.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+From: Steve Dickson <steved@redhat.com>
+
+commit 080af20cc945d110f9912d01cf6b66f94a375b8d upstream.
+
+There is a race between nfs4_state_manager() and
+nfs_server_remove_lists() that happens during a nfsv3 mount.
+
+The v3 mount notices there is already a supper block so
+nfs_server_remove_lists() called which uses the nfs_client_lock
+spin lock to synchronize access to the client list.
+
+At the same time nfs4_state_manager() is running through
+the client list looking for work to do, using the same
+lock. When nfs4_state_manager() wins the race to the
+list, a v3 client pointer is found and not ignored
+properly which causes the panic.
+
+Moving some protocol checks before the state checking
+avoids the panic.
+
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfs/nfs4client.c |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
+
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -311,6 +311,16 @@ int nfs40_walk_client_list(struct nfs_cl
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
++
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
++
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos" */
+ 		if (pos->cl_cons_state > NFS_CS_READY) {
+@@ -330,15 +340,6 @@ int nfs40_walk_client_list(struct nfs_cl
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+ 
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (pos->cl_clientid != new->cl_clientid)
+ 			continue;
+ 
+@@ -444,6 +445,16 @@ int nfs41_walk_client_list(struct nfs_cl
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
++
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
++
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos", especially the client
+ 		 * ID and serverowner fields.  Wait for CREATE_SESSION
+@@ -469,15 +480,6 @@ int nfs41_walk_client_list(struct nfs_cl
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+ 
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (!nfs4_match_clientids(pos, new))
+ 			continue;
+ 
+
+
