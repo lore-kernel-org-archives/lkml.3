@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638AbaJCWlB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:41:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
+	id S1758708AbaJCWmK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:42:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652AbaJCWYU (ORCPT
+	with ESMTP id S932643AbaJCWYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:20 -0400
+	Fri, 3 Oct 2014 18:24:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pontus Fuchs <pontus.fuchs@gmail.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 108/143] genhd: fix leftover might_sleep() in blk_free_devt()
-Date: Fri,  3 Oct 2014 14:35:03 -0700
-Message-Id: <20141003213317.744562917@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH 3.10 097/143] Input: synaptics - add support for ForcePads
+Date: Fri,  3 Oct 2014 14:34:52 -0700
+Message-Id: <20141003213317.403696848@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,33 +29,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 46f341ffcfb5d8530f7d1e60f3be06cce6661b62 upstream.
+commit 5715fc764f7753d464dbe094b5ef9cffa6e479a4 upstream.
 
-Commit 2da78092 changed the locking from a mutex to a spinlock,
-so we now longer sleep in this context. But there was a leftover
-might_sleep() in there, which now triggers since we do the final
-free from an RCU callback. Get rid of it.
+ForcePads are found on HP EliteBook 1040 laptops. They lack any kind of
+physical buttons, instead they generate primary button click when user
+presses somewhat hard on the surface of the touchpad. Unfortunately they
+also report primary button click whenever there are 2 or more contacts
+on the pad, messing up all multi-finger gestures (2-finger scrolling,
+multi-finger tapping, etc). To cope with this behavior we introduce a
+delay (currently 50 msecs) in reporting primary press in case more
+contacts appear.
 
-Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/input/mouse/synaptics.c |   68 ++++++++++++++++++++++++++++++----------
+ drivers/input/mouse/synaptics.h |   11 ++++++
+ 2 files changed, 63 insertions(+), 16 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -445,8 +445,6 @@ int blk_alloc_devt(struct hd_struct *par
-  */
- void blk_free_devt(dev_t devt)
- {
--	might_sleep();
--
- 	if (devt == MKDEV(0, 0))
- 		return;
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -549,10 +549,61 @@ static int synaptics_parse_hw_state(cons
+ 			 ((buf[0] & 0x04) >> 1) |
+ 			 ((buf[3] & 0x04) >> 2));
  
++		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
++			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
++		    hw->w == 2) {
++			synaptics_parse_agm(buf, priv, hw);
++			return 1;
++		}
++
++		hw->x = (((buf[3] & 0x10) << 8) |
++			 ((buf[1] & 0x0f) << 8) |
++			 buf[4]);
++		hw->y = (((buf[3] & 0x20) << 7) |
++			 ((buf[1] & 0xf0) << 4) |
++			 buf[5]);
++		hw->z = buf[2];
++
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+-		if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
++		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
++			/*
++			 * ForcePads, like Clickpads, use middle button
++			 * bits to report primary button clicks.
++			 * Unfortunately they report primary button not
++			 * only when user presses on the pad above certain
++			 * threshold, but also when there are more than one
++			 * finger on the touchpad, which interferes with
++			 * out multi-finger gestures.
++			 */
++			if (hw->z == 0) {
++				/* No contacts */
++				priv->press = priv->report_press = false;
++			} else if (hw->w >= 4 && ((buf[0] ^ buf[3]) & 0x01)) {
++				/*
++				 * Single-finger touch with pressure above
++				 * the threshold. If pressure stays long
++				 * enough, we'll start reporting primary
++				 * button. We rely on the device continuing
++				 * sending data even if finger does not
++				 * move.
++				 */
++				if  (!priv->press) {
++					priv->press_start = jiffies;
++					priv->press = true;
++				} else if (time_after(jiffies,
++						priv->press_start +
++							msecs_to_jiffies(50))) {
++					priv->report_press = true;
++				}
++			} else {
++				priv->press = false;
++			}
++
++			hw->left = priv->report_press;
++
++		} else if (SYN_CAP_CLICKPAD(priv->ext_cap_0c)) {
+ 			/*
+ 			 * Clickpad's button is transmitted as middle button,
+ 			 * however, since it is primary button, we will report
+@@ -571,21 +622,6 @@ static int synaptics_parse_hw_state(cons
+ 			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+ 		}
+ 
+-		if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) ||
+-			SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) &&
+-		    hw->w == 2) {
+-			synaptics_parse_agm(buf, priv, hw);
+-			return 1;
+-		}
+-
+-		hw->x = (((buf[3] & 0x10) << 8) |
+-			 ((buf[1] & 0x0f) << 8) |
+-			 buf[4]);
+-		hw->y = (((buf[3] & 0x20) << 7) |
+-			 ((buf[1] & 0xf0) << 4) |
+-			 buf[5]);
+-		hw->z = buf[2];
+-
+ 		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+ 		    ((buf[0] ^ buf[3]) & 0x02)) {
+ 			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -78,6 +78,11 @@
+  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
+  *					reports 2.
+  * 2	0x20	report min		query 0x0f gives min coord reported
++ * 2	0x80	forcepad		forcepad is a variant of clickpad that
++ *					does not have physical buttons but rather
++ *					uses pressure above certain threshold to
++ *					report primary clicks. Forcepads also have
++ *					clickpad bit set.
+  */
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+ #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+@@ -86,6 +91,7 @@
+ #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
+ #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
+ #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
++#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -177,6 +183,11 @@ struct synaptics_data {
+ 	 */
+ 	struct synaptics_hw_state agm;
+ 	bool agm_pending;			/* new AGM packet received */
++
++	/* ForcePad handling */
++	unsigned long				press_start;
++	bool					press;
++	bool					report_press;
+ };
+ 
+ void synaptics_module_init(void);
 
 
