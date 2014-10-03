@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055AbaJCW36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:29:58 -0400
+	id S1756251AbaJCWaE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:30:04 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:47567 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260AbaJCW0c (ORCPT
+	with ESMTP id S1756413AbaJCW0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:26:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Honggang Li <enjoymindful@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 103/143] percpu: free percpu allocation info for uniprocessor system
-Date: Fri,  3 Oct 2014 14:34:58 -0700
-Message-Id: <20141003213317.581954072@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 105/143] percpu: perform tlb flush after pcpu_map_pages() failure
+Date: Fri,  3 Oct 2014 14:35:00 -0700
+Message-Id: <20141003213317.645179356@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,32 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Honggang Li <enjoymindful@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 3189eddbcafcc4d827f7f19facbeddec4424eba8 upstream.
+commit 849f5169097e1ba35b90ac9df76b5bb6f9c0aabd upstream.
 
-Currently, only SMP system free the percpu allocation info.
-Uniprocessor system should free it too. For example, one x86 UML
-virtual machine with 256MB memory, UML kernel wastes one page memory.
+If pcpu_map_pages() fails midway, it unmaps the already mapped pages.
+Currently, it doesn't flush tlb after the partial unmapping.  This may
+be okay in most cases as the established mapping hasn't been used at
+that point but it can go wrong and when it goes wrong it'd be
+extremely difficult to track down.
 
-Signed-off-by: Honggang Li <enjoymindful@gmail.com>
+Flush tlb after the partial unmapping.
+
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/percpu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ mm/percpu-vm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/percpu.c
-+++ b/mm/percpu.c
-@@ -1910,6 +1910,8 @@ void __init setup_per_cpu_areas(void)
- 
- 	if (pcpu_setup_first_chunk(ai, fc) < 0)
- 		panic("Failed to initialize percpu areas.");
-+
-+	pcpu_free_alloc_info(ai);
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -272,6 +272,7 @@ err:
+ 		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
+ 				   page_end - page_start);
+ 	}
++	pcpu_post_unmap_tlb_flush(chunk, page_start, page_end);
+ 	return err;
  }
  
- #endif	/* CONFIG_SMP */
 
 
