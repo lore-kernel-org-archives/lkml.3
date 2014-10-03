@@ -1,146 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940AbaJCQeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:34:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:19258 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753631AbaJCQeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:34:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,648,1406592000"; 
-   d="scan'208";a="177948023"
-Message-ID: <1412354047.12695.38.camel@citrix.com>
-Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: David Vrabel <david.vrabel@citrix.com>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Fri, 3 Oct 2014 17:34:07 +0100
-In-Reply-To: <alpine.DEB.2.02.1410031717420.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com>
-	 <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <542EBB2A.6030104@citrix.com>
-	 <alpine.DEB.2.02.1410031717420.17038@kaball.uk.xensource.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
+	id S1754037AbaJCQfI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:35:08 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48481 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714AbaJCQfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:35:05 -0400
+Message-ID: <542ECFF4.7010602@oracle.com>
+Date: Fri, 03 Oct 2014 12:33:56 -0400
+From: konrad wilk <konrad.wilk@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com> <5426CA0A.7000806@hurleysoftware.com> <CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com> <54294C0B.1060705@hurleysoftware.com> <CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com> <542ABF77.1020402@hurleysoftware.com> <alpine.DEB.2.11.1410010131380.4455@nanos> <542B5DC2.8020806@hurleysoftware.com> <20141002164121.GF1715@laptop.dumpdata.com> <542DCB9C.4020703@hurleysoftware.com> <CAC5umyjHruhnwiKwrHLBAF+g0ZDVouuuNvrisrUH8o963GyytQ@mail.gmail.com> <542EB242.4090102@hurleysoftware.com> <CAC5umygJ3EDOb4E29+YPo4t4Ew_K3x7jpxLrmvNco3U=UJBCrA@mail.gmail.com>
+In-Reply-To: <CAC5umygJ3EDOb4E29+YPo4t4Ew_K3x7jpxLrmvNco3U=UJBCrA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-03 at 17:20 +0100, Stefano Stabellini wrote:
-> On Fri, 3 Oct 2014, David Vrabel wrote:
-> > On 03/10/14 15:53, Stefano Stabellini wrote:
-> > > Introduce support for new hypercall GNTTABOP_cache_flush.
-> > > Use it to perform cache flashing on pages used for dma when necessary.
-> > [..]
-> > >  /* functions called by SWIOTLB */
-> > > @@ -22,16 +25,31 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
-> > >  		size_t len = left;
-> > >  		void *vaddr;
-> > >  	
-> > > +		if (len + offset > PAGE_SIZE)
-> > > +			len = PAGE_SIZE - offset;
-> > > +
-> > >  		if (!pfn_valid(pfn))
-> > >  		{
-> > > -			/* TODO: cache flush */
-> > > +			struct gnttab_cache_flush cflush;
-> > > +
-> > > +			cflush.op = 0;
-> > > +			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
-> > > +			cflush.offset = offset;
-> > > +			cflush.size = len;
-> > > +
-> > > +			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
-> > > +				cflush.op = GNTTAB_CACHE_INVAL;
-> > > +			if (op == dmac_map_area) {
-> > > +				cflush.op = GNTTAB_CACHE_CLEAN;
-> > > +				if (dir == DMA_FROM_DEVICE)
-> > > +					cflush.op |= GNTTAB_CACHE_INVAL;
-> > > +			}
-> > 
-> > Are all these cache operations needed?  You do a clean on map regardless
-> > of the direction and INVAL on map seems unnecessary.
+On 10/3/2014 12:06 PM, Akinobu Mita wrote:
+> 2014-10-03 23:27 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>> On 10/02/2014 07:08 PM, Akinobu Mita wrote:
+>>> 2014-10-03 7:03 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>>>> On 10/02/2014 12:41 PM, Konrad Rzeszutek Wilk wrote:
+>>>>> On Tue, Sep 30, 2014 at 09:49:54PM -0400, Peter Hurley wrote:
+>>>>>> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+>>>
+>>>>>> Which is different than if the plan is to ship production units for x86;
+>>>>>> then a general purpose solution will be required.
+>>>>>>
+>>>>>> As to the good design of a general purpose solution for allocating and
+>>>>>> mapping huge order pages, you are certainly more qualified to help Akinobu
+>>>>>> than I am.
+>>>>
+>>>> What Akinobu's patches intend to support is:
+>>>>
+>>>>          phys_addr = dma_alloc_coherent(dev, 64 * 1024 * 1024, &bus_addr, GFP_KERNEL);
+>>>>
+>>>> which raises three issues:
+>>>>
+>>>> 1. Where do coherent blocks of this size come from?
+>>>> 2. How to prevent fragmentation of these reserved blocks over time by
+>>>>     existing DMA users?
+>>>> 3. Is this support generically required across all iommu implementations on x86?
+>>>>
+>>>> Questions 1 and 2 are non-trivial, in the general case, otherwise the page
+>>>> allocator would already do this. Simply dropping in the contiguous memory
+>>>> allocator doesn't work because CMA does not have the same policy and performance
+>>>> as the page allocator, and is already causing performance regressions even
+>>>> in the absence of huge page allocations.
+>>>
+>>> Could you take a look at the patches I sent?  Can they fix these issues?
+>>> https://lkml.org/lkml/2014/9/28/110
+>>>
+>>> With these patches, normal alloc_pages() is used for allocation first
+>>> and dma_alloc_from_contiguous() is used as a fallback.
+>>
+>> Sure, I can test these patches this weekend.
+>> Where are the unit tests?
+>
+> Thanks a lot.  I would like to know whether the performance regression
+> you see will disappear or not with these patches as if CONFIG_DMA_CMA is
+> disabled.
+>
+>>>> So that's why I raised question 3; is making the necessary compromises to support
+>>>> 64MB coherent DMA allocations across all x86 iommu implementations actually
+>>>> required?
+>>>>
+>>>> Prior to Akinobu's patches, the use of CMA by x86 iommu configurations was
+>>>> designed to be limited to testing configurations, as the introductory
+>>>> commit states:
+>>>>
+>>>> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
+>>>> Author: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>> Date:   Thu Dec 29 13:09:51 2011 +0100
+>>>>
+>>>>      X86: integrate CMA with DMA-mapping subsystem
+>>>>
+>>>>      This patch adds support for CMA to dma-mapping subsystem for x86
+>>>>      architecture that uses common pci-dma/pci-nommu implementation. This
+>>>>      allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+>>>>
+>>>>      Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>      Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>      CC: Michal Nazarewicz <mina86@mina86.com>
+>>>>      Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>>>
+>>>>
+>>>> Which brings me to my suggestion: if support for huge coherent DMA is
+>>>> required only for a special test platform, then could not this support
+>>>> be specific to a new iommu configuration, namely iommu=cma, which would
+>>>> get initialized much the same way that iommu=calgary is now.
+>>>>
+>>>> The code for such a iommu configuration would mostly duplicate
+>>>> arch/x86/kernel/pci-swiotlb.c and the CMA support would get removed from
+>>>> the other x86 iommu implementations.
+>>>
+>>> I'm not sure I read correctly, though.  Can boot option 'cma=0' also
+>>> help avoiding CMA from IOMMU implementation?
+>>
+>> Maybe, but that's not an appropriate solution for distro kernels.
+>>
+>> Nor does this address configurations that want a really large CMA so
+>> 1GB huge pages can be allocated (not for DMA though).
+>
+> Now I see the point of iommu=cma you suggested.  But what should we do
+> when CONFIG_SWIOTLB is disabled, especially for x86_32?
+> Should we just introduce yet another flag to tell not using DMA_CMA
+> instead of adding new swiotlb-like iommu implementation?
+>
 
-Isn't the inval on map so that the processor doesn't decide to
-evict/clean the cache line all over your newly DMA'd data?
+If you implement an DMA API producer - aka dma_ops (which is what Peter 
+is thinking I believe) it won't matter which IOMMUs / DMA producers are 
+selected right?
 
-> > I would have thought it would be:
-> > 
-> > map && (TO_DEVICE || BOTH)
-> >    op = CLEAN
-> > 
-> > unmap && (FROM_DEVICE || BOTH)
-> >    op = INVAL
-> 
-> I was trying to do the same thing Linux is already doing on native to
-> stay on the safe side.
-> 
-> See arch/arm/mm/cache-v7.S:v7_dma_map_area and
-> arch/arm/mm/cache-v7.S:v7_dma_unmap_area.
-> 
-> Unless I misread the assembly they should match.
+Or are you saying that CMA needs SWIOTLB to handle certain type of
+pages as a fallback mechanism - and hence there needs to be a tight
+relationship?
 
-I think you have, beq doesn't set lr, so the called function will return
-to its "grandparent". i.e. the caller of v7_dma_map_area in this case
-(which will have used bl), so:
-ENTRY(v7_dma_map_area)
-        add     r1, r1, r0
-        teq     r2, #DMA_FROM_DEVICE
-        beq     v7_dma_inv_range
-        b       v7_dma_clean_range
-ENDPROC(v7_dma_map_area)
-
-Is actually
-	if (dir == from device)
-		inv
-	else
-		clean
-
-which makes much more sense I think.
-
-
-> 
-> 
-> > > --- a/include/xen/interface/grant_table.h
-> > > +++ b/include/xen/interface/grant_table.h
-> > > @@ -479,6 +479,24 @@ struct gnttab_get_version {
-> > >  DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
-> > >  
-> > >  /*
-> > > + * Issue one or more cache maintenance operations on a portion of a
-> > > + * page granted to the calling domain by a foreign domain.
-> > > + */
-> > > +#define GNTTABOP_cache_flush          12
-> > > +struct gnttab_cache_flush {
-> > > +    union {
-> > > +        uint64_t dev_bus_addr;
-> > > +        grant_ref_t ref;
-> > > +    } a;
-> > > +    uint32_t offset; /* offset from start of grant */
-> > > +    uint32_t size;   /* size within the grant */
-> > > +#define GNTTAB_CACHE_CLEAN      (1<<0)
-> > > +#define GNTTAB_CACHE_INVAL      (1<<1)
-> > > +    uint32_t op;
-> > > +};
-> > > +DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
-> > > +
-> > > +/*
-> > >   * Bitfield values for update_pin_status.flags.
-> > >   */
-> > >   /* Map the grant entry for access by I/O devices. */
-> > 
-> > If the ARM bits are correct, have a
-> > 
-> > Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> > 
-> > for the common header.
-> > 
-> > David
-> > 
-
+In which case I would look at making SWIOTLB be more library like - the 
+Xen-SWIOTLB already does that by using certain parts of the SWIOTLB code
+which are exposed to the rest of the kernel.
 
