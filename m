@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932825AbaJCXRJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:17:09 -0400
+	id S932905AbaJCXR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:17:58 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757869AbaJCWNv (ORCPT
+	with ESMTP id S1757859AbaJCWNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:51 -0400
+	Fri, 3 Oct 2014 18:13:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Al Viro <viro@zeniv.linux.org.uk>, Waiman Long <Waiman.Long@hp.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 175/238] lockdep: Revert lockdep check in raw_seqcount_begin()
-Date: Fri,  3 Oct 2014 14:31:30 -0700
-Message-Id: <20141003212919.272272580@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 171/238] percpu: perform tlb flush after pcpu_map_pages() failure
+Date: Fri,  3 Oct 2014 14:31:26 -0700
+Message-Id: <20141003212919.144625832@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -35,56 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 22fdcf02f6e80d64a927f702dd9d631a927d87d4 upstream.
+commit 849f5169097e1ba35b90ac9df76b5bb6f9c0aabd upstream.
 
-This commit reverts the addition of lockdep checking to raw_seqcount_begin
-for the following reasons:
+If pcpu_map_pages() fails midway, it unmaps the already mapped pages.
+Currently, it doesn't flush tlb after the partial unmapping.  This may
+be okay in most cases as the established mapping hasn't been used at
+that point but it can go wrong and when it goes wrong it'd be
+extremely difficult to track down.
 
- 1) It violates the naming convention that raw_* functions should not
-    do lockdep checks (a convention that is also followed by the other
-    raw_*_seqcount_begin functions).
+Flush tlb after the partial unmapping.
 
- 2) raw_seqcount_begin does not spin, so it can only be part of an ABBA
-    deadlock in very special circumstances (for instance if a lock
-    is held across the entire raw_seqcount_begin()+read_seqcount_retry()
-    loop while also being taken inside the write_seqcount protected area).
-
- 3) It is causing false positives with some existing callers, and there
-    is no non-lockdep alternative for those callers to use.
-
-None of the three existing callers (__d_lookup_rcu, netdev_get_name, and
-the NFS state code) appear to use the function in a manner that is ABBA
-deadlock prone.
-
-Fixes: 1ca7d67cf5d5: seqcount: Add lockdep functionality to seqcount/seqlock
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Waiman Long <Waiman.Long@hp.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/CAHQdGtRR6SvEhXiqWo24hoUh9AU9cL82Z8Z-d8-7u951F_d+5g@mail.gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/seqlock.h |    2 --
- 1 file changed, 2 deletions(-)
+ mm/percpu-vm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -164,8 +164,6 @@ static inline unsigned read_seqcount_beg
- static inline unsigned raw_seqcount_begin(const seqcount_t *s)
- {
- 	unsigned ret = ACCESS_ONCE(s->sequence);
--
--	seqcount_lockdep_reader_access(s);
- 	smp_rmb();
- 	return ret & ~1;
+--- a/mm/percpu-vm.c
++++ b/mm/percpu-vm.c
+@@ -272,6 +272,7 @@ err:
+ 		__pcpu_unmap_pages(pcpu_chunk_addr(chunk, tcpu, page_start),
+ 				   page_end - page_start);
+ 	}
++	pcpu_post_unmap_tlb_flush(chunk, page_start, page_end);
+ 	return err;
  }
+ 
 
 
