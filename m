@@ -1,110 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261AbaJCSAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 14:00:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26554 "EHLO mx1.redhat.com"
+	id S1754362AbaJCSBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 14:01:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27072 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751290AbaJCSAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 14:00:14 -0400
-Date: Fri, 3 Oct 2014 19:56:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
-	kernel/sched/core.c:7156 __might_sleep()
-Message-ID: <20141003175654.GA14952@redhat.com>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com> <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <20141002201020.GA8907@redhat.com> <20141003115020.GG10583@worktop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141003115020.GG10583@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751573AbaJCSBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 14:01:33 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-api@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Subject: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
+Date: Fri,  3 Oct 2014 19:08:00 +0200
+Message-Id: <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03, Peter Zijlstra wrote:
->
-> On Thu, Oct 02, 2014 at 10:10:20PM +0200, Oleg Nesterov wrote:
->
-> > As for rfcomm_run(), perhaps it can ise it too?
-> >
-> > 	set_kthread_wants_signal(true);
-> >
-> > 	add_wait_queue(&rfcomm_wq, &wait);
-> > 	for (;;) {
-> > 		// This is only possible if kthread_should_stop() == T
->
-> True because kthreads SIG_IGN everything, right?
+remap_anon_pages (unlike remap_file_pages) tries to be non intrusive
+in the rmap code.
 
-Yes,
+As far as the rmap code is concerned, rmap_anon_pages only alters the
+page->mapping and page->index. It does it while holding the page
+lock. However there are a few places that in presence of anon pages
+are allowed to do rmap walks without the page lock (split_huge_page
+and page_referenced_anon). Those places that are doing rmap walks
+without taking the page lock first, must be updated to re-check that
+the page->mapping didn't change after they obtained the anon_vma
+lock. remap_anon_pages takes the anon_vma lock for writing before
+altering the page->mapping, so if the page->mapping is still the same
+after obtaining the anon_vma lock (without the page lock), the rmap
+walks can go ahead safely (and remap_anon_pages will wait them to
+complete before proceeding).
 
-> > 		if (signal_pending(current))
-> > 			break;
-> >
-> > 		rfcomm_process_sessions();
-> > 		wait_woken(TASK_INTERRUPTIBLE);
-> > 	}
-> >
-> > Of course, this assumes that rfcomm_process_sessions() can't do something
-> > "really bad" if signal_pending() is true.
->
-> So from what I can think of, everything that does an INTERRUPTIBLE sleep
-> will 'malfunction' after that, right? Which might be quite a lot
-> actually.
+remap_anon_pages serializes against itself with the page lock.
 
-Yes.
+All other places taking the anon_vma lock while holding the mmap_sem
+for writing, don't need to check if the page->mapping has changed
+after taking the anon_vma lock, regardless of the page lock, because
+remap_anon_pages holds the mmap_sem for reading.
 
-> > What do you think?
->
-> Interesting approach, but somewhat risky I tihnk, due to that
-> INTERRUPTIBLE thing.
+Overall this looks a fairly small change to the rmap code, notably
+less intrusive than the nonlinear vmas created by remap_file_pages.
 
-OK, this is fixable.  rfcomm_run() can do
+There's one constraint enforced to allow this simplification: the
+source pages passed to remap_anon_pages must be mapped only in one
+vma, but this is not a limitation when used to handle userland page
+faults with MADV_USERFAULT. The source addresses passed to
+remap_anon_pages should be set as VM_DONTCOPY with MADV_DONTFORK to
+avoid any risk of the mapcount of the pages increasing, if fork runs
+in parallel in another thread, before or while remap_anon_pages runs.
 
-	add_wait_queue(&rfcomm_wq, &wait);
-	while (!kthread_should_stop()) {
-		rfcomm_process_sessions();
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ mm/huge_memory.c | 24 ++++++++++++++++++++----
+ mm/rmap.c        |  9 +++++++++
+ 2 files changed, 29 insertions(+), 4 deletions(-)
 
-		set_kthread_wants_signal(true);
-		wait_woken(TASK_INTERRUPTIBLE);
-		set_kthread_wants_signal(false);
-	}
-	remove_wait_queue(&rfcomm_wq, &wait);
-
-Or. perhaps we can change wait_woken
-
-	-	set_current_state(mode);
-	+	if (mode)
-	+		set_current_state(mode);
-
-
-then rfcomm_run() can do
-
-	for (;;) {
-		rfcomm_process_sessions();
-
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (kthread_should_stop())
-			break;
-		wait_woken(0);
-	}
-
-Or perhaps we can split wait_woken() into 2 helpers,
-
-	static inline long wait_woken(wq, mode, timeout)
-	{
-		set_current_state(mode);
-		schedule_woken(wq, timeout); // does the rest
-	}
-
-to avoid "mode == 0" hack; rfcomm_run() should use schedule_woken().
-
-What do you think?
-
-Oleg.
-
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index b402d60..4277ed7 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1921,6 +1921,7 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
+ {
+ 	struct anon_vma *anon_vma;
+ 	int ret = 1;
++	struct address_space *mapping;
+ 
+ 	BUG_ON(is_huge_zero_page(page));
+ 	BUG_ON(!PageAnon(page));
+@@ -1932,10 +1933,24 @@ int split_huge_page_to_list(struct page *page, struct list_head *list)
+ 	 * page_lock_anon_vma_read except the write lock is taken to serialise
+ 	 * against parallel split or collapse operations.
+ 	 */
+-	anon_vma = page_get_anon_vma(page);
+-	if (!anon_vma)
+-		goto out;
+-	anon_vma_lock_write(anon_vma);
++	for (;;) {
++		mapping = ACCESS_ONCE(page->mapping);
++		anon_vma = page_get_anon_vma(page);
++		if (!anon_vma)
++			goto out;
++		anon_vma_lock_write(anon_vma);
++		/*
++		 * We don't hold the page lock here so
++		 * remap_anon_pages_huge_pmd can change the anon_vma
++		 * from under us until we obtain the anon_vma
++		 * lock. Verify that we obtained the anon_vma lock
++		 * before remap_anon_pages did.
++		 */
++		if (likely(mapping == ACCESS_ONCE(page->mapping)))
++			break;
++		anon_vma_unlock_write(anon_vma);
++		put_anon_vma(anon_vma);
++	}
+ 
+ 	ret = 0;
+ 	if (!PageCompound(page))
+@@ -2460,6 +2475,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+ 	 * Prevent all access to pagetables with the exception of
+ 	 * gup_fast later hanlded by the ptep_clear_flush and the VM
+ 	 * handled by the anon_vma lock + PG_lock.
++	 * remap_anon_pages is prevented to race as well by the mmap_sem.
+ 	 */
+ 	down_write(&mm->mmap_sem);
+ 	if (unlikely(khugepaged_test_exit(mm)))
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 3e8491c..6d875eb 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -450,6 +450,7 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+ 	struct anon_vma *root_anon_vma;
+ 	unsigned long anon_mapping;
+ 
++repeat:
+ 	rcu_read_lock();
+ 	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+ 	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+@@ -488,6 +489,14 @@ struct anon_vma *page_lock_anon_vma_read(struct page *page)
+ 	rcu_read_unlock();
+ 	anon_vma_lock_read(anon_vma);
+ 
++	/* check if remap_anon_pages changed the anon_vma */
++	if (unlikely((unsigned long) ACCESS_ONCE(page->mapping) != anon_mapping)) {
++		anon_vma_unlock_read(anon_vma);
++		put_anon_vma(anon_vma);
++		anon_vma = NULL;
++		goto repeat;
++	}
++
+ 	if (atomic_dec_and_test(&anon_vma->refcount)) {
+ 		/*
+ 		 * Oops, we held the last refcount, release the lock
