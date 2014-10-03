@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759955AbaJCXWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:22:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46754 "EHLO
+	id S1760003AbaJCXXR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:23:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757759AbaJCWNo (ORCPT
+	with ESMTP id S1757779AbaJCWNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:44 -0400
+	Fri, 3 Oct 2014 18:13:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 152/238] Revert "iwlwifi: dvm: dont enable CTS to self"
-Date: Fri,  3 Oct 2014 14:31:07 -0700
-Message-Id: <20141003212918.544848392@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.14 146/238] Target/iser: Dont put isert_conn inside disconnected handler
+Date: Fri,  3 Oct 2014 14:31:01 -0700
+Message-Id: <20141003212918.353871244@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,48 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit f47f46d7b09cf1d09e4b44b6cc4dd7d68a08028c upstream.
+commit 0fc4ea701fcf5bc51ace4e288af5be741465f776 upstream.
 
-This reverts commit 43d826ca5979927131685cc2092c7ce862cb91cd.
+disconnected_handler is invoked on several CM events (such
+as DISCONNECTED, DEVICE_REMOVAL, TIMEWAIT_EXIT...). Since
+multiple  events can occur while before isert_free_conn is
+invoked, we might put all isert_conn references and free
+the connection too early.
 
-This commit caused packet loss.
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-@@ -1068,6 +1068,13 @@ int iwlagn_commit_rxon(struct iwl_priv *
- 	/* recalculate basic rates */
- 	iwl_calc_basic_rates(priv, ctx);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -716,7 +716,6 @@ isert_disconnect_work(struct work_struct
  
-+	/*
-+	 * force CTS-to-self frames protection if RTS-CTS is not preferred
-+	 * one aggregation protection method
-+	 */
-+	if (!priv->hw_params.use_rts_for_aggregation)
-+		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-+
- 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
- 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
- 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
-@@ -1473,6 +1480,11 @@ void iwlagn_bss_info_changed(struct ieee
- 	else
- 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
+ wake_up:
+ 	complete(&isert_conn->conn_wait);
+-	isert_put_conn(isert_conn);
+ }
  
-+	if (bss_conf->use_cts_prot)
-+		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-+	else
-+		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
-+
- 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+ static void
+@@ -2801,6 +2800,7 @@ static void isert_wait_conn(struct iscsi
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
  
- 	if (vif->type == NL80211_IFTYPE_AP ||
+ 	wait_for_completion(&isert_conn->conn_wait);
++	isert_put_conn(isert_conn);
+ }
+ 
+ static void isert_free_conn(struct iscsi_conn *conn)
 
 
