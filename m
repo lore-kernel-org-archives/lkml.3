@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbaJDAv4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:51:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
+	id S934184AbaJDAwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:52:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44750 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908AbaJCVce (ORCPT
+	with ESMTP id S1754875AbaJCVcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:34 -0400
+	Fri, 3 Oct 2014 17:32:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.16 018/357] drm/radeon: re-enable dpm by default on cayman
-Date: Fri,  3 Oct 2014 14:26:44 -0700
-Message-Id: <20141003212934.017126185@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.16 031/357] ahci: Add Device IDs for Intel 9 Series PCH
+Date: Fri,  3 Oct 2014 14:26:57 -0700
+Message-Id: <20141003212934.400547692@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit 8f500af4efe347d1a8ac674d115220e8caa84559 upstream.
+commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
 
-This patch depends on:
-b0880e87c1fd038b84498944f52e52c3e86ebe59
-(drm/radeon/dpm: fix vddci setup typo on cayman)
+This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=69723
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -1306,7 +1306,6 @@ int radeon_pm_init(struct radeon_device
- 	case CHIP_BARTS:
- 	case CHIP_TURKS:
- 	case CHIP_CAICOS:
--	case CHIP_CAYMAN:
- 		/* DPM requires the RLC, RV770+ dGPU requires SMC */
- 		if (!rdev->rlc_fw)
- 			rdev->pm.pm_method = PM_METHOD_PROFILE;
-@@ -1330,6 +1329,7 @@ int radeon_pm_init(struct radeon_device
- 	case CHIP_PALM:
- 	case CHIP_SUMO:
- 	case CHIP_SUMO2:
-+	case CHIP_CAYMAN:
- 	case CHIP_ARUBA:
- 	case CHIP_TAHITI:
- 	case CHIP_PITCAIRN:
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -305,6 +305,14 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
+ 
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
