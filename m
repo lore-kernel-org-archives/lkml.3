@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751197AbaJCE6C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 00:58:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48883 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaJCE6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 00:58:00 -0400
-Message-ID: <1412312253.27162.5.camel@linux-t7sj.site>
-Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
-From: Davidlohr Bueso <dbueso@suse.de>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Tuan Bui <tuan.d.bui@hp.com>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
-Date: Thu, 02 Oct 2014 21:57:33 -0700
-In-Reply-To: <20141001171226.GF2799@kernel.org>
-References: <1412120999.2941.11.camel@u64>
-	 <20141001052832.GA32248@gmail.com> <20141001171226.GF2799@kernel.org>
-Organization: SUSE Labs
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752448AbaJCFA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:00:27 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25196 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaJCFA0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 01:00:26 -0400
+Message-ID: <542E2D56.6090007@oracle.com>
+Date: Fri, 03 Oct 2014 01:00:06 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: pipe/page fault oddness.
+References: <20140930033327.GA14558@redhat.com>	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>	<20140930160510.GA15903@redhat.com>	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>	<20140930162201.GC15903@redhat.com>	<20140930164047.GA18354@redhat.com>	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>	<20140930182059.GA24431@redhat.com>	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>	<542C7B5E.2020000@oracle.com>	<CA+55aFy7Y+pmhyEHTJg=K8gLKzLHxzz6j9FBJMt7_Fazfong6g@mail.gmail.com>	<542D6981.3080405@oracle.com> <CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.co!
+ m>
+In-Reply-To: <CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 14:12 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Oct 01, 2014 at 07:28:32AM +0200, Ingo Molnar escreveu:
-> > If you compare an strace of AIM7 steady state and 'perf bench 
-> > lock' steady state, is it comparable, i.e. do the syscalls and 
+On 10/02/2014 12:10 PM, Linus Torvalds wrote:
+> On Thu, Oct 2, 2014 at 8:04 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>> >
+>> > I have a new one for you. I know it doesn't say "numa" anywhere, but I
+>> > haven't ever seen that trace before so I'll just go ahead and blame it
+>> > on your patch...
+> Fair enough, but the oops doesn't really give even a hint of what
+> could be wrong.
 > 
-> Isn't "lock" too generic? Isn't this stressing some specific lock and if
-> so shouldn't that be made abundantly clear in the 'perf bench' test name
-> and in the docs?
+> The stack is clearly too deep:
+> 
+>   Thread overran stack, or stack corrupted
+>   task.ti: ffff880dba2ec000
+>     RSP: ffff880dba2ebf48
+> 
+> but my patch shouldn't have added any deeper call-chains anywhere.
 
-yeah, and 'perf bench locking creat' just doesn't sound right.
+For the record, I tweaked the environment to put some more pressure on the
+scheduler and found out what broke (which is not related to this thread at
+all).
 
+For the curious ones: https://lkml.org/lkml/2014/10/3/5
+
+
+Thanks,
+Sasha
