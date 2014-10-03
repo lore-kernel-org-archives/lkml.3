@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315AbaJCWaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:30:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47643 "EHLO
+	id S1758368AbaJCWbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:31:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47632 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757131AbaJCW3s (ORCPT
+	with ESMTP id S1756338AbaJCW3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:29:48 -0400
+	Fri, 3 Oct 2014 18:29:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>, Sergey Dyasly <dserrg@gmail.com>,
+        Sameer Nanda <snanda@chromium.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        Michal Hocko <mhocko@suse.cz>, Pavel Emelyanov <xemul@parallels.com>,
-        Sergey Dyasly <dserrg@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        "Ma, Xindong" <xindong.ma@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        "Tu, Xiaobing" <xiaobing.tu@intel.com>,
+        David Rientjes <rientjes@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Li Zefan <lizefan@huawei.com>
-Subject: [PATCH 3.10 138/143] kernel/fork.c:copy_process(): unify CLONE_THREAD-or-thread_group_leader code
-Date: Fri,  3 Oct 2014 14:35:33 -0700
-Message-Id: <20141003213318.613357435@linuxfoundation.org>
+Subject: [PATCH 3.10 140/143] oom_kill: change oom_kill.c to use for_each_thread()
+Date: Fri,  3 Oct 2014 14:35:35 -0700
+Message-Id: <20141003213318.671273467@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -36,58 +40,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-commit 80628ca06c5d42929de6bc22c0a41589a834d151 upstream.
+commit 1da4db0cd5c8a31d4468ec906b413e75e604b465 upstream.
 
-Cleanup and preparation for the next changes.
+Change oom_kill.c to use for_each_thread() rather than the racy
+while_each_thread() which can loop forever if we race with exit.
 
-Move the "if (clone_flags & CLONE_THREAD)" code down under "if
-(likely(p->pid))" and turn it into into the "else" branch.  This makes the
-process/thread initialization more symmetrical and removes one check.
+Note also that most users were buggy even if while_each_thread() was
+fine, the task can exit even _before_ rcu_read_lock().
+
+Fortunately the new for_each_thread() only requires the stable
+task_struct, so this change fixes both problems.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Sergey Dyasly <dserrg@gmail.com>
+Tested-by: Sergey Dyasly <dserrg@gmail.com>
+Reviewed-by: Sameer Nanda <snanda@chromium.org>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Sergey Dyasly <dserrg@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>
+Cc: "Ma, Xindong" <xindong.ma@intel.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/fork.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ mm/oom_kill.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1448,14 +1448,6 @@ static struct task_struct *copy_process(
- 		goto bad_fork_free_pid;
- 	}
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -59,7 +59,7 @@ static bool has_intersects_mems_allowed(
+ {
+ 	struct task_struct *start = tsk;
  
--	if (clone_flags & CLONE_THREAD) {
--		current->signal->nr_threads++;
--		atomic_inc(&current->signal->live);
--		atomic_inc(&current->signal->sigcnt);
--		p->group_leader = current->group_leader;
--		list_add_tail_rcu(&p->thread_group, &p->group_leader->thread_group);
--	}
--
- 	if (likely(p->pid)) {
- 		ptrace_init_task(p, (clone_flags & CLONE_PTRACE) || trace);
- 
-@@ -1472,6 +1464,13 @@ static struct task_struct *copy_process(
- 			list_add_tail(&p->sibling, &p->real_parent->children);
- 			list_add_tail_rcu(&p->tasks, &init_task.tasks);
- 			__this_cpu_inc(process_counts);
-+		} else {
-+			current->signal->nr_threads++;
-+			atomic_inc(&current->signal->live);
-+			atomic_inc(&current->signal->sigcnt);
-+			p->group_leader = current->group_leader;
-+			list_add_tail_rcu(&p->thread_group,
-+					  &p->group_leader->thread_group);
+-	do {
++	for_each_thread(start, tsk) {
+ 		if (mask) {
+ 			/*
+ 			 * If this is a mempolicy constrained oom, tsk's
+@@ -77,7 +77,7 @@ static bool has_intersects_mems_allowed(
+ 			if (cpuset_mems_allowed_intersects(current, tsk))
+ 				return true;
  		}
- 		attach_pid(p, PIDTYPE_PID, pid);
- 		nr_threads++;
+-	} while_each_thread(start, tsk);
++	}
+ 
+ 	return false;
+ }
+@@ -97,14 +97,14 @@ static bool has_intersects_mems_allowed(
+  */
+ struct task_struct *find_lock_task_mm(struct task_struct *p)
+ {
+-	struct task_struct *t = p;
++	struct task_struct *t;
+ 
+-	do {
++	for_each_thread(p, t) {
+ 		task_lock(t);
+ 		if (likely(t->mm))
+ 			return t;
+ 		task_unlock(t);
+-	} while_each_thread(p, t);
++	}
+ 
+ 	return NULL;
+ }
+@@ -301,7 +301,7 @@ static struct task_struct *select_bad_pr
+ 	unsigned long chosen_points = 0;
+ 
+ 	rcu_read_lock();
+-	do_each_thread(g, p) {
++	for_each_process_thread(g, p) {
+ 		unsigned int points;
+ 
+ 		switch (oom_scan_process_thread(p, totalpages, nodemask,
+@@ -323,7 +323,7 @@ static struct task_struct *select_bad_pr
+ 			chosen = p;
+ 			chosen_points = points;
+ 		}
+-	} while_each_thread(g, p);
++	}
+ 	if (chosen)
+ 		get_task_struct(chosen);
+ 	rcu_read_unlock();
+@@ -406,7 +406,7 @@ void oom_kill_process(struct task_struct
+ {
+ 	struct task_struct *victim = p;
+ 	struct task_struct *child;
+-	struct task_struct *t = p;
++	struct task_struct *t;
+ 	struct mm_struct *mm;
+ 	unsigned int victim_points = 0;
+ 	static DEFINE_RATELIMIT_STATE(oom_rs, DEFAULT_RATELIMIT_INTERVAL,
+@@ -437,7 +437,7 @@ void oom_kill_process(struct task_struct
+ 	 * still freeing memory.
+ 	 */
+ 	read_lock(&tasklist_lock);
+-	do {
++	for_each_thread(p, t) {
+ 		list_for_each_entry(child, &t->children, sibling) {
+ 			unsigned int child_points;
+ 
+@@ -455,7 +455,7 @@ void oom_kill_process(struct task_struct
+ 				get_task_struct(victim);
+ 			}
+ 		}
+-	} while_each_thread(p, t);
++	}
+ 	read_unlock(&tasklist_lock);
+ 
+ 	rcu_read_lock();
 
 
