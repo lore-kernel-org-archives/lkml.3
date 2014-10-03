@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755519AbaJCVuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:50:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45635 "EHLO
+	id S1755590AbaJCVup (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:50:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45629 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754856AbaJCVpY (ORCPT
+	with ESMTP id S1756238AbaJCVpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Christian Borntraeger <borntraeger@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH 3.16 211/357] KVM: s390/mm: Fix storage key corruption during swapping
-Date: Fri,  3 Oct 2014 14:29:57 -0700
-Message-Id: <20141003212939.869998199@linuxfoundation.org>
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        David Hildenbrand <dahi@linux.vnet.ibm.com>
+Subject: [PATCH 3.16 209/357] KVM: s390: Fix user triggerable bug in dead code
+Date: Fri,  3 Oct 2014 14:29:55 -0700
+Message-Id: <20141003212939.812323982@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,47 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit 3e03d4c46daa849880837d802e41c14132a03ef9 upstream.
+commit 614a80e474b227cace52fd6e3c790554db8a396e upstream.
 
-Since 3.12 or more precisely  commit 0944fe3f4a32 ("s390/mm:
-implement software referenced bits") guest storage keys get
-corrupted during paging. This commit added another valid->invalid
-translation for page tables - namely ptep_test_and_clear_young.
-We have to transfer the storage key into the pgste in that case.
+In the early days, we had some special handling for the
+KVM_EXIT_S390_SIEIC exit, but this was gone in 2009 with commit
+d7b0b5eb3000 (KVM: s390: Make psw available on all exits, not
+just a subset).
+
+Now this switch statement is just a sanity check for userspace
+not messing with the kvm_run structure. Unfortunately, this
+allows userspace to trigger a kernel BUG. Let's just remove
+this switch statement.
 
 Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Acked-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/include/asm/pgtable.h |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/s390/kvm/kvm-s390.c |   13 -------------
+ 1 file changed, 13 deletions(-)
 
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -1115,7 +1115,7 @@ static inline int ptep_test_and_clear_yo
- 					    unsigned long addr, pte_t *ptep)
- {
- 	pgste_t pgste;
--	pte_t pte;
-+	pte_t pte, oldpte;
- 	int young;
+--- a/arch/s390/kvm/kvm-s390.c
++++ b/arch/s390/kvm/kvm-s390.c
+@@ -1286,19 +1286,6 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_v
  
- 	if (mm_has_pgste(vma->vm_mm)) {
-@@ -1123,12 +1123,13 @@ static inline int ptep_test_and_clear_yo
- 		pgste = pgste_ipte_notify(vma->vm_mm, ptep, pgste);
- 	}
+ 	kvm_s390_vcpu_start(vcpu);
  
--	pte = *ptep;
-+	oldpte = pte = *ptep;
- 	ptep_flush_direct(vma->vm_mm, addr, ptep);
- 	young = pte_young(pte);
- 	pte = pte_mkold(pte);
- 
- 	if (mm_has_pgste(vma->vm_mm)) {
-+		pgste = pgste_update_all(&oldpte, pgste, vma->vm_mm);
- 		pgste = pgste_set_pte(ptep, pgste, pte);
- 		pgste_set_unlock(ptep, pgste);
- 	} else
+-	switch (kvm_run->exit_reason) {
+-	case KVM_EXIT_S390_SIEIC:
+-	case KVM_EXIT_UNKNOWN:
+-	case KVM_EXIT_INTR:
+-	case KVM_EXIT_S390_RESET:
+-	case KVM_EXIT_S390_UCONTROL:
+-	case KVM_EXIT_S390_TSCH:
+-	case KVM_EXIT_DEBUG:
+-		break;
+-	default:
+-		BUG();
+-	}
+-
+ 	vcpu->arch.sie_block->gpsw.mask = kvm_run->psw_mask;
+ 	vcpu->arch.sie_block->gpsw.addr = kvm_run->psw_addr;
+ 	if (kvm_run->kvm_dirty_regs & KVM_SYNC_PREFIX) {
 
 
