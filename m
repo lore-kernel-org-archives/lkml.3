@@ -1,279 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaJCJAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 05:00:37 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:22328 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507AbaJCJAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 05:00:13 -0400
-X-Mailbox-Line: From 6a7fb623a46853b36fe6be008e816181678fa193 Mon Sep 17 00:00:00 2001
-Message-Id: <6a7fb623a46853b36fe6be008e816181678fa193.1412325047.git.moinejf@free.fr>
-In-Reply-To: <cover.1412325047.git.moinejf@free.fr>
-References: <cover.1412325047.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Fri, 3 Oct 2014 10:22:36 +0200
-Subject: [PATCH v7 1/2] ASoC: codecs: Add a transmitter interface to the HDMI
- CODEC
-To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	id S1751967AbaJCJKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 05:10:13 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52507 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaJCJKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 05:10:07 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-fd-542e67eb0b76
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
+        linux-security-module@vger.kernel.org, dhowells@redhat.com,
+        jmorris@namei.org, rusty@rustcorp.com.au, keyrings@linux-nfs.org
+Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH 2/4] KEYS: provide pure subject key identifier (fingerprint) as
+ key id
+Date: Fri, 03 Oct 2014 12:09:55 +0300
+Message-id: <c7fc6e50a7854d537eef85ede24ba0792212ce59.1412327306.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <cover.1412327306.git.d.kasatkin@samsung.com>
+References: <cover.1412327306.git.d.kasatkin@samsung.com>
+In-reply-to: <cover.1412327306.git.d.kasatkin@samsung.com>
+References: <cover.1412327306.git.d.kasatkin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xq7qv0/VCDH7NZ7O49Xcvs8W7pt8s
+	Fl+W1lmsW7+YyWL2rocsFi9nzGO3uLxrDpvFh55HbBY3p11gsfi0YhKzA5fHzll32T2mnVjG
+	4vHg0GYWj90LPjN59HxP9ni/7yqbx4oNJ5g9+rasYvT4vEkugDOKyyYlNSezLLVI3y6BK2Pq
+	koPMBcc1K5Z//8LSwPheqYuRk0NCwETi3Zp2RghbTOLCvfVsXYxcHEICSxklLvxdwwSSEBLo
+	ZJL4+UINxGYT0JPY0PyDHaRIROAoo8S0M9dZQRLMAukSnyb1soPYwgIREp/XXgNrZhFQlTg3
+	pwmshlcgTuLC1OtQ2+QkTh6bDBbnFLCS2HJ1AxvEMkuJ9f0r2HGJT2DkX8DIsIpRNLU0uaA4
+	KT3XSK84Mbe4NC9dLzk/dxMjJJC/7mBceszqEKMAB6MSD++HG7ohQqyJZcWVuYcYJTiYlUR4
+	T8fphQjxpiRWVqUW5ccXleakFh9iZOLglGpgPFmYc+v4JgUfO7b1N+YEP/0pveue8oFm+9hC
+	vScnpkkJ7zppek7y5dNjdomfTghE7ZFdaxHSdfjkVd7SdcxAndu4Z2xm9n229peGudGML+d3
+	lvBJinTnizMrxMU26mobzsnc9j2mhGXfG4mNSdJ/3xYs/rIxxXHqbZ2svZ3foz0zDL7M0/+t
+	xFKckWioxVxUnAgAdRvZjEICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The audio constraints of the HDMI interface are defined by the EDID
-which is sent by the connected device.
+Earlier KEYs code used pure subject key identifies for
+searching keys. Latest merged code removed that and broke
+compatibility with integrity subsytem signatures and original
+format of module signatures.
 
-The HDMI transmitters may have one or many audio sources.
+This patch returns back fingerprint and partial matching.
 
-This patch adds two functions to the HDMI CODEC:
-- it updates the audio constraints from the EDID,
-- it gives the audio source type to the HDMI transmitter
-  on start of audio streaming.
-
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+Reported-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- include/sound/hdmi.h    |  20 ++++++
- sound/soc/codecs/hdmi.c | 176 ++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 190 insertions(+), 6 deletions(-)
- create mode 100644 include/sound/hdmi.h
+ crypto/asymmetric_keys/asymmetric_type.c  | 23 ++++++++++++++++++++++-
+ crypto/asymmetric_keys/x509_cert_parser.c |  6 ++++++
+ crypto/asymmetric_keys/x509_parser.h      |  1 +
+ crypto/asymmetric_keys/x509_public_key.c  |  2 ++
+ include/keys/asymmetric-type.h            |  2 +-
+ 5 files changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/include/sound/hdmi.h b/include/sound/hdmi.h
-new file mode 100644
-index 0000000..49062c7
---- /dev/null
-+++ b/include/sound/hdmi.h
-@@ -0,0 +1,20 @@
-+#ifndef SND_HDMI_H
-+#define SND_HDMI_H
-+
-+#include <sound/soc.h>
-+
-+/* platform_data */
-+struct hdmi_data {
-+	int (*get_audio)(struct device *dev,
-+			 int *max_channels,
-+			 int *rate_mask,
-+			 int *fmt);
-+	void (*audio_switch)(struct device *dev,
-+			     int port_index,
-+			     unsigned sample_rate,
-+			     int sample_format);
-+	int ndais;
-+	struct snd_soc_dai_driver *dais;
-+	struct snd_soc_codec_driver *driver;
-+};
-+#endif
-diff --git a/sound/soc/codecs/hdmi.c b/sound/soc/codecs/hdmi.c
-index 1087fd5..0309d98 100644
---- a/sound/soc/codecs/hdmi.c
-+++ b/sound/soc/codecs/hdmi.c
-@@ -22,9 +22,148 @@
- #include <sound/soc.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <sound/pcm_params.h>
-+#include <sound/hdmi.h>
- 
- #define DRV_NAME "hdmi-audio-codec"
- 
-+struct hdmi_priv {
-+	struct hdmi_data hdmi_data;
-+	struct snd_pcm_hw_constraint_list rate_constraints;
-+};
-+
-+static int hdmi_dev_match(struct device *dev, void *data)
-+{
-+	return !strcmp(dev_name(dev), (char *) data);
-+}
-+
-+/* get the codec device */
-+static struct device *hdmi_get_cdev(struct device *dev)
-+{
-+	struct device *cdev;
-+
-+	cdev = device_find_child(dev,
-+				 DRV_NAME,
-+				 hdmi_dev_match);
-+	if (!cdev)
-+		dev_err(dev, "Cannot get codec device");
-+	else
-+		put_device(cdev);
-+	return cdev;
-+}
-+
-+static int hdmi_startup(struct snd_pcm_substream *substream,
-+			struct snd_soc_dai *dai)
-+{
-+	struct snd_pcm_runtime *runtime = substream->runtime;
-+	struct device *cdev;
-+	struct hdmi_priv *priv;
-+	struct snd_pcm_hw_constraint_list *rate_constraints;
-+	int ret, max_channels, rate_mask, fmt;
-+	u64 formats;
-+	static const u32 hdmi_rates[] = {
-+		32000, 44100, 48000, 88200, 96000, 176400, 192000
-+	};
-+
-+	cdev = hdmi_get_cdev(dai->dev);
-+	if (!cdev)
-+		return -ENODEV;
-+	priv = dev_get_drvdata(cdev);
-+
-+	/* get the EDID values and the rate constraints buffer */
-+	ret = priv->hdmi_data.get_audio(dai->dev,
-+					&max_channels, &rate_mask, &fmt);
-+	if (ret < 0)
-+		return ret;				/* no screen */
-+
-+	/* convert the EDID values to audio constraints */
-+	rate_constraints = &priv->rate_constraints;
-+	rate_constraints->list = hdmi_rates;
-+	rate_constraints->count = ARRAY_SIZE(hdmi_rates);
-+	rate_constraints->mask = rate_mask;
-+	snd_pcm_hw_constraint_list(runtime, 0,
-+				   SNDRV_PCM_HW_PARAM_RATE,
-+				   rate_constraints);
-+
-+	formats = 0;
-+	if (fmt & 1)
-+		formats |= SNDRV_PCM_FMTBIT_S16_LE;
-+	if (fmt & 2)
-+		formats |= SNDRV_PCM_FMTBIT_S20_3LE;
-+	if (fmt & 4)
-+		formats |= SNDRV_PCM_FMTBIT_S24_LE |
-+			   SNDRV_PCM_FMTBIT_S24_3LE |
-+			   SNDRV_PCM_FMTBIT_S32_LE;
-+	snd_pcm_hw_constraint_mask64(runtime,
-+				SNDRV_PCM_HW_PARAM_FORMAT,
-+				formats);
-+
-+	snd_pcm_hw_constraint_minmax(runtime,
-+				SNDRV_PCM_HW_PARAM_CHANNELS,
-+				1, max_channels);
-+	return 0;
-+}
-+
-+static int hdmi_hw_params(struct snd_pcm_substream *substream,
-+			  struct snd_pcm_hw_params *params,
-+			  struct snd_soc_dai *dai)
-+{
-+	struct device *cdev;
-+	struct hdmi_priv *priv;
-+
-+	cdev = hdmi_get_cdev(dai->dev);
-+	if (!cdev)
-+		return -ENODEV;
-+	priv = dev_get_drvdata(cdev);
-+
-+	priv->hdmi_data.audio_switch(dai->dev, dai->id,
-+				     params_rate(params),
-+				     params_format(params));
-+	return 0;
-+}
-+
-+static void hdmi_shutdown(struct snd_pcm_substream *substream,
-+			  struct snd_soc_dai *dai)
-+{
-+	struct device *cdev;
-+	struct hdmi_priv *priv;
-+
-+	cdev = hdmi_get_cdev(dai->dev);
-+	if (!cdev)
-+		return;
-+	priv = dev_get_drvdata(cdev);
-+
-+	priv->hdmi_data.audio_switch(dai->dev, -1, 0, 0);	/* stop */
-+}
-+
-+static const struct snd_soc_dai_ops hdmi_ops = {
-+	.startup = hdmi_startup,
-+	.hw_params = hdmi_hw_params,
-+	.shutdown = hdmi_shutdown,
-+};
-+
-+static int hdmi_codec_probe(struct snd_soc_codec *codec)
-+{
-+	struct hdmi_priv *priv;
-+	struct device *dev = codec->dev;	/* encoder device */
-+	struct device *cdev;			/* codec device */
-+
-+	cdev = hdmi_get_cdev(dev);
-+	if (!cdev)
-+		return -ENODEV;
-+
-+	/* allocate some memory to store
-+	 * the encoder callback functions and the rate constraints */
-+	priv = devm_kzalloc(cdev, sizeof *priv, GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+	dev_set_drvdata(cdev, priv);
-+
-+	memcpy(&priv->hdmi_data, cdev->platform_data,
-+				sizeof priv->hdmi_data);
-+	return 0;
-+}
-+
- static const struct snd_soc_dapm_widget hdmi_widgets[] = {
- 	SND_SOC_DAPM_INPUT("RX"),
- 	SND_SOC_DAPM_OUTPUT("TX"),
-@@ -77,13 +216,38 @@ static struct snd_soc_codec_driver hdmi_codec = {
- 	.num_dapm_routes = ARRAY_SIZE(hdmi_routes),
- };
- 
--static int hdmi_codec_probe(struct platform_device *pdev)
-+static int hdmi_codec_dev_probe(struct platform_device *pdev)
- {
--	return snd_soc_register_codec(&pdev->dev, &hdmi_codec,
--			&hdmi_codec_dai, 1);
-+	struct hdmi_data *pdata = pdev->dev.platform_data;
-+	struct snd_soc_dai_driver *dais;
-+	struct snd_soc_codec_driver *driver;
-+	int i, ret;
-+
-+	if (!pdata)
-+		return snd_soc_register_codec(&pdev->dev, &hdmi_codec,
-+						&hdmi_codec_dai, 1);
-+
-+	/* creation from a video encoder as a child device */
-+	dais = devm_kmemdup(&pdev->dev,
-+			    pdata->dais,
-+			    sizeof *pdata->dais * pdata->ndais,
-+			    GFP_KERNEL);
-+	for (i = 0; i < pdata->ndais; i++)
-+		dais[i].ops = &hdmi_ops;
-+
-+	driver = devm_kmemdup(&pdev->dev,
-+			    pdata->driver,
-+			    sizeof *pdata->driver,
-+			    GFP_KERNEL);
-+	driver->probe = hdmi_codec_probe;
-+
-+	/* register the codec on the video encoder */
-+	ret = snd_soc_register_codec(pdev->dev.parent, driver,
-+					dais, pdata->ndais);
-+	return ret;
+diff --git a/crypto/asymmetric_keys/asymmetric_type.c b/crypto/asymmetric_keys/asymmetric_type.c
+index 29983cb..9c83129 100644
+--- a/crypto/asymmetric_keys/asymmetric_type.c
++++ b/crypto/asymmetric_keys/asymmetric_type.c
+@@ -45,7 +45,8 @@ struct asymmetric_key_id *asymmetric_key_generate_id(const void *val_1,
+ 		return ERR_PTR(-ENOMEM);
+ 	kid->len = len_1 + len_2;
+ 	memcpy(kid->data, val_1, len_1);
+-	memcpy(kid->data + len_1, val_2, len_2);
++	if (val_2)
++		memcpy(kid->data + len_1, val_2, len_2);
+ 	return kid;
  }
+ EXPORT_SYMBOL_GPL(asymmetric_key_generate_id);
+@@ -66,6 +67,23 @@ bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
+ EXPORT_SYMBOL_GPL(asymmetric_key_id_same);
  
--static int hdmi_codec_remove(struct platform_device *pdev)
-+static int hdmi_codec_dev_remove(struct platform_device *pdev)
- {
- 	snd_soc_unregister_codec(&pdev->dev);
- 	return 0;
-@@ -96,8 +260,8 @@ static struct platform_driver hdmi_codec_driver = {
- 		.of_match_table = of_match_ptr(hdmi_audio_codec_ids),
- 	},
+ /**
++ * asymmetric_key_id_partial - Return true if two asymmetric keys IDs
++ * partially match
++ * @kid_1, @kid_2: The key IDs to compare
++ */
++bool asymmetric_key_id_partial(const struct asymmetric_key_id *kid1,
++			       const struct asymmetric_key_id *kid2)
++{
++	if (!kid1 || !kid2)
++		return false;
++	if (kid1->len < kid2->len)
++		return false;
++	return memcmp(kid1->data + (kid1->len - kid2->len),
++		      kid2->data, kid2->len) == 0;
++}
++EXPORT_SYMBOL_GPL(asymmetric_key_id_partial);
++
++/**
+  * asymmetric_match_key_ids - Search asymmetric key IDs
+  * @kids: The list of key IDs to check
+  * @match_id: The key ID we're looking for
+@@ -79,6 +97,8 @@ bool asymmetric_match_key_ids(const struct asymmetric_key_ids *kids,
+ 		return true;
+ 	if (asymmetric_key_id_same(kids->id[1], match_id))
+ 		return true;
++	if (asymmetric_key_id_partial(kids->id[2], match_id))
++		return true;
+ 	return false;
+ }
+ EXPORT_SYMBOL_GPL(asymmetric_match_key_ids);
+@@ -261,6 +281,7 @@ static void asymmetric_key_free_preparse(struct key_preparsed_payload *prep)
+ 	if (kids) {
+ 		kfree(kids->id[0]);
+ 		kfree(kids->id[1]);
++		kfree(kids->id[2]);
+ 		kfree(kids);
+ 	}
+ 	kfree(prep->description);
+diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+index 96151b2..7cf36fe 100644
+--- a/crypto/asymmetric_keys/x509_cert_parser.c
++++ b/crypto/asymmetric_keys/x509_cert_parser.c
+@@ -48,6 +48,7 @@ void x509_free_certificate(struct x509_certificate *cert)
+ 		kfree(cert->subject);
+ 		kfree(cert->id);
+ 		kfree(cert->skid);
++		kfree(cert->skid_only);
+ 		kfree(cert->authority);
+ 		kfree(cert->sig.digest);
+ 		mpi_free(cert->sig.rsa.s);
+@@ -442,6 +443,11 @@ int x509_process_extension(void *context, size_t hdrlen,
+ 			return PTR_ERR(kid);
+ 		ctx->cert->skid = kid;
+ 		pr_debug("subjkeyid %*phN\n", kid->len, kid->data);
++		kid = asymmetric_key_generate_id(v, vlen, NULL, 0);
++		if (IS_ERR(kid))
++			return PTR_ERR(kid);
++		ctx->cert->skid_only = kid;
++		pr_debug("subjkeyid %*phN\n", kid->len, kid->data);
+ 		return 0;
+ 	}
  
--	.probe		= hdmi_codec_probe,
--	.remove		= hdmi_codec_remove,
-+	.probe		= hdmi_codec_dev_probe,
-+	.remove		= hdmi_codec_dev_remove,
+diff --git a/crypto/asymmetric_keys/x509_parser.h b/crypto/asymmetric_keys/x509_parser.h
+index 4e1a384..a0b3052 100644
+--- a/crypto/asymmetric_keys/x509_parser.h
++++ b/crypto/asymmetric_keys/x509_parser.h
+@@ -21,6 +21,7 @@ struct x509_certificate {
+ 	char		*subject;		/* Name of certificate subject */
+ 	struct asymmetric_key_id *id;		/* Issuer + serial number */
+ 	struct asymmetric_key_id *skid;		/* Subject key identifier */
++	struct asymmetric_key_id *skid_only;	/* Subject key identifier only*/
+ 	struct asymmetric_key_id *authority;	/* Authority key identifier */
+ 	struct tm	valid_from;
+ 	struct tm	valid_to;
+diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+index 1d9a4c5..a0673c9 100644
+--- a/crypto/asymmetric_keys/x509_public_key.c
++++ b/crypto/asymmetric_keys/x509_public_key.c
+@@ -302,6 +302,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 		goto error_free_desc;
+ 	kids->id[0] = cert->id;
+ 	kids->id[1] = cert->skid;
++	kids->id[2] = cert->skid_only;
+ 
+ 	/* We're pinning the module by being linked against it */
+ 	__module_get(public_key_subtype.owner);
+@@ -315,6 +316,7 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+ 	cert->pub = NULL;
+ 	cert->id = NULL;
+ 	cert->skid = NULL;
++	cert->skid_only = NULL;
+ 	desc = NULL;
+ 	ret = 0;
+ 
+diff --git a/include/keys/asymmetric-type.h b/include/keys/asymmetric-type.h
+index 044ab0d..54fb119 100644
+--- a/include/keys/asymmetric-type.h
++++ b/include/keys/asymmetric-type.h
+@@ -45,7 +45,7 @@ struct asymmetric_key_id {
  };
  
- module_platform_driver(hdmi_codec_driver);
+ struct asymmetric_key_ids {
+-	void		*id[2];
++	void		*id[3];
+ };
+ 
+ extern bool asymmetric_key_id_same(const struct asymmetric_key_id *kid1,
 -- 
-2.1.1
+1.9.1
 
