@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770AbaJCVmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:42:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44907 "EHLO
+	id S934045AbaJDAny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:43:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44721 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087AbaJCVc7 (ORCPT
+	with ESMTP id S1755024AbaJCVcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:59 -0400
+	Fri, 3 Oct 2014 17:32:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.16 087/357] drm/radeon/dpm: select the appropriate vce power state for KV/KB/ML
-Date: Fri,  3 Oct 2014 14:27:53 -0700
-Message-Id: <20141003212936.099682916@linuxfoundation.org>
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Subject: [PATCH 3.16 042/357] arm/arm64: KVM: Complete WFI/WFE instructions
+Date: Fri,  3 Oct 2014 14:27:08 -0700
+Message-Id: <20141003212934.726049384@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,48 +30,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Christoffer Dall <christoffer.dall@linaro.org>
 
-commit c83dec3bb6c38629398b65c231c80978b3e00e14 upstream.
+commit 05e0127f9e362b36aa35f17b1a3d52bca9322a3a upstream.
 
-Compare the clock in the limits table to the requested evclk rather
-than just taking the first value.  Improves vce performance in certain
-cases.
+The architecture specifies that when the processor wakes up from a WFE
+or WFI instruction, the instruction is considered complete, however we
+currrently return to EL1 (or EL0) at the WFI/WFE instruction itself.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+While most guests may not be affected by this because their local
+exception handler performs an exception returning setting the event bit
+or with an interrupt pending, some guests like UEFI will get wedged due
+this little mishap.
+
+Simply skip the instruction when we have completed the emulation.
+
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/kv_dpm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/kvm/handle_exit.c   |    2 ++
+ arch/arm64/kvm/handle_exit.c |    2 ++
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/gpu/drm/radeon/kv_dpm.c
-+++ b/drivers/gpu/drm/radeon/kv_dpm.c
-@@ -1438,14 +1438,14 @@ static int kv_update_uvd_dpm(struct rade
- 	return kv_enable_uvd_dpm(rdev, !gate);
+--- a/arch/arm/kvm/handle_exit.c
++++ b/arch/arm/kvm/handle_exit.c
+@@ -93,6 +93,8 @@ static int kvm_handle_wfx(struct kvm_vcp
+ 	else
+ 		kvm_vcpu_block(vcpu);
+ 
++	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
++
+ 	return 1;
  }
  
--static u8 kv_get_vce_boot_level(struct radeon_device *rdev)
-+static u8 kv_get_vce_boot_level(struct radeon_device *rdev, u32 evclk)
- {
- 	u8 i;
- 	struct radeon_vce_clock_voltage_dependency_table *table =
- 		&rdev->pm.dpm.dyn_state.vce_clock_voltage_dependency_table;
+--- a/arch/arm64/kvm/handle_exit.c
++++ b/arch/arm64/kvm/handle_exit.c
+@@ -66,6 +66,8 @@ static int kvm_handle_wfx(struct kvm_vcp
+ 	else
+ 		kvm_vcpu_block(vcpu);
  
- 	for (i = 0; i < table->count; i++) {
--		if (table->entries[i].evclk >= 0) /* XXX */
-+		if (table->entries[i].evclk >= evclk)
- 			break;
- 	}
++	kvm_skip_instr(vcpu, kvm_vcpu_trap_il_is32bit(vcpu));
++
+ 	return 1;
+ }
  
-@@ -1468,7 +1468,7 @@ static int kv_update_vce_dpm(struct rade
- 		if (pi->caps_stable_p_state)
- 			pi->vce_boot_level = table->count - 1;
- 		else
--			pi->vce_boot_level = kv_get_vce_boot_level(rdev);
-+			pi->vce_boot_level = kv_get_vce_boot_level(rdev, radeon_new_state->evclk);
- 
- 		ret = kv_copy_bytes_to_smc(rdev,
- 					   pi->dpm_table_start +
 
 
