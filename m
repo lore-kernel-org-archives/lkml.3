@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344AbaJCW6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:58:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
+	id S932433AbaJCW6I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:58:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47251 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932583AbaJCWYB (ORCPT
+	with ESMTP id S932579AbaJCWYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:24:01 -0400
+	Fri, 3 Oct 2014 18:24:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emanuel Koczwara <poczta@emanuelkoczwara.pl>,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 050/143] USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
-Date: Fri,  3 Oct 2014 14:34:05 -0700
-Message-Id: <20141003213315.987053549@linuxfoundation.org>
+Subject: [PATCH 3.10 047/143] USB: zte_ev: remove duplicate Qualcom PID
+Date: Fri,  3 Oct 2014 14:34:02 -0700
+Message-Id: <20141003213315.893714720@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -31,43 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <johan@kernel.org>
 
-commit ee444609dbae8afee420c3243ce4c5f442efb622 upstream.
+commit 754eb21c0bbbbc4b8830a9a864b286323b84225f upstream.
 
-Add device id for NOVITUS Bono E thermal printer.
+Remove dublicate Qualcom PID 0x3197 which is already handled by the
+moto-modem driver since commit 6986a978eec7 ("USB: add new moto_modem
+driver for some Morotola phones").
 
-Reported-by: Emanuel Koczwara <poczta@emanuelkoczwara.pl>
+Fixes: 799ee9243d89 ("USB: serial: add zte_ev.c driver")
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/serial/zte_ev.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -744,6 +744,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
-+	{ USB_DEVICE(NOVITUS_VID, NOVITUS_BONO_E_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -837,6 +837,12 @@
- #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
- 
- /*
-+ * NOVITUS printers
-+ */
-+#define NOVITUS_VID			0x1a28
-+#define NOVITUS_BONO_E_PID		0x6010
-+
-+/*
-  * RT Systems programming cables for various ham radios
-  */
- #define RTSYSTEMS_VID		0x2100	/* Vendor ID */
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -275,7 +275,6 @@ static void zte_ev_usb_serial_close(stru
+ static const struct usb_device_id id_table[] = {
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+-	{ USB_DEVICE(0x05C6, 0x3197) },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(usb, id_table);
 
 
