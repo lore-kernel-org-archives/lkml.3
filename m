@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299AbaJDAEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:04:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728AbaJCVxX (ORCPT
+	id S1757059AbaJDAE3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:04:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59974 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756720AbaJCVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:23 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.16 247/357] dm cache: fix race causing dirty blocks to be marked as clean
-Date: Fri,  3 Oct 2014 14:30:33 -0700
-Message-Id: <20141003212940.920680007@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 17:53:22 -0400
+Date: Fri, 03 Oct 2014 14:55:24 -0700 (PDT)
+Message-Id: <20141003.145524.270976129977723195.davem@davemloft.net>
+To: mwelling@ieee.org
+Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:ethernet:davinci_emac.c:Fixes flaw in mac
+ address handling.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141003204359.GA10110@sysresccd>
+References: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
+	<20141003.130305.2216770567363258603.davem@davemloft.net>
+	<20141003204359.GA10110@sysresccd>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 14:53:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+From: Michael Welling <mwelling@ieee.org>
+Date: Fri, 3 Oct 2014 15:43:59 -0500
 
-------------------
+> On Fri, Oct 03, 2014 at 01:03:05PM -0700, David Miller wrote:
+>> From: Michael Welling <mwelling@ieee.org>
+>> Date: Wed,  1 Oct 2014 21:32:05 -0500
+>> 
+>> > The code currently checks the mac_addr variable that is clearly
+>> > zero'd out during allocation.
+>> > 
+>> > Further code is added to bring the mac_addr from the partial pdata.
+>> > 
+>> > Signed-off-by: Michael Welling <mwelling@ieee.org>
+>> 
+>> I don't see anyone specifying a MAC address in the partial pdata,
+>> so better to just delete that field.
+>> 
+>> Even if people did, I am not so sure that the partial pdata should
+>> unconditionally trump an OF provided MAC address.
+> 
+> So should I just leave the code for handling the mac_addr field from the
+> partial pdata out or make it such that the mac_addr field is overriden 
+> if specified from the devicetree?
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
-
-commit 40aa978eccec61347cd47b97c598df49acde8be5 upstream.
-
-When a writeback or a promotion of a block is completed, the cell of
-that block is removed from the prison, the block is marked as clean, and
-the clear_dirty() callback of the cache policy is called.
-
-Unfortunately, performing those actions in this order allows an incoming
-new write bio for that block to come in before clearing the dirty status
-is completed and therefore possibly causing one of these two scenarios:
-
-Scenario A:
-
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called,
-.                               but block already dirty
-.                               => it does nothing
-clear_dirty()                 .
-- block marked clean          .
-- policy clear_dirty() called .
-
-Result: Block is marked clean even though it is actually dirty. No
-writeback will occur.
-
-Scenario B:
-
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-clear_dirty()                 .
-- block marked clean          .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called
-.                             - block marked dirty
-.                             - policy set_dirty() called
-- policy clear_dirty() called .
-
-Result: Block is properly marked as dirty, but policy thinks it is clean
-and therefore never asks us to writeback it.
-This case is visible in "dmsetup status" dirty block count (which
-normally decreases to 0 on a quiet device).
-
-Fix these issues by calling clear_dirty() before calling cell_defer().
-Incoming bios for that block will then be detained in the cell and
-released only after clear_dirty() has completed, so the race will not
-occur.
-
-Found by inspecting the code after noticing spurious dirty counts
-(scenario B).
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/dm-cache-target.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -873,8 +873,8 @@ static void migration_success_pre_commit
- 	struct cache *cache = mg->cache;
- 
- 	if (mg->writeback) {
--		cell_defer(cache, mg->old_ocell, false);
- 		clear_dirty(cache, mg->old_oblock, mg->cblock);
-+		cell_defer(cache, mg->old_ocell, false);
- 		cleanup_migration(mg);
- 		return;
- 
-@@ -929,13 +929,13 @@ static void migration_success_post_commi
- 		}
- 
- 	} else {
-+		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		if (mg->requeue_holder)
- 			cell_defer(cache, mg->new_ocell, true);
- 		else {
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		cleanup_migration(mg);
- 	}
- }
-
-
+I'm saying the partial pdata mac_addr is completely unused and should
+be removed.
