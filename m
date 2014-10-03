@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaJCPXC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:23:02 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52665 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752498AbaJCPW7 (ORCPT
+	id S1753615AbaJCPXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:23:16 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59537 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670AbaJCPXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:22:59 -0400
-Date: Fri, 3 Oct 2014 16:22:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "open list:INTEL DRM DRIVERS..." <intel-gfx@lists.freedesktop.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH RFC 0/4] drm/core: restore suspend/resume calbacks in
-	KMS drm drivers
-Message-ID: <20141003152244.GV5182@n2100.arm.linux.org.uk>
-References: <1412324653-30677-1-git-send-email-a.hajda@samsung.com> <20141003083121.GC16117@phenom.ffwll.local> <542E6F9D.2090005@samsung.com> <CAKMK7uGec2yV89n-RLsg+HqXoXvXBMBVZ6py3Z7puFe+KR6e7A@mail.gmail.com>
+	Fri, 3 Oct 2014 11:23:12 -0400
+Message-ID: <542EBF56.1000500@roeck-us.net>
+Date: Fri, 03 Oct 2014 08:23:02 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uGec2yV89n-RLsg+HqXoXvXBMBVZ6py3Z7puFe+KR6e7A@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Mark Brown <broonie@kernel.org>, atull@opensource.altera.com
+CC: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v5 3/4] pmbus: add regulator support
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com> <1412275071-6417-4-git-send-email-atull@opensource.altera.com> <20141003142746.GA24441@sirena.org.uk>
+In-Reply-To: <20141003142746.GA24441@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.542EBF60.0031,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 15
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 01:39:21PM +0200, Daniel Vetter wrote:
-> On Fri, Oct 3, 2014 at 11:42 AM, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> > But this is an issue closely connected with component framework.
-> > Component framework separates master component probe and drm device
-> > initialization. As a result PM ops which are synchronized with probe
-> > (via device_lock)
-> > are no more synchronized with drm initialization which is usually called
-> > from
-> > .bind callback.
-> 
-> Now I'm confused. component->bind and drm initialization is about
-> driver load, but all this code here is about system suspend/resume
-> really. So I'm rather confused what problem you actually want to fix
-> ..
+On 10/03/2014 07:27 AM, Mark Brown wrote:
+> On Thu, Oct 02, 2014 at 01:37:50PM -0500, atull@opensource.altera.com wrote:
+>> From: Alan Tull <atull@opensource.altera.com>
+>>
+>> Add support for simple on/off control of each channel.
+>>
+>> To add regulator support, the pmbus part driver needs to add
+>> regulator_desc information and number of regulators to its
+>> pmbus_driver_info struct.
+>
+> Reviewed-by: Mark Brown <broonie@kernel.org>
+>
 
-The component *helper* will disconnect the bind of the master device
-from its probe if the components aren't already known.  If all the
-components are known at the point the master device probes, the
-master device lock will be held (since we'll be operating within the
-master device's probe function.)
+Mark,
 
-The issue here is that while the master device is being probed, the
-per-device lock is held.  Beneath that lock there are locks in the
-component helper which will be taken, and thus will end up depending
-upon the per-device lock.
+do you have an immutable branch or tag I could merge to get
+the necessary regulator patches ?
 
-This means that we pretty much can not guarantee synchronisation between
-PM on the master device and the component helper calling the bind
-callback - if we tried to take the per-device lock here, we would either
-deadlock, or we would end up with AB-BA lock dependencies.
+Thanks,
+Guenter
 
-What we /could/ do is expose lock/unlock functions from the component
-helper so that PM implementations can synchronise with binds - or I could
-look at whether we could integrate the component helper into the device
-model.  I suspect the latter would not be met with enthusiasm as it would
-mean adding bloat to the driver core structures, which would not be needed
-in 99% of cases.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
