@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758931AbaJCWtU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:49:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47418 "EHLO
+	id S1753131AbaJCWtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:49:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47422 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758242AbaJCWYL (ORCPT
+	with ESMTP id S1755128AbaJCWYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Dickson <steved@redhat.com>,
+        James Drews <drews@engr.wisc.edu>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 062/143] NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
-Date: Fri,  3 Oct 2014 14:34:17 -0700
-Message-Id: <20141003213316.384249517@linuxfoundation.org>
+Subject: [PATCH 3.10 063/143] NFSv4: Fix another bug in the close/open_downgrade code
+Date: Fri,  3 Oct 2014 14:34:18 -0700
+Message-Id: <20141003213316.412496160@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,101 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Dickson <steved@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 080af20cc945d110f9912d01cf6b66f94a375b8d upstream.
+commit cd9288ffaea4359d5cfe2b8d264911506aed26a4 upstream.
 
-There is a race between nfs4_state_manager() and
-nfs_server_remove_lists() that happens during a nfsv3 mount.
+James Drew reports another bug whereby the NFS client is now sending
+an OPEN_DOWNGRADE in a situation where it should really have sent a
+CLOSE: the client is opening the file for O_RDWR, but then trying to
+do a downgrade to O_RDONLY, which is not allowed by the NFSv4 spec.
 
-The v3 mount notices there is already a supper block so
-nfs_server_remove_lists() called which uses the nfs_client_lock
-spin lock to synchronize access to the client list.
-
-At the same time nfs4_state_manager() is running through
-the client list looking for work to do, using the same
-lock. When nfs4_state_manager() wins the race to the
-list, a v3 client pointer is found and not ignored
-properly which causes the panic.
-
-Moving some protocol checks before the state checking
-avoids the panic.
-
-Signed-off-by: Steve Dickson <steved@redhat.com>
+Reported-by: James Drews <drews@engr.wisc.edu>
+Link: http://lkml.kernel.org/r/541AD7E5.8020409@engr.wisc.edu
+Fixes: aee7af356e15 (NFSv4: Fix problems with close in the presence...)
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ fs/nfs/nfs4proc.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -311,6 +311,16 @@ int nfs40_walk_client_list(struct nfs_cl
- 
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2299,23 +2299,23 @@ static void nfs4_close_prepare(struct rp
+ 	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
+ 	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
+ 	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
+-	/* Calculate the current open share mode */
+-	calldata->arg.fmode = 0;
+-	if (is_rdonly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_READ;
+-	if (is_wronly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_WRITE;
+ 	/* Calculate the change in open mode */
++	calldata->arg.fmode = 0;
+ 	if (state->n_rdwr == 0) {
+-		if (state->n_rdonly == 0) {
+-			call_close |= is_rdonly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_READ;
+-		}
+-		if (state->n_wronly == 0) {
+-			call_close |= is_wronly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_WRITE;
+-		}
+-	}
++		if (state->n_rdonly == 0)
++			call_close |= is_rdonly;
++		else if (is_rdonly)
++			calldata->arg.fmode |= FMODE_READ;
++		if (state->n_wronly == 0)
++			call_close |= is_wronly;
++		else if (is_wronly)
++			calldata->arg.fmode |= FMODE_WRITE;
++	} else if (is_rdwr)
++		calldata->arg.fmode |= FMODE_READ|FMODE_WRITE;
 +
-+		if (pos->rpc_ops != new->rpc_ops)
-+			continue;
++	if (calldata->arg.fmode == 0)
++		call_close |= is_rdwr;
 +
-+		if (pos->cl_proto != new->cl_proto)
-+			continue;
-+
-+		if (pos->cl_minorversion != new->cl_minorversion)
-+			continue;
-+
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos" */
- 		if (pos->cl_cons_state > NFS_CS_READY) {
-@@ -330,15 +340,6 @@ int nfs40_walk_client_list(struct nfs_cl
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
- 
--		if (pos->rpc_ops != new->rpc_ops)
--			continue;
--
--		if (pos->cl_proto != new->cl_proto)
--			continue;
--
--		if (pos->cl_minorversion != new->cl_minorversion)
--			continue;
--
- 		if (pos->cl_clientid != new->cl_clientid)
- 			continue;
- 
-@@ -444,6 +445,16 @@ int nfs41_walk_client_list(struct nfs_cl
- 
- 	spin_lock(&nn->nfs_client_lock);
- 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
-+
-+		if (pos->rpc_ops != new->rpc_ops)
-+			continue;
-+
-+		if (pos->cl_proto != new->cl_proto)
-+			continue;
-+
-+		if (pos->cl_minorversion != new->cl_minorversion)
-+			continue;
-+
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos", especially the client
- 		 * ID and serverowner fields.  Wait for CREATE_SESSION
-@@ -469,15 +480,6 @@ int nfs41_walk_client_list(struct nfs_cl
- 		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
- 
--		if (pos->rpc_ops != new->rpc_ops)
--			continue;
--
--		if (pos->cl_proto != new->cl_proto)
--			continue;
--
--		if (pos->cl_minorversion != new->cl_minorversion)
--			continue;
--
- 		if (!nfs4_match_clientids(pos, new))
- 			continue;
- 
+ 	if (!nfs4_valid_open_stateid(state))
+ 		call_close = 0;
+ 	spin_unlock(&state->owner->so_lock);
 
 
