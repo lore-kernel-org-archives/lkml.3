@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830AbaJCWNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:13:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46729 "EHLO
+	id S1757942AbaJCWOD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:14:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46748 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757758AbaJCWNj (ORCPT
+	with ESMTP id S1757817AbaJCWNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:39 -0400
+	Fri, 3 Oct 2014 18:13:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Theodore Tso <tytso@mit.edu>
-Subject: [PATCH 3.16 353/357] ext4: avoid trying to kfree an ERR_PTR pointer
-Date: Fri,  3 Oct 2014 14:32:19 -0700
-Message-Id: <20141003212944.061183410@linuxfoundation.org>
+        Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.16 351/357] aio: block exit_aio() until all context requests are completed
+Date: Fri,  3 Oct 2014 14:32:17 -0700
+Message-Id: <20141003212944.003662008@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -28,58 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-commit a9cfcd63e8d206ce4235c355d857c4fbdf0f4587 upstream.
+commit 6098b45b32e6baeacc04790773ced9340601d511 upstream.
 
-Thanks to Dan Carpenter for extending smatch to find bugs like this.
-(This was found using a development version of smatch.)
+It seems that exit_aio() also needs to wait for all iocbs to complete (like
+io_destroy), but we missed the wait step in current implemention, so fix
+it in the same way as we did in io_destroy.
 
-Fixes: 36de928641ee48b2078d3fe9514242aaa2f92013
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
+[bwh: Backported to 3.16: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
 ---
- fs/ext4/namei.c  |    2 ++
- fs/ext4/resize.c |    2 ++
- 2 files changed, 4 insertions(+)
+ fs/aio.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -3240,6 +3240,7 @@ static int ext4_rename(struct inode *old
- 				 &new.de, &new.inlined);
- 	if (IS_ERR(new.bh)) {
- 		retval = PTR_ERR(new.bh);
-+		new.bh = NULL;
- 		goto end_rename;
- 	}
- 	if (new.bh) {
-@@ -3386,6 +3387,7 @@ static int ext4_cross_rename(struct inod
- 				 &new.de, &new.inlined);
- 	if (IS_ERR(new.bh)) {
- 		retval = PTR_ERR(new.bh);
-+		new.bh = NULL;
- 		goto end_rename;
- 	}
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -797,6 +797,9 @@ void exit_aio(struct mm_struct *mm)
+ 	unsigned i = 0;
  
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -575,6 +575,7 @@ handle_bb:
- 		bh = bclean(handle, sb, block);
- 		if (IS_ERR(bh)) {
- 			err = PTR_ERR(bh);
-+			bh = NULL;
- 			goto out;
- 		}
- 		overhead = ext4_group_overhead_blocks(sb, group);
-@@ -603,6 +604,7 @@ handle_ib:
- 		bh = bclean(handle, sb, block);
- 		if (IS_ERR(bh)) {
- 			err = PTR_ERR(bh);
-+			bh = NULL;
- 			goto out;
- 		}
+ 	while (1) {
++		struct completion requests_done =
++			COMPLETION_INITIALIZER_ONSTACK(requests_done);
++
+ 		rcu_read_lock();
+ 		table = rcu_dereference(mm->ioctx_table);
+ 
+@@ -824,7 +827,10 @@ void exit_aio(struct mm_struct *mm)
+ 		 */
+ 		ctx->mmap_size = 0;
+ 
+-		kill_ioctx(mm, ctx, NULL);
++		kill_ioctx(mm, ctx, &requests_done);
++
++		/* Wait until all IO for the context are done. */
++		wait_for_completion(&requests_done);
+ 	}
+ }
  
 
 
