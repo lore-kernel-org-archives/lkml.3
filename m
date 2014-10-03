@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207AbaJCVxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45752 "EHLO
+	id S932089AbaJCVys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:54:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758AbaJCVx0 (ORCPT
+	with ESMTP id S932198AbaJCVxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:26 -0400
+	Fri, 3 Oct 2014 17:53:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fan Du <fan.du@intel.com>, Neil Horman <nhorman@tuxdriver.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 038/238] i2c: ismt: use correct length when copy buffer
-Date: Fri,  3 Oct 2014 14:29:13 -0700
-Message-Id: <20141003212914.882109795@linuxfoundation.org>
+        Andrey Vagin <avagin@openvz.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 274/357] fsnotify/fdinfo: use named constants instead of hardcoded values
+Date: Fri,  3 Oct 2014 14:31:00 -0700
+Message-Id: <20141003212941.727469579@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,46 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Fan Du <fan.du@intel.com>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit 979bbf7b7ae75cfc06e09d09eda38009a3bdc4a4 upstream.
+commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
 
-In block write mode, when encapsulating dma_buffer, first element is
-'command', the rest is data buffer, so only copy actual data buffer
-starting from block[1] with the size indicating by block[0].
+MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
+bytes, so exportfs_encode_inode_fh can return an error.
 
-Signed-off-by: Fan Du <fan.du@intel.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-ismt.c |    4 ++--
+ fs/notify/fdinfo.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/i2c/busses/i2c-ismt.c
-+++ b/drivers/i2c/busses/i2c-ismt.c
-@@ -497,7 +497,7 @@ static int ismt_access(struct i2c_adapte
- 			desc->wr_len_cmd = dma_size;
- 			desc->control |= ISMT_DESC_BLK;
- 			priv->dma_buffer[0] = command;
--			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size);
-+			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size - 1);
- 		} else {
- 			/* Block Read */
- 			dev_dbg(dev, "I2C_SMBUS_BLOCK_DATA:  READ\n");
-@@ -525,7 +525,7 @@ static int ismt_access(struct i2c_adapte
- 			desc->wr_len_cmd = dma_size;
- 			desc->control |= ISMT_DESC_I2C;
- 			priv->dma_buffer[0] = command;
--			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size);
-+			memcpy(&priv->dma_buffer[1], &data->block[1], dma_size - 1);
- 		} else {
- 			/* i2c Block Read */
- 			dev_dbg(dev, "I2C_SMBUS_I2C_BLOCK_DATA:  READ\n");
+--- a/fs/notify/fdinfo.c
++++ b/fs/notify/fdinfo.c
+@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_
+ {
+ 	struct {
+ 		struct file_handle handle;
+-		u8 pad[64];
++		u8 pad[MAX_HANDLE_SZ];
+ 	} f;
+ 	int size, ret, i;
+ 
+@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_
+ 	size = f.handle.handle_bytes >> 2;
+ 
+ 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
+-	if ((ret == 255) || (ret == -ENOSPC)) {
++	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
+ 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
+ 		return 0;
+ 	}
 
 
