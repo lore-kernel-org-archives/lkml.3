@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164AbaJCVoy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:44:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45289 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064AbaJCVnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.16 217/357] shmem: fix nlink for rename overwrite directory
-Date: Fri,  3 Oct 2014 14:30:03 -0700
-Message-Id: <20141003212940.043160637@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1759606AbaJDATD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:19:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54287 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756149AbaJCVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:44:53 -0400
+Date: Fri, 3 Oct 2014 23:41:24 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, luto@amacapital.net, dvlasenk@redhat.com,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/asm] x86: Speed up ___preempt_schedule*() by using
+	THUNK helpers
+Message-ID: <20141003214124.GA31614@redhat.com>
+References: <20140921184153.GA23727@redhat.com> <tip-0ad6e3c5199be12c9745da8f8b9e3c9f8066c235@git.kernel.org> <542E2B05.5080607@oracle.com> <20141003083954.10a13a24@as>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141003083954.10a13a24@as>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On 10/03, Chuck Ebbert wrote:
+>
+> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+> > [  921.917752] ? ___preempt_schedule_context (arch/x86/lib/thunk_64.S:44)
+> > [  921.917752] ? preempt_schedule_context (kernel/context_tracking.c:145)
+>
+> <snip lots of repeats of this>
+>
+> I *think* this is because RBP isn't being saved across task switch
+> anymore?
+>
+> Without CONFIG_FRAME_POINTERS that night not be a problem...
 
-------------------
+Could you please spell?
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+I don't even understand "RBP isn't being saved", SAVE_CONTEXT/RESTORE_CONTEXT
+do push/pop %rbp?
 
-commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
+Thanks,
 
-If overwriting an empty directory with rename, then need to drop the extra
-nlink.
-
-Test prog:
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <err.h>
-#include <sys/stat.h>
-
-int main(void)
-{
-	const char *test_dir1 = "test-dir1";
-	const char *test_dir2 = "test-dir2";
-	int res;
-	int fd;
-	struct stat statbuf;
-
-	res = mkdir(test_dir1, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir1);
-
-	res = mkdir(test_dir2, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir2);
-
-	fd = open(test_dir2, O_RDONLY);
-	if (fd == -1)
-		err(1, "open(\"%s\")", test_dir2);
-
-	res = rename(test_dir1, test_dir2);
-	if (res == -1)
-		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
-
-	res = fstat(fd, &statbuf);
-	if (res == -1)
-		err(1, "fstat(%i)", fd);
-
-	if (statbuf.st_nlink != 0) {
-		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
-		return 1;
-	}
-
-	return 0;
-}
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/shmem.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2064,8 +2064,10 @@ static int shmem_rename(struct inode *ol
- 
- 	if (new_dentry->d_inode) {
- 		(void) shmem_unlink(new_dir, new_dentry);
--		if (they_are_dirs)
-+		if (they_are_dirs) {
-+			drop_nlink(new_dentry->d_inode);
- 			drop_nlink(old_dir);
-+		}
- 	} else if (they_are_dirs) {
- 		drop_nlink(old_dir);
- 		inc_nlink(new_dir);
-
+Oleg.
 
