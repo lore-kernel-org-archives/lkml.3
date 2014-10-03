@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270AbaJCWyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:54:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
+	id S932221AbaJCWyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:54:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47269 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932607AbaJCWYF (ORCPT
+	with ESMTP id S932608AbaJCWYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brennan Ashton <bashton@brennanashton.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 044/143] USB: option: add VIA Telecom CDS7 chipset device id
-Date: Fri,  3 Oct 2014 14:33:59 -0700
-Message-Id: <20141003213315.802586523@linuxfoundation.org>
+        Lei Liu <liu.lei78@zte.com.cn>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 045/143] Revert "USB: option,zte_ev: move most ZTE CDMA devices to zte_ev"
+Date: Fri,  3 Oct 2014 14:34:00 -0700
+Message-Id: <20141003213315.837275032@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,43 +28,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brennan Ashton <bashton@brennanashton.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit d77302739d900bbca5e901a3b7ac48c907ee6c93 upstream.
+commit 63a901c06e3c2c45bd601916fe04e870e9ccae1e upstream.
 
-This VIA Telecom baseband processor is used is used by by u-blox in both the
-FW2770 and FW2760 products and may be used in others as well.
+This reverts commit 73228a0538a7 ("USB: option,zte_ev: move most ZTE
+CDMA devices to zte_ev").
 
-This patch has been tested on both of these modem versions.
+Move the IDs of the devices that were previously driven by the option
+driver back to that driver.
 
-Signed-off-by: Brennan Ashton <bashton@brennanashton.com>
+As several users have reported, the zte_ev driver is causing random
+disconnects as well as reconnect failures.
+
+A closer analysis of the zte_ev setup code reveals that it consists of
+standard CDC requests (SET/GET_LINE_CODING and SET_CONTROL_LINE_STATE)
+but unfortunately fails to get some of those right. In particular, as
+reported by Liu Lei, it fails to lower DTR/RTS on close. It also appears
+that the control requests lack the interface argument.
+
+Note that the zte_ev driver is based on code (once) distributed by ZTE
+that still appears to originally have been reverse-engineered and bolted
+onto the generic driver.
+
+Since line control is already handled properly by the option driver, and
+the SET/GET_LINE_CODING requests appears to be redundant (amounts to a
+SET 9600 8N1), this is a first step in ultimately removing the redundant
+zte_ev driver.
+
+Note that AC2726 had already been moved back to option, and that some
+IDs were in the device table of both drivers prior to the commit being
+reverted.
+
+Reported-by: Lei Liu <liu.lei78@zte.com.cn>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/option.c |   24 +++++++++++++++++++++---
+ drivers/usb/serial/zte_ev.c |   18 ------------------
+ 2 files changed, 21 insertions(+), 21 deletions(-)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -494,6 +494,10 @@ static void option_instat_callback(struc
- #define INOVIA_VENDOR_ID			0x20a6
- #define INOVIA_SEW858				0x1105
+@@ -275,8 +275,12 @@ static void option_instat_callback(struc
+ #define ZTE_PRODUCT_MF622			0x0001
+ #define ZTE_PRODUCT_MF628			0x0015
+ #define ZTE_PRODUCT_MF626			0x0031
+-#define ZTE_PRODUCT_MC2718			0xffe8
+ #define ZTE_PRODUCT_AC2726			0xfff1
++#define ZTE_PRODUCT_CDMA_TECH			0xfffe
++#define ZTE_PRODUCT_AC8710T			0xffff
++#define ZTE_PRODUCT_MC2718			0xffe8
++#define ZTE_PRODUCT_AD3812			0xffeb
++#define ZTE_PRODUCT_MC2716			0xffed
  
-+/* VIA Telecom */
-+#define VIATELECOM_VENDOR_ID			0x15eb
-+#define VIATELECOM_PRODUCT_CDS7			0x0001
-+
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1724,6 +1728,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
- 	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
-+	{ USB_DEVICE(VIATELECOM_VENDOR_ID, VIATELECOM_PRODUCT_CDS7) },
- 	{ } /* Terminating entry */
+ #define BENQ_VENDOR_ID				0x04a5
+ #define BENQ_PRODUCT_H10			0x4068
+@@ -531,10 +535,18 @@ static const struct option_blacklist_inf
+ 	.reserved = BIT(4),
  };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 
++static const struct option_blacklist_info zte_ad3812_z_blacklist = {
++	.sendsetup = BIT(0) | BIT(1) | BIT(2),
++};
++
+ static const struct option_blacklist_info zte_mc2718_z_blacklist = {
+ 	.sendsetup = BIT(1) | BIT(2) | BIT(3) | BIT(4),
+ };
+ 
++static const struct option_blacklist_info zte_mc2716_z_blacklist = {
++	.sendsetup = BIT(1) | BIT(2) | BIT(3),
++};
++
+ static const struct option_blacklist_info huawei_cdc12_blacklist = {
+ 	.reserved = BIT(1) | BIT(2),
+ };
+@@ -1074,6 +1086,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_INTERFACE_CLASS(BANDRICH_VENDOR_ID, BANDRICH_PRODUCT_1012, 0xff) },
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC650) },
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
++	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+@@ -1548,13 +1561,18 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff93, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff94, 0xff, 0xff, 0xff) },
+ 
+-	/* NOTE: most ZTE CDMA devices should be driven by zte_ev, not option */
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710T, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2718, 0xff, 0xff, 0xff),
+ 	 .driver_info = (kernel_ulong_t)&zte_mc2718_z_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AD3812, 0xff, 0xff, 0xff),
++	 .driver_info = (kernel_ulong_t)&zte_ad3812_z_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MC2716, 0xff, 0xff, 0xff),
++	 .driver_info = (kernel_ulong_t)&zte_mc2716_z_blacklist },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x01) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
+ 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
+ 
+ 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
+ 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -273,27 +273,9 @@ static void zte_ev_usb_serial_close(stru
+ }
+ 
+ static const struct usb_device_id id_table[] = {
+-	/* AC8710, AC8710T */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffff, 0xff, 0xff, 0xff) },
+-	 /* AC8700 */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xfffe, 0xff, 0xff, 0xff) },
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+-	{ USB_DEVICE(0x19d2, 0xfffc) },
+-	{ USB_DEVICE(0x19d2, 0xfffb) },
+-	/* AC8710_V3 */
+-	{ USB_DEVICE(0x19d2, 0xfff6) },
+-	{ USB_DEVICE(0x19d2, 0xfff7) },
+-	{ USB_DEVICE(0x19d2, 0xfff8) },
+-	{ USB_DEVICE(0x19d2, 0xfff9) },
+-	{ USB_DEVICE(0x19d2, 0xffee) },
+-	/* AC2716, MC2716 */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffed, 0xff, 0xff, 0xff) },
+-	/* AD3812 */
+-	{ USB_DEVICE_AND_INTERFACE_INFO(0x19d2, 0xffeb, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE(0x19d2, 0xffec) },
+ 	{ USB_DEVICE(0x05C6, 0x3197) },
+-	{ USB_DEVICE(0x05C6, 0x6000) },
+ 	{ USB_DEVICE(0x05C6, 0x9008) },
+ 	{ },
+ };
 
 
