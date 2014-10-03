@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaJCO2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 10:28:25 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60466 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaJCO2V (ORCPT
+	id S1753419AbaJCO2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:28:36 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:61976 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaJCO23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 10:28:21 -0400
-Date: Fri, 3 Oct 2014 15:27:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: atull@opensource.altera.com
-Cc: linux@roeck-us.net, jdelvare@suse.de, lm-sensors@lm-sensors.org,
-        lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Message-ID: <20141003142746.GA24441@sirena.org.uk>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-4-git-send-email-atull@opensource.altera.com>
+	Fri, 3 Oct 2014 10:28:29 -0400
+Message-ID: <542EB288.5000209@kernel.dk>
+Date: Fri, 03 Oct 2014 08:28:24 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
-Content-Disposition: inline
-In-Reply-To: <1412275071-6417-4-git-send-email-atull@opensource.altera.com>
-X-Cookie: The coast was clear.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 3/4] pmbus: add regulator support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Thanos Makatos <thanos.makatos@citrix.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "jlayton@poochiereds.net" <jlayton@poochiereds.net>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "jack@suse.cz" <jack@suse.cz>
+Subject: Re: [PATCH RFC] introduce ioctl to completely invalidate page cache
+References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com> <542DAEAC.8010203@kernel.dk> <2368A3FCF9F7214298E53C823B0A48EC0423DFE3@AMSPEX01CL02.citrite.net>
+In-Reply-To: <2368A3FCF9F7214298E53C823B0A48EC0423DFE3@AMSPEX01CL02.citrite.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014-10-03 03:25, Thanos Makatos wrote:
+>>> -		fsync_bdev(bdev);
+>>> -		invalidate_bdev(bdev);
+>>> +		flush_buffer_cache(bdev);
+>>> +		if (BLKFLSBUF2 == cmd)
+>>> +			return invalidate_inode_pages2(
+>>> +					bdev->bd_inode->i_mapping);
+>>>   		return 0;
+>>
+>> We're currently ignoring the buffer cache sync and invalidation (which is odd),
+>> but at least being consistent would be good.
+>>
+>> Might also need a filemap_write_and_wait() to sync before invalidation.
+>
+> (I've got zero knowledge in this area, so excuse my ignorance!)
+>
+> Does filemap_write_and_wait() writes back modified, memory-mapped pages? If so,
+> isn't there a race condition? Or have I got it completely wrong?
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's no race to be concerned of for this ioctl. Any page dirtied 
+before you make the call will be synced, any page dirtied after may not. 
+This is no different than what would happen on the buffer cache side in 
+the current ioctl.
 
-On Thu, Oct 02, 2014 at 01:37:50PM -0500, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
->=20
-> Add support for simple on/off control of each channel.
->=20
-> To add regulator support, the pmbus part driver needs to add
-> regulator_desc information and number of regulators to its
-> pmbus_driver_info struct.
+-- 
+Jens Axboe
 
-Reviewed-by: Mark Brown <broonie@kernel.org>
-
---TB36FDmn/VVEgNH/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJULrJeAAoJECTWi3JdVIfQx5YH/2Or3CYT25D8ArNXkmGEnXvN
-PPXAbRTmKOGRdX3gH5p7Vbijw0n2YonPF4s4lFNr3OPwPBXic8AHlB6nBOFQkho/
-4MD196tDboRfOFbAuEtZxHU2BREBEPo1JK10Q5EO/knRnTow7ub5GrOSDs0ToKdw
-ieI8fG4GYxcUAoIeUnelt9TQmjqtxlOTaAmPEQ00RzL0zLQxt4AlLxFgQywQrrps
-9AjY3mLzF/isYGVfGFOYzmu0Ny9iCKLBuffu8i/pdBZaU6BtUsPBkeqZszjR+PeJ
-fbsARKC/o8Tryp9ttaWsA4jnoSAeNKKyc0IoJPkXjqbcmt1Sn3Px4hB3hgUFCMc=
-=J0bv
------END PGP SIGNATURE-----
-
---TB36FDmn/VVEgNH/--
