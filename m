@@ -1,266 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaJCUVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:21:33 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39516 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752081AbaJCUVb (ORCPT
+	id S1754663AbaJCUWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:22:49 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:41541 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbaJCUWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:21:31 -0400
-Message-ID: <542F0546.6040604@dragonslave.de>
-Date: Fri, 03 Oct 2014 22:21:26 +0200
-From: Daniel Exner <dex@dragonslave.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Fri, 3 Oct 2014 16:22:43 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Daniel Exner <dex@dragonslave.de>
-Subject: Regression in i915 intel_panel_setup_backligh
-OpenPGP: url=https://www.dragonslave.de/pub_key.asc
-Content-Type: multipart/mixed;
- boundary="------------090301090008070405010507"
+In-Reply-To: <20141003201409.GM10583@worktop.programming.kicks-ass.net>
+References: <fc0c2447cbc39257941c6b118388c024b719353a.1412356529.git.luto@amacapital.net>
+ <CALCETrUfCrvidOS6VvUpWFAcHUrPUs58zSQqGRC5UOTS=E37rw@mail.gmail.com> <20141003201409.GM10583@worktop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 3 Oct 2014 13:22:22 -0700
+Message-ID: <CALCETrVvFP66s5XOmSKaC8Vq73=uh11819HOOLkVTu7jJZotew@mail.gmail.com>
+Subject: Re: [PATCH] x86,seccomp,prctl: Remove PR_TSC_SIGSEGV and seccomp TSC filtering
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>, X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090301090008070405010507
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+On Fri, Oct 3, 2014 at 1:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Oct 03, 2014 at 10:27:47AM -0700, Andy Lutomirski wrote:
+>> [adding linux-api.  whoops.]
+>>
+>> On Fri, Oct 3, 2014 at 10:18 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > PR_SET_TSC / PR_TSC_SIGSEGV is a security feature to prevent heavily
+>> > sandboxed programs from learning the time, presumably to avoid
+>> > disclosing the wall clock and to make timing attacks much harder to
+>> > exploit.
+>> >
+>> > Unfortunately, this feature is very insecure, for multiple reasons,
+>> > and has probably been insecure since before it was written.
+>> >
+>> > Weakness 1: Before Linux 3.16, the vvar page and the HPET (!) were
+>> > part of the kernel's fixmap, so any user process could read them.
+>> > The vvar page contains low-resolution timing information (with real
+>> > wall clock and frequency data), and the HPET can be used for high
+>> > precision timing.  Even in Linux 3.16, there clean way to disable
+>> > access to these pages.
+>> >
+>> > Weakness 2: On most configurations, most or all userspace processes
+>> > have unrestricted access to RDPMC, which is even better than RDTSC
+>> > for exploiting timing attacks.
+>> >
+>> > I would like to fix both of these issues.  I want to deny access to
+>> > RDPMC to processes that haven't asked for access via
+>> > perf_event_open.  I also want to implement real TSC blocking, which
+>> > will require some vdso enhancements
+>
+> So the problem with the default deny is that its:
+>  1) pointless -- the attacker can do sys_perf_event_open() just fine;
 
-Hi,
+Not if the attacker is in a seccomp sandbox.
 
-please keep me CC as I am currently not subscribed to the LKML.
+>  2) and expensive -- the people trying to measure performance get the
+>     penalty of the CR4 write.
 
-I recently tested 3.17-rc7 and found my Samsung AtivBook 7 unable to
-enable inteldrmfb (see attached output of the crash).
+Does this matter for performance measuring?  I'm not 100% clear on how all
+the perf_event stuff gets used in practice, but, by my very vague
+understanding, there are two main workflows:
 
-I managed to bisect it to:
+a) perf record, etc: one process creates a ringbuffer and wakes up
+rarely to record the contents.  The process being recorded doesn't
+have a perf_event mapped, so the cr4 switch will only happen when
+waking up the perf process.
 
-commit 4dac3edfe68e5e1b3c2216b84ba160572420fa40
-Merge: 4877776 e05444b
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Tue Jul 29 20:49:36 2014 +0200
+perf record prints stuff like "[ perf record: Woken up 1 times to
+write data ]", which seems to confirm my understanding.
 
-    Merge remote-tracking branch 'airlied/drm-next' into drm-intel-next
+b) self-monitoring.  A task mmaps a perf_event, does rdpmc, does
+something, and does rdpmc again.  In that case, there's no context
+switch.
 
-    Pull in drm-next with Dave's DP MST support so that I can merge some
-    conflicting patches which also touch the driver load sequencing around
-    interrupt handling.
+>
+> So I would suggest a default on, but allow a disable for the seccomp
+> users, which might have also disabled the syscall. Note that is is
+> possible to disable RDPMC while still allowing the syscall.
 
-    Conflicts:
-        drivers/gpu/drm/i915/intel_display.c
-        drivers/gpu/drm/i915/intel_dp.c
+Disabling RDPMC per-process while still allowing the syscall will need
+a bunch of work, right?  What happens if the same perf_event is mapped
+by two different users?
 
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+We could make the rule be that RDPMC is enabled if a perf event is
+mmapped or TIF_SECCOMP is clear, but I'd prefer to be convinced that
+there's an actual performance issue first.  Ideally we can get this
+all working with no API or ABI change at all.
 
-git bisect log:
-git bisect start 'v3.17.0-rc4' 'v3.15' 'drivers/gpu/drm/i915/intel_dp.c'
-# bad: [2ce7598c9a453e0acd0e07be7be3f5eb39608ebd] Linux 3.17-rc4
-git bisect bad 2ce7598c9a453e0acd0e07be7be3f5eb39608ebd
-# good: [1860e379875dfe7271c649058aeddffe5afd9d0d] Linux 3.15
-git bisect good 1860e379875dfe7271c649058aeddffe5afd9d0d
-# good: [7c8f8a7007cf0069488e0b4e3db5f89d715f297e] drm/i915: Force PSR
-exit by inactivating it.
-git bisect good 7c8f8a7007cf0069488e0b4e3db5f89d715f297e
-# good: [9ca153017e00550dbeda2718cfd69ca37de9c523] drm/i915: Fix up PSR
-frontbuffer tracking
-git bisect good 9ca153017e00550dbeda2718cfd69ca37de9c523
-# bad: [5d42f82a9b8c5168d75cf59307cd271feca94464] Merge tag 'v3.16' into
-drm-next
-git bisect bad 5d42f82a9b8c5168d75cf59307cd271feca94464
-# good: [0e32b39ceed665bfa4a77a4bc307b6652b991632] drm/i915: add DP 1.2
-MST support (v0.7)
-git bisect good 0e32b39ceed665bfa4a77a4bc307b6652b991632
-# bad: [4dac3edfe68e5e1b3c2216b84ba160572420fa40] Merge remote-tracking
-branch 'airlied/drm-next' into drm-intel-next
-git bisect bad 4dac3edfe68e5e1b3c2216b84ba160572420fa40
-# good: [eeefa889cddb8d7e4ee6ce0212e685dd624d66a1] drm/i915: Remove
-redundant HAS_PSR checks
-git bisect good eeefa889cddb8d7e4ee6ce0212e685dd624d66a1
-# good: [4651fb23f6f1d86700b07a27ad7f137d28492342] drm/i915: remove
-useless runtime PM get calls
-git bisect good 4651fb23f6f1d86700b07a27ad7f137d28492342
-# first bad commit: [4dac3edfe68e5e1b3c2216b84ba160572420fa40] Merge
-remote-tracking branch 'airlied/drm-next' into drm-intel-next
+P.S. Hey, Intel, let us context switch RDPMC accessibility of the
+individual counters, please :)
 
-
-Any thoughts on that?
-
-Greetings
-Daniel
--- 
-Daniel Exner
-Public-Key: https://www.dragonslave.de/pub_key.asc
-
---------------090301090008070405010507
-Content-Type: text/plain; charset=UTF-8;
- name="intelcrash.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="intelcrash.txt"
-
-W2RybTpkcm1fcGNpX2luaXRdIApbZHJtOmRybV9nZXRfcGNpX2Rldl0gCltkcm06ZHJtX21p
-bm9yX3JlZ2lzdGVyXSAKW2RybTpkcm1fbWlub3JfcmVnaXN0ZXJdIG5ldyBtaW5vciByZWdp
-c3RlcmVkIDY0Cltkcm06ZHJtX21pbm9yX3JlZ2lzdGVyXSAKW2RybTpkcm1fbWlub3JfcmVn
-aXN0ZXJdIG5ldyBtaW5vciByZWdpc3RlcmVkIDEyOApbZHJtOmRybV9taW5vcl9yZWdpc3Rl
-cl0gCltkcm06ZHJtX21pbm9yX3JlZ2lzdGVyXSBuZXcgbWlub3IgcmVnaXN0ZXJlZCAwCltk
-cm06aTkxNV9kdW1wX2RldmljZV9pbmZvXSBpOTE1IGRldmljZSBpbmZvOiBnZW49NywgcGNp
-aWQ9MHgwMTY2IHJldj0weDA5IGZsYWdzPWlzX21vYmlsZSxuZWVkX2dmeF9od3MsaXNfaXZ5
-YnJpZGdlLGhhc19mYmMsaGFzX2hvdHBsdWcsaGFzX2xsYywKW2RybTppbnRlbF9kZXRlY3Rf
-cGNoXSBGb3VuZCBQYW50aGVyUG9pbnQgUENICltkcm1dIE1lbW9yeSB1c2FibGUgYnkgZ3Jh
-cGhpY3MgZGV2aWNlID0gMjA0OE0KW2RybTppOTE1X2dlbV9ndHRfaW5pdF0gR01BRFIgc2l6
-ZSA9IDI1Nk0KW2RybTppOTE1X2dlbV9ndHRfaW5pdF0gR1RUIHN0b2xlbiBzaXplID0gNjRN
-Cltkcm06aTkxNV9nZW1fZ3R0X2luaXRdIHBwZ3R0IG1vZGU6IDEKW2RybV0gUmVwbGFjaW5n
-IFZHQSBjb25zb2xlIGRyaXZlcgpjaGVja2luZyBnZW5lcmljIChkMDAwMDAwMCAxZTAwMDAp
-IHZzIGh3IChkMDAwMDAwMCAxMDAwMDAwMCkKZmI6IHN3aXRjaGluZyB0byBpbnRlbGRybWZi
-IGZyb20gRUZJIFZHQQpDb25zb2xlOiBzd2l0Y2hpbmcgdG8gY29sb3VyIGR1bW15IGRldmlj
-ZSA4MHgyNQpbZHJtOmludGVsX29wcmVnaW9uX3NldHVwXSBncmFwaGljIG9wcmVnaW9uIHBo
-eXNpY2FsIGFkZHI6IDB4YzliNTUwMTgKW2RybTppbnRlbF9vcHJlZ2lvbl9zZXR1cF0gUHVi
-bGljIEFDUEkgbWV0aG9kcyBzdXBwb3J0ZWQKW2RybTppbnRlbF9vcHJlZ2lvbl9zZXR1cF0g
-U1dTQ0kgc3VwcG9ydGVkCltkcm06c3dzY2lfc2V0dXBdIFNXU0NJIEdCREEgY2FsbGJhY2tz
-IDAwMDAwY2YzLCBTQkNCIGNhbGxiYWNrcyAwMDAwMDI0MQpbZHJtOmludGVsX29wcmVnaW9u
-X3NldHVwXSBBU0xFIHN1cHBvcnRlZAppOTE1IDAwMDA6MDA6MDIuMDogaXJxIDMzIGZvciBN
-U0kvTVNJLVgKW2RybV0gU3VwcG9ydHMgdmJsYW5rIHRpbWVzdGFtcCBjYWNoaW5nIFJldiAy
-ICgyMS4xMC4yMDEzKS4KW2RybV0gRHJpdmVyIHN1cHBvcnRzIHByZWNpc2UgdmJsYW5rIHRp
-bWVzdGFtcCBxdWVyeS4KW2RybTppbml0X3ZidF9kZWZhdWx0c10gU2V0IGRlZmF1bHQgdG8g
-U1NDIGF0IDEyMDAwMCBrSHoKW2RybTp2YWxpZGF0ZV92YnRdIFVzaW5nIFZCVCBmcm9tIE9w
-UmVnaW9uOiAkVkJUIFNOQi9JVkItTU9CSUxFIGQKW2RybTpwYXJzZV9nZW5lcmFsX2ZlYXR1
-cmVzXSBCREJfR0VORVJBTF9GRUFUVVJFUyBpbnRfdHZfc3VwcG9ydCAwIGludF9jcnRfc3Vw
-cG9ydCAxIGx2ZHNfdXNlX3NzYyAwIGx2ZHNfc3NjX2ZyZXEgMTIwMDAwIGRpc3BsYXlfY2xv
-Y2tfbW9kZSAwIGZkaV9yeF9wb2xhcml0eV9pbnZlcnRlZCAwCltkcm06cGFyc2VfZ2VuZXJh
-bF9kZWZpbml0aW9uc10gY3J0X2RkY19idXNfcGluOiAyCltkcm06cGFyc2VfbGZwX3BhbmVs
-X2RhdGFdIERSUlMgc3VwcG9ydGVkIG1vZGUgaXMgc2VhbWxlc3MKW2RybTpwYXJzZV9sZnBf
-cGFuZWxfZGF0YV0gRm91bmQgcGFuZWwgbW9kZSBpbiBCSU9TIFZCVCB0YWJsZXM6Cltkcm06
-ZHJtX21vZGVfZGVidWdfcHJpbnRtb2RlbGluZV0gTW9kZWxpbmUgMDoiMTkyMHgxMDgwIiAw
-IDE0ODUwMCAxOTIwIDIwMDggMjA1MyAyMjAwIDEwODAgMTA4MyAxMDg5IDExMjUgMHg4IDB4
-YQpbZHJtOnBhcnNlX2xmcF9wYW5lbF9kYXRhXSBWQlQgaW5pdGlhbCBMVkRTIHZhbHVlIDMw
-MApbZHJtOnBhcnNlX2xmcF9iYWNrbGlnaHRdIFZCVCBiYWNrbGlnaHQgUFdNIG1vZHVsYXRp
-b24gZnJlcXVlbmN5IDIxMCBIeiwgYWN0aXZlIGhpZ2gsIG1pbiBicmlnaHRuZXNzIDI1NSwg
-bGV2ZWwgMjU1Cltkcm06cGFyc2Vfc2R2b19wYW5lbF9kYXRhXSBGb3VuZCBTRFZPIHBhbmVs
-IG1vZGUgaW4gQklPUyBWQlQgdGFibGVzOgpbZHJtOmRybV9tb2RlX2RlYnVnX3ByaW50bW9k
-ZWxpbmVdIE1vZGVsaW5lIDA6IjE2MDB4MTIwMCIgMCAxNjIwMDAgMTYwMCAxNjY0IDE4NTYg
-MjE2MCAxMjAwIDEyMDEgMTIwNCAxMjUwIDB4OCAweGEKW2RybTpwYXJzZV9zZHZvX2Rldmlj
-ZV9tYXBwaW5nXSBObyBTRFZPIGRldmljZSBpbmZvIGlzIGZvdW5kIGluIFZCVApbZHJtOnBh
-cnNlX2RyaXZlcl9mZWF0dXJlc10gRFJSUyBTdGF0ZSBFbmFibGVkOjAKW2RybTppbnRlbF9k
-c21fcGNpX3Byb2JlXSBubyBfRFNNIG1ldGhvZCBmb3IgaW50ZWwgZGV2aWNlCltkcm06aTkx
-NV9nZW1faW5pdF9zdG9sZW5dIGZvdW5kIDY3MTA4ODY0IGJ5dGVzIG9mIHN0b2xlbiBtZW1v
-cnkgYXQgY2JhMDAwMDAKW2RybTppbnRlbF9kaXNwbGF5X3Bvd2VyX2dldF0gZW5hYmxpbmcg
-YWx3YXlzLW9uCltkcm06ZHJtX2lycV9pbnN0YWxsXSBpcnE9MzMKW2RybTppbnRlbF9wcmlu
-dF93bV9sYXRlbmN5XSBQcmltYXJ5IFdNMCBsYXRlbmN5IDEyICgxLjIgdXNlYykKW2RybTpp
-bnRlbF9wcmludF93bV9sYXRlbmN5XSBQcmltYXJ5IFdNMSBsYXRlbmN5IDQgKDIuMCB1c2Vj
-KQpbZHJtOmludGVsX3ByaW50X3dtX2xhdGVuY3ldIFByaW1hcnkgV00yIGxhdGVuY3kgMTYg
-KDguMCB1c2VjKQpbZHJtOmludGVsX3ByaW50X3dtX2xhdGVuY3ldIFByaW1hcnkgV00zIGxh
-dGVuY3kgMzIgKDE2LjAgdXNlYykKW2RybTppbnRlbF9wcmludF93bV9sYXRlbmN5XSBTcHJp
-dGUgV00wIGxhdGVuY3kgMTIgKDEuMiB1c2VjKQpbZHJtOmludGVsX3ByaW50X3dtX2xhdGVu
-Y3ldIFNwcml0ZSBXTTEgbGF0ZW5jeSA0ICgyLjAgdXNlYykKW2RybTppbnRlbF9wcmludF93
-bV9sYXRlbmN5XSBTcHJpdGUgV00yIGxhdGVuY3kgMTYgKDguMCB1c2VjKQpbZHJtOmludGVs
-X3ByaW50X3dtX2xhdGVuY3ldIFNwcml0ZSBXTTMgbGF0ZW5jeSAzMiAoMTYuMCB1c2VjKQpb
-ZHJtOmludGVsX3ByaW50X3dtX2xhdGVuY3ldIEN1cnNvciBXTTAgbGF0ZW5jeSAxMiAoMS4y
-IHVzZWMpCltkcm06aW50ZWxfcHJpbnRfd21fbGF0ZW5jeV0gQ3Vyc29yIFdNMSBsYXRlbmN5
-IDQgKDIuMCB1c2VjKQpbZHJtOmludGVsX3ByaW50X3dtX2xhdGVuY3ldIEN1cnNvciBXTTIg
-bGF0ZW5jeSAxNiAoOC4wIHVzZWMpCltkcm06aW50ZWxfcHJpbnRfd21fbGF0ZW5jeV0gQ3Vy
-c29yIFdNMyBsYXRlbmN5IDY0ICgzMi4wIHVzZWMpCltkcm06aW50ZWxfbW9kZXNldF9pbml0
-XSAzIGRpc3BsYXkgcGlwZXMgYXZhaWxhYmxlLgp2Z2FhcmI6IGRldmljZSBjaGFuZ2VkIGRl
-Y29kZXM6IFBDSTowMDAwOjAwOjAyLjAsb2xkZGVjb2Rlcz1pbyttZW0sZGVjb2Rlcz1pbytt
-ZW06b3ducz1pbyttZW0KW2RybTppbnRlbF9sdmRzX2luaXRdIExWRFMgaXMgbm90IHByZXNl
-bnQgaW4gVkJUCltkcm06ZHJtX3N5c2ZzX2Nvbm5lY3Rvcl9hZGRdIGFkZGluZyAiVkdBLTEi
-IHRvIHN5c2ZzCltkcm06ZHJtX3N5c2ZzX2hvdHBsdWdfZXZlbnRdIGdlbmVyYXRpbmcgaG90
-cGx1ZyBldmVudApbZHJtOmludGVsX2NydF9yZXNldF0gcGNoIGNydCBhZHBhIHNldCB0byAw
-eGY0MDAwMApbZHJtOmludGVsX2RwX2luaXRfY29ubmVjdG9yXSBBZGRpbmcgZURQIGNvbm5l
-Y3RvciBvbiBwb3J0IEEKW2RybTpkcm1fc3lzZnNfY29ubmVjdG9yX2FkZF0gYWRkaW5nICJl
-RFAtMSIgdG8gc3lzZnMKW2RybTpkcm1fc3lzZnNfaG90cGx1Z19ldmVudF0gZ2VuZXJhdGlu
-ZyBob3RwbHVnIGV2ZW50Cltkcm06aW50ZWxfZHBfaW5pdF9wYW5lbF9wb3dlcl9zZXF1ZW5j
-ZXJdIGN1ciB0MV90MyAyMDAwIHQ4IDgwMCB0OSAyMDAwIHQxMCA1MDAgdDExX3QxMiA2MDAw
-Cltkcm06aW50ZWxfZHBfaW5pdF9wYW5lbF9wb3dlcl9zZXF1ZW5jZXJdIHZidCB0MV90MyAy
-MDAwIHQ4IDgwMCB0OSAyMDAwIHQxMCA1MDAgdDExX3QxMiA1MDAwCltkcm06aW50ZWxfZHBf
-aW5pdF9wYW5lbF9wb3dlcl9zZXF1ZW5jZXJdIHBhbmVsIHBvd2VyIHVwIGRlbGF5IDIwMCwg
-cG93ZXIgZG93biBkZWxheSA1MCwgcG93ZXIgY3ljbGUgZGVsYXkgNjAwCltkcm06aW50ZWxf
-ZHBfaW5pdF9wYW5lbF9wb3dlcl9zZXF1ZW5jZXJdIGJhY2tsaWdodCBvbiBkZWxheSA4MCwg
-b2ZmIGRlbGF5IDIwMApbZHJtOmludGVsX2RwX2F1eF9pbml0XSByZWdpc3RlcmluZyBEUERE
-Qy1BIGJ1cyBmb3IgY2FyZDAtZURQLTEKW2RybTpfZWRwX3BhbmVsX3ZkZF9vbl0gVHVybmlu
-ZyBlRFAgVkREIG9uCltkcm06X2VkcF9wYW5lbF92ZGRfb25dIFBQX1NUQVRVUzogMHg4MDAw
-MDAwOCBQUF9DT05UUk9MOiAweGFiY2QwMDBmCltkcm06aW50ZWxfZHBfZ2V0X2RwY2RdIERQ
-Q0Q6IDExIDBhIDAyIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwIDAwCltkcm06
-aW50ZWxfZHBfaW5pdF9wYW5lbF9wb3dlcl9zZXF1ZW5jZXJfcmVnaXN0ZXJzXSBwYW5lbCBw
-b3dlciBzZXF1ZW5jZXIgcmVnaXN0ZXIgc2V0dGluZ3M6IFBQX09OIDB4NDdkMDAwMDEsIFBQ
-X09GRiAweDFmNDAwMDEsIFBQX0RJViAweDE4NjkwNgpbZHJtOmRybV9hZGRfZGlzcGxheV9p
-bmZvXSBlRFAtMTogQXNzaWduaW5nIEVESUQtMS40IGRpZ2l0YWwgc2luayBjb2xvciBkZXB0
-aCBhcyA4IGJwYy4KW2RybTpkcm1fZWRpZF90b19lbGRdIEVMRDogbm8gQ0VBIEV4dGVuc2lv
-biBmb3VuZApbZHJtXSBWQlQgZG9lc24ndCBzdXBwb3J0IERSUlMKZGl2aWRlIGVycm9yOiAw
-MDAwIFsjMV0gUFJFRU1QVCBTTVAgCk1vZHVsZXMgbGlua2VkIGluOiBpOTE1KCspIGJ1dHRv
-biB2aWRlbyBkcm1fa21zX2hlbHBlciBpbnRlbF9ndHQgaTJjX2FsZ29fYml0IGRybSBhZ3Bn
-YXJ0IGN0ciBjY20gYWZfcGFja2V0IGJuZXAgam95ZGV2IGlUQ09fd2R0IGlUQ09fdmVuZG9y
-X3N1cHBvcnQgZWNiIGJ0dXNiIHV2Y3ZpZGVvIHZpZGVvYnVmMl92bWFsbG9jIHZpZGVvYnVm
-Ml9tZW1vcHMgdmlkZW9idWYyX2NvcmUgdjRsMl9jb21tb24gdmlkZW9kZXYgYmx1ZXRvb3Ro
-IG1lZGlhIHg4Nl9wa2dfdGVtcF90aGVybWFsIGludGVsX3Bvd2VyY2xhbXAgY29yZXRlbXAg
-YXJjNCBpbnRlbF9yYXBsIGt2bV9pbnRlbCBrdm0gZXZkZXYgbWFjX2hpZCBzbmRfaGRhX2Nv
-ZGVjX2hkbWkgaXdsZHZtIHBzbW91c2Ugc25kX2hkYV9jb2RlY19yZWFsdGVrIG1hYzgwMjEx
-IHNuZF9oZGFfY29kZWNfZ2VuZXJpYyBtaWNyb2NvZGUgZWZpdmFycyBzZXJpb19yYXcgcGNz
-cGtyIGl3bHdpZmkgY2ZnODAyMTEgcjgxNjkgcmZraWxsIHNuZF9oZGFfaW50ZWwgc25kX2hk
-YV9jb250cm9sbGVyIGkyY19pODAxIG1paSBzbmRfaGRhX2NvZGVjIGxwY19pY2ggc25kX2h3
-ZGVwIHNocGNocCB0aGVybWFsIGZhbiBhY3BpX2NwdWZyZXEgdHBtX2luZmluZW9uIHdtaSBw
-cm9jZXNzb3IgdGhlcm1hbF9zeXMgYmF0dGVyeSB0cG1fdGlzIGh3bW9uIHRwbSBhYyBwcGRl
-diBiaW5mbXRfbWlzYyBzbmRfc2VxX2R1bW15IHNuZF9wY21fb3NzIHNuZF9taXhlcl9vc3Mg
-c25kX3BjbSBzbmRfc2VxX29zcyBzbmRfc2VxX21pZGlfZXZlbnQgc25kX3NlcSBzbmRfc2Vx
-X2RldmljZSBzbmRfdGltZXIgc25kIHNvdW5kY29yZSBscCBwYXJwb3J0X3BjIHBhcnBvcnQg
-ZXh0NCBjcmMxNiBqYmQyIG1iY2FjaGUgZG1fY3J5cHQgc2RfbW9kIGNyY190MTBkaWYgY3Jj
-dDEwZGlmX3BjbG11bCBjcmN0MTBkaWZfY29tbW9uIGNyYzMyX3BjbG11bCBjcmMzMmNfaW50
-ZWwgZ2hhc2hfY2xtdWxuaV9pbnRlbCBhZXNuaV9pbnRlbCBhZXNfeDg2XzY0IGxydyBnZjEy
-OG11bCBnbHVlX2hlbHBlciBhYmxrX2hlbHBlciBjcnlwdGQgZWhjaV9wY2kgeGhjaV9oY2Qg
-ZWhjaV9oY2QgYWhjaSBsaWJhaGNpIGxpYmF0YSBzY3NpX21vZCB1c2Jjb3JlIHVzYl9jb21t
-b24gZG1fbWlycm9yIGRtX3JlZ2lvbl9oYXNoIGRtX2xvZyBkbV9tb2QgaXB2NiBhdXRvZnM0
-IHVuaXggZWZpdmFyZnMgW2xhc3QgdW5sb2FkZWQ6IGFncGdhcnRdCkNQVTogMCBQSUQ6IDIy
-MTggQ29tbTogbW9kcHJvYmUgTm90IHRhaW50ZWQgMy4xNy4wLXJjNC0wMDM1NS1nMTUzNjM0
-MCAjOQpIYXJkd2FyZSBuYW1lOiBTQU1TVU5HIEVMRUNUUk9OSUNTIENPLiwgTFRELiA3MzBV
-M0UvNzQwVTNFL05QNzMwVTNFLVgwM0RFLCBCSU9TIFAwNUFCVy4wNjAuMTMwNTMwLmRnIDA1
-LzMwLzIwMTMKdGFzazogZmZmZjg4MDBjMzExZTI1MCB0aTogZmZmZjg4MDBjODVkYzAwMCB0
-YXNrLnRpOiBmZmZmODgwMGM4NWRjMDAwClJJUDogMDAxMDpbPGZmZmZmZmZmYTEwMTFiZjY+
-XSAgWzxmZmZmZmZmZmExMDExYmY2Pl0gc2NhbGUrMHgzNi8weGEwIFtpOTE1XQpSU1A6IDAw
-MTg6ZmZmZjg4MDBjODVkZjhlOCAgRUZMQUdTOiAwMDAxMDIwNgpSQVg6IDAwMDAwMDAwMDAw
-MDAwMDAgUkJYOiBmZmZmODgwMGMyMTAyNDAwIFJDWDogMDAwMDAwMDAwMDAwMDAwMApSRFg6
-IDAwMDAwMDAwMDAwMDAwMDAgUlNJOiAwMDAwMDAwMDAwMDAwMDAwIFJESTogMDAwMDAwMDAw
-MDAwMTIyYQpSQlA6IDAwMDAwMDAwMDAwMDAwMDAgUjA4OiAwMDAwMDAwMDAwMDAxMjJhIFIw
-OTogZmZmZjg4MDBjOGUzMmYwMApSMTA6IDAwMDAwMDAwMDAwMDAzY2QgUjExOiAwMDAwMDAw
-MDAwMDAwM2NjIFIxMjogZmZmZjg4MDEyOGE2NzUxMApSMTM6IDAwMDAwMDAwMDAwMDAyMDIg
-UjE0OiBmZmZmODgwMGM4ZTA0MDAwIFIxNTogZmZmZjg4MDBjODM2YTYwMApGUzogIDAwMDA3
-ZjQ5ZjQ2ZTA3MDAoMDAwMCkgR1M6ZmZmZjg4MDEyZjIwMDAwMCgwMDAwKSBrbmxHUzowMDAw
-MDAwMDAwMDAwMDAwCkNTOiAgMDAxMCBEUzogMDAwMCBFUzogMDAwMCBDUjA6IDAwMDAwMDAw
-ODAwNTAwMzMKQ1IyOiAwMDAwN2ZiYWM5ZGUxMDAwIENSMzogMDAwMDAwMDBjN2ZkMDAwMCBD
-UjQ6IDAwMDAwMDAwMDAxNDA3ZjAKU3RhY2s6CiBmZmZmZmZmZmExMDEzNTU4IDAwMDAxMjJh
-MDAwMDAwMDAgMDAwMDAwMDAwMDAwMDAwMCAwMDAwMDAwMDAwMDAwMDAxCiBmZmZmODgwMGMy
-MTAyNDAwIGZmZmY4ODAxMjg2ZmYwMDAgZmZmZjg4MDEyOGE2MDAwMCBmZmZmODgwMTI4NmZm
-MDAwCiBmZmZmZmZmZmExMDA3OTAyIGZmZmY4ODAwYzhlMDQwZTAgZmZmZjg4MDEyOGE2MDAw
-MCAwMDAwMDAwMDAwMDAwMDAwCkNhbGwgVHJhY2U6CiBbPGZmZmZmZmZmYTEwMTM1NTg+XSA/
-IGludGVsX3BhbmVsX3NldHVwX2JhY2tsaWdodCsweGY4LzB4MjUwIFtpOTE1XQogWzxmZmZm
-ZmZmZmExMDA3OTAyPl0gPyBpbnRlbF9kcF9pbml0X2Nvbm5lY3RvcisweDYyMi8weDhkMCBb
-aTkxNV0KIFs8ZmZmZmZmZmZhMTAwN2NmNj5dID8gaW50ZWxfZHBfaW5pdCsweDE0Ni8weDIw
-MCBbaTkxNV0KIFs8ZmZmZmZmZmZhMGZmMDU1MT5dID8gaW50ZWxfbW9kZXNldF9pbml0KzB4
-MTFiMS8weDE1NTAgW2k5MTVdCiBbPGZmZmZmZmZmYTBmZDMxZmU+XSA/IGdlbjZfd3JpdGUz
-MisweDJlLzB4OTAgW2k5MTVdCiBbPGZmZmZmZmZmYTBmYzNmNmM+XSA/IGlyb25sYWtlX2ly
-cV9wb3N0aW5zdGFsbCsweGJjLzB4MTkwIFtpOTE1XQogWzxmZmZmZmZmZmExMDFjODk4Pl0g
-PyBpOTE1X2RyaXZlcl9sb2FkKzB4YmI4LzB4MTBhMCBbaTkxNV0KIFs8ZmZmZmZmZmZhMGYw
-ZjFiYz5dID8gZHJtX2Rldl9yZWdpc3RlcisweDljLzB4ZjAgW2RybV0KIFs8ZmZmZmZmZmZh
-MGYxMTc1Nj5dID8gZHJtX2dldF9wY2lfZGV2KzB4YzYvMHgxZTAgW2RybV0KIFs8ZmZmZmZm
-ZmY4MTIzZWIyYT5dID8gbG9jYWxfcGNpX3Byb2JlKzB4M2EvMHhhMAogWzxmZmZmZmZmZjgx
-MjNlYTk0Pl0gPyBwY2lfbWF0Y2hfZGV2aWNlKzB4ZDQvMHgxMDAKIFs8ZmZmZmZmZmY4MTIz
-ZWM1YT5dID8gcGNpX2RldmljZV9wcm9iZSsweGNhLzB4MTIwCiBbPGZmZmZmZmZmODEyZWU1
-MDM+XSA/IGRyaXZlcl9wcm9iZV9kZXZpY2UrMHg4My8weDI1MAogWzxmZmZmZmZmZjgxMmVl
-NzhiPl0gPyBfX2RyaXZlcl9hdHRhY2grMHg3Yi8weDgwCiBbPGZmZmZmZmZmODEyZWU3MTA+
-XSA/IF9fZGV2aWNlX2F0dGFjaCsweDQwLzB4NDAKIFs8ZmZmZmZmZmY4MTJlYzkxMz5dID8g
-YnVzX2Zvcl9lYWNoX2RldisweDUzLzB4OTAKIFs8ZmZmZmZmZmY4MTJlZGQwOD5dID8gYnVz
-X2FkZF9kcml2ZXIrMHgxNjgvMHgyMjAKIFs8ZmZmZmZmZmZhMTA1YjAwMD5dID8gMHhmZmZm
-ZmZmZmExMDViMDAwCiBbPGZmZmZmZmZmODEyZWVkMjY+XSA/IGRyaXZlcl9yZWdpc3Rlcisw
-eDU2LzB4ZDAKIFs8ZmZmZmZmZmY4MTAwMDJjOD5dID8gZG9fb25lX2luaXRjYWxsKzB4OTgv
-MHgxZjAKIFs8ZmZmZmZmZmY4MTBiMTRiZj5dID8gbG9hZF9tb2R1bGUrMHgxY2NmLzB4MjFi
-MAogWzxmZmZmZmZmZjgxMGFlMjMwPl0gPyBzdG9yZV91ZXZlbnQrMHg0MC8weDQwCiBbPGZm
-ZmZmZmZmODEwYjFhYmQ+XSA/IFN5U19maW5pdF9tb2R1bGUrMHg2ZC8weDcwCiBbPGZmZmZm
-ZmZmODE0MzNjZTk+XSA/IHN5c3RlbV9jYWxsX2Zhc3RwYXRoKzB4MTYvMHgxYgpDb2RlOiBk
-NiA3NyAyZiA0NCAzOSBjMSA3NyA1NyAzOSBlYiA4OSBlOCA4OSBkNiAwZiA0MyBjMyAzOSBk
-MCAwZiA0NyBjMiA0MSAyOSBjOCAyOSBkZSAyOSBkOCAzMSBkMiA0OCA4MyBjNCAxMCA0OSAw
-ZiBhZiBjMCA4OSBjOSA1YiA1ZCA8NDg+IGY3IGY2IDQ4IDAxIGM4IGMzIGJlIDlmIDAxIDAw
-IDAwIDQ4IGM3IGM3IGQ4IGQyIDAzIGExIDQ0IDg5IApSSVAgIFs8ZmZmZmZmZmZhMTAxMWJm
-Nj5dIHNjYWxlKzB4MzYvMHhhMCBbaTkxNV0KIFJTUCA8ZmZmZjg4MDBjODVkZjhlOD4KLS0t
-WyBlbmQgdHJhY2UgZmYwZjg1ZDZhMDEyMDhiZCBdLS0tCltkcm06ZWRwX3BhbmVsX3ZkZF9v
-ZmZfc3luY10gVHVybmluZyBlRFAgVkREIG9mZgpbZHJtOmVkcF9wYW5lbF92ZGRfb2ZmX3N5
-bmNdIFBQX1NUQVRVUzogMHg4MDAwMDAwOCBQUF9DT05UUk9MOiAweGFiY2QwMDA3
---------------090301090008070405010507--
+--Andy
