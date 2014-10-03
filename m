@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761484AbaJDAzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:55:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
+	id S1761499AbaJDAze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:55:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880AbaJCVcb (ORCPT
+	with ESMTP id S1754878AbaJCVcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Andreas Boll <andreas.boll.dev@gmail.com>
-Subject: [PATCH 3.16 023/357] drm/radeon: tweak ACCEL_WORKING2 query for hawaii
-Date: Fri,  3 Oct 2014 14:26:49 -0700
-Message-Id: <20141003212934.161071981@linuxfoundation.org>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [PATCH 3.16 014/357] drm/ttm: Use mutex_trylock() to avoid deadlock inside shrinker functions.
+Date: Fri,  3 Oct 2014 14:26:40 -0700
+Message-Id: <20141003212933.902038304@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,42 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
-commit 3c64bd26f7e9bd589ebe0d1ebec69ef2f784c12d upstream.
+commit 22e71691fd54c637800d10816bbeba9cf132d218 upstream.
 
-Return 2 so we can be sure the kernel has the necessary
-changes for acceleration to work.
+I can observe that RHEL7 environment stalls with 100% CPU usage when a
+certain type of memory pressure is given. While the shrinker functions
+are called by shrink_slab() before the OOM killer is triggered, the stall
+lasts for many minutes.
 
-Note: This patch depends on these two commits:
- - drm/radeon: fix cut and paste issue for hawaii.
- - drm/radeon: use packet2 for nop on hawaii with old firmware
+One of reasons of this stall is that
+ttm_dma_pool_shrink_count()/ttm_dma_pool_shrink_scan() are called and
+are blocked at mutex_lock(&_manager->lock). GFP_KERNEL allocation with
+_manager->lock held causes someone (including kswapd) to deadlock when
+these functions are called due to memory pressure. This patch changes
+"mutex_lock();" to "if (!mutex_trylock()) return ...;" in order to
+avoid deadlock.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Andreas Boll <andreas.boll.dev@gmail.com>
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_kms.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -254,7 +254,14 @@ static int radeon_info_ioctl(struct drm_
- 		}
- 		break;
- 	case RADEON_INFO_ACCEL_WORKING2:
--		*value = rdev->accel_working;
-+		if (rdev->family == CHIP_HAWAII) {
-+			if (rdev->accel_working)
-+				*value = 2;
-+			else
-+				*value = 0;
-+		} else {
-+			*value = rdev->accel_working;
-+		}
- 		break;
- 	case RADEON_INFO_TILING_CONFIG:
- 		if (rdev->family >= CHIP_BONAIRE)
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -1014,7 +1014,8 @@ ttm_dma_pool_shrink_scan(struct shrinker
+ 	if (list_empty(&_manager->pools))
+ 		return SHRINK_STOP;
+ 
+-	mutex_lock(&_manager->lock);
++	if (!mutex_trylock(&_manager->lock))
++		return SHRINK_STOP;
+ 	if (!_manager->npools)
+ 		goto out;
+ 	pool_offset = ++start_pool % _manager->npools;
+@@ -1047,7 +1048,8 @@ ttm_dma_pool_shrink_count(struct shrinke
+ 	struct device_pools *p;
+ 	unsigned long count = 0;
+ 
+-	mutex_lock(&_manager->lock);
++	if (!mutex_trylock(&_manager->lock))
++		return 0;
+ 	list_for_each_entry(p, &_manager->pools, pools)
+ 		count += p->pool->npages_free;
+ 	mutex_unlock(&_manager->lock);
 
 
