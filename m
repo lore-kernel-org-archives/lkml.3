@@ -1,67 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759639AbaJDARj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:17:39 -0400
-Received: from mout.perfora.net ([74.208.4.196]:59964 "EHLO mout.perfora.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756563AbaJDARh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 20:17:37 -0400
-From: Marcel Ziswiler <marcel@ziswiler.com>
-To: alsa-devel@alsa-project.org
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch, Marcel Ziswiler <marcel@ziswiler.com>,
-        Fabio Estevam <festevam@gmail.com>
-Subject: [PATCH v3 3/3] ARM: tegra: enable sgtl5000 audio
-Date: Sat,  4 Oct 2014 02:15:45 +0200
-Message-Id: <6bd1e5a958108f4d834015342be6de094dbbeb68.1412381377.git.marcel@ziswiler.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <cover.1412381377.git.marcel@ziswiler.com>
-References: <cover.1412381377.git.marcel@ziswiler.com>
-X-Provags-ID: V02:K0:62+2Oor1tUEBeaayyWavy72kuIgxL+3efcfV4dLBGx9
- bWPvorEySpUY4ykiBpKoVUPSNzVFLeO1hlJQ396qHixU7NEO3n
- HrMoZxXY118cJ/z8k7MdACrzbFuCPO4BmSIwClQx6A/moFZyEI
- Uu8BnxKdzIjwghizy33b11PSS/d+oclTStvlrJgOqcY79dg010
- mzqcMvSvvpXkqtniIhNOaU4OWDPvq287H2miG7ohnIhulyeJeL
- x7HtRfuUzbAlTJJ1axSye8wbSDtw4PByPXrsddXejbbU77GDqe
- 6A8+27J8KIrE3AyxAGERs58NOiD56OvxxnPIg2c9ZgDjF9V6dH
- aFBOMFi6sPblhnTjcR2bGiyWUTwUunhJ2v0mJezRlemAptDwJd
- XDUW/yPUY8geQvqNJmQ8GJkW+HUx4N20vvwHX5ndNqnuAKVxSY
- dFD2u
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754760AbaJCVo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:44:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390AbaJCVnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 17:43:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Young <dyoung@redhat.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.16 215/357] x86 early_ioremap: Increase FIX_BTMAPS_SLOTS to 8
+Date: Fri,  3 Oct 2014 14:30:01 -0700
+Message-Id: <20141003212939.984829480@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NVIDIA Tegra 3 based Apalis T30 and Colibri T30 modules contain a Freescale SGTL5000 analogue audio codec.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+------------------
+
+From: Dave Young <dyoung@redhat.com>
+
+commit 3eddc69ffeba092d288c386646bfa5ec0fce25fd upstream.
+
+3.16 kernel boot fail with earlyprintk=efi, it keeps scrolling at the
+bottom line of screen.
+
+Bisected, the first bad commit is below:
+commit 86dfc6f339886559d80ee0d4bd20fe5ee90450f0
+Author: Lv Zheng <lv.zheng@intel.com>
+Date:   Fri Apr 4 12:38:57 2014 +0800
+
+    ACPICA: Tables: Fix table checksums verification before installation.
+
+I did some debugging by enabling both serial and efi earlyprintk, below is
+some debug dmesg, seems early_ioremap fails in scroll up function due to
+no free slot, see below dmesg output:
+
+  WARNING: CPU: 0 PID: 0 at mm/early_ioremap.c:116 __early_ioremap+0x90/0x1c4()
+  __early_ioremap(ed00c800, 00000c80) not found slot
+  Modules linked in:
+  CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-rc1+ #204
+  Hardware name: Hewlett-Packard HP Z420 Workstation/1589, BIOS J61 v03.15 05/09/2013
+  Call Trace:
+    dump_stack+0x4e/0x7a
+    warn_slowpath_common+0x75/0x8e
+    ? __early_ioremap+0x90/0x1c4
+    warn_slowpath_fmt+0x47/0x49
+    __early_ioremap+0x90/0x1c4
+    ? sprintf+0x46/0x48
+    early_ioremap+0x13/0x15
+    early_efi_map+0x24/0x26
+    early_efi_scroll_up+0x6d/0xc0
+    early_efi_write+0x1b0/0x214
+    call_console_drivers.constprop.21+0x73/0x7e
+    console_unlock+0x151/0x3b2
+    ? vprintk_emit+0x49f/0x532
+    vprintk_emit+0x521/0x532
+    ? console_unlock+0x383/0x3b2
+    printk+0x4f/0x51
+    acpi_os_vprintf+0x2b/0x2d
+    acpi_os_printf+0x43/0x45
+    acpi_info+0x5c/0x63
+    ? __acpi_map_table+0x13/0x18
+    ? acpi_os_map_iomem+0x21/0x147
+    acpi_tb_print_table_header+0x177/0x186
+    acpi_tb_install_table_with_override+0x4b/0x62
+    acpi_tb_install_standard_table+0xd9/0x215
+    ? early_ioremap+0x13/0x15
+    ? __acpi_map_table+0x13/0x18
+    acpi_tb_parse_root_table+0x16e/0x1b4
+    acpi_initialize_tables+0x57/0x59
+    acpi_table_init+0x50/0xce
+    acpi_boot_table_init+0x1e/0x85
+    setup_arch+0x9b7/0xcc4
+    start_kernel+0x94/0x42d
+    ? early_idt_handlers+0x120/0x120
+    x86_64_start_reservations+0x2a/0x2c
+    x86_64_start_kernel+0xf3/0x100
+
+Quote reply from Lv.zheng about the early ioremap slot usage in this case:
+
+"""
+In early_efi_scroll_up(), 2 mapping entries will be used for the src/dst screen buffer.
+In drivers/acpi/acpica/tbutils.c, we've improved the early table loading code in acpi_tb_parse_root_table().
+We now need 2 mapping entries:
+1. One mapping entry is used for RSDT table mapping. Each RSDT entry contains an address for another ACPI table.
+2. For each entry in RSDP, we need another mapping entry to map the table to perform necessary check/override before installing it.
+
+When acpi_tb_parse_root_table() prints something through EFI earlyprintk console, we'll have 4 mapping entries used.
+The current 4 slots setting of early_ioremap() seems to be too small for such a use case.
+"""
+
+Thus increase the slot to 8 in this patch to fix this issue.
+boot-time mappings become 512 page with this patch.
+
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
-Changes in v3:
-- Revert to not using simple-audio-card being incompatible with tegra.
-- Rebased to for-next.
+ arch/x86/include/asm/fixmap.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Changes in v2:
-- Using simple-audio-card as suggested by Fabio.
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -106,14 +106,14 @@ enum fixed_addresses {
+ 	__end_of_permanent_fixed_addresses,
+ 
+ 	/*
+-	 * 256 temporary boot-time mappings, used by early_ioremap(),
++	 * 512 temporary boot-time mappings, used by early_ioremap(),
+ 	 * before ioremap() is functional.
+ 	 *
+-	 * If necessary we round it up to the next 256 pages boundary so
++	 * If necessary we round it up to the next 512 pages boundary so
+ 	 * that we can have a single pgd entry and a single pte table:
+ 	 */
+ #define NR_FIX_BTMAPS		64
+-#define FIX_BTMAPS_SLOTS	4
++#define FIX_BTMAPS_SLOTS	8
+ #define TOTAL_FIX_BTMAPS	(NR_FIX_BTMAPS * FIX_BTMAPS_SLOTS)
+ 	FIX_BTMAP_END =
+ 	 (__end_of_permanent_fixed_addresses ^
 
- arch/arm/configs/tegra_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 77d6e94..02233d1 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -210,6 +210,7 @@ CONFIG_SND_SOC_TEGRA_WM8903=y
- CONFIG_SND_SOC_TEGRA_TRIMSLICE=y
- CONFIG_SND_SOC_TEGRA_ALC5632=y
- CONFIG_SND_SOC_TEGRA_MAX98090=y
-+CONFIG_SND_SOC_TEGRA_SGTL5000=y
- CONFIG_USB=y
- CONFIG_USB_XHCI_HCD=y
- CONFIG_USB_EHCI_HCD=y
--- 
-1.9.3
 
