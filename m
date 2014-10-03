@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101AbaJCVni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45369 "EHLO
+	id S932093AbaJCVng (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756038AbaJCVnP (ORCPT
+	with ESMTP id S1756046AbaJCVnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:15 -0400
+	Fri, 3 Oct 2014 17:43:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
+        Nathan Lynch <nathan_lynch@mentor.com>,
+        Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.16 184/357] ARM: 8133/1: use irq_set_affinity with force=false when migrating irqs
-Date: Fri,  3 Oct 2014 14:29:30 -0700
-Message-Id: <20141003212939.003113264@linuxfoundation.org>
+Subject: [PATCH 3.16 185/357] ARM: 8148/1: flush TLS and thumbee register state during exec
+Date: Fri,  3 Oct 2014 14:29:31 -0700
+Message-Id: <20141003212939.032402487@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,57 +30,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sudeep Holla <sudeep.holla@arm.com>
+From: Nathan Lynch <nathan_lynch@mentor.com>
 
-commit a040803a9d6b8c1876d3487a5cb69602ebcbb82c upstream.
+commit fbfb872f5f417cea48760c535e0ff027c88b507a upstream.
 
-Since commit 1dbfa187dad ("ARM: irq migration: force migration off CPU
-going down") the ARM interrupt migration code on cpu offline calls
-irqchip.irq_set_affinity() with the argument force=true. At the point
-of this change the argument had no effect because it was not used by
-any interrupt chip driver and there was no semantics defined.
+The TPIDRURO and TPIDRURW registers need to be flushed during exec;
+otherwise TLS information is potentially leaked.  TPIDRURO in
+particular needs careful treatment.  Since flush_thread basically
+needs the same code used to set the TLS in arm_syscall, pull that into
+a common set_tls helper in tls.h and use it in both places.
 
-This changed with commit 01f8fa4f01d8 ("genirq: Allow forcing cpu
-affinity of interrupts") which made the force argument useful to route
-interrupts to not yet online cpus without checking the target cpu
-against the cpu online mask. The following commit ffde1de64012
-("irqchip: gic: Support forced affinity setting") implemented this for
-the GIC interrupt controller.
+Similarly, TEEHBR needs to be cleared during exec as well.  Clearing
+its save slot in thread_info isn't right as there is no guarantee
+that a thread switch will occur before the new program runs.  Just
+setting the register directly is sufficient.
 
-As a consequence the ARM cpu offline irq migration fails if CPU0 is
-offlined, because CPU0 is still set in the affinity mask and the
-validataion against cpu online mask is skipped to the force argument
-being true. The following first_cpu(mask) selection always selects
-CPU0 as the target.
-
-Solve the issue by calling irq_set_affinity() with force=false from
-the CPU offline irq migration code so the GIC driver validates the
-affinity mask against CPU online mask and therefore removes CPU0 from
-the possible target candidates.
-
-Tested on TC2 hotpluging CPU0 in and out. Without this patch the system
-locks up as the IRQs are not migrated away from CPU0.
-
-Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/tls.h |   62 +++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/process.c  |    2 +
+ arch/arm/kernel/thumbee.c  |    2 -
+ arch/arm/kernel/traps.c    |   17 ------------
+ 4 files changed, 66 insertions(+), 17 deletions(-)
 
---- a/arch/arm/kernel/irq.c
-+++ b/arch/arm/kernel/irq.c
-@@ -175,7 +175,7 @@ static bool migrate_one_irq(struct irq_d
- 	c = irq_data_get_irq_chip(d);
- 	if (!c->irq_set_affinity)
- 		pr_debug("IRQ%u: unable to set affinity\n", d->irq);
--	else if (c->irq_set_affinity(d, affinity, true) == IRQ_SET_MASK_OK && ret)
-+	else if (c->irq_set_affinity(d, affinity, false) == IRQ_SET_MASK_OK && ret)
- 		cpumask_copy(d->affinity, affinity);
+--- a/arch/arm/include/asm/tls.h
++++ b/arch/arm/include/asm/tls.h
+@@ -1,6 +1,9 @@
+ #ifndef __ASMARM_TLS_H
+ #define __ASMARM_TLS_H
  
- 	return ret;
++#include <linux/compiler.h>
++#include <asm/thread_info.h>
++
+ #ifdef __ASSEMBLY__
+ #include <asm/asm-offsets.h>
+ 	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
+@@ -50,6 +53,47 @@
+ #endif
+ 
+ #ifndef __ASSEMBLY__
++
++static inline void set_tls(unsigned long val)
++{
++	struct thread_info *thread;
++
++	thread = current_thread_info();
++
++	thread->tp_value[0] = val;
++
++	/*
++	 * This code runs with preemption enabled and therefore must
++	 * be reentrant with respect to switch_tls.
++	 *
++	 * We need to ensure ordering between the shadow state and the
++	 * hardware state, so that we don't corrupt the hardware state
++	 * with a stale shadow state during context switch.
++	 *
++	 * If we're preempted here, switch_tls will load TPIDRURO from
++	 * thread_info upon resuming execution and the following mcr
++	 * is merely redundant.
++	 */
++	barrier();
++
++	if (!tls_emu) {
++		if (has_tls_reg) {
++			asm("mcr p15, 0, %0, c13, c0, 3"
++			    : : "r" (val));
++		} else {
++			/*
++			 * User space must never try to access this
++			 * directly.  Expect your app to break
++			 * eventually if you do so.  The user helper
++			 * at 0xffff0fe0 must be used instead.  (see
++			 * entry-armv.S for details)
++			 */
++			*((unsigned int *)0xffff0ff0) = val;
++		}
++
++	}
++}
++
+ static inline unsigned long get_tpuser(void)
+ {
+ 	unsigned long reg = 0;
+@@ -59,5 +103,23 @@ static inline unsigned long get_tpuser(v
+ 
+ 	return reg;
+ }
++
++static inline void set_tpuser(unsigned long val)
++{
++	/* Since TPIDRURW is fully context-switched (unlike TPIDRURO),
++	 * we need not update thread_info.
++	 */
++	if (has_tls_reg && !tls_emu) {
++		asm("mcr p15, 0, %0, c13, c0, 2"
++		    : : "r" (val));
++	}
++}
++
++static inline void flush_tls(void)
++{
++	set_tls(0);
++	set_tpuser(0);
++}
++
+ #endif
+ #endif	/* __ASMARM_TLS_H */
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -334,6 +334,8 @@ void flush_thread(void)
+ 	memset(&tsk->thread.debug, 0, sizeof(struct debug_info));
+ 	memset(&thread->fpstate, 0, sizeof(union fp_state));
+ 
++	flush_tls();
++
+ 	thread_notify(THREAD_NOTIFY_FLUSH, thread);
+ }
+ 
+--- a/arch/arm/kernel/thumbee.c
++++ b/arch/arm/kernel/thumbee.c
+@@ -45,7 +45,7 @@ static int thumbee_notifier(struct notif
+ 
+ 	switch (cmd) {
+ 	case THREAD_NOTIFY_FLUSH:
+-		thread->thumbee_state = 0;
++		teehbr_write(0);
+ 		break;
+ 	case THREAD_NOTIFY_SWITCH:
+ 		current_thread_info()->thumbee_state = teehbr_read();
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -579,7 +579,6 @@ do_cache_op(unsigned long start, unsigne
+ #define NR(x) ((__ARM_NR_##x) - __ARM_NR_BASE)
+ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
+ {
+-	struct thread_info *thread = current_thread_info();
+ 	siginfo_t info;
+ 
+ 	if ((no >> 16) != (__ARM_NR_BASE>> 16))
+@@ -630,21 +629,7 @@ asmlinkage int arm_syscall(int no, struc
+ 		return regs->ARM_r0;
+ 
+ 	case NR(set_tls):
+-		thread->tp_value[0] = regs->ARM_r0;
+-		if (tls_emu)
+-			return 0;
+-		if (has_tls_reg) {
+-			asm ("mcr p15, 0, %0, c13, c0, 3"
+-				: : "r" (regs->ARM_r0));
+-		} else {
+-			/*
+-			 * User space must never try to access this directly.
+-			 * Expect your app to break eventually if you do so.
+-			 * The user helper at 0xffff0fe0 must be used instead.
+-			 * (see entry-armv.S for details)
+-			 */
+-			*((unsigned int *)0xffff0ff0) = regs->ARM_r0;
+-		}
++		set_tls(regs->ARM_r0);
+ 		return 0;
+ 
+ #ifdef CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG
 
 
