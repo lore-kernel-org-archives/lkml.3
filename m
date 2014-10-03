@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508AbaJCXFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:05:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
+	id S1755450AbaJCXHC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:07:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757956AbaJCWOG (ORCPT
+	with ESMTP id S1757946AbaJCWOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:06 -0400
+	Fri, 3 Oct 2014 18:14:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luciano Coelho <luciano.coelho@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.14 179/238] Revert "mac80211: disable uAPSD if all ACs are under ACM"
-Date: Fri,  3 Oct 2014 14:31:34 -0700
-Message-Id: <20141003212919.401800853@linuxfoundation.org>
+        David Rientjes <rientjes@google.com>,
+        Andrei Elovikov <a.elovikov@gmail.com>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 186/238] mm, slab: initialize object alignment on cache creation
+Date: Fri,  3 Oct 2014 14:31:41 -0700
+Message-Id: <20141003212919.616711212@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,38 +33,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: David Rientjes <rientjes@google.com>
 
-commit bb512ad0732232f1d2693bb68f31a76bed8f22ae upstream.
+commit d4a5fca592b9ab52b90bb261a90af3c8f53be011 upstream.
 
-This reverts commit 24aa11ab8ae03292d38ec0dbd9bc2ac49fe8a6dd.
+Since commit 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the
+"ralign" automatic variable in __kmem_cache_create() may be used as
+uninitialized.
 
-That commit was wrong since it uses data that hasn't even been set
-up yet, but might be a hold-over from a previous connection.
+The proper alignment defaults to BYTES_PER_WORD and can be overridden by
+SLAB_RED_ZONE or the alignment specified by the caller.
 
-Additionally, it seems like a driver-specific workaround that
-shouldn't have been in mac80211 to start with.
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
 
-Fixes: 24aa11ab8ae0 ("mac80211: disable uAPSD if all ACs are under ACM")
-Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ mm/slab.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -4240,8 +4240,7 @@ int ieee80211_mgd_assoc(struct ieee80211
- 	rcu_read_unlock();
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2189,7 +2189,8 @@ static int __init_refok setup_cpu_cache(
+ int
+ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ {
+-	size_t left_over, freelist_size, ralign;
++	size_t left_over, freelist_size;
++	size_t ralign = BYTES_PER_WORD;
+ 	gfp_t gfp;
+ 	int err;
+ 	size_t size = cachep->size;
+@@ -2222,14 +2223,6 @@ __kmem_cache_create (struct kmem_cache *
+ 		size &= ~(BYTES_PER_WORD - 1);
+ 	}
  
- 	if (bss->wmm_used && bss->uapsd_supported &&
--	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD) &&
--	    sdata->wmm_acm != 0xff) {
-+	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD)) {
- 		assoc_data->uapsd = true;
- 		ifmgd->flags |= IEEE80211_STA_UAPSD_ENABLED;
- 	} else {
+-	/*
+-	 * Redzoning and user store require word alignment or possibly larger.
+-	 * Note this will be overridden by architecture or caller mandated
+-	 * alignment if either is greater than BYTES_PER_WORD.
+-	 */
+-	if (flags & SLAB_STORE_USER)
+-		ralign = BYTES_PER_WORD;
+-
+ 	if (flags & SLAB_RED_ZONE) {
+ 		ralign = REDZONE_ALIGN;
+ 		/* If redzoning, ensure that the second redzone is suitably
 
 
