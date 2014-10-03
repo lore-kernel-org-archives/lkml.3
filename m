@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504AbaJCWHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:07:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46641 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436AbaJCWGJ (ORCPT
+	id S932434AbaJCWGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:06:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60091 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaJCWGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:06:09 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 133/238] ASoC: davinci-mcasp: Correct rx format unit configuration
-Date: Fri,  3 Oct 2014 14:30:48 -0700
-Message-Id: <20141003212917.930331295@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 18:06:02 -0400
+Date: Fri, 03 Oct 2014 15:08:07 -0700 (PDT)
+Message-Id: <20141003.150807.1695488392631084970.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: nway reset after setting eee
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-54-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-54-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 15:06:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Thu, 2 Oct 2014 16:01:22 +0800
 
-------------------
+> @@ -3480,6 +3480,9 @@ rtl_ethtool_set_eee(struct net_device *net, struct ethtool_eee *edata)
+>  
+>  	ret = tp->rtl_ops.eee_set(tp, edata);
+>  
+> +	if (ret == 0)
+> +		ret = mii_nway_restart(&tp->mii);
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Please test this canonically as "if (!ret)" and delete the empty line between the function
+call and the return value test.
 
-commit fe0a29e163a5d045c73faab682a8dac71c2f8012 upstream.
-
-In case of capture we should not use rotation. The reverse and mask is
-enough to get the data align correctly from the bus to MCU:
-Format	  data from bus    after reverse (XRBUF)
-S16_LE:  |LSB|MSB|xxx|xxx|  |xxx|xxx|MSB|LSB|
-S24_3LE: |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S24_LE:  |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S32_LE:  |LSB|DAT|DAT|MSB|  |MSB|DAT|DAT|LSB|
-
-With this patch all supported formats will work for playback and capture.
-
-Reported-by: Jyri Sarha <jsarha@ti.com> (broken S24_3LE capture)
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/davinci/davinci-mcasp.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -418,8 +418,17 @@ static int davinci_config_channel_size(s
- {
- 	u32 fmt;
- 	u32 tx_rotate = (word_length / 4) & 0x7;
--	u32 rx_rotate = (32 - word_length) / 4;
- 	u32 mask = (1ULL << word_length) - 1;
-+	/*
-+	 * For captured data we should not rotate, inversion and masking is
-+	 * enoguh to get the data to the right position:
-+	 * Format	  data from bus		after reverse (XRBUF)
-+	 * S16_LE:	|LSB|MSB|xxx|xxx|	|xxx|xxx|MSB|LSB|
-+	 * S24_3LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S24_LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S32_LE:	|LSB|DAT|DAT|MSB|	|MSB|DAT|DAT|LSB|
-+	 */
-+	u32 rx_rotate = 0;
- 
- 	/*
- 	 * if s BCLK-to-LRCLK ratio has been configured via the set_clkdiv()
-
-
+Thank you.
