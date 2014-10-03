@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaJCM7B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:59:01 -0400
-Received: from ecfrec.frec.bull.fr ([129.183.4.8]:39394 "EHLO
-	ecfrec.frec.bull.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaJCM66 (ORCPT
+	id S1753066AbaJCM7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:59:13 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:43336 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaJCM7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:58:58 -0400
-X-Greylist: delayed 1839 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Oct 2014 08:58:58 EDT
-From: Sebastien Buisson <sebastien.buisson@bull.net>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCH] Increase the buffer-head per-CPU LRU size
-Date: Fri,  3 Oct 2014 14:28:10 +0200
-Message-Id: <1412339290-32552-1-git-send-email-sebastien.buisson@bull.net>
-X-Mailer: git-send-email 1.7.10.1
+	Fri, 3 Oct 2014 08:59:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <1411685122-21867-1-git-send-email-behanw@converseincode.com>
+References: <5774775.2EcFmuR4sV@wuerfel>
+	<1411685122-21867-1-git-send-email-behanw@converseincode.com>
+Date: Fri, 3 Oct 2014 14:59:07 +0200
+Message-ID: <CAPDyKFruar4iax_goZUmCbyoAM9BwNFLzyss1Fc+pZVkse+a7A@mail.gmail.com>
+Subject: Re: [PATCH v3] mmc, sdhci, bcm-kona, LLVMLinux: Remove use of __initconst
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Behan Webster <behanw@converseincode.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Chris Ball <chris@printf.net>,
+        Matt Porter <mporter@linaro.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the buffer-head per-CPU LRU size to allow efficient
-filesystem operations that access many blocks for each transaction.
-For example, creating a file in a large ext4 directory with quota
-enabled will access multiple buffer heads and will overflow the LRU
-at the default 8-block LRU size:
+On 26 September 2014 00:45, Behan Webster <behanw@converseincode.com> wrote:
+> The __initconst is in the wrong place, and when moved to the correct place
+> it uncovers an error where the variable is used by non-init data structures.
+>
+> Instead merely make them const and put the const in the right spot.
+>
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Reviewed-by: Mark Charlebois <charlebm@gmail.com>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Matt Porter <mporter@linaro.org>
 
-* parent directory inode table block (ctime, nlinks for subdirs)
-* new inode bitmap
-* inode table block
-* 2 quota blocks
-* directory leaf block (not reused, but pollutes one cache entry)
-* 2 levels htree blocks (only one is reused, other pollutes cache)
-* 2 levels indirect/index blocks (only one is reused)
+Thanks! Applied for next.
 
-The buffer-head per-CPU LRU size is raised to 16, as it shows in
-metadata performance benchmarks up to 10% gain for create,
-4% for lookup and 7% for destroy.
+Kind regards
+Uffe
 
-Signed-off-by: Liang Zhen <liang.zhen@intel.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
-Signed-off-by: Sebastien Buisson <sebastien.buisson@bull.net>
----
- fs/buffer.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 6024877..a6468f2 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1256,7 +1256,7 @@ static struct buffer_head *__bread_slow(struct buffer_head *bh)
-  * a local interrupt disable for that.
-  */
- 
--#define BH_LRU_SIZE	8
-+#define BH_LRU_SIZE	16
- 
- struct bh_lru {
- 	struct buffer_head *bhs[BH_LRU_SIZE];
--- 
-1.7.1
-
+> ---
+>  drivers/mmc/host/sdhci-bcm-kona.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-bcm-kona.c b/drivers/mmc/host/sdhci-bcm-kona.c
+> index dd780c3..d085dfe 100644
+> --- a/drivers/mmc/host/sdhci-bcm-kona.c
+> +++ b/drivers/mmc/host/sdhci-bcm-kona.c
+> @@ -225,7 +225,7 @@ static struct sdhci_pltfm_data sdhci_pltfm_data_kona = {
+>                 SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN,
+>  };
+>
+> -static struct __initconst of_device_id sdhci_bcm_kona_of_match[] = {
+> +static const struct of_device_id sdhci_bcm_kona_of_match[] = {
+>         { .compatible = "brcm,kona-sdhci"},
+>         { .compatible = "bcm,kona-sdhci"}, /* deprecated name */
+>         {}
+> --
+> 1.9.1
+>
