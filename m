@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932856AbaJCWqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:46:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
+	id S932840AbaJCWqD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:46:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47291 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355AbaJCWYQ (ORCPT
+	with ESMTP id S1758256AbaJCWYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Keith Busch <keith.busch@intel.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.10 094/143] block: Fix dev_t minor allocation lifetime
-Date: Fri,  3 Oct 2014 14:34:49 -0700
-Message-Id: <20141003213317.317441235@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Mike Anderson <mike.anderson@us.ibm.com>,
+        Oleg Nesterov <onestero@redhat.com>,
+        Gustavo Luiz Duarte <gduarte@redhat.com>,
+        Tomas Henzl <thenzl@redhat.com>
+Subject: [PATCH 3.10 093/143] workqueue: apply __WQ_ORDERED to create_singlethread_workqueue()
+Date: Fri,  3 Oct 2014 14:34:48 -0700
+Message-Id: <20141003213317.288973269@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,119 +31,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keith Busch <keith.busch@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 2da78092dda13f1efd26edbbf99a567776913750 upstream.
+commit e09c2c295468476a239d13324ce9042ec4de05eb upstream.
 
-Releases the dev_t minor when all references are closed to prevent
-another device from acquiring the same major/minor.
+create_singlethread_workqueue() is a compat interface for single
+threaded workqueue which maps to ordered workqueue w/ rescuer in the
+current implementation.  create_singlethread_workqueue() currently
+implemented by invoking alloc_workqueue() w/ appropriate parameters.
 
-Since the partition's release may be invoked from call_rcu's soft-irq
-context, the ext_dev_idr's mutex had to be replaced with a spinlock so
-as not so sleep.
+8719dceae2f9 ("workqueue: reject adjusting max_active or applying
+attrs to ordered workqueues") introduced __WQ_ORDERED to protect
+ordered workqueues against dynamic attribute changes which can break
+ordering guarantees but forgot to apply it to
+create_singlethread_workqueue().  This in itself is okay as nobody
+currently uses dynamic attribute change on workqueues created with
+create_singlethread_workqueue().
 
-Signed-off-by: Keith Busch <keith.busch@intel.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+However, 4c16bd327c ("workqueue: implement NUMA affinity for unbound
+workqueues") broke singlethreaded guarantee for ordered workqueues
+through allocating a separate pool_workqueue on each NUMA node by
+default.  A later change 8a2b75384444 ("workqueue: fix ordered
+workqueues in NUMA setups") fixed it by allocating only one global
+pool_workqueue if __WQ_ORDERED is set.
+
+Combined, the __WQ_ORDERED omission in create_singlethread_workqueue()
+became critical breaking its single threadedness and ordering
+guarantee.
+
+Let's make create_singlethread_workqueue() wrap
+alloc_ordered_workqueue() instead so that it inherits __WQ_ORDERED and
+can implicitly track future ordered_workqueue changes.
+
+v2: I missed that __WQ_ORDERED now protects against pwq splitting
+    across NUMA nodes and incorrectly described the patch as a
+    nice-to-have fix to protect against future dynamic attribute
+    usages.  Oleg pointed out that this is actually a critical
+    breakage due to 8a2b75384444 ("workqueue: fix ordered workqueues
+    in NUMA setups").
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Mike Anderson <mike.anderson@us.ibm.com>
+Cc: Oleg Nesterov <onestero@redhat.com>
+Cc: Gustavo Luiz Duarte <gduarte@redhat.com>
+Cc: Tomas Henzl <thenzl@redhat.com>
+Fixes: 4c16bd327c ("workqueue: implement NUMA affinity for unbound workqueues")
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c             |   24 ++++++++++++++----------
- block/partition-generic.c |    2 +-
- 2 files changed, 15 insertions(+), 11 deletions(-)
+ include/linux/workqueue.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -28,10 +28,10 @@ struct kobject *block_depr;
- /* for extended dynamic devt allocation, currently only one major is used */
- #define NR_EXT_DEVT		(1 << MINORBITS)
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -414,7 +414,7 @@ __alloc_workqueue_key(const char *fmt, u
+ #define create_freezable_workqueue(name)				\
+ 	alloc_workqueue((name), WQ_FREEZABLE | WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
+ #define create_singlethread_workqueue(name)				\
+-	alloc_workqueue((name), WQ_UNBOUND | WQ_MEM_RECLAIM, 1)
++	alloc_ordered_workqueue("%s", WQ_MEM_RECLAIM, name)
  
--/* For extended devt allocation.  ext_devt_mutex prevents look up
-+/* For extended devt allocation.  ext_devt_lock prevents look up
-  * results from going away underneath its user.
-  */
--static DEFINE_MUTEX(ext_devt_mutex);
-+static DEFINE_SPINLOCK(ext_devt_lock);
- static DEFINE_IDR(ext_devt_idr);
+ extern void destroy_workqueue(struct workqueue_struct *wq);
  
- static struct device_type disk_type;
-@@ -420,9 +420,13 @@ int blk_alloc_devt(struct hd_struct *par
- 	}
- 
- 	/* allocate ext devt */
--	mutex_lock(&ext_devt_mutex);
--	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_KERNEL);
--	mutex_unlock(&ext_devt_mutex);
-+	idr_preload(GFP_KERNEL);
-+
-+	spin_lock(&ext_devt_lock);
-+	idx = idr_alloc(&ext_devt_idr, part, 0, NR_EXT_DEVT, GFP_NOWAIT);
-+	spin_unlock(&ext_devt_lock);
-+
-+	idr_preload_end();
- 	if (idx < 0)
- 		return idx == -ENOSPC ? -EBUSY : idx;
- 
-@@ -447,9 +451,9 @@ void blk_free_devt(dev_t devt)
- 		return;
- 
- 	if (MAJOR(devt) == BLOCK_EXT_MAJOR) {
--		mutex_lock(&ext_devt_mutex);
-+		spin_lock(&ext_devt_lock);
- 		idr_remove(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
--		mutex_unlock(&ext_devt_mutex);
-+		spin_unlock(&ext_devt_lock);
- 	}
- }
- 
-@@ -665,7 +669,6 @@ void del_gendisk(struct gendisk *disk)
- 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
- 	device_del(disk_to_dev(disk));
--	blk_free_devt(disk_to_dev(disk)->devt);
- }
- EXPORT_SYMBOL(del_gendisk);
- 
-@@ -690,13 +693,13 @@ struct gendisk *get_gendisk(dev_t devt,
- 	} else {
- 		struct hd_struct *part;
- 
--		mutex_lock(&ext_devt_mutex);
-+		spin_lock(&ext_devt_lock);
- 		part = idr_find(&ext_devt_idr, blk_mangle_minor(MINOR(devt)));
- 		if (part && get_disk(part_to_disk(part))) {
- 			*partno = part->partno;
- 			disk = part_to_disk(part);
- 		}
--		mutex_unlock(&ext_devt_mutex);
-+		spin_unlock(&ext_devt_lock);
- 	}
- 
- 	return disk;
-@@ -1098,6 +1101,7 @@ static void disk_release(struct device *
- {
- 	struct gendisk *disk = dev_to_disk(dev);
- 
-+	blk_free_devt(dev->devt);
- 	disk_release_events(disk);
- 	kfree(disk->random);
- 	disk_replace_part_tbl(disk, NULL);
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -211,6 +211,7 @@ static const struct attribute_group *par
- static void part_release(struct device *dev)
- {
- 	struct hd_struct *p = dev_to_part(dev);
-+	blk_free_devt(dev->devt);
- 	free_part_stats(p);
- 	free_part_info(p);
- 	kfree(p);
-@@ -253,7 +254,6 @@ void delete_partition(struct gendisk *di
- 	rcu_assign_pointer(ptbl->last_lookup, NULL);
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
--	blk_free_devt(part_devt(part));
- 
- 	hd_struct_put(part);
- }
 
 
