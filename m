@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480AbaJDAVv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:21:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45353 "EHLO
+	id S933464AbaJDAVu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:21:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45358 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024AbaJCVnN (ORCPT
+	with ESMTP id S1756029AbaJCVnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:43:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.16 200/357] ACPI / video: disable native backlight for ThinkPad X201s
-Date: Fri,  3 Oct 2014 14:29:46 -0700
-Message-Id: <20141003212939.487266549@linuxfoundation.org>
+        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.16 183/357] ARM: dts: dra7-evm: Fix spi1 mux documentation
+Date: Fri,  3 Oct 2014 14:29:29 -0700
+Message-Id: <20141003212938.974491954@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,43 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 789eeea128925741e0a105357bebf8855d3bcdee upstream.
+commit 68e4d9e58dbae2fb178e8b74806f521adb16f0d3 upstream.
 
-The ThinkPad X201s has a working ACPI video backlight interface and is
-shipped before Win8; then there is BIOS update that starts to query
-_OSI("Windows 2012") and that would make our video module stop creating
-backlight interface and caused problem for the user. Add it to the DMI
-table to disable native backlight to fix this problem.
+While auditing the various pin ctrl configurations using the following
+command:
+grep PIN_ arch/arm/boot/dts/dra7-evm.dts|(while read line;
+do
+	v=`echo "$line" | sed -e "s/\s\s*/|/g" | cut -d '|' -f1 |
+		cut -d 'x' -f2|tr [a-z] [A-Z]`;
+	HEX=`echo "obase=16;ibase=16;4A003400+$v"| bc`;
+	echo "$HEX ===> $line";
+done)
+against DRA75x/74x NDA TRM revision S(SPRUHI2S August 2014),
+documentation errors were found for spi1 pinctrl. Fix the same.
 
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=81691
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=51231
-Reported-and-tested-by: Yves-Alexis Perez <corsac@debian.org>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 6e58b8f1daaf1af ("ARM: dts: DRA7: Add the dts files for dra7 SoC and dra7-evm board")
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/video.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm/boot/dts/dra7-evm.dts |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -675,6 +675,14 @@ static struct dmi_system_id video_dmi_ta
- 		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T520"),
- 		},
- 	},
-+	{
-+	 .callback = video_disable_native_backlight,
-+	 .ident = "ThinkPad X201s",
-+	 .matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-+		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
-+		},
-+	},
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -50,13 +50,13 @@
  
- 	/* The native backlight controls do not work on some older machines */
- 	{
+ 	mcspi1_pins: pinmux_mcspi1_pins {
+ 		pinctrl-single,pins = <
+-			0x3a4 (PIN_INPUT | MUX_MODE0) /* spi2_clk */
+-			0x3a8 (PIN_INPUT | MUX_MODE0) /* spi2_d1 */
+-			0x3ac (PIN_INPUT | MUX_MODE0) /* spi2_d0 */
+-			0x3b0 (PIN_INPUT_SLEW | MUX_MODE0) /* spi2_cs0 */
+-			0x3b4 (PIN_INPUT_SLEW | MUX_MODE0) /* spi2_cs1 */
+-			0x3b8 (PIN_INPUT_SLEW | MUX_MODE6) /* spi2_cs2 */
+-			0x3bc (PIN_INPUT_SLEW | MUX_MODE6) /* spi2_cs3 */
++			0x3a4 (PIN_INPUT | MUX_MODE0) /* spi1_sclk */
++			0x3a8 (PIN_INPUT | MUX_MODE0) /* spi1_d1 */
++			0x3ac (PIN_INPUT | MUX_MODE0) /* spi1_d0 */
++			0x3b0 (PIN_INPUT_SLEW | MUX_MODE0) /* spi1_cs0 */
++			0x3b4 (PIN_INPUT_SLEW | MUX_MODE0) /* spi1_cs1 */
++			0x3b8 (PIN_INPUT_SLEW | MUX_MODE6) /* spi1_cs2.hdmi1_hpd */
++			0x3bc (PIN_INPUT_SLEW | MUX_MODE6) /* spi1_cs3.hdmi1_cec */
+ 		>;
+ 	};
+ 
 
 
