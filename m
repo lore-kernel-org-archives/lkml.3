@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760825AbaJCX7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:59:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
+	id S1760810AbaJCX7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:59:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756765AbaJCVx3 (ORCPT
+	with ESMTP id S1756767AbaJCVx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tommi Rantala <tt.rantala@gmail.com>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 041/238] ALSA: core: fix buffer overflow in snd_info_get_line()
-Date: Fri,  3 Oct 2014 14:29:16 -0700
-Message-Id: <20141003212914.976378473@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 042/238] ALSA: hda - Fix digital mic on Acer Aspire 3830TG
+Date: Fri,  3 Oct 2014 14:29:17 -0700
+Message-Id: <20141003212915.006855847@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,44 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ddc64b278a4dda052390b3de1b551e59acdff105 upstream.
+commit ff50479ad61069f3ee14863225aebe36d598e93e upstream.
 
-snd_info_get_line() documents that its last parameter must be one
-less than the buffer size, but this API design guarantees that
-(literally) every caller gets it wrong.
+Acer Aspire 3830TG with CX20588 codec has a digital built-in mic that
+has the same problem like many others, the inverted signal in stereo.
+Apply the same fixup to this machine, too.
 
-Just change this parameter to have its obvious meaning.
-
-Reported-by: Tommi Rantala <tt.rantala@gmail.com>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/info.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_conexant.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/sound/core/info.c
-+++ b/sound/core/info.c
-@@ -679,7 +679,7 @@ int snd_info_card_free(struct snd_card *
-  * snd_info_get_line - read one line from the procfs buffer
-  * @buffer: the procfs buffer
-  * @line: the buffer to store
-- * @len: the max. buffer size - 1
-+ * @len: the max. buffer size
-  *
-  * Reads one line from the buffer and stores the string.
-  *
-@@ -699,7 +699,7 @@ int snd_info_get_line(struct snd_info_bu
- 			buffer->stop = 1;
- 		if (c == '\n')
- 			break;
--		if (len) {
-+		if (len > 1) {
- 			len--;
- 			*line++ = c;
- 		}
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3237,6 +3237,7 @@ enum {
+ 	CXT_FIXUP_HEADPHONE_MIC_PIN,
+ 	CXT_FIXUP_HEADPHONE_MIC,
+ 	CXT_FIXUP_GPIO1,
++	CXT_FIXUP_ASPIRE_DMIC,
+ 	CXT_FIXUP_THINKPAD_ACPI,
+ };
+ 
+@@ -3397,6 +3398,12 @@ static const struct hda_fixup cxt_fixups
+ 			{ }
+ 		},
+ 	},
++	[CXT_FIXUP_ASPIRE_DMIC] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = cxt_fixup_stereo_dmic,
++		.chained = true,
++		.chain_id = CXT_FIXUP_GPIO1,
++	},
+ 	[CXT_FIXUP_THINKPAD_ACPI] = {
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = hda_fixup_thinkpad_acpi,
+@@ -3410,7 +3417,7 @@ static const struct snd_pci_quirk cxt505
+ 
+ static const struct snd_pci_quirk cxt5066_fixups[] = {
+ 	SND_PCI_QUIRK(0x1025, 0x0543, "Acer Aspire One 522", CXT_FIXUP_STEREO_DMIC),
+-	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_GPIO1),
++	SND_PCI_QUIRK(0x1025, 0x054c, "Acer Aspire 3830TG", CXT_FIXUP_ASPIRE_DMIC),
+ 	SND_PCI_QUIRK(0x1043, 0x138d, "Asus", CXT_FIXUP_HEADPHONE_MIC_PIN),
+ 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+ 	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
 
 
