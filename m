@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933890AbaJDAet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:34:49 -0400
-Received: from relay6-d.mail.gandi.net ([217.70.183.198]:52594 "EHLO
-	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaJDAeq (ORCPT
+	id S933862AbaJDAem (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:34:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45285 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755896AbaJCVms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 20:34:46 -0400
-X-Originating-IP: 75.92.167.159
-Date: Fri, 3 Oct 2014 17:34:31 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
-Subject: [GIT PULL 3.17] tinification: Kconfig bugfixes for 3.17
-Message-ID: <20141004003427.GA19070@thin>
+	Fri, 3 Oct 2014 17:42:48 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 3.16 140/357] usb: dwc3: core: fix order of PM runtime calls
+Date: Fri,  3 Oct 2014 14:28:46 -0700
+Message-Id: <20141003212937.678917802@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
-  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
+------------------
 
-are available in the git repository at:
+From: Felipe Balbi <balbi@ti.com>
 
-  https://git.kernel.org/pub/scm/linux/kernel/git/josh/linux.git tags/tiny/kconfig-for-3.17
+commit fed33afce0eda44a46ae24d93aec1b5198c0bac4 upstream.
 
-for you to fetch changes up to 62b4d2041117f35ab2409c9f5c4b8d3dc8e59d0f:
+Currently, we disable pm_runtime before all register
+accesses are done, this is dangerous and might lead
+to abort exceptions due to the driver trying to access
+a register which is clocked by a clock which was long
+gated.
 
-  init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu (2014-10-03 16:49:43 -0700)
+Fix that by moving pm_runtime_put_sync() and pm_runtime_disable()
+as the last thing we do before returning from our ->remove()
+method.
 
-----------------------------------------------------------------
-Two Kconfig bugfixes for 3.17 related to tinification.  These fixes make the
-Kconfig "General Setup" menu much more usable.
+Fixes: 72246da (usb: Introduce DesignWare USB3 DRD Driver)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-----------------------------------------------------------------
+---
+ drivers/usb/dwc3/core.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Neither of these fixes changes the resulting built kernel in any way;
-they just improve the usability of the kconfig "General Setup" menu.
-Randy Dunlap suggested them for 3.17 rather than waiting for 3.18.
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -791,15 +791,15 @@ static int dwc3_remove(struct platform_d
+ 	phy_power_off(dwc->usb2_generic_phy);
+ 	phy_power_off(dwc->usb3_generic_phy);
+ 
+-	pm_runtime_put_sync(&pdev->dev);
+-	pm_runtime_disable(&pdev->dev);
+-
+ 	dwc3_debugfs_exit(dwc);
+ 	dwc3_core_exit_mode(dwc);
+ 	dwc3_event_buffers_cleanup(dwc);
+ 	dwc3_free_event_buffers(dwc);
+ 	dwc3_core_exit(dwc);
+ 
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	return 0;
+ }
+ 
 
-Josh Triplett (2):
-      init/Kconfig: Hide printk log config if CONFIG_PRINTK=n
-      init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
 
- init/Kconfig | 3 +++
- 1 file changed, 3 insertions(+)
