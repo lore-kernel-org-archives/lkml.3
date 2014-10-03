@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570AbaJCXIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:08:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46906 "EHLO
+	id S1759618AbaJCXJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:09:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46891 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757903AbaJCWOB (ORCPT
+	with ESMTP id S1757922AbaJCWOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:14:01 -0400
+	Fri, 3 Oct 2014 18:14:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Moni Shoua <monis@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [PATCH 3.14 201/238] IB/mlx4: Avoid null pointer dereference in mlx4_ib_scan_netdevs()
-Date: Fri,  3 Oct 2014 14:31:56 -0700
-Message-Id: <20141003212920.094193557@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.14 198/238] alarmtimer: Lock k_itimer during timer callback
+Date: Fri,  3 Oct 2014 14:31:53 -0700
+Message-Id: <20141003212919.991895454@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,87 +33,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Moni Shoua <monis@mellanox.com>
+From: Richard Larocque <rlarocque@google.com>
 
-commit e381835cf1b8e3b2857277dbc3b77d8c5350f70a upstream.
+commit 474e941bed9262f5fa2394f9a4a67e24499e5926 upstream.
 
-When Ethernet netdev is not present for a port (e.g. when the link
-layer type of the port is InfiniBand) it's possible to dereference a
-null pointer when we do netdevice scanning.
+Locks the k_itimer's it_lock member when handling the alarm timer's
+expiry callback.
 
-To fix that, we move a section of code that needs to run only when
-netdev is present to a proper if () statement.
+The regular posix timers defined in posix-timers.c have this lock held
+during timout processing because their callbacks are routed through
+posix_timer_fn().  The alarm timers follow a different path, so they
+ought to grab the lock somewhere else.
 
-Fixes: ad4885d279b6 ("IB/mlx4: Build the port IBoE GID table properly under bonding")
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Moni Shoua <monis@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/hw/mlx4/main.c |   49 ++++++++++++++++++++------------------
- 1 file changed, 26 insertions(+), 23 deletions(-)
+ kernel/time/alarmtimer.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/infiniband/hw/mlx4/main.c
-+++ b/drivers/infiniband/hw/mlx4/main.c
-@@ -1723,31 +1723,34 @@ static void mlx4_ib_scan_netdevs(struct
- 			port_state = (netif_running(curr_netdev) && netif_carrier_ok(curr_netdev)) ?
- 						IB_PORT_ACTIVE : IB_PORT_DOWN;
- 			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--		} else {
--			reset_gid_table(ibdev, port);
--		}
--		/* if using bonding/team and a slave port is down, we don't the bond IP
--		 * based gids in the table since flows that select port by gid may get
--		 * the down port.
--		 */
--		if (curr_master && (port_state == IB_PORT_DOWN)) {
--			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--		}
--		/* if bonding is used it is possible that we add it to masters
--		 * only after IP address is assigned to the net bonding
--		 * interface.
--		*/
--		if (curr_master && (old_master != curr_master)) {
--			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--			mlx4_ib_get_dev_addr(curr_master, ibdev, port);
--		}
-+			/* if using bonding/team and a slave port is down, we
-+			 * don't the bond IP based gids in the table since
-+			 * flows that select port by gid may get the down port.
-+			 */
-+			if (curr_master && (port_state == IB_PORT_DOWN)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+			}
-+			/* if bonding is used it is possible that we add it to
-+			 * masters only after IP address is assigned to the
-+			 * net bonding interface.
-+			*/
-+			if (curr_master && (old_master != curr_master)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+				mlx4_ib_get_dev_addr(curr_master, ibdev, port);
-+			}
- 
--		if (!curr_master && (old_master != curr_master)) {
-+			if (!curr_master && (old_master != curr_master)) {
-+				reset_gid_table(ibdev, port);
-+				mlx4_ib_set_default_gid(ibdev,
-+							curr_netdev, port);
-+				mlx4_ib_get_dev_addr(curr_netdev, ibdev, port);
-+			}
-+		} else {
- 			reset_gid_table(ibdev, port);
--			mlx4_ib_set_default_gid(ibdev, curr_netdev, port);
--			mlx4_ib_get_dev_addr(curr_netdev, ibdev, port);
- 		}
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -464,8 +464,12 @@ static enum alarmtimer_type clock2alarm(
+ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ 							ktime_t now)
+ {
++	unsigned long flags;
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
++	enum alarmtimer_restart result = ALARMTIMER_NORESTART;
++
++	spin_lock_irqsave(&ptr->it_lock, flags);
+ 	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
+ 		if (posix_timer_event(ptr, 0) != 0)
+ 			ptr->it_overrun++;
+@@ -475,9 +479,11 @@ static enum alarmtimer_restart alarm_han
+ 	if (ptr->it.alarm.interval.tv64) {
+ 		ptr->it_overrun += alarm_forward(alarm, now,
+ 						ptr->it.alarm.interval);
+-		return ALARMTIMER_RESTART;
++		result = ALARMTIMER_RESTART;
  	}
+-	return ALARMTIMER_NORESTART;
++	spin_unlock_irqrestore(&ptr->it_lock, flags);
++
++	return result;
+ }
  
+ /**
 
 
