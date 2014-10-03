@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064AbaJDAo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:44:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44750 "EHLO
+	id S1758207AbaJDApl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:45:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023AbaJCVcs (ORCPT
+	with ESMTP id S1755015AbaJCVcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:48 -0400
+	Fri, 3 Oct 2014 17:32:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Thierry Reding <thierry.reding@gmail.com>
-Subject: [PATCH 3.16 033/357] pwm: Fix period and polarity in pwm_get() for non-perfect matches
-Date: Fri,  3 Oct 2014 14:26:59 -0700
-Message-Id: <20141003212934.464999120@linuxfoundation.org>
+        Jeff Moyer <jmoyer@redhat.com>, Benjamin LaHaise <bcrl@kvack.org>
+Subject: [PATCH 3.16 036/357] aio: add missing smp_rmb() in read_events_ring
+Date: Fri,  3 Oct 2014 14:27:02 -0700
+Message-Id: <20141003212934.551081686@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,65 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit d717ea73e36dd5659640fae82605ad85c4117f4d upstream.
+commit 2ff396be602f10b5eab8e73b24f20348fa2de159 upstream.
 
-If pwm_get() finds a look-up entry with a perfect match (both dev_id and
-con_id match), the loop is aborted, and "p" still points to the correct
-struct pwm_lookup.
+We ran into a case on ppc64 running mariadb where io_getevents would
+return zeroed out I/O events.  After adding instrumentation, it became
+clear that there was some missing synchronization between reading the
+tail pointer and the events themselves.  This small patch fixes the
+problem in testing.
 
-If only an entry with a matching dev_id or con_id is found, the loop
-terminates after traversing the whole list, and "p" now points to
-arbitrary memory, not part of the pwm_lookup list.
-Then pwm_set_period() and pwm_set_polarity() will set random values for
-period resp. polarity.
+Thanks to Zach for helping to look into this, and suggesting the fix.
 
-To fix this, save period and polarity when finding a new best match,
-just like is done for chip (for the provider) and index.
-
-This fixes the LCD backlight on r8a7740/armadillo-legacy, which was fed
-period 0 and polarity -1068821144 instead of 33333 resp. 1.
-
-Fixes: 3796ce1d4d4b ("pwm: add period and polarity to struct pwm_lookup")
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pwm/core.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/aio.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -606,6 +606,8 @@ struct pwm_device *pwm_get(struct device
- 	unsigned int best = 0;
- 	struct pwm_lookup *p;
- 	unsigned int match;
-+	unsigned int period;
-+	enum pwm_polarity polarity;
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1134,6 +1134,12 @@ static long aio_read_events_ring(struct
+ 	tail = ring->tail;
+ 	kunmap_atomic(ring);
  
- 	/* look up via DT first */
- 	if (IS_ENABLED(CONFIG_OF) && dev && dev->of_node)
-@@ -653,6 +655,8 @@ struct pwm_device *pwm_get(struct device
- 		if (match > best) {
- 			chip = pwmchip_find_by_name(p->provider);
- 			index = p->index;
-+			period = p->period;
-+			polarity = p->polarity;
++	/*
++	 * Ensure that once we've read the current tail pointer, that
++	 * we also see the events that were stored up to the tail.
++	 */
++	smp_rmb();
++
+ 	pr_debug("h%u t%u m%u\n", head, tail, ctx->nr_events);
  
- 			if (match != 3)
- 				best = match;
-@@ -668,8 +672,8 @@ struct pwm_device *pwm_get(struct device
- 	if (IS_ERR(pwm))
- 		return pwm;
- 
--	pwm_set_period(pwm, p->period);
--	pwm_set_polarity(pwm, p->polarity);
-+	pwm_set_period(pwm, period);
-+	pwm_set_polarity(pwm, polarity);
- 
- 
- 	return pwm;
+ 	if (head == tail)
 
 
