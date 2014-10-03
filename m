@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaJCUEx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:04:53 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46103 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaJCUEu convert rfc822-to-8bit (ORCPT
+	id S1754494AbaJCUG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:06:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36090 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaJCUG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:04:50 -0400
+	Fri, 3 Oct 2014 16:06:28 -0400
+Date: Fri, 3 Oct 2014 22:06:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
+Subject: Re: Removing per-task TSD? (Re: Tightening up rdpmc permissions?)
+Message-ID: <20141003200624.GL10583@worktop.programming.kicks-ass.net>
+References: <CALCETrUwXk-WtfwMRtcg4NO5i8-36HXDqL3BdV7xRWDWT2w7Jw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20141003150544.435e323f@recife.lan>
-References: <20141003150544.435e323f@recife.lan>
-Date: Fri, 3 Oct 2014 13:04:48 -0700
-X-Google-Sender-Auth: fJD-uc9P3gKL1BbIIkK-fd7wjjc
-Message-ID: <CA+55aFz+CRAP7UeuEpiOLJLBjZKLx_7qM0Tw=qG1RpZ=kXhAng@mail.gmail.com>
-Subject: Re: [GIT PULL for v3.17] si2165 firmware changes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUwXk-WtfwMRtcg4NO5i8-36HXDqL3BdV7xRWDWT2w7Jw@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah, this is pure crap. It doesn't even compile.
+On Fri, Oct 03, 2014 at 09:41:30AM -0700, Andy Lutomirski wrote:
+> So this is a mess.  I think that any reasonable implementation of
+> rdpmc permissions should be per mm, since we perf_event maps are, of
+> course, per mm.
+> 
+> Similarly, any reasonable implementation of rdtsc permissions should
+> be per mm, since doing it sensibly involves telling the vdso not to
+> use rdtsc, and the vdso is per mm
 
-  drivers/media/dvb-frontends/si2165.c:1063:17: error: expected ‘,’ or
-‘;’ before ‘SI2165_FIRMWARE’
-   MODULE_FIRMWARE(SI2165_FIRMWARE);
+So far so good.
 
-because it should presumably say "SI2165_FIRMWARE_REV_D" now.
+> Unfortunately, PR_SET_TSC is a per-thread setting.  Implementing this
+> correctly looks like it'll require twiddling, or at least thinking
+> about, cr4 at switch_mm time *and* when switching tasks, because the
+> only sensible way of granting PMC access to a running mm is to
+> broadcast a function call to the cpus running that mm.
 
-Why the f*ck do you send me totally untested crap?
+Confused... now though.
 
-                 Linus
+Any cpu can only ever run one mm at the time, and the only way to change
+mm on any one cpu is switch_mm(), so having a CR4 write in switch_mm()
+will DTRT, no weird broadcasts or anything else required.
 
-On Fri, Oct 3, 2014 at 11:05 AM, Mauro Carvalho Chehab
-<mchehab@osg.samsung.com> wrote:
-> Hi Linus,
->
-> Please pull from:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media/topic/si2165-v3.17-rc8
->
-> For some changes at the si2165 firmware name and the removal of an extra
-> unneeded header added artificially via the script that extracts it from
-> the original driver provided by the manufacturer.
->
-> The si2165 is a new driver that was added for v3.17. There are two issues
-> with the current firmware format:
->
-> - The firmware only covers one specific revision of the chipset
->   (Rev. D). We'll be adding support for another revision for v3.18, so
->   it would be better to rename the firmware file to reflect the revision
->   on its name:
->
->         -#define SI2165_FIRMWARE "dvb-demod-si2165.fw"
->         +#define SI2165_FIRMWARE_REV_D "dvb-demod-si2165-d.fw"
->
-> - Instead of containing a single blob with the firmware, the file
->   also contains some meta-data that could be determined on some other way
->   directly by the driver.
->
-> The script that gets the firmware from the Internet was also updated
-> accordingly to not add the extra header.
->
-> Thanks!
-> Mauro
->
->
->
-> The following changes since commit 90a5dbef1a66e9f55b76ccb83c0ef27c0bd87c27:
->
->   Revert "[media] media: em28xx - remove reset_resume interface" (2014-09-28 22:25:24 -0300)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media/topic/si2165-v3.17-rc8
->
-> for you to fetch changes up to 3173fbdce9e41fc4fabe0b3dedd99c615f47dbdd:
->
->   [media] [V2,2/2] si2165: do load firmware without extra header (2014-10-02 18:18:52 -0300)
->
-> ----------------------------------------------------------------
-> topic/si2165 fixes for v3.17-rc8
->
-> ----------------------------------------------------------------
-> Matthias Schwarzott (2):
->       [media] [V2, 1/2] get_dvb_firmware: si2165: drop the extra header from the firmware
->       [media] [V2,2/2] si2165: do load firmware without extra header
->
->  Documentation/dvb/get_dvb_firmware        |  20 ++----
->  drivers/media/dvb-frontends/Kconfig       |   1 +
->  drivers/media/dvb-frontends/si2165.c      | 107 ++++++++++++++++++------------
->  drivers/media/dvb-frontends/si2165_priv.h |   2 +-
->  4 files changed, 71 insertions(+), 59 deletions(-)
->
->
+Or were you talking about doing the per mm filter while maintaining the
+old TIF_NOTSC thing? Then still no broadcasts would be required I think.
+
+> Nonetheless, this is doable.  Either there can be separate context
+> switching of CR4.PCE (in switch_mm) and CR4.TSD (in switch_to), or
+> there can be some crazy optimization to make it faster.
+
+IFF you want to retain TIF_NOTSC then yes, we'll need both or crazy.
+
+> All of this sucks, so I'll ask a normally verboten question: can we
+> just remove PR_SET_TSC entirely?
+
+Fine with me, see more in that thread, I'll try and reply to the right
+copy.
