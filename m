@@ -1,2189 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848AbaJCDdl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 23:33:41 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:57208 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaJCDdj (ORCPT
+	id S1752765AbaJCDld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 23:41:33 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:48505 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaJCDlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 23:33:39 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] rcutorture: Remove stale test configurations
-Date: Thu,  2 Oct 2014 23:33:48 -0400
-Message-Id: <1412307228-14001-1-git-send-email-bobby.prani@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 2 Oct 2014 23:41:31 -0400
+From: Daniel Micay <danielmicay@gmail.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        akpm@linux-foundation.org, jasone@canonware.com, luto@amacapital.net,
+        Daniel Micay <danielmicay@gmail.com>
+Subject: [PATCH v4] mm: add mremap flag for preserving the old mapping
+Date: Thu,  2 Oct 2014 23:41:19 -0400
+Message-Id: <1412307679-2458-1-git-send-email-danielmicay@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove rcutorture configuration files which are no longer necessary.
+This introduces the MREMAP_RETAIN flag for preserving the source mapping
+when MREMAP_MAYMOVE moves the pages to a new destination. Accesses to
+the source mapping will fault and map in fresh zeroed pages.
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+It is currently limited to writable MAP_PRIVATE|MAP_ANONYMOUS mappings
+and will return EFAULT when used on anything else. This covers the
+intended use case in general purpose allocators.
+
+For consistency, the old_len >= new_len case could decommit the pages
+instead of unmapping. However, userspace can accomplish the same thing
+via madvise and the flag is coherent without the additional complexity.
+
+Motivation:
+
+TCMalloc and jemalloc avoid releasing virtual memory in order to reduce
+virtual memory fragmentation. A call to munmap or mremap would leave a
+hole in the address space. Instead, unused pages are lazily returned to
+the operating system via MADV_DONTNEED.
+
+Since mremap cannot be used to elide copies, TCMalloc and jemalloc end
+up being significantly slower for patterns like repeated vector / hash
+table reallocations. Consider the typical vector building pattern:
+
+    #include <string.h>
+    #include <stdlib.h>
+
+    int main(void) {
+        for (size_t i = 0; i < 100; i++) {
+            void *ptr = NULL;
+            size_t old_size = 0;
+            for (size_t size = 4; size < (1 << 30); size *= 2) {
+                ptr = realloc(ptr, size);
+                if (!ptr) return 1;
+                memset(ptr + old_size, 0xff, size - old_size);
+                old_size = size;
+            }
+            free(ptr);
+        }
+    }
+
+Transparent huge pages disabled:
+
+glibc (baseline, uses mremap already): 15.051s
+jemalloc without MREMAP_RETAIN: 38.540s
+jemalloc with MREMAP_RETAIN: 15.086s
+
+Transparent huge pages enabled:
+
+glibc (baseline, uses mremap already): 8.464s
+jemalloc without MREMAP_RETAIN: 18.230s
+jemalloc with MREMAP_RETAIN: 6.696s
+
+In practice, in-place growth never occurs for huge allocations because
+the heap grows in the downwards direction for all 3 allocators. TCMalloc
+and jemalloc pay for enormous copies while glibc is only spending time
+writing new elements to the vector. Even if it was grown in the other
+direction, real-world applications would end up blocking in-place growth
+with new allocations.
+
+The allocators could attempt to map the source location again after an
+mremap call, but there is no guarantee of success in a multi-threaded
+program and fragmentating memory over time is considered unacceptable.
+
+Signed-off-by: Daniel Micay <danielmicay@gmail.com>
 ---
- .../selftests/rcutorture/configs/rcu/v0.0/CFLIST   | 14 ------
- .../configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP           | 18 -------
- .../configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp           | 22 ---------
- .../configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP           | 18 -------
- .../configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp           | 22 ---------
- .../selftests/rcutorture/configs/rcu/v0.0/NT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v0.0/NT3-NH   | 20 --------
- .../configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP           | 19 --------
- .../configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp           | 20 --------
- .../configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP           | 22 ---------
- .../configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp           | 27 ----------
- .../selftests/rcutorture/configs/rcu/v0.0/PT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v0.0/PT2-NH   | 22 ---------
- .../rcutorture/configs/rcu/v0.0/ver_functions.sh   | 33 -------------
- .../selftests/rcutorture/configs/rcu/v3.12/CFLIST  | 17 -------
- .../configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP          | 19 --------
- .../configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp          | 20 --------
- .../configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp          | 22 ---------
- .../configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP          | 18 -------
- .../configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp          | 22 ---------
- .../configs/rcu/v3.12/N6---t-nh-SD-smp-hp          | 19 --------
- .../configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP          | 26 ----------
- .../configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP          | 22 ---------
- .../selftests/rcutorture/configs/rcu/v3.12/NT1-nh  | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.12/NT3-NH  | 20 --------
- .../configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP          | 20 --------
- .../configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp          | 20 --------
- .../configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp          | 20 --------
- .../configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP          | 22 ---------
- .../configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp          | 27 ----------
- .../configs/rcu/v3.12/P6---t-nh-SD-smp-hp          | 18 -------
- .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP          | 30 ------------
- .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all      | 30 ------------
- .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none     | 30 ------------
- .../configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp          | 30 ------------
- .../selftests/rcutorture/configs/rcu/v3.12/PT1-nh  | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.12/PT2-NH  | 22 ---------
- .../selftests/rcutorture/configs/rcu/v3.3/CFLIST   | 14 ------
- .../configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP           | 19 --------
- .../configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp           | 22 ---------
- .../configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP           | 18 -------
- .../configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp           | 22 ---------
- .../selftests/rcutorture/configs/rcu/v3.3/NT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.3/NT3-NH   | 20 --------
- .../configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP           | 20 --------
- .../configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp           | 20 --------
- .../configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP           | 22 ---------
- .../configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp           | 27 ----------
- .../selftests/rcutorture/configs/rcu/v3.3/PT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.3/PT2-NH   | 22 ---------
- .../rcutorture/configs/rcu/v3.3/ver_functions.sh   | 44 -----------------
- .../selftests/rcutorture/configs/rcu/v3.5/CFLIST   | 14 ------
- .../configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP           | 19 --------
- .../configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp           | 22 ---------
- .../configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP           | 18 -------
- .../configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp           | 22 ---------
- .../selftests/rcutorture/configs/rcu/v3.5/NT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.5/NT3-NH   | 20 --------
- .../configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP           | 20 --------
- .../configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp           | 20 --------
- .../configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp           | 20 --------
- .../configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP           | 22 ---------
- .../configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp           | 27 ----------
- .../selftests/rcutorture/configs/rcu/v3.5/PT1-nh   | 23 ---------
- .../selftests/rcutorture/configs/rcu/v3.5/PT2-NH   | 22 ---------
- .../rcutorture/configs/rcu/v3.5/ver_functions.sh   | 57 ----------------------
- 71 files changed, 1588 deletions(-)
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH
- delete mode 100644 tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh
+ include/linux/huge_mm.h   |  2 +-
+ include/linux/mm.h        |  6 ++++++
+ include/uapi/linux/mman.h |  1 +
+ mm/huge_memory.c          |  4 ++--
+ mm/memory.c               |  2 +-
+ mm/mmap.c                 | 12 +++++++++++
+ mm/mremap.c               | 52 +++++++++++++++++++++++++++++++----------------
+ 7 files changed, 57 insertions(+), 22 deletions(-)
 
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST
-deleted file mode 100644
-index 1822394..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/CFLIST
-+++ /dev/null
-@@ -1,14 +0,0 @@
--P1-S-T-NH-SD-SMP-HP
--P2-2-t-nh-sd-SMP-hp
--P3-3-T-nh-SD-SMP-hp
--P4-A-t-NH-sd-SMP-HP
--P5-U-T-NH-sd-SMP-hp
--N1-S-T-NH-SD-SMP-HP
--N2-2-t-nh-sd-SMP-hp
--N3-3-T-nh-SD-SMP-hp
--N4-A-t-NH-sd-SMP-HP
--N5-U-T-NH-sd-SMP-hp
--PT1-nh
--PT2-NH
--NT1-nh
--NT3-NH
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index d3ef873..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 02e4185..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index b3100f6..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index c56b445..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 90d924f..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/N5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh
-deleted file mode 100644
-index 023f312..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH
-deleted file mode 100644
-index 6fd0235..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/NT3-NH
-+++ /dev/null
-@@ -1,20 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index dd7bd4d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,19 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 81d4843..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index 16e22b7..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index ea7ed3b..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 24f4d5e..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,27 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh
-deleted file mode 100644
-index e3361c3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH
-deleted file mode 100644
-index 64abfc3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/PT2-NH
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh
-deleted file mode 100644
-index 5ace37a..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v0.0/ver_functions.sh
-+++ /dev/null
-@@ -1,33 +0,0 @@
--#!/bin/bash
--#
--# Kernel-version-dependent shell functions for the rest of the scripts.
--#
--# This program is free software; you can redistribute it and/or modify
--# it under the terms of the GNU General Public License as published by
--# the Free Software Foundation; either version 2 of the License, or
--# (at your option) any later version.
--#
--# This program is distributed in the hope that it will be useful,
--# but WITHOUT ANY WARRANTY; without even the implied warranty of
--# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--# GNU General Public License for more details.
--#
--# You should have received a copy of the GNU General Public License
--# along with this program; if not, you can access it online at
--# http://www.gnu.org/licenses/gpl-2.0.html.
--#
--# Copyright (C) IBM Corporation, 2013
--#
--# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
--
--# per_version_boot_params bootparam-string config-file seconds
--#
--# Adds per-version torture-module parameters to kernels supporting them.
--# Which old kernels do not.
--per_version_boot_params () {
--	echo	rcutorture.stat_interval=15 \
--		rcutorture.shutdown_secs=$3 \
--		rcutorture.rcutorture_runnable=1 \
--		rcutorture.test_no_idle_hz=1 \
--		rcutorture.verbose=1
--}
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST
-deleted file mode 100644
-index da4cbc66..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/CFLIST
-+++ /dev/null
-@@ -1,17 +0,0 @@
--sysidleY.2013.06.19a
--sysidleN.2013.06.19a
--P1-S-T-NH-SD-SMP-HP
--P2-2-t-nh-sd-SMP-hp
--P3-3-T-nh-SD-SMP-hp
--P4-A-t-NH-sd-SMP-HP
--P5-U-T-NH-sd-SMP-hp
--P6---t-nh-SD-smp-hp
--N1-S-T-NH-SD-SMP-HP
--N2-2-t-nh-sd-SMP-hp
--N3-3-T-nh-SD-SMP-hp
--N4-A-t-NH-sd-SMP-HP
--N5-U-T-NH-sd-SMP-hp
--PT1-nh
--PT2-NH
--NT1-nh
--NT3-NH
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index d81e11d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,19 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 02e4185..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index b3100f6..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index c56b445..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 90d924f..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp
-deleted file mode 100644
-index 0ccc36d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N6---t-nh-SD-smp-hp
-+++ /dev/null
-@@ -1,19 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_NR_CPUS=1
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP
-deleted file mode 100644
-index 3f640cf..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N7-4-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,26 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_RCU_NOCB_CPU=y
--CONFIG_RCU_NOCB_CPU_NONE=y
--CONFIG_RCU_NOCB_CPU_ZERO=n
--CONFIG_RCU_NOCB_CPU_ALL=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP
-deleted file mode 100644
-index 285da2d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/N8-2-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=14
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh
-deleted file mode 100644
-index 023f312..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH
-deleted file mode 100644
-index 6fd0235..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/NT3-NH
-+++ /dev/null
-@@ -1,20 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index 6880663..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 81d4843..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index 16e22b7..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index ea7ed3b..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 24f4d5e..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,27 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp
-deleted file mode 100644
-index 1be59e4..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=n
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP
-deleted file mode 100644
-index b49ef74..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,30 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_RCU_NOCB_CPU=y
--CONFIG_RCU_NOCB_CPU_NONE=n
--CONFIG_RCU_NOCB_CPU_ZERO=n
--CONFIG_RCU_NOCB_CPU_ALL=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_SLUB=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all
-deleted file mode 100644
-index a55a6ac..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all
-+++ /dev/null
-@@ -1,30 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_RCU_NOCB_CPU=y
--CONFIG_RCU_NOCB_CPU_NONE=y
--CONFIG_RCU_NOCB_CPU_ZERO=n
--CONFIG_RCU_NOCB_CPU_ALL=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_SLUB=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none
-deleted file mode 100644
-index a55a6ac..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none
-+++ /dev/null
-@@ -1,30 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_RCU_NOCB_CPU=y
--CONFIG_RCU_NOCB_CPU_NONE=y
--CONFIG_RCU_NOCB_CPU_ZERO=n
--CONFIG_RCU_NOCB_CPU_ALL=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_SLUB=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp
-deleted file mode 100644
-index 3134f46..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp
-+++ /dev/null
-@@ -1,30 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=16
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_RCU_NOCB_CPU=y
--CONFIG_RCU_NOCB_CPU_NONE=n
--CONFIG_RCU_NOCB_CPU_ZERO=y
--CONFIG_RCU_NOCB_CPU_ALL=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_SLUB=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh
-deleted file mode 100644
-index e3361c3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH
-deleted file mode 100644
-index 64abfc3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.12/PT2-NH
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST
-deleted file mode 100644
-index 1822394..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/CFLIST
-+++ /dev/null
-@@ -1,14 +0,0 @@
--P1-S-T-NH-SD-SMP-HP
--P2-2-t-nh-sd-SMP-hp
--P3-3-T-nh-SD-SMP-hp
--P4-A-t-NH-sd-SMP-HP
--P5-U-T-NH-sd-SMP-hp
--N1-S-T-NH-SD-SMP-HP
--N2-2-t-nh-sd-SMP-hp
--N3-3-T-nh-SD-SMP-hp
--N4-A-t-NH-sd-SMP-HP
--N5-U-T-NH-sd-SMP-hp
--PT1-nh
--PT2-NH
--NT1-nh
--NT3-NH
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index d81e11d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,19 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 02e4185..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index b3100f6..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index c56b445..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 90d924f..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/N5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh
-deleted file mode 100644
-index 023f312..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH
-deleted file mode 100644
-index 6fd0235..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/NT3-NH
-+++ /dev/null
-@@ -1,20 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index 6880663..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 81d4843..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index 16e22b7..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index ea7ed3b..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 24f4d5e..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,27 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh
-deleted file mode 100644
-index e3361c3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH
-deleted file mode 100644
-index 64abfc3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/PT2-NH
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh
-deleted file mode 100644
-index bae5569..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.3/ver_functions.sh
-+++ /dev/null
-@@ -1,44 +0,0 @@
--#!/bin/bash
--#
--# Kernel-version-dependent shell functions for the rest of the scripts.
--#
--# This program is free software; you can redistribute it and/or modify
--# it under the terms of the GNU General Public License as published by
--# the Free Software Foundation; either version 2 of the License, or
--# (at your option) any later version.
--#
--# This program is distributed in the hope that it will be useful,
--# but WITHOUT ANY WARRANTY; without even the implied warranty of
--# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--# GNU General Public License for more details.
--#
--# You should have received a copy of the GNU General Public License
--# along with this program; if not, you can access it online at
--# http://www.gnu.org/licenses/gpl-2.0.html.
--#
--# Copyright (C) IBM Corporation, 2013
--#
--# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
--
--# rcutorture_param_onoff bootparam-string config-file
--#
--# Adds onoff rcutorture module parameters to kernels having it.
--rcutorture_param_onoff () {
--	if ! bootparam_hotplug_cpu "$1" && configfrag_hotplug_cpu "$2"
--	then
--		echo CPU-hotplug kernel, adding rcutorture onoff. 1>&2
--		echo rcutorture.onoff_interval=3 rcutorture.onoff_holdoff=30
--	fi
--}
--
--# per_version_boot_params bootparam-string config-file seconds
--#
--# Adds per-version torture-module parameters to kernels supporting them.
--per_version_boot_params () {
--	echo $1 `rcutorture_param_onoff "$1" "$2"` \
--		rcutorture.stat_interval=15 \
--		rcutorture.shutdown_secs=$3 \
--		rcutorture.rcutorture_runnable=1 \
--		rcutorture.test_no_idle_hz=1 \
--		rcutorture.verbose=1
--}
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST
-deleted file mode 100644
-index 1822394..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/CFLIST
-+++ /dev/null
-@@ -1,14 +0,0 @@
--P1-S-T-NH-SD-SMP-HP
--P2-2-t-nh-sd-SMP-hp
--P3-3-T-nh-SD-SMP-hp
--P4-A-t-NH-sd-SMP-HP
--P5-U-T-NH-sd-SMP-hp
--N1-S-T-NH-SD-SMP-HP
--N2-2-t-nh-sd-SMP-hp
--N3-3-T-nh-SD-SMP-hp
--N4-A-t-NH-sd-SMP-HP
--N5-U-T-NH-sd-SMP-hp
--PT1-nh
--PT2-NH
--NT1-nh
--NT3-NH
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index d81e11d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,19 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 02e4185..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index b3100f6..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index c56b445..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,18 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 90d924f..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/N5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--#CHECK#CONFIG_TREE_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh
-deleted file mode 100644
-index 023f312..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH
-deleted file mode 100644
-index 6fd0235..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/NT3-NH
-+++ /dev/null
-@@ -1,20 +0,0 @@
--#CHECK#CONFIG_TINY_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=y
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=n
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP
-deleted file mode 100644
-index 6880663..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_RCU_FAST_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=8
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp
-deleted file mode 100644
-index 81d4843..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=4
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp
-deleted file mode 100644
-index 16e22b7..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp
-+++ /dev/null
-@@ -1,20 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_NO_HZ=n
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=2
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP
-deleted file mode 100644
-index ea7ed3b..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_RCU_TRACE=n
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=n
--CONFIG_HOTPLUG_CPU=y
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp
-deleted file mode 100644
-index 24f4d5e..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp
-+++ /dev/null
-@@ -1,27 +0,0 @@
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_CPU_STALL_INFO=y
--CONFIG_NO_HZ=y
--CONFIG_SMP=y
--CONFIG_RCU_FANOUT=6
--CONFIG_NR_CPUS=8
--CONFIG_RCU_FANOUT_EXACT=y
--CONFIG_HOTPLUG_CPU=n
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--#CHECK#CONFIG_PREEMPT_RCU=y
--CONFIG_DEBUG_KERNEL=y
--CONFIG_DEBUG_OBJECTS=y
--CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
--CONFIG_RT_MUTEXES=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh
-deleted file mode 100644
-index e3361c3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT1-nh
-+++ /dev/null
-@@ -1,23 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
--CONFIG_RCU_TRACE=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=n
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH
-deleted file mode 100644
-index 64abfc3..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/PT2-NH
-+++ /dev/null
-@@ -1,22 +0,0 @@
--CONFIG_TINY_PREEMPT_RCU=y
--CONFIG_RCU_TORTURE_TEST=m
--CONFIG_MODULE_UNLOAD=y
--CONFIG_SUSPEND=n
--CONFIG_HIBERNATION=n
--#
--CONFIG_SMP=n
--#
--CONFIG_HOTPLUG_CPU=n
--#
--CONFIG_NO_HZ=y
--#
--CONFIG_PREEMPT_NONE=n
--CONFIG_PREEMPT_VOLUNTARY=n
--CONFIG_PREEMPT=y
--CONFIG_PROVE_LOCKING=y
--CONFIG_PROVE_RCU=y
--CONFIG_SYSFS_DEPRECATED_V2=y
--CONFIG_IKCONFIG=y
--CONFIG_IKCONFIG_PROC=y
--CONFIG_PRINTK_TIME=y
--
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh
-deleted file mode 100644
-index 8977d8d..0000000
---- a/tools/testing/selftests/rcutorture/configs/rcu/v3.5/ver_functions.sh
-+++ /dev/null
-@@ -1,57 +0,0 @@
--#!/bin/bash
--#
--# Kernel-version-dependent shell functions for the rest of the scripts.
--#
--# This program is free software; you can redistribute it and/or modify
--# it under the terms of the GNU General Public License as published by
--# the Free Software Foundation; either version 2 of the License, or
--# (at your option) any later version.
--#
--# This program is distributed in the hope that it will be useful,
--# but WITHOUT ANY WARRANTY; without even the implied warranty of
--# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--# GNU General Public License for more details.
--#
--# You should have received a copy of the GNU General Public License
--# along with this program; if not, you can access it online at
--# http://www.gnu.org/licenses/gpl-2.0.html.
--#
--# Copyright (C) IBM Corporation, 2013
--#
--# Authors: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
--
--# rcutorture_param_n_barrier_cbs bootparam-string
--#
--# Adds n_barrier_cbs rcutorture module parameter to kernels having it.
--rcutorture_param_n_barrier_cbs () {
--	if echo $1 | grep -q "rcutorture\.n_barrier_cbs"
--	then
--		:
--	else
--		echo rcutorture.n_barrier_cbs=4
--	fi
--}
--
--# rcutorture_param_onoff bootparam-string config-file
--#
--# Adds onoff rcutorture module parameters to kernels having it.
--rcutorture_param_onoff () {
--	if ! bootparam_hotplug_cpu "$1" && configfrag_hotplug_cpu "$2"
--	then
--		echo CPU-hotplug kernel, adding rcutorture onoff. 1>&2
--		echo rcutorture.onoff_interval=3 rcutorture.onoff_holdoff=30
--	fi
--}
--
--# per_version_boot_params bootparam-string config-file seconds
--#
--# Adds per-version torture-module parameters to kernels supporting them.
--per_version_boot_params () {
--	echo $1 `rcutorture_param_onoff "$1" "$2"` \
--		`rcutorture_param_n_barrier_cbs "$1"` \
--		rcutorture.stat_interval=15 \
--		rcutorture.shutdown_secs=$3 \
--		rcutorture.rcutorture_runnable=1 \
--		rcutorture.test_no_idle_hz=1 \
--		rcutorture.verbose=1
--}
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index 63579cb..3c13b20 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -143,7 +143,7 @@ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
+ 					 unsigned long end,
+ 					 long adjust_next)
+ {
+-	if (!vma->anon_vma || vma->vm_ops)
++	if (!vma->anon_vma || (vma->vm_ops && !vma->vm_ops->allow_huge_pages))
+ 		return;
+ 	__vma_adjust_trans_huge(vma, start, end, adjust_next);
+ }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 8981cc8..1e61036 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -273,6 +273,12 @@ struct vm_operations_struct {
+ 	/* called by sys_remap_file_pages() to populate non-linear mapping */
+ 	int (*remap_pages)(struct vm_area_struct *vma, unsigned long addr,
+ 			   unsigned long size, pgoff_t pgoff);
++
++	/* Check if the mapping may be duplicated by MREMAP_RETAIN */
++	bool (*may_duplicate)(struct vm_area_struct *vma);
++
++	/* if there is no vm_ops table, this is considered true */
++	bool allow_huge_pages;
+ };
+ 
+ struct mmu_gather;
+diff --git a/include/uapi/linux/mman.h b/include/uapi/linux/mman.h
+index ade4acd..4e9a546 100644
+--- a/include/uapi/linux/mman.h
++++ b/include/uapi/linux/mman.h
+@@ -5,6 +5,7 @@
+ 
+ #define MREMAP_MAYMOVE	1
+ #define MREMAP_FIXED	2
++#define MREMAP_RETAIN	4
+ 
+ #define OVERCOMMIT_GUESS		0
+ #define OVERCOMMIT_ALWAYS		1
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d9a21d06..350b478 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -2077,7 +2077,7 @@ int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
+ 		 * page fault if needed.
+ 		 */
+ 		return 0;
+-	if (vma->vm_ops)
++	if ((vma->vm_ops && !vma->vm_ops->allow_huge_pages))
+ 		/* khugepaged not yet working on file or special mappings */
+ 		return 0;
+ 	VM_BUG_ON(vma->vm_flags & VM_NO_THP);
+@@ -2405,7 +2405,7 @@ static bool hugepage_vma_check(struct vm_area_struct *vma)
+ 	    (vma->vm_flags & VM_NOHUGEPAGE))
+ 		return false;
+ 
+-	if (!vma->anon_vma || vma->vm_ops)
++	if (!vma->anon_vma || (vma->vm_ops && !vma->vm_ops->allow_huge_pages))
+ 		return false;
+ 	if (is_vma_temporary_stack(vma))
+ 		return false;
+diff --git a/mm/memory.c b/mm/memory.c
+index e229970..c181401 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3275,7 +3275,7 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return VM_FAULT_OOM;
+ 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+ 		int ret = VM_FAULT_FALLBACK;
+-		if (!vma->vm_ops)
++		if (!vma->vm_ops || vma->vm_ops->allow_huge_pages)
+ 			ret = do_huge_pmd_anonymous_page(mm, vma, address,
+ 					pmd, flags);
+ 		if (!(ret & VM_FAULT_FALLBACK))
+diff --git a/mm/mmap.c b/mm/mmap.c
+index c0a3637..6b644fe 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1500,6 +1500,16 @@ static inline int accountable_mapping(struct file *file, vm_flags_t vm_flags)
+ 	return (vm_flags & (VM_NORESERVE | VM_SHARED | VM_WRITE)) == VM_WRITE;
+ }
+ 
++static bool anon_may_duplicate(struct vm_area_struct *vma)
++{
++	return vma->vm_flags & VM_WRITE && !(vma->vm_flags & VM_SHARED);
++}
++
++static const struct vm_operations_struct anon_vmops = {
++	.may_duplicate = anon_may_duplicate,
++	.allow_huge_pages = true
++};
++
+ unsigned long mmap_region(struct file *file, unsigned long addr,
+ 		unsigned long len, vm_flags_t vm_flags, unsigned long pgoff)
+ {
+@@ -1569,6 +1579,8 @@ munmap_back:
+ 	vma->vm_flags = vm_flags;
+ 	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+ 	vma->vm_pgoff = pgoff;
++	if (!file)
++		vma->vm_ops = &anon_vmops;
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
+ 
+ 	if (file) {
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 05f1180..ca7a662 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -235,7 +235,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
+ 
+ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		unsigned long old_addr, unsigned long old_len,
+-		unsigned long new_len, unsigned long new_addr, bool *locked)
++		unsigned long new_len, unsigned long new_addr, bool retain,
++		bool *locked)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct vm_area_struct *new_vma;
+@@ -287,15 +288,7 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		old_len = new_len;
+ 		old_addr = new_addr;
+ 		new_addr = -ENOMEM;
+-	}
+-
+-	/* Conceal VM_ACCOUNT so old reservation is not undone */
+-	if (vm_flags & VM_ACCOUNT) {
+-		vma->vm_flags &= ~VM_ACCOUNT;
+-		excess = vma->vm_end - vma->vm_start - old_len;
+-		if (old_addr > vma->vm_start &&
+-		    old_addr + old_len < vma->vm_end)
+-			split = 1;
++		retain = false;
+ 	}
+ 
+ 	/*
+@@ -310,6 +303,19 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 	hiwater_vm = mm->hiwater_vm;
+ 	vm_stat_account(mm, vma->vm_flags, vma->vm_file, new_len>>PAGE_SHIFT);
+ 
++	/* Leave the old mapping in place for MREMAP_RETAIN */
++	if (retain)
++		goto out;
++
++	/* Conceal VM_ACCOUNT so old reservation is not undone */
++	if (vm_flags & VM_ACCOUNT) {
++		vma->vm_flags &= ~VM_ACCOUNT;
++		excess = vma->vm_end - vma->vm_start - old_len;
++		if (old_addr > vma->vm_start &&
++		    old_addr + old_len < vma->vm_end)
++			split = 1;
++	}
++
+ 	if (do_munmap(mm, old_addr, old_len) < 0) {
+ 		/* OOM: unable to split vma, just get accounts right */
+ 		vm_unacct_memory(excess >> PAGE_SHIFT);
+@@ -324,6 +330,7 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 			vma->vm_next->vm_flags |= VM_ACCOUNT;
+ 	}
+ 
++out:
+ 	if (vm_flags & VM_LOCKED) {
+ 		mm->locked_vm += new_len >> PAGE_SHIFT;
+ 		*locked = true;
+@@ -333,7 +340,8 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ }
+ 
+ static struct vm_area_struct *vma_to_resize(unsigned long addr,
+-	unsigned long old_len, unsigned long new_len, unsigned long *p)
++	unsigned long old_len, unsigned long new_len, bool retain,
++	unsigned long *p)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma = find_vma(mm, addr);
+@@ -348,6 +356,11 @@ static struct vm_area_struct *vma_to_resize(unsigned long addr,
+ 	if (old_len > vma->vm_end - addr)
+ 		goto Efault;
+ 
++	/* Forbid MREMAP_RETAIN if not explicitly permitted by the mapping */
++	if (retain && !(vma->vm_ops && vma->vm_ops->may_duplicate &&
++	    vma->vm_ops->may_duplicate(vma)))
++		goto Efault;
++
+ 	/* Need to be careful about a growing mapping */
+ 	if (new_len > old_len) {
+ 		unsigned long pgoff;
+@@ -392,7 +405,8 @@ Eagain:
+ }
+ 
+ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
+-		unsigned long new_addr, unsigned long new_len, bool *locked)
++		unsigned long new_addr, unsigned long new_len, bool retain,
++		bool *locked)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct vm_area_struct *vma;
+@@ -426,7 +440,7 @@ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
+ 		old_len = new_len;
+ 	}
+ 
+-	vma = vma_to_resize(addr, old_len, new_len, &charged);
++	vma = vma_to_resize(addr, old_len, new_len, retain, &charged);
+ 	if (IS_ERR(vma)) {
+ 		ret = PTR_ERR(vma);
+ 		goto out;
+@@ -442,7 +456,7 @@ static unsigned long mremap_to(unsigned long addr, unsigned long old_len,
+ 	if (ret & ~PAGE_MASK)
+ 		goto out1;
+ 
+-	ret = move_vma(vma, addr, old_len, new_len, new_addr, locked);
++	ret = move_vma(vma, addr, old_len, new_len, new_addr, retain, locked);
+ 	if (!(ret & ~PAGE_MASK))
+ 		goto out;
+ out1:
+@@ -482,7 +496,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 	unsigned long charged = 0;
+ 	bool locked = false;
+ 
+-	if (flags & ~(MREMAP_FIXED | MREMAP_MAYMOVE))
++	if (flags & ~(MREMAP_FIXED | MREMAP_MAYMOVE | MREMAP_RETAIN))
+ 		return ret;
+ 
+ 	if (flags & MREMAP_FIXED && !(flags & MREMAP_MAYMOVE))
+@@ -506,7 +520,7 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 
+ 	if (flags & MREMAP_FIXED) {
+ 		ret = mremap_to(addr, old_len, new_addr, new_len,
+-				&locked);
++				flags & MREMAP_RETAIN, &locked);
+ 		goto out;
+ 	}
+ 
+@@ -526,7 +540,8 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 	/*
+ 	 * Ok, we need to grow..
+ 	 */
+-	vma = vma_to_resize(addr, old_len, new_len, &charged);
++	vma = vma_to_resize(addr, old_len, new_len, flags & MREMAP_RETAIN,
++			    &charged);
+ 	if (IS_ERR(vma)) {
+ 		ret = PTR_ERR(vma);
+ 		goto out;
+@@ -575,7 +590,8 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 			goto out;
+ 		}
+ 
+-		ret = move_vma(vma, addr, old_len, new_len, new_addr, &locked);
++		ret = move_vma(vma, addr, old_len, new_len, new_addr,
++			       flags & MREMAP_RETAIN, &locked);
+ 	}
+ out:
+ 	if (ret & ~PAGE_MASK)
 -- 
-1.9.1
+2.1.2
 
