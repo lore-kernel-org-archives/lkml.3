@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932318AbaJCWyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:54:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47264 "EHLO
+	id S932270AbaJCWyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:54:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932393AbaJCWYF (ORCPT
+	with ESMTP id S932607AbaJCWYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ed Butler <ressy66@ausics.net>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.10 043/143] USB: option: reduce interrupt-urb logging verbosity
-Date: Fri,  3 Oct 2014 14:33:58 -0700
-Message-Id: <20141003213315.774172458@linuxfoundation.org>
+        Brennan Ashton <bashton@brennanashton.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.10 044/143] USB: option: add VIA Telecom CDS7 chipset device id
+Date: Fri,  3 Oct 2014 14:33:59 -0700
+Message-Id: <20141003213315.802586523@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,40 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Brennan Ashton <bashton@brennanashton.com>
 
-commit f0e4cba2534cd88476dff920727c81350130f3c5 upstream.
+commit d77302739d900bbca5e901a3b7ac48c907ee6c93 upstream.
 
-Do not log normal interrupt-urb shutdowns as errors.
+This VIA Telecom baseband processor is used is used by by u-blox in both the
+FW2770 and FW2760 products and may be used in others as well.
 
-The option driver has always been logging any nonzero interrupt-urb
-status as an error, including when the urb is killed during normal
-operation.
+This patch has been tested on both of these modem versions.
 
-Commit 9096f1fbba91 ("USB: usb_wwan: fix potential NULL-deref at
-resume") moved the interrupt urb submission from port probe and release
-to open and close, thus potentially increasing the number of these
-false-positive error messages dramatically.
-
-Reported-by: Ed Butler <ressy66@ausics.net>
-Tested-by: Ed Butler <ressy66@ausics.net>
+Signed-off-by: Brennan Ashton <bashton@brennanashton.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -1917,6 +1917,8 @@ static void option_instat_callback(struc
- 			dev_dbg(dev, "%s: type %x req %x\n", __func__,
- 				req_pkt->bRequestType, req_pkt->bRequest);
- 		}
-+	} else if (status == -ENOENT || status == -ESHUTDOWN) {
-+		dev_dbg(dev, "%s: urb stopped: %d\n", __func__, status);
- 	} else
- 		dev_err(dev, "%s: error %d\n", __func__, status);
+@@ -494,6 +494,10 @@ static void option_instat_callback(struc
+ #define INOVIA_VENDOR_ID			0x20a6
+ #define INOVIA_SEW858				0x1105
  
++/* VIA Telecom */
++#define VIATELECOM_VENDOR_ID			0x15eb
++#define VIATELECOM_PRODUCT_CDS7			0x0001
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1724,6 +1728,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
+ 	{ USB_DEVICE(INOVIA_VENDOR_ID, INOVIA_SEW858) },
++	{ USB_DEVICE(VIATELECOM_VENDOR_ID, VIATELECOM_PRODUCT_CDS7) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
