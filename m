@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450AbaJCXHC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:07:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46931 "EHLO
+	id S1757096AbaJCXG7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:06:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757946AbaJCWOF (ORCPT
+	with ESMTP id S1757948AbaJCWOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:14:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Andrei Elovikov <a.elovikov@gmail.com>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>, Jamie Liu <jamieliu@google.com>,
+        Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 186/238] mm, slab: initialize object alignment on cache creation
-Date: Fri,  3 Oct 2014 14:31:41 -0700
-Message-Id: <20141003212919.616711212@linuxfoundation.org>
+Subject: [PATCH 3.14 187/238] mm: softdirty: keep bit when zapping file pte
+Date: Fri,  3 Oct 2014 14:31:42 -0700
+Message-Id: <20141003212919.648599103@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -33,58 +33,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Peter Feiner <pfeiner@google.com>
 
-commit d4a5fca592b9ab52b90bb261a90af3c8f53be011 upstream.
+commit dbab31aa2ceec2d201966fa0b552f151310ba5f4 upstream.
 
-Since commit 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the
-"ralign" automatic variable in __kmem_cache_create() may be used as
-uninitialized.
+This fixes the same bug as b43790eedd31 ("mm: softdirty: don't forget to
+save file map softdiry bit on unmap") and 9aed8614af5a ("mm/memory.c:
+don't forget to set softdirty on file mapped fault") where the return
+value of pte_*mksoft_dirty was being ignored.
 
-The proper alignment defaults to BYTES_PER_WORD and can be overridden by
-SLAB_RED_ZONE or the alignment specified by the caller.
+To be sure that no other pte/pmd "mk" function return values were being
+ignored, I annotated the functions in arch/x86/include/asm/pgtable.h
+with __must_check and rebuilt.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
+The userspace effect of this bug is that the softdirty mark might be
+lost if a file mapped pte get zapped.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Peter Feiner <pfeiner@google.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Jamie Liu <jamieliu@google.com>
+Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/slab.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
+ mm/memory.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2189,7 +2189,8 @@ static int __init_refok setup_cpu_cache(
- int
- __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- {
--	size_t left_over, freelist_size, ralign;
-+	size_t left_over, freelist_size;
-+	size_t ralign = BYTES_PER_WORD;
- 	gfp_t gfp;
- 	int err;
- 	size_t size = cachep->size;
-@@ -2222,14 +2223,6 @@ __kmem_cache_create (struct kmem_cache *
- 		size &= ~(BYTES_PER_WORD - 1);
- 	}
- 
--	/*
--	 * Redzoning and user store require word alignment or possibly larger.
--	 * Note this will be overridden by architecture or caller mandated
--	 * alignment if either is greater than BYTES_PER_WORD.
--	 */
--	if (flags & SLAB_STORE_USER)
--		ralign = BYTES_PER_WORD;
--
- 	if (flags & SLAB_RED_ZONE) {
- 		ralign = REDZONE_ALIGN;
- 		/* If redzoning, ensure that the second redzone is suitably
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1120,7 +1120,7 @@ again:
+ 						addr) != page->index) {
+ 				pte_t ptfile = pgoff_to_pte(page->index);
+ 				if (pte_soft_dirty(ptent))
+-					pte_file_mksoft_dirty(ptfile);
++					ptfile = pte_file_mksoft_dirty(ptfile);
+ 				set_pte_at(mm, addr, pte, ptfile);
+ 			}
+ 			if (PageAnon(page))
 
 
