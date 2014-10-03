@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117AbaJDAv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:51:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44727 "EHLO
+	id S1758649AbaJDAv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:51:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754906AbaJCVce (ORCPT
+	with ESMTP id S1754908AbaJCVce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:32:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.16 017/357] drm/radeon/dpm: handle voltage info fetching on hawaii
-Date: Fri,  3 Oct 2014 14:26:43 -0700
-Message-Id: <20141003212933.988025254@linuxfoundation.org>
+Subject: [PATCH 3.16 018/357] drm/radeon: re-enable dpm by default on cayman
+Date: Fri,  3 Oct 2014 14:26:44 -0700
+Message-Id: <20141003212934.017126185@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,42 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 6b57f20cb5b708415fbab63847f8f8429b051af8 upstream.
+commit 8f500af4efe347d1a8ac674d115220e8caa84559 upstream.
 
-Some hawaii cards use a different method to fetch the
-voltage info from the vbios.
+This patch depends on:
+b0880e87c1fd038b84498944f52e52c3e86ebe59
+(drm/radeon/dpm: fix vddci setup typo on cayman)
 
 bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=74250
+https://bugs.freedesktop.org/show_bug.cgi?id=69723
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/ci_dpm.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_pm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -940,7 +940,18 @@ static void ci_get_leakage_voltages(stru
- 	pi->vddc_leakage.count = 0;
- 	pi->vddci_leakage.count = 0;
- 
--	if (radeon_atom_get_leakage_id_from_vbios(rdev, &leakage_id) == 0) {
-+	if (rdev->pm.dpm.platform_caps & ATOM_PP_PLATFORM_CAP_EVV) {
-+		for (i = 0; i < CISLANDS_MAX_LEAKAGE_COUNT; i++) {
-+			virtual_voltage_id = ATOM_VIRTUAL_VOLTAGE_ID0 + i;
-+			if (radeon_atom_get_voltage_evv(rdev, virtual_voltage_id, &vddc) != 0)
-+				continue;
-+			if (vddc != 0 && vddc != virtual_voltage_id) {
-+				pi->vddc_leakage.actual_voltage[pi->vddc_leakage.count] = vddc;
-+				pi->vddc_leakage.leakage_id[pi->vddc_leakage.count] = virtual_voltage_id;
-+				pi->vddc_leakage.count++;
-+			}
-+		}
-+	} else if (radeon_atom_get_leakage_id_from_vbios(rdev, &leakage_id) == 0) {
- 		for (i = 0; i < CISLANDS_MAX_LEAKAGE_COUNT; i++) {
- 			virtual_voltage_id = ATOM_VIRTUAL_VOLTAGE_ID0 + i;
- 			if (radeon_atom_get_leakage_vddc_based_on_leakage_params(rdev, &vddc, &vddci,
+--- a/drivers/gpu/drm/radeon/radeon_pm.c
++++ b/drivers/gpu/drm/radeon/radeon_pm.c
+@@ -1306,7 +1306,6 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_BARTS:
+ 	case CHIP_TURKS:
+ 	case CHIP_CAICOS:
+-	case CHIP_CAYMAN:
+ 		/* DPM requires the RLC, RV770+ dGPU requires SMC */
+ 		if (!rdev->rlc_fw)
+ 			rdev->pm.pm_method = PM_METHOD_PROFILE;
+@@ -1330,6 +1329,7 @@ int radeon_pm_init(struct radeon_device
+ 	case CHIP_PALM:
+ 	case CHIP_SUMO:
+ 	case CHIP_SUMO2:
++	case CHIP_CAYMAN:
+ 	case CHIP_ARUBA:
+ 	case CHIP_TAHITI:
+ 	case CHIP_PITCAIRN:
 
 
