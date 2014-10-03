@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026AbaJCXWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:22:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46744 "EHLO
+	id S1759955AbaJCXWe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:22:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757793AbaJCWNn (ORCPT
+	with ESMTP id S1757759AbaJCWNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:43 -0400
+	Fri, 3 Oct 2014 18:13:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 3.14 150/238] NFC: microread: Potential overflows in microread_target_discovered()
-Date: Fri,  3 Oct 2014 14:31:05 -0700
-Message-Id: <20141003212918.478414988@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 152/238] Revert "iwlwifi: dvm: dont enable CTS to self"
+Date: Fri,  3 Oct 2014 14:31:07 -0700
+Message-Id: <20141003212918.544848392@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,55 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d07f1e8600ccb885c8f4143402b8912f7d827bcb upstream.
+commit f47f46d7b09cf1d09e4b44b6cc4dd7d68a08028c upstream.
 
-Smatch says that skb->data is untrusted so we need to check to make sure
-that the memcpy() doesn't overflow.
+This reverts commit 43d826ca5979927131685cc2092c7ce862cb91cd.
 
-Fixes: cfad1ba87150 ('NFC: Initial support for Inside Secure microread')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+This commit caused packet loss.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/nfc/microread/microread.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/nfc/microread/microread.c
-+++ b/drivers/nfc/microread/microread.c
-@@ -501,9 +501,13 @@ static void microread_target_discovered(
- 		targets->sens_res =
- 			 be16_to_cpu(*(u16 *)&skb->data[MICROREAD_EMCF_A_ATQA]);
- 		targets->sel_res = skb->data[MICROREAD_EMCF_A_SAK];
--		memcpy(targets->nfcid1, &skb->data[MICROREAD_EMCF_A_UID],
--		       skb->data[MICROREAD_EMCF_A_LEN]);
- 		targets->nfcid1_len = skb->data[MICROREAD_EMCF_A_LEN];
-+		if (targets->nfcid1_len > sizeof(targets->nfcid1)) {
-+			r = -EINVAL;
-+			goto exit_free;
-+		}
-+		memcpy(targets->nfcid1, &skb->data[MICROREAD_EMCF_A_UID],
-+		       targets->nfcid1_len);
- 		break;
- 	case MICROREAD_GATE_ID_MREAD_ISO_A_3:
- 		targets->supported_protocols =
-@@ -511,9 +515,13 @@ static void microread_target_discovered(
- 		targets->sens_res =
- 			 be16_to_cpu(*(u16 *)&skb->data[MICROREAD_EMCF_A3_ATQA]);
- 		targets->sel_res = skb->data[MICROREAD_EMCF_A3_SAK];
--		memcpy(targets->nfcid1, &skb->data[MICROREAD_EMCF_A3_UID],
--		       skb->data[MICROREAD_EMCF_A3_LEN]);
- 		targets->nfcid1_len = skb->data[MICROREAD_EMCF_A3_LEN];
-+		if (targets->nfcid1_len > sizeof(targets->nfcid1)) {
-+			r = -EINVAL;
-+			goto exit_free;
-+		}
-+		memcpy(targets->nfcid1, &skb->data[MICROREAD_EMCF_A3_UID],
-+		       targets->nfcid1_len);
- 		break;
- 	case MICROREAD_GATE_ID_MREAD_ISO_B:
- 		targets->supported_protocols = NFC_PROTO_ISO14443_B_MASK;
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1068,6 +1068,13 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	/* recalculate basic rates */
+ 	iwl_calc_basic_rates(priv, ctx);
+ 
++	/*
++	 * force CTS-to-self frames protection if RTS-CTS is not preferred
++	 * one aggregation protection method
++	 */
++	if (!priv->hw_params.use_rts_for_aggregation)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
++
+ 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
+ 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
+ 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
+@@ -1473,6 +1480,11 @@ void iwlagn_bss_info_changed(struct ieee
+ 	else
+ 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
+ 
++	if (bss_conf->use_cts_prot)
++		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
++	else
++		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
++
+ 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
+ 
+ 	if (vif->type == NL80211_IFTYPE_AP ||
 
 
