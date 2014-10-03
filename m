@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751300AbaJCHeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 03:34:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731AbaJCHeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 03:34:22 -0400
-Date: Fri, 3 Oct 2014 09:33:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/2] perf tools: Add option to copy events when queueing
-Message-ID: <20141003073354.GA19087@krava.brq.redhat.com>
-References: <1412267936-19827-1-git-send-email-yarygin@linux.vnet.ibm.com>
- <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
+	id S1751219AbaJCHpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 03:45:38 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:18961 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731AbaJCHpg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 03:45:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 03 Oct 2014 00:44:20 -0700
+Message-ID: <542E5421.5070708@nvidia.com>
+Date: Fri, 3 Oct 2014 15:45:37 +0800
+From: Joseph Lo <josephl@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412267936-19827-2-git-send-email-yarygin@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jingchang Lu <jingchang.lu@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] serial: of-serial: add PM suspend/resume support
+References: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
+In-Reply-To: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
+X-Originating-IP: [10.19.108.115]
+X-ClientProxiedBy: HKMAIL103.nvidia.com (10.18.16.12) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 08:38:55PM +0400, Alexander Yarygin wrote:
-> When processing events the session code has an ordered samples queue which is
-> used to time-sort events coming in across multiple mmaps. At a later point in
-> time samples on the queue are flushed up to some timestamp at which point the
-> event is actually processed.
-> 
-> When analyzing events live (ie., record/analysis path in the same command)
-> there is a race that leads to corrupted events and parse errors which cause
-> perf to terminate. The problem is that when the event is placed in the ordered
-> samples queue it is only a reference to the event which is really sitting in
-> the mmap buffer. Even though the event is queued for later processing the mmap
-> tail pointer is updated which indicates to the kernel that the event has been
-> processed. The race is flushing the event from the queue before it gets
-> overwritten by some other event. For commands trying to process events live
-> (versus just writing to a file) and processing a high rate of events this leads
-> to parse failures and perf terminates.
-> 
-> Examples hitting this problem are 'perf kvm stat live', especially with nested
-> VMs which generate 100,000+ traces per second, and a command processing
-> scheduling events with a high rate of context switching -- e.g., running
-> 'perf bench sched pipe'.
-> 
-> This patch offers live commands an option to copy the event when it is placed in
-> the ordered samples queue.
-> 
-> Based on a patch from David Ahern <dsahern@gmail.com>
-> 
-> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-> Cc: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung.kim@lge.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Stephane Eranian <eranian@google.com>
+Hi,
+
+This patch might have a potential issue that cause system hard hung 
+immediately when it accesses to registers with no clock. This could 
+happen on many chips that mainline kernel supporting with the setting 
+"no_console_suspend=1" during suspend time.
+
+On 09/23/2014 04:34 PM, Jingchang Lu wrote:
+> This adds PM suspend/resume support for the of-serial driver
+> to provide power management support on devices attatched to it.
+>
+> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
 > ---
->  tools/perf/util/ordered-events.c | 51 ++++++++++++++++++++++++++++++++++++----
->  tools/perf/util/ordered-events.h | 10 +++++++-
->  tools/perf/util/session.c        |  5 ++--
->  3 files changed, 58 insertions(+), 8 deletions(-)
-
-apart from extra whitespaces (below):
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-
-thanks,
-jirka
-
-> 
-> diff --git a/tools/perf/util/ordered-events.c b/tools/perf/util/ordered-events.c
-> index 706ce1a..06d53ee 100644
-> --- a/tools/perf/util/ordered-events.c
-> +++ b/tools/perf/util/ordered-events.c
-
-SNIP
-
-> +		}
->  
->  		pr("alloc size %" PRIu64 "B (+%zu), max %" PRIu64 "B\n",
->  		   oe->cur_alloc_size, size, oe->max_alloc_size);
-> @@ -90,15 +127,19 @@ static struct ordered_event *alloc_event(struct ordered_events *oe)
->  		pr("allocation limit reached %" PRIu64 "B\n", oe->max_alloc_size);
->  	}
->  
-> +	new->event = new_event;
+>   drivers/tty/serial/of_serial.c | 27 +++++++++++++++++++++++++++
+>   1 file changed, 27 insertions(+)
+>
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 27981e2..8bc2563 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -240,6 +240,32 @@ static int of_platform_serial_remove(struct platform_device *ofdev)
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_PM_SLEEP
+> +static int of_serial_suspend(struct device *dev)
+> +{
+> +	struct of_serial_info *info = dev_get_drvdata(dev);
 > +
->  	return new;
+> +	serial8250_suspend_port(info->line);
+> +	if (info->clk)
+The fix would be something like this.
+	if (info->clk && console_suspend_enabled)
 
-^^^ here
-
->  }
->  
->  struct ordered_event *
-> -ordered_events__new(struct ordered_events *oe, u64 timestamp)
-> +ordered_events__new(struct ordered_events *oe, u64 timestamp,
-> +		    union perf_event *event)
->  {
->  	struct ordered_event *new;
->  
-> -	new = alloc_event(oe);
-> +	new = alloc_event(oe, event);
+> +		clk_disable_unprepare(info->clk);
 > +
->  	if (new) {
+> +	return 0;
+> +}
+> +
+> +static int of_serial_resume(struct device *dev)
+> +{
+> +	struct of_serial_info *info = dev_get_drvdata(dev);
+> +
+> +	if (info->clk)
+Ditto.
 
-^^^ and here
+Thanks,
+-Joseph
+> +		clk_prepare_enable(info->clk);
+> +
+> +	serial8250_resume_port(info->line);
+> +
+> +	return 0;
+> +}
+> +#endif
+> +static SIMPLE_DEV_PM_OPS(of_serial_pm_ops, of_serial_suspend, of_serial_resume);
+> +
+>   /*
+>    * A few common types, add more as needed.
+>    */
+> @@ -271,6 +297,7 @@ static struct platform_driver of_platform_serial_driver = {
+>   		.name = "of_serial",
+>   		.owner = THIS_MODULE,
+>   		.of_match_table = of_platform_serial_table,
+> +		.pm = &of_serial_pm_ops,
+>   	},
+>   	.probe = of_platform_serial_probe,
+>   	.remove = of_platform_serial_remove,
+>
