@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093AbaJCVng (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
+	id S932077AbaJCVnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:43:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45319 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046AbaJCVnQ (ORCPT
+	with ESMTP id S1755822AbaJCVnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:16 -0400
+	Fri, 3 Oct 2014 17:43:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Lynch <nathan_lynch@mentor.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.16 185/357] ARM: 8148/1: flush TLS and thumbee register state during exec
-Date: Fri,  3 Oct 2014 14:29:31 -0700
-Message-Id: <20141003212939.032402487@linuxfoundation.org>
+        Roger Quadros <rogerq@ti.com>, Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.16 187/357] ARM: dts: dra7-evm: Fix NAND GPMC timings
+Date: Fri,  3 Oct 2014 14:29:33 -0700
+Message-Id: <20141003212939.090170796@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,171 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Lynch <nathan_lynch@mentor.com>
+From: Roger Quadros <rogerq@ti.com>
 
-commit fbfb872f5f417cea48760c535e0ff027c88b507a upstream.
+commit 5990047cef0c6a36eefcb166bd32d99a8f95c75b upstream.
 
-The TPIDRURO and TPIDRURW registers need to be flushed during exec;
-otherwise TLS information is potentially leaked.  TPIDRURO in
-particular needs careful treatment.  Since flush_thread basically
-needs the same code used to set the TLS in arm_syscall, pull that into
-a common set_tls helper in tls.h and use it in both places.
+The nand timings were scaled down by 2 to account for
+the 2x rate returned by clk_get_rate(gpmc_fclk).
 
-Similarly, TEEHBR needs to be cleared during exec as well.  Clearing
-its save slot in thread_info isn't right as there is no guarantee
-that a thread switch will occur before the new program runs.  Just
-setting the register directly is sufficient.
+As the clock data got fixed by [1], revert back to actual
+timings (i.e. scale them up by 2).
 
-Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-Acked-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Without this NAND doesn't work on dra7-evm.
+
+[1] - commit dd94324b983afe114ba9e7ee3649313b451f63ce
+    ARM: dts: dra7xx-clocks: Fix the l3 and l4 clock rates
+
+Fixes: ff66a3c86e00 ("ARM: dts: dra7: add support for parallel NAND flash")
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/tls.h |   62 +++++++++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/process.c  |    2 +
- arch/arm/kernel/thumbee.c  |    2 -
- arch/arm/kernel/traps.c    |   17 ------------
- 4 files changed, 66 insertions(+), 17 deletions(-)
+ arch/arm/boot/dts/dra7-evm.dts |   27 ++++++++++++---------------
+ 1 file changed, 12 insertions(+), 15 deletions(-)
 
---- a/arch/arm/include/asm/tls.h
-+++ b/arch/arm/include/asm/tls.h
-@@ -1,6 +1,9 @@
- #ifndef __ASMARM_TLS_H
- #define __ASMARM_TLS_H
- 
-+#include <linux/compiler.h>
-+#include <asm/thread_info.h>
-+
- #ifdef __ASSEMBLY__
- #include <asm/asm-offsets.h>
- 	.macro switch_tls_none, base, tp, tpuser, tmp1, tmp2
-@@ -50,6 +53,47 @@
- #endif
- 
- #ifndef __ASSEMBLY__
-+
-+static inline void set_tls(unsigned long val)
-+{
-+	struct thread_info *thread;
-+
-+	thread = current_thread_info();
-+
-+	thread->tp_value[0] = val;
-+
-+	/*
-+	 * This code runs with preemption enabled and therefore must
-+	 * be reentrant with respect to switch_tls.
-+	 *
-+	 * We need to ensure ordering between the shadow state and the
-+	 * hardware state, so that we don't corrupt the hardware state
-+	 * with a stale shadow state during context switch.
-+	 *
-+	 * If we're preempted here, switch_tls will load TPIDRURO from
-+	 * thread_info upon resuming execution and the following mcr
-+	 * is merely redundant.
-+	 */
-+	barrier();
-+
-+	if (!tls_emu) {
-+		if (has_tls_reg) {
-+			asm("mcr p15, 0, %0, c13, c0, 3"
-+			    : : "r" (val));
-+		} else {
-+			/*
-+			 * User space must never try to access this
-+			 * directly.  Expect your app to break
-+			 * eventually if you do so.  The user helper
-+			 * at 0xffff0fe0 must be used instead.  (see
-+			 * entry-armv.S for details)
-+			 */
-+			*((unsigned int *)0xffff0ff0) = val;
-+		}
-+
-+	}
-+}
-+
- static inline unsigned long get_tpuser(void)
- {
- 	unsigned long reg = 0;
-@@ -59,5 +103,23 @@ static inline unsigned long get_tpuser(v
- 
- 	return reg;
- }
-+
-+static inline void set_tpuser(unsigned long val)
-+{
-+	/* Since TPIDRURW is fully context-switched (unlike TPIDRURO),
-+	 * we need not update thread_info.
-+	 */
-+	if (has_tls_reg && !tls_emu) {
-+		asm("mcr p15, 0, %0, c13, c0, 2"
-+		    : : "r" (val));
-+	}
-+}
-+
-+static inline void flush_tls(void)
-+{
-+	set_tls(0);
-+	set_tpuser(0);
-+}
-+
- #endif
- #endif	/* __ASMARM_TLS_H */
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -334,6 +334,8 @@ void flush_thread(void)
- 	memset(&tsk->thread.debug, 0, sizeof(struct debug_info));
- 	memset(&thread->fpstate, 0, sizeof(union fp_state));
- 
-+	flush_tls();
-+
- 	thread_notify(THREAD_NOTIFY_FLUSH, thread);
- }
- 
---- a/arch/arm/kernel/thumbee.c
-+++ b/arch/arm/kernel/thumbee.c
-@@ -45,7 +45,7 @@ static int thumbee_notifier(struct notif
- 
- 	switch (cmd) {
- 	case THREAD_NOTIFY_FLUSH:
--		thread->thumbee_state = 0;
-+		teehbr_write(0);
- 		break;
- 	case THREAD_NOTIFY_SWITCH:
- 		current_thread_info()->thumbee_state = teehbr_read();
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -579,7 +579,6 @@ do_cache_op(unsigned long start, unsigne
- #define NR(x) ((__ARM_NR_##x) - __ARM_NR_BASE)
- asmlinkage int arm_syscall(int no, struct pt_regs *regs)
- {
--	struct thread_info *thread = current_thread_info();
- 	siginfo_t info;
- 
- 	if ((no >> 16) != (__ARM_NR_BASE>> 16))
-@@ -630,21 +629,7 @@ asmlinkage int arm_syscall(int no, struc
- 		return regs->ARM_r0;
- 
- 	case NR(set_tls):
--		thread->tp_value[0] = regs->ARM_r0;
--		if (tls_emu)
--			return 0;
--		if (has_tls_reg) {
--			asm ("mcr p15, 0, %0, c13, c0, 3"
--				: : "r" (regs->ARM_r0));
--		} else {
--			/*
--			 * User space must never try to access this directly.
--			 * Expect your app to break eventually if you do so.
--			 * The user helper at 0xffff0fe0 must be used instead.
--			 * (see entry-armv.S for details)
--			 */
--			*((unsigned int *)0xffff0ff0) = regs->ARM_r0;
--		}
-+		set_tls(regs->ARM_r0);
- 		return 0;
- 
- #ifdef CONFIG_NEEDS_SYSCALL_FOR_CMPXCHG
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -427,22 +427,19 @@
+ 		gpmc,device-width = <2>;
+ 		gpmc,sync-clk-ps = <0>;
+ 		gpmc,cs-on-ns = <0>;
+-		gpmc,cs-rd-off-ns = <40>;
+-		gpmc,cs-wr-off-ns = <40>;
++		gpmc,cs-rd-off-ns = <80>;
++		gpmc,cs-wr-off-ns = <80>;
+ 		gpmc,adv-on-ns = <0>;
+-		gpmc,adv-rd-off-ns = <30>;
+-		gpmc,adv-wr-off-ns = <30>;
+-		gpmc,we-on-ns = <5>;
+-		gpmc,we-off-ns = <25>;
+-		gpmc,oe-on-ns = <2>;
+-		gpmc,oe-off-ns = <20>;
+-		gpmc,access-ns = <20>;
+-		gpmc,wr-access-ns = <40>;
+-		gpmc,rd-cycle-ns = <40>;
+-		gpmc,wr-cycle-ns = <40>;
+-		gpmc,wait-pin = <0>;
+-		gpmc,wait-on-read;
+-		gpmc,wait-on-write;
++		gpmc,adv-rd-off-ns = <60>;
++		gpmc,adv-wr-off-ns = <60>;
++		gpmc,we-on-ns = <10>;
++		gpmc,we-off-ns = <50>;
++		gpmc,oe-on-ns = <4>;
++		gpmc,oe-off-ns = <40>;
++		gpmc,access-ns = <40>;
++		gpmc,wr-access-ns = <80>;
++		gpmc,rd-cycle-ns = <80>;
++		gpmc,wr-cycle-ns = <80>;
+ 		gpmc,bus-turnaround-ns = <0>;
+ 		gpmc,cycle2cycle-delay-ns = <0>;
+ 		gpmc,clk-activation-ns = <0>;
 
 
