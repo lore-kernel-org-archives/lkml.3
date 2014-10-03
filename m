@@ -1,39 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaJCObo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 10:31:44 -0400
-Received: from mga03.intel.com ([134.134.136.65]:8989 "EHLO mga03.intel.com"
+	id S1753803AbaJCOc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:32:29 -0400
+Received: from mga14.intel.com ([192.55.52.115]:47274 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474AbaJCObm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 10:31:42 -0400
+	id S1752498AbaJCOc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 10:32:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,647,1406617200"; 
-   d="scan'208";a="583050221"
-Message-ID: <1412346676.3795.62.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 3/4] UBI: Fastmap: Care about the protection queue
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 03 Oct 2014 17:31:16 +0300
-In-Reply-To: <1412029248-22454-4-git-send-email-richard@nod.at>
-References: <1412029248-22454-1-git-send-email-richard@nod.at>
-	 <1412029248-22454-4-git-send-email-richard@nod.at>
+   d="scan'208";a="481756693"
+Message-ID: <1412346717.2987.5.camel@spandruv-hsb-test>
+Subject: Re: [PATCH] iio: inkern: Add of_xlate function to struct iio_dev
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        John Stultz <john.stultz@linaro.org>, linux-iio@vger.kernel.org,
+        svarbanov@mm-sol.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Date: Fri, 03 Oct 2014 07:31:57 -0700
+In-Reply-To: <1412257785.1027.40.camel@iivanov-dev>
+References: <1412253128-32165-1-git-send-email-iivanov@mm-sol.com>
+	 <542D5377.90201@metafoo.de> <1412257785.1027.40.camel@iivanov-dev>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-09-30 at 00:20 +0200, Richard Weinberger wrote:
-> +
-> +	for (i = 0; i < UBI_PROT_QUEUE_LEN; i++) {
-> +		list_for_each_entry(wl_e, &ubi->pq[i], u.list) {
-> +			fec = (struct ubi_fm_ec *)(fm_raw + fm_pos);
+On Thu, 2014-10-02 at 16:49 +0300, Ivan T. Ivanov wrote:
+> On Thu, 2014-10-02 at 15:30 +0200, Lars-Peter Clausen wrote:
+> > On 10/02/2014 02:32 PM, Ivan T. Ivanov wrote:
+> > > When #iio-cells is greater than '0', the driver could provide
+> > > a custom of_xlate function that reads the *args* and returns
+> > > the appropriate index in registered IIO channels array.
+> > 
+> > Do you have an example of a device that doesn't want to use the default 
+> > mapping? If yes please include it in the commit message, otherwise it is 
+> > fairly hard to say whether this makes sense or not.
+> 
+> Still not mainlined. You can find more detailed description of the 
+> issue here[1] and driver here[2].
+I see your need. I wonder this mapping be done in individual client
+driver instead of creating another callback.
 
-Similarly to my other posts, is it possible to not touch the WL-internal
-things like 'ubi->pq[]' from fastmap.c? Can we come up with a function
-at wl.c which fastmap.c could call instead?
+Thanks,
+Srinivas
+
+> 
+> Regards,
+> Ivan
+> 
+> [1] https://lkml.org/lkml/2014/10/2/123
+> [2] http://www.spinics.net/lists/devicetree/msg50717.html
+> 
+> 
+
 
