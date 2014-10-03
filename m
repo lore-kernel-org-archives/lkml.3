@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758093AbaJCWQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:16:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47126 "EHLO
+	id S932165AbaJCWQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:16:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756903AbaJCWQT (ORCPT
+	with ESMTP id S1756867AbaJCWQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:16:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
-Subject: [PATCH 3.14 230/238] dmaengine: dw: introduce dwc_dostart_first_queued() helper
-Date: Fri,  3 Oct 2014 14:32:25 -0700
-Message-Id: <20141003212921.020233742@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Scott Robinson <scott.robinson55@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.14 212/238] media: cx18: fix kernel oops with tda8290 tuner
+Date: Fri,  3 Oct 2014 14:32:07 -0700
+Message-Id: <20141003212920.441566242@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,63 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit e7637c6c0382485f4d2e20715d058dae6f2b6a7c upstream.
+commit 6a03dc92cc2edfa2257502557b9f714893987383 upstream.
 
-We have a duplicate code which starts first descriptor in the queue. Let's make
-this as a separate helper that can be used in future as well.
+This was caused by an uninitialized setup.config field.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+Based on a suggestion from Devin Heitmueller.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Thanks-to: Devin Heitmueller <dheitmueller@kernellabs.com>
+Reported-by: Scott Robinson <scott.robinson55@gmail.com>
+Tested-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/dma/dw/core.c |   19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ drivers/media/pci/cx18/cx18-driver.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -279,6 +279,15 @@ static void dwc_dostart(struct dw_dma_ch
- 	channel_set_bit(dw, CH_EN, dwc->mask);
- }
- 
-+static void dwc_dostart_first_queued(struct dw_dma_chan *dwc)
-+{
-+	if (list_empty(&dwc->queue))
-+		return;
-+
-+	list_move(dwc->queue.next, &dwc->active_list);
-+	dwc_dostart(dwc, dwc_first_active(dwc));
-+}
-+
- /*----------------------------------------------------------------------*/
- 
- static void
-@@ -335,10 +344,7 @@ static void dwc_complete_all(struct dw_d
- 	 * the completed ones.
- 	 */
- 	list_splice_init(&dwc->active_list, &list);
--	if (!list_empty(&dwc->queue)) {
--		list_move(dwc->queue.next, &dwc->active_list);
--		dwc_dostart(dwc, dwc_first_active(dwc));
--	}
-+	dwc_dostart_first_queued(dwc);
- 
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- 
-@@ -467,10 +473,7 @@ static void dwc_scan_descriptors(struct
- 	/* Try to continue after resetting the channel... */
- 	dwc_chan_disable(dw, dwc);
- 
--	if (!list_empty(&dwc->queue)) {
--		list_move(dwc->queue.next, &dwc->active_list);
--		dwc_dostart(dwc, dwc_first_active(dwc));
--	}
-+	dwc_dostart_first_queued(dwc);
- 	spin_unlock_irqrestore(&dwc->lock, flags);
- }
- 
+--- a/drivers/media/pci/cx18/cx18-driver.c
++++ b/drivers/media/pci/cx18/cx18-driver.c
+@@ -1091,6 +1091,7 @@ static int cx18_probe(struct pci_dev *pc
+ 		setup.addr = ADDR_UNSET;
+ 		setup.type = cx->options.tuner;
+ 		setup.mode_mask = T_ANALOG_TV;  /* matches TV tuners */
++		setup.config = NULL;
+ 		if (cx->options.radio > 0)
+ 			setup.mode_mask |= T_RADIO;
+ 		setup.tuner_callback = (setup.type == TUNER_XC2028) ?
 
 
