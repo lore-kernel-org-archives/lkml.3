@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749AbaJCWrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:47:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47242 "EHLO
+	id S1758029AbaJCWrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:47:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758249AbaJCWYO (ORCPT
+	with ESMTP id S1758247AbaJCWYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:24:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joern Engel <joern@logfs.org>,
+        Sagi Grimberg <sagig@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 088/143] iscsi-target: avoid NULL pointer in iscsi_copy_param_list failure
-Date: Fri,  3 Oct 2014 14:34:43 -0700
-Message-Id: <20141003213317.144544885@linuxfoundation.org>
+Subject: [PATCH 3.10 087/143] Target/iser: Dont put isert_conn inside disconnected handler
+Date: Fri,  3 Oct 2014 14:34:42 -0700
+Message-Id: <20141003213317.116121553@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,37 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joern Engel <joern@logfs.org>
+From: Sagi Grimberg <sagig@mellanox.com>
 
-commit 8ae757d09c45102b347a1bc2867f54ffc1ab8fda upstream.
+commit 0fc4ea701fcf5bc51ace4e288af5be741465f776 upstream.
 
-In iscsi_copy_param_list() a failed iscsi_param_list memory allocation
-currently invokes iscsi_release_param_list() to cleanup, and will promptly
-trigger a NULL pointer dereference.
+disconnected_handler is invoked on several CM events (such
+as DISCONNECTED, DEVICE_REMOVAL, TIMEWAIT_EXIT...). Since
+multiple  events can occur while before isert_free_conn is
+invoked, we might put all isert_conn references and free
+the connection too early.
 
-Instead, go ahead and return for the first iscsi_copy_param_list()
-failure case.
-
-Found by coverity.
-
-Signed-off-by: Joern Engel <joern@logfs.org>
+Signed-off-by: Sagi Grimberg <sagig@mellanox.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/iscsi/iscsi_target_parameters.c |    2 +-
+ drivers/infiniband/ulp/isert/ib_isert.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -603,7 +603,7 @@ int iscsi_copy_param_list(
- 	param_list = kzalloc(sizeof(struct iscsi_param_list), GFP_KERNEL);
- 	if (!param_list) {
- 		pr_err("Unable to allocate memory for struct iscsi_param_list.\n");
--		goto err_out;
-+		return -1;
- 	}
- 	INIT_LIST_HEAD(&param_list->param_list);
- 	INIT_LIST_HEAD(&param_list->extra_response_list);
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -583,7 +583,6 @@ isert_disconnect_work(struct work_struct
+ 
+ wake_up:
+ 	complete(&isert_conn->conn_wait);
+-	isert_put_conn(isert_conn);
+ }
+ 
+ static void
+@@ -2266,6 +2265,7 @@ static void isert_wait_conn(struct iscsi
+ 	wait_for_completion(&isert_conn->conn_wait_comp_err);
+ 
+ 	wait_for_completion(&isert_conn->conn_wait);
++	isert_put_conn(isert_conn);
+ }
+ 
+ static void isert_free_conn(struct iscsi_conn *conn)
 
 
