@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaJCPHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:07:01 -0400
-Received: from mail-bn1on0069.outbound.protection.outlook.com ([157.56.110.69]:61664
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751773AbaJCPG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:06:58 -0400
-From: Nathaniel Ting <nathaniel.ting@silabs.com>
-To: <johan@kernel.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Nathaniel Ting" <nathaniel.ting@silabs.com>
-Subject: [PATCH] USB: serial: cp210x: Add Silicon Labs 358x VID and PID.
-Date: Fri, 3 Oct 2014 11:06:33 -0400
-Message-ID: <1412348793-4558-1-git-send-email-nathaniel.ting@silabs.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753852AbaJCPHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:07:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46773 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753330AbaJCPHH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:07:07 -0400
+Date: Fri, 3 Oct 2014 17:07:03 +0200
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: dan.carpenter@oracle.com
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        sebastian.hesselbarth@gmail.com, alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: pxa168_eth: avoid using signed char for bitops
+Message-ID: <20141003150703.GA20398@kwain>
+References: <1412348517-20352-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1412348517-20352-2-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [216.236.254.7]
-X-ClientProxiedBy: BY2PR06CA033.namprd06.prod.outlook.com (10.141.250.151) To
- BY2PR07MB908.namprd07.prod.outlook.com (10.242.45.156)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR07MB908;
-X-Forefront-PRVS: 0353563E2B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(53416004)(93916002)(86362001)(80022003)(106356001)(21056001)(104166001)(99396003)(102836001)(4396001)(88136002)(50466002)(48376002)(95666004)(31966008)(77156001)(36756003)(107046002)(2351001)(105586002)(77096002)(81156004)(122386001)(89996001)(46102003)(76482002)(47776003)(20776003)(85306004)(64706001)(92726001)(92566001)(87976001)(97736003)(10300001)(42186005)(69596002)(85852003)(62966002)(50986999)(120916001)(101416001)(229853001)(66066001)(33646002)(87286001)(19580405001)(110136001)(40100001)(19580395003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB908;H:lab-nate-ubuntu.silabs.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: silabs.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412348517-20352-2-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathaniel Ting <nathaniel.ting@silabs.com>
+On Fri, Oct 03, 2014 at 05:01:54PM +0200, Antoine Tenart wrote:
+> Signedness bugs may occur when using signed char for bitops,
+> depending on if the highest bit is ever used.
+> 
+> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> 
+> Dan reported a static checker warning:
+> http://marc.info/?l=kernel-janitors&m=141218246222535&w=2
+> 
+> This patch fixes it. Instead of using sa->sa_data we now use
+> dev->dev_addr (of type unsigned char *) to avoid possible
+> signedness issues.
 
-Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
-driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
-connect to host PCs over a USB serial link.
+Well, this patch shouldn't be in this thread. I'm resending it.
+Sorry for the noise.
 
-Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
----
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+Antoine
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index e4bb622..ce81fa8 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -154,6 +154,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
-+        { USB_DEVICE(0x1BA4, 0x0002) }, /* Silicon Labs 358x factory default */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+> 
+>  drivers/net/ethernet/marvell/pxa168_eth.c | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+> index 24de41231593..c3b209cd0660 100644
+> --- a/drivers/net/ethernet/marvell/pxa168_eth.c
+> +++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+> @@ -634,12 +634,12 @@ static int pxa168_eth_set_mac_address(struct net_device *dev, void *addr)
+>  	memcpy(oldMac, dev->dev_addr, ETH_ALEN);
+>  	memcpy(dev->dev_addr, sa->sa_data, ETH_ALEN);
+>  
+> -	mac_h = sa->sa_data[0] << 24;
+> -	mac_h |= sa->sa_data[1] << 16;
+> -	mac_h |= sa->sa_data[2] << 8;
+> -	mac_h |= sa->sa_data[3];
+> -	mac_l = sa->sa_data[4] << 8;
+> -	mac_l |= sa->sa_data[5];
+> +	mac_h = dev->dev_addr[0] << 24;
+> +	mac_h |= dev->dev_addr[1] << 16;
+> +	mac_h |= dev->dev_addr[2] << 8;
+> +	mac_h |= dev->dev_addr[3];
+> +	mac_l = dev->dev_addr[4] << 8;
+> +	mac_l |= dev->dev_addr[5];
+>  	wrl(pep, MAC_ADDR_HIGH, mac_h);
+>  	wrl(pep, MAC_ADDR_LOW, mac_l);
+>  
+> -- 
+> 1.9.1
+> 
+
 -- 
-1.9.1
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
