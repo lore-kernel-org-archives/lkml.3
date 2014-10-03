@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009AbaJDAhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:37:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45328 "EHLO
+	id S932281AbaJDAiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:38:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45316 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873AbaJCVmq (ORCPT
+	with ESMTP id S1755869AbaJCVmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:46 -0400
+	Fri, 3 Oct 2014 17:42:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <jroedel@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3.16 152/357] iommu/vt-d: Check return value of acpi_bus_get_device()
-Date: Fri,  3 Oct 2014 14:28:58 -0700
-Message-Id: <20141003212938.037461480@linuxfoundation.org>
+        "Lee, Chun-Yi" <jlee@suse.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 149/357] ACPI / RTC: Fix CMOS RTC opregion handler accesses to wrong addresses
+Date: Fri,  3 Oct 2014 14:28:55 -0700
+Message-Id: <20141003212937.951653512@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,36 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <jroedel@suse.de>
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
 
-commit c0df975f9045d6b2b13d88746e628ac308ff49ea upstream.
+commit 9389f46e9782ea5e56fbd7b2e59ba7c08f3ba86b upstream.
 
-Checking adev == NULL is not sufficient as
-acpi_bus_get_device() might not touch the value of this
-parameter in an error case, so check the return value
-directly.
+The value64 parameter is an u64 point that used to transfer the value
+for write to CMOS, or used to return the value that's read from CMOS.
 
-Fixes: ed40356b5fcf1ce28e026ab39c5b2b6939068b50
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
-Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+The value64 is an u64 point, so don't need get address again. It causes
+acpi_cmos_rtc_space_handler always return 0 to reader and didn't write
+expected value to CMOS.
+
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/dmar.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/acpi/acpi_cmos_rtc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -677,8 +677,7 @@ static int __init dmar_acpi_dev_scope_in
- 				       andd->object_name);
- 				continue;
- 			}
--			acpi_bus_get_device(h, &adev);
--			if (!adev) {
-+			if (acpi_bus_get_device(h, &adev)) {
- 				pr_err("Failed to get device for ACPI object %s\n",
- 				       andd->object_name);
- 				continue;
+--- a/drivers/acpi/acpi_cmos_rtc.c
++++ b/drivers/acpi/acpi_cmos_rtc.c
+@@ -33,7 +33,7 @@ acpi_cmos_rtc_space_handler(u32 function
+ 		      void *handler_context, void *region_context)
+ {
+ 	int i;
+-	u8 *value = (u8 *)&value64;
++	u8 *value = (u8 *)value64;
+ 
+ 	if (address > 0xff || !value64)
+ 		return AE_BAD_PARAMETER;
 
 
