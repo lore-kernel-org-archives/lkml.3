@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758126AbaJCWRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:17:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47123 "EHLO
+	id S932228AbaJCWSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:18:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758074AbaJCWQX (ORCPT
+	with ESMTP id S1758058AbaJCWQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:16:23 -0400
+	Fri, 3 Oct 2014 18:16:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
-Subject: [PATCH 3.14 229/238] serial: 8250_dma: check the result of TX buffer mapping
-Date: Fri,  3 Oct 2014 14:32:24 -0700
-Message-Id: <20141003212920.987307094@linuxfoundation.org>
+        Tero Kristo <t-kristo@ti.com>, Nishanth Menon <nm@ti.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH 3.14 234/238] clk: prevent erronous parsing of children during rate change
+Date: Fri,  3 Oct 2014 14:32:29 -0700
+Message-Id: <20141003212921.152130552@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,56 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+From: Tero Kristo <t-kristo@ti.com>
 
-commit d4089a332883ad969700aac5dd4dd5f1c4fee825 upstream.
+commit 067bb1741c27c8d3b74ac98c0b8fc12b31e67005 upstream.
 
-Using dma_mapping_error() to make sure the mapping did not
-fail.
+In some cases, clocks can switch their parent with clk_set_rate, for
+example clk_mux can do this in some cases. Current implementation of
+clk_change_rate uses un-safe list iteration on the clock children, which
+will cause wrong clocks to be parsed in case any of the clock children
+change their parents during the change rate operation. Fixed by using
+the safe list iterator instead.
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: "Petallo, MauriceX R" <mauricex.r.petallo@intel.com>
+The problem was detected due to some divide by zero errors generated
+by clock init on dra7-evm board, see discussion under
+http://article.gmane.org/gmane.linux.ports.arm.kernel/349180 for details.
+
+Fixes: 71472c0c06cf ("clk: add support for clock reparent on set_rate")
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_dma.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/clk/clk.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -192,21 +192,28 @@ int serial8250_request_dma(struct uart_8
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1487,6 +1487,7 @@ static struct clk *clk_propagate_rate_ch
+ static void clk_change_rate(struct clk *clk)
+ {
+ 	struct clk *child;
++	struct hlist_node *tmp;
+ 	unsigned long old_rate;
+ 	unsigned long best_parent_rate = 0;
+ 	bool skip_set_rate = false;
+@@ -1525,7 +1526,11 @@ static void clk_change_rate(struct clk *
+ 	if (clk->notifier_count && old_rate != clk->rate)
+ 		__clk_notify(clk, POST_RATE_CHANGE, old_rate, clk->rate);
  
- 	dma->rx_buf = dma_alloc_coherent(dma->rxchan->device->dev, dma->rx_size,
- 					&dma->rx_addr, GFP_KERNEL);
--	if (!dma->rx_buf) {
--		dma_release_channel(dma->rxchan);
--		dma_release_channel(dma->txchan);
--		return -ENOMEM;
--	}
-+	if (!dma->rx_buf)
-+		goto err;
- 
- 	/* TX buffer */
- 	dma->tx_addr = dma_map_single(dma->txchan->device->dev,
- 					p->port.state->xmit.buf,
- 					UART_XMIT_SIZE,
- 					DMA_TO_DEVICE);
-+	if (dma_mapping_error(dma->txchan->device->dev, dma->tx_addr)) {
-+		dma_free_coherent(dma->rxchan->device->dev, dma->rx_size,
-+				  dma->rx_buf, dma->rx_addr);
-+		goto err;
-+	}
- 
- 	dev_dbg_ratelimited(p->port.dev, "got both dma channels\n");
- 
- 	return 0;
-+err:
-+	dma_release_channel(dma->rxchan);
-+	dma_release_channel(dma->txchan);
-+
-+	return -ENOMEM;
- }
- EXPORT_SYMBOL_GPL(serial8250_request_dma);
- 
+-	hlist_for_each_entry(child, &clk->children, child_node) {
++	/*
++	 * Use safe iteration, as change_rate can actually swap parents
++	 * for certain clock types.
++	 */
++	hlist_for_each_entry_safe(child, tmp, &clk->children, child_node) {
+ 		/* Skip children who will be reparented to another clock */
+ 		if (child->new_parent && child->new_parent != clk)
+ 			continue;
 
 
