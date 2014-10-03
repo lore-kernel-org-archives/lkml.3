@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759416AbaJDAFr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
+	id S1758227AbaJDAFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:05:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755665AbaJCVxV (ORCPT
+	with ESMTP id S1755676AbaJCVxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 3.14 031/238] arm64: flush TLS registers during exec
-Date: Fri,  3 Oct 2014 14:29:06 -0700
-Message-Id: <20141003212914.660954385@linuxfoundation.org>
+        "=?UTF-8?q?Dave=20 \"Trinity\" =20Jones?=" <davej@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 3.16 245/357] futex: Unlock hb->lock in futex_wait_requeue_pi() error path
+Date: Fri,  3 Oct 2014 14:30:31 -0700
+Message-Id: <20141003212940.862527986@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,83 +28,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit eb35bdd7bca29a13c8ecd44e6fd747a84ce675db upstream.
+commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
 
-Nathan reports that we leak TLS information from the parent context
-during an exec, as we don't clear the TLS registers when flushing the
-thread state.
+futex_wait_requeue_pi() calls futex_wait_setup(). If
+futex_wait_setup() succeeds it returns with hb->lock held and
+preemption disabled. Now the sanity check after this does:
 
-This patch updates the flushing code so that we:
+        if (match_futex(&q.key, &key2)) {
+	   	ret = -EINVAL;
+		goto out_put_keys;
+	}
 
-  (1) Unconditionally zero the tpidr_el0 register (since this is fully
-      context switched for native tasks and zeroed for compat tasks)
+which releases the keys but does not release hb->lock.
 
-  (2) Zero the tp_value state in thread_info before clearing the
-      tpidrr0_el0 register for compat tasks (since this is only writable
-      by the set_tls compat syscall and therefore not fully switched).
+So we happily return to user space with hb->lock held and therefor
+preemption disabled.
 
-A missing compiler barrier is also added to the compat set_tls syscall.
+Unlock hb->lock before taking the exit route.
 
-Acked-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Reported-by: Nathan Lynch <Nathan_Lynch@mentor.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Reported-by: Dave "Trinity" Jones <davej@redhat.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Darren Hart <dvhart@linux.intel.com>
+Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/process.c    |   18 ++++++++++++++++++
- arch/arm64/kernel/sys_compat.c |    6 ++++++
- 2 files changed, 24 insertions(+)
+ kernel/futex.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm64/kernel/process.c
-+++ b/arch/arm64/kernel/process.c
-@@ -187,9 +187,27 @@ void exit_thread(void)
- {
- }
- 
-+static void tls_thread_flush(void)
-+{
-+	asm ("msr tpidr_el0, xzr");
-+
-+	if (is_compat_task()) {
-+		current->thread.tp_value = 0;
-+
-+		/*
-+		 * We need to ensure ordering between the shadow state and the
-+		 * hardware state, so that we don't corrupt the hardware state
-+		 * with a stale shadow state during context switch.
-+		 */
-+		barrier();
-+		asm ("msr tpidrro_el0, xzr");
-+	}
-+}
-+
- void flush_thread(void)
- {
- 	fpsimd_flush_thread();
-+	tls_thread_flush();
- 	flush_ptrace_hw_breakpoint(current);
- }
- 
---- a/arch/arm64/kernel/sys_compat.c
-+++ b/arch/arm64/kernel/sys_compat.c
-@@ -79,6 +79,12 @@ long compat_arm_syscall(struct pt_regs *
- 
- 	case __ARM_NR_compat_set_tls:
- 		current->thread.tp_value = regs->regs[0];
-+
-+		/*
-+		 * Protect against register corruption from context switch.
-+		 * See comment in tls_thread_flush.
-+		 */
-+		barrier();
- 		asm ("msr tpidrro_el0, %0" : : "r" (regs->regs[0]));
- 		return 0;
- 
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2628,6 +2628,7 @@ static int futex_wait_requeue_pi(u32 __u
+ 	 * shared futexes. We need to compare the keys:
+ 	 */
+ 	if (match_futex(&q.key, &key2)) {
++		queue_unlock(hb);
+ 		ret = -EINVAL;
+ 		goto out_put_keys;
+ 	}
 
 
