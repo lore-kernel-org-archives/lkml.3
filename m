@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982AbaJCF1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 01:27:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60765 "EHLO
+	id S1752906AbaJCF1Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 01:27:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60766 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaJCF1O (ORCPT
+	with ESMTP id S1751240AbaJCF1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 01:27:14 -0400
-Date: Thu, 2 Oct 2014 22:26:06 -0700
+Date: Thu, 2 Oct 2014 22:26:19 -0700
 From: tip-bot for Waiman Long <tipbot@zytor.com>
-Message-ID: <tip-8fa7d87f91479f7124142ca4ad93a37b80f8c1c0@git.kernel.org>
+Message-ID: <tip-4598a0a6d22fadfb7b37f2b44ee7fdcb24632fcf@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         mingo@redhat.com, hpa@zytor.com, mingo@kernel.org, jolsa@kernel.org,
         peterz@infradead.org, namhyung@kernel.org, Waiman.Long@hp.com,
@@ -20,12 +20,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@kernel.org, Waiman.Long@hp.com,
         doug.hatch@hp.com, adrian.hunter@intel.com, tglx@linutronix.de,
         scott.norton@hp.com, dzickus@redhat.com
-In-Reply-To: <1412021249-19201-2-git-send-email-Waiman.Long@hp.com>
-References: <1412021249-19201-2-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1412098575-27863-3-git-send-email-Waiman.Long@hp.com>
+References: <1412098575-27863-3-git-send-email-Waiman.Long@hp.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf symbols:
-  Encapsulate dsos list head into struct dsos
-Git-Commit-ID: 8fa7d87f91479f7124142ca4ad93a37b80f8c1c0
+  Improve DSO long names lookup speed with rbtree
+Git-Commit-ID: 4598a0a6d22fadfb7b37f2b44ee7fdcb24632fcf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,30 +38,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8fa7d87f91479f7124142ca4ad93a37b80f8c1c0
-Gitweb:     http://git.kernel.org/tip/8fa7d87f91479f7124142ca4ad93a37b80f8c1c0
+Commit-ID:  4598a0a6d22fadfb7b37f2b44ee7fdcb24632fcf
+Gitweb:     http://git.kernel.org/tip/4598a0a6d22fadfb7b37f2b44ee7fdcb24632fcf
 Author:     Waiman Long <Waiman.Long@hp.com>
-AuthorDate: Mon, 29 Sep 2014 16:07:28 -0400
+AuthorDate: Tue, 30 Sep 2014 13:36:15 -0400
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 30 Sep 2014 12:11:49 -0300
+CommitDate: Wed, 1 Oct 2014 14:39:57 -0300
 
-perf symbols: Encapsulate dsos list head into struct dsos
+perf symbols: Improve DSO long names lookup speed with rbtree
 
-This is a precursor patch to enable long name searching of DSOs using
-a rbtree.
+With workload that spawns and destroys many threads and processes, it
+was found that perf-mem could took a long time to post-process the perf
+data after the target workload had completed its operation.
 
-In this patch, a new dsos structure is created which contains only a
-list head structure for the moment.
+The performance bottleneck was found to be the lookup and insertion of
+the new DSO structures (thousands of them in this case).
 
-The new dsos structure is used, in turn, in the machine structure for
-the user_dsos and kernel_dsos fields.
+In a dual-socket Ivy-Bridge E7-4890 v2 machine (30-core, 60-thread), the
+perf profile below shows what perf was doing after the profiled AIM7
+shared workload completed:
 
-Only the following 3 dsos functions are modified to accept the new dsos
-structure parameter instead of list_head:
+-     83.94%  perf  libc-2.11.3.so     [.] __strcmp_sse42
+   - __strcmp_sse42
+      - 99.82% map__new
+           machine__process_mmap_event
+           perf_session_deliver_event
+           perf_session__process_event
+           __perf_session__process_events
+           cmd_record
+           cmd_mem
+           run_builtin
+           main
+           __libc_start_main
+-     13.17%  perf  perf               [.] __dsos__findnew
+     __dsos__findnew
+     map__new
+     machine__process_mmap_event
+     perf_session_deliver_event
+     perf_session__process_event
+     __perf_session__process_events
+     cmd_record
+     cmd_mem
+     run_builtin
+     main
+     __libc_start_main
 
- - dsos__add()
- - dsos__find()
- - __dsos__findnew()
+So about 97% of CPU times were spent in the map__new() function trying
+to insert new DSO entry into the DSO linked list. The whole
+post-processing step took about 9 minutes.
+
+The DSO structures are currently searched linearly. So the total
+processing time will be proportional to n^2.
+
+To overcome this performance problem, the DSO code is modified to also
+put the DSO structures in a RB tree sorted by its long name in
+additional to being in a simple linked list. With this change, the
+processing time will become proportional to n*log(n) which will be much
+quicker for large n. However, the short name will still be searched
+using the old linear searching method.  With that patch in place, the
+same perf-mem post-processing step took less than 30 seconds to
+complete.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 Cc: Adrian Hunter <adrian.hunter@intel.com>
@@ -73,324 +109,155 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Scott J Norton <scott.norton@hp.com>
-Link: http://lkml.kernel.org/r/1412021249-19201-2-git-send-email-Waiman.Long@hp.com
-[ Move struct dsos to dso.h to reduce the dso methods depends on machine.h ]
+Link: http://lkml.kernel.org/r/1412098575-27863-3-git-send-email-Waiman.Long@hp.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/dso.c         | 17 +++++++++--------
- tools/perf/util/dso.h         | 13 ++++++++++---
- tools/perf/util/header.c      | 32 ++++++++++++++++++--------------
- tools/perf/util/machine.c     | 24 ++++++++++++------------
- tools/perf/util/machine.h     |  5 +++--
- tools/perf/util/probe-event.c |  3 ++-
- tools/perf/util/symbol-elf.c  |  7 ++++++-
- 7 files changed, 60 insertions(+), 41 deletions(-)
+ tools/perf/util/dso.c     | 70 ++++++++++++++++++++++++++++++++++++++++++++---
+ tools/perf/util/dso.h     |  5 +++-
+ tools/perf/util/machine.c |  1 +
+ 3 files changed, 71 insertions(+), 5 deletions(-)
 
 diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
-index 55e39dc..901a58f 100644
+index 901a58f..0247acf 100644
 --- a/tools/perf/util/dso.c
 +++ b/tools/perf/util/dso.c
-@@ -851,35 +851,36 @@ bool __dsos__read_build_ids(struct list_head *head, bool with_hits)
- 	return have_build_id;
+@@ -653,6 +653,65 @@ struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
+ 	return dso;
  }
  
--void dsos__add(struct list_head *head, struct dso *dso)
-+void dsos__add(struct dsos *dsos, struct dso *dso)
++/*
++ * Find a matching entry and/or link current entry to RB tree.
++ * Either one of the dso or name parameter must be non-NULL or the
++ * function will not work.
++ */
++static struct dso *dso__findlink_by_longname(struct rb_root *root,
++					     struct dso *dso, const char *name)
++{
++	struct rb_node **p = &root->rb_node;
++	struct rb_node  *parent = NULL;
++
++	if (!name)
++		name = dso->long_name;
++	/*
++	 * Find node with the matching name
++	 */
++	while (*p) {
++		struct dso *this = rb_entry(*p, struct dso, rb_node);
++		int rc = strcmp(name, this->long_name);
++
++		parent = *p;
++		if (rc == 0) {
++			/*
++			 * In case the new DSO is a duplicate of an existing
++			 * one, print an one-time warning & put the new entry
++			 * at the end of the list of duplicates.
++			 */
++			if (!dso || (dso == this))
++				return this;	/* Find matching dso */
++			/*
++			 * The core kernel DSOs may have duplicated long name.
++			 * In this case, the short name should be different.
++			 * Comparing the short names to differentiate the DSOs.
++			 */
++			rc = strcmp(dso->short_name, this->short_name);
++			if (rc == 0) {
++				pr_err("Duplicated dso name: %s\n", name);
++				return NULL;
++			}
++		}
++		if (rc < 0)
++			p = &parent->rb_left;
++		else
++			p = &parent->rb_right;
++	}
++	if (dso) {
++		/* Add new node and rebalance tree */
++		rb_link_node(&dso->rb_node, parent, p);
++		rb_insert_color(&dso->rb_node, root);
++	}
++	return NULL;
++}
++
++static inline struct dso *
++dso__find_by_longname(const struct rb_root *root, const char *name)
++{
++	return dso__findlink_by_longname((struct rb_root *)root, NULL, name);
++}
++
+ void dso__set_long_name(struct dso *dso, const char *name, bool name_allocated)
  {
--	list_add_tail(&dso->node, head);
-+	list_add_tail(&dso->node, &dsos->head);
+ 	if (name == NULL)
+@@ -755,6 +814,7 @@ struct dso *dso__new(const char *name)
+ 		dso->a2l_fails = 1;
+ 		dso->kernel = DSO_TYPE_USER;
+ 		dso->needs_swap = DSO_SWAP__UNSET;
++		RB_CLEAR_NODE(&dso->rb_node);
+ 		INIT_LIST_HEAD(&dso->node);
+ 		INIT_LIST_HEAD(&dso->data.open_entry);
+ 	}
+@@ -765,6 +825,10 @@ struct dso *dso__new(const char *name)
+ void dso__delete(struct dso *dso)
+ {
+ 	int i;
++
++	if (!RB_EMPTY_NODE(&dso->rb_node))
++		pr_err("DSO %s is still in rbtree when being deleted!\n",
++		       dso->long_name);
+ 	for (i = 0; i < MAP__NR_TYPES; ++i)
+ 		symbols__delete(&dso->symbols[i]);
+ 
+@@ -854,6 +918,7 @@ bool __dsos__read_build_ids(struct list_head *head, bool with_hits)
+ void dsos__add(struct dsos *dsos, struct dso *dso)
+ {
+ 	list_add_tail(&dso->node, &dsos->head);
++	dso__findlink_by_longname(&dsos->root, dso, NULL);
  }
  
--struct dso *dsos__find(const struct list_head *head, const char *name, bool cmp_short)
-+struct dso *dsos__find(const struct dsos *dsos, const char *name,
-+		       bool cmp_short)
- {
- 	struct dso *pos;
- 
- 	if (cmp_short) {
--		list_for_each_entry(pos, head, node)
-+		list_for_each_entry(pos, &dsos->head, node)
- 			if (strcmp(pos->short_name, name) == 0)
+ struct dso *dsos__find(const struct dsos *dsos, const char *name,
+@@ -867,10 +932,7 @@ struct dso *dsos__find(const struct dsos *dsos, const char *name,
  				return pos;
  		return NULL;
  	}
--	list_for_each_entry(pos, head, node)
-+	list_for_each_entry(pos, &dsos->head, node)
- 		if (strcmp(pos->long_name, name) == 0)
- 			return pos;
- 	return NULL;
+-	list_for_each_entry(pos, &dsos->head, node)
+-		if (strcmp(pos->long_name, name) == 0)
+-			return pos;
+-	return NULL;
++	return dso__find_by_longname(&dsos->root, name);
  }
  
--struct dso *__dsos__findnew(struct list_head *head, const char *name)
-+struct dso *__dsos__findnew(struct dsos *dsos, const char *name)
- {
--	struct dso *dso = dsos__find(head, name, false);
-+	struct dso *dso = dsos__find(dsos, name, false);
- 
- 	if (!dso) {
- 		dso = dso__new(name);
- 		if (dso != NULL) {
--			dsos__add(head, dso);
-+			dsos__add(dsos, dso);
- 			dso__set_basename(dso);
- 		}
- 	}
+ struct dso *__dsos__findnew(struct dsos *dsos, const char *name)
 diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index 5e463c0..b63dc98 100644
+index b63dc98..acb651a 100644
 --- a/tools/perf/util/dso.h
 +++ b/tools/perf/util/dso.h
-@@ -90,6 +90,13 @@ struct dso_cache {
- 	char data[0];
+@@ -91,14 +91,17 @@ struct dso_cache {
  };
  
-+/*
-+ * DSOs are put into a list for fast iteration.
-+ */
-+struct dsos {
-+	struct list_head head;
-+};
-+
+ /*
+- * DSOs are put into a list for fast iteration.
++ * DSOs are put into both a list for fast iteration and rbtree for fast
++ * long name lookup.
+  */
+ struct dsos {
+ 	struct list_head head;
++	struct rb_root	 root;	/* rbtree root sorted by long name */
+ };
+ 
  struct dso {
  	struct list_head node;
++	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
  	struct rb_root	 symbols[MAP__NR_TYPES];
-@@ -224,10 +231,10 @@ struct map *dso__new_map(const char *name);
- struct dso *dso__kernel_findnew(struct machine *machine, const char *name,
- 				const char *short_name, int dso_type);
- 
--void dsos__add(struct list_head *head, struct dso *dso);
--struct dso *dsos__find(const struct list_head *head, const char *name,
-+void dsos__add(struct dsos *dsos, struct dso *dso);
-+struct dso *dsos__find(const struct dsos *dsos, const char *name,
- 		       bool cmp_short);
--struct dso *__dsos__findnew(struct list_head *head, const char *name);
-+struct dso *__dsos__findnew(struct dsos *dsos, const char *name);
- bool __dsos__read_build_ids(struct list_head *head, bool with_hits);
- 
- size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 158c787..ce0de00 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -214,11 +214,11 @@ static int machine__hit_all_dsos(struct machine *machine)
- {
- 	int err;
- 
--	err = __dsos__hit_all(&machine->kernel_dsos);
-+	err = __dsos__hit_all(&machine->kernel_dsos.head);
- 	if (err)
- 		return err;
- 
--	return __dsos__hit_all(&machine->user_dsos);
-+	return __dsos__hit_all(&machine->user_dsos.head);
- }
- 
- int dsos__hit_all(struct perf_session *session)
-@@ -288,11 +288,12 @@ static int machine__write_buildid_table(struct machine *machine, int fd)
- 		umisc = PERF_RECORD_MISC_GUEST_USER;
- 	}
- 
--	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine,
-+	err = __dsos__write_buildid_table(&machine->kernel_dsos.head, machine,
- 					  machine->pid, kmisc, fd);
- 	if (err == 0)
--		err = __dsos__write_buildid_table(&machine->user_dsos, machine,
--						  machine->pid, umisc, fd);
-+		err = __dsos__write_buildid_table(&machine->user_dsos.head,
-+						  machine, machine->pid, umisc,
-+						  fd);
- 	return err;
- }
- 
-@@ -455,9 +456,10 @@ static int __dsos__cache_build_ids(struct list_head *head,
- 
- static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
- {
--	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, machine,
-+	int ret = __dsos__cache_build_ids(&machine->kernel_dsos.head, machine,
- 					  debugdir);
--	ret |= __dsos__cache_build_ids(&machine->user_dsos, machine, debugdir);
-+	ret |= __dsos__cache_build_ids(&machine->user_dsos.head, machine,
-+				       debugdir);
- 	return ret;
- }
- 
-@@ -483,8 +485,10 @@ static int perf_session__cache_build_ids(struct perf_session *session)
- 
- static bool machine__read_build_ids(struct machine *machine, bool with_hits)
- {
--	bool ret = __dsos__read_build_ids(&machine->kernel_dsos, with_hits);
--	ret |= __dsos__read_build_ids(&machine->user_dsos, with_hits);
-+	bool ret;
-+
-+	ret  = __dsos__read_build_ids(&machine->kernel_dsos.head, with_hits);
-+	ret |= __dsos__read_build_ids(&machine->user_dsos.head, with_hits);
- 	return ret;
- }
- 
-@@ -1548,7 +1552,7 @@ static int __event_process_build_id(struct build_id_event *bev,
- 				    struct perf_session *session)
- {
- 	int err = -1;
--	struct list_head *head;
-+	struct dsos *dsos;
- 	struct machine *machine;
- 	u16 misc;
- 	struct dso *dso;
-@@ -1563,22 +1567,22 @@ static int __event_process_build_id(struct build_id_event *bev,
- 	switch (misc) {
- 	case PERF_RECORD_MISC_KERNEL:
- 		dso_type = DSO_TYPE_KERNEL;
--		head = &machine->kernel_dsos;
-+		dsos = &machine->kernel_dsos;
- 		break;
- 	case PERF_RECORD_MISC_GUEST_KERNEL:
- 		dso_type = DSO_TYPE_GUEST_KERNEL;
--		head = &machine->kernel_dsos;
-+		dsos = &machine->kernel_dsos;
- 		break;
- 	case PERF_RECORD_MISC_USER:
- 	case PERF_RECORD_MISC_GUEST_USER:
- 		dso_type = DSO_TYPE_USER;
--		head = &machine->user_dsos;
-+		dsos = &machine->user_dsos;
- 		break;
- 	default:
- 		goto out;
- 	}
- 
--	dso = __dsos__findnew(head, filename);
-+	dso = __dsos__findnew(dsos, filename);
- 	if (dso != NULL) {
- 		char sbuild_id[BUILD_ID_SIZE * 2 + 1];
- 
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	void		 *a2l;
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index b2ec38b..49a75ec 100644
+index 49a75ec..b7d477f 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -17,8 +17,8 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
- {
- 	map_groups__init(&machine->kmaps);
- 	RB_CLEAR_NODE(&machine->rb_node);
--	INIT_LIST_HEAD(&machine->user_dsos);
--	INIT_LIST_HEAD(&machine->kernel_dsos);
-+	INIT_LIST_HEAD(&machine->user_dsos.head);
-+	INIT_LIST_HEAD(&machine->kernel_dsos.head);
- 
- 	machine->threads = RB_ROOT;
- 	INIT_LIST_HEAD(&machine->dead_threads);
-@@ -72,11 +72,11 @@ out_delete:
- 	return NULL;
- }
- 
--static void dsos__delete(struct list_head *dsos)
-+static void dsos__delete(struct dsos *dsos)
- {
+@@ -77,6 +77,7 @@ static void dsos__delete(struct dsos *dsos)
  	struct dso *pos, *n;
  
--	list_for_each_entry_safe(pos, n, dsos, node) {
-+	list_for_each_entry_safe(pos, n, &dsos->head, node) {
+ 	list_for_each_entry_safe(pos, n, &dsos->head, node) {
++		RB_CLEAR_NODE(&pos->rb_node);
  		list_del(&pos->node);
  		dso__delete(pos);
  	}
-@@ -477,23 +477,23 @@ struct map *machine__new_module(struct machine *machine, u64 start,
- size_t machines__fprintf_dsos(struct machines *machines, FILE *fp)
- {
- 	struct rb_node *nd;
--	size_t ret = __dsos__fprintf(&machines->host.kernel_dsos, fp) +
--		     __dsos__fprintf(&machines->host.user_dsos, fp);
-+	size_t ret = __dsos__fprintf(&machines->host.kernel_dsos.head, fp) +
-+		     __dsos__fprintf(&machines->host.user_dsos.head, fp);
- 
- 	for (nd = rb_first(&machines->guests); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret += __dsos__fprintf(&pos->kernel_dsos, fp);
--		ret += __dsos__fprintf(&pos->user_dsos, fp);
-+		ret += __dsos__fprintf(&pos->kernel_dsos.head, fp);
-+		ret += __dsos__fprintf(&pos->user_dsos.head, fp);
- 	}
- 
- 	return ret;
- }
- 
--size_t machine__fprintf_dsos_buildid(struct machine *machine, FILE *fp,
-+size_t machine__fprintf_dsos_buildid(struct machine *m, FILE *fp,
- 				     bool (skip)(struct dso *dso, int parm), int parm)
- {
--	return __dsos__fprintf_buildid(&machine->kernel_dsos, fp, skip, parm) +
--	       __dsos__fprintf_buildid(&machine->user_dsos, fp, skip, parm);
-+	return __dsos__fprintf_buildid(&m->kernel_dsos.head, fp, skip, parm) +
-+	       __dsos__fprintf_buildid(&m->user_dsos.head, fp, skip, parm);
- }
- 
- size_t machines__fprintf_dsos_buildid(struct machines *machines, FILE *fp,
-@@ -994,7 +994,7 @@ static bool machine__uses_kcore(struct machine *machine)
- {
- 	struct dso *dso;
- 
--	list_for_each_entry(dso, &machine->kernel_dsos, node) {
-+	list_for_each_entry(dso, &machine->kernel_dsos.head, node) {
- 		if (dso__is_kcore(dso))
- 			return true;
- 	}
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 6a6bcc1..2b651a7 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -4,6 +4,7 @@
- #include <sys/types.h>
- #include <linux/rbtree.h>
- #include "map.h"
-+#include "dso.h"
- #include "event.h"
- 
- struct addr_location;
-@@ -32,8 +33,8 @@ struct machine {
- 	struct list_head  dead_threads;
- 	struct thread	  *last_match;
- 	struct vdso_info  *vdso_info;
--	struct list_head  user_dsos;
--	struct list_head  kernel_dsos;
-+	struct dsos	  user_dsos;
-+	struct dsos	  kernel_dsos;
- 	struct map_groups kmaps;
- 	struct map	  *vmlinux_maps[MAP__NR_TYPES];
- 	u64		  kernel_start;
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index be37b5a..c150ca4 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -184,7 +184,8 @@ static struct dso *kernel_get_module_dso(const char *module)
- 	const char *vmlinux_name;
- 
- 	if (module) {
--		list_for_each_entry(dso, &host_machine->kernel_dsos, node) {
-+		list_for_each_entry(dso, &host_machine->kernel_dsos.head,
-+				    node) {
- 			if (strncmp(dso->short_name + 1, module,
- 				    dso->short_name_len - 2) == 0)
- 				goto found;
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 2a92e10..1e23a5b 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -6,6 +6,7 @@
- #include <inttypes.h>
- 
- #include "symbol.h"
-+#include "machine.h"
- #include "vdso.h"
- #include <symbol/kallsyms.h>
- #include "debug.h"
-@@ -929,7 +930,11 @@ int dso__load_sym(struct dso *dso, struct map *map,
- 				}
- 				curr_dso->symtab_type = dso->symtab_type;
- 				map_groups__insert(kmap->kmaps, curr_map);
--				dsos__add(&dso->node, curr_dso);
-+				/*
-+				 * The new DSO should go to the kernel DSOS
-+				 */
-+				dsos__add(&map->groups->machine->kernel_dsos,
-+					  curr_dso);
- 				dso__set_loaded(curr_dso, map->type);
- 			} else
- 				curr_dso = curr_map->dso;
