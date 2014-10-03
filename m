@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045AbaJCVxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45705 "EHLO
+	id S1757965AbaJDAHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:07:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755275AbaJCVxL (ORCPT
+	with ESMTP id S1756708AbaJCVxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:11 -0400
+	Fri, 3 Oct 2014 17:53:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.14 016/238] drm/radeon: load the lm63 driver for an lm64 thermal chip.
-Date: Fri,  3 Oct 2014 14:28:51 -0700
-Message-Id: <20141003212914.182404669@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 028/238] ibmveth: Fix endian issues with rx_no_buffer statistic
+Date: Fri,  3 Oct 2014 14:29:03 -0700
+Message-Id: <20141003212914.568733934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,38 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 5dc355325b648dc9b4cf3bea4d968de46fd59215 upstream.
+commit cbd5228199d8be45d895d9d0cc2b8ce53835fc21 upstream.
 
-Looks like the lm63 driver supports the lm64 as well.
+Hidden away in the last 8 bytes of the buffer_list page is a solitary
+statistic. It needs to be byte swapped or else ethtool -S will
+produce numbers that terrify the user.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Since we do this in multiple places, create a helper function with a
+comment explaining what is going on.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/ibm/ibmveth.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -1955,7 +1955,7 @@ static const char *thermal_controller_na
- 	"adm1032",
- 	"adm1030",
- 	"max6649",
--	"lm64",
-+	"lm63", /* lm64 */
- 	"f75375",
- 	"asc7xxx",
- };
-@@ -1966,7 +1966,7 @@ static const char *pp_lib_thermal_contro
- 	"adm1032",
- 	"adm1030",
- 	"max6649",
--	"lm64",
-+	"lm63", /* lm64 */
- 	"f75375",
- 	"RV6xx",
- 	"RV770",
+--- a/drivers/net/ethernet/ibm/ibmveth.c
++++ b/drivers/net/ethernet/ibm/ibmveth.c
+@@ -292,6 +292,18 @@ failure:
+ 	atomic_add(buffers_added, &(pool->available));
+ }
+ 
++/*
++ * The final 8 bytes of the buffer list is a counter of frames dropped
++ * because there was not a buffer in the buffer list capable of holding
++ * the frame.
++ */
++static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
++{
++	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
++
++	adapter->rx_no_buffer = be64_to_cpup(p);
++}
++
+ /* replenish routine */
+ static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
+ {
+@@ -307,8 +319,7 @@ static void ibmveth_replenish_task(struc
+ 			ibmveth_replenish_buffer_pool(adapter, pool);
+ 	}
+ 
+-	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
+-						4096 - 8);
++	ibmveth_update_rx_no_buffer(adapter);
+ }
+ 
+ /* empty and free ana buffer pool - also used to do cleanup in error paths */
+@@ -698,8 +709,7 @@ static int ibmveth_close(struct net_devi
+ 
+ 	free_irq(netdev->irq, netdev);
+ 
+-	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
+-						4096 - 8);
++	ibmveth_update_rx_no_buffer(adapter);
+ 
+ 	ibmveth_cleanup(adapter);
+ 
 
 
