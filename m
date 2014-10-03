@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590AbaJCVup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:50:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45629 "EHLO
+	id S1755292AbaJCVur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:50:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45628 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238AbaJCVpY (ORCPT
+	with ESMTP id S1756237AbaJCVpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:45:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        David Hildenbrand <dahi@linux.vnet.ibm.com>
-Subject: [PATCH 3.16 209/357] KVM: s390: Fix user triggerable bug in dead code
-Date: Fri,  3 Oct 2014 14:29:55 -0700
-Message-Id: <20141003212939.812323982@linuxfoundation.org>
+        Zefan Li <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH 3.16 208/357] cgroup: fix unbalanced locking
+Date: Fri,  3 Oct 2014 14:29:54 -0700
+Message-Id: <20141003212939.783332925@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,50 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 614a80e474b227cace52fd6e3c790554db8a396e upstream.
+commit eb4aec84d6bdf98d00cedb41c18000f7a31e648a upstream.
 
-In the early days, we had some special handling for the
-KVM_EXIT_S390_SIEIC exit, but this was gone in 2009 with commit
-d7b0b5eb3000 (KVM: s390: Make psw available on all exits, not
-just a subset).
+cgroup_pidlist_start() holds cgrp->pidlist_mutex and then calls
+pidlist_array_load(), and cgroup_pidlist_stop() releases the mutex.
 
-Now this switch statement is just a sanity check for userspace
-not messing with the kvm_run structure. Unfortunately, this
-allows userspace to trigger a kernel BUG. Let's just remove
-this switch statement.
+It is wrong that we release the mutex in the failure path in
+pidlist_array_load(), because cgroup_pidlist_stop() will be called
+no matter if cgroup_pidlist_start() returns errno or not.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-Reviewed-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Fixes: 4bac00d16a8760eae7205e41d2c246477d42a210
+Signed-off-by: Zefan Li <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Cong Wang <xiyou.wangcong@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kvm/kvm-s390.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ kernel/cgroup.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -1286,19 +1286,6 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_v
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3833,7 +3833,6 @@ static int pidlist_array_load(struct cgr
  
- 	kvm_s390_vcpu_start(vcpu);
- 
--	switch (kvm_run->exit_reason) {
--	case KVM_EXIT_S390_SIEIC:
--	case KVM_EXIT_UNKNOWN:
--	case KVM_EXIT_INTR:
--	case KVM_EXIT_S390_RESET:
--	case KVM_EXIT_S390_UCONTROL:
--	case KVM_EXIT_S390_TSCH:
--	case KVM_EXIT_DEBUG:
--		break;
--	default:
--		BUG();
--	}
--
- 	vcpu->arch.sie_block->gpsw.mask = kvm_run->psw_mask;
- 	vcpu->arch.sie_block->gpsw.addr = kvm_run->psw_addr;
- 	if (kvm_run->kvm_dirty_regs & KVM_SYNC_PREFIX) {
+ 	l = cgroup_pidlist_find_create(cgrp, type);
+ 	if (!l) {
+-		mutex_unlock(&cgrp->pidlist_mutex);
+ 		pidlist_free(array);
+ 		return -ENOMEM;
+ 	}
 
 
