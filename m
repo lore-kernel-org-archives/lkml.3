@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851AbaJCXeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:34:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46349 "EHLO
+	id S1760205AbaJCXeN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46443 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757356AbaJCWDu (ORCPT
+	with ESMTP id S1756588AbaJCWDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.16 325/357] media: em28xx: fix VBI handling logic
-Date: Fri,  3 Oct 2014 14:31:51 -0700
-Message-Id: <20141003212943.229859240@linuxfoundation.org>
+        Keerthy <j-keerthy@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Nishanth Menon <nm@ti.com>,
+        Paul Walmsley <paul@pwsan.com>
+Subject: [PATCH 3.14 111/238] ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists
+Date: Fri,  3 Oct 2014 14:30:26 -0700
+Message-Id: <20141003212917.228415848@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,42 +26,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+From: Rajendra Nayak <rnayak@ti.com>
 
-commit c7854c2c5d692a329b4d9a9a73bcf36ae137ee7c upstream.
+commit f7f7a29bf0cf25af23f37e5b5bf1368b85705286 upstream.
 
-When both VBI and video are streaming, and video stream is stopped,
-a subsequent trial to restart it will fail, because S_FMT will
-return -EBUSY.
+To deal with IPs which are specific to dra74x and dra72x, maintain seperate
+ocp interface lists, while keeping the common list for all common IPs.
 
-That prevents applications like zvbi to work properly.
+Move USB OTG SS4 to dra74x only list since its unavailable in
+dra72x and is giving an abort during boot. The dra72x only list
+is empty for now and a placeholder for future hwmod additions which
+are specific to dra72x.
 
-Please notice that, while this fix it fully for zvbi, the
-best is to get rid of streaming_users and res_get logic as a hole.
-
-However, this single-line patch is better to be merged at -stable.
-
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Fixes: d904b38df0db13 ("ARM: DRA7: hwmod: Add SYSCONFIG for usb_otg_ss")
+Reported-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Rajendra Nayak <rnayak@ti.com>
+Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+Tested-by: Nishanth Menon <nm@ti.com>
+[paul@pwsan.com: fixed comment style to conform with CodingStyle]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/usb/em28xx/em28xx-video.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-omap2/omap_hwmod.c          |    3 +++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   22 ++++++++++++++++++++--
+ 2 files changed, 23 insertions(+), 2 deletions(-)
 
---- a/drivers/media/usb/em28xx/em28xx-video.c
-+++ b/drivers/media/usb/em28xx/em28xx-video.c
-@@ -1344,7 +1344,7 @@ static int vidioc_s_fmt_vid_cap(struct f
- 	struct em28xx *dev = video_drvdata(file);
- 	struct em28xx_v4l2 *v4l2 = dev->v4l2;
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -3349,6 +3349,9 @@ int __init omap_hwmod_register_links(str
+ 	if (!ois)
+ 		return 0;
  
--	if (v4l2->streaming_users > 0)
-+	if (vb2_is_busy(&v4l2->vb_vidq))
- 		return -EBUSY;
++	if (ois[0] == NULL) /* Empty list */
++		return 0;
++
+ 	if (!linkspace) {
+ 		if (_alloc_linkspace(ois)) {
+ 			pr_err("omap_hwmod: could not allocate link space\n");
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -35,6 +35,7 @@
+ #include "i2c.h"
+ #include "mmc.h"
+ #include "wd_timer.h"
++#include "soc.h"
  
- 	vidioc_try_fmt_vid_cap(file, priv, f);
+ /* Base offset for all DRA7XX interrupts external to MPUSS */
+ #define DRA7XX_IRQ_GIC_START	32
+@@ -2707,7 +2708,6 @@ static struct omap_hwmod_ocp_if *dra7xx_
+ 	&dra7xx_l4_per3__usb_otg_ss1,
+ 	&dra7xx_l4_per3__usb_otg_ss2,
+ 	&dra7xx_l4_per3__usb_otg_ss3,
+-	&dra7xx_l4_per3__usb_otg_ss4,
+ 	&dra7xx_l3_main_1__vcp1,
+ 	&dra7xx_l4_per2__vcp1,
+ 	&dra7xx_l3_main_1__vcp2,
+@@ -2716,8 +2716,26 @@ static struct omap_hwmod_ocp_if *dra7xx_
+ 	NULL,
+ };
+ 
++static struct omap_hwmod_ocp_if *dra74x_hwmod_ocp_ifs[] __initdata = {
++	&dra7xx_l4_per3__usb_otg_ss4,
++	NULL,
++};
++
++static struct omap_hwmod_ocp_if *dra72x_hwmod_ocp_ifs[] __initdata = {
++	NULL,
++};
++
+ int __init dra7xx_hwmod_init(void)
+ {
++	int ret;
++
+ 	omap_hwmod_init();
+-	return omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
++	ret = omap_hwmod_register_links(dra7xx_hwmod_ocp_ifs);
++
++	if (!ret && soc_is_dra74x())
++		return omap_hwmod_register_links(dra74x_hwmod_ocp_ifs);
++	else if (!ret && soc_is_dra72x())
++		return omap_hwmod_register_links(dra72x_hwmod_ocp_ifs);
++
++	return ret;
+ }
 
 
