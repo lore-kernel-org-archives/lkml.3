@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341AbaJCW6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:58:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
+	id S1759373AbaJCW67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:58:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47279 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576AbaJCWX7 (ORCPT
+	with ESMTP id S932570AbaJCWX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 037/143] xtensa: fix TLBTEMP_BASE_2 region handling in fast_second_level_miss
-Date: Fri,  3 Oct 2014 14:33:52 -0700
-Message-Id: <20141003213315.602656669@linuxfoundation.org>
+        Ruki Sekiya <sekiya.ruki@lab.ntt.co.jp>,
+        Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 025/143] cfq-iosched: Fix wrong children_weight calculation
+Date: Fri,  3 Oct 2014 14:33:40 -0700
+Message-Id: <20141003213315.252978829@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,61 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
 
-commit 7128039fe2dd3d59da9e4ffa036f3aaa3ba87b9f upstream.
+commit e15693ef18e13e3e6bffe891fe140f18b8ff6d07 upstream.
 
-Current definition of TLBTEMP_BASE_2 is always 32K above the
-TLBTEMP_BASE_1, whereas fast_second_level_miss handler for the TLBTEMP
-region analyzes virtual address bit (PAGE_SHIFT + DCACHE_ALIAS_ORDER)
-to determine TLBTEMP region where the fault happened. The size of the
-TLBTEMP region is also checked incorrectly: not 64K, but twice data
-cache way size (whicht may as well be less than the instruction cache
-way size).
+cfq_group_service_tree_add() is applying new_weight at the beginning of
+the function via cfq_update_group_weight().
+This actually allows weight to change between adding it to and subtracting
+it from children_weight, and triggers WARN_ON_ONCE() in
+cfq_group_service_tree_del(), or even causes oops by divide error during
+vfr calculation in cfq_group_service_tree_add().
 
-Fix TLBTEMP_BASE_2 to be TLBTEMP_BASE_1 + data cache way size.
-Provide TLBTEMP_SIZE that is a greater of doubled data cache way size or
-the instruction cache way size, and use it to determine if the second
-level TLB miss occured in the TLBTEMP region.
+The detailed scenario is as follows:
+1. Create blkio cgroups X and Y as a child of X.
+   Set X's weight to 500 and perform some I/O to apply new_weight.
+   This X's I/O completes before starting Y's I/O.
+2. Y starts I/O and cfq_group_service_tree_add() is called with Y.
+3. cfq_group_service_tree_add() walks up the tree during children_weight
+   calculation and adds parent X's weight (500) to children_weight of root.
+   children_weight becomes 500.
+4. Set X's weight to 1000.
+5. X starts I/O and cfq_group_service_tree_add() is called with X.
+6. cfq_group_service_tree_add() applies its new_weight (1000).
+7. I/O of Y completes and cfq_group_service_tree_del() is called with Y.
+8. I/O of X completes and cfq_group_service_tree_del() is called with X.
+9. cfq_group_service_tree_del() subtracts X's weight (1000) from
+   children_weight of root. children_weight becomes -500.
+   This triggers WARN_ON_ONCE().
+10. Set X's weight to 500.
+11. X starts I/O and cfq_group_service_tree_add() is called with X.
+12. cfq_group_service_tree_add() applies its new_weight (500) and adds it
+    to children_weight of root. children_weight becomes 0. Calcularion of
+    vfr triggers oops by divide error.
 
-Practical occurence of page faults in the TLBTEMP area is extremely
-rare, this code can be tested by deletion of all w[di]tlb instructions
-in the tlbtemp_mapping region.
+weight should be updated right before adding it to children_weight.
 
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+Reported-by: Ruki Sekiya <sekiya.ruki@lab.ntt.co.jp>
+Signed-off-by: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/asm/pgtable.h |    7 ++++++-
- arch/xtensa/kernel/entry.S        |    2 +-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ block/cfq-iosched.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/xtensa/include/asm/pgtable.h
-+++ b/arch/xtensa/include/asm/pgtable.h
-@@ -68,7 +68,12 @@
- #define VMALLOC_START		0xC0000000
- #define VMALLOC_END		0xC7FEFFFF
- #define TLBTEMP_BASE_1		0xC7FF0000
--#define TLBTEMP_BASE_2		0xC7FF8000
-+#define TLBTEMP_BASE_2		(TLBTEMP_BASE_1 + DCACHE_WAY_SIZE)
-+#if 2 * DCACHE_WAY_SIZE > ICACHE_WAY_SIZE
-+#define TLBTEMP_SIZE		(2 * DCACHE_WAY_SIZE)
-+#else
-+#define TLBTEMP_SIZE		ICACHE_WAY_SIZE
-+#endif
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1275,12 +1275,16 @@ __cfq_group_service_tree_add(struct cfq_
+ static void
+ cfq_update_group_weight(struct cfq_group *cfqg)
+ {
+-	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
+-
+ 	if (cfqg->new_weight) {
+ 		cfqg->weight = cfqg->new_weight;
+ 		cfqg->new_weight = 0;
+ 	}
++}
++
++static void
++cfq_update_group_leaf_weight(struct cfq_group *cfqg)
++{
++	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
  
- /*
-  * Xtensa Linux config PTE layout (when present):
---- a/arch/xtensa/kernel/entry.S
-+++ b/arch/xtensa/kernel/entry.S
-@@ -1703,7 +1703,7 @@ ENTRY(fast_second_level_miss)
- 	rsr	a0, excvaddr
- 	bltu	a0, a3, 2f
+ 	if (cfqg->new_leaf_weight) {
+ 		cfqg->leaf_weight = cfqg->new_leaf_weight;
+@@ -1299,7 +1303,7 @@ cfq_group_service_tree_add(struct cfq_rb
+ 	/* add to the service tree */
+ 	BUG_ON(!RB_EMPTY_NODE(&cfqg->rb_node));
  
--	addi	a1, a0, -(2 << (DCACHE_ALIAS_ORDER + PAGE_SHIFT))
-+	addi	a1, a0, -TLBTEMP_SIZE
- 	bgeu	a1, a3, 2f
+-	cfq_update_group_weight(cfqg);
++	cfq_update_group_leaf_weight(cfqg);
+ 	__cfq_group_service_tree_add(st, cfqg);
  
- 	/* Check if we have to restore an ITLB mapping. */
+ 	/*
+@@ -1323,6 +1327,7 @@ cfq_group_service_tree_add(struct cfq_rb
+ 	 */
+ 	while ((parent = cfqg_parent(pos))) {
+ 		if (propagate) {
++			cfq_update_group_weight(pos);
+ 			propagate = !parent->nr_active++;
+ 			parent->children_weight += pos->weight;
+ 		}
 
 
