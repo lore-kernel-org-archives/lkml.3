@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683AbaJCVxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45703 "EHLO
+	id S1756754AbaJCVx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:53:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086AbaJCVxK (ORCPT
+	with ESMTP id S1755808AbaJCVxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:10 -0400
+	Fri, 3 Oct 2014 17:53:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [PATCH 3.16 220/357] iio:trigger: modify return value for iio_trigger_get
-Date: Fri,  3 Oct 2014 14:30:06 -0700
-Message-Id: <20141003212940.130542624@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        Andreas Boll <andreas.boll.dev@gmail.com>
+Subject: [PATCH 3.14 019/238] drm/radeon: tweak ACCEL_WORKING2 query for hawaii
+Date: Fri,  3 Oct 2014 14:28:54 -0700
+Message-Id: <20141003212914.277550937@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,42 +25,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit f153566570fb9e32c2f59182883f4f66048788fb upstream.
+commit 3c64bd26f7e9bd589ebe0d1ebec69ef2f784c12d upstream.
 
-Instead of a void function, return the trigger pointer.
+Return 2 so we can be sure the kernel has the necessary
+changes for acceleration to work.
 
-Whilst not in of itself a fix, this makes the following set of
-7 fixes cleaner than they would otherwise be.
+Note: This patch depends on these two commits:
+ - drm/radeon: fix cut and paste issue for hawaii.
+ - drm/radeon: use packet2 for nop on hawaii with old firmware
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Andreas Boll <andreas.boll.dev@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/iio/trigger.h |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_kms.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/include/linux/iio/trigger.h
-+++ b/include/linux/iio/trigger.h
-@@ -84,10 +84,12 @@ static inline void iio_trigger_put(struc
- 	put_device(&trig->dev);
- }
- 
--static inline void iio_trigger_get(struct iio_trigger *trig)
-+static inline struct iio_trigger *iio_trigger_get(struct iio_trigger *trig)
- {
- 	get_device(&trig->dev);
- 	__module_get(trig->ops->owner);
-+
-+	return trig;
- }
- 
- /**
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -254,7 +254,14 @@ static int radeon_info_ioctl(struct drm_
+ 		}
+ 		break;
+ 	case RADEON_INFO_ACCEL_WORKING2:
+-		*value = rdev->accel_working;
++		if (rdev->family == CHIP_HAWAII) {
++			if (rdev->accel_working)
++				*value = 2;
++			else
++				*value = 0;
++		} else {
++			*value = rdev->accel_working;
++		}
+ 		break;
+ 	case RADEON_INFO_TILING_CONFIG:
+ 		if (rdev->family >= CHIP_BONAIRE)
 
 
