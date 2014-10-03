@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155AbaJDApj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:45:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44895 "EHLO
+	id S1760080AbaJDAqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:46:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017AbaJCVcr (ORCPT
+	with ESMTP id S1754973AbaJCVcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:47 -0400
+	Fri, 3 Oct 2014 17:32:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Anson Huang <Anson.Huang@freescale.com>
-Subject: [PATCH 3.16 037/357] ARM: imx: fix TLB missing of IOMUXC base address during suspend
-Date: Fri,  3 Oct 2014 14:27:03 -0700
-Message-Id: <20141003212934.580948979@linuxfoundation.org>
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.16 056/357] ALSA: core: fix buffer overflow in snd_info_get_line()
+Date: Fri,  3 Oct 2014 14:27:22 -0700
+Message-Id: <20141003212935.138020159@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,41 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shawn Guo <shawn.guo@freescale.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 59d05b518321618177b898a6801503e31b15b25b upstream.
+commit ddc64b278a4dda052390b3de1b551e59acdff105 upstream.
 
-After the suspend routine running in OCRAM puts DDR into self-refresh,
-it will access IOMUXC block to float DDR IO for power saving.  A TLB
-missing of IOMUXC base address may happen in this case, and triggers an
-access to DDR, and thus hangs the system.
+snd_info_get_line() documents that its last parameter must be one
+less than the buffer size, but this API design guarantees that
+(literally) every caller gets it wrong.
 
-The failure is discovered by running suspend/resume on a Cubox-i board.
-Though the issue is not Cubox-i specific, it can be hit the on the board
-quite easily with the 3.15 or 3.16 kernel.
+Just change this parameter to have its obvious meaning.
 
-Fix the issue with a dummy access to IOMUXC block at the beginning of
-suspend routine, so that the address translation can be filled into TLB
-before DDR is put into self-refresh.
-
-Signed-off-by: Shawn Guo <shawn.guo@freescale.com>
-Acked-by: Anson Huang <Anson.Huang@freescale.com>
+Reported-by: Tommi Rantala <tt.rantala@gmail.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/suspend-imx6.S |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/core/info.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-imx/suspend-imx6.S
-+++ b/arch/arm/mach-imx/suspend-imx6.S
-@@ -172,6 +172,8 @@ ENTRY(imx6_suspend)
- 	ldr	r6, [r11, #0x0]
- 	ldr	r11, [r0, #PM_INFO_MX6Q_GPC_V_OFFSET]
- 	ldr	r6, [r11, #0x0]
-+	ldr	r11, [r0, #PM_INFO_MX6Q_IOMUXC_V_OFFSET]
-+	ldr	r6, [r11, #0x0]
- 
- 	/* use r11 to store the IO address */
- 	ldr	r11, [r0, #PM_INFO_MX6Q_SRC_V_OFFSET]
+--- a/sound/core/info.c
++++ b/sound/core/info.c
+@@ -684,7 +684,7 @@ int snd_info_card_free(struct snd_card *
+  * snd_info_get_line - read one line from the procfs buffer
+  * @buffer: the procfs buffer
+  * @line: the buffer to store
+- * @len: the max. buffer size - 1
++ * @len: the max. buffer size
+  *
+  * Reads one line from the buffer and stores the string.
+  *
+@@ -704,7 +704,7 @@ int snd_info_get_line(struct snd_info_bu
+ 			buffer->stop = 1;
+ 		if (c == '\n')
+ 			break;
+-		if (len) {
++		if (len > 1) {
+ 			len--;
+ 			*line++ = c;
+ 		}
 
 
