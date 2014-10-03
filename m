@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760740AbaJCX5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:57:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45708 "EHLO
+	id S1760725AbaJCX47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:56:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756791AbaJCVxb (ORCPT
+	with ESMTP id S1756794AbaJCVxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.16 239/357] Revert "iwlwifi: dvm: dont enable CTS to self"
-Date: Fri,  3 Oct 2014 14:30:25 -0700
-Message-Id: <20141003212940.689210597@linuxfoundation.org>
+        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.14 026/238] ahci: Add Device IDs for Intel 9 Series PCH
+Date: Fri,  3 Oct 2014 14:29:01 -0700
+Message-Id: <20141003212914.508137768@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,52 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: James Ralston <james.d.ralston@intel.com>
 
-commit f47f46d7b09cf1d09e4b44b6cc4dd7d68a08028c upstream.
+commit 1b071a0947dbce5c184c12262e02540fbc493457 upstream.
 
-This reverts commit 43d826ca5979927131685cc2092c7ce862cb91cd.
+This patch adds the AHCI mode SATA Device IDs for the Intel 9 Series PCH.
 
-This commit caused packet loss.
-
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/ata/ahci.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
-@@ -1068,6 +1068,13 @@ int iwlagn_commit_rxon(struct iwl_priv *
- 	/* recalculate basic rates */
- 	iwl_calc_basic_rates(priv, ctx);
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -306,6 +306,14 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c82), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c83), board_ahci }, /* 9 Series AHCI */
++	{ PCI_VDEVICE(INTEL, 0x8c84), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c85), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c86), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
  
-+	/*
-+	 * force CTS-to-self frames protection if RTS-CTS is not preferred
-+	 * one aggregation protection method
-+	 */
-+	if (!priv->hw_params.use_rts_for_aggregation)
-+		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-+
- 	if ((ctx->vif && ctx->vif->bss_conf.use_short_slot) ||
- 	    !(ctx->staging.flags & RXON_FLG_BAND_24G_MSK))
- 		ctx->staging.flags |= RXON_FLG_SHORT_SLOT_MSK;
-@@ -1473,6 +1480,11 @@ void iwlagn_bss_info_changed(struct ieee
- 	else
- 		ctx->staging.flags &= ~RXON_FLG_TGG_PROTECT_MSK;
- 
-+	if (bss_conf->use_cts_prot)
-+		ctx->staging.flags |= RXON_FLG_SELF_CTS_EN;
-+	else
-+		ctx->staging.flags &= ~RXON_FLG_SELF_CTS_EN;
-+
- 	memcpy(ctx->staging.bssid_addr, bss_conf->bssid, ETH_ALEN);
- 
- 	if (vif->type == NL80211_IFTYPE_AP ||
+ 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
+ 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
 
 
