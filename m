@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759431AbaJCXDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:03:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
+	id S932529AbaJCWXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:23:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46760 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757018AbaJCWXy (ORCPT
+	with ESMTP id S1757965AbaJCWOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:54 -0400
+	Fri, 3 Oct 2014 18:14:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 028/143] HID: logitech-dj: prevent false errors to be shown
-Date: Fri,  3 Oct 2014 14:33:43 -0700
-Message-Id: <20141003213315.338928967@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 218/238] md/raid1: update next_resync under resync_lock.
+Date: Fri,  3 Oct 2014 14:32:13 -0700
+Message-Id: <20141003212920.641752483@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
-References: <20141003213314.470709810@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,116 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 5abfe85c1d4694d5d4bbd13ecc166262b937adf0 upstream.
+commit c2fd4c94deedb89ac1746c4a53219be499372c06 upstream.
 
-Commit "HID: logitech: perform bounds checking on device_id early
-enough" unfortunately leaks some errors to dmesg which are not real
-ones:
-- if the report is not a DJ one, then there is not point in checking
-  the device_id
-- the receiver (index 0) can also receive some notifications which
-  can be safely ignored given the current implementation
+raise_barrier() uses next_resync as part of its calculations, so it
+really should be updated first, instead of afterwards.
 
-Move out the test regarding the report_id and also discards
-printing errors when the receiver got notified.
+next_resync is always used under resync_lock so update it under
+resync lock to, just before it is used.  That is safest.
 
-Fixes: ad3e14d7c5268c2e24477c6ef54bbdf88add5d36
+This could cause normal IO and resync IO to interact badly so
+it suitable for -stable.
 
-Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-logitech-dj.c |   43 ++++++++++++++++++++++++------------------
- drivers/hid/hid-logitech-dj.h |    1 
- 2 files changed, 26 insertions(+), 18 deletions(-)
+ drivers/md/raid1.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -679,7 +679,6 @@ static int logi_dj_raw_event(struct hid_
- 	struct dj_receiver_dev *djrcv_dev = hid_get_drvdata(hdev);
- 	struct dj_report *dj_report = (struct dj_report *) data;
- 	unsigned long flags;
--	bool report_processed = false;
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -827,7 +827,7 @@ static void flush_pending_writes(struct
+  *    there is no normal IO happeing.  It must arrange to call
+  *    lower_barrier when the particular background IO completes.
+  */
+-static void raise_barrier(struct r1conf *conf)
++static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
+ {
+ 	spin_lock_irq(&conf->resync_lock);
  
- 	dbg_hid("%s, size:%d\n", __func__, size);
+@@ -837,6 +837,7 @@ static void raise_barrier(struct r1conf
  
-@@ -706,34 +705,42 @@ static int logi_dj_raw_event(struct hid_
- 	 * device (via hid_input_report() ) and return 1 so hid-core does not do
- 	 * anything else with it.
- 	 */
-+
-+	/* case 1) */
-+	if (data[0] != REPORT_ID_DJ_SHORT)
-+		return false;
-+
- 	if ((dj_report->device_index < DJ_DEVICE_INDEX_MIN) ||
- 	    (dj_report->device_index > DJ_DEVICE_INDEX_MAX)) {
--		dev_err(&hdev->dev, "%s: invalid device index:%d\n",
-+		/*
-+		 * Device index is wrong, bail out.
-+		 * This driver can ignore safely the receiver notifications,
-+		 * so ignore those reports too.
-+		 */
-+		if (dj_report->device_index != DJ_RECEIVER_INDEX)
-+			dev_err(&hdev->dev, "%s: invalid device index:%d\n",
- 				__func__, dj_report->device_index);
- 		return false;
- 	}
+ 	/* block any new IO from starting */
+ 	conf->barrier++;
++	conf->next_resync = sector_nr;
  
- 	spin_lock_irqsave(&djrcv_dev->lock, flags);
--	if (dj_report->report_id == REPORT_ID_DJ_SHORT) {
--		switch (dj_report->report_type) {
--		case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
--		case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
--			logi_dj_recv_queue_notification(djrcv_dev, dj_report);
--			break;
--		case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
--			if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
--			    STATUS_LINKLOSS) {
--				logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
--			}
--			break;
--		default:
--			logi_dj_recv_forward_report(djrcv_dev, dj_report);
-+	switch (dj_report->report_type) {
-+	case REPORT_TYPE_NOTIF_DEVICE_PAIRED:
-+	case REPORT_TYPE_NOTIF_DEVICE_UNPAIRED:
-+		logi_dj_recv_queue_notification(djrcv_dev, dj_report);
-+		break;
-+	case REPORT_TYPE_NOTIF_CONNECTION_STATUS:
-+		if (dj_report->report_params[CONNECTION_STATUS_PARAM_STATUS] ==
-+		    STATUS_LINKLOSS) {
-+			logi_dj_recv_forward_null_report(djrcv_dev, dj_report);
- 		}
--		report_processed = true;
-+		break;
-+	default:
-+		logi_dj_recv_forward_report(djrcv_dev, dj_report);
- 	}
- 	spin_unlock_irqrestore(&djrcv_dev->lock, flags);
+ 	/* For these conditions we must wait:
+ 	 * A: while the array is in frozen state
+@@ -2542,9 +2543,8 @@ static sector_t sync_request(struct mdde
  
--	return report_processed;
-+	return true;
- }
+ 	bitmap_cond_end_sync(mddev->bitmap, sector_nr);
+ 	r1_bio = mempool_alloc(conf->r1buf_pool, GFP_NOIO);
+-	raise_barrier(conf);
  
- static int logi_dj_probe(struct hid_device *hdev,
---- a/drivers/hid/hid-logitech-dj.h
-+++ b/drivers/hid/hid-logitech-dj.h
-@@ -27,6 +27,7 @@
+-	conf->next_resync = sector_nr;
++	raise_barrier(conf, sector_nr);
  
- #define DJ_MAX_PAIRED_DEVICES			6
- #define DJ_MAX_NUMBER_NOTIFICATIONS		8
-+#define DJ_RECEIVER_INDEX			0
- #define DJ_DEVICE_INDEX_MIN 			1
- #define DJ_DEVICE_INDEX_MAX 			6
- 
+ 	rcu_read_lock();
+ 	/*
 
 
