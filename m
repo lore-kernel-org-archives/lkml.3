@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaJDADg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:03:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45712 "EHLO
+	id S932178AbaJDADe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:03:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45752 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730AbaJCVxX (ORCPT
+	with ESMTP id S1756731AbaJCVxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:53:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Subject: [PATCH 3.14 034/238] ARM/ARM64: KVM: Nuke Hyp-mode tlbs before enabling MMU
-Date: Fri,  3 Oct 2014 14:29:09 -0700
-Message-Id: <20141003212914.753488155@linuxfoundation.org>
+        Krzysztof Kolasa <kkolasa@winsoft.pl>,
+        Milan Broz <gmazyland@gmail.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.16 248/357] dm crypt: fix access beyond the end of allocated space
+Date: Fri,  3 Oct 2014 14:30:34 -0700
+Message-Id: <20141003212940.949552192@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+References: <20141003212933.458851516@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,60 +27,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit f6edbbf36da3a27b298b66c7955fc84e1dcca305 upstream.
+commit d49ec52ff6ddcda178fc2476a109cf1bd1fa19ed upstream.
 
-X-Gene u-boot runs in EL2 mode with MMU enabled hence we might
-have stale EL2 tlb enteris when we enable EL2 MMU on each host CPU.
+The DM crypt target accesses memory beyond allocated space resulting in
+a crash on 32 bit x86 systems.
 
-This can happen on any ARM/ARM64 board running bootloader in
-Hyp-mode (or EL2-mode) with MMU enabled.
+This bug is very old (it dates back to 2.6.25 commit 3a7f6c990ad04 "dm
+crypt: use async crypto").  However, this bug was masked by the fact
+that kmalloc rounds the size up to the next power of two.  This bug
+wasn't exposed until 3.17-rc1 commit 298a9fa08a ("dm crypt: use per-bio
+data").  By switching to using per-bio data there was no longer any
+padding beyond the end of a dm-crypt allocated memory block.
 
-This patch ensures that we flush all Hyp-mode (or EL2-mode) TLBs
-on each host CPU before enabling Hyp-mode (or EL2-mode) MMU.
+To minimize allocation overhead dm-crypt puts several structures into one
+block allocated with kmalloc.  The block holds struct ablkcipher_request,
+cipher-specific scratch pad (crypto_ablkcipher_reqsize(any_tfm(cc))),
+struct dm_crypt_request and an initialization vector.
 
-Tested-by: Mark Rutland <mark.rutland@arm.com>
-Reviewed-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Signed-off-by: Anup Patel <anup.patel@linaro.org>
-Signed-off-by: Christoffer Dall <christoffer.dall@linaro.org>
+The variable dmreq_start is set to offset of struct dm_crypt_request
+within this memory block.  dm-crypt allocates the block with this size:
+cc->dmreq_start + sizeof(struct dm_crypt_request) + cc->iv_size.
+
+When accessing the initialization vector, dm-crypt uses the function
+iv_of_dmreq, which performs this calculation: ALIGN((unsigned long)(dmreq
++ 1), crypto_ablkcipher_alignmask(any_tfm(cc)) + 1).
+
+dm-crypt allocated "cc->iv_size" bytes beyond the end of dm_crypt_request
+structure.  However, when dm-crypt accesses the initialization vector, it
+takes a pointer to the end of dm_crypt_request, aligns it, and then uses
+it as the initialization vector.  If the end of dm_crypt_request is not
+aligned on a crypto_ablkcipher_alignmask(any_tfm(cc)) boundary the
+alignment causes the initialization vector to point beyond the allocated
+space.
+
+Fix this bug by calculating the variable iv_size_padding and adding it
+to the allocated size.
+
+Also correct the alignment of dm_crypt_request.  struct dm_crypt_request
+is specific to dm-crypt (it isn't used by the crypto subsystem at all),
+so it is aligned on __alignof__(struct dm_crypt_request).
+
+Also align per_bio_data_size on ARCH_KMALLOC_MINALIGN, so that it is
+aligned as if the block was allocated with kmalloc.
+
+Reported-by: Krzysztof Kolasa <kkolasa@winsoft.pl>
+Tested-by: Milan Broz <gmazyland@gmail.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kvm/init.S       |    4 ++++
- arch/arm64/kvm/hyp-init.S |    4 ++++
- 2 files changed, 8 insertions(+)
+ drivers/md/dm-crypt.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
---- a/arch/arm/kvm/init.S
-+++ b/arch/arm/kvm/init.S
-@@ -98,6 +98,10 @@ __do_hyp_init:
- 	mrc	p15, 0, r0, c10, c2, 1
- 	mcr	p15, 4, r0, c10, c2, 1
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -1681,6 +1681,7 @@ static int crypt_ctr(struct dm_target *t
+ 	unsigned int key_size, opt_params;
+ 	unsigned long long tmpll;
+ 	int ret;
++	size_t iv_size_padding;
+ 	struct dm_arg_set as;
+ 	const char *opt_string;
+ 	char dummy;
+@@ -1717,12 +1718,23 @@ static int crypt_ctr(struct dm_target *t
  
-+	@ Invalidate the stale TLBs from Bootloader
-+	mcr	p15, 4, r0, c8, c7, 0	@ TLBIALLH
-+	dsb	ish
+ 	cc->dmreq_start = sizeof(struct ablkcipher_request);
+ 	cc->dmreq_start += crypto_ablkcipher_reqsize(any_tfm(cc));
+-	cc->dmreq_start = ALIGN(cc->dmreq_start, crypto_tfm_ctx_alignment());
+-	cc->dmreq_start += crypto_ablkcipher_alignmask(any_tfm(cc)) &
+-			   ~(crypto_tfm_ctx_alignment() - 1);
++	cc->dmreq_start = ALIGN(cc->dmreq_start, __alignof__(struct dm_crypt_request));
 +
- 	@ Set the HSCTLR to:
- 	@  - ARM/THUMB exceptions: Kernel config (Thumb-2 kernel)
- 	@  - Endianness: Kernel config
---- a/arch/arm64/kvm/hyp-init.S
-+++ b/arch/arm64/kvm/hyp-init.S
-@@ -74,6 +74,10 @@ __do_hyp_init:
- 	msr	mair_el2, x4
- 	isb
++	if (crypto_ablkcipher_alignmask(any_tfm(cc)) < CRYPTO_MINALIGN) {
++		/* Allocate the padding exactly */
++		iv_size_padding = -(cc->dmreq_start + sizeof(struct dm_crypt_request))
++				& crypto_ablkcipher_alignmask(any_tfm(cc));
++	} else {
++		/*
++		 * If the cipher requires greater alignment than kmalloc
++		 * alignment, we don't know the exact position of the
++		 * initialization vector. We must assume worst case.
++		 */
++		iv_size_padding = crypto_ablkcipher_alignmask(any_tfm(cc));
++	}
  
-+	/* Invalidate the stale TLBs from Bootloader */
-+	tlbi	alle2
-+	dsb	sy
-+
- 	mrs	x4, sctlr_el2
- 	and	x4, x4, #SCTLR_EL2_EE	// preserve endianness of EL2
- 	ldr	x5, =SCTLR_EL2_FLAGS
+ 	cc->req_pool = mempool_create_kmalloc_pool(MIN_IOS, cc->dmreq_start +
+-			sizeof(struct dm_crypt_request) + cc->iv_size);
++			sizeof(struct dm_crypt_request) + iv_size_padding + cc->iv_size);
+ 	if (!cc->req_pool) {
+ 		ti->error = "Cannot allocate crypt request mempool";
+ 		goto bad;
 
 
