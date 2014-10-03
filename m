@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590AbaJCP60 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945AbaJCP6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:58:21 -0400
-Date: Fri, 3 Oct 2014 11:58:05 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: pipe/page fault oddness.
-Message-ID: <20141003155805.GA22798@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-	Michel Lespinasse <walken@google.com>,
-	"Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-	Mel Gorman <mgorman@suse.de>
-References: <alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
- <CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
- <CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
- <CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
- <542C7B5E.2020000@oracle.com>
- <CA+55aFy7Y+pmhyEHTJg=K8gLKzLHxzz6j9FBJMt7_Fazfong6g@mail.gmail.com>
- <542D6981.3080405@oracle.com>
- <CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.com>
- <542E2D56.6090007@oracle.com>
- <CA+55aFydZt+D68u60MDHUG5r34SmWnDewVFLom7uNwovMzc-CA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFydZt+D68u60MDHUG5r34SmWnDewVFLom7uNwovMzc-CA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754545AbaJCP6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:58:11 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47437 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102AbaJCPz5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:55:57 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 04/12] mmc: sdhci-pxav3: Remove unused clk_enable from sdhci_pxa
+Date: Fri,  3 Oct 2014 17:55:39 +0200
+Message-Id: <1412351747-4188-5-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1412351747-4188-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 08:43:57AM -0700, Linus Torvalds wrote:
- > On Thu, Oct 2, 2014 at 10:00 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
- > >
- > > For the record, I tweaked the environment to put some more pressure on the
- > > scheduler and found out what broke (which is not related to this thread at
- > > all).
- > 
- > Ok. It's probably still worth testing Mel's patches, since that's what
- > goes into 3.17. But it would be interesting to eventually go back to
- > stability-testing the protnone set, since it *looked* like it was
- > working well aside from this issue. I might decide to just do it
- > during the 3.18 merge window..
+clk_enable from struct sdhci_pxa is unused, remove it from the private
+driver data.
 
-FYI, I've been trying to reproduce that initial bug all week, and
-haven't seen a single reoccurance of it, just other bugs.
-Kind of a pain in the ass for confirming this numa stuff was indeed
-the cause, but that's been true of so many of the more obscure bugs
-trinity has shaken out.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Chris Ball <chris@printf.net>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+Cc: linux-mmc@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/mmc/host/sdhci-pxav3.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-	Dave
+diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+index 48bc8179c8fc..d1f63d32b2cd 100644
+--- a/drivers/mmc/host/sdhci-pxav3.c
++++ b/drivers/mmc/host/sdhci-pxav3.c
+@@ -59,7 +59,6 @@
+ #define SDCE_MISC_INT_EN	(1<<1)
+ 
+ struct sdhci_pxa {
+-	u8	clk_enable;
+ 	u8	power_mode;
+ };
+ 
+-- 
+2.1.1
 
