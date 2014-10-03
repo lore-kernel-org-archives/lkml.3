@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaJCO3m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 10:29:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45909 "EHLO mail.kernel.org"
+	id S1753516AbaJCOa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 10:30:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752586AbaJCO3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 10:29:39 -0400
-Date: Fri, 3 Oct 2014 16:29:32 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] Documentation: charger: max14577: Update the date of
- introducing ABI
-Message-ID: <20141003142932.GB8291@earth.universe>
-References: <1412251954-29912-1-git-send-email-k.kozlowski@samsung.com>
+	id S1753484AbaJCOaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 10:30:20 -0400
+Subject: [PATCH 0/3] MODSIGN: Use PKCS#7 cert to avoid SKIDs
+From: David Howells <dhowells@redhat.com>
+To: rusty@rustcorp.com.au
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org
+Date: Fri, 03 Oct 2014 15:30:12 +0100
+Message-ID: <20141003143012.26457.54004.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
-Content-Disposition: inline
-In-Reply-To: <1412251954-29912-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---3uo+9/B/ebqu+fSQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Rusty,
 
-Hi,
+In the current module signing code, we try to use the subject and subjKeyId
+fields from X.509 certificate representing the key used to sign the modules to
+locate the X.509 certificate containing the public key required to verify the
+signature.
 
-On Thu, Oct 02, 2014 at 02:12:34PM +0200, Krzysztof Kozlowski wrote:
-> Update the date of introducing max14577 charger's ABI (fast_charge_timer
-> sysfs entry) to approximate date of kernel release which actually
-> introduces this.
->=20
-> The old date came from previous driver submissions.
->=20
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Unfortunately, we have situations where we have to deal with signatures
+generated from keys that don't have a subjKeyId (it is, after all, optional in
+the X.509 spec for none CA keys).
 
-http://git.infradead.org/battery-2.6.git/commit/c8c5ebcc5e33a0ae65b6b1cba8d=
-257d423f25da0
+Now that we have PKCS#7 message handling code in the kernel for kexec(), we can
+make use of this for module signing.  By using a PKCS#7 message with detached
+data and no embedded X.509 certs as the signature blob, we can forgo specifying
+all the signature parameters (eg. hash algo, pubkey algo, name, id) elsewhere
+and rely instead on the PKCS#7 message to supply all of those.
 
--- Sebastian
+PKCS#7 doesn't use the subjKeyId, but rather matches issuer name and
+certificate serial number, both of which are mandatory in an X.509 certificate.
 
---3uo+9/B/ebqu+fSQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+We leave out the embedded X.509 certs to make the signature smaller and use
+detached data so that we don't have to put the module content in there.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+The patches are as follows:
 
-iQIcBAEBCgAGBQJULrLMAAoJENju1/PIO/qa5+wP/2sh9kv/Zq8zIOMnrMgtMdlC
-eT+inEyK6trKgFk+kP8ZdYc+RBd5TYooQF84ymVHjHtFpM7Oot1HAAn7kjwnrBuS
-M0El16167qOSxZHJaQXYdR92In12ganQcM0QwxHmVLA4o+/LgTYuuIQL+kyNNydv
-CKDotEIXh1RHeTs/1pKmnhRv9REJABjJolSTxP4nwGvfWOeV1P5QsRiec2gBY1P+
-j1TYtGic+lWwq0+2X7NsOWG19ubf+Krs6xqQqeTt4Q7TIm5LkRF5Uihiyuvb/M1l
-Rd7SFhEx4TlMBCayLPKid4bgLKYO+CAzBJ5uXUBtbYNiUcRNvUKNxtox9vPbxQn5
-ho+gS1ApvEiCqMHrRrrr3K+G0wLQVxS2MM8FWQph8eYmNGk/T6n1DRP4IizVA2DZ
-uw3xUgOiyPsE/ptiqviS5SxuHfQhjteVnQ34C/ZbQpZOVlnGyXuKFcGtyrCjAqrZ
-1icesMyumrpHwFd2Jr5GUbE/0llp1U7d4GpAhM2qgI4/RShM8LZbHBXPS3ICuYF/
-6ZikMYfRzdmG7i6omcvc+Mr2pnhJ3QU/UBA+F2bIUwPYwNAYyntxfbKj+P9slZ80
-BOmfUKLB7uoOb4+r3UD9Bubdon21hwrsbrxoM96upwlwQSuQRxjYUuXbXVmnvvL9
-7rUwWhjC7g8Zyzp+lv4c
-=I3cu
------END PGP SIGNATURE-----
+ (1) Provide a function to pass detached data to the PKCS#7 verifier, rather
+     than always requiring the data to be contained therein.
 
---3uo+9/B/ebqu+fSQ--
+ (2) Provide a utility to sign modules (a drop-in replacement for
+     scripts/sign-file).  This does need to be built against -lcrypto from
+     OpenSSL.  I couldn't work out how to make a PKCS#7 message with no
+     embedded X.509 certs from the openssl command line.
+
+     I also haven't provided a way to externally specify the signature - that's
+     something that will need to be worked out.  Quite likely it will involve
+     taking a PKCS#7 message rather than generating one.
+
+ (3) Make use of the above and the PKCS#7 handling to sign modules and verify
+     signatures.
+
+Note that this does make signatures generated by previous kernels incompatible
+with newer kernels, but since the modules being signed may no longer be
+compatible anyway for other reasons, I'm not sure how much of a problem that
+will actually be.
+
+I have provided a function, mod_verify_pkcs7(), that takes a buffer containing
+the actual module data, sans signature, and a buffer containing the PKCS#7
+message that does the actual work.  This could be called, for instance, if
+modules are ever loaded with detached signatures.
+
+The patches can be found here also:
+
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=modsign-pkcs7
+
+This is based on James Morris's security/next branch as there are some keyring
+and PKCS#7 changes in there that are prerequisites for this.
+
+David
+---
+David Howells (3):
+      PKCS#7: Allow detached data to be supplied for signature checking purposes
+      MODSIGN: Provide a utility to append a PKCS#7 signature to a module
+      MODSIGN: Use PKCS#7 messages as module signatures
+
+
+ crypto/asymmetric_keys/pkcs7_verify.c |   26 ++
+ include/crypto/pkcs7.h                |    3 
+ include/crypto/public_key.h           |    1 
+ init/Kconfig                          |    1 
+ kernel/module_signing.c               |  220 +++--------------
+ scripts/Makefile                      |    2 
+ scripts/sign-file                     |  421 ---------------------------------
+ scripts/sign-file.c                   |  189 +++++++++++++++
+ 8 files changed, 266 insertions(+), 597 deletions(-)
+ delete mode 100755 scripts/sign-file
+ create mode 100755 scripts/sign-file.c
+
