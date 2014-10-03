@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443AbaJCSID (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 14:08:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50571 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbaJCSH7 (ORCPT
+	id S1754059AbaJCSNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 14:13:45 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:46983 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaJCSNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 14:07:59 -0400
-Message-ID: <542EE5FE.9080806@codeaurora.org>
-Date: Fri, 03 Oct 2014 11:07:58 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 3 Oct 2014 14:13:43 -0400
+Message-ID: <542EE753.20005@kernel.dk>
+Date: Fri, 03 Oct 2014 12:13:39 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
-References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-5-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1409957256-23729-5-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org
+CC: Benjamin LaHaise <bcrl@kvack.org>, Zach Brown <zab@zabbo.net>,
+        Jeff Moyer <jmoyer@redhat.com>, Slava Pestov <sp@daterainc.com>
+Subject: Re: [PATCH] aio: Fix return code of io_submit() (RFC)
+References: <1412359693-2535-1-git-send-email-kmo@daterainc.com>
+In-Reply-To: <1412359693-2535-1-git-send-email-kmo@daterainc.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/05/14 15:47, Stephen Boyd wrote:
-> +
-> +int divider_get_val(unsigned long rate, unsigned long parent_rate,
-> +		    const struct clk_div_table *table, u8 width,
-> +		    unsigned long flags)
-> +{
->  	unsigned int div, value;
-> -	unsigned long flags = 0;
-> -	u32 val;
->  
->  	div = DIV_ROUND_UP(parent_rate, rate);
->  
-> -	if (!_is_valid_div(divider, div))
-> +	if (!_is_valid_div(table, div, flags))
->  		return -EINVAL;
->  
-> -	value = _get_val(divider, div);
-> +	value = _get_val(table, div, flags);
-> +
-> +	min_t(unsigned int, value, div_mask(width));
-> +
-> +	return 0;
-
-This should be return value, not return 0.
-
-> +}
-> +EXPORT_SYMBOL_GPL(divider_get_val);
+On 2014-10-03 12:08, Kent Overstreet wrote:
+> io_submit() could return -EAGAIN on memory allocation failure when it should
+> really have been returning -ENOMEM. This could confuse applications (i.e. fio)
+> since -EAGAIN means "too many requests outstanding, wait until completions have
+> been reaped" and if the application actually was tracking outstanding
+> completions this wouldn't make a lot of sense.
 >
+> NOTE:
+>
+> the man page seems to imply that the current behaviour (-EAGAIN on allocation
+> failure) has always been the case. I don't think it makes a lot of sense, but
+> this should probably be discussed more widely in case applications have somehow
+> come to rely on the current behaviour...
+
+We can't really feasibly fix this, is my worry. Fio does track the 
+pending requests and does not get into a getevents() forever wait if it 
+gets -EAGAIN on submission. But before the fix, it would loop forever in 
+submission in -EAGAIN.
+
+How are applications supposed to deal with ENOMEM? I think the answer 
+here is that they can't, it would be a fatal condition. AIO must provide 
+isn't own guarantee of progress, with a mempool or similar.
+
+
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Jens Axboe
 
