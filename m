@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaJCUG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 16:06:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36090 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaJCUG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 16:06:28 -0400
-Date: Fri, 3 Oct 2014 22:06:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Subject: Re: Removing per-task TSD? (Re: Tightening up rdpmc permissions?)
-Message-ID: <20141003200624.GL10583@worktop.programming.kicks-ass.net>
-References: <CALCETrUwXk-WtfwMRtcg4NO5i8-36HXDqL3BdV7xRWDWT2w7Jw@mail.gmail.com>
+	id S1751238AbaJCULh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:11:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37514 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750750AbaJCULe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 16:11:34 -0400
+Date: Fri, 3 Oct 2014 22:11:26 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: gregkh@linuxfoundation.org, dmitry.torokhov@gmail.com, tiwai@suse.de,
+        tj@kernel.org, arjan@linux.intel.com, teg@jklm.no, rmilasan@suse.com,
+        werner@suse.com, oleg@redhat.com, hare@suse.com, bpoirier@suse.de,
+        santosh@chelsio.com, pmladek@suse.cz, dbueso@suse.com,
+        linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v1 5/5] driver-core: add driver asynchronous probe
+	support
+Message-ID: <20141003201126.GW14081@wotan.suse.de>
+References: <1411768637-6809-1-git-send-email-mcgrof@do-not-panic.com> <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrUwXk-WtfwMRtcg4NO5i8-36HXDqL3BdV7xRWDWT2w7Jw@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1411768637-6809-6-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 09:41:30AM -0700, Andy Lutomirski wrote:
-> So this is a mess.  I think that any reasonable implementation of
-> rdpmc permissions should be per mm, since we perf_event maps are, of
-> course, per mm.
-> 
-> Similarly, any reasonable implementation of rdtsc permissions should
-> be per mm, since doing it sensibly involves telling the vdso not to
-> use rdtsc, and the vdso is per mm
+On Fri, Sep 26, 2014 at 02:57:17PM -0700, Luis R. Rodriguez wrote:
+> +	queue_work(system_unbound_wq, &priv->attach_work->work);
 
-So far so good.
+Tejun,
 
-> Unfortunately, PR_SET_TSC is a per-thread setting.  Implementing this
-> correctly looks like it'll require twiddling, or at least thinking
-> about, cr4 at switch_mm time *and* when switching tasks, because the
-> only sensible way of granting PMC access to a running mm is to
-> broadcast a function call to the cpus running that mm.
+based on my testing so far using system_highpri_wq instead of
+system_unbound_wq yields close to par / better boot times
+than synchronous probe support for all modules. How set are
+you on using system_unbound_wq? About to punt out a new
+series which also addresses built-in.
 
-Confused... now though.
-
-Any cpu can only ever run one mm at the time, and the only way to change
-mm on any one cpu is switch_mm(), so having a CR4 write in switch_mm()
-will DTRT, no weird broadcasts or anything else required.
-
-Or were you talking about doing the per mm filter while maintaining the
-old TIF_NOTSC thing? Then still no broadcasts would be required I think.
-
-> Nonetheless, this is doable.  Either there can be separate context
-> switching of CR4.PCE (in switch_mm) and CR4.TSD (in switch_to), or
-> there can be some crazy optimization to make it faster.
-
-IFF you want to retain TIF_NOTSC then yes, we'll need both or crazy.
-
-> All of this sucks, so I'll ask a normally verboten question: can we
-> just remove PR_SET_TSC entirely?
-
-Fine with me, see more in that thread, I'll try and reply to the right
-copy.
+  Luis
