@@ -1,106 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509AbaJCVif (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:38:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45173 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476AbaJCViY (ORCPT
+	id S1755537AbaJCVix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:38:53 -0400
+Received: from mail-yh0-f73.google.com ([209.85.213.73]:54657 "EHLO
+	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499AbaJCVif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:38:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Alexis R. Cortes" <alexis.cortes@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.16 129/357] usb: host: xhci: fix compliance mode workaround
-Date: Fri,  3 Oct 2014 14:28:35 -0700
-Message-Id: <20141003212937.351114816@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 3 Oct 2014 17:38:35 -0400
+From: Ben Zhang <benzh@chromium.org>
+To: alsa-devel@alsa-project.org
+Cc: Bard Liao <bardliao@realtek.com>, Oder Chiou <oder_chiou@realtek.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        Ben Zhang <benzh@chromium.org>
+Subject: [PATCH 2/3] ASoC: rt5677: Add ACPI device probing
+Date: Fri,  3 Oct 2014 14:37:25 -0700
+Message-Id: <1412372246-10489-2-git-send-email-benzh@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1412372246-10489-1-git-send-email-benzh@chromium.org>
+References: <1412372246-10489-1-git-send-email-benzh@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+The rt5677 codec driver looks for ACPI device ID "RT5677CE",
+which is specified in coreboot.
 
-------------------
-
-From: Felipe Balbi <balbi@ti.com>
-
-commit 96908589a8b2584b1185f834d365f5cc360e8226 upstream.
-
-Commit 71c731a (usb: host: xhci: Fix Compliance Mode
-on SN65LVP3502CP Hardware) implemented a workaround
-for a known issue with Texas Instruments' USB 3.0
-redriver IC but it left a condition where any xHCI
-host would be taken out of reset if port was placed
-in compliance mode and there was no device connected
-to the port.
-
-That condition would trigger a fake connection to a
-non-existent device so that usbcore would trigger a
-warm reset of the port, thus taking the link out of
-reset.
-
-This has the side-effect of preventing any xHCI host
-connected to a Linux machine from starting and running
-the USB 3.0 Electrical Compliance Suite because the
-port will mysteriously taken out of compliance mode
-and, thus, xHCI won't step through the necessary
-compliance patterns for link validation.
-
-This patch fixes the issue by just adding a missing
-check for XHCI_COMP_MODE_QUIRK inside
-xhci_hub_report_usb3_link_state() when PORT_CAS isn't
-set.
-
-This patch should be backported to all kernels containing
-commit 71c731a.
-
-Fixes: 71c731a (usb: host: xhci: Fix Compliance Mode on SN65LVP3502CP Hardware)
-Cc: Alexis R. Cortes <alexis.cortes@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Ben Zhang <benzh@chromium.org>
+Reviewed-on: https://chromium-review.googlesource.com/207622
+Reviewed-by: Dylan Reid <dgreid@chromium.org>
+Reviewed-by: AndyX C Huang <andyx.c.huang@intel.com>
 ---
- drivers/usb/host/xhci-hub.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ sound/soc/codecs/rt5677.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -468,7 +468,8 @@ static void xhci_hub_report_usb2_link_st
+diff --git a/sound/soc/codecs/rt5677.c b/sound/soc/codecs/rt5677.c
+index cecbdb1..19dbb8a 100644
+--- a/sound/soc/codecs/rt5677.c
++++ b/sound/soc/codecs/rt5677.c
+@@ -20,6 +20,7 @@
+ #include <linux/i2c.h>
+ #include <linux/platform_device.h>
+ #include <linux/spi/spi.h>
++#include <linux/acpi.h>
+ #include <linux/gpio.h>
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+@@ -3680,10 +3681,21 @@ static int rt5677_i2c_remove(struct i2c_client *i2c)
+ 	return 0;
  }
  
- /* Updates Link Status for super Speed port */
--static void xhci_hub_report_usb3_link_state(u32 *status, u32 status_reg)
-+static void xhci_hub_report_usb3_link_state(struct xhci_hcd *xhci,
-+		u32 *status, u32 status_reg)
- {
- 	u32 pls = status_reg & PORT_PLS_MASK;
- 
-@@ -507,7 +508,8 @@ static void xhci_hub_report_usb3_link_st
- 		 * in which sometimes the port enters compliance mode
- 		 * caused by a delay on the host-device negotiation.
- 		 */
--		if (pls == USB_SS_PORT_LS_COMP_MOD)
-+		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
-+				(pls == USB_SS_PORT_LS_COMP_MOD))
- 			pls |= USB_PORT_STAT_CONNECTION;
- 	}
- 
-@@ -666,7 +668,7 @@ static u32 xhci_get_port_status(struct u
- 	}
- 	/* Update Port Link State */
- 	if (hcd->speed == HCD_USB3) {
--		xhci_hub_report_usb3_link_state(&status, raw_port_status);
-+		xhci_hub_report_usb3_link_state(xhci, &status, raw_port_status);
- 		/*
- 		 * Verify if all USB3 Ports Have entered U0 already.
- 		 * Delete Compliance Mode Timer if so.
-
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id rt5677_acpi_id[] = {
++	{ "RT5677CE", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, rt5677_acpi_id);
++#endif
++
+ static struct i2c_driver rt5677_i2c_driver = {
+ 	.driver = {
+ 		.name = "rt5677",
+ 		.owner = THIS_MODULE,
++#ifdef CONFIG_ACPI
++		.acpi_match_table = ACPI_PTR(rt5677_acpi_id),
++#endif
+ 	},
+ 	.probe = rt5677_i2c_probe,
+ 	.remove   = rt5677_i2c_remove,
+-- 
+2.1.0.rc2.206.gedb03e5
 
