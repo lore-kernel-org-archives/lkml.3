@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaJCQzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 12:55:49 -0400
-Received: from mga03.intel.com ([134.134.136.65]:50732 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461AbaJCQzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 12:55:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,648,1406617200"; 
-   d="scan'208";a="583124975"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: linus.walleij@linaro.org
-Cc: linux-kernel@vger.kernel.org, David Cohen <david.a.cohen@linux.intel.com>
-Subject: [PATCH] pinctrl: baytrail: show output gpio state correctly on Intel Baytrail
-Date: Fri,  3 Oct 2014 09:55:19 -0700
-Message-Id: <1412355319-18946-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1754296AbaJCQ5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 12:57:30 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:52759 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753876AbaJCQ53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 12:57:29 -0400
+Date: Fri, 3 Oct 2014 17:57:16 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Vrabel <david.vrabel@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Ian.Campbell@citrix.com, linux-arm-kernel@lists.infradead.org,
+        konrad.wilk@oracle.com
+Subject: Re: [PATCH v2 2/2] xen/arm: introduce GNTTABOP_cache_flush
+Message-ID: <20141003165716.GW5182@n2100.arm.linux.org.uk>
+References: <alpine.DEB.2.02.1410031549150.17038@kaball.uk.xensource.com> <1412348006-27884-2-git-send-email-stefano.stabellini@eu.citrix.com> <542EBB2A.6030104@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542EBB2A.6030104@citrix.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if a gpio pin is set to output, we still need to set INPUT_EN bit
-to be able to read its value. Without this change, we'll always read low
-level state.
+On Fri, Oct 03, 2014 at 04:05:14PM +0100, David Vrabel wrote:
+> Are all these cache operations needed?  You do a clean on map regardless
+> of the direction and INVAL on map seems unnecessary.
+> 
+> I would have thought it would be:
+> 
+> map && (TO_DEVICE || BOTH)
+>    op = CLEAN
+> 
+> unmap && (FROM_DEVICE || BOTH)
+>    op = INVAL
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
- drivers/pinctrl/pinctrl-baytrail.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is wrong.  You've failed to consider the case where you have dirty
+cache lines in the cache before the DMA operation, and the DMA operation
+is going to write to memory.  So, let's take this case, and work it
+through.
 
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index e12e5b07f6d7..c23d8ded936d 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -318,7 +318,7 @@ static int byt_gpio_direction_output(struct gpio_chip *chip,
- 		"Potential Error: Setting GPIO with direct_irq_en to output");
- 
- 	reg_val = readl(reg) | BYT_DIR_MASK;
--	reg_val &= ~BYT_OUTPUT_EN;
-+	reg_val &= ~(BYT_OUTPUT_EN | BYT_INPUT_EN);
- 
- 	if (value)
- 		writel(reg_val | BYT_LEVEL, reg);
+At the map point, we do nothing.  This leaves dirty cache lines in the
+cache.
+
+DMA commences, and starts writing data into the memory.  Meanwhile, the
+CPU goes off and does something else.
+
+The cache then wants to evict a line, and picks one of the dirty lines
+associated with this region.  The dirty data is written back to memory,
+overwriting the newly DMA'd data.
+
+Meanwhile, the CPU may speculatively load cache lines corresponding with
+this memory, possibly from the part which has not yet been updated by the
+DMA activity.
+
+At the end of the DMA, we unmap, and at this point we invalidate the cache,
+getting rid of any remaining dirty lines, and the speculatively loaded
+lines.
+
+We now have corrupted data in the memory region.  So, maybe you'll be
+saying bye bye to your filesystem at this point...
+
+You could always clean at map time, but in the case of DMA from the device,
+this is a waste of bus cycles since you don't need the dirty lines in the
+cache written back to memory.  If you can invalidate, you might as well do
+that for this case and save writing back data to memory which you're about
+to overwrite with DMA.
+
 -- 
-2.1.0
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
