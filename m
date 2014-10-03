@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758490AbaJCXRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:17:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46760 "EHLO
+	id S932903AbaJCXRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:17:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757865AbaJCWNv (ORCPT
+	with ESMTP id S1757866AbaJCWNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:13:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nico Baggus <nico-linux@noci.xs4all.nl>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 173/238] rtlwifi: rtl8192cu: Add new ID
-Date: Fri,  3 Oct 2014 14:31:28 -0700
-Message-Id: <20141003212919.211532173@linuxfoundation.org>
+        Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>,
+        Jeff Layton <jlayton@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 174/238] lockd: fix rpcbind crash on lockd startup failure
+Date: Fri,  3 Oct 2014 14:31:29 -0700
+Message-Id: <20141003212919.244742862@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -30,31 +30,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit c66517165610b911e4c6d268f28d8c640832dbd1 upstream.
+commit 7c17705e77b12b20fb8afb7c1b15dcdb126c0c12 upstream.
 
-The Sitecom WLA-2102 adapter uses this driver.
+Nikita Yuschenko reported that booting a kernel with init=/bin/sh and
+then nfs mounting without portmap or rpcbind running using a busybox
+mount resulted in:
 
-Reported-by: Nico Baggus <nico-linux@noci.xs4all.nl>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Nico Baggus <nico-linux@noci.xs4all.nl>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  # mount -t nfs 10.30.130.21:/opt /mnt
+  svc: failed to register lockdv1 RPC service (errno 111).
+  lockd_up: makesock failed, error=-111
+  Unable to handle kernel paging request for data at address 0x00000030
+  Faulting instruction address: 0xc055e65c
+  Oops: Kernel access of bad area, sig: 11 [#1]
+  MPC85xx CDS
+  Modules linked in:
+  CPU: 0 PID: 1338 Comm: mount Not tainted 3.10.44.cge #117
+  task: cf29cea0 ti: cf35c000 task.ti: cf35c000
+  NIP: c055e65c LR: c0566490 CTR: c055e648
+  REGS: cf35dad0 TRAP: 0300   Not tainted  (3.10.44.cge)
+  MSR: 00029000 <CE,EE,ME>  CR: 22442488  XER: 20000000
+  DEAR: 00000030, ESR: 00000000
+
+  GPR00: c05606f4 cf35db80 cf29cea0 cf0ded80 cf0dedb8 00000001 1dec3086
+  00000000
+  GPR08: 00000000 c07b1640 00000007 1dec3086 22442482 100b9758 00000000
+  10090ae8
+  GPR16: 00000000 000186a5 00000000 00000000 100c3018 bfa46edc 100b0000
+  bfa46ef0
+  GPR24: cf386ae0 c07834f0 00000000 c0565f88 00000001 cf0dedb8 00000000
+  cf0ded80
+  NIP [c055e65c] call_start+0x14/0x34
+  LR [c0566490] __rpc_execute+0x70/0x250
+  Call Trace:
+  [cf35db80] [00000080] 0x80 (unreliable)
+  [cf35dbb0] [c05606f4] rpc_run_task+0x9c/0xc4
+  [cf35dbc0] [c0560840] rpc_call_sync+0x50/0xb8
+  [cf35dbf0] [c056ee90] rpcb_register_call+0x54/0x84
+  [cf35dc10] [c056f24c] rpcb_register+0xf8/0x10c
+  [cf35dc70] [c0569e18] svc_unregister.isra.23+0x100/0x108
+  [cf35dc90] [c0569e38] svc_rpcb_cleanup+0x18/0x30
+  [cf35dca0] [c0198c5c] lockd_up+0x1dc/0x2e0
+  [cf35dcd0] [c0195348] nlmclnt_init+0x2c/0xc8
+  [cf35dcf0] [c015bb5c] nfs_start_lockd+0x98/0xec
+  [cf35dd20] [c015ce6c] nfs_create_server+0x1e8/0x3f4
+  [cf35dd90] [c0171590] nfs3_create_server+0x10/0x44
+  [cf35dda0] [c016528c] nfs_try_mount+0x158/0x1e4
+  [cf35de20] [c01670d0] nfs_fs_mount+0x434/0x8c8
+  [cf35de70] [c00cd3bc] mount_fs+0x20/0xbc
+  [cf35de90] [c00e4f88] vfs_kern_mount+0x50/0x104
+  [cf35dec0] [c00e6e0c] do_mount+0x1d0/0x8e0
+  [cf35df10] [c00e75ac] SyS_mount+0x90/0xd0
+  [cf35df40] [c000ccf4] ret_from_syscall+0x0/0x3c
+
+The addition of svc_shutdown_net() resulted in two calls to
+svc_rpcb_cleanup(); the second is no longer necessary and crashes when
+it calls rpcb_register_call with clnt=NULL.
+
+Reported-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Fixes: 679b033df484 "lockd: ensure we tear down any live sockets when socket creation fails during lockd_up"
+Acked-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/lockd/svc.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -317,6 +317,7 @@ static struct usb_device_id rtl8192c_usb
- 	{RTL_USB_DEVICE(0x0bda, 0x5088, rtl92cu_hal_cfg)}, /*Thinkware-CC&C*/
- 	{RTL_USB_DEVICE(0x0df6, 0x0052, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
- 	{RTL_USB_DEVICE(0x0df6, 0x005c, rtl92cu_hal_cfg)}, /*Sitecom - Edimax*/
-+	{RTL_USB_DEVICE(0x0df6, 0x0070, rtl92cu_hal_cfg)}, /*Sitecom - 150N */
- 	{RTL_USB_DEVICE(0x0df6, 0x0077, rtl92cu_hal_cfg)}, /*Sitecom-WLA2100V2*/
- 	{RTL_USB_DEVICE(0x0eb0, 0x9071, rtl92cu_hal_cfg)}, /*NO Brand - Etop*/
- 	{RTL_USB_DEVICE(0x4856, 0x0091, rtl92cu_hal_cfg)}, /*NetweeN - Feixun*/
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -253,13 +253,11 @@ static int lockd_up_net(struct svc_serv
+ 
+ 	error = make_socks(serv, net);
+ 	if (error < 0)
+-		goto err_socks;
++		goto err_bind;
+ 	set_grace_period(net);
+ 	dprintk("lockd_up_net: per-net data created; net=%p\n", net);
+ 	return 0;
+ 
+-err_socks:
+-	svc_rpcb_cleanup(serv, net);
+ err_bind:
+ 	ln->nlmsvc_users--;
+ 	return error;
 
 
