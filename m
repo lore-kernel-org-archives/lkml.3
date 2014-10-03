@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaJCPle (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:41:34 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:33830 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489AbaJCPl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:41:29 -0400
-Message-ID: <542EC3A3.1060605@gmail.com>
-Date: Fri, 03 Oct 2014 17:41:23 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-To: Benoit Masson <benoitm@perenite.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <-7443282711873112734@unknownmsgid> <20141003141102.GJ3895@titan.lakedaemon.net> <542EBB93.108@gmail.com> <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
-In-Reply-To: <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753954AbaJCPli (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:41:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58664 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753687AbaJCPlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:41:35 -0400
+Date: Fri, 3 Oct 2014 17:41:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
+Message-ID: <20141003154134.GG4816@dhcp22.suse.cz>
+References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
+ <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
+ <20140926103104.GE29445@esperanza>
+ <20141002120748.GA1359@cmpxchg.org>
+ <20141003153623.GA1162@esperanza>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141003153623.GA1162@esperanza>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2014 05:29 PM, Benoit Masson wrote:
-> Le 3 oct. 2014 à 17:06, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
->> On 10/03/2014 04:11 PM, Jason Cooper wrote:
->>> On Sun, Sep 21, 2014 at 04:11:23PM +0200, Benoit Masson wrote:
->>>>> Le 19 sept. 2014 à 22:14, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a écrit :
+On Fri 03-10-14 19:36:23, Vladimir Davydov wrote:
+> On Thu, Oct 02, 2014 at 08:07:48AM -0400, Johannes Weiner wrote:
 [...]
->>>>> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
->>>>> a hurry. I only compile tested this, so a formal Tested-by from Benoit
->>>>> for the ix4 and any other Armada XP board would be great.
->>>>
->>>> I'm not sure what to test since I only receive some patch from the
->>>> series of 8. Should I get all 8 or only those you sent me. I'll be
->>>> able to test during next week.
->>>
->>> Did you ever get a chance to test this series?
->>
->> Uhm, I never prepared a branch for Benoit to test. I have pushed the
->> patches with Thomas Acked-by's and renamed eeprom node based on
->> v3.17-rc1 to
->>
->> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4
->>
-[...]
-> Also I've noted you did some other patch for Armada XP not related to ix-4-300d,
- > are they included here or should I get them too ?
+> > The barriers are implied in change-return atomics, which is why there
+> > is an xchg.  But it's clear that this needs to be documented.  This?:
+> 
+> With the comments it looks correct to me, but I wonder if we can always
+> rely on implicit memory barriers issued by atomic ops. Are there any
+> archs where it doesn't hold?
 
-No, they are neither included nor is there any need to test. They are
-about pcie-lanes property but it is more or less unused on Linux.
-
-It is too late for v3.18 anyway, so I'll resend them once v3.18-rc1
-drops.
-
-> I'll test those over Sunday night.
-
-Ok, great!
-
-Sebastian
+xchg is explcitly mentioned in Documentation/memory-barriers.txt so it
+is expected to be barrier on all archs. Besides that not all atomic ops
+imply memory barriers. Only those that "modifies some state in memory
+and returns information about the state" do.
+ 
+-- 
+Michal Hocko
+SUSE Labs
