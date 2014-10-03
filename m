@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867AbaJCXAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:00:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47278 "EHLO
+	id S932682AbaJCXBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:01:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47251 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569AbaJCWX6 (ORCPT
+	with ESMTP id S1758236AbaJCWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:58 -0400
+	Fri, 3 Oct 2014 18:23:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 024/143] ALSA: pcm: fix fifo_size frame calculation
-Date: Fri,  3 Oct 2014 14:33:39 -0700
-Message-Id: <20141003213315.224446345@linuxfoundation.org>
+        Simon Lindgren <simon@aqwary.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 018/143] i2c: at91: Fix a race condition during signal handling in at91_do_twi_xfer.
+Date: Fri,  3 Oct 2014 14:33:33 -0700
+Message-Id: <20141003213315.034604122@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,46 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Simon Lindgren <simon@aqwary.com>
 
-commit a9960e6a293e6fc3ed414643bb4e4106272e4d0a upstream.
+commit 6721f28a26efd6368497abbdef5dcfc59608d899 upstream.
 
-The calculated frame size was wrong because snd_pcm_format_physical_width()
-actually returns the number of bits, not bytes.
+There is a race condition in at91_do_twi_xfer when signals arrive.
+If a signal is recieved while waiting for a transfer to complete
+wait_for_completion_interruptible_timeout() will return -ERESTARTSYS.
+This is not handled correctly resulting in interrupts still being
+enabled and a transfer being in flight when we return.
 
-Use snd_pcm_format_size() instead, which not only returns bytes, but also
-simplifies the calculation.
+Symptoms include a range of oopses and bus lockups. Oopses can happen
+when the transfer completes because the interrupt handler will corrupt
+the stack. If a new transfer is started before the interrupt fires
+the controller will start a new transfer in the middle of the old one,
+resulting in confused slaves and a locked bus.
 
-Fixes: 8bea869c5e56 ("ALSA: PCM midlevel: improve fifo_size handling")
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+To avoid this, use wait_for_completion_io_timeout instead so that we
+don't have to deal with gracefully shutting down the transfer and
+disabling the interrupts.
+
+Signed-off-by: Simon Lindgren <simon@aqwary.com>
+Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/pcm_lib.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/i2c/busses/i2c-at91.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/core/pcm_lib.c
-+++ b/sound/core/pcm_lib.c
-@@ -1782,14 +1782,16 @@ static int snd_pcm_lib_ioctl_fifo_size(s
- {
- 	struct snd_pcm_hw_params *params = arg;
- 	snd_pcm_format_t format;
--	int channels, width;
-+	int channels;
-+	ssize_t frame_size;
- 
- 	params->fifo_size = substream->runtime->hw.fifo_size;
- 	if (!(substream->runtime->hw.info & SNDRV_PCM_INFO_FIFO_IN_FRAMES)) {
- 		format = params_format(params);
- 		channels = params_channels(params);
--		width = snd_pcm_format_physical_width(format);
--		params->fifo_size /= width * channels;
-+		frame_size = snd_pcm_format_size(format, channels);
-+		if (frame_size > 0)
-+			params->fifo_size /= (unsigned)frame_size;
+--- a/drivers/i2c/busses/i2c-at91.c
++++ b/drivers/i2c/busses/i2c-at91.c
+@@ -435,8 +435,8 @@ static int at91_do_twi_transfer(struct a
+ 		}
  	}
- 	return 0;
- }
+ 
+-	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
+-							dev->adapter.timeout);
++	ret = wait_for_completion_io_timeout(&dev->cmd_complete,
++					     dev->adapter.timeout);
+ 	if (ret == 0) {
+ 		dev_err(dev->dev, "controller timed out\n");
+ 		at91_init_twi_bus(dev);
 
 
