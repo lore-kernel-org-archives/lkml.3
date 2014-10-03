@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaJCD2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 2 Oct 2014 23:28:31 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:45637 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbaJCD2a convert rfc822-to-8bit (ORCPT
+	id S1752806AbaJCDcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 2 Oct 2014 23:32:04 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:56719 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752438AbaJCDcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 2 Oct 2014 23:28:30 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Mike Snitzer <snitzer@redhat.com>, "axboe@kernel.dk" <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "tytso@mit.edu" <tytso@mit.edu>,
-        "gmazyland@gmail.com" <gmazyland@gmail.com>,
-        "agk@redhat.com" <agk@redhat.com>,
-        "mpatocka@redhat.com" <mpatocka@redhat.com>
-Subject: RE: [PATCH] block: disable entropy contributions from nonrot devices
-Thread-Topic: [PATCH] block: disable entropy contributions from nonrot
- devices
-Thread-Index: AQHP3p6lbip0aKW3RUaZVqgPDFbDmZwdsErg
-Date: Fri, 3 Oct 2014 03:26:27 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958CCBFB5@G4W3202.americas.hpqcorp.net>
-References: <1412295074-4984-1-git-send-email-snitzer@redhat.com>
-In-Reply-To: <1412295074-4984-1-git-send-email-snitzer@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 2 Oct 2014 23:32:01 -0400
+Date: Fri, 3 Oct 2014 05:31:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Chang Hyun Park <heartinpiece@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Davidlohr Bueso <dbueso@suse.de>,
+        Don Zickus <dzickus@redhat.com>, Douglas Hatch <doug.hatch@hp.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H . Peter Anvin" <hpa@zytor.com>, Jean Pihet <jean.pihet@linaro.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-arm-kernel@lists.infradead.org,
+        Matt Fleming <matt.fleming@intel.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Scott J Norton <scott.norton@hp.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Waiman Long <Waiman.Long@hp.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 0/8] perf/core improvements and fixes
+Message-ID: <20141003033156.GA17567@gmail.com>
+References: <1412193043-15493-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412193043-15493-1-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Mike Snitzer
-> Sent: Thursday, 02 October, 2014 7:11 PM
-> To: axboe@kernel.dk; linux-kernel@vger.kernel.org
-> Cc: tytso@mit.edu; gmazyland@gmail.com; agk@redhat.com; mpatocka@redhat.com
-> Subject: [PATCH] block: disable entropy contributions from nonrot devices
+> Hi Ingo,
 > 
-> Introduce queue_flags_set_nonrot_clear_add_random() and convert all
-> block drivers that set QUEUE_FLAG_NONROT over to using it instead.
+> 	Please consider pulling,
 > 
-> Historically, all block devices have automatically made entropy
-> contributions.  But as previously stated in commit e2e1a148 ("block: add
-> sysfs knob for turning off disk entropy contributions"):
->     - On SSD disks, the completion times aren't as random as they
->       are for rotational drives. So it's questionable whether they
->       should contribute to the random pool in the first place.
->     - Calling add_disk_randomness() has a lot of overhead.
+> Best Regards,
 > 
-> There are more reliable sources for randomness than non-rotational block
-> devices.  From a security perspective it is better to err on the side of
-> caution than to allow entropy contributions from unreliable "random"
-> sources.
+> - Arnaldo
+> 
+> The following changes since commit 07394b5f13a04f86b27e0ddd96a36c7d9bfe1a4f:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-09-27 09:15:48 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to 281f92f233a59ef52bb45287242bd815a67f5647:
+> 
+>   perf record: Fix error message for --filter option not coming after tracepoint (2014-10-01 15:05:32 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes:
+> 
+> User visible:
+> 
+> . Fix mmap return address truncation to 32-bit in 'perf trace'. (Chang Hyun Park)
+> 
+> o Support operations for shared futexes. (Davidlohr Bueso)
+> 
+> . Fix error message for --filter option not coming after tracepoint. (Arnaldo Carvalho de Melo)
+> 
+> Infrastructure:
+> 
+> . Refactor unit and scale function parameters for pmu parsing routines. (Matt Fleming)
+> 
+> . Improve DSO long names lookup with rbtree, resulting in great speedup for
+>   workloads with lots of DSOs. (Waiman Long)
+> 
+> . Fix build breakage on arm64 targets. (Will Deacon)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       perf record: Fix error message for --filter option not coming after tracepoint
+> 
+> Chang Hyun Park (1):
+>       perf trace: Fix mmap return address truncation to 32-bit
+> 
+> Davidlohr Bueso (2):
+>       perf bench futex: Support operations for shared futexes
+>       perf bench futex: Sanitize -q option in requeue
+> 
+> Matt Fleming (1):
+>       perf tools: Refactor unit and scale function parameters
+> 
+> Waiman Long (2):
+>       perf symbols: Encapsulate dsos list head into struct dsos
+>       perf symbols: Improve DSO long names lookup speed with rbtree
+> 
+> Will Deacon (1):
+>       perf tools: Fix build breakage on arm64 targets
+> 
+>  tools/perf/arch/arm64/util/unwind-libunwind.c |  1 +
+>  tools/perf/bench/futex-hash.c                 |  7 ++-
+>  tools/perf/bench/futex-requeue.c              | 28 +++++----
+>  tools/perf/bench/futex-wake.c                 | 15 +++--
+>  tools/perf/builtin-trace.c                    |  6 +-
+>  tools/perf/util/dso.c                         | 85 +++++++++++++++++++++++----
+>  tools/perf/util/dso.h                         | 16 ++++-
+>  tools/perf/util/header.c                      | 32 +++++-----
+>  tools/perf/util/machine.c                     | 25 ++++----
+>  tools/perf/util/machine.h                     |  5 +-
+>  tools/perf/util/parse-events.c                | 11 ++--
+>  tools/perf/util/pmu.c                         | 38 +++++++-----
+>  tools/perf/util/pmu.h                         |  7 ++-
+>  tools/perf/util/probe-event.c                 |  3 +-
+>  tools/perf/util/symbol-elf.c                  |  7 ++-
+>  15 files changed, 200 insertions(+), 86 deletions(-)
 
-blk-mq defaults to off (QUEUE_FLAG_MQ_DEFAULT does not 
-include QUEUE_FLAG_ADD_RANDOM).
+Pulled into tip:perf/core, thanks a lot Arnaldo!
 
-Even when it's off in block layer completion processing, all interrupts, 
-storage or not, are forced to contribute during hardirq processing.
-I've seen this add 3-12 us latency blips every 64 interrupts (when 
-the "fast_mix" code runs out of bits).
-
-Example of fast_mix only taking 0.071 us:
-(from ftrace function_graph)
-  8)               |                                          handle_irq_event() {
-  8)               |                                            handle_irq_event_percpu() {
-  8)               |                                              do_hpsa_intr_msi [hpsa]() {
-  8)   0.060 us    |                                                SA5_performant_completed [hpsa]();
-  8)   0.397 us    |                                              }
-  8)   0.071 us    |                                              add_interrupt_randomness();
-  8)   0.071 us    |                                              note_interrupt();
-  8)   1.495 us    |                                            }
-  8)   0.045 us    |                                            _raw_spin_lock();
-  8)   2.165 us    |                                          }
-
-Example of the 64th bit taking 3.814 us:
-  8)               |                                    handle_irq_event() {
-  8)               |                                      handle_irq_event_percpu() {
-...
-  8)               |                                        add_interrupt_randomness() {
-  8)               |                                          __mix_pool_bytes() {
-  8)   0.312 us    |                                            _mix_pool_bytes();
-  8)   0.688 us    |                                          }
-  8)               |                                          credit_entropy_bits() {
-  8)               |                                            __wake_up() {
-  8)   0.070 us    |                                              _raw_spin_lock_irqsave();
-  8)   0.050 us    |                                              __wake_up_common();
-  8)   0.056 us    |                                              _raw_spin_unlock_irqrestore();
-  8)   1.448 us    |                                            }
-  8)   0.048 us    |                                            kill_fasync();
-  8)   2.313 us    |                                          }
-  8)   3.814 us    |                                        }
-
-
----
-Rob Elliott    HP Server Storage
-
-
-
+	Ingo
