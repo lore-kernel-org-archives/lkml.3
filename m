@@ -1,74 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaJCMts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:49:48 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:35043 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539AbaJCMtp (ORCPT
+	id S1752726AbaJCMu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:50:57 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:59318 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaJCMu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:49:45 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-32-542e9b6730c4
-Message-id: <542E9B68.1010906@samsung.com>
-Date: Fri, 03 Oct 2014 15:49:44 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: David Howells <dhowells@redhat.com>
-Cc: zohar@linux.vnet.ibm.com, linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 3/4] module: search the key only by keyid
-References: <6d32cecfb3c3f5d041900ce1866bc15134832991.1412327306.git.d.kasatkin@samsung.com>
- <cover.1412327306.git.d.kasatkin@samsung.com>
- <cover.1412327306.git.d.kasatkin@samsung.com>
- <29146.1412340378@warthog.procyon.org.uk>
-In-reply-to: <29146.1412340378@warthog.procyon.org.uk>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xK7rps/VCDO59ZLJ41/SbxeLL0jqL
-	desXM1nM3vWQxeLljHnsFpd3zWGz+NDziM3i5rQLLBafVkxiduD02DnrLrvHtBPLWDweHNrM
-	4rF7wWcmj57vyR7v911l81ix4QSzx+dNcgEcUVw2Kak5mWWpRfp2CVwZF5ZfYC5YwF6xf+Zi
-	9gbGRrYuRg4OCQETiRPTGbsYOYFMMYkL99YDhbk4hASWMkrc23iEBcJpZJKYt2AZlDOLUaLv
-	8QUmkBZeAS2Jae/+sYDYLAKqEvPebgGz2QT0JDY0/2AHsUUFIiRO3t3DDlEvKPFj8j2wGhEB
-	dYlHyzYygwxlFnjNKLHxygdWkISwgK3Ek66DbCC2kMArRolzPeogNqeAmcTZNR2sIGczAy24
-	f1ELJMwsIC+xec1bZohyVYnutWvZIN5RlDg9+RzzBEbhWUhWz0LonoWkewEj8ypG0dTS5ILi
-	pPRcQ73ixNzi0rx0veT83E2MkNj6soNx8TGrQ4wCHIxKPLwfb+iGCLEmlhVX5h5ilOBgVhLh
-	lW7SCxHiTUmsrEotyo8vKs1JLT7EyMTBKdXAyJuqPFt+pbH668CJWzNWHp0WuGVaVN9bz4om
-	1eDIBZ1KH/9EmCb/mGZwJNZh6wrttM+/lkkvkzBsVtkdliyU8nGR/ZfLddM1ZDXLsmufW7Oo
-	/G/jOOHr5KTG/y1xEaNEftOdw47KL1cZxc4S150wmetgC6fSmtNHj/7/k3kq/oODfuMG2S99
-	SizFGYmGWsxFxYkAnYcsK4sCAAA=
+	Fri, 3 Oct 2014 08:50:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141003093546.GB28662@e103034-lin>
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
+ <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org>
+ <20141002165745.GA28662@e103034-lin> <CAKfTPtA5XTwT0fTqXZJWWwfUQ8SfVxiqmQwSWqFKpbb1XpriRw@mail.gmail.com>
+ <20141003093546.GB28662@e103034-lin>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 3 Oct 2014 14:50:35 +0200
+Message-ID: <CAKfTPtAA1thOXR7tRzMQrnyzuoEysqwmBP_mQ+RSh1yOAG7Jpg@mail.gmail.com>
+Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/14 15:46, David Howells wrote:
-> Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->
->> Latest KEYS code change the way keys identified and module
->> signing keys are not searchable anymore with original id.
+On 3 October 2014 11:35, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Fri, Oct 03, 2014 at 08:24:23AM +0100, Vincent Guittot wrote:
+>> On 2 October 2014 18:57, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+>> > On Tue, Sep 23, 2014 at 05:08:04PM +0100, Vincent Guittot wrote:
+>> >> Below are two examples to illustrate the problem that this patch solves:
+>> >>
+>> >> 1 - capacity_factor makes the assumption that max capacity of a CPU is
+>> >> SCHED_CAPACITY_SCALE and the load of a thread is always is
+>> >> SCHED_LOAD_SCALE. It compares the output of these figures with the sum
+>> >> of nr_running to decide if a group is overloaded or not.
+>> >>
+>> >> But if the default capacity of a CPU is less than SCHED_CAPACITY_SCALE
+>> >> (640 as an example), a group of 3 CPUS will have a max capacity_factor
+>> >> of 2 ( div_round_closest(3x640/1024) = 2) which means that it will be
+>> >> seen as overloaded if we have only one task per CPU.
+>> >
+>> > I did some testing on TC2 which has the setup you describe above on the
+>> > A7 cluster when the clock-frequency property is set in DT. The two A15s
+>> > have max capacities above 1024. When using sysbench with five threads I
+>> > still get three tasks on the two A15s and two tasks on the three A7
+>> > leaving one cpu idle (on average).
+>> >
+>> > Using cpu utilization (usage) does correctly identify the A15 cluster as
+>> > overloaded and it even gets as far as selecting the A15 running two
+>> > tasks as the source cpu in load_balance(). However, load_balance() bails
+>> > out without pulling the task due to calculate_imbalance() returning a
+>> > zero imbalance. calculate_imbalance() bails out just before the hunk you
+>> > changed due to comparison of the sched_group avg_loads. sgs->avg_load is
+>> > basically the sum of load in the group divided by its capacity. Since
+>> > load isn't scaled the avg_load of the overloaded A15 group is slightly
+>> > _lower_ than the partially idle A7 group. Hence calculate_imbalance()
+>> > bails out, which isn't what we want.
+>> >
+>> > I think we need to have a closer look at the imbalance calculation code
+>> > and any other users of sgs->avg_load to get rid of all code making
+>> > assumptions about cpu capacity.
 >>
->> This patch fixes this problem without change module signature
->> data.
-> This isn't sufficient.  The key search must also include the signer.
+>> We already had this discussion during the review of a previous version
+>> https://lkml.org/lkml/2014/6/3/422
+>> and my answer has not changed; This patch is necessary to solve the 1
+>> task per CPU issue of the HMP system but is not enough. I have a patch
+>> for solving the imbalance calculation issue and i have planned to send
+>> it once this patch will be in a good shape for being accepted by
+>> Peter.
+>>
+>> I don't want to mix this patch and the next one because there are
+>> addressing different problem: this one is how evaluate the capacity of
+>> a system and detect when a group is overloaded and the next one will
+>> handle the case when the balance of the system can't rely on the
+>> average load figures of the group because we have a significant
+>> capacity difference between groups. Not that i haven't specifically
+>> mentioned HMP for the last patch because SMP system can also take
+>> advantage of it
 >
+> You do mention 'big' and 'little' cores in your commit message and quote
+> example numbers with are identical to the cpu capacities for TC2. That
 
-IMA uses "id:<id>" partial matching.. There is no signer in the signature.
-It is added as "last resort"
+By last patch, i mean the patch about imbalance that i haven't sent
+yet, but it's not related with this patch
 
-It is here... the same but I renamed with finger print..
+> lead me to believe that this patch would address the issues we see for
+> HMP systems. But that is clearly wrong. I would suggest that you drop
 
-http://git.kernel.org/cgit/linux/kernel/git/kasatkin/linux-digsig.git/commit/?h=keys-fixes&id=f036bb9a4c1b3c548f315226d3284e6a91d284e7
+This patch addresses one issue: correctly detect how much capacity we
+have and correctly detect when the group is overloaded; HMP system
+clearly falls in this category but not only.
+This is the only purpose of this patch and not the "1 task per CPU
+issue" that you mentioned.
 
-- Dmitry
+The second patch is about correctly balance the tasks on system where
+the capacity of a group is significantly less than another group. It
+has nothing to do in capacity computation and overload detection but
+it will use these corrected/new metrics to make a better choice.
 
+Then, there is the "1 task per CPU issue on HMP" that you mentioned
+and this latter will be solved thanks to these 2 patchsets but this is
+not the only/main target of these patchsets so i don't want to reduce
+them into: "solve an HMP issue"
 
-> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> mentioning big and little cores and stick to only describing cpu
+> capacity reductions due to rt tasks and irq to avoid any confusion about
+> the purpose of the patch. Maybe explicitly say that non-default cpu
+> capacities (capacity_orig) isn't addressed yet.
+
+But they are addressed by this patchset. you just mixed various goal
+together (see above)
+
 >
+> I think the two problems you describe are very much related. This patch
+> set is half the solution of the HMP balancing problem. We just need the
+> last bit for avg_load and then we can add scale-invariance on top.
 
+i don't see the link between scale invariance and a bad load-balancing
+choice. The fact that the current load balancer puts more tasks than
+CPUs in a group on HMP system should not influence or break the scale
+invariance load tracking. Isn't it ?
+
+Now, i could send the other patchset but i'm afraid that this will
+generate more confusion than help in the process review.
+
+Regards,
+Vincent
+
+>
+> IMHO, it would be good to have all the bits and pieces for cpu capacity
+> scaling and scaling of per-entity load-tracking on the table so we fit
+> things together. We only have patches for parts of the solution posted
+> so far.
+>
+> Morten
