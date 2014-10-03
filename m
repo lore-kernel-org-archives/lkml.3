@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932746AbaJCXBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:01:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
+	id S932720AbaJCXBw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:01:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47246 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966AbaJCWX4 (ORCPT
+	with ESMTP id S1758233AbaJCWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH 3.10 034/143] xtensa: replace IOCTL code definitions with constants
-Date: Fri,  3 Oct 2014 14:33:49 -0700
-Message-Id: <20141003213315.518472466@linuxfoundation.org>
+        Alan Douglas <adouglas@cadence.com>, Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.10 035/143] xtensa: fix address checks in dma_{alloc,free}_coherent
+Date: Fri,  3 Oct 2014 14:33:50 -0700
+Message-Id: <20141003213315.546420024@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -28,77 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Filippov <jcmvbkbc@gmail.com>
+From: Alan Douglas <adouglas@cadence.com>
 
-commit f61bf8e7d19e0a3456a7a9ed97c399e4353698dc upstream.
+commit 1ca49463c44c970b1ab1d71b0f268bfdf8427a7e upstream.
 
-This fixes userspace code that builds on other architectures but fails
-on xtensa due to references to structures that other architectures don't
-refer to. E.g. this fixes the following issue with python-2.7.8:
+Virtual address is translated to the XCHAL_KSEG_CACHED region in the
+dma_free_coherent, but is checked to be in the 0...XCHAL_KSEG_SIZE
+range.
 
-  python-2.7.8/Modules/termios.c:861:25: error: invalid application
-     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
-     {"TIOCSERGETMULTI", TIOCSERGETMULTI},
-  python-2.7.8/Modules/termios.c:870:25: error: invalid application
-     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
-     {"TIOCSERSETMULTI", TIOCSERSETMULTI},
-  python-2.7.8/Modules/termios.c:900:24: error: invalid application
-     of 'sizeof' to incomplete type 'struct tty_struct'
-     {"TIOCTTYGSTRUCT", TIOCTTYGSTRUCT},
+Change check for end of the range from 'addr >= X' to 'addr > X - 1' to
+handle the case of X == 0.
 
+Replace 'if (C) BUG();' construct with 'BUG_ON(C);'.
+
+Signed-off-by: Alan Douglas <adouglas@cadence.com>
 Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/xtensa/include/uapi/asm/ioctls.h |   19 ++++++++++---------
- 1 file changed, 10 insertions(+), 9 deletions(-)
+ arch/xtensa/kernel/pci-dma.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/xtensa/include/uapi/asm/ioctls.h
-+++ b/arch/xtensa/include/uapi/asm/ioctls.h
-@@ -28,17 +28,17 @@
- #define TCSETSW		0x5403
- #define TCSETSF		0x5404
+--- a/arch/xtensa/kernel/pci-dma.c
++++ b/arch/xtensa/kernel/pci-dma.c
+@@ -49,9 +49,8 @@ dma_alloc_coherent(struct device *dev,si
  
--#define TCGETA		_IOR('t', 23, struct termio)
--#define TCSETA		_IOW('t', 24, struct termio)
--#define TCSETAW		_IOW('t', 25, struct termio)
--#define TCSETAF		_IOW('t', 28, struct termio)
-+#define TCGETA		0x80127417	/* _IOR('t', 23, struct termio) */
-+#define TCSETA		0x40127418	/* _IOW('t', 24, struct termio) */
-+#define TCSETAW		0x40127419	/* _IOW('t', 25, struct termio) */
-+#define TCSETAF		0x4012741C	/* _IOW('t', 28, struct termio) */
+ 	/* We currently don't support coherent memory outside KSEG */
  
- #define TCSBRK		_IO('t', 29)
- #define TCXONC		_IO('t', 30)
- #define TCFLSH		_IO('t', 31)
+-	if (ret < XCHAL_KSEG_CACHED_VADDR
+-	    || ret >= XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE)
+-		BUG();
++	BUG_ON(ret < XCHAL_KSEG_CACHED_VADDR ||
++	       ret > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
  
--#define TIOCSWINSZ	_IOW('t', 103, struct winsize)
--#define TIOCGWINSZ	_IOR('t', 104, struct winsize)
-+#define TIOCSWINSZ	0x40087467	/* _IOW('t', 103, struct winsize) */
-+#define TIOCGWINSZ	0x80087468	/* _IOR('t', 104, struct winsize) */
- #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
- #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
- #define TIOCOUTQ        _IOR('t', 115, int)     /* output queue size */
-@@ -88,7 +88,6 @@
- #define TIOCSETD	_IOW('T', 35, int)
- #define TIOCGETD	_IOR('T', 36, int)
- #define TCSBRKP		_IOW('T', 37, int)   /* Needed for POSIX tcsendbreak()*/
--#define TIOCTTYGSTRUCT	_IOR('T', 38, struct tty_struct) /* For debugging only*/
- #define TIOCSBRK	_IO('T', 39) 	     /* BSD compatibility */
- #define TIOCCBRK	_IO('T', 40)	     /* BSD compatibility */
- #define TIOCGSID	_IOR('T', 41, pid_t) /* Return the session ID of FD*/
-@@ -114,8 +113,10 @@
- #define TIOCSERGETLSR   _IOR('T', 89, unsigned int) /* Get line status reg. */
-   /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
- # define TIOCSER_TEMT    0x01		     /* Transmitter physically empty */
--#define TIOCSERGETMULTI _IOR('T', 90, struct serial_multiport_struct) /* Get multiport config  */
--#define TIOCSERSETMULTI _IOW('T', 91, struct serial_multiport_struct) /* Set multiport config */
-+#define TIOCSERGETMULTI 0x80a8545a /* Get multiport config  */
-+			/* _IOR('T', 90, struct serial_multiport_struct) */
-+#define TIOCSERSETMULTI 0x40a8545b /* Set multiport config */
-+			/* _IOW('T', 91, struct serial_multiport_struct) */
  
- #define TIOCMIWAIT	_IO('T', 92) /* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+ 	if (ret != 0) {
+@@ -68,10 +67,11 @@ EXPORT_SYMBOL(dma_alloc_coherent);
+ void dma_free_coherent(struct device *hwdev, size_t size,
+ 			 void *vaddr, dma_addr_t dma_handle)
+ {
+-	long addr=(long)vaddr+XCHAL_KSEG_CACHED_VADDR-XCHAL_KSEG_BYPASS_VADDR;
++	unsigned long addr = (unsigned long)vaddr +
++		XCHAL_KSEG_CACHED_VADDR - XCHAL_KSEG_BYPASS_VADDR;
+ 
+-	if (addr < 0 || addr >= XCHAL_KSEG_SIZE)
+-		BUG();
++	BUG_ON(addr < XCHAL_KSEG_CACHED_VADDR ||
++	       addr > XCHAL_KSEG_CACHED_VADDR + XCHAL_KSEG_SIZE - 1);
+ 
+ 	free_pages(addr, get_order(size));
+ }
 
 
