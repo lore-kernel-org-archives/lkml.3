@@ -1,61 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580AbaJCPoC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 11:44:02 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:53414 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134AbaJCPn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 11:43:58 -0400
+	id S1753911AbaJCPot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 11:44:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753233AbaJCPos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 11:44:48 -0400
+Date: Fri, 3 Oct 2014 17:44:46 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
+Message-ID: <20141003154446.GH4816@dhcp22.suse.cz>
+References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
+ <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
+ <20140930110622.GB4456@dhcp22.suse.cz>
+ <20141002150135.GA1394@cmpxchg.org>
+ <20141002195214.GA2705@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <542E2D56.6090007@oracle.com>
-References: <20140930033327.GA14558@redhat.com>
-	<CA+55aFwxdOBKHwwp7Zq1k19mHCyHYmYqigCVt59AtB-P7Zva1w@mail.gmail.com>
-	<CA+55aFynr-Abo_JY1=GGOf9e2tjJvexbX2kVTgD0bkq7BXacJw@mail.gmail.com>
-	<20140930160510.GA15903@redhat.com>
-	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
-	<20140930162201.GC15903@redhat.com>
-	<20140930164047.GA18354@redhat.com>
-	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
-	<20140930182059.GA24431@redhat.com>
-	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
-	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
-	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
-	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
-	<CA+55aFzisEwtcBA93Xo74RM-6X9V=_go=YhN7eFJOHLeHs3HEQ@mail.gmail.com>
-	<542C7B5E.2020000@oracle.com>
-	<CA+55aFy7Y+pmhyEHTJg=K8gLKzLHxzz6j9FBJMt7_Fazfong6g@mail.gmail.com>
-	<542D6981.3080405@oracle.com>
-	<CA+55aFx_Q7C2a9yCAqK=yWNX1mkcVRdE2bnLOQPHEkMjRcj7KQ@mail.gmail.com>
-	<542E2D56.6090007@oracle.com>
-Date: Fri, 3 Oct 2014 08:43:57 -0700
-X-Google-Sender-Auth: 0AHHIdLX3nnmS3BV063br4UUbFo
-Message-ID: <CA+55aFydZt+D68u60MDHUG5r34SmWnDewVFLom7uNwovMzc-CA@mail.gmail.com>
-Subject: Re: pipe/page fault oddness.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Michel Lespinasse <walken@google.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002195214.GA2705@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 2, 2014 at 10:00 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> For the record, I tweaked the environment to put some more pressure on the
-> scheduler and found out what broke (which is not related to this thread at
-> all).
+On Thu 02-10-14 15:52:14, Johannes Weiner wrote:
+> On Thu, Oct 02, 2014 at 11:01:35AM -0400, Johannes Weiner wrote:
+> > On Tue, Sep 30, 2014 at 01:06:22PM +0200, Michal Hocko wrote:
+> > > > +/**
+> > > > + * page_counter_limit - limit the number of pages allowed
+> > > > + * @counter: counter
+> > > > + * @limit: limit to set
+> > > > + *
+> > > > + * Returns 0 on success, -EBUSY if the current number of pages on the
+> > > > + * counter already exceeds the specified limit.
+> > > > + *
+> > > > + * The caller must serialize invocations on the same counter.
+> > > > + */
+> > > > +int page_counter_limit(struct page_counter *counter, unsigned long limit)
+> > > > +{
+> > > > +	for (;;) {
+> > > > +		unsigned long old;
+> > > > +		long count;
+> > > > +
+> > > > +		count = atomic_long_read(&counter->count);
+> > > > +
+> > > > +		old = xchg(&counter->limit, limit);
+> > > > +
+> > > > +		if (atomic_long_read(&counter->count) != count) {
+> > > > +			counter->limit = old;
+> > > > +			continue;
+> > > > +		}
+> > > > +
+> > > > +		if (count > limit) {
+> > > > +			counter->limit = old;
+> > > > +			return -EBUSY;
+> > > > +		}
+> > > 
+> > > Ordering doesn't make much sense to me here. Say you really want to set
+> > > limit < count. You are effectively pushing all concurrent charges to
+> > > the reclaim even though you would revert your change and return with
+> > > EBUSY later on.
+> > >
+> > > Wouldn't (count > limit) check make more sense right after the first
+> > > atomic_long_read?
+> > > Also the second count check should be sufficient to check > count and
+> > > retry only when the count has increased.
+> > > Finally continuous flow of charges can keep this loop running for quite
+> > > some time and trigger lockup detector. cond_resched before continue
+> > > would handle that. Something like the following:
+> > > 
+> > > 	for (;;) {
+> > > 		unsigned long old;
+> > > 		long count;
+> > > 
+> > > 		count = atomic_long_read(&counter->count);
+> > > 		if (count > limit)
+> > > 			return -EBUSY;
+> > > 
+> > > 		old = xchg(&counter->limit, limit);
+> > > 
+> > > 		/* Recheck for concurrent charges */
+> > > 		if (atomic_long_read(&counter->count) > count) {
+> > > 			counter->limit = old;
+> > > 			cond_resched();
+> > > 			continue;
+> > > 		}
+> > > 
+> > > 		return 0;
+> > > 	}
+> > 
+> > This is susceptible to spurious -EBUSY during races with speculative
+> > charges and uncharges.  My code avoids that by retrying until we set
+> > the limit without any concurrent counter operations first, before
+> > moving on to implementing policy and rollback.
+> > 
+> > Some reclaim activity caused by a limit that the user is trying to set
+> > anyway should be okay.  I'd rather have a reliable syscall.
+> > 
+> > But the cond_resched() is a good idea, I'll add that, thanks.
+> 
+> Thinking more about it, my code doesn't really avoid that if the
+> speculative charges persist over the two reads, it just widens the
+> window a bit.  But your suggestion seems indeed more readable,
+> although I'd invert the second branch.
+> 
+> How about this delta on top?
+> 
+> diff --git a/mm/page_counter.c b/mm/page_counter.c
+> index 4bdab1c7a057..7eb17135d4a4 100644
+> --- a/mm/page_counter.c
+> +++ b/mm/page_counter.c
+> @@ -19,8 +19,8 @@ int page_counter_cancel(struct page_counter *counter, unsigned long nr_pages)
+>  
+>  	new = atomic_long_sub_return(nr_pages, &counter->count);
+>  
+> -	if (WARN_ON_ONCE(new < 0))
+> -		atomic_long_add(nr_pages, &counter->count);
+> +	/* More uncharges than charges? */
+> +	WARN_ON_ONCE(new < 0);
+>  
+>  	return new > 0;
+>  }
+> @@ -146,29 +146,29 @@ int page_counter_limit(struct page_counter *counter, unsigned long limit)
+>  		unsigned long old;
+>  		long count;
+>  
+> -		count = atomic_long_read(&counter->count);
+>  		/*
+> +		 * Update the limit while making sure that it's not
+> +		 * below the (concurrently changing) counter value.
+> +		 *
+>  		 * The xchg implies two full memory barriers before
+>  		 * and after, so the read-swap-read is ordered and
+>  		 * ensures coherency with page_counter_try_charge():
+>  		 * that function modifies the count before checking
+>  		 * the limit, so if it sees the old limit, we see the
+> -		 * modified counter and retry.  This guarantees we
+> -		 * never successfully set a limit below the counter.
+> +		 * modified counter and retry.
+>  		 */
+> -		old = xchg(&counter->limit, limit);
+> -
+> -		if (atomic_long_read(&counter->count) != count) {
+> -			counter->limit = old;
+> -			continue;
+> -		}
+> +		count = atomic_long_read(&counter->count);
+>  
+> -		if (count > limit) {
+> -			counter->limit = old;
+> +		if (count > limit)
+>  			return -EBUSY;
+> -		}
+>  
+> -		return 0;
+> +		old = xchg(&counter->limit, limit);
+> +
+> +		if (atomic_long_read(&counter->count) <= count)
+> +			return 0;
+> +
+> +		counter->limit = old;
+> +		cond_resched();
+>  	}
+>  }
 
-Ok. It's probably still worth testing Mel's patches, since that's what
-goes into 3.17. But it would be interesting to eventually go back to
-stability-testing the protnone set, since it *looked* like it was
-working well aside from this issue. I might decide to just do it
-during the 3.18 merge window..
+Looks good to me.
 
-          Linus
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
