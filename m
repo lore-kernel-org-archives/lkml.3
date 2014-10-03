@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaJCXQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:16:36 -0400
+	id S1757862AbaJCWNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 18:13:50 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:46742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872AbaJCWNw (ORCPT
+	with ESMTP id S1757764AbaJCWNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:13:52 -0400
+	Fri, 3 Oct 2014 18:13:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pontus Fuchs <pontus.fuchs@gmail.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 176/238] genhd: fix leftover might_sleep() in blk_free_devt()
-Date: Fri,  3 Oct 2014 14:31:31 -0700
-Message-Id: <20141003212919.309216031@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [PATCH 3.14 142/238] iio: adc: ad_sigma_delta: Fix indio_dev->trig assignment
+Date: Fri,  3 Oct 2014 14:30:57 -0700
+Message-Id: <20141003212918.227733295@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -28,33 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 46f341ffcfb5d8530f7d1e60f3be06cce6661b62 upstream.
+commit 9e5846be33277802c0c76e5c12825d0e4d27f639 upstream.
 
-Commit 2da78092 changed the locking from a mutex to a spinlock,
-so we now longer sleep in this context. But there was a leftover
-might_sleep() in there, which now triggers since we do the final
-free from an RCU callback. Get rid of it.
+This can result in wrong reference count for trigger device, call
+iio_trigger_get to increment reference.
+Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
+with Jonathan.
 
-Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/iio/adc/ad_sigma_delta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -445,8 +445,6 @@ int blk_alloc_devt(struct hd_struct *par
-  */
- void blk_free_devt(dev_t devt)
- {
--	might_sleep();
--
- 	if (devt == MKDEV(0, 0))
- 		return;
+--- a/drivers/iio/adc/ad_sigma_delta.c
++++ b/drivers/iio/adc/ad_sigma_delta.c
+@@ -472,7 +472,7 @@ static int ad_sd_probe_trigger(struct ii
+ 		goto error_free_irq;
+ 
+ 	/* select default trigger */
+-	indio_dev->trig = sigma_delta->trig;
++	indio_dev->trig = iio_trigger_get(sigma_delta->trig);
+ 
+ 	return 0;
  
 
 
