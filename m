@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244AbaJCXqO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:46:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46270 "EHLO
+	id S933227AbaJCXqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:46:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46292 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264AbaJCWDc (ORCPT
+	with ESMTP id S1757267AbaJCWDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:03:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>, Linn Crosetto <linn@hp.com>,
-        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.16 281/357] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
-Date: Fri,  3 Oct 2014 14:31:07 -0700
-Message-Id: <20141003212941.931929299@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.14 067/238] xtensa: replace IOCTL code definitions with constants
+Date: Fri,  3 Oct 2014 14:29:42 -0700
+Message-Id: <20141003212915.818171930@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
+References: <20141003212913.680985295@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -30,124 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
+commit f61bf8e7d19e0a3456a7a9ed97c399e4353698dc upstream.
 
-The following bug can be triggered by hot adding and removing a large number of
-xen domain0's vcpus repeatedly:
+This fixes userspace code that builds on other architectures but fails
+on xtensa due to references to structures that other architectures don't
+refer to. E.g. this fixes the following issue with python-2.7.8:
 
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
-	PGD 5a9d5067 PUD 13067 PMD 0
-	Oops: 0000 [#3] SMP
-	[...]
-	Call Trace:
-	load_balance
-	? _raw_spin_unlock_irqrestore
-	idle_balance
-	__schedule
-	schedule
-	schedule_timeout
-	? lock_timer_base
-	schedule_timeout_uninterruptible
-	msleep
-	lock_device_hotplug_sysfs
-	online_store
-	dev_attr_store
-	sysfs_write_file
-	vfs_write
-	SyS_write
-	system_call_fastpath
+  python-2.7.8/Modules/termios.c:861:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERGETMULTI", TIOCSERGETMULTI},
+  python-2.7.8/Modules/termios.c:870:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERSETMULTI", TIOCSERSETMULTI},
+  python-2.7.8/Modules/termios.c:900:24: error: invalid application
+     of 'sizeof' to incomplete type 'struct tty_struct'
+     {"TIOCTTYGSTRUCT", TIOCTTYGSTRUCT},
 
-Last level cache shared mask is built during CPU up and the
-build_sched_domain() routine takes advantage of it to setup
-the sched domain CPU topology.
-
-However, llc_shared_mask is not released during CPU disable,
-which leads to an invalid sched domainCPU topology.
-
-This patch fix it by releasing the llc_shared_mask correctly
-during CPU disable.
-
-Yasuaki also reported that this can happen on real hardware:
-
-  https://lkml.org/lkml/2014/7/22/1018
-
-His case is here:
-
-	==
-	Here is an example on my system.
-	My system has 4 sockets and each socket has 15 cores and HT is
-	enabled. In this case, each core of sockes is numbered as
-	follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-44, 90-104
-	Socket#3 | 45-59, 105-119
-
-	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
-
-	It means that last level cache of Socket#2 is shared with
-	CPU#30-44 and 90-104.
-
-	When hot-removing socket#2 and #3, each core of sockets is
-	numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-
-	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
-	remains having 0x3fff80000001fffc0000000.
-
-	After that, when hot-adding socket#2 and #3, each core of
-	sockets is numbered as follows:
-
-		 | CPU#
-	Socket#0 | 0-14 , 60-74
-	Socket#1 | 15-29, 75-89
-	Socket#2 | 30-59
-	Socket#3 | 90-119
-
-	Then llc_shared_mask of CPU#30 becomes
-	0x3fff8000fffffffc0000000. It means that last level cache of
-	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
-	the wrong value.
-
-Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
-Tested-by: Linn Crosetto <linn@hp.com>
-Reviewed-by: Borislav Petkov <bp@suse.de>
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/smpboot.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/xtensa/include/uapi/asm/ioctls.h |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1292,6 +1292,9 @@ static void remove_siblinginfo(int cpu)
+--- a/arch/xtensa/include/uapi/asm/ioctls.h
++++ b/arch/xtensa/include/uapi/asm/ioctls.h
+@@ -28,17 +28,17 @@
+ #define TCSETSW		0x5403
+ #define TCSETSF		0x5404
  
- 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
- 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
-+	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
-+		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
-+	cpumask_clear(cpu_llc_shared_mask(cpu));
- 	cpumask_clear(cpu_sibling_mask(cpu));
- 	cpumask_clear(cpu_core_mask(cpu));
- 	c->phys_proc_id = 0;
+-#define TCGETA		_IOR('t', 23, struct termio)
+-#define TCSETA		_IOW('t', 24, struct termio)
+-#define TCSETAW		_IOW('t', 25, struct termio)
+-#define TCSETAF		_IOW('t', 28, struct termio)
++#define TCGETA		0x80127417	/* _IOR('t', 23, struct termio) */
++#define TCSETA		0x40127418	/* _IOW('t', 24, struct termio) */
++#define TCSETAW		0x40127419	/* _IOW('t', 25, struct termio) */
++#define TCSETAF		0x4012741C	/* _IOW('t', 28, struct termio) */
+ 
+ #define TCSBRK		_IO('t', 29)
+ #define TCXONC		_IO('t', 30)
+ #define TCFLSH		_IO('t', 31)
+ 
+-#define TIOCSWINSZ	_IOW('t', 103, struct winsize)
+-#define TIOCGWINSZ	_IOR('t', 104, struct winsize)
++#define TIOCSWINSZ	0x40087467	/* _IOW('t', 103, struct winsize) */
++#define TIOCGWINSZ	0x80087468	/* _IOR('t', 104, struct winsize) */
+ #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
+ #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
+ #define TIOCOUTQ        _IOR('t', 115, int)     /* output queue size */
+@@ -88,7 +88,6 @@
+ #define TIOCSETD	_IOW('T', 35, int)
+ #define TIOCGETD	_IOR('T', 36, int)
+ #define TCSBRKP		_IOW('T', 37, int)   /* Needed for POSIX tcsendbreak()*/
+-#define TIOCTTYGSTRUCT	_IOR('T', 38, struct tty_struct) /* For debugging only*/
+ #define TIOCSBRK	_IO('T', 39) 	     /* BSD compatibility */
+ #define TIOCCBRK	_IO('T', 40)	     /* BSD compatibility */
+ #define TIOCGSID	_IOR('T', 41, pid_t) /* Return the session ID of FD*/
+@@ -114,8 +113,10 @@
+ #define TIOCSERGETLSR   _IOR('T', 89, unsigned int) /* Get line status reg. */
+   /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
+ # define TIOCSER_TEMT    0x01		     /* Transmitter physically empty */
+-#define TIOCSERGETMULTI _IOR('T', 90, struct serial_multiport_struct) /* Get multiport config  */
+-#define TIOCSERSETMULTI _IOW('T', 91, struct serial_multiport_struct) /* Set multiport config */
++#define TIOCSERGETMULTI 0x80a8545a /* Get multiport config  */
++			/* _IOR('T', 90, struct serial_multiport_struct) */
++#define TIOCSERSETMULTI 0x40a8545b /* Set multiport config */
++			/* _IOW('T', 91, struct serial_multiport_struct) */
+ 
+ #define TIOCMIWAIT	_IO('T', 92) /* wait for a change on serial input line(s) */
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
 
 
