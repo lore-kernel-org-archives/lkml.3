@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaJCT5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 15:57:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39285 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287AbaJCT50 (ORCPT
+	id S1754649AbaJCUBB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 16:01:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59012 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaJCUA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 15:57:26 -0400
-Date: Fri, 3 Oct 2014 21:57:24 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Mikko Perttunen <mperttunen@nvidia.com>, rui.zhang@intel.com,
-        swarren@wwwdotorg.org, thierry.reding@gmail.com,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        juha-matti.tilli@iki.fi
-Subject: Re: [PATCH v5 3/4] ARM: tegra: Add thermal trip points for Jetson TK1
-Message-ID: <20141003195723.GA6074@amd>
-References: <1408616242-21009-1-git-send-email-mperttunen@nvidia.com>
- <1408616242-21009-4-git-send-email-mperttunen@nvidia.com>
- <20140924183204.GE27076@developer>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140924183204.GE27076@developer>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 3 Oct 2014 16:00:59 -0400
+Date: Fri, 03 Oct 2014 13:03:05 -0700 (PDT)
+Message-Id: <20141003.130305.2216770567363258603.davem@davemloft.net>
+To: mwelling@ieee.org
+Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:ethernet:davinci_emac.c:Fixes flaw in mac
+ address handling.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
+References: <1412217125-11057-1-git-send-email-mwelling@ieee.org>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 03 Oct 2014 13:00:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-09-24 14:32:06, Eduardo Valentin wrote:
-> Hello Mikko,
+From: Michael Welling <mwelling@ieee.org>
+Date: Wed,  1 Oct 2014 21:32:05 -0500
+
+> The code currently checks the mac_addr variable that is clearly
+> zero'd out during allocation.
 > 
-> On Thu, Aug 21, 2014 at 01:17:21PM +0300, Mikko Perttunen wrote:
-> > This adds critical trip points to the Jetson TK1 device tree.
-> > The device will do a controlled shutdown when either the CPU, GPU
-> > or MEM thermal zone reaches 101 degrees Celsius.
+> Further code is added to bring the mac_addr from the partial pdata.
+> 
+> Signed-off-by: Michael Welling <mwelling@ieee.org>
 
-> > +			trips {
-> > +				trip@0 {
-> > +					temperature = <101000>;
-> > +					hysteresis = <0>;
-> > +					type = "critical";
-> > +				};
+I don't see anyone specifying a MAC address in the partial pdata,
+so better to just delete that field.
 
-Would it be still time to switch to some more reasonable unit, like
-degrees celsius? milicelsius is a bit of overkill.. ACPI uses
-deciCelsius, but .. celsius should be enough.
-
-								Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Even if people did, I am not so sure that the partial pdata should
+unconditionally trump an OF provided MAC address.
