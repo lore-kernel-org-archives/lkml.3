@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaJCXFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:05:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46891 "EHLO
+	id S1755187AbaJCXFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:05:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757839AbaJCWOH (ORCPT
+	with ESMTP id S1757835AbaJCWOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:14:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.14 213/238] media: adv7604: fix inverted condition
-Date: Fri,  3 Oct 2014 14:32:08 -0700
-Message-Id: <20141003212920.471355594@linuxfoundation.org>
+        Cong Wang <cwang@twopensource.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 204/238] perf: Fix a race condition in perf_remove_from_context()
+Date: Fri,  3 Oct 2014 14:31:59 -0700
+Message-Id: <20141003212920.186261959@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
 References: <20141003212913.680985295@linuxfoundation.org>
@@ -29,31 +34,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: Cong Wang <cwang@twopensource.com>
 
-commit 77639ff2b3404a913b8037d230a384798b854bae upstream.
+commit 3577af70a2ce4853d58e57d832e687d739281479 upstream.
 
-The log_status function should show HDMI information, but the test checking for
-an HDMI input was inverted. Fix this.
+We saw a kernel soft lockup in perf_remove_from_context(),
+it looks like the `perf` process, when exiting, could not go
+out of the retry loop. Meanwhile, the target process was forking
+a child. So either the target process should execute the smp
+function call to deactive the event (if it was running) or it should
+do a context switch which deactives the event.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+It seems we optimize out a context switch in perf_event_context_sched_out(),
+and what's more important, we still test an obsolete task pointer when
+retrying, so no one actually would deactive that event in this situation.
+Fix it directly by reloading the task pointer in perf_remove_from_context().
+
+This should cure the above soft lockup.
+
+Signed-off-by: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1409696840-843-1-git-send-email-xiyou.wangcong@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/adv7604.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/events/core.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/media/i2c/adv7604.c
-+++ b/drivers/media/i2c/adv7604.c
-@@ -1984,7 +1984,7 @@ static int adv7604_log_status(struct v4l
- 	v4l2_info(sd, "HDCP keys read: %s%s\n",
- 			(hdmi_read(sd, 0x04) & 0x20) ? "yes" : "no",
- 			(hdmi_read(sd, 0x04) & 0x10) ? "ERROR" : "");
--	if (!is_hdmi(sd)) {
-+	if (is_hdmi(sd)) {
- 		bool audio_pll_locked = hdmi_read(sd, 0x04) & 0x01;
- 		bool audio_sample_packet_detect = hdmi_read(sd, 0x18) & 0x01;
- 		bool audio_mute = io_read(sd, 0x65) & 0x40;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1516,6 +1516,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
+@@ -1957,6 +1962,11 @@ retry:
+ 	 */
+ 	if (ctx->is_active) {
+ 		raw_spin_unlock_irq(&ctx->lock);
++		/*
++		 * Reload the task pointer, it might have been changed by
++		 * a concurrent perf_event_context_sched_out().
++		 */
++		task = ctx->task;
+ 		goto retry;
+ 	}
+ 
 
 
