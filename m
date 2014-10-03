@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaJCVnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:43:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44838 "EHLO
+	id S1758370AbaJDAXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:23:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45274 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755062AbaJCVcz (ORCPT
+	with ESMTP id S1755991AbaJCVnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:32:55 -0400
+	Fri, 3 Oct 2014 17:43:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Richter <adam_richter2004@yahoo.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 061/357] ALSA: hda - Fix invalid pin powermap without jack detection
-Date: Fri,  3 Oct 2014 14:27:27 -0700
-Message-Id: <20141003212935.290631111@linuxfoundation.org>
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.16 196/357] gpio / ACPI: Use pin index and bit length
+Date: Fri,  3 Oct 2014 14:29:42 -0700
+Message-Id: <20141003212939.365947671@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -29,73 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 
-commit 7a9744cb455e6faa287e148394b4b422a6f3c5c4 upstream.
+commit c15d821ddb9dac9ac6b5beb75bf942f3bc3a4004 upstream.
 
-When a driver is set up without the jack detection explicitly (either
-by passing a model option or via a specific fixup), the pin powermap
-of IDT/STAC codecs is set up wrongly, resulting in the silence
-output.  It's because of a logic failure in stac_init_power_map().
-It tries to avoid creating a callback for the pins that have other
-auto-hp and auto-mic callbacks, but the check is done in a wrong way
-at a wrong time.  The stac_init_power_map() should be called after
-creating other jack detection ctls, and the jack callback should be
-created only for jack-detectable widgets.
+Fix code when the operation region callback is for an gpio, which
+is not at index 0 and for partial pins in a GPIO definition.
+For example:
+Name (GMOD, ResourceTemplate ()
+{
+	//3 Outputs that define the Power mode of the device
+	GpioIo (Exclusive, PullDown, , , , "\\_SB.GPI2") {10, 11, 12}
+	})
+}
 
-This patch fixes the check in stac_init_power_map() and its callee
-at the right place, after snd_hda_gen_build_controls().
+If opregion callback calls is for:
+- Set pin 10, then address = 0 and bit length = 1
+- Set pin 11, then address = 1 and bit length = 1
+- Set for both pin 11 and pin 12, then address = 1, bit length = 2
 
-Reported-by: Adam Richter <adam_richter2004@yahoo.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This change requires updated ACPICA gpio operation handler code to
+send the pin index and bit length.
+
+Fixes: 473ed7be0da0 (gpio / ACPI: Add support for ACPI GPIO operation regions)
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/gpio/gpiolib-acpi.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -565,8 +565,8 @@ static void stac_init_power_map(struct h
- 		if (snd_hda_jack_tbl_get(codec, nid))
- 			continue;
- 		if (def_conf == AC_JACK_PORT_COMPLEX &&
--		    !(spec->vref_mute_led_nid == nid ||
--		      is_jack_detectable(codec, nid))) {
-+		    spec->vref_mute_led_nid != nid &&
-+		    is_jack_detectable(codec, nid)) {
- 			snd_hda_jack_detect_enable_callback(codec, nid,
- 							    STAC_PWR_EVENT,
- 							    jack_update_power);
-@@ -4263,11 +4263,18 @@ static int stac_parse_auto_config(struct
- 			return err;
+--- a/drivers/gpio/gpiolib-acpi.c
++++ b/drivers/gpio/gpiolib-acpi.c
+@@ -357,8 +357,10 @@ acpi_gpio_adr_space_handler(u32 function
+ 	struct gpio_chip *chip = achip->chip;
+ 	struct acpi_resource_gpio *agpio;
+ 	struct acpi_resource *ares;
++	int pin_index = (int)address;
+ 	acpi_status status;
+ 	bool pull_up;
++	int length;
+ 	int i;
+ 
+ 	status = acpi_buffer_to_resource(achip->conn_info.connection,
+@@ -380,7 +382,8 @@ acpi_gpio_adr_space_handler(u32 function
+ 		return AE_BAD_PARAMETER;
  	}
  
--	stac_init_power_map(codec);
--
- 	return 0;
- }
- 
-+static int stac_build_controls(struct hda_codec *codec)
-+{
-+	int err = snd_hda_gen_build_controls(codec);
-+
-+	if (err < 0)
-+		return err;
-+	stac_init_power_map(codec);
-+	return 0;
-+}
- 
- static int stac_init(struct hda_codec *codec)
- {
-@@ -4379,7 +4386,7 @@ static int stac_suspend(struct hda_codec
- #endif /* CONFIG_PM */
- 
- static const struct hda_codec_ops stac_patch_ops = {
--	.build_controls = snd_hda_gen_build_controls,
-+	.build_controls = stac_build_controls,
- 	.build_pcms = snd_hda_gen_build_pcms,
- 	.init = stac_init,
- 	.free = stac_free,
+-	for (i = 0; i < agpio->pin_table_length; i++) {
++	length = min(agpio->pin_table_length, (u16)(pin_index + bits));
++	for (i = pin_index; i < length; ++i) {
+ 		unsigned pin = agpio->pin_table[i];
+ 		struct acpi_gpio_connection *conn;
+ 		struct gpio_desc *desc;
 
 
