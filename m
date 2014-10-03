@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182AbaJCVxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:53:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45826 "EHLO
+	id S932236AbaJCVxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:53:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45712 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756741AbaJCVx0 (ORCPT
+	with ESMTP id S1756798AbaJCVxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:26 -0400
+	Fri, 3 Oct 2014 17:53:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        Sagi Grimberg <sagig@mellanox.com>, Christoph Hellwig <hch@lst.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.16 238/357] SCSI: libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-Date: Fri,  3 Oct 2014 14:30:24 -0700
-Message-Id: <20141003212940.659568793@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.16 240/357] iwlwifi: mvm: fix endianity issues with Smart Fifo commands
+Date: Fri,  3 Oct 2014 14:30:26 -0700
+Message-Id: <20141003212940.717510438@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,52 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
+commit 86974bff066dd8b98be46d7c7d3aba89034f0833 upstream.
 
-This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
-This function is used by iscsi drivers and userspace to send iscsi PDUs/
-commands. For login commands, we have a set buffer size. For all other
-commands we do not support data buffers.
+This code was broken on big endian systems. Sparse didn't
+catch the bug since the firmware command was not tagged as
+little endian.
+Fix the bug for big endian systems and tag the field in the
+firmware command to prevent such issues in the future.
 
-This was reported by Dan Carpenter here:
-http://www.spinics.net/lists/linux-scsi/msg66838.html
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Fixes: 1f3b0ff8ec ("iwlwifi: mvm: Add Smart FIFO support")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/libiscsi.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/wireless/iwlwifi/mvm/fw-api.h |    4 ++--
+ drivers/net/wireless/iwlwifi/mvm/sf.c     |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn
- 			return NULL;
- 		}
+--- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
++++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
+@@ -1487,14 +1487,14 @@ enum iwl_sf_scenario {
  
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
- 
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
- 
+ /**
+  * Smart Fifo configuration command.
+- * @state: smart fifo state, types listed in iwl_sf_sate.
++ * @state: smart fifo state, types listed in enum %iwl_sf_sate.
+  * @watermark: Minimum allowed availabe free space in RXF for transient state.
+  * @long_delay_timeouts: aging and idle timer values for each scenario
+  * in long delay state.
+  * @full_on_timeouts: timer values for each scenario in full on state.
+  */
+ struct iwl_sf_cfg_cmd {
+-	enum iwl_sf_state state;
++	__le32 state;
+ 	__le32 watermark[SF_TRANSIENT_STATES_NUMBER];
+ 	__le32 long_delay_timeouts[SF_NUM_SCENARIO][SF_NUM_TIMEOUT_TYPES];
+ 	__le32 full_on_timeouts[SF_NUM_SCENARIO][SF_NUM_TIMEOUT_TYPES];
+--- a/drivers/net/wireless/iwlwifi/mvm/sf.c
++++ b/drivers/net/wireless/iwlwifi/mvm/sf.c
+@@ -172,7 +172,7 @@ static int iwl_mvm_sf_config(struct iwl_
+ 			     enum iwl_sf_state new_state)
+ {
+ 	struct iwl_sf_cfg_cmd sf_cmd = {
+-		.state = new_state,
++		.state = cpu_to_le32(new_state),
+ 	};
+ 	struct ieee80211_sta *sta;
+ 	int ret = 0;
 
 
