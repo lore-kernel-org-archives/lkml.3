@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932577AbaJCWX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:23:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47233 "EHLO
+	id S932511AbaJCXAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:00:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391AbaJCWXw (ORCPT
+	with ESMTP id S1757001AbaJCWX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:23:52 -0400
+	Fri, 3 Oct 2014 18:23:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.10 009/143] drm/ttm: Choose a pool to shrink correctly in ttm_dma_pool_shrink_scan().
-Date: Fri,  3 Oct 2014 14:33:24 -0700
-Message-Id: <20141003213314.764150912@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>
+Subject: [PATCH 3.10 020/143] arm64: ptrace: fix compat hardware watchpoint reporting
+Date: Fri,  3 Oct 2014 14:33:35 -0700
+Message-Id: <20141003213315.091132518@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -29,45 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 46c2df68f03a236b30808bba361f10900c88d95e upstream.
+commit 27d7ff273c2aad37b28f6ff0cab2cfa35b51e648 upstream.
 
-We can use "unsigned int" instead of "atomic_t" by updating start_pool
-variable under _manager->lock. This patch will make it possible to avoid
-skipping when choosing a pool to shrink in round-robin style, after next
-patch changes mutex_lock(_manager->lock) to !mutex_trylock(_manager->lork).
+I'm not sure what I was on when I wrote this, but when iterating over
+the hardware watchpoint array (hbp_watch_array), our index is off by
+ARM_MAX_BRP, so we walk off the end of our thread_struct...
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+... except, a dodgy condition in the loop means that it never executes
+at all (bp cannot be NULL).
+
+This patch fixes the code so that we remove the bp check and use the
+correct index for accessing the watchpoint structures.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm64/include/asm/hw_breakpoint.h |    1 -
+ arch/arm64/kernel/ptrace.c             |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -1006,9 +1006,9 @@ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
- static int ttm_dma_pool_mm_shrink(struct shrinker *shrink,
- 				  struct shrink_control *sc)
- {
--	static atomic_t start_pool = ATOMIC_INIT(0);
-+	static unsigned start_pool;
- 	unsigned idx = 0;
--	unsigned pool_offset = atomic_add_return(1, &start_pool);
-+	unsigned pool_offset;
- 	unsigned shrink_pages = sc->nr_to_scan;
- 	struct device_pools *p;
+--- a/arch/arm64/include/asm/hw_breakpoint.h
++++ b/arch/arm64/include/asm/hw_breakpoint.h
+@@ -79,7 +79,6 @@ static inline void decode_ctrl_reg(u32 r
+  */
+ #define ARM_MAX_BRP		16
+ #define ARM_MAX_WRP		16
+-#define ARM_MAX_HBP_SLOTS	(ARM_MAX_BRP + ARM_MAX_WRP)
  
-@@ -1018,7 +1018,7 @@ static int ttm_dma_pool_mm_shrink(struct
- 	mutex_lock(&_manager->lock);
- 	if (!_manager->npools)
- 		goto out;
--	pool_offset = pool_offset % _manager->npools;
-+	pool_offset = ++start_pool % _manager->npools;
- 	list_for_each_entry(p, &_manager->pools, pools) {
- 		unsigned nr_free;
- 
+ /* Virtual debug register bases. */
+ #define AARCH64_DBG_REG_BVR	0
+--- a/arch/arm64/kernel/ptrace.c
++++ b/arch/arm64/kernel/ptrace.c
+@@ -103,7 +103,8 @@ static void ptrace_hbptriggered(struct p
+ 			break;
+ 		}
+ 	}
+-	for (i = ARM_MAX_BRP; i < ARM_MAX_HBP_SLOTS && !bp; ++i) {
++
++	for (i = 0; i < ARM_MAX_WRP; ++i) {
+ 		if (current->thread.debug.hbp_watch[i] == bp) {
+ 			info.si_errno = -((i << 1) + 1);
+ 			break;
 
 
