@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494AbaJCWFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 18:05:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46453 "EHLO
+	id S1760089AbaJCX1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:27:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46292 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432AbaJCWEB (ORCPT
+	with ESMTP id S1757409AbaJCWD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 18:04:01 -0400
+	Fri, 3 Oct 2014 18:03:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Brassow Jonathan <jbrassow@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.16 336/357] md/raid1: intialise start_next_window for READ case to avoid hang
-Date: Fri,  3 Oct 2014 14:32:02 -0700
-Message-Id: <20141003212943.547356748@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.16 333/357] md/raid1: update next_resync under resync_lock.
+Date: Fri,  3 Oct 2014 14:31:59 -0700
+Message-Id: <20141003212943.461151084@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -30,31 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit f0cc9a057151892b885be21a1d19b0185568281d upstream.
+commit c2fd4c94deedb89ac1746c4a53219be499372c06 upstream.
 
-r1_bio->start_next_window is not initialised in the READ
-case, so allow_barrier may incorrectly decrement
-   conf->current_window_requests
-which can cause raise_barrier() to block forever.
+raise_barrier() uses next_resync as part of its calculations, so it
+really should be updated first, instead of afterwards.
+
+next_resync is always used under resync_lock so update it under
+resync lock to, just before it is used.  That is safest.
+
+This could cause normal IO and resync IO to interact badly so
+it suitable for -stable.
 
 Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
-Reported-by: Brassow Jonathan <jbrassow@redhat.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid1.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/raid1.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 --- a/drivers/md/raid1.c
 +++ b/drivers/md/raid1.c
-@@ -1185,6 +1185,7 @@ read_again:
- 				   atomic_read(&bitmap->behind_writes) == 0);
- 		}
- 		r1_bio->read_disk = rdisk;
-+		r1_bio->start_next_window = 0;
+@@ -827,7 +827,7 @@ static void flush_pending_writes(struct
+  *    there is no normal IO happeing.  It must arrange to call
+  *    lower_barrier when the particular background IO completes.
+  */
+-static void raise_barrier(struct r1conf *conf)
++static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
+ {
+ 	spin_lock_irq(&conf->resync_lock);
  
- 		read_bio = bio_clone_mddev(bio, GFP_NOIO, mddev);
- 		bio_trim(read_bio, r1_bio->sector - bio->bi_iter.bi_sector,
+@@ -837,6 +837,7 @@ static void raise_barrier(struct r1conf
+ 
+ 	/* block any new IO from starting */
+ 	conf->barrier++;
++	conf->next_resync = sector_nr;
+ 
+ 	/* For these conditions we must wait:
+ 	 * A: while the array is in frozen state
+@@ -2542,9 +2543,8 @@ static sector_t sync_request(struct mdde
+ 
+ 	bitmap_cond_end_sync(mddev->bitmap, sector_nr);
+ 	r1_bio = mempool_alloc(conf->r1buf_pool, GFP_NOIO);
+-	raise_barrier(conf);
+ 
+-	conf->next_resync = sector_nr;
++	raise_barrier(conf, sector_nr);
+ 
+ 	rcu_read_lock();
+ 	/*
 
 
