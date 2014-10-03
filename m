@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaJCVjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:39:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45162 "EHLO
+	id S1755539AbaJCVj3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 17:39:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755124AbaJCViX (ORCPT
+	with ESMTP id S1755206AbaJCViX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 17:38:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emanuel Koczwara <poczta@emanuelkoczwara.pl>,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.16 126/357] USB: ftdi_sio: add support for NOVITUS Bono E thermal printer
-Date: Fri,  3 Oct 2014 14:28:32 -0700
-Message-Id: <20141003212937.262677500@linuxfoundation.org>
+        Lei Liu <lei35151@163.com>, Johan Hovold <johan@kernel.org>
+Subject: [PATCH 3.16 127/357] USB: zte_ev: fix removed PIDs
+Date: Fri,  3 Oct 2014 14:28:33 -0700
+Message-Id: <20141003212937.293677301@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
 References: <20141003212933.458851516@linuxfoundation.org>
@@ -31,43 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <johan@kernel.org>
 
-commit ee444609dbae8afee420c3243ce4c5f442efb622 upstream.
+commit 3096691011d01cef56b243a5e65431405c07d574 upstream.
 
-Add device id for NOVITUS Bono E thermal printer.
+Add back some PIDs that were mistakingly remove when reverting commit
+73228a0538a7 ("USB: option,zte_ev: move most ZTE CDMA devices to
+zte_ev"), which apparently did more than its commit message claimed in
+that it not only moved some PIDs from option to zte_ev but also added
+some new ones.
 
-Reported-by: Emanuel Koczwara <poczta@emanuelkoczwara.pl>
+Fixes: 63a901c06e3c ("Revert "USB: option,zte_ev: move most ZTE CDMA
+devices to zte_ev"")
+
+Reported-by: Lei Liu <lei35151@163.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/usb/serial/zte_ev.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -741,6 +741,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(FTDI_VID, FTDI_NDI_AURORA_SCU_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
- 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
-+	{ USB_DEVICE(NOVITUS_VID, NOVITUS_BONO_E_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_S03_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_59_PID) },
- 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_USB_57A_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -837,6 +837,12 @@
- #define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
+--- a/drivers/usb/serial/zte_ev.c
++++ b/drivers/usb/serial/zte_ev.c
+@@ -272,6 +272,14 @@ static void zte_ev_usb_serial_close(stru
+ }
  
- /*
-+ * NOVITUS printers
-+ */
-+#define NOVITUS_VID			0x1a28
-+#define NOVITUS_BONO_E_PID		0x6010
-+
-+/*
-  * RT Systems programming cables for various ham radios
-  */
- #define RTSYSTEMS_VID		0x2100	/* Vendor ID */
+ static const struct usb_device_id id_table[] = {
++	{ USB_DEVICE(0x19d2, 0xffec) },
++	{ USB_DEVICE(0x19d2, 0xffee) },
++	{ USB_DEVICE(0x19d2, 0xfff6) },
++	{ USB_DEVICE(0x19d2, 0xfff7) },
++	{ USB_DEVICE(0x19d2, 0xfff8) },
++	{ USB_DEVICE(0x19d2, 0xfff9) },
++	{ USB_DEVICE(0x19d2, 0xfffb) },
++	{ USB_DEVICE(0x19d2, 0xfffc) },
+ 	/* MG880 */
+ 	{ USB_DEVICE(0x19d2, 0xfffd) },
+ 	{ },
 
 
