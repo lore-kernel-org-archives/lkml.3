@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682AbaJCXBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:01:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47251 "EHLO
+	id S932746AbaJCXBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:01:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758236AbaJCWX4 (ORCPT
+	with ESMTP id S1757966AbaJCWX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 3 Oct 2014 18:23:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Simon Lindgren <simon@aqwary.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.10 018/143] i2c: at91: Fix a race condition during signal handling in at91_do_twi_xfer.
-Date: Fri,  3 Oct 2014 14:33:33 -0700
-Message-Id: <20141003213315.034604122@linuxfoundation.org>
+        Max Filippov <jcmvbkbc@gmail.com>
+Subject: [PATCH 3.10 034/143] xtensa: replace IOCTL code definitions with constants
+Date: Fri,  3 Oct 2014 14:33:49 -0700
+Message-Id: <20141003213315.518472466@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
 References: <20141003213314.470709810@linuxfoundation.org>
@@ -30,47 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Lindgren <simon@aqwary.com>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 6721f28a26efd6368497abbdef5dcfc59608d899 upstream.
+commit f61bf8e7d19e0a3456a7a9ed97c399e4353698dc upstream.
 
-There is a race condition in at91_do_twi_xfer when signals arrive.
-If a signal is recieved while waiting for a transfer to complete
-wait_for_completion_interruptible_timeout() will return -ERESTARTSYS.
-This is not handled correctly resulting in interrupts still being
-enabled and a transfer being in flight when we return.
+This fixes userspace code that builds on other architectures but fails
+on xtensa due to references to structures that other architectures don't
+refer to. E.g. this fixes the following issue with python-2.7.8:
 
-Symptoms include a range of oopses and bus lockups. Oopses can happen
-when the transfer completes because the interrupt handler will corrupt
-the stack. If a new transfer is started before the interrupt fires
-the controller will start a new transfer in the middle of the old one,
-resulting in confused slaves and a locked bus.
+  python-2.7.8/Modules/termios.c:861:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERGETMULTI", TIOCSERGETMULTI},
+  python-2.7.8/Modules/termios.c:870:25: error: invalid application
+     of 'sizeof' to incomplete type 'struct serial_multiport_struct'
+     {"TIOCSERSETMULTI", TIOCSERSETMULTI},
+  python-2.7.8/Modules/termios.c:900:24: error: invalid application
+     of 'sizeof' to incomplete type 'struct tty_struct'
+     {"TIOCTTYGSTRUCT", TIOCTTYGSTRUCT},
 
-To avoid this, use wait_for_completion_io_timeout instead so that we
-don't have to deal with gracefully shutting down the transfer and
-disabling the interrupts.
-
-Signed-off-by: Simon Lindgren <simon@aqwary.com>
-Acked-by: Ludovic Desroches <ludovic.desroches@atmel.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-at91.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/xtensa/include/uapi/asm/ioctls.h |   19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -435,8 +435,8 @@ static int at91_do_twi_transfer(struct a
- 		}
- 	}
+--- a/arch/xtensa/include/uapi/asm/ioctls.h
++++ b/arch/xtensa/include/uapi/asm/ioctls.h
+@@ -28,17 +28,17 @@
+ #define TCSETSW		0x5403
+ #define TCSETSF		0x5404
  
--	ret = wait_for_completion_interruptible_timeout(&dev->cmd_complete,
--							dev->adapter.timeout);
-+	ret = wait_for_completion_io_timeout(&dev->cmd_complete,
-+					     dev->adapter.timeout);
- 	if (ret == 0) {
- 		dev_err(dev->dev, "controller timed out\n");
- 		at91_init_twi_bus(dev);
+-#define TCGETA		_IOR('t', 23, struct termio)
+-#define TCSETA		_IOW('t', 24, struct termio)
+-#define TCSETAW		_IOW('t', 25, struct termio)
+-#define TCSETAF		_IOW('t', 28, struct termio)
++#define TCGETA		0x80127417	/* _IOR('t', 23, struct termio) */
++#define TCSETA		0x40127418	/* _IOW('t', 24, struct termio) */
++#define TCSETAW		0x40127419	/* _IOW('t', 25, struct termio) */
++#define TCSETAF		0x4012741C	/* _IOW('t', 28, struct termio) */
+ 
+ #define TCSBRK		_IO('t', 29)
+ #define TCXONC		_IO('t', 30)
+ #define TCFLSH		_IO('t', 31)
+ 
+-#define TIOCSWINSZ	_IOW('t', 103, struct winsize)
+-#define TIOCGWINSZ	_IOR('t', 104, struct winsize)
++#define TIOCSWINSZ	0x40087467	/* _IOW('t', 103, struct winsize) */
++#define TIOCGWINSZ	0x80087468	/* _IOR('t', 104, struct winsize) */
+ #define	TIOCSTART	_IO('t', 110)		/* start output, like ^Q */
+ #define	TIOCSTOP	_IO('t', 111)		/* stop output, like ^S */
+ #define TIOCOUTQ        _IOR('t', 115, int)     /* output queue size */
+@@ -88,7 +88,6 @@
+ #define TIOCSETD	_IOW('T', 35, int)
+ #define TIOCGETD	_IOR('T', 36, int)
+ #define TCSBRKP		_IOW('T', 37, int)   /* Needed for POSIX tcsendbreak()*/
+-#define TIOCTTYGSTRUCT	_IOR('T', 38, struct tty_struct) /* For debugging only*/
+ #define TIOCSBRK	_IO('T', 39) 	     /* BSD compatibility */
+ #define TIOCCBRK	_IO('T', 40)	     /* BSD compatibility */
+ #define TIOCGSID	_IOR('T', 41, pid_t) /* Return the session ID of FD*/
+@@ -114,8 +113,10 @@
+ #define TIOCSERGETLSR   _IOR('T', 89, unsigned int) /* Get line status reg. */
+   /* ioctl (fd, TIOCSERGETLSR, &result) where result may be as below */
+ # define TIOCSER_TEMT    0x01		     /* Transmitter physically empty */
+-#define TIOCSERGETMULTI _IOR('T', 90, struct serial_multiport_struct) /* Get multiport config  */
+-#define TIOCSERSETMULTI _IOW('T', 91, struct serial_multiport_struct) /* Set multiport config */
++#define TIOCSERGETMULTI 0x80a8545a /* Get multiport config  */
++			/* _IOR('T', 90, struct serial_multiport_struct) */
++#define TIOCSERSETMULTI 0x40a8545b /* Set multiport config */
++			/* _IOW('T', 91, struct serial_multiport_struct) */
+ 
+ #define TIOCMIWAIT	_IO('T', 92) /* wait for a change on serial input line(s) */
+ #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
 
 
