@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaJCJvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 05:51:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36017 "EHLO mx1.redhat.com"
+	id S1751906AbaJCJ4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 05:56:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49518 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaJCJvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 05:51:31 -0400
-Message-ID: <542E719A.8030509@redhat.com>
-Date: Fri, 03 Oct 2014 11:51:22 +0200
+	id S1751462AbaJCJ4B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 05:56:01 -0400
+Message-ID: <542E72A8.2030908@redhat.com>
+Date: Fri, 03 Oct 2014 11:55:52 +0200
 From: Hans de Goede <hdegoede@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
@@ -16,10 +16,10 @@ To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
         Yunkang Tang <yunkang.tang@cn.alps.com>,
         Tommy Will <tommywill2011@gmail.com>
 CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] input: alps: For protocol V3, do not process data
- when last packet's bit7 is set
-References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1412329392-5580-3-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1412329392-5580-3-git-send-email-pali.rohar@gmail.com>
+Subject: Re: [PATCH 3/3] input: alps: Reset mouse and ALPS driver immediately
+ after first invalid packet
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com> <1412329392-5580-4-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <1412329392-5580-4-git-send-email-pali.rohar@gmail.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,54 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi,
 
 On 10/03/2014 11:43 AM, Pali Rohár wrote:
-> Sometimes laptops with closed lid receive invalid ALPS protocol V3 packets with
-> last bit7 set.
+> For unknown reasons linux psmouse alps driver sometimes receive totally invalid
+> packet sequences on Dell Latitude laptops. According to ALPS HW engineers these
+> invalid packets do not come from ALPS devices. So it looks like bug in BIOS and
+> EC incorrectly split keyboard and touchpad PS/2 data when laptops are under
+> heavy loads (big I/O together with powersave governor, running on battery).
 > 
-> This happens on Dell Latitude laptops and it looks like it is BIOS bug. Probably
-> EC does not correctly split keyboard and touchpad PS/2 data and when laptop lid
-> is closed it adds 0xFF packet into touchpad PS/2 data.
+> There are sequences of invalid packets (which are dropeed) and some sequences
+> which look like valid. But these valid packets cause random trackstick button
+> pressing, random cursor moving/jumping and in these condition it is not possible
+> to use ALPS device (trackstick+touchpad).
 > 
-> When last packet's bit7 is set it is invalid ALPS packet. So Do not process it
-> and drop it with PSMOUSE_FULL_PACKET.
+> To prevent random button press and random cursor jumps immediately reset ALPS
+> device after first invalid packet. This will cause that touchpad and trackstick
+> will not respond for one or two seconds and it better then random cursor jumps.
 > 
-> After testing it looks like this patch fixed problem with reseting mouse (after
-> series of invalid packets) when laptop lid is closed on Dell Latitude machines.
-> 
+
+This one probably should have:
+
+Bug: https://bugzilla.redhat.com/show_bug.cgi?id=1145954
+
+And you may want to add Bug: tags to the relevant patches for the
+launchpad issues too.
+
+While on the topic of tags, once we've agreed upon the return value to use for the
+2nd patch, can you please resend with a "Cc: stable@vger.kernel.org" added to all
+3 patches?
+
 > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 > Tested-by: Pali Rohár <pali.rohar@gmail.com>
-> ---
->  drivers/input/mouse/alps.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-> index 1bd5aa1..b1f44d4 100644
-> --- a/drivers/input/mouse/alps.c
-> +++ b/drivers/input/mouse/alps.c
-> @@ -1179,6 +1179,16 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
->  		return PSMOUSE_BAD_DATA;
->  	}
->  
-> +	if (priv->proto_version == ALPS_PROTO_V3 && psmouse->pktcnt == psmouse->pktsize) {
-> +		// For protocol V3, do not process data when last packet's bit7 is set
-> +		if (psmouse->packet[psmouse->pktcnt - 1] & 0x80) {
-> +			psmouse_dbg(psmouse, "v3 discard packet[%i] = %x\n",
-> +				    psmouse->pktcnt - 1,
-> +				    psmouse->packet[psmouse->pktcnt - 1]);
-> +			return PSMOUSE_FULL_PACKET;
-> +		}
-> +	}
-> +
 
-I wonder if this should not be PSMOUSE_BAD_DATA as a return value ? I realize that
-with the 3th patch in place, that will cause an immediate reset, but if your theory is
-right that this ff gets inserted from the keyboard ps/2 stream, then we actually want
-a full reset as otherwise we will be out of sync then.
+Looks good and seems sensible:
 
->  	/* Bytes 2 - pktsize should have 0 in the highest bit */
->  	if ((priv->proto_version < ALPS_PROTO_V5) &&
->  	    psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
-> 
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-Regards,
+Thanks & Regards,
 
 Hans
