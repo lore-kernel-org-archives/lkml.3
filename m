@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259AbaJCML1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 08:11:27 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:53809 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583AbaJCMLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 08:11:24 -0400
-Date: Fri, 3 Oct 2014 13:11:19 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Mark Salter <msalter@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Leif Lindholm <leif.lindholm@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-efi@vger.kernel.org,
-        Daniel Kiper <daniel.kiper@oracle.com>, Russ Anderson <rja@sgi.com>,
-        rtc-linux@googlegroups.com
-Subject: Re: [PATCH 7/7] efi_rtc: probe function error out in case no efi
- runtime enabled
-Message-ID: <20141003121119.GH14343@console-pimps.org>
-References: <1408007731-15081-1-git-send-email-dyoung@redhat.com>
- <1408007953-15151-1-git-send-email-dyoung@redhat.com>
- <1411403609.25340.55.camel@deneb.redhat.com>
- <20140925211855.GS18635@console-pimps.org>
- <1411681130.25340.101.camel@deneb.redhat.com>
+	id S1752385AbaJCMNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 08:13:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43267 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaJCMNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 08:13:07 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <542D741D.5070109@samsung.com>
+References: <542D741D.5070109@samsung.com> <20140908153704.28301.41578.stgit@warthog.procyon.org.uk> <20140908153830.28301.37880.stgit@warthog.procyon.org.uk>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, keyrings@linux-nfs.org,
+        jwboyer@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, pjones@redhat.com,
+        vgoyal@redhat.com
+Subject: Re: [PATCH 08/13] KEYS: Overhaul key identification when searching for asymmetric keys
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411681130.25340.101.camel@deneb.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <28437.1412338372.1@warthog.procyon.org.uk>
+Date: Fri, 03 Oct 2014 13:12:52 +0100
+Message-ID: <28438.1412338372@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Argh, this was sat in my outbox for over a week)
+Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
 
-On Thu, 25 Sep, at 05:38:50PM, Mark Salter wrote:
-> On Thu, 2014-09-25 at 22:18 +0100, Matt Fleming wrote:
-> > On Mon, 22 Sep, at 12:33:29PM, Mark Salter wrote:
-> > > 
-> > > Is this still needed after commit da167ad7638759:
-> > > 
-> > >   rtc: ia64: allow other architectures to use EFI RTC
-> > 
-> > Umm... we should really look at disabling this for x86, since the EFI
-> > time functions don't work on a bunch of machines I've got here.
-> > 
-> > And it looks like someone enabled this driver and triggered an oops on
-> > their 32-bit EFI tablet,
-> > 
-> >   https://bugzilla.kernel.org/show_bug.cgi?id=84241#c21
+> Also I noticed that output of 'keyctl show' and 'cat /proc/keys' output
+> also has changed in respect of certificate ids..
 > 
-> Previously, it depended on IA64. If it's not worth the trouble for
-> x86 then I'd say have it depend on !X86 also. Newer EFI-supporting
-> architectures are unlikely to have the same legacy issues as x86
-> so I don't think it'll end up being an ever growing list.
- 
-Yeah that's what I was thinking. For x86, it's the age old "Windows
-doesn't use it, so it was never validated" issue.
+> Those ids does not look any close to my kernel X509 X509v3 Subject Key
+> Identifier, which is:
+> 92:63:05:D6:DD:A6:6F:47:13:9E:B4:E3:CB:25:A6:AD:EF:52:7F:08
+> 
+> proc/keys shows
+> 
+> symmetri Magrathea: Glacier signing key: d9e2e4c6951f1e83: X509.RSA
+> 6865612e68326732 []
+> 
+> Very different ids..
+> 
+> How could I match certificate now?
 
-I'll send an update.
+There are two IDs available:
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+	id: serial number + issuer
+	skid: subjKeyId + subject
+
+You can use either of them and their content is somewhat negotiable.  Note
+that they are both compound IDs at this point.
+
+We have to move away from using subjKeyId for module signatures because we
+have to be able to deal with keys that don't have one.  Blech, but the PKCS
+specs suck somewhat.
+
+This is why I want to move to using detached-data PKCS#7 certs as the
+signature.  We have the PKCS#7 handling in the kernel now for doing kexec.
+
+David
