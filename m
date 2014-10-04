@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790AbaJDK6q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 06:58:46 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:40197 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727AbaJDK6p (ORCPT
+	id S1752819AbaJDLAQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 07:00:16 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:59575 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaJDLAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 06:58:45 -0400
-MIME-Version: 1.0
-From: Kieran Clancy <clancy.kieran@gmail.com>
-Date: Sat, 4 Oct 2014 20:28:14 +0930
-Message-ID: <CAGf84QKbuC7KNcG1GhUJyRktwekVg8HV7zLCv7wbx6qjjJXxSw@mail.gmail.com>
-Subject: [REGRESSION] ACPI / EC: Events not being cleared on Samsung series 9 laptop
-To: "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+	Sat, 4 Oct 2014 07:00:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
+Date: Sat, 04 Oct 2014 12:59:59 +0200
+Message-ID: <8634377.yRllsv0gms@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <6568619.UkU5qISONv@vostro.rjw.lan>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <20141003143547.GP26643@leverpostej> <6568619.UkU5qISONv@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:y9+i0Y7QMpDCgUThij1cnY3+VniWzWqMf71hlB5moxf
+ Pa16EwxAZ/42rIwoEZAxRAZ7NrxrId3kW76qBKEFRU4TFBE998
+ Cdu7ad/U7HVH2Ld1zCGE8w4uc903zMHHGYVSaZsBCrnVb31eus
+ cJg3ncGuUE1IVQk7WwVA5hTPmntBbJJiSu0QLdhHa+rxj2zFLy
+ Fy6igvXKb8mxa+oH4oz2GpEkQsqDbftwlW2vdssqyO2LfQeG7j
+ SlrR8Id+Q83RIq1CJmjS+bC/qxglX+OjO2dmWPMm03j08iXxNk
+ lKeyzTZarnv3ah6/B63o9tmpG5yPsuuKkKxeB0L4DIbf5jhKGV
+ fhUHSz+NkH/3U1rvFVNE=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since updating to kernel 3.16.3 I have noticed that an old bug has
-returned where EC events like lid open/close and ambient light change
-are no longer being processed on my Samsung notebook (900X3C).
+On Saturday 04 October 2014 02:13:23 Rafael J. Wysocki wrote:
+> > Because people get the format wrong regardless of documentation. The
+> > format:
+> > 
+> > Package () {
+> >       Package () { ^ref1, data, data },
+> >       Package () { ^ref2, data },
+> >       Package () { ^ref3, data, data, data },
+> > }
+> > 
+> > Is superior to the format:
+> > 
+> > Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
+> > 
+> > Because in the former you have delimiters that can be used to verify
+> > each tuple. Imagine someone misses a data element for one of these
+> > tuples. In the former layout you can detect this easily while in the
+> > latter you cannot.
+> 
+> I agree with this particular thing (although other people seem to have
+> problems with too many package nesting levels) but I'm not sure what that
+> has to do with the example given above (let me quote again):
+> 
+> > Putting everything to a single package results this:
+> > 
+> >       Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
+> > 
+> > But I think the below looks better:
+> > 
+> >       Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
+> >       Package () { "pwm-names", Package () {"led-red", "led-green"}}
+> > 
+> > and it is trivial to match with the corresponding DT fragment.
+> 
+> that I was commenting.  Both cases contains the
+> 
+>         Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
+> 
+> format that you don't like, don't they?
+> 
 
-Most of this was previously documented in:
+There are two independent issues:
 
-Samsung Series 9 np900x4b: ACPI does not seem to reflect charging/discharging...
-https://bugzilla.kernel.org/show_bug.cgi?id=44161
+a) avoiding the need for "pwm-names" by embedding the name in the
+   "pwms" property
 
-A workaround was added to the kernel at the time:
+b) avoiding the need for "#pwm-cells" by having explicit separators between
+   entries in a "pwms" property.
 
-ad332c8a45330d170bb38b95209de449b31cd1b4
-ACPI / EC: Clear stale EC events on Samsung systems
+It would be possible to do one but not the other.
 
-3eba563e280101209bad27d40bfc83ddf1489234
-ACPI / EC: Process rather than discard events in acpi_ec_clear
-
-That seemed to have solved the problem, but it seems that a recent
-change between
-
-66b42b78bc1e816f92b662e8888c89195e4199e1
-ACPI / EC: Avoid race condition related to advance_transaction()
-
-and
-
-558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4
-ACPI / EC: Add support to disallow QR_EC to be issued before
-completing previous QR_EC
-
-Has reintroduced this bug. I have not had time to fully test this
-myself, but someone else who noticed the same regression has now
-posted in the kernel bugzilla link above reporting that:
-
-> I've narrowed it down to the following commits:
->
-> ACPI / EC: Add support to disallow QR_EC to be issued when SCI_EVT isn't set
-> 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08
->
-> ACPI / EC: Add support to disallow QR_EC to be issued before completing previous QR_EC
-> 558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4
->
-> On 3.17rc7, reverting the latter seems to solve the issue for acpi events related to
-> the power supply, however LID switch is still broken.
-> Reverting both seems to resolve the issue completely.
-
-Can anyone (Lv Zheng) think of why these patches have caused this
-issue on this hardware? Maybe we need to modify the patches above to
-do something different in case EC_FLAGS_CLEAR_ON_RESUME is set?
-
-Regards,
-Kieran Clancy
+	Arnd
