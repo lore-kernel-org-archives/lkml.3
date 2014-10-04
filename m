@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaJDBnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 21:43:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48735 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101AbaJDBm6 (ORCPT
+	id S1753591AbaJDCYg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 22:24:36 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:64845 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770AbaJDCYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 21:42:58 -0400
-Date: Fri, 3 Oct 2014 18:42:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
-Message-ID: <20141004014201.GA13873@kroah.com>
-References: <20141003212933.458851516@linuxfoundation.org>
- <542F403F.1010807@osg.samsung.com>
+	Fri, 3 Oct 2014 22:24:34 -0400
+Message-ID: <542F5A5C.9050905@gmail.com>
+Date: Sat, 04 Oct 2014 10:24:28 +0800
+From: Cheng-wei Lee <lee.rhapsody@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542F403F.1010807@osg.samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, johannes.berg@intel.com,
+        josh@joshtriplett.org, sarah.a.sharp@linux.intel.com,
+        himangi774@gmail.com, teobaluta@gmail.com, linville@tuxdriver.com,
+        gamerh2o@gmail.com
+CC: devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] drivers: staging: wlan-ng: fix sparse warnings
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 06:33:03PM -0600, Shuah Khan wrote:
-> On 10/03/2014 03:26 PM, Greg Kroah-Hartman wrote:
-> > ---------------------------------
-> > Note: This is a big stable release.  Mostly my fault for being on the
-> > road last week, combined with an unusually large number of patches being
-> > tagged for the stable tree.  Anyway, I've caught up with all pending
-> > patches before 3.17-rc7, so if you have marked something for the stable
-> > tree that I have not applied, or emailed the stable@v.k.o list asking
-> > for a patch, that is not here, please let me know.
-> > ---------------------------------
-> > 
-> > This is the start of the stable review cycle for the 3.16.4 release.
-> > There are 357 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.4-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> > 
-> 
-> Compiled and booted on my test system. No dmesg regressions.
-> 
-> Looking better than the previous with clean dmesg err
-> 
-> drm:ivb_err_int_handlererrors I was seeing went away.
-> Must be changes in drivers/gpu/drm/i915
+This patch fix the sparse warnings in wlan-ng/cfg80211.c
+The following functions were only used in this file, so done by
+declaring them into static.
 
-Thanks for testing all of these and letting me know.
+drivers/staging/wlan-ng/cfg80211.c:710:6: warning: symbol
+'prism2_connect_result' was not declared. Should it be static?
+drivers/staging/wlan-ng/cfg80211.c:719:6: warning: symbol
+'prism2_disconnected' was not declared. Should it be static?
+drivers/staging/wlan-ng/cfg80211.c:725:6: warning: symbol
+'prism2_roamed' was not declared. Should it be static?
 
-greg k-h
+Signed-off-by: Quentin Lee <lee.rhapsody@gmail.com>
+---
+ drivers/staging/wlan-ng/cfg80211.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 723319e..9e65429 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -707,7 +707,7 @@ exit:
+ 
+ 
+ /* Interface callback functions, passing data back up to the cfg80211 layer */
+-void prism2_connect_result(wlandevice_t *wlandev, u8 failed)
++static void prism2_connect_result(wlandevice_t *wlandev, u8 failed)
+ {
+     u16 status = failed ?
+              WLAN_STATUS_UNSPECIFIED_FAILURE : WLAN_STATUS_SUCCESS;
+@@ -716,13 +716,13 @@ void prism2_connect_result(wlandevice_t *wlandev, u8 failed)
+                 NULL, 0, NULL, 0, status, GFP_KERNEL);
+ }
+ 
+-void prism2_disconnected(wlandevice_t *wlandev)
++static void prism2_disconnected(wlandevice_t *wlandev)
+ {
+     cfg80211_disconnected(wlandev->netdev, 0, NULL,
+         0, GFP_KERNEL);
+ }
+ 
+-void prism2_roamed(wlandevice_t *wlandev)
++static void prism2_roamed(wlandevice_t *wlandev)
+ {
+     cfg80211_roamed(wlandev->netdev, NULL, wlandev->bssid,
+         NULL, 0, NULL, 0, GFP_KERNEL);
+-- 
+1.7.9.5
