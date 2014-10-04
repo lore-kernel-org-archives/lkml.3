@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaJDLeS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 07:34:18 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:56810 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaJDLeG (ORCPT
+	id S1751306AbaJDLnl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 07:43:41 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43452 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaJDLnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 07:34:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Peter Griffin <peter.griffin@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [next-20141003] USB: host: st: fix typo 'CONFIG_USB_EHCI_HCD_ST'
-Date: Sat, 04 Oct 2014 13:33:57 +0200
-Message-ID: <3636554.BfmsPxFGhz@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412324504.19413.76.camel@x220>
-References: <1412324504.19413.76.camel@x220>
+	Sat, 4 Oct 2014 07:43:40 -0400
+Message-ID: <542FDEC6.3010507@gmail.com>
+Date: Sat, 04 Oct 2014 19:49:26 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ipoyFBLhaHM6kLCTIIkJS879IRMv7TioTq5k1bJUYXt
- mwjesrTGGU2oJUw4SeGYKOpsSI/NMc1tySQ7vMMEoOhPCn4bop
- 1zoiGGf4hfKUIbQY5AvsFTr93dc2eFHOU/KXG6e1/SEyQT5yDZ
- NyAtV0QpGTZdAHOVLo0MYPA26eEziFpNZ4ZWHcs/H02T4KFATf
- efGQRY6z8H8pXE/34kr8tTAZFUt/itky14eqpKY9cFaYzQaQpS
- uB9DGxlMpPa1AG2y4RlM/0Ahkh22KMQ8h7CDzIsOurtO6FEQGL
- v+6NqCik/9XGIWCKkWU9Fzd7ZXAmTgRWPlTo1y+QvJwR4d+lPx
- SeWBtuYkzlAhrkYCZVm0=
-X-UI-Out-Filterresults: notjunk:1;
+To: Varka Bhadram <varkabhadram@gmail.com>, wg@grandegger.com,
+        mkl@pengutronix.de, fengguang.wu@intel.com, b29396@freescale.com
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/can/m_can/Kconfig: Let CAN_M_CAN depend on
+ HAS_IOMEM
+References: <542FC556.6060306@gmail.com> <542FD466.6080603@gmail.com>
+In-Reply-To: <542FD466.6080603@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 03 October 2014 10:21:44 Paul Bolle wrote:
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> Fixes: 905e300e1043 ("USB: host: st: fix ehci/ohci driver selection")
-> ---
-> drivers/usb/host/ehci-st.o actually builds (on x86_64. that is) so
-> there's no _obvious_ reason not to fix this typo.
+
+On 10/4/14 19:05, Varka Bhadram wrote:
+> Hi Chen Gang
+> 
+> 
+> I think commit message should be short and proper.
+> 
+> We can remove *drivers/net/can/m_can/Kconfig* in the commit, just
+> give *can: Kconfig: *
+> 
+> commit message like : *can: Kconfig: Fix CAN_M_CAN dependency*
 > 
 
-I was about to post the same fix, thanks a lot for addressing this.
-Sorry for my stupid mistake.
+OK, thanks, it sounds good to me. If necessary to send patch v2 for it,
+please let me know.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thanks.
+
+> On Saturday 04 October 2014 03:30 PM, Chen Gang wrote:
+>> CAN_M_CAN needs HAS_IOMEM, so depend on it, the related error (with
+>> allmodconfig under um):
+>>
+>>      MODPOST 1205 modules
+>>    ERROR: "devm_ioremap" [drivers/net/can/m_can/m_can.ko] undefined!
+>>    ERROR: "devm_ioremap_resource" [drivers/net/can/m_can/m_can.ko] undefined!
+>>
+>> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+>> ---
+>>   drivers/net/can/m_can/Kconfig | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/net/can/m_can/Kconfig b/drivers/net/can/m_can/Kconfig
+>> index fca5482..14c9fcf 100644
+>> --- a/drivers/net/can/m_can/Kconfig
+>> +++ b/drivers/net/can/m_can/Kconfig
+>> @@ -1,4 +1,5 @@
+>>   config CAN_M_CAN
+>>       tristate "Bosch M_CAN devices"
+>> +    depends on HAS_IOMEM
+>>       ---help---
+>>         Say Y here if you want to support for Bosch M_CAN controller.
+> 
+
+-- 
+Chen Gang
+
+Open, share, and attitude like air, water, and life which God blessed
