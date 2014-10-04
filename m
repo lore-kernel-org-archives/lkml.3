@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaJDAen (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:34:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45305 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895AbaJCVms (ORCPT
+	id S933890AbaJDAet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:34:49 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:52594 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167AbaJDAeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:42:48 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Joe Lawrence <joe.lawrence@stratus.com>
-Subject: [PATCH 3.16 139/357] USB: EHCI: unlink QHs even after the controller has stopped
-Date: Fri,  3 Oct 2014 14:28:45 -0700
-Message-Id: <20141003212937.647984985@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 20:34:46 -0400
+X-Originating-IP: 75.92.167.159
+Date: Fri, 3 Oct 2014 17:34:31 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
+Subject: [GIT PULL 3.17] tinification: Kconfig bugfixes for 3.17
+Message-ID: <20141004003427.GA19070@thin>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
-------------------
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-From: Alan Stern <stern@rowland.harvard.edu>
+are available in the git repository at:
 
-commit 7312b5ddd47fee2356baa78c5516ef8e04eed452 upstream.
+  https://git.kernel.org/pub/scm/linux/kernel/git/josh/linux.git tags/tiny/kconfig-for-3.17
 
-Old code in ehci-hcd tries to expedite disabling endpoints after the
-controller has stopped, by destroying the endpoint's associated QH
-without first unlinking the QH.  This was necessary back when the
-driver wasn't so careful about keeping track of the controller's
-state.
+for you to fetch changes up to 62b4d2041117f35ab2409c9f5c4b8d3dc8e59d0f:
 
-But now we are careful about it, and the driver knows that when the
-controller isn't running, no unlinking delay is needed.  Furthermore,
-skipping the unlink step will trigger a BUG() in qh_destroy() when the
-preceding QH is released, because the link pointer will be non-NULL.
+  init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu (2014-10-03 16:49:43 -0700)
 
-Removing the lines that skip the unlinking step and go directly to
-QH_STATE_IDLE fixes the problem.
+----------------------------------------------------------------
+Two Kconfig bugfixes for 3.17 related to tinification.  These fixes make the
+Kconfig "General Setup" menu much more usable.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
-Tested-by: Joe Lawrence <joe.lawrence@stratus.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+----------------------------------------------------------------
 
----
- drivers/usb/host/ehci-hcd.c |    2 --
- 1 file changed, 2 deletions(-)
+Neither of these fixes changes the resulting built kernel in any way;
+they just improve the usability of the kconfig "General Setup" menu.
+Randy Dunlap suggested them for 3.17 rather than waiting for 3.18.
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -965,8 +965,6 @@ rescan:
- 	}
- 
- 	qh->exception = 1;
--	if (ehci->rh_state < EHCI_RH_RUNNING)
--		qh->qh_state = QH_STATE_IDLE;
- 	switch (qh->qh_state) {
- 	case QH_STATE_LINKED:
- 		WARN_ON(!list_empty(&qh->qtd_list));
+Josh Triplett (2):
+      init/Kconfig: Hide printk log config if CONFIG_PRINTK=n
+      init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
 
-
+ init/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
