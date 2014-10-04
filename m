@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaJDUAv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 16:00:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53537 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaJDUAu (ORCPT
+	id S1751240AbaJDVIq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 17:08:46 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:57166 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaJDVIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 16:00:50 -0400
-Date: Sat, 4 Oct 2014 22:00:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Cc: linux-mips@linux-mips.org, Zubair.Kakakhel@imgtec.com,
-        david.daney@cavium.com, paul.gortmaker@windriver.com, davidlohr@hp.com,
-        macro@linux-mips.org, chenhc@lemote.com, zajec5@gmail.com,
-        james.hogan@imgtec.com, keescook@chromium.org, alex@alex-smith.me.uk,
-        tglx@linutronix.de, blogic@openwrt.org, jchandra@broadcom.com,
-        paul.burton@imgtec.com, qais.yousef@imgtec.com,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        markos.chandras@imgtec.com, manuel.lauss@gmail.com,
-        akpm@linux-foundation.org, lars.persson@axis.com
-Subject: Re: [PATCH 2/3] MIPS: Setup an instruction emulation in VDSO
- protected page instead of user stack
-Message-ID: <20141004200016.GB7509@worktop.ger.corp.intel.com>
-References: <20141004030438.28569.85536.stgit@linux-yegoshin>
- <20141004031730.28569.38511.stgit@linux-yegoshin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141004031730.28569.38511.stgit@linux-yegoshin>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Sat, 4 Oct 2014 17:08:45 -0400
+From: Mathias Krause <minipli@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>
+Subject: [PATCH] posix-timers: fix stack info leak in timer_create()
+Date: Sat,  4 Oct 2014 23:06:39 +0200
+Message-Id: <1412456799-32339-1-git-send-email-minipli@googlemail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 08:17:30PM -0700, Leonid Yegoshin wrote:
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
 
-> --- a/arch/mips/include/asm/switch_to.h
-> +++ b/arch/mips/include/asm/switch_to.h
-> @@ -17,6 +17,7 @@
->  #include <asm/dsp.h>
->  #include <asm/cop2.h>
->  #include <asm/msa.h>
-> +#include <asm/mmu_context.h>
->  
->  struct task_struct;
->  
-> @@ -104,6 +105,16 @@ do {									\
->  	disable_msa();							\
->  } while (0)
->  
-> +static inline void flush_vdso_page(void)
-> +{
-> +	if (current->mm && cpu_context(raw_smp_processor_id(), current->mm) &&
-> +	    (current->mm->context.vdso_asid[raw_smp_processor_id()] ==
-> +	     cpu_asid(raw_smp_processor_id(), current->mm))) {
-> +		local_flush_tlb_page(current->mm->mmap, (unsigned long)current->mm->context.vdso);
-> +		current->mm->context.vdso_asid[raw_smp_processor_id()] = 0;
-> +	}
-> +}
+Initialize sigev_value with 0 to plug the stack info leak.
 
-Why raw_smp_processor_id() and why evaluate it 3 times, sure compilers
-can be expected to do some CSE but something like:
+Found in the PaX patch, written by the PaX Team.
 
-	int cpu = smp_processor_id();
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: <stable@vger.kernel.org>	# v2.6.28+
+---
+ kernel/time/posix-timers.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-	if ( ... [cpu] ...)
+diff --git a/kernel/time/posix-timers.c b/kernel/time/posix-timers.c
+index 42b463ad90f2..31ea01f42e1f 100644
+--- a/kernel/time/posix-timers.c
++++ b/kernel/time/posix-timers.c
+@@ -636,6 +636,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
+-- 
+1.7.10.4
 
-is far more readable as well.
-
-> +
->  #define finish_arch_switch(prev)					\
->  do {									\
->  	u32 __c0_stat;							\
-> @@ -118,6 +129,7 @@ do {									\
->  		__restore_dsp(current);					\
->  	if (cpu_has_userlocal)						\
->  		write_c0_userlocal(current_thread_info()->tp_value);	\
-> +	flush_vdso_page();                                              \
->  	__restore_watch();						\
->  } while (0)
-
-So what I didn't see is any talk about the cost of this. Surely a TLB
-flush isn't exactly free.
