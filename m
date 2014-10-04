@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaJDPaq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 11:30:46 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54459 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaJDPao (ORCPT
+	id S1752694AbaJDPdo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 11:33:44 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:51466 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaJDPdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 11:30:44 -0400
-Message-ID: <1412436642.17245.37.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [RFC 1/1] net: fix rcu access on phonet_routes
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Remi Denis-Courmont <courmisch@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Date: Sat, 04 Oct 2014 08:30:42 -0700
-In-Reply-To: <1412416676-21698-1-git-send-email-fabf@skynet.be>
-References: <1412416676-21698-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 4 Oct 2014 11:33:43 -0400
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        Zubair Kakakhel <Zubair.Kakakhel@imgtec.com>,
+        "david.daney@cavium.com" <david.daney@cavium.com>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "davidlohr@hp.com" <davidlohr@hp.com>,
+        "macro@linux-mips.org" <macro@linux-mips.org>,
+        "chenhc@lemote.com" <chenhc@lemote.com>,
+        "zajec5@gmail.com" <zajec5@gmail.com>,
+        James Hogan <James.Hogan@imgtec.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "alex@alex-smith.me.uk" <alex@alex-smith.me.uk>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "blogic@openwrt.org" <blogic@openwrt.org>,
+        "jchandra@broadcom.com" <jchandra@broadcom.com>,
+        Paul Burton <Paul.Burton@imgtec.com>,
+        Qais Yousef <Qais.Yousef@imgtec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "lars.persson@axis.com" <lars.persson@axis.com>
+Subject: Re: [PATCH 0/3] MIPS executable stack protection
+Thread-Topic: [PATCH 0/3] MIPS executable stack protection
+Thread-Index: Ac/f6JBasxw0os/VaEewjedDoGfZbg==
+Date: Sat, 4 Oct 2014 15:33:36 +0000
+Message-ID: <tg3ek4qtursbob5wootj8r09.1412436788097@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <DC282DA7E8B50048996C8C67EAC32EE2@imgtec.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s94FXnUP024427
 
-On Sat, 2014-10-04 at 11:57 +0200, Fabian Frederick wrote:
-> -Add __rcu annotation on table to fix sparse warnings:
-> net/phonet/pn_dev.c:279:25: warning: incorrect type in assignment (different address spaces)
-> net/phonet/pn_dev.c:279:25:    expected struct net_device *<noident>
-> net/phonet/pn_dev.c:279:25:    got void [noderef] <asn:4>*<noident>
-> net/phonet/pn_dev.c:376:17: warning: incorrect type in assignment (different address spaces)
-> net/phonet/pn_dev.c:376:17:    expected struct net_device *volatile <noident>
-> net/phonet/pn_dev.c:376:17:    got struct net_device [noderef] <asn:4>*<noident>
-> net/phonet/pn_dev.c:392:17: warning: incorrect type in assignment (different address spaces)
-> net/phonet/pn_dev.c:392:17:    expected struct net_device *<noident>
-> net/phonet/pn_dev.c:392:17:    got void [noderef] <asn:4>*<noident>
-> 
-> -Access table with rcu_dereference (fixes the following sparse errors):
-> net/phonet/pn_dev.c:278:25: error: incompatible types in comparison expression (different address spaces)
-> net/phonet/pn_dev.c:391:17: error: incompatible types in comparison expression (different address spaces)
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  net/phonet/pn_dev.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/phonet/pn_dev.c b/net/phonet/pn_dev.c
-> index 56a6146..5c9c0b2f1 100644
-> --- a/net/phonet/pn_dev.c
-> +++ b/net/phonet/pn_dev.c
-> @@ -36,7 +36,7 @@
->  
->  struct phonet_routes {
->  	struct mutex		lock;
-> -	struct net_device	*table[64];
-> +	struct net_device __rcu	*table[64];
->  };
->  
->  struct phonet_net {
-> @@ -275,7 +275,7 @@ static void phonet_route_autodel(struct net_device *dev)
->  	bitmap_zero(deleted, 64);
->  	mutex_lock(&pnn->routes.lock);
->  	for (i = 0; i < 64; i++)
-> -		if (dev == pnn->routes.table[i]) {
-> +		if (rcu_dereference(pnn->routes.table[i]) == dev) {
->  			RCU_INIT_POINTER(pnn->routes.table[i], NULL);
->  			set_bit(i, deleted);
->  		}
-> @@ -388,7 +388,7 @@ int phonet_route_del(struct net_device *dev, u8 daddr)
->  
->  	daddr = daddr >> 2;
->  	mutex_lock(&routes->lock);
-> -	if (dev == routes->table[daddr])
-> +	if (rcu_dereference(routes->table[daddr]) == dev)
->  		RCU_INIT_POINTER(routes->table[daddr], NULL);
->  	else
->  		dev = NULL;
+Peter Zijlstra wrote:
 
-Hi Fabian
+>> It sets up a per-thread 'VDSO' page and appropriate TLB support.
 
-Have you tested this running the kernel with following config options :
+> So traditionally we've always avoided per-thread pages like that.
+> What makes it worth it on MIPS?
 
-CONFIG_LOCKDEP=y
-CONFIG_PROVE_RCU=y
+MIPS has branch delay slots - it is an instruction after branch which is executed
+before branch is taken. If branch fails due to FPU unavailability then that
+instruction should be emulated as well as branch itself.
+However, MIPS allows to have a customisable coprocessor 2 instructions
+and it is impractical to emulate it and big amount of other traditional MIPS
+instructions inside of kernel.
 
-LOCKDEP should complain loudly, if not, we should file a bug !
+So, some per thread space is needed to put instruction into it, enclose it with
+a return kernel call and switch temporary execution into it.
 
-Hint : Use rcu_access_pointer(), and check that LOCKDEP is happy with
-that.
+Currently, this space is space at SP register (user stack) but it prevents
+switching stack as non-executable.
 
-Thanks !
-
-
+Handle another stack set (one stack per thread) in common user map is
+impractical because of management, scalability and performance difficulties.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
