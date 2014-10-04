@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262AbaJDDRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 23:17:49 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:50763 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224AbaJDDRo (ORCPT
+	id S1755348AbaJDDSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 23:18:36 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:36115 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311AbaJDDSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 23:17:44 -0400
-Subject: [PATCH 3/3] MIPS: set stack/data protection as non-executable
-To: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <david.daney@cavium.com>, <peterz@infradead.org>,
-        <paul.gortmaker@windriver.com>, <davidlohr@hp.com>,
-        <macro@linux-mips.org>, <chenhc@lemote.com>, <zajec5@gmail.com>,
-        <james.hogan@imgtec.com>, <keescook@chromium.org>,
-        <alex@alex-smith.me.uk>, <tglx@linutronix.de>, <blogic@openwrt.org>,
-        <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
-        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
-        <manuel.lauss@gmail.com>, <akpm@linux-foundation.org>,
-        <lars.persson@axis.com>
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Date: Fri, 3 Oct 2014 20:17:39 -0700
-Message-ID: <20141004031739.28569.12863.stgit@linux-yegoshin>
-In-Reply-To: <20141004030438.28569.85536.stgit@linux-yegoshin>
-References: <20141004030438.28569.85536.stgit@linux-yegoshin>
-User-Agent: StGit/0.15
+	Fri, 3 Oct 2014 23:18:33 -0400
+Message-ID: <542F66FC.9040901@roeck-us.net>
+Date: Fri, 03 Oct 2014 20:18:20 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
+References: <20141003212933.458851516@linuxfoundation.org>
+In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.542F6709.0040,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 13
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 7
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a last step of 3 patches which shift FPU emulation out of
-stack into protected area. So, it disables a default executable stack.
+On 10/03/2014 02:26 PM, Greg Kroah-Hartman wrote:
+> ---------------------------------
+> Note: This is a big stable release.  Mostly my fault for being on the
+> road last week, combined with an unusually large number of patches being
+> tagged for the stable tree.  Anyway, I've caught up with all pending
+> patches before 3.17-rc7, so if you have marked something for the stable
+> tree that I have not applied, or emailed the stable@v.k.o list asking
+> for a patch, that is not here, please let me know.
+> ---------------------------------
+>
+> This is the start of the stable review cycle for the 3.16.4 release.
+> There are 357 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Additionally, it sets a default data area non-executable protection.
+Build results:
+	total: 136 pass: 134 fail: 2
+Failed builds:
+	arm:omap2plus_defconfig
+	arm:multi_v7_defconfig
 
-Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
----
- arch/mips/include/asm/page.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Qemu test results:
+	total: 28 pass: 28 fail: 0
 
-diff --git a/arch/mips/include/asm/page.h b/arch/mips/include/asm/page.h
-index 3be8180..d49ba81 100644
---- a/arch/mips/include/asm/page.h
-+++ b/arch/mips/include/asm/page.h
-@@ -230,7 +230,7 @@ extern int __virt_addr_valid(const volatile void *kaddr);
- #define virt_addr_valid(kaddr)						\
- 	__virt_addr_valid((const volatile void *) (kaddr))
- 
--#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
-+#define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
- 				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
- 
- #define UNCAC_ADDR(addr)	((addr) - PAGE_OFFSET + UNCAC_BASE)
+Build errors are the same as in 3.14, with the same culprit and fix.
+
+Guenter
 
