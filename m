@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760881AbaJDAAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:00:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45763 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756056AbaJCVx1 (ORCPT
+	id S1760897AbaJDAA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:00:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37148 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758237AbaJDAA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:27 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Lau <kafai@fb.com>, Josef Bacik <jbacik@fb.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 039/238] trace: Fix epoll hang when we race with new entries
-Date: Fri,  3 Oct 2014 14:29:14 -0700
-Message-Id: <20141003212914.912532598@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212913.680985295@linuxfoundation.org>
-References: <20141003212913.680985295@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 20:00:27 -0400
+Message-ID: <542F3892.7090001@infradead.org>
+Date: Fri, 03 Oct 2014 17:00:18 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
+To: Josh Triplett <josh@joshtriplett.org>
+CC: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Matt Turner <mattst88@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        =?UTF-8?B?6JSh5q2j6b6Z?= <zhenglong.cai@cs2c.com.cn>,
+        Tejun Heo <tj@kernel.org>, Fabian Frederick <fabf@skynet.be>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break
+ up the EXPERT menu
+References: <20141003233139.GA16079@thin> <542F3304.4000703@infradead.org> <20141003234743.GA16233@thin>
+In-Reply-To: <20141003234743.GA16233@thin>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 10/03/14 16:47, Josh Triplett wrote:
+> On Fri, Oct 03, 2014 at 04:36:36PM -0700, Randy Dunlap wrote:
+>> On 10/03/14 16:31, Josh Triplett wrote:
+>>> commit 03b8c7b623c80af264c4c8d6111e5c6289933666 ("futex: Allow
+>>> architectures to skip futex_atomic_cmpxchg_inatomic() test") added the
+>>> HAVE_FUTEX_CMPXCHG symbol right below FUTEX.  This placed it right in
+>>> the middle of the options for the EXPERT menu.  However,
+>>> HAVE_FUTEX_CMPXCHG does not depend on EXPERT or FUTEX, so Kconfig stops
+>>> placing items in the EXPERT menu, and displays the remaining several
+>>> EXPERT items (starting with EPOLL) directly in the General Setup menu.
+>>>
+>>> Since both users of HAVE_FUTEX_CMPXCHG only select it "if FUTEX", make
+>>> HAVE_FUTEX_CMPXCHG itself depend on FUTEX.  With this change, the
+>>> subsequent items display as part of the EXPERT menu again; the EMBEDDED
+>>> menu now appears as the next top-level item in the General Setup menu,
+>>> which makes General Setup much shorter and more usable.
+>>>
+>>> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+>>> ---
+>>>
+>>> Posting for review.  I can upstream this through the tiny tree.
+>>>
+>>> Personally, I'd consider this a bit of a bug in Kconfig; ideally,
+>>> Kconfig should only consider symbols with prompt strings when
+>>> considering what to display in a menu.  However, in the interim, this
+>>> one-line patch drastically improves the usability of the "General Setup"
+>>> config menu.
+>>
+>> Good catch.  Thanks.
+>>
+>> I would prefer to see both of your patches merged quickly into 3.17 no matter
+>> how they get there.
+>>
+>> both patches:
+>> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Both of the fixes are entirely about Kconfig usability, don't affect the
+> built kernel, and have existed for quite a few kernel releases, so I
+> hadn't planned to get them into 3.17 at the last minute.  I'd just
+> planned to submit them during the 3.18 merge window when that opens.
+> 
+> Do you really think they should be pushed into 3.17 at this point?
 
-------------------
+Both of them are bugs IMO, even though they are usability/presentation bugs.
+and they make the menu system confusing.
 
-From: Josef Bacik <jbacik@fb.com>
+> If you'd like, I could get them into 3.18 and mark them for stable,
+> instead.
 
-commit 4ce97dbf50245227add17c83d87dc838e7ca79d0 upstream.
-
-Epoll on trace_pipe can sometimes hang in a weird case.  If the ring buffer is
-empty when we set waiters_pending but an event shows up exactly at that moment
-we can miss being woken up by the ring buffers irq work.  Since
-ring_buffer_empty() is inherently racey we will sometimes think that the buffer
-is not empty.  So we don't get woken up and we don't think there are any events
-even though there were some ready when we added the watch, which makes us hang.
-This patch fixes this by making sure that we are actually on the wait list
-before we set waiters_pending, and add a memory barrier to make sure
-ring_buffer_empty() is going to be correct.
-
-Link: http://lkml.kernel.org/p/1408989581-23727-1-git-send-email-jbacik@fb.com
-
-Cc: Martin Lau <kafai@fb.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/ring_buffer.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
-
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -626,8 +626,22 @@ int ring_buffer_poll_wait(struct ring_bu
- 		work = &cpu_buffer->irq_work;
- 	}
- 
--	work->waiters_pending = true;
- 	poll_wait(filp, &work->waiters, poll_table);
-+	work->waiters_pending = true;
-+	/*
-+	 * There's a tight race between setting the waiters_pending and
-+	 * checking if the ring buffer is empty.  Once the waiters_pending bit
-+	 * is set, the next event will wake the task up, but we can get stuck
-+	 * if there's only a single event in.
-+	 *
-+	 * FIXME: Ideally, we need a memory barrier on the writer side as well,
-+	 * but adding a memory barrier to all events will cause too much of a
-+	 * performance hit in the fast path.  We only need a memory barrier when
-+	 * the buffer goes from empty to having content.  But as this race is
-+	 * extremely small, and it's not a problem if another event comes in, we
-+	 * will fix it later.
-+	 */
-+	smp_mb();
- 
- 	if ((cpu == RING_BUFFER_ALL_CPUS && !ring_buffer_empty(buffer)) ||
- 	    (cpu != RING_BUFFER_ALL_CPUS && !ring_buffer_empty_cpu(buffer, cpu)))
+Do that at a minimum, please.
 
 
+-- 
+~Randy
