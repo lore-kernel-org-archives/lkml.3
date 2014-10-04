@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaJDJye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 05:54:34 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33654 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaJDJyc (ORCPT
+	id S1752801AbaJDJzK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 05:55:10 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56814 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046AbaJDJzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 05:54:32 -0400
-Date: Sat, 4 Oct 2014 10:53:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "atull@opensource.altera.com" <atull@opensource.altera.com>,
-        "jdelvare@suse.de" <jdelvare@suse.de>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "delicious.quinoa@gmail.com" <delicious.quinoa@gmail.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yvanderv@opensource.altera.com" <yvanderv@opensource.altera.com>
-Message-ID: <20141004095349.GB4609@sirena.org.uk>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
- <20141003122736.GH26643@leverpostej>
- <542EDCDB.6040406@roeck-us.net>
- <20141003231334.GA4609@sirena.org.uk>
- <542F2FE3.60507@roeck-us.net>
+	Sat, 4 Oct 2014 05:55:08 -0400
+Message-ID: <542FC556.6060306@gmail.com>
+Date: Sat, 04 Oct 2014 18:00:54 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <542F2FE3.60507@roeck-us.net>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: wg@grandegger.com, mkl@pengutronix.de, fengguang.wu@intel.com,
+        b29396@freescale.com, varkabhadram@gmail.com
+CC: linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/can/m_can/Kconfig: Let CAN_M_CAN depend on HAS_IOMEM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CAN_M_CAN needs HAS_IOMEM, so depend on it, the related error (with
+allmodconfig under um):
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+    MODPOST 1205 modules
+  ERROR: "devm_ioremap" [drivers/net/can/m_can/m_can.ko] undefined!
+  ERROR: "devm_ioremap_resource" [drivers/net/can/m_can/m_can.ko] undefined!
 
-On Fri, Oct 03, 2014 at 04:23:15PM -0700, Guenter Roeck wrote:
-> On 10/03/2014 04:13 PM, Mark Brown wrote:
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/net/can/m_can/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-> >Nope, nothing to do with regulator that I'm aware of and I've not seen
-> >any examples (but I don't tend to review users too often).
-
-> Many examples, really. Just picking one.
-
-> Documentation/devicetree/bindings/mfd/tps6507x.txt
-
-OK, that's not an actual DTS...  I'm not seeing anything in the code.
-
-> 	regulators {
->                 #address-cells = <1>;
->                 #size-cells = <0>;
-> 		...
-
-> This also uses the reg property for the regulator index
-> (without explaining it further). Seems to be pretty common.
-
-If it's doing that it's nothing to do with the regulator API.
-
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUL8OsAAoJECTWi3JdVIfQl3QH/0XbMyh3/nBelRTyQ/tU2svk
-p/F7bdWEU9Ffx96qOP6RjM78I/MmXPE8EdHOKi76V6ri1bhzTCPvzEEnSj34E/Ha
-zQWQastXpG8D8I/0qjf2NMc19QkpfA8dM4dGPq+TCedZJPpwrikN2USB1/Myq2jW
-cfZcTfolj8iemnjLlPacYTEGgGrh9mSdPbOj2UDFd6jXaHHo+DTCXOVxwpdC8UqB
-gvpySGfbcQSxeUfaKvpBnu+sJh2zKvxWkb9XJNUY+yOaI7dyCbCDPfyugg56KRcq
-Bxctz+XKALuiDT5DenerWQ08PNJA8pewCvMnt6PA/TfXufEm03Rj//cNB6IbS3Q=
-=906O
------END PGP SIGNATURE-----
-
---FkmkrVfFsRoUs1wW--
+diff --git a/drivers/net/can/m_can/Kconfig b/drivers/net/can/m_can/Kconfig
+index fca5482..14c9fcf 100644
+--- a/drivers/net/can/m_can/Kconfig
++++ b/drivers/net/can/m_can/Kconfig
+@@ -1,4 +1,5 @@
+ config CAN_M_CAN
+ 	tristate "Bosch M_CAN devices"
++	depends on HAS_IOMEM
+ 	---help---
+ 	  Say Y here if you want to support for Bosch M_CAN controller.
+-- 
+1.9.3
