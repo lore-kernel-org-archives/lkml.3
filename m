@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaJDJkE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 05:40:04 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:42598 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315AbaJDJkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 05:40:01 -0400
-Message-ID: <542FC1CC.90705@gmail.com>
-Date: Sat, 04 Oct 2014 17:45:48 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752500AbaJDJkg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 05:40:36 -0400
+Received: from mout.gmx.net ([212.227.17.20]:60325 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189AbaJDJkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 05:40:33 -0400
+From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <daniel-gl@gmx.net>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <daniel-gl@gmx.net>
+Subject: [PATCH] rtc-cmos: fix wakeup from S5 without CONFIG_PM_SLEEP
+Date: Sat,  4 Oct 2014 11:38:56 +0200
+Message-Id: <1412415536-8919-1-git-send-email-daniel-gl@gmx.net>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-To: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/watchdog/Kconfig: Let XILINX_WATCHDOG and TEGRA_WATCHDOG
- depend on HAS_IOMEM
-References: <542FC064.1030604@gmail.com>
-In-Reply-To: <542FC064.1030604@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:pGHQ56tXhEsJvGxxO8owQzLfsrujQAVJdgOgnW13I/D63ELrKQ/
+ n58jl9W3KPz0dRHZvbFHyzXhqOGYYCcgFsRJGH/1VN/JiK6JebRhVIuJykwh1w3IhrV+VS1
+ hY5u0OtUBpUUJTxxTScahGmf/RhwYaSvF3uygAfq94mM+zm+wi0PRIwZqHG2P19/hhodDn/
+ N2521xBn9qcciA4ack2mw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/4/14 17:39, Chen Gang wrote:
-> They need HAS_IOMEM, so let them depend on it, the related error (with
-> allmodconfig under um):
-> 
->     MODPOST 1205 modules
->   ERROR: "syscall" [fs/hostfs/hostfs.ko] undefined!
-    ^
-Sorry, the line above is useless for this issue, please skip it.
+b5ada4600d broke wakeup from S5 by making cmos_poweroff a nop
+unless CONFIG_PM_SLEEP was defined. Fix this by restricting
+the #ifdef to cmos_resume and restoring the old dependency on
+CONFIG_PM for cmos_suspend and cmos_poweroff.
 
-Thanks.
+Signed-off-by: Daniel Glöckner <daniel-gl@gmx.net>
+---
+ drivers/rtc/rtc-cmos.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
->   ERROR: "devm_ioremap_resource" [drivers/watchdog/tegra_wdt.ko] undefined!
->   ERROR: "devm_ioremap_resource" [drivers/watchdog/of_xilinx_wdt.ko] undefined!
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/watchdog/Kconfig | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index a51ccf3..d0ddf90 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -132,6 +132,7 @@ config WM8350_WATCHDOG
->  
->  config XILINX_WATCHDOG
->  	tristate "Xilinx Watchdog timer"
-> +	depends on HAS_IOMEM
->  	select WATCHDOG_CORE
->  	help
->  	  Watchdog driver for the xps_timebase_wdt ip core.
-> @@ -472,7 +473,7 @@ config SIRFSOC_WATCHDOG
->  
->  config TEGRA_WATCHDOG
->  	tristate "Tegra watchdog"
-> -	depends on ARCH_TEGRA || COMPILE_TEST
-> +	depends on (ARCH_TEGRA || COMPILE_TEST) && HAS_IOMEM
->  	select WATCHDOG_CORE
->  	help
->  	  Say Y here to include support for the watchdog timer
-> 
-
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index b0e4a3e..5b2e761 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -856,7 +856,7 @@ static void __exit cmos_do_remove(struct device *dev)
+ 	cmos->dev = NULL;
+ }
+ 
+-#ifdef	CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ 
+ static int cmos_suspend(struct device *dev)
+ {
+@@ -907,6 +907,8 @@ static inline int cmos_poweroff(struct device *dev)
+ 	return cmos_suspend(dev);
+ }
+ 
++#ifdef	CONFIG_PM_SLEEP
++
+ static int cmos_resume(struct device *dev)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -954,6 +956,7 @@ static int cmos_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++#endif
+ #else
+ 
+ static inline int cmos_poweroff(struct device *dev)
 -- 
-Chen Gang
+1.8.3.4
 
-Open, share, and attitude like air, water, and life which God blessed
