@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750942AbaJDEo7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 00:44:59 -0400
-Received: from mail.vibrantasia.com ([182.72.112.163]:42498 "EHLO
-	mail.vibrantasia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaJDEo6 (ORCPT
+	id S1751055AbaJDF4j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 01:56:39 -0400
+Received: from mailout.micron.com ([137.201.242.129]:27254 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaJDF4i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 00:44:58 -0400
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Oct 2014 00:44:57 EDT
-Message-ID: <61a771f666605f728261630d05649905.squirrel@vibrantasia.com>
-Date: Sat, 4 Oct 2014 10:07:00 +0530
-Subject: lening bieden
-From: "DIAMOND SWISS LOAN COMPANY" <diamondswissloanscompany@gmail.com>
-Reply-To: diamondswissloans51@gmail.com
-User-Agent: SquirrelMail/1.4.23 [SVN]
+	Sat, 4 Oct 2014 01:56:38 -0400
+From: bpqw <bpqw@micron.com>
+To: Marek Vasut <marex@denx.de>, Brian Norris <computersforpeace@gmail.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Topic: [PATCH 1/1 v3] driver:mtd:spi-nor: Add Micron quad I/O support
+Thread-Index: AQHP3YTkQqU2n0ldmUiracjhDO+8SJwfdAEg
+Date: Sat, 4 Oct 2014 05:55:47 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E4E8A@NTXXIAMBX02.xacn.micron.com>
+References: <A765B125120D1346A63912DDE6D8B6315DCC46@NTXXIAMBX02.xacn.micron.com>
+ <201409261046.07132.marex@denx.de>
+ <A765B125120D1346A63912DDE6D8B6315E3D45@NTXXIAMBX02.xacn.micron.com>
+ <201410011633.18150.marex@denx.de>
+In-Reply-To: <201410011633.18150.marex@denx.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+x-tm-as-product-ver: SMEX-10.0.0.4152-7.000.1014-20994.004
+x-tm-as-result: No--31.534600-0.000000-31
+x-tm-as-user-approved-sender: Yes
+x-tm-as-user-blocked-sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>> Signed-off-by: bean huo <beanhuo@micron.com>
 
+>I don't see anything obviously wrong.
 
+>Acked-by: Marek Vasut <marex@denx.de>
 
-Goede dag,
-      
-     We zijn Diamond Zwitserse lening bedrijf geven van leningen per post
-advertentie. Wij bieden verschillende soorten leningen (korte en lange
-termijn leningen, persoonlijke leningen, leningen aan bedrijven etc.) met
-3% rente. We geven leningen aan mensen in nood niet, ongeacht hun locatie,
-geslacht, burgerlijke staat, opleiding, status van de taak, maar moet een
-wettelijke middelen van terugbetaling hebben. Onze leningen variëren
-tussen 5.000,00 tot 10.000.000,00 Amerikaanse dollar of de euro of pond
-met een looptijd van maximaal 20 jaar. Als u geïnteresseerd bent in meer
-informatie, vul dan onderstaand formulier in en stuur deze naar ons
-e-mailadres: diamondswissloans51@gmail.com
+Hi,Brian
 
-Gelieve in te vullen:
-
-naam:
-
-Adres:
-
-Leeftijd:
-
-Geslacht:
-
-Contact-Phone:
-
-Beroep:
-
-Maandelijks inkomen:
-
-Het benodigde bedrag van de lening:
-
-Duur van de lening:
-
-Het doel van de lening:
-
-land:
-
-Postcode:
-
-
-"Wij tonen u een betere manier om uw financiële vrijheid"
-
-Met vriendelijke groet,
-Mr Diamond Peters (algemeen directeur).
-De heer Bill Anthony (Marketing Manager).
-
+How do you think about this patch?
