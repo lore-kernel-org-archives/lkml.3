@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaJDQBg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 12:01:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52579 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934AbaJDQBe (ORCPT
+	id S1751197AbaJDQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 12:03:56 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:61683 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaJDQDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 12:01:34 -0400
-Date: Sat, 4 Oct 2014 09:00:37 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: rjw@rjwysocki.net, pavel@ucw.cz, len.brown@intel.com,
-        ulf.hansson@linaro.org, khilman@linaro.org, geert+renesas@glider.be,
-        tomasz.figa@gmail.com, richard@nod.at, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: power: domain: Use 'pm_cpu_data' instead
- of 'cpu_data' for compiling break
-Message-ID: <20141004160037.GB16969@kroah.com>
-References: <54300206.3020206@gmail.com>
+	Sat, 4 Oct 2014 12:03:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54300206.3020206@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141004082307.GS10583@worktop.programming.kicks-ass.net>
+References: <20141004030438.28569.85536.stgit@linux-yegoshin>
+	<20141004082307.GS10583@worktop.programming.kicks-ass.net>
+Date: Sat, 4 Oct 2014 09:03:53 -0700
+X-Google-Sender-Auth: a5LSQBCKbsHbsdRVmigCIx0FDaE
+Message-ID: <CA+55aFynSp90n=jdUdmY7nq-9t4pHS82Tj-WfZOBfot7ip0hBw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] MIPS executable stack protection
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        linux-mips <linux-mips@linux-mips.org>, Zubair.Kakakhel@imgtec.com,
+        David Daney <david.daney@cavium.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        "Maciej W. Rozycki" <macro@linux-mips.org>, chenhc@lemote.com,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Kees Cook <keescook@chromium.org>, alex@alex-smith.me.uk,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Crispin <blogic@openwrt.org>, jchandra@broadcom.com,
+        paul.burton@imgtec.com, qais.yousef@imgtec.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ralf Baechle <ralf@linux-mips.org>, markos.chandras@imgtec.com,
+        Manuel Lauss <manuel.lauss@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, lars.persson@axis.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 04, 2014 at 10:19:50PM +0800, Chen Gang wrote:
-> 'cpu_data' is too common to be already used by some architectures (e.g.
-> um, m32r, and mn10300), so need use 'pm_cpu_data' instead of, or cause
-> compiling break. The related error (with allmodconfig under um):
-> 
->     CC      drivers/base/platform.o
->   In file included from ./arch/x86/um/asm/processor.h:31:0,
->                    from ./arch/um/include/asm/uaccess.h:16,
->                    from ./arch/um/include/asm/thread_info.h:13,
->                    from include/linux/thread_info.h:54,
->                    from include/asm-generic/current.h:4,
->                    from arch/um/include/generated/asm/current.h:1,
->                    from include/linux/mutex.h:13,
->                    from include/linux/kernfs.h:13,
->                    from include/linux/sysfs.h:15,
->                    from include/linux/kobject.h:21,
->                    from include/linux/device.h:17,
->                    from include/linux/platform_device.h:14,
->                    from drivers/base/platform.c:14:
->   ./arch/um/include/asm/processor-generic.h:107:19: error: expected identifier or '(' before '&' token
->    #define cpu_data (&boot_cpu_data)
->                      ^
->   include/linux/pm_domain.h:74:23: note: in expansion of macro 'cpu_data'
->     struct gpd_cpu_data *cpu_data;
->                        ^
-> 
-> Also need notice about 80 columns boundary.
+On Sat, Oct 4, 2014 at 1:23 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Oct 03, 2014 at 08:17:14PM -0700, Leonid Yegoshin wrote:
+>> The following series implements an executable stack protection in MIPS.
+>>
+>> It sets up a per-thread 'VDSO' page and appropriate TLB support.
+>
+> So traditionally we've always avoided per-thread pages like that. What
+> makes it worth it on MIPS?
 
-I don't object to this change at all, but it could be easier to solve
-this by fixing up 'cpu_data' to be named something a bit less "generic"?
-What does x86 use for this data type?
+Nothing makes it worth it on MIPS.
 
-thanks,
+It may be easy to implement when you have all software-fill of TLB's,
+but it's a mistake even then - because it means that you'll never be
+able to do hardware TLB walkers.
 
-greg k-h
+And MIPS *does* have hardware TLB walkers, even if they are not
+necessarily available everywhere.
+
+So this is a horrible idea. Don't do it. Page tables need to be
+per-process, not per thread, so that page tables can be shared.
+
+              Linus
