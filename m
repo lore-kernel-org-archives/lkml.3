@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaJCVor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 17:44:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45319 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756072AbaJCVn0 (ORCPT
+	id S932367AbaJDAUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:20:35 -0400
+Received: from any239.rev.netart.pl ([85.128.233.239]:17607 "EHLO
+	any239.rev.netart.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755258AbaJDAUc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:43:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve French <smfrench@gmail.com>, Sachin Prabhu <sprabhu@redhat.com>
-Subject: [PATCH 3.16 219/357] SMB3: Fix oops when creating symlinks on smb3
-Date: Fri,  3 Oct 2014 14:30:05 -0700
-Message-Id: <20141003212940.101318490@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 20:20:32 -0400
+X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Fri, 03 Oct 2014 20:20:32 EDT
+Reply-To: "Doradca Kredytowy" <biuro@centrumpomocykredytowej.pl>
+From: "Doradca Kredytowy" <biuro@mailingkredytowy.pl>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-2?Q?Pozwolenie_na_wys=B3anie_Oferty_kredytowej?=
+Message-ID: <15A86DB3B51A27AE5589B941E4FD5659@giada>
+Date: Sat, 4 Oct 2014 02:11:49 +0200
+Organization: AnoMail - oprogramowanie do emailingow
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-2";
+	reply-type=original
+Content-Transfer-Encoding: 8BIT
+X-Antivirus: avast! (VPS 141003-0, 2014-10-03), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+Witam,
 
-------------------
+Mam do zaoferowania  kredyty firmowe które zawieraja m.in.
 
-From: Steve French <smfrench@gmail.com>
+kredyt bez za¶wiadczeñ z ZUS i US,
+3 letnie limity w rachunku bie¿±cym,
+kredyt na o¶wiadczenie do 500 tys PLN,
+kredyt pod zabezpieczenie ( Bez weryfikacji Bik )
+Prosimy o odpowied¼ zwrotn± TAK w przypadku chêci otrzymania oferty.
 
-commit da80659d4aa758dc6935b10ec64513f0b67bc969 upstream.
+Powy¿sze zapytanie nie stanowi oferty handlowej. Jest ono jedynie pro¶b± o zgodê na przes³anie do Pañstwa stosownej oferty. Jesli nie ustosunkuj± siê Pañstwo do tej wiadomo¶ci pozytywnie nie otrzymaj± Pañstwo ponownie zapytania.
 
-We were not checking for symlink support properly for SMB2/SMB3
-mounts so could oops when mounted with mfsymlinks when try
-to create symlink when mfsymlinks on smb2/smb3 mounts
+z powa¿aniem
+Przemys³aw Majakowski
+tel. 530-512-382
 
-Signed-off-by: Steve French <smfrench@gmail.com>
-CC: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 
 ---
- fs/cifs/link.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/fs/cifs/link.c
-+++ b/fs/cifs/link.c
-@@ -213,8 +213,12 @@ create_mf_symlink(const unsigned int xid
- 	if (rc)
- 		goto out;
- 
--	rc = tcon->ses->server->ops->create_mf_symlink(xid, tcon, cifs_sb,
--					fromName, buf, &bytes_written);
-+	if (tcon->ses->server->ops->create_mf_symlink)
-+		rc = tcon->ses->server->ops->create_mf_symlink(xid, tcon,
-+					cifs_sb, fromName, buf, &bytes_written);
-+	else
-+		rc = -EOPNOTSUPP;
-+
- 	if (rc)
- 		goto out;
- 
-
+Ta wiadomo¶æ e-mail jest wolna od wirusów i z³o¶liwego oprogramowania, poniewa¿ ochrona avast! Antivirus jest aktywna.
+http://www.avast.com
 
