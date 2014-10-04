@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbaJDIwU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 04:52:20 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59610 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaJDIwQ (ORCPT
+	id S1751966AbaJDJWN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 05:22:13 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:44529 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923AbaJDJWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 04:52:16 -0400
-Date: Sat, 4 Oct 2014 01:50:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, dave@stgolabs.net
-Subject: [GIT PULL rcu/next] Additional locktorture commits for 3.18
-Message-ID: <20141004085003.GA17523@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	Sat, 4 Oct 2014 05:22:11 -0400
+Date: Sat, 4 Oct 2014 11:22:05 +0200
+From: Marc Burkhardt <marc@osknowledge.org>
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+Cc: Marc Burkhardt <marc@osknowledge.org>, linux-kernel@vger.kernel.org
+Subject: Re: Slowdown due to threads bouncing between HT cores
+Message-ID: <20141004092205.GA12973@localhost>
+References: <20141003194428.GA27084@sesse.net>
+ <20141003211152.GB3889@localhost>
+ <20141003211417.GA17326@sesse.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100408-8236-0000-0000-000005E70590
+In-Reply-To: <20141003211417.GA17326@sesse.net>
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://marc.ngoe.de/pubkey.asc
+X-Operating-System: Linux marc 3.10.55-desper
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+* Steinar H. Gunderson <sgunderson@bigfoot.com> [2014-10-03 23:14:17 +0200]:
 
-A few additional commits for locktorture for 3.18.  These were posted
-to LKML at https://lkml.org/lkml/2014/9/29/277 and have been exposed to
--next testing.
+> On Fri, Oct 03, 2014 at 11:11:52PM +0200, Marc Burkhardt wrote:
+> > As I understand your mail, you problem is quite similar, isn't it?
+> 
+> I guess it depends on how often your process migrates. If it happens, like,
+> every second, it's not a big problem (and probably is expected).
+> If it happens all the time, it might be; it depends a bit on a number of
+> factors.
 
-These changes are available in the git repository at:
+Hi Steinar,
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+you say the behavior is probably expected, but I still don't get the point why
+this could be normal or even wanted. There's a cost for migrating the process to
+another CPU. In case my machine has 4 cores, 3 of them 'idle' and that 1 running
+process that keeps being migrated ... where's the benefit of migrating it?
 
-for you to fetch changes up to c98fed9fc6a7449affd941d8a8e9fcb0c72977d6:
+Do you have any source/docs where I could read about this?
 
-  locktorture: Cleanup header usage (2014-09-30 00:10:02 -0700)
+Thanks,
+Marc
 
-----------------------------------------------------------------
-Davidlohr Bueso (4):
-      locktorture: Support rwlocks
-      locktorture: Fix __acquire annotation for spinlock irq
-      locktorture: Cannot hold read and write lock
-      locktorture: Cleanup header usage
+> 
+> /* Steinar */
+> -- 
+> Homepage: http://www.sesse.net/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
- Documentation/locking/locktorture.txt              |   5 +
- kernel/locking/locktorture.c                       | 141 ++++++++++++++++++---
- .../selftests/rcutorture/configs/lock/CFLIST       |   1 +
- .../selftests/rcutorture/configs/lock/LOCK04       |   6 +
- .../selftests/rcutorture/configs/lock/LOCK04.boot  |   1 +
- 5 files changed, 137 insertions(+), 17 deletions(-)
- create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK04
- create mode 100644 tools/testing/selftests/rcutorture/configs/lock/LOCK04.boot
-
+-- 
+Marc Burkhardt
