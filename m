@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268AbaJDLYW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 07:24:22 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4005 "EHLO
-	esgaroth.tuxoid.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaJDLYU (ORCPT
+	id S1751312AbaJDLd6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 07:33:58 -0400
+Received: from ns207790.ip-94-23-215.eu ([94.23.215.26]:48777 "EHLO
+	ns207790.ip-94-23-215.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaJDLd5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 07:24:20 -0400
-X-Greylist: delayed 3476 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Oct 2014 07:24:20 EDT
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters
- overflow within 50 days
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Christoph Lameter <cl@linux.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Date: Sat, 04 Oct 2014 12:26:09 +0200
-In-Reply-To: <alpine.DEB.2.11.1410030722390.9084@gentwo.org>
-References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org>
-	 <alpine.DEB.2.11.1410031231420.4383@nanos>
-	 <alpine.DEB.2.11.1410030653040.8496@gentwo.org>
-	 <1412338512.19413.85.camel@x220>
-	 <alpine.DEB.2.11.1410030722390.9084@gentwo.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1412418370.19330.10.camel@thorin>
-Mime-Version: 1.0
-X-DCC-EATSERVER-Metrics: esgaroth.tuxoid.at 1166; Body=4 Fuz1=4 Fuz2=4
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -0.2 AWL AWL: From: address is in the auto white-list
+	Sat, 4 Oct 2014 07:33:57 -0400
+X-Greylist: delayed 548 seconds by postgrey-1.27 at vger.kernel.org; Sat, 04 Oct 2014 07:33:56 EDT
+From: =?ISO-8859-1?Q?R=E9mi?= Denis-Courmont <remi@remlab.net>
+To: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        netdev@vger.kernel.org
+Subject: Re: [RFC 1/1] net: fix rcu access on phonet_routes
+Date: Sat, 04 Oct 2014 14:24:47 +0300
+Message-ID: <1511645.tJ3y45khDT@basile.remlab.net>
+Organization: Remlab
+User-Agent: KMail/4.14.1 (Linux/3.16.3-basile; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <1412416676-21698-1-git-send-email-fabf@skynet.be>
+References: <1412416676-21698-1-git-send-email-fabf@skynet.be>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fre, 2014-10-03 at 07:23 -0500, Christoph Lameter wrote:
-> On Fri, 3 Oct 2014, Paul Bolle wrote:
-> 
-> > dc -e "1 k 2 32 ^ 1000 / 86400 / p"
-> > 49.7
-> >
-> > (That was the number I remembered from stories about a ancient Windows
-> > lockup.)
-> 
-> Well yes, I used bc which discards the remainder on integer divides
+Le samedi 4 octobre 2014, 11:57:56 Fabian Frederick a écrit :
+(snip)
+> -Access table with rcu_dereference (fixes the following sparse errors):
+> net/phonet/pn_dev.c:278:25: error: incompatible types in comparison
+> expression (different address spaces) net/phonet/pn_dev.c:391:17: error:
+> incompatible types in comparison expression (different address spaces)
 
-Use `bc -l`;-)
-----  snip  ----
-2^32 / 1000 / 86400 
-49.71026962962962962962
-----  snip  ----
+Acked-by: Rémi Denis-Courmont <remi@remlab.net>
 
-	Bernd
 -- 
-"I dislike type abstraction if it has no real reason. And saving
-on typing is not a good reason - if your typing speed is the main
-issue when you're coding, you're doing something seriously wrong."
-    - Linus Torvalds
+Rémi Denis-Courmont
+http://www.remlab.net/
 
