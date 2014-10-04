@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaJDQiN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 12:38:13 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:44457 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaJDQiM (ORCPT
+	id S1751066AbaJDQtd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 12:49:33 -0400
+Received: from mout.gmx.com ([74.208.4.201]:52842 "EHLO mout.gmx.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaJDQtb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 12:38:12 -0400
-From: Yasser Shalabi <yassershalabi@gmail.com>
-To: acme@kernel.org
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        a.p.zijlstra@chello.nl, Yasser Shalabi <yassershalabi@gmail.com>
-Subject: [PATCH] perf: fix for double free in tools/perf stat
-Date: Sat,  4 Oct 2014 11:37:57 -0400
-Message-Id: <1412437077-13109-1-git-send-email-yassershalabi@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 4 Oct 2014 12:49:31 -0400
+MIME-Version: 1.0
+Message-ID: <trinity-cc489298-336a-4100-85b8-84c43c620c90-1412441370324@3capp-mailcom-lxa16>
+From: "Tom Collins" <tomcollins224@mail.com>
+To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org
+Subject: (Song) Fk SystemD
+Content-Type: text/plain; charset=UTF-8
+Date: Sat, 4 Oct 2014 18:49:30 +0200
+Importance: normal
+Sensitivity: Normal
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+X-Provags-ID: V03:K0:WiAZTT2sopa1noErefD2mSNHOq2scX6gtuAdLXTRsF9
+ twI7i9WMylT8N48x1G4LYKmOu0JzhRN3rhfAhqVyjaFKv7+NXS
+ BVcQf08lfIHzCqRiq8lFEotO4gjdnaGY/mL7yYhxPUbO/oChBY
+ iNqyenn9O/Y5bT0dTNDJO1GB94Ayw01xyei/qvTxX896g1Zzfc
+ TLLZ3nLAbB/C3IsRtk353NWuBw63nbxMyOUbFkcQF82AYGkyZg
+ 5ABj+Ge4bR9qUjvasZfOrhBRgdSynXeqI5BWmRupleFKhqsTer
+ e6qyz0I2cK2nwei8ja1yLSen9Ku
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix for double free bug in tools/perf due to dangling thread_map pointer in perf_evlist struct.
-Code path excercised when perf stat -C switch is used but not set and is followed by another switch.
-Example: perf stat -C -e. 
-Signed-off-by: Yasser Shalabi <yassershalabi@gmail.com>
+youtu.be/JbRztcLaQa8
 
----
- tools/perf/util/evlist.c |    1 +
- 1 file changed, 1 insertion(+)
+Fuck Systemd. It is passionless static, worthless.
+Only here to force us in a direction.
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 814e954..09af633 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -845,6 +845,7 @@ int perf_evlist__create_maps(struct perf_evlist *evlist, struct target *target)
- 
- out_delete_threads:
- 	thread_map__delete(evlist->threads);
-+	evlist->threads = 0;
- 	return -1;
- }
- 
--- 
-1.7.10.4
+And Linus Trovalds agrees 100% with that direction.
+But he never claimed to be brilliant
+nor have good taste in women
+nor be uncorruptable
+(got to keep that RedHat stock valuable)
+ 
+This was recorded in the morning
+Fuck Systemd.
+Fuck Lennart Poettering.
 
