@@ -1,88 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760613AbaJCXxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 19:53:14 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12725 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759246AbaJCXxJ (ORCPT
+	id S1760633AbaJCXx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 19:53:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:63083 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759219AbaJCXxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 19:53:09 -0400
-Date: Fri, 3 Oct 2014 16:53:21 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 3 Oct 2014 19:53:23 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v5 0/4] Qualcomm SPMI PMIC pin controller drivers
-Message-ID: <20141003235320.GC28481@sonymobile.com>
-References: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
+Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
+Date: Sat, 04 Oct 2014 02:13:23 +0200
+Message-ID: <6568619.UkU5qISONv@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141003143547.GP26643@leverpostej>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <7198018.2Bqkjlecz2@vostro.rjw.lan> <20141003143547.GP26643@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1412181058-29179-1-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 01 Oct 09:30 PDT 2014, Ivan T. Ivanov wrote:
+On Friday, October 03, 2014 03:35:47 PM Mark Rutland wrote:
+> On Fri, Oct 03, 2014 at 03:38:49PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, October 03, 2014 02:58:26 PM Mark Rutland wrote:
+> > > On Fri, Oct 03, 2014 at 03:03:51AM +0100, Rafael J. Wysocki wrote:
+> > > > On Thursday, October 02, 2014 04:36:54 PM Mika Westerberg wrote:
+> > > > > On Thu, Oct 02, 2014 at 02:46:30PM +0200, Arnd Bergmann wrote:
+> > > > > > On Thursday 02 October 2014 15:15:08 Mika Westerberg wrote:
+> > > > 
+> > > > [cut]
+> > > > 
+> > > > > 
+> > > > > Putting everything to a single package results this:
+> > > > > 
+> > > > > 		Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
+> > > > > 
+> > > > > But I think the below looks better:
+> > > > 
+> > > > I agree.
+> > > > 
+> > > > > 		Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
+> > > > > 		Package () { "pwm-names", Package () {"led-red", "led-green"}}
+> > > > > 
+> > > > > and it is trivial to match with the corresponding DT fragment.
+> > > > > 
+> > > > > > 	}
+> > > > > > 
+> > > > > > vs.
+> > > > > > 
+> > > > > > 	pwm-slave {
+> > > > > > 		pwms = <&pwm0 0 10>, <&pwm1 1 20>;
+> > > > > > 		pwm-names = "led-red", "led-green";
+> > > > > > 	};
+> > > > > > 
+> > > > > 
+> > > > > I don't have strong feelings which way it should be. The current
+> > > > > implementation limits references so that you can have only integer
+> > > > > arguments, like {ref0, int, int, ref1, int} but if people think it is
+> > > > > better to allow strings there as well, it can be changed.
+> > > > > 
+> > > > > I would like to get comments from Darren and Rafael about this, though.
+> > > > 
+> > > > In my opinion there needs to be a "canonical" representation of the
+> > > > binding that people always can expect to work.  It seems reasonable to
+> > > > use the one exactly matching the DT representation for that.
+> > > 
+> > > I don't follow. The two forms would share the same high-level accessors,
+> > > but the binary representation is already different. Why should we choose
+> > > the inferior layout given they are already different binary formats?
+> > 
+> > Well, why is it inferior in the first place?  It represents the same information
+> > and I'm not sure why the binary formats matter here?
+> 
+> Because people get the format wrong regardless of documentation. The
+> format:
+> 
+> Package () {
+> 	Package () { ^ref1, data, data },
+> 	Package () { ^ref2, data },
+> 	Package () { ^ref3, data, data, data },
+> }
+> 
+> Is superior to the format:
+> 
+> Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
+> 
+> Because in the former you have delimiters that can be used to verify
+> each tuple. Imagine someone misses a data element for one of these
+> tuples. In the former layout you can detect this easily while in the
+> latter you cannot.
 
-> Changes since v4:
-> 
-> - Use PMIC name in compatible string.
-> - PINCTRL_QCOM_SPMI_PMIC from Kconfig symbol.
-> - Remove pmic string from drivers file names.
-> - Fixed coding style issues.
-> - Use qcom-spmi-gpio and qcom-spmi-mpp from dirver names,
->   to be similar to qcom-spmi-iadc, qcom-spmi-vadc and 
->   qcom-spmi-temp-alarm drivers.
-> 
-> Short description:
-> 
-> Patches adds pin control drivers for Multi-Purpose Pin (MPP) and
-> General-purpose pin (GPIO) controllers found in Qualcomm SPMI based
-> PMIC chips.
-> 
-> MPP's are enhanced GPIO's with analog circuits, which support 
-> analog and digital input/output.
-> 
-> v4: https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg725568.html
-> 
-> Bjorn Andersson (1):
->   pinctrl: Device tree bindings for Qualcomm PMIC GPIO block
-> 
-> Ivan T. Ivanov (3):
->   pinctrl: Device tree bindings for Qualcomm PMIC MPP block
->   pinctrl: Qualcomm SPMI PMIC GPIO pin controller driver
->   pinctrl: Qualcomm SPMI PMIC MPP pin controller driver
-> 
->  .../devicetree/bindings/pinctrl/qcom,pmic-gpio.txt | 215 +++++
->  .../devicetree/bindings/pinctrl/qcom,pmic-mpp.txt  | 162 ++++
->  drivers/pinctrl/qcom/Kconfig                       |  13 +
->  drivers/pinctrl/qcom/Makefile                      |   2 +
->  drivers/pinctrl/qcom/pinctrl-spmi-gpio.c           | 937 ++++++++++++++++++++
->  drivers/pinctrl/qcom/pinctrl-spmi-mpp.c            | 953 +++++++++++++++++++++
->  include/dt-bindings/pinctrl/qcom,pmic-gpio.h       | 142 +++
->  include/dt-bindings/pinctrl/qcom,pmic-mpp.h        |  44 +
->  8 files changed, 2468 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,pmic-gpio.txt
->  create mode 100644 Documentation/devicetree/bindings/pinctrl/qcom,pmic-mpp.txt
->  create mode 100644 drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
->  create mode 100644 drivers/pinctrl/qcom/pinctrl-spmi-mpp.c
->  create mode 100644 include/dt-bindings/pinctrl/qcom,pmic-gpio.h
->  create mode 100644 include/dt-bindings/pinctrl/qcom,pmic-mpp.h
-> 
+I agree with this particular thing (although other people seem to have
+problems with too many package nesting levels) but I'm not sure what that
+has to do with the example given above (let me quote again):
 
-This looks good and I gave it a spin on one of our 8974 devices and verified
-that gpio_keys works :)
+> Putting everything to a single package results this:
+> 
+> 	Package () { "pwms", Package () {"led-red", ^PWM0, 0, 10, "led-green", ^PWM0, 1, 10 }}
+> 
+> But I think the below looks better:
+> 
+> 	Package () { "pwms", Package () {^PWM0, 0, 10, ^PWM0, 1, 10 }}
+> 	Package () { "pwm-names", Package () {"led-red", "led-green"}}
+> 
+> and it is trivial to match with the corresponding DT fragment.
 
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+that I was commenting.  Both cases contains the
 
-Regards,
-Bjorn
+	Package () { ^ref1, data, data, ^ref2, data, ^ref3, data, data, data }
+
+format that you don't like, don't they?
+
+> Additionally, the former can represent variadic phandle/reference + args
+> formats, which the latter cannot. The DT pinctrl bindings look the way
+> they do because we can't represent variadic args in DT due to a lack of
+> delimiters.
+> 
+> You have the ability to embed structure in the binary format. Throwing
+> this away because it doesn't quite match DT does not to me sounds like
+> the right tradeoff.
+> 
+> > If I'm to create a _DSD with that information and have a DT template, it
+> > surely is easier to copy it exactly than to figure out how to resolve it
+> > to represent something I can actually put in there. 
+> 
+> Sure, you can put something together fast. However, that doesn't make it
+> necessarily better.
+> 
+> If you want to make reusing DT templates easier, why not just embed a
+> DTB and be done with it?
+
+Because that sucks?
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
