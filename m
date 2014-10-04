@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760989AbaJDACc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 20:02:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45758 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755608AbaJCVxY (ORCPT
+	id S1761018AbaJDACn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 20:02:43 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:13551 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760993AbaJDACk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 17:53:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Sung <penmount.touch@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 3.16 249/357] Input: serport - add compat handling for SPIOCSTYPE ioctl
-Date: Fri,  3 Oct 2014 14:30:35 -0700
-Message-Id: <20141003212940.985520282@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141003212933.458851516@linuxfoundation.org>
-References: <20141003212933.458851516@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Fri, 3 Oct 2014 20:02:40 -0400
+Date: Fri, 3 Oct 2014 17:02:50 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [RFC 5/7] soc: qcom: Add Shared Memory Driver
+Message-ID: <20141004000249.GD28481@sonymobile.com>
+References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1412037291-16880-6-git-send-email-bjorn.andersson@sonymobile.com>
+ <542DD3DA.1010909@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <542DD3DA.1010909@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Thu 02 Oct 15:38 PDT 2014, Stephen Boyd wrote:
 
-------------------
+> On 09/29/14 17:34, Bjorn Andersson wrote:
+> > +
+> > +#define GET_RX_CHANNEL_INFO(channel, param) \
+> > +	(channel->rx_info_word ? \
+> > +		channel->rx_info_word->param : \
+> > +		channel->rx_info->param)
+> > +
+> > +#define GET_TX_CHANNEL_INFO(channel, param) \
+> > +	(channel->rx_info_word ? \
+> > +		channel->tx_info_word->param : \
+> > +		channel->tx_info->param)
+> > +
+> > +#define SET_RX_CHANNEL_INFO(channel, param, value) \
+> > +	(channel->rx_info_word ? \
+> > +		(channel->rx_info_word->param = value) : \
+> > +		(channel->rx_info->param = value))
+> > +
+> > +#define SET_TX_CHANNEL_INFO(channel, param, value) \
+> > +	(channel->rx_info_word ? \
+> 
+> Drive-by review: Should this be tx_info_word? Given that it works I
+> wonder why not just have a flag indicating if we should use word aligned
+> read/write vs. byte aligned.
+> 
 
-From: John Sung <penmount.touch@gmail.com>
+You're right, that should be tx - but from the way things both channels will
+always be of the same type, so it will simply work.
 
-commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
+I had a separate flag, but instead of having 4 members in the struct to
+indicate if I was dealing with word aligned access I had 5. So I dropped it.
 
-When running a 32-bit inputattach utility in a 64-bit system, there will be
-error code "inputattach: can't set device type". This is caused by the
-serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
-fails.
+> > +		(channel->tx_info_word->param = value) : \
+> > +		(channel->tx_info->param = value))
+> > +
+> 
 
-Signed-off-by: John Sung <penmount.touch@gmail.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/input/serio/serport.c |   45 +++++++++++++++++++++++++++++++++++-------
- 1 file changed, 38 insertions(+), 7 deletions(-)
-
---- a/drivers/input/serio/serport.c
-+++ b/drivers/input/serio/serport.c
-@@ -21,6 +21,7 @@
- #include <linux/init.h>
- #include <linux/serio.h>
- #include <linux/tty.h>
-+#include <linux/compat.h>
- 
- MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
- MODULE_DESCRIPTION("Input device TTY line discipline");
-@@ -198,28 +199,55 @@ static ssize_t serport_ldisc_read(struct
- 	return 0;
- }
- 
-+static void serport_set_type(struct tty_struct *tty, unsigned long type)
-+{
-+	struct serport *serport = tty->disc_data;
-+
-+	serport->id.proto = type & 0x000000ff;
-+	serport->id.id    = (type & 0x0000ff00) >> 8;
-+	serport->id.extra = (type & 0x00ff0000) >> 16;
-+}
-+
- /*
-  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
-  */
- 
--static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
-+static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
-+			       unsigned int cmd, unsigned long arg)
- {
--	struct serport *serport = (struct serport*) tty->disc_data;
--	unsigned long type;
--
- 	if (cmd == SPIOCSTYPE) {
-+		unsigned long type;
-+
- 		if (get_user(type, (unsigned long __user *) arg))
- 			return -EFAULT;
- 
--		serport->id.proto = type & 0x000000ff;
--		serport->id.id	  = (type & 0x0000ff00) >> 8;
--		serport->id.extra = (type & 0x00ff0000) >> 16;
-+		serport_set_type(tty, type);
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
-+static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
-+				       struct file *file,
-+				       unsigned int cmd, unsigned long arg)
-+{
-+	if (cmd == COMPAT_SPIOCSTYPE) {
-+		void __user *uarg = compat_ptr(arg);
-+		compat_ulong_t compat_type;
-+
-+		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
-+			return -EFAULT;
- 
-+		serport_set_type(tty, compat_type);
- 		return 0;
- 	}
- 
- 	return -EINVAL;
- }
-+#endif
- 
- static void serport_ldisc_write_wakeup(struct tty_struct * tty)
- {
-@@ -243,6 +271,9 @@ static struct tty_ldisc_ops serport_ldis
- 	.close =	serport_ldisc_close,
- 	.read =		serport_ldisc_read,
- 	.ioctl =	serport_ldisc_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl =	serport_ldisc_compat_ioctl,
-+#endif
- 	.receive_buf =	serport_ldisc_receive,
- 	.write_wakeup =	serport_ldisc_write_wakeup
- };
-
-
+Regards,
+Bjorn
