@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752417AbaJDM44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 08:56:56 -0400
-Received: from mout.web.de ([212.227.15.4]:53558 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857AbaJDM4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 08:56:55 -0400
-Message-ID: <542FEE4A.4040401@users.sourceforge.net>
-Date: Sat, 04 Oct 2014 14:55:38 +0200
-From: SF Markus Elfring <elfring@users.sourceforge.net>
+	id S1752269AbaJDNAk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 09:00:40 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58189 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaJDNAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 09:00:39 -0400
+Message-ID: <542FEF75.9010707@kernel.org>
+Date: Sat, 04 Oct 2014 14:00:37 +0100
+From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: linux-kernel@vger.kernel.org, Coccinelle <cocci@systeme.lip6.fr>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Davidlohr Bueso <dbueso@suse.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Ewan Milne <emilne@redhat.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Hannes Reinecke <hare@suse.de>, Jean Delvare <jdelvare@suse.de>,
-        Oleg Nesterov <oleg@redhat.com>, Petr Mladek <pmladek@suse.cz>,
-        Robert Milasan <rmilasan@suse.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Santosh Rastapur <santosh@chelsio.com>, Takashi Iwai <tiwai@suse.de>,
-        Tom Gundersen <teg@jklm.no>, Werner Fink <werner@suse.de>
-Subject: Re: [Cocci] [PATCH v2 2/7] module: add extra argument for parse_params()
- callback
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-3-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1412372683-2003-3-git-send-email-mcgrof@do-not-panic.com>
+To: Daniel Baluta <daniel.baluta@intel.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: irina.tirdea@intel.com
+Subject: Re: [RFC PATCH 2/8] iio: core: Introduce IIO_ACTIVITY channel
+References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com> <1412257439-15683-3-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1412257439-15683-3-git-send-email-daniel.baluta@intel.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:k9m0yyzE6xspPdti6cGyMxBnq6MaxJrimJ56tljv/FF0Y17MCZd
- r2KyWSWYL1t5xYc+y9NNEDmswaTZnRa3cM7ChhM6tqV5pXzciskBZphcoztxyI9oahmfMWt
- Grn+rWagivUsB/uONNGeqsQUNV2Cs+VosXx/CNPZac/IyxX++kUCPBBVe+z+TQIvMZ+oZx1
- jCBfWOl1RhV07vBMdZA+Q==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This adds an extra argument onto parse_params() to be used
-> as a way to make the unused callback a bit more useful and
-> generic by allowing the caller to pass on a data structure
-> of its choice.
+On 02/10/14 14:43, Daniel Baluta wrote:
+> This channel will be used for exposing information about
+> some activity composite sensors including:
+> 	* motion (running, jogging, walking, still).
+> 	* step counter
+> 	* step detector
+> 
+> This will offer an interface for Android composite sensors
+> defined here:
+> http://source.android.com/devices/sensors/composite_sensors.html
+> 
+> This sensors are supported by Freescale's MMA9553 device.
+> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+> 
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+This interface is interesting.... As I state on later patches,
+get the less fuzzy stuff (step counting) out of here into
+it's own type.
 
-How do you think about to work with more data type definitions for such callback
-functions?
+I'd also merge this at least with the next patch as it has little meaning
+without that...
 
-Regards,
-Markus
+> ---
+>  drivers/iio/industrialio-core.c | 1 +
+>  include/linux/iio/types.h       | 1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> index af3e76d..67e8561 100644
+> --- a/drivers/iio/industrialio-core.c
+> +++ b/drivers/iio/industrialio-core.c
+> @@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
+>  	[IIO_CCT] = "cct",
+>  	[IIO_PRESSURE] = "pressure",
+>  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
+> +	[IIO_ACTIVITY] = "activity",
+>  };
+>  
+>  static const char * const iio_modifier_names[] = {
+> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+> index 4a2af8a..d58769a 100644
+> --- a/include/linux/iio/types.h
+> +++ b/include/linux/iio/types.h
+> @@ -30,6 +30,7 @@ enum iio_chan_type {
+>  	IIO_CCT,
+>  	IIO_PRESSURE,
+>  	IIO_HUMIDITYRELATIVE,
+> +	IIO_ACTIVITY,
+>  };
+>  
+>  enum iio_modifier {
+> 
