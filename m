@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaJDVon (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 17:44:43 -0400
-Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:35698 "EHLO
-	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751380AbaJDVoT (ORCPT
+	id S1751457AbaJDXbb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 19:31:31 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39314 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaJDXb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 17:44:19 -0400
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, davej@redhat.com,
-        hmh@hmh.eng.br
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-Subject: [PATCH v2 0/2] Fix legacy_cache detect on Intel. Add Quark to legacy_cache, document TLB quirk
-Date: Sat,  4 Oct 2014 22:43:55 +0100
-Message-Id: <1412459037-26089-1-git-send-email-pure.logic@nexus-software.ie>
+	Sat, 4 Oct 2014 19:31:28 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] power: ab8500_fg: Fix build warning
+Date: Sat,  4 Oct 2014 16:31:13 -0700
+Message-Id: <1412465473-13495-1-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two patches cover four things.
+Fix
 
-First add legacy_cache callback into init_intel() to enable calling of
-intel_size_cache() re-enabling detection of PIII Tualatin cache size
-and allowing Quark SoC X1000 hooked into this mechanism to similarly
-report it's cache size.
+drivers/power/ab8500_fg.c: In function 'ab8500_fg_probe':
+drivers/power/ab8500_fg.c:2989:27:
+		warning: 'i' may be used uninitialized in this function
+drivers/power/ab8500_fg.c:2972:15: note: 'i' was declared here
 
-Second adding of Quark SoC X1000 to the legacy_cache callback so that
-it too will report correct cache size. In this case a 4-way set
-associative cache with a 16 byte cache line and 256 lines per tag. 
+which actually points to a real bug.
 
-Third add the Quark SoC X1000 string so that /proc/cpuinfo gives the
-correct description of the processor in the "model name" field.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/power/ab8500_fg.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Finally documentation of early TLB flushing behaviour on Quark before
-cpu_has_pge() has been switched off. For clarity the existing code works
-fine on Quark. This change to setup.c documents the minutiae of why.
-
-Bryan O'Donoghue (2):
-  x86: Add cpu_detect_cache_sizes() to init_intel(), add Quark to
-    legacy_cache
-  x86: Quark: Comment setup_arch() to document TLB/PGE behaviour
-
- arch/x86/kernel/cpu/intel.c | 23 +++++++++++++++++++++--
- arch/x86/kernel/setup.c     |  9 +++++++++
- 2 files changed, 30 insertions(+), 2 deletions(-)
-
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 3cb4178..217da4b 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2969,7 +2969,7 @@ static struct device_attribute ab8505_fg_sysfs_psy_attrs[] = {
+ 
+ static int ab8500_fg_sysfs_psy_create_attrs(struct device *dev)
+ {
+-	unsigned int i, j;
++	unsigned int i;
+ 	struct power_supply *psy = dev_get_drvdata(dev);
+ 	struct ab8500_fg *di;
+ 
+@@ -2978,14 +2978,15 @@ static int ab8500_fg_sysfs_psy_create_attrs(struct device *dev)
+ 	if (((is_ab8505(di->parent) || is_ab9540(di->parent)) &&
+ 	     abx500_get_chip_id(dev->parent) >= AB8500_CUT2P0)
+ 	    || is_ab8540(di->parent)) {
+-		for (j = 0; j < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); j++)
+-			if (device_create_file(dev, &ab8505_fg_sysfs_psy_attrs[j]))
++		for (i = 0; i < ARRAY_SIZE(ab8505_fg_sysfs_psy_attrs); i++)
++			if (device_create_file(dev,
++					       &ab8505_fg_sysfs_psy_attrs[i]))
+ 				goto sysfs_psy_create_attrs_failed_ab8505;
+ 	}
+ 	return 0;
+ sysfs_psy_create_attrs_failed_ab8505:
+ 	dev_err(dev, "Failed creating sysfs psy attrs for ab8505.\n");
+-	while (j--)
++	while (i--)
+ 		device_remove_file(dev, &ab8505_fg_sysfs_psy_attrs[i]);
+ 
+ 	return -EIO;
 -- 
 1.9.1
 
