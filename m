@@ -1,50 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbaJDNXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 09:23:25 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:56312 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750921AbaJDNXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 09:23:24 -0400
-Message-ID: <1412429000.21058.7.camel@x220>
-Subject: Re: [PATCH] [next-20141003] USB: host: st: fix typo
- 'CONFIG_USB_EHCI_HCD_ST'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        Peter Griffin <peter.griffin@linaro.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sat, 04 Oct 2014 15:23:20 +0200
-In-Reply-To: <3636554.BfmsPxFGhz@wuerfel>
-References: <1412324504.19413.76.camel@x220> <3636554.BfmsPxFGhz@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Oct 2014 13:23:21.0040 (UTC) FILETIME=[5E04C500:01CFDFD6]
-X-RcptDomain: vger.kernel.org
+	id S1752327AbaJDNYq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 09:24:46 -0400
+Received: from mail-bl2on0144.outbound.protection.outlook.com ([65.55.169.144]:38352
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750850AbaJDNYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 09:24:45 -0400
+From: "J. German Rivera" <German.Rivera@freescale.com>
+To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>
+CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
+        <scottwood@freescale.com>, <agraf@suse.de>, <bhamciu1@freescale.com>,
+        <R89243@freescale.com>, <Geoff.Thorpe@freescale.com>,
+        <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
+        <richard.schmitt@freescale.com>
+Subject: [PATCH 0/3 v3] drivers/bus: Freescale Management Complex bus driver patch series
+Date: Sat, 4 Oct 2014 08:23:32 -0500
+Message-ID: <1412429015-30564-1-git-send-email-German.Rivera@freescale.com>
+X-Mailer: git-send-email 1.7.9.7
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(448002)(199003)(189002)(26826002)(46102003)(80022003)(102836001)(31966008)(21056001)(50986999)(92726001)(2201001)(93916002)(50226001)(4396001)(76482002)(15202345003)(99396003)(44976005)(6806004)(19580395003)(68736004)(50466002)(104166001)(86362001)(10300001)(92566001)(87936001)(62966002)(106466001)(88136002)(84676001)(97736003)(95666004)(89996001)(85852003)(85326001)(64706001)(107046002)(120916001)(47776003)(20776003)(104016003)(229853001)(48376002)(77156001)(15975445006)(85306004)(36756003)(87286001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB500;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB500;
+X-Forefront-PRVS: 0354B4BED2
+Authentication-Results: spf=permerror (sender IP is 192.88.168.50)
+ smtp.mailfrom=German.Rivera@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-04 at 13:33 +0200, Arnd Bergmann wrote:
-> I was about to post the same fix, thanks a lot for addressing this.
+This patch series introduces Linux support for the Freescale
+Management Complex (fsl-mc) hardware. This patch series is dependent
+on the patch series "ARM64: Add support for FSL's LS2085A SoC"
+(http://thread.gmane.org/gmane.linux.ports.arm.kernel/351829)
 
-You're welcome. I just figured that sending a (second) message regarding
-this typo would have been about as much trouble as sending a one line
-patch, so I sent that patch.
+The fsl-mc is a hardware resource manager that manages specialized
+hardware objects used in network-oriented packet processing
+applications.  After the fsl-mc block is enabled, pools of hardware
+resources are available, such as queues, buffer poools, I/O
+interfaces.  These resources are building blocks that can be
+used to create functional hardware objects such as network
+interfaces, crypto accelerator instances, or L2 switches.
 
-> Sorry for my stupid mistake.
+All the fsl-mc managed hardware resources/objects are represented in
+a physical grouping mechanism called a 'container' or DPRC (data
+path resource container).
 
-That typo was rather easy to make and hard to notice (make won't shout
-at you for using an unknown macro, etc). See the thread starting at
-https://lkml.kernel.org/r/1411730854.7866.10.camel@x220 for what I've
-been doing lately to try to catch these type of things early (ie, in
-linux-next) and for how Valentin hopes to automate that properly.
+>From the point of view of an OS, a DPRC functions similar to a plug
+and play bus.  Using fsl-mc commands software can enumerate the
+contents of the DPRC discovering the hardware objects present
+and binding them to drivers.  Hardware objects can be created
+and removed dynamically, providing hot pluggability of the hardware
+objects.
 
+Software contexts interact with the fsl-mc by sending commands through
+a memory mapped hardware interface called an "MC portal". Every
+fsl-mc object type has a command set to manage the objects. Key
+DPRC commands include:
+   -create/destroy a DPRC
+   -enumerate objects and resource pools in the DPRC, including
+    identifying mappable regions and the number of IRQs an object
+    may have
+   -IRQ configuration
+   -move objects/resources between DPRCs
+   -connecting objects (e.g. connecting a network interface to
+    an L2 switch port)
+   -reset
 
-Paul Bolle
+Patch 1 contains a minimal set of low level functions to send an
+d receive commands to the fsl-mc. It includes support for basic
+management commands and commands to manipulate DPRC objects.
+
+Patch 2 contains a platform device driver that sets up and registers
+the basic bus infrastructure including support for adding/removing
+devices, register/unregister of drivers, and bus match support
+to bind devices to drivers.
+
+Patch 3 contains an driver that manages DPRC objects (the
+container that holds the hardware resources). This driver
+functions as a bus controller and handles enumeration
+of the objects in the container and hotplug events.
+
+CHANGE HISTORY
+
+Changes in v3:
+- Addressed pending issues not resolved in v2:
+  * Removed Doxygen comments as requested by Greg Kroah-Hartman
+  * Moved newly added FSL-specific header files from include/linux to
+    include/linux/fsl
+  * Changed wording of licenses in MC flib source files
+  * Fixed sparse warning about context imbalance in 'mc_send_command'
+
+- Addressed additional comments from Kim Phillips, Scott Wood and
+  Timur Tabi. Details in each patch.
+
+Issues pending resolution not addressed by v3:
+- Checkpatch warnings:
+  * WARNING: DT compatible string "fsl,qoriq-mc" appears un-documented
+    This warning will go away once the prerequisite patch series is
+    accepted upstream.
+  * WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
+    This warning still happens even after adding MAINTAINERS file entries in
+    the same patch where new files were added
+
+Changes in v2:
+- Added reference to the patch series this patch is dependent on for
+  device tree and device tree bindings changes. (See above).
+- Removed patch 4 (update to the MAINTAINERS file), as this is done
+  now in patch 1
+- Addressed comments from Joe Perches, Kim Phillips, Alex Graf
+  and Scott Wood. Details in each patch.
+
+Issues pending resolution not addressed by v2:
+- What to do with Doxygen comments in patch 1
+- Whether to move or not FSL-specific header files added in include/linux,
+  by this patch series, to another location
+- Whether to change or not the wording of the licenses used in some
+  source files
+- Checkpatch warnings:
+  * WARNING: DT compatible string "fsl,qoriq-mc" appears un-documented
+    This warning will go away once the prerequisite patch series is
+    accepted upstream.
+  * WARNING: added, moved or deleted file(s), does MAINTAINERS need updating?
+    This warning still happens even after adding MAINTAINERS file entries in
+    the same patch where new files were added
+- Sparse warning:
+  * drivers/bus/fsl-mc/fsl_mc_sys.c:193:9: warning: context imbalance in 'mc_send_command' - different lock contexts for basic block
+    This warning is caused by conditionally acquiring/releasing a lock in function mc_send_command().
+    Not clear how to solve this warning, as we need to be able to decide at
+    run time based on a flag whether to acquire the lock or not.
+
+Changes in v1:
+- No changes since RFC v4
+
+Changes in RFC v4:
+- Fixed parameter mismatch for device_find_child() call in fsl_mc_dprc.c
+- Added back the dma_mask field to struct fsl_mc_device as it is needed
+  by some MC child device drivers. However, the default DMA mask now
+  does not have the 32-bit limitation of the original patch series (v1).
+
+Changes in RFC v3:
+Rework to address comments from Arnd Bergmann:
+- Removed per-bus list of children, and instead use device_for_each_child()
+- Use the same structure (struct fsl_mc_device) to represent both
+  bus devices and their children.
+http://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg711301.html
+
+Changes in RFC v2:
+Rework to address comments from Arnd Bergmann:
+- Removed fsl_mc_bus structure and global variable
+- Removed the 'magic' fields from all structs
+- Removed NULL initializers
+- Replaced all occurrences of EXPORT_SYMBOL() with EXPORT_SYMBOL_GPL()
+- Removed function dprc_parse_dt_node(), and replaced its call by a
+  direct call to of_address_to_resource()
+- Removed struct fsl_mc_device_region and use standard 'struct resource'
+  instead.
+- Removed dma_mask field from 'struct fsl_mc_device' as it is not currently
+  being used.
+- Removed redundant 'driver' field from struct fsl_mc_device
+- Removed the container field. We can get the parent DPRC of a given dev,
+  from its dev.parent field.
+http://www.mail-archive.com/linux-kernel%40vger.kernel.org/msg708858.html
 
