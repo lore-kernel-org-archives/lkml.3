@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaJDJaS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 05:30:18 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:49224 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923AbaJDJaP convert rfc822-to-8bit (ORCPT
+	id S1752304AbaJDJeF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 05:34:05 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:44470 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaJDJeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 05:30:15 -0400
+	Sat, 4 Oct 2014 05:34:03 -0400
+Message-ID: <542FC064.1030604@gmail.com>
+Date: Sat, 04 Oct 2014 17:39:48 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <542C1692.5060007@suse.cz>
-References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com>
- <1412010341-13902-1-git-send-email-valentinrothberg@gmail.com> <542C1692.5060007@suse.cz>
-From: Valentin Rothberg <valentinrothberg@gmail.com>
-Date: Sat, 4 Oct 2014 11:29:44 +0200
-Message-ID: <CAD3Xx4Kg82ugtN0RHOQNeDPW5Y7ymzm03NycmESztsVA4bJy8w@mail.gmail.com>
-Subject: Re: [PATCH v8] checkkconfigsymbols.sh: reimplementation in python
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kbuild@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
-        Stefan Hengelein <stefan.hengelein@fau.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/watchdog/Kconfig: Let XILINX_WATCHDOG and TEGRA_WATCHDOG
+ depend on HAS_IOMEM
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 4:58 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 2014-09-29 19:05, Valentin Rothberg wrote:
->> The scripts/checkkconfigsymbols.sh script searches Kconfig features
->> in the source code that are not defined in Kconfig. Such identifiers
->> always evaluate to false and are the source of various kinds of bugs.
->> However, the shell script is slow and it does not detect such broken
->> references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
->> Furthermore, it generates false positives. The script is also hard to
->> read and understand, and is thereby difficult to maintain.
->>
->> This patch replaces the shell script with an implementation in Python,
->> which:
->>     (a) detects the same bugs, but does not report previous false positives
->>     (b) additionally detects broken references in Kconfig and all
->>         non-Kconfig files, such as Kbuild, .[cSh], .txt, .sh, defconfig, etc.
->>     (c) is up to 75 times faster than the shell script
->>     (d) only checks files under version control ('git ls-files')
->>
->> The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
->> from 3m47s to 0m3s, and reports 912 broken references in Linux v3.17-rc1;
->> 424 additional reports of which 16 are located in Kconfig files,
->> 287 in defconfigs, 63 in ./Documentation, 1 in Kbuild.
->>
->> Moreover, we intentionally include references in comments, which have been
->> ignored until now. Such comments may be leftovers of features that have
->> been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
->> These references can be misleading and should be removed or replaced.
->>
->> Note that the output format changed from (file list <tab> feature) to
->> (feature <tab> file list) as it simplifies the detection of the Kconfig
->> feature for long file lists.
->>
->> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
->> Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
->> Acked-by: Paul Bolle <pebolle@tiscali.nl>
->> ---
->> Changelog:
->> v2: Fix of regular expressions
->> v3: Changelog replacement, and add changes of v2
->> v4: Based on comments from Paul Bolle <pebolle@tiscali.nl>
->>   - Inclusion of all non-Kconfig files, such as .txt, .sh, etc.
->>   - Changes of regular expressions
->>   - Increases additional reports from 49 to 229 compared to v3
->>   - Change of output format from (file list <tab> feature) to
->>         (feature <tab> file list)
->> v5: Only analyze files under version control ('git ls-files')
->> v6: Cover features with numbers and small letters (e.g., 4xx)
->> v7: Add changes of v6 (lost 'git add') and filter FOO/BAR features
->> v8: Based on comments from Paul Bolle <pebolle@tiscali.nl>
->>   - Fix of [D]{,1}CONFIG_ regex to exclude false positives
->>   - Exclude ".log" files of analysis
->>   - Filter "XXX" feature
->> ---
->>  scripts/checkkconfigsymbols.py | 139 +++++++++++++++++++++++++++++++++++++++++
->>  scripts/checkkconfigsymbols.sh |  59 -----------------
->>  2 files changed, 139 insertions(+), 59 deletions(-)
->>  create mode 100644 scripts/checkkconfigsymbols.py
->>  delete mode 100755 scripts/checkkconfigsymbols.sh
->
-> Please make the new file executable as well.
->
->
->> +    for gitfile in stdout.rsplit("\n"):
->> +        if ".git" in gitfile or "ChangeLog" in gitfile or \
->> +                ".log" in gitfile or os.path.isdir(gitfile):
->> +            continue
->
-> Can you also skip arch/*/configs? A significant part of the output are
-> defconfig files, but there is little value in reporting them. The stale
-> options will go away automatically as soon as the defconfig is refreshed.
+They need HAS_IOMEM, so let them depend on it, the related error (with
+allmodconfig under um):
 
-What do you mean by "refreshed"? And how often are they refreshed? I
-think that reporting defconfigs helps to point to a problem, namely
-that features are just not present anymore.
+    MODPOST 1205 modules
+  ERROR: "syscall" [fs/hostfs/hostfs.ko] undefined!
+  ERROR: "devm_ioremap_resource" [drivers/watchdog/tegra_wdt.ko] undefined!
+  ERROR: "devm_ioremap_resource" [drivers/watchdog/of_xilinx_wdt.ko] undefined!
 
-Thanks,
- Valentin
+
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ drivers/watchdog/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index a51ccf3..d0ddf90 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -132,6 +132,7 @@ config WM8350_WATCHDOG
+ 
+ config XILINX_WATCHDOG
+ 	tristate "Xilinx Watchdog timer"
++	depends on HAS_IOMEM
+ 	select WATCHDOG_CORE
+ 	help
+ 	  Watchdog driver for the xps_timebase_wdt ip core.
+@@ -472,7 +473,7 @@ config SIRFSOC_WATCHDOG
+ 
+ config TEGRA_WATCHDOG
+ 	tristate "Tegra watchdog"
+-	depends on ARCH_TEGRA || COMPILE_TEST
++	depends on (ARCH_TEGRA || COMPILE_TEST) && HAS_IOMEM
+ 	select WATCHDOG_CORE
+ 	help
+ 	  Say Y here to include support for the watchdog timer
+-- 
+1.9.3
