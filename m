@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbaJDCtI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 22:49:08 -0400
-Received: from mail-bl2on0134.outbound.protection.outlook.com ([65.55.169.134]:3297
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752200AbaJDCtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 22:49:06 -0400
-Date: Sat, 4 Oct 2014 10:48:55 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: Torsten Fleischer <to-fleischer@t-online.de>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] usb: chipidea: Fix oops when removing the ci_hdrc
- module
-Message-ID: <20141004024853.GA3713@peterchendt>
-References: <1412326880-3268-1-git-send-email-to-fleischer@t-online.de>
+	id S1754873AbaJDDFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 23:05:19 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34901 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751986AbaJDDFR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 3 Oct 2014 23:05:17 -0400
+Message-ID: <542F63DF.8090707@roeck-us.net>
+Date: Fri, 03 Oct 2014 20:05:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1412326880-3268-1-git-send-email-to-fleischer@t-online.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(24454002)(199003)(105606002)(95666004)(120916001)(4396001)(107046002)(64706001)(106466001)(46406003)(31966008)(85306004)(84676001)(47776003)(87936001)(20776003)(85852003)(33716001)(33656002)(23726002)(50466002)(54356999)(19580395003)(86362001)(92726001)(110136001)(92566001)(10300001)(83506001)(50986999)(76482002)(76176999)(99396003)(68736004)(104016003)(102836001)(19580405001)(26826002)(80022003)(21056001)(57986006)(6806004)(97756001)(97736003)(44976005)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB209;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0354B4BED2
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Peter.Chen@freescale.com; 
-X-OriginatorOrg: freescale.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 000/143] 3.10.56-stable review
+References: <20141003213314.470709810@linuxfoundation.org>
+In-Reply-To: <20141003213314.470709810@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.542F63EC.00C4,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 11:01:20AM +0200, Torsten Fleischer wrote:
-> The call of 'kfree(ci->hw_bank.regmap)' in ci_hdrc_remove() sometimes causes
-> a kernel oops when removing the ci_hdrc module.
-> 
-> Since there is no separate memory allocated for the ci->hw_bank.regmap array,
-> there is no need to free it.
-> 
-> Signed-off-by: Torsten Fleischer <to-fleischer@t-online.de>
-> ---
->  drivers/usb/chipidea/core.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-> index 619d13e..4ecb650 100644
-> --- a/drivers/usb/chipidea/core.c
-> +++ b/drivers/usb/chipidea/core.c
-> @@ -732,7 +732,6 @@ static int ci_hdrc_remove(struct platform_device *pdev)
->  	ci_role_destroy(ci);
->  	ci_hdrc_enter_lpm(ci, true);
->  	usb_phy_shutdown(ci->transceiver);
-> -	kfree(ci->hw_bank.regmap);
->  
->  	return 0;
->  }
-> -- 
-> 1.8.4.5
-> 
+On 10/03/2014 02:33 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.56 release.
+> There are 143 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Oct  5 21:32:57 UTC 2014.
+> Anything received after that time might be too late.
+>
 
-Good fix, applied, thanks.
+Build results:
+	total: 137 pass: 137 fail: 0
 
--- 
-Best Regards,
-Peter Chen
+Qemu test results:
+	total: 25 pass: 25 fail: 0
+
+Details are available at http://server.roeck-us.net:8010/builders.
+
+Guenter
+
