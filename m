@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaJDKPt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 06:15:49 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:40719 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780AbaJDKPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 06:15:47 -0400
-Message-ID: <542FC8C1.1000707@c-s.fr>
-Date: Sat, 04 Oct 2014 12:15:29 +0200
-From: christophe leroy <christophe.leroy@c-s.fr>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752278AbaJDKRZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 06:17:25 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57345 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaJDKRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 06:17:22 -0400
+Message-ID: <542FC92E.9040209@kernel.org>
+Date: Sat, 04 Oct 2014 11:17:18 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: Mark Brown <broonie@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Marcelo Tosatti <marcelo@kvack.org>,
-        Vitaly Bordug <vitb@kernel.crashing.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-spi@vger.kernel.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: Re: [PATCH 2/2] spi: fsl-spi: Allow dynamic allocation of CPM1 parameter
- RAM
-References: <20141003125609.5BEA11AB276@localhost.localdomain>	 <20141003144420.GC24441@sirena.org.uk> <542F03CF.8010900@c-s.fr> <1412367858.13320.432.camel@snotra.buserror.net>
-In-Reply-To: <1412367858.13320.432.camel@snotra.buserror.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Anssi Hannula <anssi.hannula@iki.fi>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: iio commit dates in future
+References: <344d9464-c489-42cd-b9c4-a63759f8f6da@BL2FFO11FD040.protection.gbl> <54132C78.9000300@metafoo.de> <5414A36B.3000106@kernel.org> <542F2493.2020805@iki.fi>
+In-Reply-To: <542F2493.2020805@iki.fi>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-X-Antivirus: avast! (VPS 141004-0, 04/10/2014), Outbound message
-X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Le 03/10/2014 22:24, Scott Wood a écrit :
-> On Fri, 2014-10-03 at 22:15 +0200, christophe leroy wrote:
->> Le 03/10/2014 16:44, Mark Brown a écrit :
->>> On Fri, Oct 03, 2014 at 02:56:09PM +0200, Christophe Leroy wrote:
+On 03/10/14 23:34, Anssi Hannula wrote:
+> 13.09.2014, 23:04, Jonathan Cameron kirjoitti:
+>> On 12/09/14 18:25, Lars-Peter Clausen wrote:
+>>> On 09/11/2014 10:55 AM, Subbaraya Sundeep Bhatta wrote:
+>>>> This patch fixes incorrect logic for assigning address
+>>>> to auxiliary channels of xilinx xadc.
+>>>>
+>>>> Signed-off-by: Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
 >>>
->>>> +config CPM1_RELOCSPI
->>>> +	bool "Dynamic SPI relocation"
->>>> +	default n
->>>> +	help
->>>> +	  On recent MPC8xx (at least MPC866 and MPC885) SPI can be relocated
->>>> +	  without micropatch. This activates relocation to a dynamically
->>>> +	  allocated area in the CPM Dual port RAM.
->>>> +	  When combined with SPI relocation patch (for older MPC8xx) it avoids
->>>> +	  the "loss" of additional Dual port RAM space just above the patch,
->>>> +	  which might be needed for example when using the CPM QMC.
->>> Something like this shouldn't be a compile time option.  Either it
->>> should be unconditional or it should be triggered in some system
->>> specific manner (from DT, from knowing about other users or similar).
->> Can't be unconditional as older versions of mpc8xx (eg MPC860) don't
->> support relocation without a micropatch.
->> I have therefore submitted a v2 based on a DTS compatible property.
-> So the device tree change is about whether relocation is supported, not
-> whether it is required?
-Indeed no, my intension is to say that relocation is requested. Do you 
-mean that it should then not use a compatible ?
-> Is this specific to SPI or does the relocation
-> mechanism work for other things?
-Relocation is the same for I2C.
+>>> Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+>> Applied to the fixes-togreg branch of iio.git and flagged
+>> for stable.
+> 
+> Something weird seems to have happened with this commit and at least a
+> few others:
+> 1887e724e2 "iio: adc: xilinx-xadc: assign auxiliary channels address
+> correctly"
+> d4f51956ac "iio: adc: at91: don't use the last converted data register"
+> a31d092899 "iio:magnetometer: bugfix magnetometers gain values".
+> 
+> They all have their Date in the future (up to Nov 2014), looks to me
+> like month and day got swapped for some reason.
+> 
+> Not a big issue I guess, but worth looking into if it is something in
+> your workflow causing this :)
+> 
+> Noticed these strange Dates while looking at Greg's stable-queue repo.
+> 
+I have a suspicion that this is to do with the fact I use thunderbird to
+manage my email and save it out as plain text.   I'm using the import
+export tools package on top of thunderbird (as it gives a cleaner result)
+but it is using numeric dates.  Which git am is happy with, but apparently
+it isn't coping well with American date formats vs mine.  Superficially
+looks like this is fine if I use the much more verbose alternative of
+saving as an eml file and using that...
 
-It is also possible to relocate SMC1 and SMC2 parameter RAM but only 
-with a micropatch.
-Today, the kernel only implements relocation of SMC1, and it relocates 
-it at a fixed address just after SMC2 at offset 0x1FC0.
->
-> How about checking for the existing specific-SoC compatibles?
-What do you mean ?
+There are some dates that have by coincidence jumped a fair way back into
+the past as well.
 
-Christophe
+I did notice an incidence of this a few months back but thought it was just
+a one off.  Thanks for bringing it up Anssi!
 
----
-Ce courrier électronique ne contient aucun virus ou logiciel malveillant parce que la protection avast! Antivirus est active.
-http://www.avast.com
+Jonathan
+
 
