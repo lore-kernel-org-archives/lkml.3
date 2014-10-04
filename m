@@ -1,141 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143AbaJDDR3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 3 Oct 2014 23:17:29 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:40088 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089AbaJDDRY (ORCPT
+	id S1755191AbaJDDRd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 3 Oct 2014 23:17:33 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:44322 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755126AbaJDDR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 3 Oct 2014 23:17:24 -0400
-Date: Fri, 3 Oct 2014 22:17:21 -0500
-From: Michael Welling <mwelling@ieee.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
-        pmeerw@pmeerw.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] iio: light: add support for TI's opt3001 light
- sensor
-Message-ID: <20141004031721.GA2846@deathray>
-References: <20140925221619.GA10644@saruman>
- <20140927041959.GA28445@saruman>
- <20140929140227.GD32403@saruman>
- <20140929183856.GA11871@sysresccd>
- <20140929185325.GA1939@saruman>
- <20140929223833.GA13111@sysresccd>
- <20140929224638.GA21681@saruman>
- <20140929234159.GB13111@sysresccd>
- <20140930212204.GC13806@saruman>
- <20141002180553.GI7933@saruman>
+	Fri, 3 Oct 2014 23:17:29 -0400
+Subject: [PATCH 1/3] MIPS: mips_flush_cache_range is added
+To: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
+        <david.daney@cavium.com>, <peterz@infradead.org>,
+        <paul.gortmaker@windriver.com>, <davidlohr@hp.com>,
+        <macro@linux-mips.org>, <chenhc@lemote.com>, <zajec5@gmail.com>,
+        <james.hogan@imgtec.com>, <keescook@chromium.org>,
+        <alex@alex-smith.me.uk>, <tglx@linutronix.de>, <blogic@openwrt.org>,
+        <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
+        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
+        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
+        <manuel.lauss@gmail.com>, <akpm@linux-foundation.org>,
+        <lars.persson@axis.com>
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Date: Fri, 3 Oct 2014 20:17:22 -0700
+Message-ID: <20141004031722.28569.41138.stgit@linux-yegoshin>
+In-Reply-To: <20141004030438.28569.85536.stgit@linux-yegoshin>
+References: <20141004030438.28569.85536.stgit@linux-yegoshin>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002180553.GI7933@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 01:05:53PM -0500, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Sep 30, 2014 at 04:22:04PM -0500, Felipe Balbi wrote:
-> > On Mon, Sep 29, 2014 at 06:41:59PM -0500, Michael Welling wrote:
-> > > On Mon, Sep 29, 2014 at 05:46:38PM -0500, Felipe Balbi wrote:
-> > > > Hi,
-> > > > 
-> > > > On Mon, Sep 29, 2014 at 05:38:33PM -0500, Michael Welling wrote:
-> > > > > > > > Alright, this is already ridiculous. Andrew, if I resend the patch can
-> > > > > > > > you apply it since maintainer has been ignoring this thread anyway ?
-> > > > > > > > 
-> > > > > > > 
-> > > > > > > Do you reall think this is the best way to approach this?
-> > > > > > 
-> > > > > > when maintainer doesn't respond for weeks, yeah! Sure it is.
-> > > > > > 
-> > > > > > > Perhaps it would be better to explain what each field of the
-> > > > > > > configuration register does and then we can move on.
-> > > > > > 
-> > > > > > perhaps Jonathan could tell me exactly what he wants because I can't
-> > > > > > handle back-and-forth anymore. Specially when he complains about stuff
-> > > > > > he asked me to modify himself.
-> > > > > >
-> > > > > > > In particular the OPT3001_CONFIGURATION_L field needs to be explained
-> > > > > > > such that the ABI can be properly applied.
-> > > > > > > 
-> > > > > > > Looking at the docs for the Windows demo program the field is associated
-> > > > > > > with a latch configuration. What does this bit field actually do?
-> > > > > 
-> > > > > Still no technical information. Without all the facts how can you expect
-> > > > > him to tell you what he wants?
-> > > > 
-> > > > yeah, because clearly he doesn't know himself, right ?
-> > > 
-> > > Could you explain how it works to me then?
-> > 
-> > checking how much of the docs I can expose now, gimme a couple days.
-> 
-> alright, here's a snippet of what's on preliminary docs:
-> 
+New function mips_flush_cache_range() is added.
+It flushes D-cache on kernel VA and I-cache on user VA.
+It is significant in case of cache aliasing systems.
+It can be used to flush a short sequence of newly written code
+to user space and especially usefull in ptrace() and dsemul().
+Today a full page is flushed by flush_cache_page in ptrace().
 
-Firstly, there is logical error in the latest code.
-The hysteresis setting is 0 not 1.
+Signed-off-by: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+---
+ arch/mips/include/asm/cacheflush.h |    3 +++
+ arch/mips/mm/c-octeon.c            |    8 +++++++
+ arch/mips/mm/c-r3k.c               |    8 +++++++
+ arch/mips/mm/c-r4k.c               |   43 ++++++++++++++++++++++++++++++++++++
+ arch/mips/mm/c-tx39.c              |    9 ++++++++
+ arch/mips/mm/cache.c               |    4 +++
+ 6 files changed, 75 insertions(+), 0 deletions(-)
 
-+       if (opt->hysteresis)
-+               reg |= OPT3001_CONFIGURATION_L;
-+       else
-+               reg &= ~OPT3001_CONFIGURATION_L;
-
-
-> Latch field (read or write).
-> The latch field controls the functionality of the interrupt reporting
-> mechanisms: the INT pin, the flag high field (FH), and flag low field (FL).
-> This bit selects the reporting style between a latched window-style comparison
-> and a transparent hysteresis-style comparison.
-> 
-> 0 = The device functions in transparent hysteresis-style comparison operation,
-> where the three interrupt reporting mechanisms directly reflect the comparison
-> of the result register with the high- and low-limit registers with no
-> user-controlled clearing event. See the Interrupt Operation, INT Pin, and
-> Interrupt Reporting Mechanisms section for further details.
-> 
-> 1 = The device functions in latched window-style comparison operation, latching
-> the interrupt reporting mechanisms until a user-controlled clearing event.
-> 
-
-How is the interrupt cleared in mode 1 in the latest version of your
-code?
-
-> [...]
-> 
-> 7.4.2.2 Transparent Hysteresis-Style Comparison Mode
-> The transparent hysteresis-style comparison mode is typically used when a
-> single digital signal is desired that indicates whether the input light is
-> higher than or lower than a light level of interest. If the result register is
-> higher than the high-limit register for a consecutive number of events set by
-> the fault count field, the INT line is set to active, the flag high field is
-> set to 1, and the flag low field is set to 0. If the result register is lower
-> than the lowlimit register for a consecutive number of events set by the fault
-> count field, the INT line is set to inactive, the flag low field is set to 1,
-> and the flag high field is set to 0. The INT pin and flag high and flag low
-> fields do not change state with configuration reads and writes. The INT pin and
-> flag fields continually report the appropriate comparison of the light to the
-> low-limit and high-limit registers. The device does not respond to the SMBus
-> alert response protocol while in either of the two transparent comparison modes
-> (configuration register, latch field = 0).
-> 
-
-The ABI confusion starts here.
-
-You are dealing with a mode enable and IIO_EV_INFO_HYSTERESIS is associated
-with a the hysteresis level of a threshold event.
-
-http://lxr.free-electrons.com/source/Documentation/ABI/testing/sysfs-bus-iio#L605
-
-You are going to have abstract the register access to conform to the ABI or add
-to the ABI as Jonathan suggests.
-
-> -- 
-> balbi
-
+diff --git a/arch/mips/include/asm/cacheflush.h b/arch/mips/include/asm/cacheflush.h
+index e08381a..8305241 100644
+--- a/arch/mips/include/asm/cacheflush.h
++++ b/arch/mips/include/asm/cacheflush.h
+@@ -94,6 +94,9 @@ extern void (*flush_cache_sigtramp)(unsigned long addr);
+ extern void (*flush_icache_all)(void);
+ extern void (*local_flush_data_cache_page)(void * addr);
+ extern void (*flush_data_cache_page)(unsigned long addr);
++extern void (*mips_flush_data_cache_range)(struct vm_area_struct *vma,
++	unsigned long vaddr, struct page *page, unsigned long addr,
++	unsigned long size);
+ 
+ /*
+  * This flag is used to indicate that the page pointed to by a pte
+diff --git a/arch/mips/mm/c-octeon.c b/arch/mips/mm/c-octeon.c
+index 05b1d7c..38349d1 100644
+--- a/arch/mips/mm/c-octeon.c
++++ b/arch/mips/mm/c-octeon.c
+@@ -178,6 +178,13 @@ static void octeon_flush_kernel_vmap_range(unsigned long vaddr, int size)
+ 	BUG();
+ }
+ 
++static void octeon_flush_data_cache_range(struct vm_area_struct *vma,
++       unsigned long vaddr, struct page *page, unsigned long addr,
++       unsigned long size)
++{
++	octeon_flush_cache_page(vma, addr, page_to_pfn(page));
++}
++
+ /**
+  * Probe Octeon's caches
+  *
+@@ -292,6 +299,7 @@ void octeon_cache_init(void)
+ 	flush_cache_sigtramp		= octeon_flush_cache_sigtramp;
+ 	flush_icache_all		= octeon_flush_icache_all;
+ 	flush_data_cache_page		= octeon_flush_data_cache_page;
++	mips_flush_data_cache_range     = octeon_flush_data_cache_range;
+ 	flush_icache_range		= octeon_flush_icache_range;
+ 	local_flush_icache_range	= local_octeon_flush_icache_range;
+ 
+diff --git a/arch/mips/mm/c-r3k.c b/arch/mips/mm/c-r3k.c
+index 135ec31..93b4810 100644
+--- a/arch/mips/mm/c-r3k.c
++++ b/arch/mips/mm/c-r3k.c
+@@ -273,6 +273,13 @@ static void r3k_flush_data_cache_page(unsigned long addr)
+ {
+ }
+ 
++static void r3k_mips_flush_data_cache_range(struct vm_area_struct *vma,
++	unsigned long vaddr, struct page *page, unsigned long addr,
++	unsigned long size)
++{
++	r3k_flush_cache_page(vma, addr, page_to_pfn(page));
++}
++
+ static void r3k_flush_cache_sigtramp(unsigned long addr)
+ {
+ 	unsigned long flags;
+@@ -322,6 +329,7 @@ void r3k_cache_init(void)
+ 	__flush_cache_all = r3k___flush_cache_all;
+ 	flush_cache_mm = r3k_flush_cache_mm;
+ 	flush_cache_range = r3k_flush_cache_range;
++	mips_flush_data_cache_range = r3k_mips_flush_data_cache_range;
+ 	flush_cache_page = r3k_flush_cache_page;
+ 	flush_icache_range = r3k_flush_icache_range;
+ 	local_flush_icache_range = r3k_flush_icache_range;
+diff --git a/arch/mips/mm/c-r4k.c b/arch/mips/mm/c-r4k.c
+index ad6ff7b..ee014e4 100644
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -636,6 +636,48 @@ static void r4k_flush_data_cache_page(unsigned long addr)
+ 		r4k_on_each_cpu(local_r4k_flush_data_cache_page, (void *) addr);
+ }
+ 
++struct mips_flush_data_cache_range_args {
++	struct vm_area_struct *vma;
++	unsigned long vaddr;
++	unsigned long start;
++	unsigned long len;
++};
++
++static inline void local_r4k_mips_flush_data_cache_range(void *args)
++{
++	struct mips_flush_data_cache_range_args *f_args = args;
++	unsigned long vaddr = f_args->vaddr;
++	unsigned long start = f_args->start;
++	unsigned long len = f_args->len;
++	struct vm_area_struct * vma = f_args->vma;
++
++	blast_dcache_range(start, start + len);
++
++	if ((vma->vm_flags & VM_EXEC) && !cpu_has_ic_fills_f_dc) {
++			wmb();
++
++		/* vma is given for exec check only, mmap is current,
++		   so - no non-current vma page flush, just user or kernel */
++		protected_blast_icache_range(vaddr, vaddr + len);
++	}
++}
++
++/* flush dirty kernel data and a corresponding user instructions (if needed).
++   used in copy_to_user_page() */
++static void r4k_mips_flush_data_cache_range(struct vm_area_struct *vma,
++	unsigned long vaddr, struct page *page, unsigned long start,
++	unsigned long len)
++{
++	struct mips_flush_data_cache_range_args args;
++
++	args.vma = vma;
++	args.vaddr = vaddr;
++	args.start = start;
++	args.len = len;
++
++	r4k_on_each_cpu(local_r4k_mips_flush_data_cache_range, (void *)&args);
++}
++
+ struct flush_icache_range_args {
+ 	unsigned long start;
+ 	unsigned long end;
+@@ -1656,6 +1698,7 @@ void r4k_cache_init(void)
+ 	flush_icache_all	= r4k_flush_icache_all;
+ 	local_flush_data_cache_page	= local_r4k_flush_data_cache_page;
+ 	flush_data_cache_page	= r4k_flush_data_cache_page;
++	mips_flush_data_cache_range = r4k_mips_flush_data_cache_range;
+ 	flush_icache_range	= r4k_flush_icache_range;
+ 	local_flush_icache_range	= local_r4k_flush_icache_range;
+ 
+diff --git a/arch/mips/mm/c-tx39.c b/arch/mips/mm/c-tx39.c
+index 8d909db..9316e92 100644
+--- a/arch/mips/mm/c-tx39.c
++++ b/arch/mips/mm/c-tx39.c
+@@ -230,6 +230,13 @@ static void tx39_flush_data_cache_page(unsigned long addr)
+ 	tx39_blast_dcache_page(addr);
+ }
+ 
++static void local_flush_data_cache_range(struct vm_area_struct *vma,
++       unsigned long vaddr, struct page *page, unsigned long addr,
++       unsigned long size)
++{
++	flush_cache_page(vma, addr, page_to_pfn(page));
++}
++
+ static void tx39_flush_icache_range(unsigned long start, unsigned long end)
+ {
+ 	if (end - start > dcache_size)
+@@ -371,6 +378,7 @@ void tx39_cache_init(void)
+ 
+ 		flush_cache_sigtramp	= (void *) tx39h_flush_icache_all;
+ 		local_flush_data_cache_page	= (void *) tx39h_flush_icache_all;
++		mips_flush_data_cache_range     = (void *) local_flush_data_cache_range;
+ 		flush_data_cache_page	= (void *) tx39h_flush_icache_all;
+ 
+ 		_dma_cache_wback_inv	= tx39h_dma_cache_wback_inv;
+@@ -402,6 +410,7 @@ void tx39_cache_init(void)
+ 
+ 		flush_cache_sigtramp = tx39_flush_cache_sigtramp;
+ 		local_flush_data_cache_page = local_tx39_flush_data_cache_page;
++		mips_flush_data_cache_range     = (void *) local_flush_data_cache_range;
+ 		flush_data_cache_page = tx39_flush_data_cache_page;
+ 
+ 		_dma_cache_wback_inv = tx39_dma_cache_wback_inv;
+diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+index 7e3ea77..b7bdd01 100644
+--- a/arch/mips/mm/cache.c
++++ b/arch/mips/mm/cache.c
+@@ -44,10 +44,14 @@ void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
+ void (*flush_cache_sigtramp)(unsigned long addr);
+ void (*local_flush_data_cache_page)(void * addr);
+ void (*flush_data_cache_page)(unsigned long addr);
++void (*mips_flush_data_cache_range)(struct vm_area_struct *vma,
++      unsigned long vaddr, struct page *page, unsigned long addr,
++      unsigned long size);
+ void (*flush_icache_all)(void);
+ 
+ EXPORT_SYMBOL_GPL(local_flush_data_cache_page);
+ EXPORT_SYMBOL(flush_data_cache_page);
++EXPORT_SYMBOL(mips_flush_data_cache_range);
+ EXPORT_SYMBOL(flush_icache_all);
+ 
+ #if defined(CONFIG_DMA_NONCOHERENT) || defined(CONFIG_DMA_MAYBE_COHERENT)
 
