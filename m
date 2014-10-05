@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823AbaJERUR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:20:17 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:62025 "EHLO
+	id S1751882AbaJERUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 13:20:38 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:4893 "EHLO
 	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751648AbaJERUO (ORCPT
+	by vger.kernel.org with ESMTP id S1751669AbaJERUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:20:14 -0400
+	Sun, 5 Oct 2014 13:20:37 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjsOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQRgs5HhmIQgGwTI5HGIYgiiUHhEsFhiuXE4xSiS6CIIFFOy+CSgEBAQ
+X-IronPort-Anti-Spam-Result: AjsOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQUTkeGYhCAbBMjkcYhiCKJQeESwWGK5cTjFKJLoIggUU7L4JKAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        Fabian Frederick <fabf@skynet.be>, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org
-Subject: [PATCH 10/13 linux-next] serial: amba-pl010: use container_of to resolve uart_amba_port from uart_port
-Date: Sun,  5 Oct 2014 19:19:46 +0200
-Message-Id: <1412529589-1753-1-git-send-email-fabf@skynet.be>
+Subject: [PATCH 11/13 linux-next] serial: pnx8xxx: use container_of to resolve pnx8xxx_port from uart_port
+Date: Sun,  5 Oct 2014 19:19:47 +0200
+Message-Id: <1412529589-1753-2-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412528475-1449-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1412529589-1753-1-git-send-email-fabf@skynet.be>
 References: <1412528475-1449-1-git-send-email-fabf@skynet.be>
+ <1412529589-1753-1-git-send-email-fabf@skynet.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,130 +30,170 @@ Use container_of instead of casting first structure member.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/tty/serial/amba-pl010.c | 36 ++++++++++++++++++++++++------------
- 1 file changed, 24 insertions(+), 12 deletions(-)
+ drivers/tty/serial/pnx8xxx_uart.c | 48 ++++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl010.c b/drivers/tty/serial/amba-pl010.c
-index 2064d31..00ae8dc 100644
---- a/drivers/tty/serial/amba-pl010.c
-+++ b/drivers/tty/serial/amba-pl010.c
-@@ -75,7 +75,8 @@ struct uart_amba_port {
- 
- static void pl010_stop_tx(struct uart_port *port)
+diff --git a/drivers/tty/serial/pnx8xxx_uart.c b/drivers/tty/serial/pnx8xxx_uart.c
+index 2ba24a4..9fd9414 100644
+--- a/drivers/tty/serial/pnx8xxx_uart.c
++++ b/drivers/tty/serial/pnx8xxx_uart.c
+@@ -126,7 +126,8 @@ static void pnx8xxx_timeout(unsigned long data)
+  */
+ static void pnx8xxx_stop_tx(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int cr;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	u32 ien;
  
- 	cr = readb(uap->port.membase + UART010_CR);
-@@ -85,7 +86,8 @@ static void pl010_stop_tx(struct uart_port *port)
- 
- static void pl010_start_tx(struct uart_port *port)
+ 	/* Disable TX intr */
+@@ -142,7 +143,8 @@ static void pnx8xxx_stop_tx(struct uart_port *port)
+  */
+ static void pnx8xxx_start_tx(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int cr;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	u32 ien;
  
- 	cr = readb(uap->port.membase + UART010_CR);
-@@ -95,7 +97,8 @@ static void pl010_start_tx(struct uart_port *port)
- 
- static void pl010_stop_rx(struct uart_port *port)
+ 	/* Clear all pending TX intr */
+@@ -158,7 +160,8 @@ static void pnx8xxx_start_tx(struct uart_port *port)
+  */
+ static void pnx8xxx_stop_rx(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int cr;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	u32 ien;
  
- 	cr = readb(uap->port.membase + UART010_CR);
-@@ -105,7 +108,8 @@ static void pl010_stop_rx(struct uart_port *port)
- 
- static void pl010_enable_ms(struct uart_port *port)
+ 	/* Disable RX intr */
+@@ -174,7 +177,8 @@ static void pnx8xxx_stop_rx(struct uart_port *port)
+  */
+ static void pnx8xxx_enable_ms(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int cr;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
  
- 	cr = readb(uap->port.membase + UART010_CR);
-@@ -259,14 +263,16 @@ static irqreturn_t pl010_int(int irq, void *dev_id)
- 
- static unsigned int pl010_tx_empty(struct uart_port *port)
+ 	mod_timer(&sport->timer, jiffies);
+ }
+@@ -313,14 +317,16 @@ static irqreturn_t pnx8xxx_int(int irq, void *dev_id)
+  */
+ static unsigned int pnx8xxx_tx_empty(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int status = readb(uap->port.membase + UART01x_FR);
- 	return status & UART01x_FR_BUSY ? 0 : TIOCSER_TEMT;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 
+ 	return serial_in(sport, PNX8XXX_FIFO) & PNX8XXX_UART_FIFO_TXFIFO_STA ? 0 : TIOCSER_TEMT;
  }
  
- static unsigned int pl010_get_mctrl(struct uart_port *port)
+ static unsigned int pnx8xxx_get_mctrl(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int result = 0;
- 	unsigned int status;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	unsigned int mctrl = TIOCM_DSR;
+ 	unsigned int msr;
  
-@@ -283,7 +289,8 @@ static unsigned int pl010_get_mctrl(struct uart_port *port)
- 
- static void pl010_set_mctrl(struct uart_port *port, unsigned int mctrl)
+@@ -347,7 +353,8 @@ static void pnx8xxx_set_mctrl(struct uart_port *port, unsigned int mctrl)
+  */
+ static void pnx8xxx_break_ctl(struct uart_port *port, int break_state)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 
- 	if (uap->data)
- 		uap->data->set_mctrl(uap->dev, uap->port.membase, mctrl);
-@@ -291,7 +298,8 @@ static void pl010_set_mctrl(struct uart_port *port, unsigned int mctrl)
- 
- static void pl010_break_ctl(struct uart_port *port, int break_state)
- {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
  	unsigned long flags;
- 	unsigned int lcr_h;
+ 	unsigned int lcr;
  
-@@ -307,7 +315,8 @@ static void pl010_break_ctl(struct uart_port *port, int break_state)
+@@ -363,7 +370,8 @@ static void pnx8xxx_break_ctl(struct uart_port *port, int break_state)
  
- static int pl010_startup(struct uart_port *port)
+ static int pnx8xxx_startup(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
  	int retval;
  
  	/*
-@@ -347,7 +356,8 @@ static int pl010_startup(struct uart_port *port)
+@@ -397,7 +405,8 @@ static int pnx8xxx_startup(struct uart_port *port)
  
- static void pl010_shutdown(struct uart_port *port)
+ static void pnx8xxx_shutdown(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	int lcr;
  
  	/*
- 	 * Free the interrupt
-@@ -374,7 +384,8 @@ static void
- pl010_set_termios(struct uart_port *port, struct ktermios *termios,
- 		     struct ktermios *old)
+@@ -434,7 +443,8 @@ static void
+ pnx8xxx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		   struct ktermios *old)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int lcr_h, old_cr;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
  	unsigned long flags;
- 	unsigned int baud, quot;
-@@ -551,7 +562,8 @@ static struct uart_amba_port *amba_ports[UART_NR];
+ 	unsigned int lcr_fcr, old_ien, baud, quot;
+ 	unsigned int old_csize = old ? old->c_cflag & CSIZE : CS8;
+@@ -551,7 +561,8 @@ pnx8xxx_set_termios(struct uart_port *port, struct ktermios *termios,
  
- static void pl010_console_putchar(struct uart_port *port, int ch)
+ static const char *pnx8xxx_type(struct uart_port *port)
  {
--	struct uart_amba_port *uap = (struct uart_amba_port *)port;
-+	struct uart_amba_port *uap =
-+		container_of(port, struct uart_amba_port, port);
- 	unsigned int status;
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 
+ 	return sport->port.type == PORT_PNX8XXX ? "PNX8XXX" : NULL;
+ }
+@@ -561,7 +572,8 @@ static const char *pnx8xxx_type(struct uart_port *port)
+  */
+ static void pnx8xxx_release_port(struct uart_port *port)
+ {
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 
+ 	release_mem_region(sport->port.mapbase, UART_PORT_SIZE);
+ }
+@@ -571,7 +583,8 @@ static void pnx8xxx_release_port(struct uart_port *port)
+  */
+ static int pnx8xxx_request_port(struct uart_port *port)
+ {
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	return request_mem_region(sport->port.mapbase, UART_PORT_SIZE,
+ 			"pnx8xxx-uart") != NULL ? 0 : -EBUSY;
+ }
+@@ -581,7 +594,8 @@ static int pnx8xxx_request_port(struct uart_port *port)
+  */
+ static void pnx8xxx_config_port(struct uart_port *port, int flags)
+ {
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 
+ 	if (flags & UART_CONFIG_TYPE &&
+ 	    pnx8xxx_request_port(&sport->port) == 0)
+@@ -596,7 +610,8 @@ static void pnx8xxx_config_port(struct uart_port *port, int flags)
+ static int
+ pnx8xxx_verify_port(struct uart_port *port, struct serial_struct *ser)
+ {
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port,	port);
+ 	int ret = 0;
+ 
+ 	if (ser->type != PORT_UNKNOWN && ser->type != PORT_PNX8XXX)
+@@ -662,7 +677,8 @@ static void __init pnx8xxx_init_ports(void)
+ 
+ static void pnx8xxx_console_putchar(struct uart_port *port, int ch)
+ {
+-	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
++	struct pnx8xxx_port *sport =
++		container_of(port, struct pnx8xxx_port, port);
+ 	int status;
  
  	do {
 -- 
