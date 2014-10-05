@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaJEQHF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:07:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63491 "EHLO mx1.redhat.com"
+	id S1752201AbaJEQHC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:07:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5954 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751882AbaJEQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751887AbaJEQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 5 Oct 2014 12:03:39 -0400
-Date: Sun, 5 Oct 2014 19:07:05 +0300
+Date: Sun, 5 Oct 2014 19:07:07 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
         virtualization@lists.linux-foundation.org
-Subject: [PATCH 05/16] virtio: defer config changed notifications
-Message-ID: <1412525038-15871-6-git-send-email-mst@redhat.com>
+Subject: [PATCH 06/16] virtio_blk: drop config_enable
+Message-ID: <1412525038-15871-7-git-send-email-mst@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,154 +23,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Defer config changed notifications that arrive during
-probe/scan/freeze/restore.
+Now that virtio core ensures config changes don't
+arrive during probing, drop config_enable flag
+in virtio blk.
+On removal, flush is now sufficient to guarantee that
+no change work is queued.
 
-This will allow drivers to set DRIVER_OK earlier, without worrying about
-racing with config change interrupts.
-
-This change will also benefit old hypervisors (before 2009)
-that send interrupts without checking DRIVER_OK: previously,
-the callback could race with driver-specific initialization.
-
-This will also help simplify drivers.
+This help simplify the driver, and will allow
+setting DRIVER_OK earlier without losing config
+change notifications.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio.h  |  6 ++++++
- drivers/virtio/virtio.c | 55 +++++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 52 insertions(+), 9 deletions(-)
+ drivers/block/virtio_blk.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index 8df7ba8..5636b11 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -79,6 +79,9 @@ bool virtqueue_is_broken(struct virtqueue *vq);
-  * virtio_device - representation of a device using virtio
-  * @index: unique position on the virtio bus
-  * @failed: saved value for CONFIG_S_FAILED bit (for restore)
-+ * @config_enabled: configuration change reporting enabled
-+ * @config_changed: configuration change reported while disabled
-+ * @config_lock: protects configuration change reporting
-  * @dev: underlying device.
-  * @id: the device type identification (used to match it with a driver).
-  * @config: the configuration ops for this device.
-@@ -90,6 +93,9 @@ bool virtqueue_is_broken(struct virtqueue *vq);
- struct virtio_device {
- 	int index;
- 	bool failed;
-+	bool config_enabled;
-+	bool config_changed;
-+	spinlock_t config_lock;
- 	struct device dev;
- 	struct virtio_device_id id;
- 	const struct virtio_config_ops *config;
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index 657f817..578e02d 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -117,6 +117,40 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
- }
- EXPORT_SYMBOL_GPL(virtio_check_driver_offered_feature);
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 0a58140..c8cf6a1 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -44,9 +44,6 @@ struct virtio_blk
+ 	/* Lock for config space updates */
+ 	struct mutex config_lock;
  
-+static void __virtio_config_changed(struct virtio_device *dev)
-+{
-+	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
-+
-+	if (!dev->config_enabled)
-+		dev->config_changed = true;
-+	else if (drv && drv->config_changed)
-+		drv->config_changed(dev);
-+}
-+
-+void virtio_config_changed(struct virtio_device *dev)
-+{
-+	spin_lock_irq(&dev->config_lock);
-+	__virtio_config_changed(dev);
-+	spin_unlock_irq(&dev->config_lock);
-+}
-+EXPORT_SYMBOL_GPL(virtio_config_changed);
-+
-+static void virtio_config_disable(struct virtio_device *dev)
-+{
-+	spin_lock_irq(&dev->config_lock);
-+	dev->config_enabled = false;
-+	spin_unlock_irq(&dev->config_lock);
-+}
-+
-+static void virtio_config_enable(struct virtio_device *dev)
-+{
-+	spin_lock_irq(&dev->config_lock);
-+	dev->config_enabled = true;
-+	__virtio_config_changed(dev);
-+	dev->config_changed = false;
-+	spin_unlock_irq(&dev->config_lock);
-+}
-+
- static int virtio_dev_probe(struct device *_d)
- {
- 	int err, i;
-@@ -153,6 +187,8 @@ static int virtio_dev_probe(struct device *_d)
- 		add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
- 		if (drv->scan)
- 			drv->scan(dev);
-+
-+		virtio_config_enable(dev);
- 	}
- 
- 	return err;
-@@ -163,6 +199,8 @@ static int virtio_dev_remove(struct device *_d)
- 	struct virtio_device *dev = dev_to_virtio(_d);
- 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
- 
-+	virtio_config_disable(dev);
-+
- 	drv->remove(dev);
- 
- 	/* Driver should have reset device. */
-@@ -211,6 +249,10 @@ int register_virtio_device(struct virtio_device *dev)
- 	dev->index = err;
- 	dev_set_name(&dev->dev, "virtio%u", dev->index);
- 
-+	spin_lock_init(&dev->config_lock);
-+	dev->config_enabled = false;
-+	dev->config_changed = false;
-+
- 	/* We always start by resetting the device, in case a previous
- 	 * driver messed it up.  This also tests that code path a little. */
- 	dev->config->reset(dev);
-@@ -239,20 +281,13 @@ void unregister_virtio_device(struct virtio_device *dev)
- }
- EXPORT_SYMBOL_GPL(unregister_virtio_device);
- 
--void virtio_config_changed(struct virtio_device *dev)
--{
--	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+-	/* enable config space updates */
+-	bool config_enable;
 -
--	if (drv && drv->config_changed)
--		drv->config_changed(dev);
--}
--EXPORT_SYMBOL_GPL(virtio_config_changed);
--
- #ifdef CONFIG_PM_SLEEP
- int virtio_device_freeze(struct virtio_device *dev)
- {
- 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
  
-+	virtio_config_disable(dev);
+@@ -348,8 +345,6 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	u64 capacity, size;
+ 
+ 	mutex_lock(&vblk->config_lock);
+-	if (!vblk->config_enable)
+-		goto done;
+ 
+ 	/* Host must always specify the capacity. */
+ 	virtio_cread(vdev, struct virtio_blk_config, capacity, &capacity);
+@@ -374,7 +369,7 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	set_capacity(vblk->disk, capacity);
+ 	revalidate_disk(vblk->disk);
+ 	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
+-done:
 +
- 	dev->failed = dev->config->get_status(dev) & VIRTIO_CONFIG_S_FAILED;
- 
- 	if (drv && drv->freeze)
-@@ -296,6 +331,8 @@ int virtio_device_restore(struct virtio_device *dev)
- 		add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
- 	}
- 
-+	virtio_config_enable(dev);
-+
- 	return 0;
+ 	mutex_unlock(&vblk->config_lock);
  }
- EXPORT_SYMBOL_GPL(virtio_device_restore);
+ 
+@@ -609,7 +604,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 	mutex_init(&vblk->config_lock);
+ 
+ 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
+-	vblk->config_enable = true;
+ 
+ 	err = init_vq(vblk);
+ 	if (err)
+@@ -772,9 +766,7 @@ static void virtblk_remove(struct virtio_device *vdev)
+ 	int refc;
+ 
+ 	/* Prevent config work handler from accessing the device. */
+-	mutex_lock(&vblk->config_lock);
+-	vblk->config_enable = false;
+-	mutex_unlock(&vblk->config_lock);
++	flush_work(&vblk->config_work);
+ 
+ 	del_gendisk(vblk->disk);
+ 	blk_cleanup_queue(vblk->disk->queue);
+@@ -784,8 +776,6 @@ static void virtblk_remove(struct virtio_device *vdev)
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-	flush_work(&vblk->config_work);
+-
+ 	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
+ 	put_disk(vblk->disk);
+ 	vdev->config->del_vqs(vdev);
+@@ -806,10 +796,6 @@ static int virtblk_freeze(struct virtio_device *vdev)
+ 	vdev->config->reset(vdev);
+ 
+ 	/* Prevent config work handler from accessing the device. */
+-	mutex_lock(&vblk->config_lock);
+-	vblk->config_enable = false;
+-	mutex_unlock(&vblk->config_lock);
+-
+ 	flush_work(&vblk->config_work);
+ 
+ 	blk_mq_stop_hw_queues(vblk->disk->queue);
+@@ -823,7 +809,6 @@ static int virtblk_restore(struct virtio_device *vdev)
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int ret;
+ 
+-	vblk->config_enable = true;
+ 	ret = init_vq(vdev->priv);
+ 	if (!ret)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
 -- 
 MST
 
