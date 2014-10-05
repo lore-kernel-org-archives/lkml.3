@@ -1,37 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaJEVLQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 17:11:16 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:57532 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaJEVLP (ORCPT
+	id S1752009AbaJEVMw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 17:12:52 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51149 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751965AbaJEVMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 17:11:15 -0400
+	Sun, 5 Oct 2014 17:12:50 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: pavel@ucw.cz, len.brown@intel.com, gregkh@linuxfoundation.org,
+        ulf.hansson@linaro.org, khilman@linaro.org, geert+renesas@glider.be,
+        tomasz.figa@gmail.com, richard@nod.at, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>
+Subject: Re: [PATCH] drivers: base: power: domain: Use 'pm_cpu_data' instead of 'cpu_data' for compiling break
+Date: Sun, 05 Oct 2014 23:32:53 +0200
+Message-ID: <3581264.gqojuoeKz2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54300206.3020206@gmail.com>
+References: <54300206.3020206@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CALtyatHUTXZOrPKD-SqkxppSnwrhFa_EQ7eUhTjdJVq7TZCb+A@mail.gmail.com>
-References: <trinity-cc489298-336a-4100-85b8-84c43c620c90-1412441370324@3capp-mailcom-lxa16>
-	<20141004174018.GW7996@ZenIV.linux.org.uk>
-	<CALtyatFRH8TWDROciTiMrGBruPZ-2eUnoOF0ct-t_j0p+LsnNQ@mail.gmail.com>
-	<20141005055406.0445144b@as>
-	<CALtyatHUTXZOrPKD-SqkxppSnwrhFa_EQ7eUhTjdJVq7TZCb+A@mail.gmail.com>
-Date: Sun, 5 Oct 2014 21:11:13 +0000
-Message-ID: <CALtyatH1JE6hfq6OaEusBbBQuSnmifbPrB_M+-9iFdzB+fRQJw@mail.gmail.com>
-Subject: Re: (Song) Fk SystemD
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Tom Collins <tomcollins224@mail.com>,
-        linux-kernel@vger.kernel.org,
-        "debian-user@lists.debian.org" <debian-user@lists.debian.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems like the unix-like era of linux development is coming to a close.
-Those of us who prefer the unix ways should perhaps shelter them.
+On Saturday, October 04, 2014 10:19:50 PM Chen Gang wrote:
+> 'cpu_data' is too common to be already used by some architectures (e.g.
+> um, m32r, and mn10300), so need use 'pm_cpu_data' instead of, or cause
+> compiling break. The related error (with allmodconfig under um):
+> 
+>     CC      drivers/base/platform.o
+>   In file included from ./arch/x86/um/asm/processor.h:31:0,
+>                    from ./arch/um/include/asm/uaccess.h:16,
+>                    from ./arch/um/include/asm/thread_info.h:13,
+>                    from include/linux/thread_info.h:54,
+>                    from include/asm-generic/current.h:4,
+>                    from arch/um/include/generated/asm/current.h:1,
+>                    from include/linux/mutex.h:13,
+>                    from include/linux/kernfs.h:13,
+>                    from include/linux/sysfs.h:15,
+>                    from include/linux/kobject.h:21,
+>                    from include/linux/device.h:17,
+>                    from include/linux/platform_device.h:14,
+>                    from drivers/base/platform.c:14:
+>   ./arch/um/include/asm/processor-generic.h:107:19: error: expected identifier or '(' before '&' token
+>    #define cpu_data (&boot_cpu_data)
+>                      ^
+>   include/linux/pm_domain.h:74:23: note: in expansion of macro 'cpu_data'
+>     struct gpd_cpu_data *cpu_data;
+>                        ^
+> 
+> Also need notice about 80 columns boundary.
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
 
-Rambling Proposal pt 1 of 2. Unix-like Fork. "Indelible Linux/Crystalline Linux"
-youtu.be/N18rNxe3Z-o
+This problem has already been fixed by a patch from Ulf Hansson that's
+in my tree (along with the commit that introduced the problem in the first
+place).
 
-Rambling Proposal pt 2 of 2. Unix-like Fork. "Indelible Linux/Crystalline Linux"
-youtu.be/TG1uqwNzlnk
+And you forgot to say that the problem was only occuring in linux-next.
+
+I'm sorry for everyone's loss of time related to this.
+
+> ---
+>  drivers/base/power/domain.c | 54 ++++++++++++++++++++++-----------------------
+>  include/linux/pm_domain.h   |  2 +-
+>  2 files changed, 28 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index 18cc68d..d8d2739 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -142,13 +142,13 @@ static void genpd_recalc_cpu_exit_latency(struct generic_pm_domain *genpd)
+>  {
+>  	s64 usecs64;
+>  
+> -	if (!genpd->cpu_data)
+> +	if (!genpd->pm_cpu_data)
+>  		return;
+>  
+>  	usecs64 = genpd->power_on_latency_ns;
+>  	do_div(usecs64, NSEC_PER_USEC);
+> -	usecs64 += genpd->cpu_data->saved_exit_latency;
+> -	genpd->cpu_data->idle_state->exit_latency = usecs64;
+> +	usecs64 += genpd->pm_cpu_data->saved_exit_latency;
+> +	genpd->pm_cpu_data->idle_state->exit_latency = usecs64;
+>  }
+>  
+>  /**
+> @@ -188,9 +188,9 @@ static int __pm_genpd_poweron(struct generic_pm_domain *genpd)
+>  		return 0;
+>  	}
+>  
+> -	if (genpd->cpu_data) {
+> +	if (genpd->pm_cpu_data) {
+>  		cpuidle_pause_and_lock();
+> -		genpd->cpu_data->idle_state->disabled = true;
+> +		genpd->pm_cpu_data->idle_state->disabled = true;
+>  		cpuidle_resume_and_unlock();
+>  		goto out;
+>  	}
+> @@ -513,17 +513,17 @@ static int pm_genpd_poweroff(struct generic_pm_domain *genpd)
+>  		}
+>  	}
+>  
+> -	if (genpd->cpu_data) {
+> +	if (genpd->pm_cpu_data) {
+>  		/*
+> -		 * If cpu_data is set, cpuidle should turn the domain off when
+> -		 * the CPU in it is idle.  In that case we don't decrement the
+> -		 * subdomain counts of the master domains, so that power is not
+> -		 * removed from the current domain prematurely as a result of
+> -		 * cutting off the masters' power.
+> +		 * If pm_cpu_data is set, cpuidle should turn the domain off
+> +		 * when the CPU in it is idle.  In that case we don't decrement
+> +		 * the subdomain counts of the master domains, so that power is
+> +		 * not removed from the current domain prematurely as a result
+> +		 * of cutting off the masters' power.
+>  		 */
+>  		genpd->status = GPD_STATE_POWER_OFF;
+>  		cpuidle_pause_and_lock();
+> -		genpd->cpu_data->idle_state->disabled = false;
+> +		genpd->pm_cpu_data->idle_state->disabled = false;
+>  		cpuidle_resume_and_unlock();
+>  		goto out;
+>  	}
+> @@ -1698,7 +1698,7 @@ int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
+>  int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
+>  {
+>  	struct cpuidle_driver *cpuidle_drv;
+> -	struct gpd_cpu_data *cpu_data;
+> +	struct gpd_cpu_data *pm_cpu_data;
+>  	struct cpuidle_state *idle_state;
+>  	int ret = 0;
+>  
+> @@ -1707,12 +1707,12 @@ int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
+>  
+>  	genpd_acquire_lock(genpd);
+>  
+> -	if (genpd->cpu_data) {
+> +	if (genpd->pm_cpu_data) {
+>  		ret = -EEXIST;
+>  		goto out;
+>  	}
+> -	cpu_data = kzalloc(sizeof(*cpu_data), GFP_KERNEL);
+> -	if (!cpu_data) {
+> +	pm_cpu_data = kzalloc(sizeof(*pm_cpu_data), GFP_KERNEL);
+> +	if (!pm_cpu_data) {
+>  		ret = -ENOMEM;
+>  		goto out;
+>  	}
+> @@ -1730,9 +1730,9 @@ int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
+>  		ret = -EAGAIN;
+>  		goto err;
+>  	}
+> -	cpu_data->idle_state = idle_state;
+> -	cpu_data->saved_exit_latency = idle_state->exit_latency;
+> -	genpd->cpu_data = cpu_data;
+> +	pm_cpu_data->idle_state = idle_state;
+> +	pm_cpu_data->saved_exit_latency = idle_state->exit_latency;
+> +	genpd->pm_cpu_data = pm_cpu_data;
+>  	genpd_recalc_cpu_exit_latency(genpd);
+>  
+>   out:
+> @@ -1743,7 +1743,7 @@ int pm_genpd_attach_cpuidle(struct generic_pm_domain *genpd, int state)
+>  	cpuidle_driver_unref();
+>  
+>   err_drv:
+> -	kfree(cpu_data);
+> +	kfree(pm_cpu_data);
+>  	goto out;
+>  }
+>  
+> @@ -1766,7 +1766,7 @@ int pm_genpd_name_attach_cpuidle(const char *name, int state)
+>   */
+>  int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd)
+>  {
+> -	struct gpd_cpu_data *cpu_data;
+> +	struct gpd_cpu_data *pm_cpu_data;
+>  	struct cpuidle_state *idle_state;
+>  	int ret = 0;
+>  
+> @@ -1775,20 +1775,20 @@ int pm_genpd_detach_cpuidle(struct generic_pm_domain *genpd)
+>  
+>  	genpd_acquire_lock(genpd);
+>  
+> -	cpu_data = genpd->cpu_data;
+> -	if (!cpu_data) {
+> +	pm_cpu_data = genpd->pm_cpu_data;
+> +	if (!pm_cpu_data) {
+>  		ret = -ENODEV;
+>  		goto out;
+>  	}
+> -	idle_state = cpu_data->idle_state;
+> +	idle_state = pm_cpu_data->idle_state;
+>  	if (!idle_state->disabled) {
+>  		ret = -EAGAIN;
+>  		goto out;
+>  	}
+> -	idle_state->exit_latency = cpu_data->saved_exit_latency;
+> +	idle_state->exit_latency = pm_cpu_data->saved_exit_latency;
+>  	cpuidle_driver_unref();
+> -	genpd->cpu_data = NULL;
+> -	kfree(cpu_data);
+> +	genpd->pm_cpu_data = NULL;
+> +	kfree(pm_cpu_data);
+>  
+>   out:
+>  	genpd_release_lock(genpd);
+> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+> index 9004743..a73b825 100644
+> --- a/include/linux/pm_domain.h
+> +++ b/include/linux/pm_domain.h
+> @@ -71,7 +71,7 @@ struct generic_pm_domain {
+>  	s64 max_off_time_ns;	/* Maximum allowed "suspended" time. */
+>  	bool max_off_time_changed;
+>  	bool cached_power_down_ok;
+> -	struct gpd_cpu_data *cpu_data;
+> +	struct gpd_cpu_data *pm_cpu_data;
+>  	void (*attach_dev)(struct device *dev);
+>  	void (*detach_dev)(struct device *dev);
+>  };
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
