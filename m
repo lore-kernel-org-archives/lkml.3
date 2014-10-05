@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356AbaJEGDe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 02:03:34 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55939 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaJEGDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 02:03:33 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: [PATCH] cma: make default CMA area size zero for x86
-Date: Sun,  5 Oct 2014 15:02:56 +0900
-Message-Id: <1412488976-3885-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751206AbaJEGiI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 02:38:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48638 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898AbaJEGiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 02:38:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,658,1406617200"; 
+   d="scan'208";a="583670764"
+Date: Sat, 4 Oct 2014 23:38:02 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [x86LKP] PANIC: double fault, error_code: 0xffffffffffffffff
+Message-ID: <20141005063802.GE3264@tassilo.jf.intel.com>
+References: <20141004134729.GB5214@wfg-t540p.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141004134729.GB5214@wfg-t540p.sh.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes CMA memory area size zero for x86 in default configuration
-(doesn't change on the other architectures).  If default CMA size is
-zero, DMA_CMA is disabled.  It can be enabled by passing cma= to the
-kernel.
+> [    5.087621] Freeing unused kernel memory: 1248K (ffff8800014c8000 - ffff880001600000)
+> [    5.136856] Freeing unused kernel memory: 1936K (ffff88000181c000 - ffff880001a00000)
+> [    5.167951] random: init urandom read with 5 bits of entropy available
+> [   19.307116] PANIC: double fault, error_code: 0xffffffffffffffff
+> [   19.309941] Kernel panic - not syncing: Machine halted.
 
-This makes less impact on x86.  Because there is no mainline driver that
-requires it for x86, and Peter Hurley reported the performance
-regression, as this is trying to drive _all_ dma mapping allocations
-through a _very_ small window.
+That's odd. I actually tested it in KVM.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Reported-by: Peter Hurley <peter@hurleysoftware.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
----
- drivers/base/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+Will try with your config.
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 4e7f0ff..92a5987e 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -240,6 +240,7 @@ comment "Default contiguous memory area size:"
- config CMA_SIZE_MBYTES
- 	int "Size in Mega Bytes"
- 	depends on !CMA_SIZE_SEL_PERCENTAGE
-+	default 0 if X86
- 	default 16
- 	help
- 	  Defines the size (in MiB) of the default memory area for Contiguous
-@@ -248,6 +249,7 @@ config CMA_SIZE_MBYTES
- config CMA_SIZE_PERCENTAGE
- 	int "Percentage of total memory"
- 	depends on !CMA_SIZE_SEL_MBYTES
-+	default 0 if X86
- 	default 10
- 	help
- 	  Defines the size of the default memory area for Contiguous Memory
--- 
-1.9.1
+> kvm=(
+> 	qemu-system-x86_64
+> 	-cpu kvm64
+> 	-enable-kvm
+> 	-kernel $kernel
+> 	-initrd $initrd
+> 	-m 320
+> 	-smp 2
+> 	-net nic,vlan=1,model=e1000
+> 	-net user,vlan=1
+> 	-boot order=nc
+> 	-no-reboot
+> 	-watchdog i6300esb
+> 	-rtc base=localtime
+> 	-serial stdio
+> 	-display none
+> 	-monitor null 
+> )
 
+-Andi
