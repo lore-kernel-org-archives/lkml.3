@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaJECM7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 22:12:59 -0400
-Received: from mga09.intel.com ([134.134.136.24]:2825 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaJECM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 22:12:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,656,1406617200"; 
-   d="scan'208";a="583629522"
-Date: Sun, 5 Oct 2014 10:13:36 +0800
-From: Huang Shijie <shijie.huang@intel.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Roy Lee <roylee@paypal.com>,
-        Mike Voytovich <mvoytovich@paypal.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/3] mtd: nand: gpmi: add proper raw access support
-Message-ID: <20141005021335.GA14640@shldeISGChi005.sh.intel.com>
-References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
- <20140930100720.45625804@bbrezillon>
+	id S1751679AbaJECQB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 22:16:01 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:43459 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaJECP7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 22:15:59 -0400
+Date: Sat, 4 Oct 2014 22:15:56 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: RCU stalls -> lockup.
+Message-ID: <20141005021556.GC8549@htj.dyndns.org>
+References: <20141002175515.GA28665@redhat.com>
+ <20141002193655.GS5015@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140930100720.45625804@bbrezillon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141002193655.GS5015@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:07:20AM +0200, Boris Brezillon wrote:
-> Hi,
-> 
-> On Tue, 23 Sep 2014 16:07:33 +0200
-> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
-> 
-> > Hello Huang, Brian,
+On Thu, Oct 02, 2014 at 12:36:55PM -0700, Paul E. McKenney wrote:
+> On Thu, Oct 02, 2014 at 01:55:15PM -0400, Dave Jones wrote:
+> > I just hit this on my box running 3.17rc7
+> > It was followed by a userspace lockup. (Could still ping, and sysrq
+> > from the console, but even getty wasn't responding on the console).
 > > 
-> > This is just a new proposal to support raw accesses in a more standard way
-> > in the GPMI driver.
-> > This series has been tested on an imx28 board.
-> > 
-> > Any suggestions are welcome.
+> > I was trying to reproduce another bug faster, and had ramped up the
+> > number of processes trinity to uses to 512. This didn't take long
+> > to fall out..
 > 
-> Brian, any chance you could take a look at this series and give your
-> opinion and/or suggest a new approach ?
-> 
-> Huang, did you have time to think about a better way to implement these
-> raw access functions ?
-> 
-sorry for the later reply. I was busy recently.
-You can send out the new version. Please do not forget add a patch to
-add
-more comments for these hooks.
+> This might be related to an exchange I had with Tejun (CCed), where
+> the work queues were running all out, preventing any quiescent states
+> from happening.  One fix under consideration is to add a quiescent state,
+> similar to the one in softirq handling.
 
-I will test your patch(or your new patch set) on Oct 7 and Oct 8.
+Dave, can you please test whether the following patch makes a
+difference if the problem is reproducible?
 
-thanks
-Huang Shijie
+  http://lkml.kernel.org/r/20141003153701.7c7da030@jlaw-desktop.mno.stratus.com
+
+Thanks.
+
+-- 
+tejun
