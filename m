@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaJESvQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 14:51:16 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36037 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaJESvO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 14:51:14 -0400
+	id S1751867AbaJETCa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 15:02:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32724 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711AbaJETC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 15:02:29 -0400
+Date: Sun, 5 Oct 2014 21:02:23 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: kan.liang@intel.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org
+Subject: Re: [PATCH V7 2/4] perf tools: parse the pmu event prefix and suffix
+Message-ID: <20141005190223.GB1934@krava.redhat.com>
+References: <1412352548-7603-1-git-send-email-kan.liang@intel.com>
+ <1412352548-7603-3-git-send-email-kan.liang@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141005184115.GA21713@node.dhcp.inet.fi>
-References: <alpine.DEB.2.02.1410041947080.7055@chino.kir.corp.google.com>
-	<20141005184115.GA21713@node.dhcp.inet.fi>
-Date: Sun, 5 Oct 2014 11:51:13 -0700
-X-Google-Sender-Auth: ZvFBnypY5oBjy6l-1dpLws49HHw
-Message-ID: <CA+55aFzZMuup+00b7yLy=oLbzErEuUXxuBuwGcDCbjM5PbYKaQ@mail.gmail.com>
-Subject: Re: [patch for-3.17] mm, thp: fix collapsing of hugepages on madvise
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412352548-7603-3-git-send-email-kan.liang@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 5, 2014 at 11:41 AM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
->
-> Look like rather complex fix for a not that complex bug.
-> What about untested patch below?
+On Fri, Oct 03, 2014 at 12:09:06PM -0400, kan.liang@intel.com wrote:
+> From: Kan Liang <kan.liang@intel.com>
 
-Much nicer. This will miss 3.17 because I'm cutting it today and it's
-too late to have this discussion for that, but I think I'd prefer to
-merge this instead later..
+SNIP
 
-              Linus
+> +/*
+> + * Read the pmu events list from sysfs
+> + * Save it into perf_pmu_events_list
+> + */
+> +static void perf_pmu__parse_init(void)
+> +{
+> +
+> +	struct perf_pmu *pmu = NULL;
+> +	struct perf_pmu_alias *alias;
+> +	int len = 0;
+> +
+> +	pmu = perf_pmu__find("cpu");
+> +	if ((pmu == NULL) || list_empty(&pmu->aliases)) {
+> +		perf_pmu_events_list_num = -1;
+> +		return;
+> +	}
+> +	list_for_each_entry(alias, &pmu->aliases, list) {
+> +		if (strchr(alias->name, '-'))
+> +			len++;
+> +		len++;
+> +	}
+> +	perf_pmu_events_list = malloc(sizeof(struct perf_pmu_event_symbol) * len);
+> +	perf_pmu_events_list_num = len;
+
+missing allocation failure check
+
+jirka
