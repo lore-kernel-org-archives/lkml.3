@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750985AbaJEE5R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 00:57:17 -0400
-Received: from p02c12o148.mxlogic.net ([208.65.145.81]:44852 "EHLO
-	p02c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaJEE5Q (ORCPT
+	id S1751059AbaJEFHL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 01:07:11 -0400
+Received: from mail-qg0-f53.google.com ([209.85.192.53]:41138 "EHLO
+	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaJEFHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 00:57:16 -0400
-X-MXL-Hash: 5430cfac44ca99be-7441046d956502a9bc72d78054766dae6a50c1e1
-X-MXL-Hash: 5430cfa41039f34f-18ff46a9c5b475198c130b005cffb8aaf6af936c
-From: Joe Lawrence <joe.lawrence@stratus.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <tj@kernel.org>, <paulmck@linux.vnet.ibm.com>, <jiri@resnulli.us>,
-        Joe Lawrence <joe.lawrence@stratus.com>
-Subject: [PATCH] workqueue: add quiescent state between work items
-Date: Sun, 5 Oct 2014 00:56:40 -0400
-Message-ID: <1412485000-5669-1-git-send-email-joe.lawrence@stratus.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 5 Oct 2014 01:07:07 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Sun, 5 Oct 2014 01:13:24 -0400 (EDT)
+To: Mark Rutland <mark.rutland@arm.com>
+cc: linux-kernel@vger.kernel.org, will.deacon@arm.com,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: Perf lockups / stack overflows on v3.17-rc6, x86_64, arm,
+ arm64
+In-Reply-To: <20140925152825.GA6531@leverpostej>
+Message-ID: <alpine.DEB.2.11.1410050106360.9898@vincent-weaver-1.umelst.maine.edu>
+References: <20140925152825.GA6531@leverpostej>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [134.111.199.152]
-X-AnalysisOut: [v=2.1 cv=VN/Jnr/X c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
-X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=_KQqW7t0BisA:10 a=Cdz]
-X-AnalysisOut: [KgOd8jloA:10 a=BLceEmwcHowA:10 a=uelBKuKpAAAA:8 a=YlVTAMxI]
-X-AnalysisOut: [AAAA:8 a=VwQbUJbxAAAA:8 a=55vktE7HwCub9vLaWSAA:9 a=kSViFEB]
-X-AnalysisOut: [My1sA:10]
-X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014100423); S=0.200(2014051901)]
-X-MAIL-FROM: <joe.lawrence@stratus.com>
-X-SOURCE-IP: [134.111.1.18]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Similar to the stop_machine deadlock scenario on !PREEMPT kernels
-addressed in b22ce2785d97 "workqueue: cond_resched() after processing
-each work item", kworker threads requeueing back-to-back with zero jiffy
-delay can stall RCU. The cond_resched call introduced in that fix will
-yield only iff there are other higher priority tasks to run, so force a
-quiescent RCU state between work items with cond_resched_rcu_qs.
+On Thu, 25 Sep 2014, Mark Rutland wrote:
 
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Link: https://lkml.kernel.org/r/20140926105227.01325697@jlaw-desktop.mno.stratus.com
-Link: https://lkml.kernel.org/r/20140929115445.40221d8e@jlaw-desktop.mno.stratus.com
----
- kernel/workqueue.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+> Log 1, x86_64 lockup
+> [  223.007005]  [<ffffffff81168910>] ? poll_select_copy_remaining+0x130/0x130
+> [  223.007005]  [<ffffffff811600ea>] ? getname_flags+0x4a/0x1a0
+> [  223.007005]  [<ffffffff8116007d>] ? final_putname+0x1d/0x40
+> [  223.007005]  [<ffffffff811602f4>] ? putname+0x24/0x40
+> [  223.007005]  [<ffffffff8116581a>] ? user_path_at_empty+0x5a/0x90
+> [  223.007005]  [<ffffffff810701c0>] ? wake_up_state+0x10/0x10
+> [  223.007005]  [<ffffffff81198078>] ? eventfd_read+0x38/0x60
+> [  223.007005]  [<ffffffff810a1e75>] ? ktime_get_ts64+0x45/0xf0
+> [  223.007005]  [<ffffffff81169f00>] SyS_poll+0x60/0xf0
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5dbe22a..09b685d 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2043,9 +2043,10 @@ __acquires(&pool->lock)
- 	 * kernels, where a requeueing work item waiting for something to
- 	 * happen could deadlock with stop_machine as such work item could
- 	 * indefinitely requeue itself while all other CPUs are trapped in
--	 * stop_machine.
-+	 * stop_machine. At the same time, report a quiescent RCU state so
-+	 * the same condition doesn't freeze RCU.
- 	 */
--	cond_resched();
-+	cond_resched_rcu_qs();
- 
- 	spin_lock_irq(&pool->lock);
- 
--- 
-1.7.10.4
+I have seen issues similar to this before, where the problem appeared
+to be in poll/hrtimer.  Never managed to track down anything useful about
+the bug.
 
+> Log 2, x86_64 stack overflow
+
+> [  346.641345] divide error: 0000 [#1] SMP
+> [  346.642010] Modules linked in:
+> [  346.642010] CPU: 0 PID: 4076 Comm: perf_fuzzer Not tainted 3.17.0-rc6hark-perf-lockup+ #1
+> [  346.642010] Hardware name: LENOVO 7484A3G/LENOVO, BIOS 5CKT54AUS 09/07/2009
+> [  346.642010] task: ffff8801ac449a70 ti: ffff8801ac574000 task.ti: ffff8801ac574000
+> [  346.642010] RIP: 0010:[<ffffffff81078bce>]  [<ffffffff81078bce>] find_busiest_group+0x28e/0x8a0
+> [  346.642010] RSP: 0018:ffff8801ac577760  EFLAGS: 00010006
+> [  346.642010] RAX: 00000000000003ff RBX: 0000000000000000 RCX: 00000000ffff8801
+> [  346.642010] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
+> [  346.642010] RBP: ffff8801ac577890 R08: 0000000000000000 R09: 0000000000000000
+> [  346.704010] ------------[ cut here ]------------
+> [  346.704017] WARNING: CPU: 2 PID: 5 at arch/x86/kernel/irq_64.c:70 handle_irq+0x141/0x150()
+> [  346.704019] do_IRQ():  has overflown the kernel stack (cur:1,sp:ffff8801b653fe88,irq stk top-bottom:ffff8801bed00080-ffff8801bed03fc0,exception stk top-bottom:ffff8801bed04080-ffff8801bed0a000)
+
+weird, have not seen this before.  Though I was hitting a reboot issue
+that would give really strange crash messages that was possibly fixed by
+a patch that went into 3.17-rc7.
+
+> Log 3, arm64 lockup
+> ---->8----
+
+>         Seeding random number generator with 1411488270
+>         /proc/sys/kernel/perf_event_max_sample_rate currently: 285518974/s
+>         /proc/sys/kernel/perf_event_paranoid currently: 1142898651
+
+Those last two lines are suspect.  Is my fuzzer broken on arm64 somehow?
+I do try to test on arm occasionally, but my pandaboard suffered massive 
+SD card failure and I haven't had a chance to get it back running yet.
+I have trouble getting any of my other flock of arm machines running 
+recent upstream kernels.
+
+
+Sorry that I don't have good answers for these bugs, but I will stick them 
+in my perf_fuzzer outstanding bugs list.
+
+Vince
