@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaJENE3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 09:04:29 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:46836 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaJENEQ (ORCPT
+	id S1751788AbaJENEi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 09:04:38 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:45220 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbaJENEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 09:04:16 -0400
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] lib: string.c:  Added a funktion function strzcpy
-Date: Sun,  5 Oct 2014 15:06:17 +0200
-Message-Id: <1412514377-19387-2-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1412514377-19387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-References: <1412514377-19387-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	Sun, 5 Oct 2014 09:04:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141005092913.1717dfc9@recife.lan>
+References: <1412275758-31340-1-git-send-email-knightrider@are.ma>
+	<542E2BF6.2090800@iki.fi>
+	<CAKnK8-QOU7szWNcC1BsBZtNmHBLiLqZuCVYpjsVBkpfNCxGa-A@mail.gmail.com>
+	<20141003075206.331006bd@recife.lan>
+	<CAKnK8-QF7fWRzp24mhsUWuK610Ko7G=a4fEx0oyf+En+jRVoJA@mail.gmail.com>
+	<CAKnK8-REiZ+Y_cjf9Lpbc+QiSpp2JZKq1wCi9_3-BNjSopzRLQ@mail.gmail.com>
+	<20141005092913.1717dfc9@recife.lan>
+Date: Sun, 5 Oct 2014 22:04:32 +0900
+X-Google-Sender-Auth: o3Px1LXeUqgChlUwsroyfGxGMPo
+Message-ID: <CAKnK8-RRXB73=UZRzndyuQ2S19kefYkiXGn7z7PpTqDUNpp6Ow@mail.gmail.com>
+Subject: Re: [PATCH] pt3 (pci, tc90522, mxl301rf, qm1d1c0042):
+ pt3_unregister_subdev(), pt3_unregister_subdev(), cleanups...
+From: "AreMa Inc." <info@are.ma>
+To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: Antti Palosaari <crope@iki.fi>, linux-media <linux-media@vger.kernel.org>,
+        Hans De Goede <hdegoede@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        linux-kernel@vger.kernel.org, knightrider@are.ma
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a function strzcpy which works the same as strncpy,
-but guaranteed to produce the trailing null character.
+Yeah, sorry if we are not familiar with submission rules as it was the
+first time for us.
+We already splitted the FE and tuners as I2C drivers, according to your request.
 
-There are many places in the code where strncpy used although it
-must be zero terminated, and switching to strlcpy is not an option
-because the string must nonetheless be fyld with zero characters.
+Maybe Tsukada is very clever and we are too busy with daily business,
+but it doesn't mean that backstabbing is tolerated.
+We already asked him to join the project, in a very good manner.
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- include/linux/string.h |    1 +
- lib/string.c           |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+)
+The fact is that, our DVB driver is already published and used widely
+at least in Japan since August 2013
+(chardev version is far earlier) and has become a de facto standard,
+well tested without any major/minor issues
+reported. Our driver is simpler/slimmer and yet, stable. And, it
+conforms the rules of DVB core.
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index d36977e..d789ee5e 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -22,6 +22,7 @@ extern char * strcpy(char *,const char *);
- #ifndef __HAVE_ARCH_STRNCPY
- extern char * strncpy(char *,const char *, __kernel_size_t);
- #endif
-+extern char *strzcpy(char *, const char *, __kernel_size_t);
- #ifndef __HAVE_ARCH_STRLCPY
- size_t strlcpy(char *, const char *, size_t);
- #endif
-diff --git a/lib/string.c b/lib/string.c
-index f3c6ff5..582a832 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -134,6 +134,37 @@ char *strncpy(char *dest, const char *src, size_t count)
- EXPORT_SYMBOL(strncpy);
- #endif
- 
-+/**
-+ * strzcpy - Copy a length-limited, C-string
-+ * @dest: Where to copy the string to
-+ * @src: Where to copy the string from
-+ * @count: The maximum number of bytes to copy
-+ *
-+ * The result is %NUL-terminated,
-+ * as long as count is greater than zero.
-+ *
-+ * In the case where the length of @src is less than  that  of
-+ * count, the remainder of @dest will be padded with %NUL.
-+ *
-+ */
-+char *strzcpy(char *dest, const char *src, size_t count)
-+{
-+	char *tmp = dest;
-+
-+	while (count) {
-+		if ((*tmp = *src) != 0)
-+			src++;
-+		tmp++;
-+		count--;
-+	}
-+
-+	if (dest != tmp)
-+		*--tmp = '\0';
-+
-+	return dest;
-+}
-+EXPORT_SYMBOL(strzcpy);
-+
- #ifndef __HAVE_ARCH_STRLCPY
- /**
-  * strlcpy - Copy a C-string into a sized buffer
--- 
-1.7.10.4
+Or, do you have the card with you?
 
+-Bud
+
+2014-10-05 21:29 GMT+09:00 Mauro Carvalho Chehab <mchehab@osg.samsung.com>:
+> Hi Bud,
+>
+> Em Sun, 05 Oct 2014 18:36:54 +0900
+> "AreMa Inc." <info@are.ma> escreveu:
+>
+>> Dear Antti, Mauro & others,
+>>
+>> We don't want to flood the mailing lists with dirts.
+>> It is regretful to send this kind of email, however
+>> as we just received a "war declaration" from Tsukada Akihiro,
+>> it is better to postpone delivering PT3 driver to the main kernel tree.
+>>
+>> A series proof of facts follow.
+>>
+>> Thanks again for your appreciation.
+>> Bud @ AreMa Inc.
+>>
+>> official contacts:
+>> +81 50 5552 1666
+>> info@are.ma
+>>
+>>
+>> 2014-10-04 16:16 GMT+09:00 AreMa Inc. <info@are.ma>:
+>> > Hi Mauro,
+>> >
+>> > The biggest reason is that, the submitted driver, also published at
+>> > https://github.com/knight-rider/ptx/tree/master/pt3_dvb
+>> > is well proven to be running smoothly and already used by Japanese community
+>> > for more than a year (i.e. de facto standard) without any major issues.
+>> >
+>> > The second is more about his personal reasons in violating the rules
+>> > and we don't want to comment further unless there is no response from him
+>> > within a week.
+>> >
+>> > Many patches will follow.
+>> >
+>> > Thanks again for your info.
+>> > Regards
+>> > -Bud
+>
+> Sorry, but the PT3 driver was already merged at the main tree and I can't
+> simply remove the PT3 patches without causing problems for all other patches
+> that are ready to be submitted.
+>
+> What might be done would be to remove the driver on a separate patch,
+> but that would require a really strong reason for doing that.
+>
+> At least from where I sit, tens of thousands kilimeters away from you both,
+> it sounds to me that we're talking about two different drivers for the
+> same piece of hardware. The big diff between your driver and his shows
+> that they're very different.
+>
+> That's the history of what happened with PT3 drivers submission:
+>         https://patchwork.linuxtv.org/project/linux-media/list/?submitter=6259&state=*
+>         https://patchwork.linuxtv.org/project/linux-media/list/?submitter=6368&state=*
+>
+> All the public e-mails are there, and I don't care (not I am aware) of
+> any other e-mails exchanged in priv.
+>
+> Both drivers had issues when submitted, and both series were properly
+> reviewed. Yet, Akihiro was fast to fix the pointed issues, and his patches
+> followed the proper submission rules since the beginning. Also, the
+> per-driver patch split helped the reviewers to better do their work.
+> His series was discussed during the last 3-4 months without a single reply
+> arguing against its merge, and all comments pointing to issues at the driver
+> were fixed.
+>
+> As it followed all the submission rules and fixup requests, it got merged.
+>
+> So, I am unable to see any reason to remove his driver from the Kernel.
+>
+> Am I missing something?
+>
+> Regards,
+> Mauro
