@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752078AbaJEQEN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:04:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5049 "EHLO mx1.redhat.com"
+	id S1752106AbaJEQEW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:04:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32785 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaJEQEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 12:04:07 -0400
-Date: Sun, 5 Oct 2014 19:07:30 +0300
+	id S1751976AbaJEQER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:04:17 -0400
+Date: Sun, 5 Oct 2014 19:07:33 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Amit Shah <amit.shah@redhat.com>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 14/16] virtio_console: enable VQs early
-Message-ID: <1412525038-15871-15-git-send-email-mst@redhat.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH 15/16] 9p/trans_virtio: enable VQs early
+Message-ID: <1412525038-15871-16-git-send-email-mst@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,30 +26,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after probe returns, virtio console violated this
-rule by adding inbufs, which causes the VQ to be used directly within
-probe.
+This is set automatically after probe returns, but virtio 9p device
+adds self to channel list within probe, at which point VQ can be
+used in violation of the spec.
 
 To fix, call virtio_early_enable_vqs before using VQs.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/char/virtio_console.c | 2 ++
+ net/9p/trans_virtio.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index b585b47..8605009 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1449,6 +1449,8 @@ static int add_port(struct ports_device *portdev, u32 id)
- 	spin_lock_init(&port->outvq_lock);
- 	init_waitqueue_head(&port->waitqueue);
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index 6940d8f..0e8bbb3 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -575,6 +575,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
+ 	/* Ceiling limit to avoid denial of service attacks */
+ 	chan->p9_max_pages = nr_free_buffer_pages()/4;
  
-+	virtio_early_enable_vqs(portdev->vdev);
++	virtio_early_enable_vqs(vdev);
 +
- 	/* Fill the in_vq with buffers so the host can send us data. */
- 	nr_added_bufs = fill_queue(port->in_vq, &port->inbuf_lock);
- 	if (!nr_added_bufs) {
+ 	mutex_lock(&virtio_9p_lock);
+ 	list_add_tail(&chan->chan_list, &virtio_chan_list);
+ 	mutex_unlock(&virtio_9p_lock);
 -- 
 MST
 
