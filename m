@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760AbaJEP6Z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 11:58:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38105 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555AbaJEP6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 11:58:23 -0400
-Date: Sun, 5 Oct 2014 17:58:16 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: linux-kbuild@vger.kernel.org
-Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [PATCH] Kbuild: Check for CONFIG_READABLE_ASM when building .s
- targets
-Message-ID: <20141005155816.GB9377@pd.tnic>
-References: <1412523154-25602-1-git-send-email-bp@alien8.de>
+	id S1751815AbaJEQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:02:09 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:34788 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaJEQCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:02:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1412523154-25602-1-git-send-email-bp@alien8.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412523392.2916.3.camel@joe-AO725>
+References: <1412515757-19689-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1412515757-19689-2-git-send-email-rickard_strandqvist@spectrumdigital.se> <1412523392.2916.3.camel@joe-AO725>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Sun, 5 Oct 2014 18:01:43 +0200
+Message-ID: <CAFo99gZp9WuxjJCwDmNStrm3uQRJq9VKRDZ3yT5R9rDrwft=oA@mail.gmail.com>
+Subject: Re: [PATCH] lib: string.c: A speed optimized for strncpy
+To: Joe Perches <joe@perches.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 05:32:34PM +0200, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> We do need to look at the asm output of c files for various reasons. In
-> order to do so, we do make <path-to-filename>.s.
-> 
-> However, it can happen that the Kconfig option which enables the
-> creation of readable asm CONFIG_READABLE_ASM is disabled. What is more,
-> we want this option enabled because it indirectly enables the issue of
-> line numbers in the asm done by gcc's switch -g.
+Hi
 
-Not really: so this is enabled by CONFIG_DEBUG_INFO and there are two
-options: we make CONFIG_READABLE_ASM depend on it which makes people
-answer a couple more questions or we simply add it to the command
-building the .s file.
+Yes, it can be faster, even if it is as you say, probably a difference
+depending on the size of the count.
+And even greater need to test this on a variety of hardware :-/
 
-I say we do the second thing:
+But I try to do my test with the memset variant to.
 
---
-From: Borislav Petkov <bp@suse.de>
-Subject: [PATCH -v1.1] Kbuild: Check for CONFIG_READABLE_ASM when building .s targets
-
-We do need to look at the asm output of c files for various reasons. In
-order to do so, we do make <path-to-filename>.s.
-
-However, it can happen that the Kconfig option which enables the
-creation of readable asm CONFIG_READABLE_ASM is disabled.
-
-So issue a warning that the asm output might not be optimally readable
-if that option is disabled.
-
-Additionally, add the -g switch to the .s build command so that gcc
-issues line numbers too.
-
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- Makefile               | 2 +-
- scripts/Makefile.build | 7 ++++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index e43244263306..d9b505360c2a 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1513,7 +1513,7 @@ else
- endif
- 
- %.s: %.c prepare scripts FORCE
--	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
-+	$(Q)$(MAKE) $(build)=$(build-dir) asm_target=$@ $(target-dir)$(notdir $@)
- %.i: %.c prepare scripts FORCE
- 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
- %.o: %.c prepare scripts FORCE
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index bf3e6778cd71..d55651d39638 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -147,7 +147,12 @@ $(multi-objs-y:.o=.s)   : modname = $(modname-multi)
- $(multi-objs-y:.o=.lst) : modname = $(modname-multi)
- 
- quiet_cmd_cc_s_c = CC $(quiet_modtag)  $@
--cmd_cc_s_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -S -o $@ $<
-+cmd_cc_s_c       = $(CC) $(c_flags) $(DISABLE_LTO) -fverbose-asm -g -S -o $@ $< \
-+		   $(if $(findstring $(asm_target),$@),\
-+			$(if $(__cmd_cc_s_c_once),,\
-+				$(if $(CONFIG_READABLE_ASM),,\
-+					$(warning Enable CONFIG_READABLE_ASM for more helpful asm); \
-+					$(eval __cmd_cc_s_c_once=1)))) \
- 
- $(obj)/%.s: $(src)/%.c FORCE
- 	$(call if_changed_dep,cc_s_c)
--- 
-2.0.0
+Kind regards
+Rickard Strandqvist
 
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+2014-10-05 17:36 GMT+02:00 Joe Perches <joe@perches.com>:
+> On Sun, 2014-10-05 at 15:29 +0200, Rickard Strandqvist wrote:
+>> This variant is in my tests about 7-10% faster, and also think
+>> it is perhaps even clearer code than before.
+> []
+>> diff --git a/lib/string.c b/lib/string.c
+> []
+>> @@ -123,12 +123,12 @@ char *strncpy(char *dest, const char *src, size_t count)
+>>  {
+>>       char *tmp = dest;
+>>
+>> -     while (count) {
+>> -             if ((*tmp = *src) != 0)
+>> -                     src++;
+>> -             tmp++;
+>> -             count--;
+>> -     }
+>> +     while (count && (*tmp++ = *src++))
+>> +             --count;
+>> +
+>> +     while (count--)
+>> +             *tmp++ = '\0';
+>
+> Perhaps it could be faster to use memset.
+> It might depend on the value of count.
+>
+> {
+>         while (count && (*tmp++ = *src++))
+>                 count--;
+>
+>         if (count > 0)
+>                 memset(tmp, 0, count);
+> }
+>
