@@ -1,92 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbaJECIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 22:08:13 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58710 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaJECIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 22:08:12 -0400
-Message-ID: <5430A804.3040708@hitachi.com>
-Date: Sun, 05 Oct 2014 11:08:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751636AbaJECM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 22:12:59 -0400
+Received: from mga09.intel.com ([134.134.136.24]:2825 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033AbaJECM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 4 Oct 2014 22:12:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,656,1406617200"; 
+   d="scan'208";a="583629522"
+Date: Sun, 5 Oct 2014 10:13:36 +0800
+From: Huang Shijie <shijie.huang@intel.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, Roy Lee <roylee@paypal.com>,
+        Mike Voytovich <mvoytovich@paypal.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 0/3] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141005021335.GA14640@shldeISGChi005.sh.intel.com>
+References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140930100720.45625804@bbrezillon>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>,
-        Tom Zanussi <tom.zanussi@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Re: (ltc-kernel 10162) Re: [PATCH ftrace/for-next v6] ftracetest:
- Add POSIX.3 standard and XFAIL result codes
-References: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal> <54294C55.3030204@hitachi.com> <542E8888.9090703@hitachi.com> <20141003165337.21043dee@gandalf.local.home>
-In-Reply-To: <20141003165337.21043dee@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930100720.45625804@bbrezillon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/04 5:53), Steven Rostedt wrote:
-> On Fri, 03 Oct 2014 20:29:12 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Tue, Sep 30, 2014 at 10:07:20AM +0200, Boris Brezillon wrote:
+> Hi,
 > 
->> Ping? :)
+> On Tue, 23 Sep 2014 16:07:33 +0200
+> Boris BREZILLON <boris.brezillon@free-electrons.com> wrote:
 > 
-> Just to make sure. This is just the one patch that I missed before,
-> right?
-
-Yes, this one is the last patch in previous series.
-
+> > Hello Huang, Brian,
+> > 
+> > This is just a new proposal to support raw accesses in a more standard way
+> > in the GPMI driver.
+> > This series has been tested on an imx28 board.
+> > 
+> > Any suggestions are welcome.
 > 
-> I pulled it and now testing it (running the tests). I'll push it to my
-> linux-next branch sometime later today. You'll probably see it as you
-> wake up ;-)
-
-Thanks!!
-
+> Brian, any chance you could take a look at this series and give your
+> opinion and/or suggest a new approach ?
 > 
-> -- Steve
+> Huang, did you have time to think about a better way to implement these
+> raw access functions ?
 > 
->>
->> (2014/09/29 21:11), Masami Hiramatsu wrote:
->>> Steven, could you pick this instead of old v5 patch?
->>>
->>> As you pointed, this version shows the log of "unsuppoted" test result.
->>>
->>> Thank you,
->>>
->>> (2014/09/29 21:02), Masami Hiramatsu wrote:
->>>> Add XFAIL and POSIX 1003.3 standard codes (UNRESOLVED/
->>>> UNTESTED/UNSUPPORTED) as result codes. These are used for the
->>>> results that test case is expected to fail or unsupported
->>>> feature (by config).
->>>>
->>>> To return these result code, this introduces exit_unresolved,
->>>> exit_untested, exit_unsupported and exit_xfail functions,
->>>> which use real-time signals to notify the result code to
->>>> ftracetest.
->>>>
->>>> This also set "errexit" option for the testcases, so that
->>>> the tests don't need to exit explicitly.
->>>>
->>>> Note that if the test returns UNRESOLVED/UNSUPPORTED/FAIL,
->>>> its test log including executed commands is shown on console
->>>> and main logfile as below.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+sorry for the later reply. I was busy recently.
+You can send out the new version. Please do not forget add a patch to
+add
+more comments for these hooks.
 
+I will test your patch(or your new patch set) on Oct 7 and Oct 8.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+thanks
+Huang Shijie
