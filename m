@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaJERGk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:06:40 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:45195 "EHLO
+	id S1751944AbaJERHy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 13:07:54 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:12217 "EHLO
 	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751669AbaJERGg (ORCPT
+	by vger.kernel.org with ESMTP id S1751669AbaJERHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:06:36 -0400
+	Sun, 5 Oct 2014 13:07:50 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjsOAJF5MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQUTkeGYhCAbBLjkcYhiCKJQeESwWGK5cTjFKJLoIggUU7L4JKAQEB
+X-IronPort-Anti-Spam-Result: AkIOAJF5MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmSmBPgJ+FwF7hAQBBScvIxBROR4ZiEIBsEuORxiGIIolB4RLBYYrlxOMUokugiCBRTsvgkoBAQE
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Fabian Frederick <fabf@skynet.be>, Jiri Slaby <jslaby@suse.cz>,
         linux-serial@vger.kernel.org
-Subject: [PATCH 04/13 linux-next] serial: mpsc: use container_of to resolve mpsc_port_info from uart_port
-Date: Sun,  5 Oct 2014 19:01:05 +0200
-Message-Id: <1412528475-1449-5-git-send-email-fabf@skynet.be>
+Subject: [PATCH 05/13 linux-next] serial: cpm_uart: use container_of to resolve uart_cpm_port from uart_port
+Date: Sun,  5 Oct 2014 19:01:06 +0200
+Message-Id: <1412528475-1449-6-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412528475-1449-1-git-send-email-fabf@skynet.be>
 References: <1412528475-1449-1-git-send-email-fabf@skynet.be>
@@ -29,143 +29,173 @@ Use container_of instead of casting first structure member.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/tty/serial/mpsc.c | 39 ++++++++++++++++++++++++++-------------
- 1 file changed, 26 insertions(+), 13 deletions(-)
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c | 48 +++++++++++++++++++----------
+ 1 file changed, 32 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/tty/serial/mpsc.c b/drivers/tty/serial/mpsc.c
-index ae49856..5d5499b 100644
---- a/drivers/tty/serial/mpsc.c
-+++ b/drivers/tty/serial/mpsc.c
-@@ -1246,7 +1246,8 @@ static irqreturn_t mpsc_sdma_intr(int irq, void *dev_id)
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index 533852e..638afd3 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -80,7 +80,8 @@ static void cpm_uart_initbd(struct uart_cpm_port *pinfo);
+ */
+ static unsigned int cpm_uart_tx_empty(struct uart_port *port)
+ {
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	cbd_t __iomem *bdp = pinfo->tx_bd_base;
+ 	int ret = 0;
+ 
+@@ -102,7 +103,8 @@ static unsigned int cpm_uart_tx_empty(struct uart_port *port)
+ 
+ static void cpm_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ {
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 
+ 	if (pinfo->gpios[GPIO_RTS] >= 0)
+ 		gpio_set_value(pinfo->gpios[GPIO_RTS], !(mctrl & TIOCM_RTS));
+@@ -113,7 +115,8 @@ static void cpm_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 
+ static unsigned int cpm_uart_get_mctrl(struct uart_port *port)
+ {
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	unsigned int mctrl = TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
+ 
+ 	if (pinfo->gpios[GPIO_CTS] >= 0) {
+@@ -144,7 +147,8 @@ static unsigned int cpm_uart_get_mctrl(struct uart_port *port)
   */
- static uint mpsc_tx_empty(struct uart_port *port)
+ static void cpm_uart_stop_tx(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	ulong iflags;
- 	uint rc;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	smc_t __iomem *smcp = pinfo->smcp;
+ 	scc_t __iomem *sccp = pinfo->sccp;
  
-@@ -1264,7 +1265,8 @@ static void mpsc_set_mctrl(struct uart_port *port, uint mctrl)
- 
- static uint mpsc_get_mctrl(struct uart_port *port)
+@@ -161,7 +165,8 @@ static void cpm_uart_stop_tx(struct uart_port *port)
+  */
+ static void cpm_uart_start_tx(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	u32 mflags, status;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	smc_t __iomem *smcp = pinfo->smcp;
+ 	scc_t __iomem *sccp = pinfo->sccp;
  
- 	status = (pi->mirror_regs) ? pi->MPSC_CHR_10_m
-@@ -1281,7 +1283,8 @@ static uint mpsc_get_mctrl(struct uart_port *port)
- 
- static void mpsc_stop_tx(struct uart_port *port)
+@@ -189,7 +194,8 @@ static void cpm_uart_start_tx(struct uart_port *port)
+  */
+ static void cpm_uart_stop_rx(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	smc_t __iomem *smcp = pinfo->smcp;
+ 	scc_t __iomem *sccp = pinfo->sccp;
  
- 	pr_debug("mpsc_stop_tx[%d]\n", port->line);
- 
-@@ -1290,7 +1293,8 @@ static void mpsc_stop_tx(struct uart_port *port)
- 
- static void mpsc_start_tx(struct uart_port *port)
+@@ -206,7 +212,8 @@ static void cpm_uart_stop_rx(struct uart_port *port)
+  */
+ static void cpm_uart_break_ctl(struct uart_port *port, int break_state)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	unsigned long iflags;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
  
- 	spin_lock_irqsave(&pi->tx_lock, iflags);
-@@ -1316,7 +1320,8 @@ static void mpsc_start_rx(struct mpsc_port_info *pi)
- 
- static void mpsc_stop_rx(struct uart_port *port)
+ 	pr_debug("CPM uart[%d]:break ctrl, break_state: %d\n", port->line,
+ 		break_state);
+@@ -240,7 +247,8 @@ static void cpm_uart_int_rx(struct uart_port *port)
+ 	unsigned char ch;
+ 	u8 *cp;
+ 	struct tty_port *tport = &port->state->port;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	cbd_t __iomem *bdp;
+ 	u16 status;
+ 	unsigned int flg;
+@@ -397,7 +405,8 @@ static irqreturn_t cpm_uart_int(int irq, void *data)
+ static int cpm_uart_startup(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
+ 	int retval;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
  
- 	pr_debug("mpsc_stop_rx[%d]: Stopping...\n", port->line);
+ 	pr_debug("CPM uart[%d]:startup\n", port->line);
  
-@@ -1338,7 +1343,8 @@ static void mpsc_stop_rx(struct uart_port *port)
- 
- static void mpsc_break_ctl(struct uart_port *port, int ctl)
+@@ -442,7 +451,8 @@ inline void cpm_uart_wait_until_send(struct uart_cpm_port *pinfo)
+  */
+ static void cpm_uart_shutdown(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	ulong	flags;
- 	u32	v;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
  
-@@ -1353,7 +1359,8 @@ static void mpsc_break_ctl(struct uart_port *port, int ctl)
+ 	pr_debug("CPM uart[%d]:shutdown\n", port->line);
  
- static int mpsc_startup(struct uart_port *port)
+@@ -492,7 +502,8 @@ static void cpm_uart_set_termios(struct uart_port *port,
+ 	unsigned long flags;
+ 	u16 cval, scval, prev_mode;
+ 	int bits, sbits;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	smc_t __iomem *smcp = pinfo->smcp;
+ 	scc_t __iomem *sccp = pinfo->sccp;
+ 	int maxidl;
+@@ -675,7 +686,8 @@ static int cpm_uart_tx_pump(struct uart_port *port)
+ 	cbd_t __iomem *bdp;
+ 	u8 *p;
+ 	int count;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	struct circ_buf *xmit = &port->state->xmit;
+ 
+ 	/* Handle xon/xoff */
+@@ -906,7 +918,8 @@ static void cpm_uart_init_smc(struct uart_cpm_port *pinfo)
+  */
+ static int cpm_uart_request_port(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	u32 flag = 0;
- 	int rc;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	int ret;
  
-@@ -1383,7 +1390,8 @@ static int mpsc_startup(struct uart_port *port)
+ 	pr_debug("CPM uart[%d]:request port\n", port->line);
+@@ -938,7 +951,8 @@ static int cpm_uart_request_port(struct uart_port *port)
  
- static void mpsc_shutdown(struct uart_port *port)
+ static void cpm_uart_release_port(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
  
- 	pr_debug("mpsc_shutdown[%d]: Shutting down MPSC\n", port->line);
+ 	if (!(pinfo->flags & FLAG_CONSOLE))
+ 		cpm_uart_freebuf(pinfo);
+@@ -1082,7 +1096,8 @@ static int poll_wait_key(char *obuf, struct uart_cpm_port *pinfo)
  
-@@ -1394,7 +1402,8 @@ static void mpsc_shutdown(struct uart_port *port)
- static void mpsc_set_termios(struct uart_port *port, struct ktermios *termios,
- 		 struct ktermios *old)
+ static int cpm_get_poll_char(struct uart_port *port)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	u32 baud;
- 	ulong flags;
- 	u32 chr_bits, stop_bits, par;
-@@ -1498,7 +1507,8 @@ static int mpsc_request_port(struct uart_port *port)
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
  
- static void mpsc_release_port(struct uart_port *port)
- {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 
- 	if (pi->ready) {
- 		mpsc_uninit_rings(pi);
-@@ -1513,7 +1523,8 @@ static void mpsc_config_port(struct uart_port *port, int flags)
- 
- static int mpsc_verify_port(struct uart_port *port, struct serial_struct *ser)
- {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	int rc = 0;
- 
- 	pr_debug("mpsc_verify_port[%d]: Verifying port data\n", pi->port.line);
-@@ -1548,7 +1559,8 @@ static void mpsc_put_poll_char(struct uart_port *port,
- 
- static int mpsc_get_poll_char(struct uart_port *port)
- {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	struct mpsc_rx_desc *rxre;
- 	u32	cmdstat, bytes_in, i;
- 	u8	*bp;
-@@ -1648,7 +1660,8 @@ static int mpsc_get_poll_char(struct uart_port *port)
- static void mpsc_put_poll_char(struct uart_port *port,
+ 	if (!serial_polled) {
+ 		serial_polled = 1;
+@@ -1099,7 +1114,8 @@ static int cpm_get_poll_char(struct uart_port *port)
+ static void cpm_put_poll_char(struct uart_port *port,
  			 unsigned char c)
  {
--	struct mpsc_port_info *pi = (struct mpsc_port_info *)port;
-+	struct mpsc_port_info *pi =
-+		container_of(port, struct mpsc_port_info, port);
- 	u32 data;
+-	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
++	struct uart_cpm_port *pinfo =
++		container_of(port, struct uart_cpm_port, port);
+ 	static char ch[2];
  
- 	data = readl(pi->mpsc_base + MPSC_MPCR);
+ 	ch[0] = (char)c;
 -- 
 1.9.1
 
