@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917AbaJERVK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:21:10 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:7162 "EHLO
+	id S1751948AbaJERVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 13:21:45 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:28853 "EHLO
 	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751669AbaJERVI (ORCPT
+	by vger.kernel.org with ESMTP id S1751765AbaJERVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:21:08 -0400
+	Sun, 5 Oct 2014 13:21:41 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjsOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQUTkeGYhCAbBMjkcYhiCKJQeESwWdPoxSiS6CIIFFOy+CSgEBAQ
+X-IronPort-Anti-Spam-Result: AkMOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmSmBPgJ+FwF7hAQBBScvIxBGCzkeGYhCAbBMjkcYhiCKJQeESwWGK5cTjFKJLoIggUU7L4JKAQEB
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        sparclinux@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 12/13 linux-next] serial: use container_of to resolve uart_sunzilog_port from uart_port
-Date: Sun,  5 Oct 2014 19:19:48 +0200
-Message-Id: <1412529589-1753-3-git-send-email-fabf@skynet.be>
+        Fabian Frederick <fabf@skynet.be>, Jiri Slaby <jslaby@suse.cz>,
+        linux-serial@vger.kernel.org
+Subject: [PATCH 13/13 linux-next] tty: ar933x_uart: use container_of to resolve ar933x_uart_port from uart_port
+Date: Sun,  5 Oct 2014 19:19:49 +0200
+Message-Id: <1412529589-1753-4-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412529589-1753-1-git-send-email-fabf@skynet.be>
 References: <1412528475-1449-1-git-send-email-fabf@skynet.be>
@@ -31,93 +30,111 @@ Use container_of instead of casting first structure member.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/tty/serial/sunzilog.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ drivers/tty/serial/ar933x_uart.c | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
-index 02df394..844aae7 100644
---- a/drivers/tty/serial/sunzilog.c
-+++ b/drivers/tty/serial/sunzilog.c
-@@ -644,7 +644,8 @@ static unsigned int sunzilog_get_mctrl(struct uart_port *port)
- /* The port lock is held and interrupts are disabled.  */
- static void sunzilog_set_mctrl(struct uart_port *port, unsigned int mctrl)
- {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
- 	unsigned char set_bits, clear_bits;
+diff --git a/drivers/tty/serial/ar933x_uart.c b/drivers/tty/serial/ar933x_uart.c
+index 0be1c45..2739361 100644
+--- a/drivers/tty/serial/ar933x_uart.c
++++ b/drivers/tty/serial/ar933x_uart.c
+@@ -119,7 +119,8 @@ static inline void ar933x_uart_putc(struct ar933x_uart_port *up, int ch)
  
-@@ -668,7 +669,8 @@ static void sunzilog_set_mctrl(struct uart_port *port, unsigned int mctrl)
- /* The port lock is held and interrupts are disabled.  */
- static void sunzilog_stop_tx(struct uart_port *port)
+ static unsigned int ar933x_uart_tx_empty(struct uart_port *port)
  {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 
- 	up->flags |= SUNZILOG_FLAG_TX_STOPPED;
- }
-@@ -676,7 +678,8 @@ static void sunzilog_stop_tx(struct uart_port *port)
- /* The port lock is held and interrupts are disabled.  */
- static void sunzilog_start_tx(struct uart_port *port)
- {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
- 	unsigned char status;
- 
-@@ -736,7 +739,8 @@ static void sunzilog_stop_rx(struct uart_port *port)
- /* The port lock is held.  */
- static void sunzilog_enable_ms(struct uart_port *port)
- {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
- 	unsigned char new_reg;
- 
-@@ -752,7 +756,8 @@ static void sunzilog_enable_ms(struct uart_port *port)
- /* The port lock is not held.  */
- static void sunzilog_break_ctl(struct uart_port *port, int break_state)
- {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
- 	unsigned char set_bits, clear_bits, new_reg;
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
  	unsigned long flags;
-@@ -938,7 +943,8 @@ static void
- sunzilog_set_termios(struct uart_port *port, struct ktermios *termios,
- 		     struct ktermios *old)
- {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	unsigned long flags;
- 	int baud, brg;
+ 	unsigned int rdata;
  
-@@ -998,7 +1004,8 @@ static int sunzilog_verify_port(struct uart_port *port, struct serial_struct *se
- static int sunzilog_get_poll_char(struct uart_port *port)
- {
- 	unsigned char ch, r1;
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
- 	struct zilog_channel __iomem *channel
- 		= ZILOG_CHANNEL_FROM_PORT(&up->port);
+@@ -141,21 +142,24 @@ static void ar933x_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
  
-@@ -1032,7 +1039,8 @@ static int sunzilog_get_poll_char(struct uart_port *port)
- static void sunzilog_put_poll_char(struct uart_port *port,
- 			unsigned char ch)
+ static void ar933x_uart_start_tx(struct uart_port *port)
  {
--	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *)port;
-+	struct uart_sunzilog_port *up =
-+		container_of(port, struct uart_sunzilog_port, port);
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
  
- 	sunzilog_putchar(&up->port, ch);
+ 	ar933x_uart_start_tx_interrupt(up);
  }
+ 
+ static void ar933x_uart_stop_tx(struct uart_port *port)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 
+ 	ar933x_uart_stop_tx_interrupt(up);
+ }
+ 
+ static void ar933x_uart_stop_rx(struct uart_port *port)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 
+ 	up->ier &= ~AR933X_UART_INT_RX_VALID;
+ 	ar933x_uart_write(up, AR933X_UART_INT_EN_REG, up->ier);
+@@ -163,7 +167,8 @@ static void ar933x_uart_stop_rx(struct uart_port *port)
+ 
+ static void ar933x_uart_break_ctl(struct uart_port *port, int break_state)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&up->port.lock, flags);
+@@ -231,7 +236,8 @@ static void ar933x_uart_set_termios(struct uart_port *port,
+ 				    struct ktermios *new,
+ 				    struct ktermios *old)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 	unsigned int cs;
+ 	unsigned long flags;
+ 	unsigned int baud, scale, step;
+@@ -404,7 +410,8 @@ static irqreturn_t ar933x_uart_interrupt(int irq, void *dev_id)
+ 
+ static int ar933x_uart_startup(struct uart_port *port)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 	unsigned long flags;
+ 	int ret;
+ 
+@@ -430,7 +437,8 @@ static int ar933x_uart_startup(struct uart_port *port)
+ 
+ static void ar933x_uart_shutdown(struct uart_port *port)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 
+ 	/* Disable all interrupts */
+ 	up->ier = 0;
+@@ -468,7 +476,8 @@ static void ar933x_uart_config_port(struct uart_port *port, int flags)
+ static int ar933x_uart_verify_port(struct uart_port *port,
+ 				   struct serial_struct *ser)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 
+ 	if (ser->type != PORT_UNKNOWN &&
+ 	    ser->type != PORT_AR933X)
+@@ -521,7 +530,8 @@ static void ar933x_uart_wait_xmitr(struct ar933x_uart_port *up)
+ 
+ static void ar933x_uart_console_putchar(struct uart_port *port, int ch)
+ {
+-	struct ar933x_uart_port *up = (struct ar933x_uart_port *) port;
++	struct ar933x_uart_port *up =
++		container_of(port, struct ar933x_uart_port, port);
+ 
+ 	ar933x_uart_wait_xmitr(up);
+ 	ar933x_uart_putc(up, ch);
 -- 
 1.9.1
 
