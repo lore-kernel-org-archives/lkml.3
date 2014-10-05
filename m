@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaJERUi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:20:38 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:4893 "EHLO
+	id S1751917AbaJERVK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 13:21:10 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:7162 "EHLO
 	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751669AbaJERUh (ORCPT
+	by vger.kernel.org with ESMTP id S1751669AbaJERVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:20:37 -0400
+	Sun, 5 Oct 2014 13:21:08 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjsOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQUTkeGYhCAbBMjkcYhiCKJQeESwWGK5cTjFKJLoIggUU7L4JKAQEB
+X-IronPort-Anti-Spam-Result: AjsOAAt9MVRbsHoL/2dsb2JhbABegw6BK7d1AQEBAQEBBQFzmmcCfhcBe4QEAQUnLyMQUTkeGYhCAbBMjkcYhiCKJQeESwWdPoxSiS6CIIFFOy+CSgEBAQ
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Fabian Frederick <fabf@skynet.be>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org
-Subject: [PATCH 11/13 linux-next] serial: pnx8xxx: use container_of to resolve pnx8xxx_port from uart_port
-Date: Sun,  5 Oct 2014 19:19:47 +0200
-Message-Id: <1412529589-1753-2-git-send-email-fabf@skynet.be>
+        Fabian Frederick <fabf@skynet.be>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        sparclinux@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [PATCH 12/13 linux-next] serial: use container_of to resolve uart_sunzilog_port from uart_port
+Date: Sun,  5 Oct 2014 19:19:48 +0200
+Message-Id: <1412529589-1753-3-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412529589-1753-1-git-send-email-fabf@skynet.be>
 References: <1412528475-1449-1-git-send-email-fabf@skynet.be>
@@ -30,172 +31,93 @@ Use container_of instead of casting first structure member.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/tty/serial/pnx8xxx_uart.c | 48 ++++++++++++++++++++++++++-------------
- 1 file changed, 32 insertions(+), 16 deletions(-)
+ drivers/tty/serial/sunzilog.c | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/tty/serial/pnx8xxx_uart.c b/drivers/tty/serial/pnx8xxx_uart.c
-index 2ba24a4..9fd9414 100644
---- a/drivers/tty/serial/pnx8xxx_uart.c
-+++ b/drivers/tty/serial/pnx8xxx_uart.c
-@@ -126,7 +126,8 @@ static void pnx8xxx_timeout(unsigned long data)
-  */
- static void pnx8xxx_stop_tx(struct uart_port *port)
+diff --git a/drivers/tty/serial/sunzilog.c b/drivers/tty/serial/sunzilog.c
+index 02df394..844aae7 100644
+--- a/drivers/tty/serial/sunzilog.c
++++ b/drivers/tty/serial/sunzilog.c
+@@ -644,7 +644,8 @@ static unsigned int sunzilog_get_mctrl(struct uart_port *port)
+ /* The port lock is held and interrupts are disabled.  */
+ static void sunzilog_set_mctrl(struct uart_port *port, unsigned int mctrl)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	u32 ien;
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
+ 	unsigned char set_bits, clear_bits;
  
- 	/* Disable TX intr */
-@@ -142,7 +143,8 @@ static void pnx8xxx_stop_tx(struct uart_port *port)
-  */
- static void pnx8xxx_start_tx(struct uart_port *port)
+@@ -668,7 +669,8 @@ static void sunzilog_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ /* The port lock is held and interrupts are disabled.  */
+ static void sunzilog_stop_tx(struct uart_port *port)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	u32 ien;
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
  
- 	/* Clear all pending TX intr */
-@@ -158,7 +160,8 @@ static void pnx8xxx_start_tx(struct uart_port *port)
-  */
- static void pnx8xxx_stop_rx(struct uart_port *port)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	u32 ien;
- 
- 	/* Disable RX intr */
-@@ -174,7 +177,8 @@ static void pnx8xxx_stop_rx(struct uart_port *port)
-  */
- static void pnx8xxx_enable_ms(struct uart_port *port)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 
- 	mod_timer(&sport->timer, jiffies);
+ 	up->flags |= SUNZILOG_FLAG_TX_STOPPED;
  }
-@@ -313,14 +317,16 @@ static irqreturn_t pnx8xxx_int(int irq, void *dev_id)
-  */
- static unsigned int pnx8xxx_tx_empty(struct uart_port *port)
+@@ -676,7 +678,8 @@ static void sunzilog_stop_tx(struct uart_port *port)
+ /* The port lock is held and interrupts are disabled.  */
+ static void sunzilog_start_tx(struct uart_port *port)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
+ 	unsigned char status;
  
- 	return serial_in(sport, PNX8XXX_FIFO) & PNX8XXX_UART_FIFO_TXFIFO_STA ? 0 : TIOCSER_TEMT;
- }
- 
- static unsigned int pnx8xxx_get_mctrl(struct uart_port *port)
+@@ -736,7 +739,8 @@ static void sunzilog_stop_rx(struct uart_port *port)
+ /* The port lock is held.  */
+ static void sunzilog_enable_ms(struct uart_port *port)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	unsigned int mctrl = TIOCM_DSR;
- 	unsigned int msr;
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
+ 	unsigned char new_reg;
  
-@@ -347,7 +353,8 @@ static void pnx8xxx_set_mctrl(struct uart_port *port, unsigned int mctrl)
-  */
- static void pnx8xxx_break_ctl(struct uart_port *port, int break_state)
+@@ -752,7 +756,8 @@ static void sunzilog_enable_ms(struct uart_port *port)
+ /* The port lock is not held.  */
+ static void sunzilog_break_ctl(struct uart_port *port, int break_state)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 	struct zilog_channel __iomem *channel = ZILOG_CHANNEL_FROM_PORT(port);
+ 	unsigned char set_bits, clear_bits, new_reg;
  	unsigned long flags;
- 	unsigned int lcr;
- 
-@@ -363,7 +370,8 @@ static void pnx8xxx_break_ctl(struct uart_port *port, int break_state)
- 
- static int pnx8xxx_startup(struct uart_port *port)
+@@ -938,7 +943,8 @@ static void
+ sunzilog_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		     struct ktermios *old)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	int retval;
- 
- 	/*
-@@ -397,7 +405,8 @@ static int pnx8xxx_startup(struct uart_port *port)
- 
- static void pnx8xxx_shutdown(struct uart_port *port)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	int lcr;
- 
- 	/*
-@@ -434,7 +443,8 @@ static void
- pnx8xxx_set_termios(struct uart_port *port, struct ktermios *termios,
- 		   struct ktermios *old)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
  	unsigned long flags;
- 	unsigned int lcr_fcr, old_ien, baud, quot;
- 	unsigned int old_csize = old ? old->c_cflag & CSIZE : CS8;
-@@ -551,7 +561,8 @@ pnx8xxx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	int baud, brg;
  
- static const char *pnx8xxx_type(struct uart_port *port)
+@@ -998,7 +1004,8 @@ static int sunzilog_verify_port(struct uart_port *port, struct serial_struct *se
+ static int sunzilog_get_poll_char(struct uart_port *port)
  {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
+ 	unsigned char ch, r1;
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 	struct zilog_channel __iomem *channel
+ 		= ZILOG_CHANNEL_FROM_PORT(&up->port);
  
- 	return sport->port.type == PORT_PNX8XXX ? "PNX8XXX" : NULL;
+@@ -1032,7 +1039,8 @@ static int sunzilog_get_poll_char(struct uart_port *port)
+ static void sunzilog_put_poll_char(struct uart_port *port,
+ 			unsigned char ch)
+ {
+-	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *)port;
++	struct uart_sunzilog_port *up =
++		container_of(port, struct uart_sunzilog_port, port);
+ 
+ 	sunzilog_putchar(&up->port, ch);
  }
-@@ -561,7 +572,8 @@ static const char *pnx8xxx_type(struct uart_port *port)
-  */
- static void pnx8xxx_release_port(struct uart_port *port)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 
- 	release_mem_region(sport->port.mapbase, UART_PORT_SIZE);
- }
-@@ -571,7 +583,8 @@ static void pnx8xxx_release_port(struct uart_port *port)
-  */
- static int pnx8xxx_request_port(struct uart_port *port)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	return request_mem_region(sport->port.mapbase, UART_PORT_SIZE,
- 			"pnx8xxx-uart") != NULL ? 0 : -EBUSY;
- }
-@@ -581,7 +594,8 @@ static int pnx8xxx_request_port(struct uart_port *port)
-  */
- static void pnx8xxx_config_port(struct uart_port *port, int flags)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 
- 	if (flags & UART_CONFIG_TYPE &&
- 	    pnx8xxx_request_port(&sport->port) == 0)
-@@ -596,7 +610,8 @@ static void pnx8xxx_config_port(struct uart_port *port, int flags)
- static int
- pnx8xxx_verify_port(struct uart_port *port, struct serial_struct *ser)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port,	port);
- 	int ret = 0;
- 
- 	if (ser->type != PORT_UNKNOWN && ser->type != PORT_PNX8XXX)
-@@ -662,7 +677,8 @@ static void __init pnx8xxx_init_ports(void)
- 
- static void pnx8xxx_console_putchar(struct uart_port *port, int ch)
- {
--	struct pnx8xxx_port *sport = (struct pnx8xxx_port *)port;
-+	struct pnx8xxx_port *sport =
-+		container_of(port, struct pnx8xxx_port, port);
- 	int status;
- 
- 	do {
 -- 
 1.9.1
 
