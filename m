@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576AbaJENvu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 09:51:50 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:59228 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaJENvt (ORCPT
+	id S1751719AbaJENyt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 09:54:49 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:59969 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaJENys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 09:51:49 -0400
-MIME-Version: 1.0
-Date: Sun, 5 Oct 2014 22:51:47 +0900
-Message-ID: <CAAr43iMnOnrLamgerGaxgAzo-dVpPmeFusk5RhJNqXZ1-6xs7A@mail.gmail.com>
-Subject: sock puppets (Re: (Song) ** SystemD)
-From: Joel Rees <joel.rees@gmail.com>
-To: debian-user <debian-user@lists.debian.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 5 Oct 2014 09:54:48 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Jean Delvare <jdelvare@suse.de>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org
+Subject: [PATCH v2] cma: make default CMA area size zero for x86
+Date: Sun,  5 Oct 2014 22:54:20 +0900
+Message-Id: <1412517260-3832-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 5, 2014 at 7:54 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> On Sun, 5 Oct 2014 10:29:24 +0000
-> Gregory Smith <gregorysmith1974a@gmail.com> wrote:
-> [...]
+This makes CMA memory area size zero for x86 in default configuration
+(doesn't change on the other architectures).  If default CMA size is
+zero, DMA_CMA is disabled.  It can be enabled by passing cma= to the
+kernel.
 
-Chuck, Al, anyone else paying attention to "Gregory" or "Tom Collins"
-or whatever he's calling himself -- I'll repeat what I posted to
-debian-user, but this is quite apparently a sockpuppet, either
-engaging in recreational trolling, or trying very hard to make it
-impossible to discuss systemd with any semblance of rationally.
+This makes less impact on x86.  Because there is no mainline driver that
+requires it for x86, and Peter Hurley reported the performance
+regression, as this is trying to drive _all_ dma mapping allocations
+through a _very_ small window.
 
-It seems to be hard enough for the more avid of both the proponents
-and opponents to be rational as it is, let's try not to get sucked
-into this kind of baiting. (Speaking as one who got a little bit
-sucked into it last week or so.)
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Reported-by: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Don Dutile <ddutile@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
+Cc: iommu@lists.linux-foundation.org
+---
+* v2
+- Add information in help text, suggested by Chuck Ebbert
 
+ drivers/base/Kconfig | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 4e7f0ff..115882f 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -240,18 +240,24 @@ comment "Default contiguous memory area size:"
+ config CMA_SIZE_MBYTES
+ 	int "Size in Mega Bytes"
+ 	depends on !CMA_SIZE_SEL_PERCENTAGE
++	default 0 if X86
+ 	default 16
+ 	help
+ 	  Defines the size (in MiB) of the default memory area for Contiguous
+-	  Memory Allocator.
++	  Memory Allocator.  If the size of 0 is selected, CMA is disabled by
++	  default, but it can be enabled by passing cma=size[MG] to the kernel.
++
+ 
+ config CMA_SIZE_PERCENTAGE
+ 	int "Percentage of total memory"
+ 	depends on !CMA_SIZE_SEL_MBYTES
++	default 0 if X86
+ 	default 10
+ 	help
+ 	  Defines the size of the default memory area for Contiguous Memory
+ 	  Allocator as a percentage of the total memory in the system.
++	  If 0 percent is selected, CMA is disabled by default, but it can be
++	  enabled by passing cma=size[MG] to the kernel.
+ 
+ choice
+ 	prompt "Selected region size"
 -- 
-Joel Rees
+1.9.1
 
-Computer storage is just fancy paper, the CPUs just fancy pens;
-all is text, streaming forever from the past into the future.
