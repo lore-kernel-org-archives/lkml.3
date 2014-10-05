@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaJEVUp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 17:20:45 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:54673 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751596AbaJEVUk (ORCPT
+	id S1751951AbaJEVYx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 17:24:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52081 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaJEVYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 17:20:40 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>, Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH v3 04/15] ACPI: Document ACPI device specific properties
-Date: Sun, 05 Oct 2014 23:40:44 +0200
-Message-ID: <2046452.dH5gnGeAQK@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <25153910.sxFpRXQ3aL@wuerfel>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <1817639.W8PYrU1iOP@vostro.rjw.lan> <25153910.sxFpRXQ3aL@wuerfel>
+	Sun, 5 Oct 2014 17:24:52 -0400
+Date: Sun, 5 Oct 2014 23:24:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Mathias Krause <minipli@googlemail.com>, linux-kernel@vger.kernel.org,
+        Brad Spengler <spender@grsecurity.net>,
+        PaX Team <pageexec@freemail.hu>
+Subject: Re: [PATCH] posix-timers: fix stack info leak in timer_create()
+In-Reply-To: <20141005210614.GA28899@redhat.com>
+Message-ID: <alpine.DEB.2.11.1410052314380.4383@nanos>
+References: <1412456799-32339-1-git-send-email-minipli@googlemail.com> <20141005210614.GA28899@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 04, 2014 12:56:21 PM Arnd Bergmann wrote:
-> On Saturday 04 October 2014 01:58:30 Rafael J. Wysocki wrote:
-> > On Friday, October 03, 2014 05:02:13 PM Arnd Bergmann wrote:
-> > > On Friday 03 October 2014 14:56:10 Mark Rutland wrote:
-> > > > On Thu, Oct 02, 2014 at 03:55:56PM +0100, Arnd Bergmann wrote:
-> > > > I'd certainly not like to see #foo-cells in _DSD given it should be
-> > > > possible with a package to have a package description like the
-> > > > following:
-> > > > 
-> > > >         Package () {
-> > > >                 Package () { ^ref1, data, data }, 
-> > > >                 Package () { ^ref2, dta, data, data },
-> > > >         }
-> > > > 
-> > > > Where the #foo-cells is implicit in each instance. That makes variadic
-> > > > properties possible, and makes it possible to perform validation on each
-> > > > tuple even in the binary format, which we can't do with a DTB
-> > > > 
-> > > > I'm not so sure on foo-names unless we made names an explicit
-> > > > requirement from the start (which I wish was the case on the DT side).
-> > > > Even then we might need other parallel properties anyway (think
-> > > > clock-indicies).
-> > > 
-> > > I suppose it might even be possible to define the ACPI references to
-> > > have an optional string, so you can do
-> > > 
-> > >          Package () {
-> > >                  Package () { ^ref1, data, data }, 
-> > >                  Package () { "foo", ^ref2, data, data, data },
-> > >          }
-> > > 
-> > > The parser should be able to interpret both anonymous and named
-> > > references just by looking at the type of the first member.
-> > > You might not want to allow mixing them in a single property, but
-> > > that is more a style question than a technical requirement.
-> > 
-> > Yes, that only is a matter of implementing the parser.
-> > 
-> > For now, it simply is easier for us to parse the
-> > 
-> >         Package () { ^ref1, data, data }
-> > 
-> > format only, because we have functions for parsing lists of strings,
-> > lists of numbers etc. for other purposes anyway and we can re-use them
-> > for the names etc.  I don't see a reason why the parser cannot be extended in
-> > the future to handle "all in one" packages, but not necessarily at the moment.
+On Sun, 5 Oct 2014, Oleg Nesterov wrote:
+> In any case this all looks confusing to me. sys_timer_create() does
 > 
-> It only really makes sense to do it that way though if it's used
-> consistently, and all references do naming like this rather than
-> the foo-names method.
+> 	new_timer->sigq->info.si_value = event.sigev_value;
+> 	new_timer->sigq->info.si_tid   = new_timer->it_id;
+> 
+> later, this writes to the differents members (_rt and _timer) in the
+> same union. But the comment in struct siginfo says that we should use
+> _timer. And copy_siginfo_to_user() reports si_tid and si_ptr, this
+> again reads _timer and _rt. This should actually work, _sigval should
+> have the same offset in both struct's, still it looks confusing imho.
 
-This almost sounds like "this will only makes sense if it's beautiful"
-which I'm not sure I agree with. :-)
+It does.
 
-As long as it is clear what information is represented, I have no problems
-with having multiple ways of expressing it and using them however people
-like.  In fact, we don't even really know at this point which way will turn
-out to be most convenient eventually.
+> Perhaps we should change
+> 
+> 	#define si_value	_sifields._rt._sigval
+> 	#define si_int		_sifields._rt._sigval.sival_int
+> 	#define si_ptr		_sifields._rt._sigval.sival_ptr
+> 
+> to use _timer instead. Nevermind, this is off-topic.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Well that would cause mqueue, perf and procfs to read/set the timer
+fields. Odd as well.
+
+Thanks,
+
+	tglx
