@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaJEDC4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 23:02:56 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:49205 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaJEDCy (ORCPT
+	id S1751471AbaJEDsK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 23:48:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40042 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaJEDsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 23:02:54 -0400
-Date: Sat, 4 Oct 2014 23:00:42 -0400
-From: John de la Garza <john@jjdev.com>
-To: viro@zeniv.linux.org.uk
+	Sat, 4 Oct 2014 23:48:08 -0400
+Date: Sun, 5 Oct 2014 04:48:06 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: John de la Garza <john@jjdev.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: use kfree_rcu instead of i_callback
-Message-ID: <20141005030040.GA830@vega.jjdev.com>
+Subject: Re: [PATCH] fs: use kfree_rcu instead of i_callback
+Message-ID: <20141005034806.GX7996@ZenIV.linux.org.uk>
+References: <20141005030040.GA830@vega.jjdev.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141005030040.GA830@vega.jjdev.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the callback is doing nothing more than calling kfree() we can
-use kfree_rcu() instead of having to use a callback.
+On Sat, Oct 04, 2014 at 11:00:42PM -0400, John de la Garza wrote:
+> Since the callback is doing nothing more than calling kfree() we can
+> use kfree_rcu() instead of having to use a callback.
 
-Signed-off-by: John de la Garza <john@jjdev.com>
----
- fs/inode.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+Except that this
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 26753ba..51deccd 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -250,12 +250,6 @@ void __destroy_inode(struct inode *inode)
- }
- EXPORT_SYMBOL(__destroy_inode);
- 
--static void i_callback(struct rcu_head *head)
--{
--	struct inode *inode = container_of(head, struct inode, i_rcu);
--	kmem_cache_free(inode_cachep, inode);
--}
--
- static void destroy_inode(struct inode *inode)
- {
- 	BUG_ON(!list_empty(&inode->i_lru));
-@@ -263,7 +257,7 @@ static void destroy_inode(struct inode *inode)
- 	if (inode->i_sb->s_op->destroy_inode)
- 		inode->i_sb->s_op->destroy_inode(inode);
- 	else
--		call_rcu(&inode->i_rcu, i_callback);
-+		kfree(inode, i_rcu);
- }
- 
- /**
--- 
-2.1.0
+> -	kmem_cache_free(inode_cachep, inode);
 
+isn't kfree()...
