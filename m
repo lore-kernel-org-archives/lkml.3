@@ -1,129 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaJENVJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 09:21:09 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:39478 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751010AbaJENVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 09:21:04 -0400
-Date: Sun, 5 Oct 2014 10:20:56 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: "AreMa Inc." <info@are.ma>
-Cc: linux-media <linux-media@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Hans De Goede <hdegoede@redhat.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Peter Senna Tschudin <peter.senna@gmail.com>, knightrider@are.ma
-Subject: Re: [PATCH 02/11] tc90522 is a client
-Message-ID: <20141005102056.05861325@recife.lan>
-In-Reply-To: <CAKnK8-REGVgdgQM+2KP0ibrf_gHMm_UO3oLr0MRoiu=-7vXUPw@mail.gmail.com>
-References: <cover.1412497399.git.knightrider@are.ma>
-	<5bff3e029fe189f44222961dc04790d4f58a4659.1412497399.git.knightrider@are.ma>
-	<20141005083358.072f5909.m.chehab@samsung.com>
-	<CAKnK8-REGVgdgQM+2KP0ibrf_gHMm_UO3oLr0MRoiu=-7vXUPw@mail.gmail.com>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751644AbaJENZl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 09:25:41 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:52699 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751010AbaJENZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 09:25:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141005054758.0f9c06bd@as>
+References: <1412488976-3885-1-git-send-email-akinobu.mita@gmail.com>
+	<20141005054758.0f9c06bd@as>
+Date: Sun, 5 Oct 2014 22:25:37 +0900
+Message-ID: <CAC5umyi+uc+0k02wTdA81+ogfkZtn0scJhmKWz2Gs2u0KbnbzA@mail.gmail.com>
+Subject: Re: [PATCH] cma: make default CMA area size zero for x86
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Jean Delvare <jdelvare@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, 05 Oct 2014 21:39:01 +0900
-"AreMa Inc." <info@are.ma> escreveu:
-
-> Mauro,
-> 
-> As this _stable_ patch series is developed originally
-> (and already submitted for review) since 2013,
-> not based on Tsukada's patch you just linked,
-> it is difficult to split into one patch per logic.
+2014-10-05 19:47 GMT+09:00 Chuck Ebbert <cebbert.lkml@gmail.com>:
+> On Sun,  5 Oct 2014 15:02:56 +0900
+> Akinobu Mita <akinobu.mita@gmail.com> wrote:
 >
-> As you said, for example, to fix the Tsukada's patch of tuner - FE - bridge
-> communication, we need to fix all the files.
+>> This makes CMA memory area size zero for x86 in default configuration
+>> (doesn't change on the other architectures).  If default CMA size is
+>> zero, DMA_CMA is disabled.  It can be enabled by passing cma= to the
+>> kernel.
+>>
+>> This makes less impact on x86.  Because there is no mainline driver that
+>> requires it for x86, and Peter Hurley reported the performance
+>> regression, as this is trying to drive _all_ dma mapping allocations
+>> through a _very_ small window.
+>>
+>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> Reported-by: Peter Hurley <peter@hurleysoftware.com>
+>> Cc: Peter Hurley <peter@hurleysoftware.com>
+>> Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+>> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: David Woodhouse <dwmw2@infradead.org>
+>> Cc: Don Dutile <ddutile@redhat.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> Cc: Andi Kleen <andi@firstfloor.org>
+>> Cc: Yinghai Lu <yinghai@kernel.org>
+>> Cc: x86@kernel.org
+>> Cc: iommu@lists.linux-foundation.org
+>> ---
+>>  drivers/base/Kconfig | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>> index 4e7f0ff..92a5987e 100644
+>> --- a/drivers/base/Kconfig
+>> +++ b/drivers/base/Kconfig
+>> @@ -240,6 +240,7 @@ comment "Default contiguous memory area size:"
+>>  config CMA_SIZE_MBYTES
+>>       int "Size in Mega Bytes"
+>>       depends on !CMA_SIZE_SEL_PERCENTAGE
+>> +     default 0 if X86
+>>       default 16
+>>       help
+>>         Defines the size (in MiB) of the default memory area for Contiguous
+>> @@ -248,6 +249,7 @@ config CMA_SIZE_MBYTES
+>>  config CMA_SIZE_PERCENTAGE
+>>       int "Percentage of total memory"
+>>       depends on !CMA_SIZE_SEL_MBYTES
+>> +     default 0 if X86
+>>       default 10
+>>       help
+>>         Defines the size of the default memory area for Contiguous Memory
+>
+> You probably need to add some documentation too. Jean Delvare proposed
+> the below, before your change. If the default is going to be zero on
+> x86, that information and some further help should be added to this.
 
-Yes, it requires lots of work, although it is possible. We've done that in
-the past a few times, when such type of conflicts arise. 
-It is always painful, though.
+OK, I'll add information in help text for CONFIG_CMA_SIZE_MBYTES and
+CONFIG_CMA_SIZE_PERCENTAGE.
 
-I did it myself some time ago, in order to add support for some newer
-Siano hardware. The original patch submission were based on a diff between
-the driver at the Kernel and some internal development tree used by
-the chip manufacturer.
+Jean's patch adds information in CONFIG_DMA_CMA, so this change doesn't
+conflict his patch.
 
-I waited for ~2 years for the original author to fix. As he didn't,
-and I got some new hardware, I was forced to do the rebase myself.
-It took maybe one week or two of hard work to get it done.
-
-> We started developing and publishing PT3 drivers (chardev and DVB versions)
-> on 2013 and have been submitting the patches to this community since then.
-> We were waiting for reviews.
-
-The reviews were sent, but it is really hard to review a big patch with
-14 files changed and 2952 insertions that weren't following the Linux DVB
-model, nor with the patches themselves were following the Kernel submission
-process.
-
-On every new review, a newer big blob were sent, sometimes repeating the
-same pattern that the reviewers asked to change.
-
-The entire review work is made by volunteers that have something else
-to do. So, if you want a quicker review, you need to make their lives
-easier, by splitting the drivers into smaller pieces and applying the
-changes they request (or technically arguing with them at the e-mail
-thread). Failing to do that makes the entire process longer.
-
-> However this July, a man named Tsukada, who has been annoying us since
-> the beginning of development (we invited him to merge/join the project,
-> in other words, opted him to be co-author), interrupted our submission
-> and started
-> speaking ill of us that we didn't want to split the driver and stopped
-> the development, etc.
-
-At least the public comments I saw, I didn't notice anything ill about
-you.
-
-Splitting the drivers into frontend, demod and bridge driver is indeed
-a requirement for DVB drivers submission. We do that even on devices
-like as as102, where they're all integrated at the same chip, as such
-split makes review a way easier, and decouples different logic functions
-into different modules.
-
-> This is not true. What we meant was that, it is too early to implement
-> Regmap I2C
-> for now (except if it is a firm consensus, surely we will do).
-
-Regmap I2C is an improvement, but not a mandatory requirement.
-
-> Unfortunately, you trusted him and put on the tree. If "backstabbing"
-> is permitted,
-> this will be a very bad precedence in our community.
-> 
-> We can send per logic patches without breaking the compilation,
-> but we cannot guarantee the behaviour if you apply only one patch or two.
-> Thus, pulling the clean package from
-> 
->        https://github.com/knight-rider/ptx/tree/master/pt3_dvb
-> 
-> is the best bet. Or, do you have the card with you?
-
-No, I don't have such card, nor I have any personal preference from
-your version or Tsukada's one.
-
-I might be ordering one and test here with my RF generators or ISDB-T
-live, but very likely I won't have any time for coding, as my duties
-as the maintainers require my attention on other things too. Also,
-the problem here is not the lack of a developer for it, but, instead,
-the lack of coordination between two developers.
-
-So, I very much prefer if you could agree one with another around
-a series of patches that would improve the driver without causing
-regressions.
-
-Thanks and Regards,
-Mauro
+> ------------------------
+>
+> From: Jean Delvare <jdelvare@suse.de>
+> Subject: [PATCH] CMA: Document cma=0
+>
+> It isn't obvious that CMA can be disabled on the kernel's command
+> line, so document it.
+>
+> Signed-off-by: Jean Delvare <jdelvare@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  Documentation/kernel-parameters.txt |    3 ++-
+>  drivers/base/Kconfig                |    3 +++
+>  2 files changed, 5 insertions(+), 1 deletion(-)
+>
+> --- linux-3.17-rc7.orig/Documentation/kernel-parameters.txt     2014-09-23 13:19:06.644838292 +0200
+> +++ linux-3.17-rc7/Documentation/kernel-parameters.txt  2014-10-04 14:10:03.257579721 +0200
+> @@ -656,7 +656,8 @@ bytes respectively. Such letter suffixes
+>                         Sets the size of kernel global memory area for
+>                         contiguous memory allocations and optionally the
+>                         placement constraint by the physical address range of
+> -                       memory allocations. For more information, see
+> +                       memory allocations. A value of 0 disables CMA
+> +                       altogether. For more information, see
+>                         include/linux/dma-contiguous.h
+>
+>         cmo_free_hint=  [PPC] Format: { yes | no }
+> --- linux-3.17-rc7.orig/drivers/base/Kconfig    2014-09-12 16:23:14.911353676 +0200
+> +++ linux-3.17-rc7/drivers/base/Kconfig 2014-10-04 13:41:37.672347240 +0200
+> @@ -231,6 +231,9 @@ config DMA_CMA
+>           to allocate big physically-contiguous blocks of memory for use with
+>           hardware components that do not support I/O map nor scatter-gather.
+>
+> +         You can disable CMA by specifying "cma=0" on the kernel's command
+> +         line.
+> +
+>           For more information see <include/linux/dma-contiguous.h>.
+>           If unsure, say "n".
+>
