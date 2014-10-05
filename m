@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbaJEUsG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 16:48:06 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48637 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaJEUsD (ORCPT
+	id S1751956AbaJEUvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 16:51:03 -0400
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:49749 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaJEUvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 16:48:03 -0400
+	Sun, 5 Oct 2014 16:51:01 -0400
+Date: Sun, 5 Oct 2014 15:50:57 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
+Message-ID: <20141005155057.4a2c5a99@as>
+In-Reply-To: <20141005203914.GE2528@kroah.com>
+References: <20141003212933.458851516@linuxfoundation.org>
+	<20141004073839.125fa529@as>
+	<20141005203914.GE2528@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20141005202843.GA1282@kroah.com>
-References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
- <20141005202843.GA1282@kroah.com>
-From: Jason Noakes <jjnoakes@gmail.com>
-Date: Sun, 5 Oct 2014 16:47:42 -0400
-Message-ID: <CAN2+FEKsVyjV8v98R+V-xHseH1E2NKPquo6Z9nQc0M8d0Z620A@mail.gmail.com>
-Subject: Re: kobject_init and the zeroed-out-memory requirement
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Is there any in-kernel code that does not properly zero out the memory
-> before calling kobject_init()?
+On Sun, 5 Oct 2014 13:39:14 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-I'm not sure. I didn't find any, but I've seen it bite people writing
-drivers more than once where I work, and the latest oops I just
-debugged a few days ago prompted me to address the issue and at least
-get the documentation updated.
+> On Sat, Oct 04, 2014 at 07:38:39AM -0500, Chuck Ebbert wrote:
+> > On Fri,  3 Oct 2014 14:26:26 -0700
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> > 
+> > > ---------------------------------
+> > > Note: This is a big stable release.  Mostly my fault for being on the
+> > > road last week, combined with an unusually large number of patches being
+> > > tagged for the stable tree.  Anyway, I've caught up with all pending
+> > > patches before 3.17-rc7, so if you have marked something for the stable
+> > > tree that I have not applied, or emailed the stable@v.k.o list asking
+> > > for a patch, that is not here, please let me know.
+> > > ---------------------------------
+> > > 
+> > > This is the start of the stable review cycle for the 3.16.4 release.
+> > > There are 357 patches in this series, all will be posted as a response
+> > > to this one.  If anyone has any issues with these being applied, please
+> > > let me know.
+> > > 
+> > > Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
+> > > Anything received after that time might be too late.
+> > > 
+> > 
+> > Should also include this one, which fixes CVE-2014-6410:
+> > 
+> > commit c03aa9f6e1f938618e6db2e23afef0574efeeb65
+> > Author: Jan Kara <jack@suse.cz>
+> > Date:   Thu Sep 4 14:06:55 2014 +0200
+> > 
+> >     udf: Avoid infinite loop when processing indirect ICBs
+> 
+> Thanks, I'll queue that up for the next stable releases.
+> 
+> greg k-h
 
->> Many other *_init kernel routines (cdev_init, kref_init, mutex_init,
->> spin_lock_init, etc) do not have the same requirement - they work on fully
->> uninitialized memory.
->
-> They all do different things, you can't compare apples to oranges :)
+I built 3.16.4-rc1 for Fedora, which already has this patch included.
 
-Well, they are all named "_init", which to me implies that they
-initialize the object/memory passed in, which is true in all of the
-other cases I mentioned, but not for kobject_init. Perhaps it should
-have been called kobject_setup or something. But I digress...
-
->> Documentation/kobject.txt does not mention the requirement that the memory be
->> zero-initialized before it is passed to kobject_init.
->
-> Add a line of text to the kerneldoc for kobject_init to mention this?
->
-> Or (a) is fine as well, if it makes you feel better, but if you do so,
-> just say that all memory for kobjects must be created with kzalloc() and
-> don't mention memset as that will cause people to try to reuse kobjects,
-> like they have in the past, and bad things will happen then.
-
-Here is a patch updating the documentation (kobject.txt and
-kobject_init's usage documentation) so that the zeroed-out-memory
-requirement is explicit.
-
-Signed-off-by: Jason J. Noakes <jjnoakes@gmail.com>
-
-diff --git a/Documentation/kobject.txt b/Documentation/kobject.txt
-index f87241d..1b38727 100644
---- a/Documentation/kobject.txt
-+++ b/Documentation/kobject.txt
-@@ -113,8 +113,14 @@ question.  That macro is subsequently invoked with:
-
- Initialization of kobjects
-
--Code which creates a kobject must, of course, initialize that object. Some
--of the internal fields are setup with a (mandatory) call to kobject_init():
-+Code which creates a kobject must, of course, initialize that object.
-+
-+First, ensure the memory for the kobject is initialized to zero; this is
-+typically accomplished by obtaining the memory for the kobject (and the
-+structure it is embedded in) from a call to kzalloc().
-+
-+Then, some of the internal fields must be setup with a (mandatory) call
-+to kobject_init():
-
-     void kobject_init(struct kobject *kobj, struct kobj_type *ktype);
-
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 58751bb..46fc865 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -307,6 +307,8 @@ EXPORT_SYMBOL(kobject_set_name);
-  * This function will properly initialize a kobject such that it can then
-  * be passed to the kobject_add() call.
-  *
-+ * The kobject must be initialized to zero prior to calling this function.
-+ *
-  * After this function is called, the kobject MUST be cleaned up by a call
-  * to kobject_put(), not by a call to kfree directly to ensure that all of
-  * the memory is cleaned up properly.
+It boots and runs on Fedora 21, and that patch has been in Fedora 21 for
+a while. Why not include it in 3.16.4?
