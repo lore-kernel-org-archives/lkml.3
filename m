@@ -1,168 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaJEMjG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 08:39:06 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:65150 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359AbaJEMjD convert rfc822-to-8bit (ORCPT
+	id S1751691AbaJEMkN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 08:40:13 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:38512 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359AbaJEMkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 08:39:03 -0400
+	Sun, 5 Oct 2014 08:40:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141005083358.072f5909.m.chehab@samsung.com>
-References: <cover.1412497399.git.knightrider@are.ma>
-	<5bff3e029fe189f44222961dc04790d4f58a4659.1412497399.git.knightrider@are.ma>
-	<20141005083358.072f5909.m.chehab@samsung.com>
-Date: Sun, 5 Oct 2014 21:39:01 +0900
-X-Google-Sender-Auth: HF7tckJKUFLlHj5lNWEx-b5p2Kc
-Message-ID: <CAKnK8-REGVgdgQM+2KP0ibrf_gHMm_UO3oLr0MRoiu=-7vXUPw@mail.gmail.com>
-Subject: Re: [PATCH 02/11] tc90522 is a client
-From: "AreMa Inc." <info@are.ma>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media <linux-media@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Hans De Goede <hdegoede@redhat.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Peter Senna Tschudin <peter.senna@gmail.com>, knightrider@are.ma
+In-Reply-To: <20141005055406.0445144b@as>
+References: <trinity-cc489298-336a-4100-85b8-84c43c620c90-1412441370324@3capp-mailcom-lxa16>
+	<20141004174018.GW7996@ZenIV.linux.org.uk>
+	<CALtyatFRH8TWDROciTiMrGBruPZ-2eUnoOF0ct-t_j0p+LsnNQ@mail.gmail.com>
+	<20141005055406.0445144b@as>
+Date: Sun, 5 Oct 2014 12:40:07 +0000
+Message-ID: <CALtyatHUTXZOrPKD-SqkxppSnwrhFa_EQ7eUhTjdJVq7TZCb+A@mail.gmail.com>
+Subject: Re: (Song) Fk SystemD
+From: Gregory Smith <gregorysmith1974a@gmail.com>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Tom Collins <tomcollins224@mail.com>,
+        linux-kernel@vger.kernel.org, debian-user@lists.debian.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
+Dry logic is what the opponents of systemD have been using.
 
-As this _stable_ patch series is developed originally
-(and already submitted for review) since 2013,
-not based on Tsukada's patch you just linked,
-it is difficult to split into one patch per logic.
+Appeal to authority, appeal to emotion (new!) and circular reasoning
+plus the application of authority (Bans (Debian, Arch linux, Linux forums, etc))
+are what the systemD proponents have been using.
 
-As you said, for example, to fix the Tsukada's patch of tuner - FE - bridge
-communication, we need to fix all the files.
+The proponents are winning, they even have linus on their side;
+Who in the past has weighed in on userspace issues such as
+KDE4, Gnome3, PulseAudio, etc.... now claims that he doesn't
+know ANNYTHING about userspace and is only a kernel hacker:
+when it comes to userspace he uses what he's given and is clueless
+(paraphrasing his claims Deb Conf '14)
 
-We started developing and publishing PT3 drivers (chardev and DVB versions)
-on 2013 and have been submitting the patches to this community since then.
-We were waiting for reviews.
+Clearly he is lying. He vouched for systemd, says he uses it, doesn't
+see any problem, says "the init wars are over, right" (lies again, systemd
+isn't only init. He knows that), says he doesn't know anything about
+userland anyway (another lie, comparing his earlier statements).
 
-However this July, a man named Tsukada, who has been annoying us since
-the beginning of development (we invited him to merge/join the project,
-in other words, opted him to be co-author), interrupted our submission
-and started
-speaking ill of us that we didn't want to split the driver and stopped
-the development, etc.
-This is not true. What we meant was that, it is too early to implement
-Regmap I2C
-for now (except if it is a firm consensus, surely we will do).
+The systemD proponents use every manner of persuasion and coersion.
+We are told to only use dry logic and not show ANY emotion or opinion.
 
-Unfortunately, you trusted him and put on the tree. If "backstabbing"
-is permitted,
-this will be a very bad precedence in our community.
+They take the hill, we are relegated to the ditch. Who's going to win?
 
-We can send per logic patches without breaking the compilation,
-but we cannot guarantee the behaviour if you apply only one patch or two.
-Thus, pulling the clean package from
+We are getting this thing shoved down our throats,
+and a little song against it is a problem?
 
-       https://github.com/knight-rider/ptx/tree/master/pt3_dvb
 
-is the best bet. Or, do you have the card with you?
-
-Best Regards
--Bud
-
-2014-10-05 20:33 GMT+09:00 Mauro Carvalho Chehab <m.chehab@samsung.com>:
-> Em Sun, 05 Oct 2014 17:59:38 +0900
-> "Буди Романто, AreMa Inc" <info@are.ma> escreveu:
+On 10/5/14, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
+> On Sun, 5 Oct 2014 10:29:24 +0000
+> Gregory Smith <gregorysmith1974a@gmail.com> wrote:
 >
->> tc90522 is an I2C client functioning as a frontend
->> thus, it is enough to return the FE pointer.
+>> Fuck you.
 >>
->> Signed-off-by: Буди Романто, AreMa Inc <knightrider@are.ma>
->> ---
->>  drivers/media/dvb-frontends/tc90522.h | 41 ++++++++++++-----------------------
->>  1 file changed, 14 insertions(+), 27 deletions(-)
+>> This is what you systemd shitheads say to everything.
+>> It's either your way or the highway.
 >>
->> diff --git a/drivers/media/dvb-frontends/tc90522.h b/drivers/media/dvb-frontends/tc90522.h
->> index b1cbddf..c78a5b0 100644
->> --- a/drivers/media/dvb-frontends/tc90522.h
->> +++ b/drivers/media/dvb-frontends/tc90522.h
->> @@ -1,12 +1,12 @@
->>  /*
->> - * Toshiba TC90522 Demodulator
->> + * Earthsoft PT3 demodulator frontend Toshiba TC90522XBG OFDM(ISDB-T)/8PSK(ISDB-S)
->>   *
->> - * Copyright (C) 2014 Akihiro Tsukada <tskd08@gmail.com>
->> - *
->> - * This program is free software; you can redistribute it and/or
->> - * modify it under the terms of the GNU General Public License as
->> - * published by the Free Software Foundation version 2.
->> + * Copyright (C) 2014 Budi Rachmanto, AreMa Inc. <info@are.ma>
->>   *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->>   *
->>   * This program is distributed in the hope that it will be useful,
->>   * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> @@ -14,29 +14,16 @@
->>   * GNU General Public License for more details.
->>   */
+>
+> Did you even *read* Al's reply? He's objecting to the tactics, not
+> the underlying message that systemd is crap. Sheesh.
+>
 >>
->> -/*
->> - * The demod has 4 input (2xISDB-T and 2xISDB-S),
->> - * and provides independent sub modules for each input.
->> - * As the sub modules work in parallel and have the separate i2c addr's,
->> - * this driver treats each sub module as one demod device.
->> - */
+>> On 10/4/14, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> > On Sat, Oct 04, 2014 at 06:49:30PM +0200, Tom Collins wrote:
+>> >
+>> > [snip masturbation]
+>> >
+>> > To quote Jordan Hubbard,
+>> >
+>> > 	Your brand of "advocacy" is akin to having the KKK show up at one's
+>> > 	wedding to congradulate the happy couple on their choice of marrying
+>> > 	within their race.  Some kinds of "support" you just don't need if
+>> > 	all it leaves you with the desire to take a couple of dozen showers.
+>> >
+>> > That was about a different dipshit in a different flamefest, but it
+>> > applies
+>> > to you nicely.  Incidentally, as you obviously understand and don't
+>> > give
+>> > a fuck about, you are actively helping the Fine Piece Of Software in
+>> > question,
+>> > letting the pushers of said FPOS to paint everyone who has objections
+>> > with
+>> > your, er, output...
+>> >
+>> > Go play in the traffic, kid.  Remember to arrange a video...
+>> >
+>> >
+>> > --
+>> > To UNSUBSCRIBE, email to debian-user-REQUEST@lists.debian.org
+>> > with a subject of "unsubscribe". Trouble? Contact
+>> > listmaster@lists.debian.org
+>> > Archive:
+>> > https://lists.debian.org/20141004174018.GW7996@ZenIV.linux.org.uk
+>> >
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 >
-> None of the above is related to the patch description. Also, we don't
-> remove copyrights from the driver.
 >
->> -
->> -#ifndef TC90522_H
->> -#define TC90522_H
->> +#ifndef      __TC90522_H__
->> +#define      __TC90522_H__
->>
->> -#include <linux/i2c.h>
->> -#include "dvb_frontend.h"
->> -
->> -/* I2C device types */
->> -#define TC90522_I2C_DEV_SAT "tc90522sat"
->> -#define TC90522_I2C_DEV_TER "tc90522ter"
->> +#define TC90522_DRVNAME "tc90522"
->
-> This would break the driver, as the two macros above are used at
-> tc90522.c.
->
->>  struct tc90522_config {
->> -     /* [OUT] frontend returned by driver */
->> -     struct dvb_frontend *fe;
->> -
->> -     /* [OUT] tuner I2C adapter returned by driver */
->> -     struct i2c_adapter *tuner_i2c;
->> +     fe_delivery_system_t    type;   /* IN   SYS_ISDBS or SYS_ISDBT */
->> +     bool                    pwr;    /* IN   set only once after all demods initialized */
->> +     struct dvb_frontend     *fe;    /* OUT  allocated frontend */
->>  };
->
-> A change like that at the struct would break the driver.
->
-> There are several problems at the approach you're taking. It seems that
-> you're just doing a diff from the driver that it is committed from the
-> driver you have, without:
->         - splitting one change par patch;
->         - caring if a patch would break compilation.
->
-> Instead, if you need, for example, to add a new field at the config struct,
-> like "pwr", your patch would need to be touching both the header and the
-> tc90522 to use this new field.
->
-> For the same reasons, I can't apply the rest of your patch series, as it is
-> not splitting the changes as one patch per functional changes.
->
-> Regards,
-> Mauro
