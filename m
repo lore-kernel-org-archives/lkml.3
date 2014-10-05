@@ -1,215 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751002AbaJEEl6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 00:41:58 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59741 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750801AbaJEElz (ORCPT
+	id S1750985AbaJEE5R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 00:57:17 -0400
+Received: from p02c12o148.mxlogic.net ([208.65.145.81]:44852 "EHLO
+	p02c12o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801AbaJEE5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 00:41:55 -0400
-Message-ID: <1412484113.8656.3.camel@jarvis.lan>
-Subject: [GIT PULL] SCSI fixes for 3.17-rc7
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 04 Oct 2014 21:41:53 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 5 Oct 2014 00:57:16 -0400
+X-MXL-Hash: 5430cfac44ca99be-7441046d956502a9bc72d78054766dae6a50c1e1
+X-MXL-Hash: 5430cfa41039f34f-18ff46a9c5b475198c130b005cffb8aaf6af936c
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <tj@kernel.org>, <paulmck@linux.vnet.ibm.com>, <jiri@resnulli.us>,
+        Joe Lawrence <joe.lawrence@stratus.com>
+Subject: [PATCH] workqueue: add quiescent state between work items
+Date: Sun, 5 Oct 2014 00:56:40 -0400
+Message-ID: <1412485000-5669-1-git-send-email-joe.lawrence@stratus.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [134.111.199.152]
+X-AnalysisOut: [v=2.1 cv=VN/Jnr/X c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:117 a=o2bo05G+d1rlxuoNbFVhCw==:17 a=_KQqW7t0BisA:10 a=Cdz]
+X-AnalysisOut: [KgOd8jloA:10 a=BLceEmwcHowA:10 a=uelBKuKpAAAA:8 a=YlVTAMxI]
+X-AnalysisOut: [AAAA:8 a=VwQbUJbxAAAA:8 a=55vktE7HwCub9vLaWSAA:9 a=kSViFEB]
+X-AnalysisOut: [My1sA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014100423); S=0.200(2014051901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a set of two small fixes, both to code which went in during the
-merge window: cxgb4i has a scheduling in atomic bug in its new ipv6 code
-and uas fails to work properly with the new scsi-mq code.
+Similar to the stop_machine deadlock scenario on !PREEMPT kernels
+addressed in b22ce2785d97 "workqueue: cond_resched() after processing
+each work item", kworker threads requeueing back-to-back with zero jiffy
+delay can stall RCU. The cond_resched call introduced in that fix will
+yield only iff there are other higher priority tasks to run, so force a
+quiescent RCU state between work items with cond_resched_rcu_qs.
 
-The patch is available here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
-
-The short changelog is:
-
-Anish Bhatt (1):
-      cxgb4i: avoid holding mutex in interrupt context
-
-Christoph Hellwig (1):
-      uas: disable use of blk-mq I/O path
-
-And the diffstat
-
- drivers/scsi/cxgbi/cxgb4i/cxgb4i.c |  2 +-
- drivers/scsi/cxgbi/libcxgbi.c      | 57 ++++++++++++++++++++++++++++++++++----
- drivers/scsi/cxgbi/libcxgbi.h      |  3 ++
- drivers/usb/storage/uas.c          |  7 +++++
- 4 files changed, 62 insertions(+), 7 deletions(-)
-
-With full diff below.
-
-James
-
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Link: https://lkml.kernel.org/r/20140926105227.01325697@jlaw-desktop.mno.stratus.com
+Link: https://lkml.kernel.org/r/20140929115445.40221d8e@jlaw-desktop.mno.stratus.com
 ---
+ kernel/workqueue.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-index 79788a1..02e69e7 100644
---- a/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-+++ b/drivers/scsi/cxgbi/cxgb4i/cxgb4i.c
-@@ -1647,7 +1647,7 @@ static int cxgbi_inet6addr_handler(struct notifier_block *this,
- 	if (event_dev->priv_flags & IFF_802_1Q_VLAN)
- 		event_dev = vlan_dev_real_dev(event_dev);
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 5dbe22a..09b685d 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2043,9 +2043,10 @@ __acquires(&pool->lock)
+ 	 * kernels, where a requeueing work item waiting for something to
+ 	 * happen could deadlock with stop_machine as such work item could
+ 	 * indefinitely requeue itself while all other CPUs are trapped in
+-	 * stop_machine.
++	 * stop_machine. At the same time, report a quiescent RCU state so
++	 * the same condition doesn't freeze RCU.
+ 	 */
+-	cond_resched();
++	cond_resched_rcu_qs();
  
--	cdev = cxgbi_device_find_by_netdev(event_dev, NULL);
-+	cdev = cxgbi_device_find_by_netdev_rcu(event_dev, NULL);
+ 	spin_lock_irq(&pool->lock);
  
- 	if (!cdev)
- 		return ret;
-diff --git a/drivers/scsi/cxgbi/libcxgbi.c b/drivers/scsi/cxgbi/libcxgbi.c
-index d65df6d..addd1dd 100644
---- a/drivers/scsi/cxgbi/libcxgbi.c
-+++ b/drivers/scsi/cxgbi/libcxgbi.c
-@@ -57,6 +57,9 @@ MODULE_PARM_DESC(dbg_level, "libiscsi debug level (default=0)");
- static LIST_HEAD(cdev_list);
- static DEFINE_MUTEX(cdev_mutex);
- 
-+static LIST_HEAD(cdev_rcu_list);
-+static DEFINE_SPINLOCK(cdev_rcu_lock);
-+
- int cxgbi_device_portmap_create(struct cxgbi_device *cdev, unsigned int base,
- 				unsigned int max_conn)
- {
-@@ -142,6 +145,10 @@ struct cxgbi_device *cxgbi_device_register(unsigned int extra,
- 	list_add_tail(&cdev->list_head, &cdev_list);
- 	mutex_unlock(&cdev_mutex);
- 
-+	spin_lock(&cdev_rcu_lock);
-+	list_add_tail_rcu(&cdev->rcu_node, &cdev_rcu_list);
-+	spin_unlock(&cdev_rcu_lock);
-+
- 	log_debug(1 << CXGBI_DBG_DEV,
- 		"cdev 0x%p, p# %u.\n", cdev, nports);
- 	return cdev;
-@@ -153,9 +160,16 @@ void cxgbi_device_unregister(struct cxgbi_device *cdev)
- 	log_debug(1 << CXGBI_DBG_DEV,
- 		"cdev 0x%p, p# %u,%s.\n",
- 		cdev, cdev->nports, cdev->nports ? cdev->ports[0]->name : "");
-+
- 	mutex_lock(&cdev_mutex);
- 	list_del(&cdev->list_head);
- 	mutex_unlock(&cdev_mutex);
-+
-+	spin_lock(&cdev_rcu_lock);
-+	list_del_rcu(&cdev->rcu_node);
-+	spin_unlock(&cdev_rcu_lock);
-+	synchronize_rcu();
-+
- 	cxgbi_device_destroy(cdev);
- }
- EXPORT_SYMBOL_GPL(cxgbi_device_unregister);
-@@ -167,12 +181,9 @@ void cxgbi_device_unregister_all(unsigned int flag)
- 	mutex_lock(&cdev_mutex);
- 	list_for_each_entry_safe(cdev, tmp, &cdev_list, list_head) {
- 		if ((cdev->flags & flag) == flag) {
--			log_debug(1 << CXGBI_DBG_DEV,
--				"cdev 0x%p, p# %u,%s.\n",
--				cdev, cdev->nports, cdev->nports ?
--				 cdev->ports[0]->name : "");
--			list_del(&cdev->list_head);
--			cxgbi_device_destroy(cdev);
-+			mutex_unlock(&cdev_mutex);
-+			cxgbi_device_unregister(cdev);
-+			mutex_lock(&cdev_mutex);
- 		}
- 	}
- 	mutex_unlock(&cdev_mutex);
-@@ -191,6 +202,7 @@ struct cxgbi_device *cxgbi_device_find_by_lldev(void *lldev)
- 		}
- 	}
- 	mutex_unlock(&cdev_mutex);
-+
- 	log_debug(1 << CXGBI_DBG_DEV,
- 		"lldev 0x%p, NO match found.\n", lldev);
- 	return NULL;
-@@ -230,6 +242,39 @@ struct cxgbi_device *cxgbi_device_find_by_netdev(struct net_device *ndev,
- }
- EXPORT_SYMBOL_GPL(cxgbi_device_find_by_netdev);
- 
-+struct cxgbi_device *cxgbi_device_find_by_netdev_rcu(struct net_device *ndev,
-+						     int *port)
-+{
-+	struct net_device *vdev = NULL;
-+	struct cxgbi_device *cdev;
-+	int i;
-+
-+	if (ndev->priv_flags & IFF_802_1Q_VLAN) {
-+		vdev = ndev;
-+		ndev = vlan_dev_real_dev(ndev);
-+		pr_info("vlan dev %s -> %s.\n", vdev->name, ndev->name);
-+	}
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(cdev, &cdev_rcu_list, rcu_node) {
-+		for (i = 0; i < cdev->nports; i++) {
-+			if (ndev == cdev->ports[i]) {
-+				cdev->hbas[i]->vdev = vdev;
-+				rcu_read_unlock();
-+				if (port)
-+					*port = i;
-+				return cdev;
-+			}
-+		}
-+	}
-+	rcu_read_unlock();
-+
-+	log_debug(1 << CXGBI_DBG_DEV,
-+		  "ndev 0x%p, %s, NO match found.\n", ndev, ndev->name);
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(cxgbi_device_find_by_netdev_rcu);
-+
- static struct cxgbi_device *cxgbi_device_find_by_mac(struct net_device *ndev,
- 						     int *port)
- {
-diff --git a/drivers/scsi/cxgbi/libcxgbi.h b/drivers/scsi/cxgbi/libcxgbi.h
-index b3e6e75..1d98fad 100644
---- a/drivers/scsi/cxgbi/libcxgbi.h
-+++ b/drivers/scsi/cxgbi/libcxgbi.h
-@@ -527,6 +527,7 @@ struct cxgbi_ports_map {
- #define CXGBI_FLAG_IPV4_SET		0x10
- struct cxgbi_device {
- 	struct list_head list_head;
-+	struct list_head rcu_node;
- 	unsigned int flags;
- 	struct net_device **ports;
- 	void *lldev;
-@@ -709,6 +710,8 @@ void cxgbi_device_unregister(struct cxgbi_device *);
- void cxgbi_device_unregister_all(unsigned int flag);
- struct cxgbi_device *cxgbi_device_find_by_lldev(void *);
- struct cxgbi_device *cxgbi_device_find_by_netdev(struct net_device *, int *);
-+struct cxgbi_device *cxgbi_device_find_by_netdev_rcu(struct net_device *,
-+						     int *);
- int cxgbi_hbas_add(struct cxgbi_device *, u64, unsigned int,
- 			struct scsi_host_template *,
- 			struct scsi_transport_template *);
-diff --git a/drivers/usb/storage/uas.c b/drivers/usb/storage/uas.c
-index 3f42785..9bfa725 100644
---- a/drivers/usb/storage/uas.c
-+++ b/drivers/usb/storage/uas.c
-@@ -970,6 +970,13 @@ static struct scsi_host_template uas_host_template = {
- 	.cmd_per_lun = 1,	/* until we override it */
- 	.skip_settle_delay = 1,
- 	.ordered_tag = 1,
-+
-+	/*
-+	 * The uas drivers expects tags not to be bigger than the maximum
-+	 * per-device queue depth, which is not true with the blk-mq tag
-+	 * allocator.
-+	 */
-+	.disable_blk_mq = true,
- };
- 
- #define UNUSUAL_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
-
+-- 
+1.7.10.4
 
