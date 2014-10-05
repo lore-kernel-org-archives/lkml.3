@@ -1,89 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751045AbaJEFw7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 01:52:59 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:58892 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750829AbaJEFw6 convert rfc822-to-8bit (ORCPT
+	id S1751081AbaJEGBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 02:01:46 -0400
+Received: from mail-lb0-f196.google.com ([209.85.217.196]:53462 "EHLO
+	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaJEGBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 01:52:58 -0400
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        Zubair Kakakhel <Zubair.Kakakhel@imgtec.com>,
-        "david.daney@cavium.com" <david.daney@cavium.com>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "davidlohr@hp.com" <davidlohr@hp.com>,
-        "macro@linux-mips.org" <macro@linux-mips.org>,
-        "chenhc@lemote.com" <chenhc@lemote.com>,
-        "zajec5@gmail.com" <zajec5@gmail.com>,
-        James Hogan <James.Hogan@imgtec.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "alex@alex-smith.me.uk" <alex@alex-smith.me.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "blogic@openwrt.org" <blogic@openwrt.org>,
-        "jchandra@broadcom.com" <jchandra@broadcom.com>,
-        Paul Burton <Paul.Burton@imgtec.com>,
-        Qais Yousef <Qais.Yousef@imgtec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        Markos Chandras <Markos.Chandras@imgtec.com>,
-        "manuel.lauss@gmail.com" <manuel.lauss@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "lars.persson@axis.com" <lars.persson@axis.com>
-Subject: RE: [PATCH 2/3] MIPS: Setup an instruction emulation in VDSO
- protected page instead of user stack
-Thread-Topic: [PATCH 2/3] MIPS: Setup an instruction emulation in VDSO
- protected page instead of user stack
-Thread-Index: AQHP4A3mSxaly1ppUki9Ol84kSztDpwg+HZf
-Date: Sun, 5 Oct 2014 05:52:49 +0000
-Message-ID: <07BA03A3EAC1A04EA0314E65E59B049B6E70BFB5@BADAG02.ba.imgtec.org>
-References: <20141004030438.28569.85536.stgit@linux-yegoshin>
- <20141004031730.28569.38511.stgit@linux-yegoshin>,<20141004200016.GB7509@worktop.ger.corp.intel.com>
-In-Reply-To: <20141004200016.GB7509@worktop.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.40.117]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 5 Oct 2014 02:01:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <542ED130.2090501@hurleysoftware.com>
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
+	<5426CA0A.7000806@hurleysoftware.com>
+	<CAC5umyhgs8---HZLa7_DOSbqW0uPbLgqTfBweScZSR9oWbG9xg@mail.gmail.com>
+	<54294C0B.1060705@hurleysoftware.com>
+	<CAC5umyjP4OscSC8igVLYPEm-6gqiXt9md46sLu77Vut5UiPb=g@mail.gmail.com>
+	<542ABF77.1020402@hurleysoftware.com>
+	<alpine.DEB.2.11.1410010131380.4455@nanos>
+	<542B5DC2.8020806@hurleysoftware.com>
+	<20141002164121.GF1715@laptop.dumpdata.com>
+	<542DCB9C.4020703@hurleysoftware.com>
+	<CAC5umyjHruhnwiKwrHLBAF+g0ZDVouuuNvrisrUH8o963GyytQ@mail.gmail.com>
+	<542EB242.4090102@hurleysoftware.com>
+	<CAC5umygJ3EDOb4E29+YPo4t4Ew_K3x7jpxLrmvNco3U=UJBCrA@mail.gmail.com>
+	<542ED130.2090501@hurleysoftware.com>
+Date: Sun, 5 Oct 2014 15:01:43 +0900
+Message-ID: <CAC5umyi4FhbvtG+ygGPtxepMTQoETQgd32xS3ddb7E=3+_i=ug@mail.gmail.com>
+Subject: Re: [PATCH v3 0/5] enhance DMA CMA on x86
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra [peterz@infradead.org]:
-
->On Fri, Oct 03, 2014 at 08:17:30PM -0700, Leonid Yegoshin wrote:
-
->> --- a/arch/mips/include/asm/switch_to.h
-> >+++ b/arch/mips/include/asm/switch_to.h
-
->Why raw_smp_processor_id() and why evaluate it 3 times, sure compilers
->can be expected to do some CSE but something like:
+2014-10-04 1:39 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+> On 10/03/2014 12:06 PM, Akinobu Mita wrote:
+>> 2014-10-03 23:27 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>>> On 10/02/2014 07:08 PM, Akinobu Mita wrote:
+>>>> 2014-10-03 7:03 GMT+09:00 Peter Hurley <peter@hurleysoftware.com>:
+>>>>> On 10/02/2014 12:41 PM, Konrad Rzeszutek Wilk wrote:
+>>>>>> On Tue, Sep 30, 2014 at 09:49:54PM -0400, Peter Hurley wrote:
+>>>>>>> On 09/30/2014 07:45 PM, Thomas Gleixner wrote:
+>>>>
+>>>>>>> Which is different than if the plan is to ship production units for x86;
+>>>>>>> then a general purpose solution will be required.
+>>>>>>>
+>>>>>>> As to the good design of a general purpose solution for allocating and
+>>>>>>> mapping huge order pages, you are certainly more qualified to help Akinobu
+>>>>>>> than I am.
+>>>>>
+>>>>> What Akinobu's patches intend to support is:
+>>>>>
+>>>>>         phys_addr = dma_alloc_coherent(dev, 64 * 1024 * 1024, &bus_addr, GFP_KERNEL);
+>>>>>
+>>>>> which raises three issues:
+>>>>>
+>>>>> 1. Where do coherent blocks of this size come from?
+>>>>> 2. How to prevent fragmentation of these reserved blocks over time by
+>>>>>    existing DMA users?
+>>>>> 3. Is this support generically required across all iommu implementations on x86?
+>>>>>
+>>>>> Questions 1 and 2 are non-trivial, in the general case, otherwise the page
+>>>>> allocator would already do this. Simply dropping in the contiguous memory
+>>>>> allocator doesn't work because CMA does not have the same policy and performance
+>>>>> as the page allocator, and is already causing performance regressions even
+>>>>> in the absence of huge page allocations.
+>>>>
+>>>> Could you take a look at the patches I sent?  Can they fix these issues?
+>>>> https://lkml.org/lkml/2014/9/28/110
+>>>>
+>>>> With these patches, normal alloc_pages() is used for allocation first
+>>>> and dma_alloc_from_contiguous() is used as a fallback.
+>>>
+>>> Sure, I can test these patches this weekend.
+>>> Where are the unit tests?
+>>
+>> Thanks a lot.  I would like to know whether the performance regression
+>> you see will disappear or not with these patches as if CONFIG_DMA_CMA is
+>> disabled.
 >
->        int cpu = smp_processor_id();
+> I think something may have gotten lost in translation.
 >
->        if ( ... [cpu] ...)
+> My "test" consists of doing my daily work (email, emacs, kernel builds,
+> web breaks, etc).
 >
->is far more readable as well.
+> I don't have a testsuite that validates a page allocator or records any
+> performance metrics (for TTM allocations under load, as an example).
+>
+> Without a unit test and performance metrics, my "test" is not really
+> positive affirmation of a correct implementation.
+>
+>
+>>>>> So that's why I raised question 3; is making the necessary compromises to support
+>>>>> 64MB coherent DMA allocations across all x86 iommu implementations actually
+>>>>> required?
+>>>>>
+>>>>> Prior to Akinobu's patches, the use of CMA by x86 iommu configurations was
+>>>>> designed to be limited to testing configurations, as the introductory
+>>>>> commit states:
+>>>>>
+>>>>> commit 0a2b9a6ea93650b8a00f9fd5ee8fdd25671e2df6
+>>>>> Author: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>> Date:   Thu Dec 29 13:09:51 2011 +0100
+>>>>>
+>>>>>     X86: integrate CMA with DMA-mapping subsystem
+>>>>>
+>>>>>     This patch adds support for CMA to dma-mapping subsystem for x86
+>>>>>     architecture that uses common pci-dma/pci-nommu implementation. This
+>>>>>     allows to test CMA on KVM/QEMU and a lot of common x86 boxes.
+>>>>>
+>>>>>     Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+>>>>>     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>>     CC: Michal Nazarewicz <mina86@mina86.com>
+>>>>>     Acked-by: Arnd Bergmann <arnd@arndb.de>
+>>>>>
+>>>>>
+>>>>> Which brings me to my suggestion: if support for huge coherent DMA is
+>>>>> required only for a special test platform, then could not this support
+>>>>> be specific to a new iommu configuration, namely iommu=cma, which would
+>>>>> get initialized much the same way that iommu=calgary is now.
+>>>>>
+>>>>> The code for such a iommu configuration would mostly duplicate
+>>>>> arch/x86/kernel/pci-swiotlb.c and the CMA support would get removed from
+>>>>> the other x86 iommu implementations.
+>>>>
+>>>> I'm not sure I read correctly, though.  Can boot option 'cma=0' also
+>>>> help avoiding CMA from IOMMU implementation?
+>>>
+>>> Maybe, but that's not an appropriate solution for distro kernels.
+>>>
+>>> Nor does this address configurations that want a really large CMA so
+>>> 1GB huge pages can be allocated (not for DMA though).
 
-Sure. But may be it has sense to use raw_smp_processor_id() due to elevated preemption counter.
+kernel parameter 'cma=' is only available when CONFIG_DMA_CMA is enabled.
+cma=0 doesn't disable 1GB huge pages as far as I can see.
+So I prepare a patch which make default cma size zero on x86.
 
+>> Now I see the point of iommu=cma you suggested.  But what should we do
+>> when CONFIG_SWIOTLB is disabled, especially for x86_32?
+>> Should we just introduce yet another flag to tell not using DMA_CMA
+>> instead of adding new swiotlb-like iommu implementation?
+>
+> Again, since I don't know what you're using this for and
+> there are no existing mainline users, I can't really design this for
+> you.
+>
+> I'm just trying to do my best to come up with alternative solutions
+> that limit the impact to existing x86 configurations, while still
+> achieving your goals (without really knowing what those design
+> constraints are).
 
->> +     flush_vdso_page();                                              \
-
->So what I didn't see is any talk about the cost of this. Surely a TLB
->flush isn't exactly free.
-
-Well, flush_vdso_page() uses a local version of TLB page flushing and it is cheap 'per se' in comparison with system-wide.
-And I take precautions to flush only if it matches the same memory map, so it is the situation then one pthread on some map is replaced by some pthread on the same map on the same CPU.
-So, it flushes only after real use in previous pthread of that map.
-
-However, some performance loss can be expected due to killing TLB.
-In low-end cores, with small TLB array we can expect that this TLB can be kicked off anyway after context switch.
-In high end cores we should expect FPU unit available and float point emulation can be very rare (un-normalized operations or so).
-
-The only question is a middle line which has enough TLB (32 or more) but may have no float point processor. However, the emulation itself is very slow and it is natural to expect performance degradation because of float point emulation here in much higher degree than possible penalty due to early loss of TLB element.
-
+Thanks a lot for your advise.
