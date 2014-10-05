@@ -1,35 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaJEUjD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 16:39:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34095 "EHLO
+	id S1752055AbaJEUjS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 16:39:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943AbaJEUi7 (ORCPT
+	with ESMTP id S1751943AbaJEUjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 16:38:59 -0400
-Date: Sun, 5 Oct 2014 13:38:58 -0700
+	Sun, 5 Oct 2014 16:39:15 -0400
+Date: Sun, 5 Oct 2014 13:39:14 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+To: Chuck Ebbert <cebbert.lkml@gmail.com>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net, shuah.kh@samsung.com,
-        stable@vger.kernel.org
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
 Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
-Message-ID: <20141005203858.GD2528@kroah.com>
+Message-ID: <20141005203914.GE2528@kroah.com>
 References: <20141003212933.458851516@linuxfoundation.org>
- <87a95ctf9m.wl%satoru.takeuchi@gmail.com>
+ <20141004073839.125fa529@as>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a95ctf9m.wl%satoru.takeuchi@gmail.com>
+In-Reply-To: <20141004073839.125fa529@as>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 04, 2014 at 05:23:17PM +0900, Satoru Takeuchi wrote:
-> At Fri,  3 Oct 2014 14:26:26 -0700,
-> Greg Kroah-Hartman wrote:
-> > 
+On Sat, Oct 04, 2014 at 07:38:39AM -0500, Chuck Ebbert wrote:
+> On Fri,  3 Oct 2014 14:26:26 -0700
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> 
 > > ---------------------------------
 > > Note: This is a big stable release.  Mostly my fault for being on the
 > > road last week, combined with an unusually large number of patches being
@@ -47,33 +48,15 @@ On Sat, Oct 04, 2014 at 05:23:17PM +0900, Satoru Takeuchi wrote:
 > > Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
 > > Anything received after that time might be too late.
 > > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.4-rc1.gz
-> > and the diffstat can be found below.
 > 
-> Al 3.16.4-rc1, 3.14.20-rc1, and 3.10.56-rc1 passed my test.
+> Should also include this one, which fixes CVE-2014-6410:
 > 
->  - Test Cases:
->    - Build this kernel.
->    - Boot this kernel.
->    - Build the latest mainline kernel with this kernel.
+> commit c03aa9f6e1f938618e6db2e23afef0574efeeb65
+> Author: Jan Kara <jack@suse.cz>
+> Date:   Thu Sep 4 14:06:55 2014 +0200
 > 
->  - Test Tool:
->    https://github.com/satoru-takeuchi/test-linux-stable
-> 
->  - Test Result (kernel .config, ktest config and test log):
->    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
-> 
->  - Build Environment:
->    - OS: Debian Jessy x86_64
->    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    - memory: 8GB
-> 
->  - Test Target Environment:
->    - Debian Jessy x86_64 (KVM guest on the Build Environment)
->    - # of vCPU: 2
->    - memory: 2GB
+>     udf: Avoid infinite loop when processing indirect ICBs
 
-Thanks for testing all of these and letting me know.
+Thanks, I'll queue that up for the next stable releases.
 
 greg k-h
