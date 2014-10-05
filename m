@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaJERtZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:49:25 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41723 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaJERtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:49:19 -0400
+	id S1751852AbaJESZL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 14:25:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65039 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724AbaJESZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 14:25:08 -0400
+Date: Sun, 5 Oct 2014 20:24:42 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141005182442.GA1934@krava.redhat.com>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
+ <20141005174801.GD9377@pd.tnic>
 MIME-Version: 1.0
-In-Reply-To: <54311E8E.80906@gmail.com>
-References: <54311E8E.80906@gmail.com>
-Date: Sun, 5 Oct 2014 10:49:17 -0700
-X-Google-Sender-Auth: bQ-_QEUHFp8I-zqoQFVPGVEO0pA
-Message-ID: <CA+55aFzRnx7mR4P-tRg=DO2M9B0_yvH34bBKNg2q1nWWd3S79g@mail.gmail.com>
-Subject: Re: [GIT PULL] S+core : Patches for building allmodconfig and for
- removing useless
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Lennox Wu <lennox.wu@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141005174801.GD9377@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 5, 2014 at 3:33 AM, Lennox Wu <lennox.wu@gmail.com> wrote:
->
->   git://github.com/sctscore/linux-off.git tags/for-linus
+On Sun, Oct 05, 2014 at 07:48:01PM +0200, Borislav Petkov wrote:
+> Top-posting on purpose:
+> 
+> Btw, jolsa, if you get your LCE proposal for the perf splitting
+> approved, please post the time here so people can come.
 
-That's a tag, but it's not a *signed* tag.
+yep, it got accepted, ther schedule is:
+  Friday, October 17, 2014 from 9:00am – Noon
+  Room 2
 
-I don't pull unsigned data from open sites like github. You need to
-use "git tag -s" to create a proper pgp signed tag.
+https://pdxplumbers.osuosl.org/2014/ocw/events/LPC2014/tracks/351
 
-                Linus
+jirka
