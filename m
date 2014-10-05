@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751806AbaJEQQx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:16:53 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:42930 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaJEQQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 12:16:50 -0400
-Date: Sun, 5 Oct 2014 12:16:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
- processing
-Message-ID: <20141005161646.GB22223@mtj.dyndns.org>
-References: <cover.1411297686.git.agordeev@redhat.com>
- <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
- <20140923205710.GB17332@mtj.dyndns.org>
- <20140924104213.GA2695@agordeev.usersys.redhat.com>
- <20140924130444.GA16555@htj.dyndns.org>
- <20140924140844.GB2695@agordeev.usersys.redhat.com>
- <20140924143913.GH16555@htj.dyndns.org>
- <20141001153114.GE8971@agordeev.usersys.redhat.com>
- <20141005022311.GD8549@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141005022311.GD8549@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751811AbaJEQkr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:40:47 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:35680
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656AbaJEQko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:40:44 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH net 1/1] hyperv: Fix a bug in netvsc_send()
+Date: Sun,  5 Oct 2014 10:42:51 -0700
+Message-Id: <1412530971-29897-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bit of addition.
+After the packet is successfully sent, we should not touch the packet 
+as it may have been freed. This patch is based on the work done by
+Long Li <longli@microsoft.com>.
 
-On Sat, Oct 04, 2014 at 10:23:11PM -0400, Tejun Heo wrote:
-> Hmmm.... so, AFAICS, there's no real pros or cons of going either way,
-> right?  The only thing which could be different is possibly slightly
-> lower latency in servicing other IRQs or RT tasks on the same CPU but
-> given that the ahci IRQ handler already doesn't do anything which
-> takes time, I'm doubtful whether that'd be anything measureable.
-> 
-> I just don't get why ahci bothers with threaded irq, MMSI or not.
+David, please queue this up for stable.
 
-I think the thing which bothers me is that due to softirq we end up
-bouncing the context twice.  IRQ schedules threaded IRQ handler after
-doing minimal amount of work.  The threaded IRQ handler gets scheduled
-and again it doesn't do much but basically just schedules block
-softirq to actually run completions which is the heavier part.
-Apparently this doesn't seem to hurt measureably but it's just weird.
-Why are we bouncing the context twice?
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+---
+ drivers/net/hyperv/netvsc.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 977984b..7d76c95 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -717,6 +717,7 @@ int netvsc_send(struct hv_device *device,
+ 	unsigned int section_index = NETVSC_INVALID_INDEX;
+ 	u32 msg_size = 0;
+ 	struct sk_buff *skb;
++	u16 q_idx = packet->q_idx;
+ 
+ 
+ 	net_device = get_outbound_net_device(device);
+@@ -781,24 +782,24 @@ int netvsc_send(struct hv_device *device,
+ 
+ 	if (ret == 0) {
+ 		atomic_inc(&net_device->num_outstanding_sends);
+-		atomic_inc(&net_device->queue_sends[packet->q_idx]);
++		atomic_inc(&net_device->queue_sends[q_idx]);
+ 
+ 		if (hv_ringbuf_avail_percent(&out_channel->outbound) <
+ 			RING_AVAIL_PERCENT_LOWATER) {
+ 			netif_tx_stop_queue(netdev_get_tx_queue(
+-					    ndev, packet->q_idx));
++					    ndev, q_idx));
+ 
+ 			if (atomic_read(&net_device->
+-				queue_sends[packet->q_idx]) < 1)
++				queue_sends[q_idx]) < 1)
+ 				netif_tx_wake_queue(netdev_get_tx_queue(
+-						    ndev, packet->q_idx));
++						    ndev, q_idx));
+ 		}
+ 	} else if (ret == -EAGAIN) {
+ 		netif_tx_stop_queue(netdev_get_tx_queue(
+-				    ndev, packet->q_idx));
+-		if (atomic_read(&net_device->queue_sends[packet->q_idx]) < 1) {
++				    ndev, q_idx));
++		if (atomic_read(&net_device->queue_sends[q_idx]) < 1) {
+ 			netif_tx_wake_queue(netdev_get_tx_queue(
+-					    ndev, packet->q_idx));
++					    ndev, q_idx));
+ 			ret = -ENOSPC;
+ 		}
+ 	} else {
 -- 
-tejun
+1.7.4.1
+
