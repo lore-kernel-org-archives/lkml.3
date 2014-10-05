@@ -1,123 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751847AbaJERfB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 13:35:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47088 "EHLO mail.skyhub.de"
+	id S1751779AbaJERsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 13:48:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38866 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaJERfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 13:35:00 -0400
-Date: Sun, 5 Oct 2014 19:34:54 +0200
+	id S1751514AbaJERsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 13:48:08 -0400
+Date: Sun, 5 Oct 2014 19:48:01 +0200
 From: Borislav Petkov <bp@alien8.de>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 1/8] x86, microcode, intel: forbid some incorrect metadata
-Message-ID: <20141005173453.GC9377@pd.tnic>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-2-git-send-email-hmh@hmh.eng.br>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141005174801.GD9377@pd.tnic>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1410197875-19252-2-git-send-email-hmh@hmh.eng.br>
+In-Reply-To: <20140930132416.GB2799@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 08, 2014 at 02:37:47PM -0300, Henrique de Moraes Holschuh wrote:
-> The Intel SDM vol 3A, section 9.11.1, and also table 9-6, requires that
-> the Data Size field be a multiple of 4 bytes.  All of the microcode
-> update header structures are dword-based, so the Total Size field must
-> also be a multiple of the dword size.
-> 
-> Ensure that data_size is a multiple of the dword size (4 bytes).  The
-> driver code assumes this to be true for both data_size and total_size,
-> and will not work correctly otherwise.
-> 
-> Futhermore, require that total_size be a multiple of 1024, as per the
-> Intel SDM, vol 3A, section 9.11.1, page 9-28; table 9-6, page 9-29, and
-> others.  Test added by request of Borislav Petkov.
-> 
-> Also refuse a microcode update with a microcode revision of zero.
-> According to the Intel SDM, vol 3A, section 9.11.7, page 9-36, a
-> microcode revision of zero is special:
-> 
->     "CPUID returns a value in a model specific register in addition to
->     its usual register return values.  The semantics of CPUID cause it
->     to deposit an update ID value in the 64-bit model-specific register
->     at address 08BH (IA32_BIOS_SIGN_ID).  If no update is present in the
->     processor, the value in the MSR remains unmodified.  The BIOS must
->     pre-load a zero into the MSR before executing CPUID.  If a read of
->     the MSR at 8BH still returns zero after executing CPUID, this
->     indicates that no update is present."
-> 
-> This effectively reserves revision zero to mean "no microcode update
-> installed on the processor": the microcode loader cannot differentiate
-> sucess from failure when updating microcode to the same revision as the
-> one currently installed on the processor, and this would always happen
-> to updates to revision zero in the BIOS/UEFI loader.
-> 
-> There is every reason to be paranoid about any microcode update with a
-> revision of zero, as Intel will never release such a microcode update.
-> 
-> Signed-off-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-> ---
->  arch/x86/kernel/cpu/microcode/intel_lib.c |   25 +++++++++++++++++++++++--
->  1 file changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
-> index ce69320..25915e3 100644
-> --- a/arch/x86/kernel/cpu/microcode/intel_lib.c
-> +++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
-> @@ -55,9 +55,10 @@ int microcode_sanity_check(void *mc, int print_err)
->  	total_size = get_totalsize(mc_header);
->  	data_size = get_datasize(mc_header);
->  
-> -	if (data_size + MC_HEADER_SIZE > total_size) {
-> +	if ((data_size % DWSIZE) || (total_size % 1024) ||
-> +	    (data_size + MC_HEADER_SIZE > total_size)) {
->  		if (print_err)
-> -			pr_err("error! Bad data size in microcode data file\n");
-> +			pr_err("error: bad data size or total size in microcode data file\n");
+Top-posting on purpose:
 
-Shorten:
+Btw, jolsa, if you get your LCE proposal for the perf splitting
+approved, please post the time here so people can come.
 
-	pr_err("error: bad data/total size in microcode data file\n");
+Thanks.
 
->  		return -EINVAL;
->  	}
->  
-> @@ -83,6 +84,26 @@ int microcode_sanity_check(void *mc, int print_err)
->  		ext_sigcount = ext_header->count;
->  	}
->  
-> +	/*
-> +	 * A version 1 loader cannot differentiate failure from success when
-> +	 * attempting a microcode update to the same revision as the one
-> +	 * currently installed.  The loader is supposed to never attempt a
-> +	 * same-version update (or a microcode downgrade, for that matter).
-> +	 *
-> +	 * This will always cause issues for microcode updates to revision zero
-> +	 * in the UEFI/BIOS microcode loader: the processor reports a revision
-> +	 * of zero when it is running without any microcode updates installed,
-> +	 * such as after a reset/power up.
-> +	 *
-> +	 * Intel will never issue a microcode update with a revision of zero
-> +	 * for the version 1 loader.  Reject it.
-> +	 */
-
-This comment is too long. How about this instead:
-
-	/*
-	 * 0 is not a valid microcode revision as it is used to denote the
-	 * failure of a microcode update, see MSR 0x8b (IA32_BIOS_SIGN_ID):
-	 *
-	 * "It is required that this register field be pre-loaded with zero
-	 * prior to executing the CPUID, function 1. If the field remains
-	 * equal to zero, then there is no microcode update loaded. Another
-	 * non-zero value will be the signature."
-	 */
-
-This is one of those seldom times where the documentation is actually clear. :-)
+On Tue, Sep 30, 2014 at 10:24:16AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Sep 30, 2014 at 11:06:21AM +0200, Jean Pihet escreveu:
+> > The RAS Deamon (rasd) as available at [1] and the development version
+> > at [2], allows to enable kernel tracepoints and outputs the
+> > tracepoints fields according to the kernel format.
+> > 
+> > [1] https://git.kernel.org/cgit/utils/ras/rasd.git/
+> > [2] https://git.linaro.org/people/jean.pihet/rasd.git
+> > 
+> > rasd currently is a duplicate of the perf tool code, ultimately perf
+> > and rasd will use the same common code. The goal is to factor out the
+> > common code from perf and place it in small librairies in tools/lib.
+> > 
+> > Here is the code that rasd currently uses and that should be moved to tools/lib:
+> > 
+> > - debugfs: already in tools/lib/api/fs
+> >   . mount and retrieve path
+> > 
+> > - evlist: tools/perf/util/evlist.[ch]
+> >   . create and init new evlist,
+> >   . set cpu and thread maps,
+> >   . add events to evlist,
+> >   . init and use internal event id,
+> >   . alloc and mmap events buffers, manage file descriptors,
+> >   . enable events,
+> >   . read events buffers, parse data,
+> >   . unmap and free buffers
+> > 
+> > - evsel: tools/perf/util/evsel.[ch]
+> >   . create and init new tracepoints events,
+> >   . init and use internal event id,
+> >   . open events, manage fds,
+> >   . close and free events
+> > 
+> > - trace-event: tools/perf/util/trace-event.[ch] and
+> >   tools/perf/util/trace-event-parse.c
+> >   . retrieve and parse events format (using event-parse),
+> >   . print out events fields
+> > 
+> > - event-parse: already in tools/lib/traceevent/event-parse.[ch]
+> >   . retrieve and parse events format,
+> >   . parse events format and print out events fields
+> > 
+> > - trace-seq: already in tools/lib/traceevent/trace-seq.c
+> >   . format output string for event fields
+> > 
+> > - events plugins: already in tools/lib/traceevent/event-plugin.c
+> > 
+> > - util: tools/perf/util/util.[ch]
+> >   . files open/read,
+> >   . manage events attributes,
+> >   . various macros
+> > 
+> > - test events attributes: tools/perf/tests/attr.c
+> >   . test_attr__open()
+> > 
+> > - thread: tools/perf/util/thread_map.[ch] and
+> > - cpu: tools/perf/util/cpumap.[ch]
+> >   . init and manage process maps
+> > 
+> > - xyarray: tools/perf/util/xyarray.[ch]
+> > 
+> > - syscall: tools/perf/perf-sys.h
+> > 
+> > - cgroup: tools/perf/util/cgroup.[ch]
+> > 
+> > The plan is to move the small and generic functions first: util,
+> > xyarray, cpumap, thread_map etc; then evlist, evsel, trace-event,
+> > trace-event-parse; and finally integrate rasd into the tools/ dir.
+> > 
+> > Any thought? Can evlist, evsel etc. be moved at once?
+> > 
+> > Patches should come soon, when time allows.
+> 
+> Why don't you add it to tools/rasd/ and in tools/rasd/Makefile you just
+> go on and add tools/perf/util/evlist.o et all to be linked directly, as
+> a first step.
+> 
+> Then, as a second step, we can create a tools/lib/perf/evlist.c having
+> what is currently used by both tools/perf/ and tools/rasd/, i.e. what is
+> proven to be useful for something other than perf.
+> 
+> As the need arises, we go on moving things into tools/lib/perf/evlist.c
+> et all from wherever it appeared first, be it from tools/rasd/,
+> tools/perf/util/evlist.c or anywhere else.
+> 
+> Initial rule being that once it is used by multiple tools living in
+> tools/, then it deserves a place in tools/lib/perf/.
+> 
+> Ditto for other stuff currently living in tools/perf/util/.
+> 
+> - Arnaldo
+> 
 
 -- 
 Regards/Gruss,
