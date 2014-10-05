@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJEWB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 18:01:28 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:56432 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaJEWBP (ORCPT
+	id S1752098AbaJEWB0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 18:01:26 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:38694 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaJEWBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 18:01:15 -0400
+	Sun, 5 Oct 2014 18:01:14 -0400
 From: Beniamino Galvani <b.galvani@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
@@ -17,9 +17,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Carlo Caione <carlo@caione.org>,
         Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
         Victor Wan <victor.wan@amlogic.com>,
         Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2 3/7] ARM: dts: add dts for Tronsmart S89 Elite TV box
-Date: Sun,  5 Oct 2014 23:59:15 +0200
-Message-Id: <1412546359-15062-4-git-send-email-b.galvani@gmail.com>
+Subject: [PATCH v2 2/7] ARM: dts: add dtsi for Amlogic Meson8 SoCs
+Date: Sun,  5 Oct 2014 23:59:14 +0200
+Message-Id: <1412546359-15062-3-git-send-email-b.galvani@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412546359-15062-1-git-send-email-b.galvani@gmail.com>
 References: <1412546359-15062-1-git-send-email-b.galvani@gmail.com>
@@ -27,24 +27,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a dts for the Tronsmart S89 Elite, a set-top box based on
-the Amlogic S802 SoC with a 8GiB NAND flash, USB ports, 10/100 Mbps
-Ethernet adapter, WiFi, HDMI and a micro SD slot.
+This adds a dtsi for Amlogic Meson8 SoCs. It differs from the Meson6
+dtsi for the number of Cortex-A9 cores (4 vs 2) and for the frequency
+of clk81.
 
 Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
- arch/arm/boot/dts/meson8-vega-s89e.dts | 65 ++++++++++++++++++++++++++++++++++
- 1 file changed, 65 insertions(+)
- create mode 100644 arch/arm/boot/dts/meson8-vega-s89e.dts
+ arch/arm/boot/dts/meson8.dtsi | 88 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 88 insertions(+)
+ create mode 100644 arch/arm/boot/dts/meson8.dtsi
 
-diff --git a/arch/arm/boot/dts/meson8-vega-s89e.dts b/arch/arm/boot/dts/meson8-vega-s89e.dts
+diff --git a/arch/arm/boot/dts/meson8.dtsi b/arch/arm/boot/dts/meson8.dtsi
 new file mode 100644
-index 0000000..950998f
+index 0000000..42e4026
 --- /dev/null
-+++ b/arch/arm/boot/dts/meson8-vega-s89e.dts
-@@ -0,0 +1,65 @@
++++ b/arch/arm/boot/dts/meson8.dtsi
+@@ -0,0 +1,88 @@
 +/*
-+ * Copyright 2014 Beniamino Galvani <b.galvani@gmail.com>
++ * Copyright 2014 Carlo Caione <carlo@caione.org>
 + *
 + * This file is dual-licensed: you can use it either under the terms
 + * of the GPL or the X11 license, at your option. Note that this dual
@@ -88,26 +88,49 @@ index 0000000..950998f
 + *     OTHER DEALINGS IN THE SOFTWARE.
 + */
 +
-+
-+/dts-v1/;
-+/include/ "meson8.dtsi"
++/include/ "meson.dtsi"
 +
 +/ {
-+	model = "Tronsmart Vega S89 Elite";
-+	compatible = "tronsmart,vega-s89e", "amlogic,meson8";
++	model = "Amlogic Meson8 SoC";
++	compatible = "amlogic,meson8";
 +
-+	aliases {
-+		serial0 = &uart_AO;
++	interrupt-parent = <&gic>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@200 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x200>;
++		};
++
++		cpu@201 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x201>;
++		};
++
++		cpu@202 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x202>;
++		};
++
++		cpu@203 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			reg = <0x203>;
++		};
 +	};
 +
-+	memory {
-+		reg = <0x40000000 0x80000000>;
++	clk81: clk@0 {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <141666666>;
 +	};
-+};
-+
-+&uart_AO {
-+	status = "okay";
-+};
++}; /* end of / */
 -- 
 1.9.1
 
