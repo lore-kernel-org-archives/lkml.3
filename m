@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544AbaJECFW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 22:05:22 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:52537 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaJECFT (ORCPT
+	id S1751597AbaJECIN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 22:08:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:58710 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaJECIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 22:05:19 -0400
-Message-ID: <5430A8B9.6040003@gmail.com>
-Date: Sun, 05 Oct 2014 10:11:05 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sat, 4 Oct 2014 22:08:12 -0400
+Message-ID: <5430A804.3040708@hitachi.com>
+Date: Sun, 05 Oct 2014 11:08:04 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: rjw@rjwysocki.net, pavel@ucw.cz, len.brown@intel.com,
-        ulf.hansson@linaro.org, khilman@linaro.org, geert+renesas@glider.be,
-        tomasz.figa@gmail.com, richard@nod.at, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: power: domain: Use 'pm_cpu_data' instead
- of 'cpu_data' for compiling break
-References: <54300206.3020206@gmail.com> <20141004160037.GB16969@kroah.com> <54309B25.2020403@gmail.com> <20141005012301.GA17655@kroah.com>
-In-Reply-To: <20141005012301.GA17655@kroah.com>
-Content-Type: text/plain; charset=windows-1252
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Re: (ltc-kernel 10162) Re: [PATCH ftrace/for-next v6] ftracetest:
+ Add POSIX.3 standard and XFAIL result codes
+References: <20140929120211.30203.99510.stgit@kbuild-f20.novalocal> <54294C55.3030204@hitachi.com> <542E8888.9090703@hitachi.com> <20141003165337.21043dee@gandalf.local.home>
+In-Reply-To: <20141003165337.21043dee@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/5/14 9:23, Greg KH wrote:
-> On Sun, Oct 05, 2014 at 09:13:09AM +0800, Chen Gang wrote:
->> On 10/5/14 0:00, Greg KH wrote:
->>> On Sat, Oct 04, 2014 at 10:19:50PM +0800, Chen Gang wrote:
->>>> 'cpu_data' is too common to be already used by some architectures (e.g.
->>>> um, m32r, and mn10300), so need use 'pm_cpu_data' instead of, or cause
->>>> compiling break. The related error (with allmodconfig under um):
->>>>
->>>>     CC      drivers/base/platform.o
->>>>   In file included from ./arch/x86/um/asm/processor.h:31:0,
->>>>                    from ./arch/um/include/asm/uaccess.h:16,
->>>>                    from ./arch/um/include/asm/thread_info.h:13,
->>>>                    from include/linux/thread_info.h:54,
->>>>                    from include/asm-generic/current.h:4,
->>>>                    from arch/um/include/generated/asm/current.h:1,
->>>>                    from include/linux/mutex.h:13,
->>>>                    from include/linux/kernfs.h:13,
->>>>                    from include/linux/sysfs.h:15,
->>>>                    from include/linux/kobject.h:21,
->>>>                    from include/linux/device.h:17,
->>>>                    from include/linux/platform_device.h:14,
->>>>                    from drivers/base/platform.c:14:
->>>>   ./arch/um/include/asm/processor-generic.h:107:19: error: expected identifier or '(' before '&' token
->>>>    #define cpu_data (&boot_cpu_data)
->>>>                      ^
->>>>   include/linux/pm_domain.h:74:23: note: in expansion of macro 'cpu_data'
->>>>     struct gpd_cpu_data *cpu_data;
->>>>                        ^
->>>>
->>>> Also need notice about 80 columns boundary.
->>>
->>> I don't object to this change at all, but it could be easier to solve
->>> this by fixing up 'cpu_data' to be named something a bit less "generic"?
->>> What does x86 use for this data type?
->>>
+(2014/10/04 5:53), Steven Rostedt wrote:
+> On Fri, 03 Oct 2014 20:29:12 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Ping? :)
+> 
+> Just to make sure. This is just the one patch that I missed before,
+> right?
+
+Yes, this one is the last patch in previous series.
+
+> 
+> I pulled it and now testing it (running the tests). I'll push it to my
+> linux-next branch sometime later today. You'll probably see it as you
+> wake up ;-)
+
+Thanks!!
+
+> 
+> -- Steve
+> 
 >>
->> It is for some kinds of arm cpu (I let this patch pass arm s3c600
->> def_config building).  Other architectures did not use it, at present.
+>> (2014/09/29 21:11), Masami Hiramatsu wrote:
+>>> Steven, could you pick this instead of old v5 patch?
+>>>
+>>> As you pointed, this version shows the log of "unsuppoted" test result.
+>>>
+>>> Thank you,
+>>>
+>>> (2014/09/29 21:02), Masami Hiramatsu wrote:
+>>>> Add XFAIL and POSIX 1003.3 standard codes (UNRESOLVED/
+>>>> UNTESTED/UNSUPPORTED) as result codes. These are used for the
+>>>> results that test case is expected to fail or unsupported
+>>>> feature (by config).
+>>>>
+>>>> To return these result code, this introduces exit_unresolved,
+>>>> exit_untested, exit_unsupported and exit_xfail functions,
+>>>> which use real-time signals to notify the result code to
+>>>> ftracetest.
+>>>>
+>>>> This also set "errexit" option for the testcases, so that
+>>>> the tests don't need to exit explicitly.
+>>>>
+>>>> Note that if the test returns UNRESOLVED/UNSUPPORTED/FAIL,
+>>>> its test log including executed commands is shown on console
+>>>> and main logfile as below.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> So why not change the name for these archs that have such a generic name
-> to something not so generic?
-> 
-
-All the code are really generic, I don't know whether it will be used
-under other architectures in the future (I guess, it will, or it need
-not be put to "drivers/base/power/" and "include/linux").
-
-At present, it is not used by other architectures, but it already has
-negative effect with other architectures (I found it during compiling
-um architecture).
-
-So for me, this issue is not only within arm itself, but also in common
-drivers.
 
 
-Thanks
 -- 
-Chen Gang
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Open, share, and attitude like air, water, and life which God blessed
+
