@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaJESpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 14:45:22 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52136 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775AbaJESpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 14:45:21 -0400
-Date: Sun, 5 Oct 2014 20:45:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf & rasd integration plan
-Message-ID: <20141005184515.GE9377@pd.tnic>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20140930132416.GB2799@kernel.org>
- <20141005174801.GD9377@pd.tnic>
- <20141005182442.GA1934@krava.redhat.com>
+	id S1751930AbaJESrl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 14:47:41 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:35611 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaJESrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 14:47:40 -0400
+Date: Sun, 5 Oct 2014 11:47:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Joe Lawrence <joe.lawrence@stratus.com>
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org, jiri@resnulli.us
+Subject: Re: [PATCH v2 2/2] workqueue: use cond_resched_rcu_qs macro
+Message-ID: <20141005184734.GU5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1412529862-17954-1-git-send-email-joe.lawrence@stratus.com>
+ <1412529862-17954-3-git-send-email-joe.lawrence@stratus.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141005182442.GA1934@krava.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412529862-17954-3-git-send-email-joe.lawrence@stratus.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100518-6688-0000-0000-000005506C56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 08:24:42PM +0200, Jiri Olsa wrote:
-> On Sun, Oct 05, 2014 at 07:48:01PM +0200, Borislav Petkov wrote:
-> > Top-posting on purpose:
-> > 
-> > Btw, jolsa, if you get your LCE proposal for the perf splitting
-> > approved, please post the time here so people can come.
+On Sun, Oct 05, 2014 at 01:24:22PM -0400, Joe Lawrence wrote:
+> Tidy up and use cond_resched_rcu_qs when calling cond_resched and
+> reporting potential quiescent state to RCU.
 > 
-> yep, it got accepted, ther schedule is:
->   Friday, October 17, 2014 from 9:00am – Noon
->   Room 2
+> Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> ---
+>  kernel/workqueue.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
 > 
-> https://pdxplumbers.osuosl.org/2014/ocw/events/LPC2014/tracks/351
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 345bec9..09b685d 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -2046,8 +2046,7 @@ __acquires(&pool->lock)
+>  	 * stop_machine. At the same time, report a quiescent RCU state so
+>  	 * the same condition doesn't freeze RCU.
+>  	 */
+> -	rcu_note_voluntary_context_switch(current);
+> -	cond_resched();
+> +	cond_resched_rcu_qs();
+> 
+>  	spin_lock_irq(&pool->lock);
+> 
+> -- 
+> 1.7.10.4
+> 
 
-Cool, thanks.
-
-I'll add it to the calendar - lot to do this conf :-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
