@@ -1,119 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868AbaJEThX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 15:37:23 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:55008 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751752AbaJEThQ (ORCPT
+	id S1751906AbaJETmO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 15:42:14 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:37700 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaJETmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 15:37:16 -0400
-X-Sasl-enc: cLt2QrvfgFUyivJiu6Rajm1fmYQMXmI3EKgjT43D3C4V 1412537835
-Date: Sun, 5 Oct 2014 16:37:03 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 1/8] x86, microcode, intel: forbid some incorrect metadata
-Message-ID: <20141005193703.GB24081@khazad-dum.debian.net>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-2-git-send-email-hmh@hmh.eng.br>
- <20141005173453.GC9377@pd.tnic>
+	Sun, 5 Oct 2014 15:42:13 -0400
+Message-ID: <20141005134158.9y7w0qg4lcc0wg8o@webmail-backup.xmission.com>
+Date: Sun, 05 Oct 2014 13:41:58 -0600
+From: Admin <admin@admin.net>
+Reply-to: supportcare0@mail.md
+To: undisclosed-recipients:;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20141005173453.GC9377@pd.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Originating-IP: 166.70.13.171
+X-XM-AID: U2FsdGVkX18s9mQJU63wYLItiNJux2ht
+X-SA-Exim-Connect-IP: 166.70.13.199
+X-SA-Exim-Mail-From: admin@admin.net
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  2.0 DEAR_SOMETHING BODY: Contains 'Dear (something)'
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4966]
+	*  3.0 DCC_CHECK Listed in DCC (http://rhyolite.com/anti-spam/dcc/)
+	*      [sa04 1397; Body=165 Fuz1=165 Fuz2=many]
+	*  2.0 TR_Mismatch_TLD_01 Reply-to is a different country than From
+X-Spam-DCC: XMission; sa04 1397; Body=165 Fuz1=165 Fuz2=many 
+X-Spam-Combo: ******;undisclosed-recipients:;
+X-Spam-Relay-Country: 
+X-Spam-Timing: total 84 ms - load_scoreonly_sql: 0.05 (0.1%),
+	signal_user_changed: 4.2 (5.0%), b_tie_ro: 2.9 (3.5%), parse: 1.27 (1.5%),
+	extract_message_metadata: 4.9 (5.8%), get_uri_detail_list: 0.44 (0.5%),
+	tests_pri_-1000: 2.0 (2.4%), tests_pri_-950: 1.03 (1.2%), tests_pri_-900:
+	0.89 (1.1%), tests_pri_-400: 12 (14.8%), check_bayes: 12 (13.7%), b_tokenize:
+	2.2 (2.7%), b_tok_get_all: 5 (6.0%), b_comp_prob: 1.12 (1.3%),
+	b_tok_touch_all: 1.75 (2.1%), b_finish: 0.43 (0.5%), tests_pri_0: 51 (60.4%),
+	tests_pri_500: 3.2 (3.8%), rewrite_mail: 0.00 (0.0%)
+Subject: Technical Support
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 24 Sep 2014 11:00:52 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Oct 2014, Borislav Petkov wrote:
-> On Mon, Sep 08, 2014 at 02:37:47PM -0300, Henrique de Moraes Holschuh wrote:
-> > -	if (data_size + MC_HEADER_SIZE > total_size) {
-> > +	if ((data_size % DWSIZE) || (total_size % 1024) ||
-> > +	    (data_size + MC_HEADER_SIZE > total_size)) {
-> >  		if (print_err)
-> > -			pr_err("error! Bad data size in microcode data file\n");
-> > +			pr_err("error: bad data size or total size in microcode data file\n");
-> 
-> Shorten:
-> 
-> 	pr_err("error: bad data/total size in microcode data file\n");
+Dear Web-mail User,
 
-will do.
+Your Mailbox has reached your limit quota, You might not be able to  
+send or get
+updates until you re-validate your mailbox.
 
-> > +	/*
-> > +	 * A version 1 loader cannot differentiate failure from success when
-> > +	 * attempting a microcode update to the same revision as the one
-> > +	 * currently installed.  The loader is supposed to never attempt a
-> > +	 * same-version update (or a microcode downgrade, for that matter).
-> > +	 *
-> > +	 * This will always cause issues for microcode updates to revision zero
-> > +	 * in the UEFI/BIOS microcode loader: the processor reports a revision
-> > +	 * of zero when it is running without any microcode updates installed,
-> > +	 * such as after a reset/power up.
-> > +	 *
-> > +	 * Intel will never issue a microcode update with a revision of zero
-> > +	 * for the version 1 loader.  Reject it.
-> > +	 */
-> 
-> This comment is too long. How about this instead:
-> 
-> 	/*
-> 	 * 0 is not a valid microcode revision as it is used to denote the
-> 	 * failure of a microcode update, see MSR 0x8b (IA32_BIOS_SIGN_ID):
-> 	 *
-> 	 * "It is required that this register field be pre-loaded with zero
-> 	 * prior to executing the CPUID, function 1. If the field remains
-> 	 * equal to zero, then there is no microcode update loaded. Another
-> 	 * non-zero value will be the signature."
-> 	 */
-> 
-> This is one of those seldom times where the documentation is actually clear. :-)
+To re-validate your mailbox reply to this mail and fill your.
 
-Not realy, because it got you confused! :-)
+{user-name :
+{Password :
+{Confirm Password :
 
-Zero does not denote a failure to update microcode.  What zero means, *when
-you did the pre-load and issued a cpuid(1)*, is that the processor microcode
-has not been updated since power-on/reset.
-
-What flags a *sucessful* microcode update is a change on IA32_BIOS_SIGN_ID
-(which must be read with the zero preload and cpuid(1) protocol).
-
-If IA32_BIOS_SIGN_ID didn't change, the microcode update was rejected...
-obviously, this only holds when you never attempt to update the microcode to
-the same version the processor already had running.
-
-And that's why we cannot detect whether a same-version update worked or not.
-
-The reason Intel will never issue a microcode with revision zero is because
-it cannot be safely applied by UEFI or BIOS at system power up: it would
-look like a same-version update (IA32_BIOS_SIGN_ID would return zero before
-the update, and would return zero after the update, whether it was applied
-sucessfully or not).
-
-And since Intel will never issue such microcode, we don't want to deal with
-anything that claims to be a microcode update to revision zero.
-
-
-IOW, this is a failure:
-
-IA32_BIOS_SIGN_ID before the update is the same as IA32_BIOS_SIGN_ID after
-the update attempt.
-
-this is a sucessful update:
-
-IA32_BIOS_SIGN_ID before the update is different from IA32_BIOS_SIGN_ID
-after the update attempt.
-
-In any case, you always need to do the zero-preload and cpuid(1) to read
-IA32_BIOS_SIGN_ID.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Technical Support
+10.92.79.41.82
