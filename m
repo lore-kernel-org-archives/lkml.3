@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaJECXR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 4 Oct 2014 22:23:17 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:63181 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaJECXO (ORCPT
+	id S1751598AbaJECmq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 4 Oct 2014 22:42:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34842 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaJECmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 4 Oct 2014 22:23:14 -0400
-Date: Sat, 4 Oct 2014 22:23:11 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
- processing
-Message-ID: <20141005022311.GD8549@htj.dyndns.org>
-References: <cover.1411297686.git.agordeev@redhat.com>
- <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
- <20140923205710.GB17332@mtj.dyndns.org>
- <20140924104213.GA2695@agordeev.usersys.redhat.com>
- <20140924130444.GA16555@htj.dyndns.org>
- <20140924140844.GB2695@agordeev.usersys.redhat.com>
- <20140924143913.GH16555@htj.dyndns.org>
- <20141001153114.GE8971@agordeev.usersys.redhat.com>
+	Sat, 4 Oct 2014 22:42:44 -0400
+Message-ID: <5430B021.1080709@infradead.org>
+Date: Sat, 04 Oct 2014 19:42:41 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141001153114.GE8971@agordeev.usersys.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg KH <gregkh@linuxfoundation.org>, Chen Gang <gang.chen.5i5j@gmail.com>
+CC: rjw@rjwysocki.net, pavel@ucw.cz, len.brown@intel.com,
+        ulf.hansson@linaro.org, khilman@linaro.org, geert+renesas@glider.be,
+        tomasz.figa@gmail.com, richard@nod.at, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: power: domain: Use 'pm_cpu_data' instead
+ of 'cpu_data' for compiling break
+References: <54300206.3020206@gmail.com> <20141004160037.GB16969@kroah.com>
+In-Reply-To: <20141004160037.GB16969@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Alexander.
+On 10/04/14 09:00, Greg KH wrote:
+> On Sat, Oct 04, 2014 at 10:19:50PM +0800, Chen Gang wrote:
+>> 'cpu_data' is too common to be already used by some architectures (e.g.
+>> um, m32r, and mn10300), so need use 'pm_cpu_data' instead of, or cause
+>> compiling break. The related error (with allmodconfig under um):
+>>
+>>     CC      drivers/base/platform.o
+>>   In file included from ./arch/x86/um/asm/processor.h:31:0,
+>>                    from ./arch/um/include/asm/uaccess.h:16,
+>>                    from ./arch/um/include/asm/thread_info.h:13,
+>>                    from include/linux/thread_info.h:54,
+>>                    from include/asm-generic/current.h:4,
+>>                    from arch/um/include/generated/asm/current.h:1,
+>>                    from include/linux/mutex.h:13,
+>>                    from include/linux/kernfs.h:13,
+>>                    from include/linux/sysfs.h:15,
+>>                    from include/linux/kobject.h:21,
+>>                    from include/linux/device.h:17,
+>>                    from include/linux/platform_device.h:14,
+>>                    from drivers/base/platform.c:14:
+>>   ./arch/um/include/asm/processor-generic.h:107:19: error: expected identifier or '(' before '&' token
+>>    #define cpu_data (&boot_cpu_data)
+>>                      ^
+>>   include/linux/pm_domain.h:74:23: note: in expansion of macro 'cpu_data'
+>>     struct gpd_cpu_data *cpu_data;
+>>                        ^
+>>
+>> Also need notice about 80 columns boundary.
+> 
+> I don't object to this change at all, but it could be easier to solve
+> this by fixing up 'cpu_data' to be named something a bit less "generic"?
+> What does x86 use for this data type?
 
-On Wed, Oct 01, 2014 at 04:31:15PM +0100, Alexander Gordeev wrote:
-> As of your concern wrt threaded handler invocation overhead - I am
-> not quite sure here, but if SCHED_FIFO policy (the handler runs with)
-> makes the difference? Anyway, as said above the overall IO does not
-> suffer.
+The patch makes sense to me.
 
-Hmmm.... so, AFAICS, there's no real pros or cons of going either way,
-right?  The only thing which could be different is possibly slightly
-lower latency in servicing other IRQs or RT tasks on the same CPU but
-given that the ahci IRQ handler already doesn't do anything which
-takes time, I'm doubtful whether that'd be anything measureable.
+These arch-es already have 'cpu_data' in some form:
 
-I just don't get why ahci bothers with threaded irq, MMSI or not.
+mips, sparc, arm64, blackfin, frv, mn10300, parisc, um(l), c6x, x86, xtensa,
+alpha, m32r, arm, ia64, metag, sn.
 
-Thanks.
 
 -- 
-tejun
+~Randy
