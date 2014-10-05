@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaJEQEW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:04:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32785 "EHLO mx1.redhat.com"
+	id S1752058AbaJEQEL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:04:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38673 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976AbaJEQER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 12:04:17 -0400
-Date: Sun, 5 Oct 2014 19:07:33 +0300
+	id S1752018AbaJEQD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:03:59 -0400
+Date: Sun, 5 Oct 2014 19:07:27 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [PATCH 15/16] 9p/trans_virtio: enable VQs early
-Message-ID: <1412525038-15871-16-git-send-email-mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 13/16] virtio_blk: enable VQs early
+Message-ID: <1412525038-15871-14-git-send-email-mst@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,30 +24,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after probe returns, but virtio 9p device
-adds self to channel list within probe, at which point VQ can be
-used in violation of the spec.
+This is set automatically after probe returns, virtio block violated this
+rule by calling add_disk, which causes the VQ to be used directly within
+probe.
 
 To fix, call virtio_early_enable_vqs before using VQs.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- net/9p/trans_virtio.c | 2 ++
+ drivers/block/virtio_blk.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index 6940d8f..0e8bbb3 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -575,6 +575,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
- 	/* Ceiling limit to avoid denial of service attacks */
- 	chan->p9_max_pages = nr_free_buffer_pages()/4;
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 13c384b..e59ae859 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -719,6 +719,8 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 	if (!err && opt_io_size)
+ 		blk_queue_io_opt(q, blk_size * opt_io_size);
  
 +	virtio_early_enable_vqs(vdev);
 +
- 	mutex_lock(&virtio_9p_lock);
- 	list_add_tail(&chan->chan_list, &virtio_chan_list);
- 	mutex_unlock(&virtio_9p_lock);
+ 	add_disk(vblk->disk);
+ 	err = device_create_file(disk_to_dev(vblk->disk), &dev_attr_serial);
+ 	if (err)
 -- 
 MST
 
