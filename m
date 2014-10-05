@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaJEUGR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 16:06:17 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:35074 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaJEUGQ (ORCPT
+	id S1751900AbaJEUT3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 16:19:29 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:45670 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaJEUT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 16:06:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
-References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
-From: Jason Noakes <jjnoakes@gmail.com>
-Date: Sun, 5 Oct 2014 16:05:54 -0400
-Message-ID: <CAN2+FELPuQwt0Xr-r-dThXAeuec7wCtFKv+E+6GSQOG7wJqE3w@mail.gmail.com>
-Subject: Fwd: kobject_init and the zeroed-out-memory requirement
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 5 Oct 2014 16:19:26 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Carlo Caione <carlo@caione.org>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jerry Cao <jerry.cao@amlogic.com>, Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH v2 0/2] i2c: add driver for Amlogic Meson I2C controller
+Date: Sun,  5 Oct 2014 22:17:10 +0200
+Message-Id: <1412540232-26168-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that kobject_init() requres the kobject passed in to be
-zeroed out fully first.
+Hi,
 
-Many other *_init kernel routines (cdev_init, kref_init, mutex_init,
-spin_lock_init, etc) do not have the same requirement - they work on
-fully uninitialized memory.
+this patchset adds a driver for the I2C controller available in
+Amlogic Meson SoCs and has been tested on a Tronsmart Vega S89E TV box
+to communicate with a Ricoh RN5T618 PMIC.
 
-Documentation/kobject.txt does not mention the requirement that the
-memory be zero-initialized before it is passed to kobject_init.
+Changes since v1:
+ - factored common code for token list setup
 
-I would like to submit a patch - which solution is preferred?
+Beniamino Galvani (2):
+  i2c: add support for Amlogic Meson I2C controller
+  i2c: meson: add device tree bindings documentation
 
-  (a) Update Documentation/kobject.txt and explicitly add the requirement
-  (b) Modify kobject_init to zero out the memory itself like other
-*_init routines
-        (It already initializes most of its members - just not all of them)
-  (c) Something else?
-
-Your preference?
-
-(Please CC: me on replies).
+ .../devicetree/bindings/i2c/i2c-meson.txt          |  24 +
+ drivers/i2c/busses/Kconfig                         |   7 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-meson.c                     | 492 +++++++++++++++++++++
+ 4 files changed, 524 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-meson.txt
+ create mode 100644 drivers/i2c/busses/i2c-meson.c
 
 -- 
-~~ Jason J. Noakes
-~~ jjnoakes@gmail.com
+1.9.1
+
