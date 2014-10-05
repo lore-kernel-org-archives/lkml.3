@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751575AbaJEK3b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 06:29:31 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:58234 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaJEK30 (ORCPT
+	id S1751626AbaJEKck (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 06:32:40 -0400
+Received: from rgout0303.bt.lon5.cpcloud.co.uk ([65.20.0.209]:6552 "EHLO
+	rgout0303.bt.lon5.cpcloud.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751019AbaJEKcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 06:29:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141004174018.GW7996@ZenIV.linux.org.uk>
-References: <trinity-cc489298-336a-4100-85b8-84c43c620c90-1412441370324@3capp-mailcom-lxa16>
-	<20141004174018.GW7996@ZenIV.linux.org.uk>
-Date: Sun, 5 Oct 2014 10:29:24 +0000
-Message-ID: <CALtyatFRH8TWDROciTiMrGBruPZ-2eUnoOF0ct-t_j0p+LsnNQ@mail.gmail.com>
-Subject: Re: (Song) Fk SystemD
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Tom Collins <tomcollins224@mail.com>, linux-kernel@vger.kernel.org,
-        debian-user@lists.debian.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 5 Oct 2014 06:32:39 -0400
+X-CTCH-RefID: str=0001.0A090201.54311E3B.002A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-Junkmail-Premium-Raw: score=28/50,refid=2.7.2:2014.10.3.130921:17:28.905,ip=86.133.111.215,rules=__HAS_FROM,
+ __PHISH_FROM2, __FRAUD_WEBMAIL_FROM, __TO_MALFORMED_2, __TO_NO_NAME,
+ __MULTIPLE_RCPTS_CC_X2, __SUBJ_ALPHA_END, __HAS_MSGID, __SANE_MSGID,
+ __HAS_X_MAILER, __ANY_URI, __FRAUD_BODY_WEBMAIL, __URI_NO_WWW, __URI_NO_PATH,
+ BODYTEXTP_SIZE_3000_LESS, BODY_SIZE_500_599, __MIME_TEXT_ONLY,
+ RDNS_GENERIC_POOLED, __URI_NS, SXL_IP_DYNAMIC[215.111.133.86.fur],
+ HTML_00_01, HTML_00_10, BODY_SIZE_5000_LESS, RDNS_SUSP_GENERIC, __PHISH_FROM,
+ MULTIPLE_RCPTS, __PHISH_SPEAR_STRUCTURE_1, BODY_SIZE_1000_LESS, RDNS_SUSP,
+ BODY_SIZE_2000_LESS, __FRAUD_WEBMAIL, BODY_SIZE_7000_LESS
+X-CTCH-Spam: Unknown
+From: Mike Roocroft <mike.linux@btinternet.com>
+To: herbert@gondor.apana.org.au
+Cc: davem@davemloft.net, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mike Roocroft <mike.linux@btinternet.com>
+Subject: [PATCH] Crypto: gf128mul : fixed a parentheses coding style issue
+Date: Sun,  5 Oct 2014 11:35:41 +0100
+Message-Id: <1412505341-20273-1-git-send-email-mike.linux@btinternet.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fuck you.
+Fixed a coding style issue.
 
-This is what you systemd shitheads say to everything.
-It's either your way or the highway.
+Signed-off-by: Mike Roocroft <mike.linux@btinternet.com>
+---
+ crypto/gf128mul.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/crypto/gf128mul.c b/crypto/gf128mul.c
+index 5276607..b143d84 100644
+--- a/crypto/gf128mul.c
++++ b/crypto/gf128mul.c
+@@ -97,7 +97,7 @@
+     the table above
+ */
+ 
+-#define xx(p, q)	0x##p##q
++#define xx(p, q)	(0x##p##q)
+ 
+ #define xda_bbe(i) ( \
+ 	(i & 0x80 ? xx(43, 80) : 0) ^ (i & 0x40 ? xx(21, c0) : 0) ^ \
+-- 
+2.1.0
 
-
-On 10/4/14, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, Oct 04, 2014 at 06:49:30PM +0200, Tom Collins wrote:
->
-> [snip masturbation]
->
-> To quote Jordan Hubbard,
->
-> 	Your brand of "advocacy" is akin to having the KKK show up at one's
-> 	wedding to congradulate the happy couple on their choice of marrying
-> 	within their race.  Some kinds of "support" you just don't need if
-> 	all it leaves you with the desire to take a couple of dozen showers.
->
-> That was about a different dipshit in a different flamefest, but it applies
-> to you nicely.  Incidentally, as you obviously understand and don't give
-> a fuck about, you are actively helping the Fine Piece Of Software in
-> question,
-> letting the pushers of said FPOS to paint everyone who has objections with
-> your, er, output...
->
-> Go play in the traffic, kid.  Remember to arrange a video...
->
->
-> --
-> To UNSUBSCRIBE, email to debian-user-REQUEST@lists.debian.org
-> with a subject of "unsubscribe". Trouble? Contact
-> listmaster@lists.debian.org
-> Archive: https://lists.debian.org/20141004174018.GW7996@ZenIV.linux.org.uk
->
->
