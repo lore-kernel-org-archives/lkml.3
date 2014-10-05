@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaJETIK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 15:08:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29645 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaJETII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 15:08:08 -0400
-Date: Sun, 5 Oct 2014 21:08:02 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: kan.liang@intel.com
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org
-Subject: Re: [PATCH V7 0/4] perf tools: pmu event new style format fix
-Message-ID: <20141005190802.GC1934@krava.redhat.com>
-References: <1412352548-7603-1-git-send-email-kan.liang@intel.com>
+	id S1751871AbaJETM3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 15:12:29 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:47471 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaJETMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 15:12:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412352548-7603-1-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412179371-4053-1-git-send-email-grant.likely@linaro.org>
+References: <1412179371-4053-1-git-send-email-grant.likely@linaro.org>
+Date: Sun, 5 Oct 2014 12:12:23 -0700
+Message-ID: <CA+rpMb+Z80kwFXimv8PNXFZPKzRsX+0yUBOCUEJ0ZyDw2xMt7g@mail.gmail.com>
+Subject: Re: [PATCH] of: Fix NULL dereference in selftest removal code
+From: Gaurav Minocha <gaurav.minocha.os@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 03, 2014 at 12:09:04PM -0400, kan.liang@intel.com wrote:
-> From: Kan Liang <kan.liang@intel.com>
-> 
-> There are two types of pmu event stytle formats, "pmu_event_name"
-> or "cpu/pmu_event_name/". However, there is a bug on supporting these
-> two formats, especially when they mixed with other perf events.
-> The patch set intends to fix this issue.
-> 
-> The patch set has been tested on my haswell.
-> Here is the test script I used for this issue.
-> (Note: please make sure that your test system support TSX and
-> L1-dcache-loads events. Otherwise, you may want to change the events
-> to other pmu events.)
-> 
-> [lk@localhost ~]$ cat perf_style_test.sh
-> #hardware events + kernel pmu event with different style
-> perf stat -x, -e cycles,mem-stores,tx-start sleep 2
-> perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
-> perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
-> perf stat -x, -e instructions,cpu/tx-start/ sleep 2
-> perf stat -x, -e '{cycles,tx-start}' sleep 2
-> perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
-> 
-> #HW Cache event + kernel pmu event with different style
-> perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
-> perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
-> perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
-> perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
-> 
-> #Raw event + kernel pmu event with different style:
-> perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
-> perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
-> perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
-> 
-> Changes since V1:
-> Read kernel PMU events from sysfs at runtime
-> 
-> Changes since V2:
-> Use strlcpy to replace strncpy
-> 
-> Changes since V3:
-> rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-> 
-> Changes since V4:
-> scan kernel pmu events from sysfs only needed
-> rename the init/check/clenup functions and related struct.
-> allocate each symbol string separatelly
-> Use ALLOC_LIST
-> 
-> Changes since V5:
-> Using perf_pmu__find to instead of perf_pmu__scan
-> Don't scan all the time if the system doesn't support kernel pmu events
-> 
-> Changes since V6:
-> Add test case in automated tests suite
-> Use strdup and macro to refine the code
-> Add sep_dc for PMU event to support PE_MODIFIER_EVENT
-> Some minor changes for code style
-> 
-> Kan Liang (4):
->   Revert "perf tools: Default to cpu// for events v5"
->   perf tools: parse the pmu event prefix and suffix
->   perf tools: Add support to new style format of kernel PMU event
->   perf tools: Add test case for pmu event new style format
+Thanks for the fix, I just noted that you increased NO_OF_NODES to 3 in
+following phandle resolver patch.
 
-got test failure with your patchset:
+So, with NO_OF_NODES = 3, the following patch works fine on arm, x86
+and powerpc.
 
-[jolsa@krava perf]$ sudo ./perf test parse -v
- 5: parse events tests                                     :
---- start ---
-test child forked, pid 9972
-running test 0 'syscalls:sys_enter_open'
-registering plugin: /root/.traceevent/plugins/plugin_kvm.so
-registering plugin: /root/.traceevent/plugins/plugin_scsi.so
-registering plugin: /root/.traceevent/plugins/plugin_mac80211.so
-registering plugin: /root/.traceevent/plugins/plugin_hrtimer.so
-
-SNIP
-
-running test 6 'faults'
-running test 7 'L1-dcache-load-miss'
-running test 8 'mem:0'
-running test 9 'mem:0:x'
-running test 10 'mem:0:r'
-running test 11 'mem:0:w'
-running test 12 'syscalls:sys_enter_open:k'
-running test 13 'syscalls:*:u'
-test child interrupted
----- end ----
-parse events tests: FAILED!
-
-
-jirka
+On Wed, Oct 1, 2014 at 9:02 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> The selftest code removes its testcase data from the live tree when
+> exiting, but if the testcases data tree contains an empty child of the
+> root, then it causes an oops due to a NULL dereference. The reason is
+> that the code tries to directly dereference the child pointer without
+> checking first if a child is actually there.
+>
+> The solution is to pass the parent node into detach_node_and_children()
+> instead of trying to pass the child. This required removing the code
+> that attempts to remove all of the sibling nodes in
+> detach_node_and_children(), which was never sensible in the first place.
+>
+> At the same time add a check to make sure the bounds of the nodes list
+> are not exceeded by the testdata tree. If they are then abort.
+>
+> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+> Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
+> ---
+>  drivers/of/selftest.c | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+> index a737cb5974de..883e60b04eb5 100644
+> --- a/drivers/of/selftest.c
+> +++ b/drivers/of/selftest.c
+> @@ -637,6 +637,8 @@ static int attach_node_and_children(struct device_node *np)
+>         dup = np;
+>
+>         while (dup) {
+> +               if (WARN_ON(last_node_index >= NO_OF_NODES))
+> +                       return -EINVAL;
+>                 nodes[last_node_index++] = dup;
+>                 dup = dup->sibling;
+>         }
+> @@ -717,10 +719,6 @@ static void detach_node_and_children(struct device_node *np)
+>  {
+>         while (np->child)
+>                 detach_node_and_children(np->child);
+> -
+> -       while (np->sibling)
+> -               detach_node_and_children(np->sibling);
+> -
+>         of_detach_node(np);
+>  }
+>
+> @@ -749,8 +747,7 @@ static void selftest_data_remove(void)
+>                 if (nodes[last_node_index]) {
+>                         np = of_find_node_by_path(nodes[last_node_index]->full_name);
+>                         if (strcmp(np->full_name, "/aliases") != 0) {
+> -                               detach_node_and_children(np->child);
+> -                               of_detach_node(np);
+> +                               detach_node_and_children(np);
+>                         } else {
+>                                 for_each_property_of_node(np, prop) {
+>                                         if (strcmp(prop->name, "testcase-alias") == 0)
+> --
+> 1.9.1
+>
