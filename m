@@ -1,133 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaJENEi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 09:04:38 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:45220 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaJENEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 09:04:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141005092913.1717dfc9@recife.lan>
-References: <1412275758-31340-1-git-send-email-knightrider@are.ma>
-	<542E2BF6.2090800@iki.fi>
-	<CAKnK8-QOU7szWNcC1BsBZtNmHBLiLqZuCVYpjsVBkpfNCxGa-A@mail.gmail.com>
-	<20141003075206.331006bd@recife.lan>
-	<CAKnK8-QF7fWRzp24mhsUWuK610Ko7G=a4fEx0oyf+En+jRVoJA@mail.gmail.com>
-	<CAKnK8-REiZ+Y_cjf9Lpbc+QiSpp2JZKq1wCi9_3-BNjSopzRLQ@mail.gmail.com>
-	<20141005092913.1717dfc9@recife.lan>
-Date: Sun, 5 Oct 2014 22:04:32 +0900
-X-Google-Sender-Auth: o3Px1LXeUqgChlUwsroyfGxGMPo
-Message-ID: <CAKnK8-RRXB73=UZRzndyuQ2S19kefYkiXGn7z7PpTqDUNpp6Ow@mail.gmail.com>
-Subject: Re: [PATCH] pt3 (pci, tc90522, mxl301rf, qm1d1c0042):
- pt3_unregister_subdev(), pt3_unregister_subdev(), cleanups...
-From: "AreMa Inc." <info@are.ma>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Antti Palosaari <crope@iki.fi>, linux-media <linux-media@vger.kernel.org>,
+	id S1751590AbaJENVJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 09:21:09 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:39478 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751010AbaJENVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 09:21:04 -0400
+Date: Sun, 5 Oct 2014 10:20:56 -0300
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: "AreMa Inc." <info@are.ma>
+Cc: linux-media <linux-media@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Hans De Goede <hdegoede@redhat.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Michael Krufky <mkrufky@linuxtv.org>,
         Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        linux-kernel@vger.kernel.org, knightrider@are.ma
-Content-Type: text/plain; charset=UTF-8
+        Peter Senna Tschudin <peter.senna@gmail.com>, knightrider@are.ma
+Subject: Re: [PATCH 02/11] tc90522 is a client
+Message-ID: <20141005102056.05861325@recife.lan>
+In-Reply-To: <CAKnK8-REGVgdgQM+2KP0ibrf_gHMm_UO3oLr0MRoiu=-7vXUPw@mail.gmail.com>
+References: <cover.1412497399.git.knightrider@are.ma>
+	<5bff3e029fe189f44222961dc04790d4f58a4659.1412497399.git.knightrider@are.ma>
+	<20141005083358.072f5909.m.chehab@samsung.com>
+	<CAKnK8-REGVgdgQM+2KP0ibrf_gHMm_UO3oLr0MRoiu=-7vXUPw@mail.gmail.com>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yeah, sorry if we are not familiar with submission rules as it was the
-first time for us.
-We already splitted the FE and tuners as I2C drivers, according to your request.
+Em Sun, 05 Oct 2014 21:39:01 +0900
+"AreMa Inc." <info@are.ma> escreveu:
 
-Maybe Tsukada is very clever and we are too busy with daily business,
-but it doesn't mean that backstabbing is tolerated.
-We already asked him to join the project, in a very good manner.
+> Mauro,
+> 
+> As this _stable_ patch series is developed originally
+> (and already submitted for review) since 2013,
+> not based on Tsukada's patch you just linked,
+> it is difficult to split into one patch per logic.
+>
+> As you said, for example, to fix the Tsukada's patch of tuner - FE - bridge
+> communication, we need to fix all the files.
 
-The fact is that, our DVB driver is already published and used widely
-at least in Japan since August 2013
-(chardev version is far earlier) and has become a de facto standard,
-well tested without any major/minor issues
-reported. Our driver is simpler/slimmer and yet, stable. And, it
-conforms the rules of DVB core.
+Yes, it requires lots of work, although it is possible. We've done that in
+the past a few times, when such type of conflicts arise. 
+It is always painful, though.
 
-Or, do you have the card with you?
+I did it myself some time ago, in order to add support for some newer
+Siano hardware. The original patch submission were based on a diff between
+the driver at the Kernel and some internal development tree used by
+the chip manufacturer.
 
--Bud
+I waited for ~2 years for the original author to fix. As he didn't,
+and I got some new hardware, I was forced to do the rebase myself.
+It took maybe one week or two of hard work to get it done.
 
-2014-10-05 21:29 GMT+09:00 Mauro Carvalho Chehab <mchehab@osg.samsung.com>:
-> Hi Bud,
->
-> Em Sun, 05 Oct 2014 18:36:54 +0900
-> "AreMa Inc." <info@are.ma> escreveu:
->
->> Dear Antti, Mauro & others,
->>
->> We don't want to flood the mailing lists with dirts.
->> It is regretful to send this kind of email, however
->> as we just received a "war declaration" from Tsukada Akihiro,
->> it is better to postpone delivering PT3 driver to the main kernel tree.
->>
->> A series proof of facts follow.
->>
->> Thanks again for your appreciation.
->> Bud @ AreMa Inc.
->>
->> official contacts:
->> +81 50 5552 1666
->> info@are.ma
->>
->>
->> 2014-10-04 16:16 GMT+09:00 AreMa Inc. <info@are.ma>:
->> > Hi Mauro,
->> >
->> > The biggest reason is that, the submitted driver, also published at
->> > https://github.com/knight-rider/ptx/tree/master/pt3_dvb
->> > is well proven to be running smoothly and already used by Japanese community
->> > for more than a year (i.e. de facto standard) without any major issues.
->> >
->> > The second is more about his personal reasons in violating the rules
->> > and we don't want to comment further unless there is no response from him
->> > within a week.
->> >
->> > Many patches will follow.
->> >
->> > Thanks again for your info.
->> > Regards
->> > -Bud
->
-> Sorry, but the PT3 driver was already merged at the main tree and I can't
-> simply remove the PT3 patches without causing problems for all other patches
-> that are ready to be submitted.
->
-> What might be done would be to remove the driver on a separate patch,
-> but that would require a really strong reason for doing that.
->
-> At least from where I sit, tens of thousands kilimeters away from you both,
-> it sounds to me that we're talking about two different drivers for the
-> same piece of hardware. The big diff between your driver and his shows
-> that they're very different.
->
-> That's the history of what happened with PT3 drivers submission:
->         https://patchwork.linuxtv.org/project/linux-media/list/?submitter=6259&state=*
->         https://patchwork.linuxtv.org/project/linux-media/list/?submitter=6368&state=*
->
-> All the public e-mails are there, and I don't care (not I am aware) of
-> any other e-mails exchanged in priv.
->
-> Both drivers had issues when submitted, and both series were properly
-> reviewed. Yet, Akihiro was fast to fix the pointed issues, and his patches
-> followed the proper submission rules since the beginning. Also, the
-> per-driver patch split helped the reviewers to better do their work.
-> His series was discussed during the last 3-4 months without a single reply
-> arguing against its merge, and all comments pointing to issues at the driver
-> were fixed.
->
-> As it followed all the submission rules and fixup requests, it got merged.
->
-> So, I am unable to see any reason to remove his driver from the Kernel.
->
-> Am I missing something?
->
-> Regards,
-> Mauro
+> We started developing and publishing PT3 drivers (chardev and DVB versions)
+> on 2013 and have been submitting the patches to this community since then.
+> We were waiting for reviews.
+
+The reviews were sent, but it is really hard to review a big patch with
+14 files changed and 2952 insertions that weren't following the Linux DVB
+model, nor with the patches themselves were following the Kernel submission
+process.
+
+On every new review, a newer big blob were sent, sometimes repeating the
+same pattern that the reviewers asked to change.
+
+The entire review work is made by volunteers that have something else
+to do. So, if you want a quicker review, you need to make their lives
+easier, by splitting the drivers into smaller pieces and applying the
+changes they request (or technically arguing with them at the e-mail
+thread). Failing to do that makes the entire process longer.
+
+> However this July, a man named Tsukada, who has been annoying us since
+> the beginning of development (we invited him to merge/join the project,
+> in other words, opted him to be co-author), interrupted our submission
+> and started
+> speaking ill of us that we didn't want to split the driver and stopped
+> the development, etc.
+
+At least the public comments I saw, I didn't notice anything ill about
+you.
+
+Splitting the drivers into frontend, demod and bridge driver is indeed
+a requirement for DVB drivers submission. We do that even on devices
+like as as102, where they're all integrated at the same chip, as such
+split makes review a way easier, and decouples different logic functions
+into different modules.
+
+> This is not true. What we meant was that, it is too early to implement
+> Regmap I2C
+> for now (except if it is a firm consensus, surely we will do).
+
+Regmap I2C is an improvement, but not a mandatory requirement.
+
+> Unfortunately, you trusted him and put on the tree. If "backstabbing"
+> is permitted,
+> this will be a very bad precedence in our community.
+> 
+> We can send per logic patches without breaking the compilation,
+> but we cannot guarantee the behaviour if you apply only one patch or two.
+> Thus, pulling the clean package from
+> 
+>        https://github.com/knight-rider/ptx/tree/master/pt3_dvb
+> 
+> is the best bet. Or, do you have the card with you?
+
+No, I don't have such card, nor I have any personal preference from
+your version or Tsukada's one.
+
+I might be ordering one and test here with my RF generators or ISDB-T
+live, but very likely I won't have any time for coding, as my duties
+as the maintainers require my attention on other things too. Also,
+the problem here is not the lack of a developer for it, but, instead,
+the lack of coordination between two developers.
+
+So, I very much prefer if you could agree one with another around
+a series of patches that would improve the driver without causing
+regressions.
+
+Thanks and Regards,
+Mauro
