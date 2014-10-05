@@ -1,122 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbaJEQHC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:07:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5954 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887AbaJEQDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 12:03:39 -0400
-Date: Sun, 5 Oct 2014 19:07:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 06/16] virtio_blk: drop config_enable
-Message-ID: <1412525038-15871-7-git-send-email-mst@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
+	id S1751806AbaJEQQx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:16:53 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:42930 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610AbaJEQQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:16:50 -0400
+Date: Sun, 5 Oct 2014 12:16:46 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20141005161646.GB22223@mtj.dyndns.org>
+References: <cover.1411297686.git.agordeev@redhat.com>
+ <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+ <20141001153114.GE8971@agordeev.usersys.redhat.com>
+ <20141005022311.GD8549@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412525038-15871-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <20141005022311.GD8549@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that virtio core ensures config changes don't
-arrive during probing, drop config_enable flag
-in virtio blk.
-On removal, flush is now sufficient to guarantee that
-no change work is queued.
+A bit of addition.
 
-This help simplify the driver, and will allow
-setting DRIVER_OK earlier without losing config
-change notifications.
+On Sat, Oct 04, 2014 at 10:23:11PM -0400, Tejun Heo wrote:
+> Hmmm.... so, AFAICS, there's no real pros or cons of going either way,
+> right?  The only thing which could be different is possibly slightly
+> lower latency in servicing other IRQs or RT tasks on the same CPU but
+> given that the ahci IRQ handler already doesn't do anything which
+> takes time, I'm doubtful whether that'd be anything measureable.
+> 
+> I just don't get why ahci bothers with threaded irq, MMSI or not.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/block/virtio_blk.c | 19 ++-----------------
- 1 file changed, 2 insertions(+), 17 deletions(-)
+I think the thing which bothers me is that due to softirq we end up
+bouncing the context twice.  IRQ schedules threaded IRQ handler after
+doing minimal amount of work.  The threaded IRQ handler gets scheduled
+and again it doesn't do much but basically just schedules block
+softirq to actually run completions which is the heavier part.
+Apparently this doesn't seem to hurt measureably but it's just weird.
+Why are we bouncing the context twice?
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 0a58140..c8cf6a1 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -44,9 +44,6 @@ struct virtio_blk
- 	/* Lock for config space updates */
- 	struct mutex config_lock;
- 
--	/* enable config space updates */
--	bool config_enable;
--
- 	/* What host tells us, plus 2 for header & tailer. */
- 	unsigned int sg_elems;
- 
-@@ -348,8 +345,6 @@ static void virtblk_config_changed_work(struct work_struct *work)
- 	u64 capacity, size;
- 
- 	mutex_lock(&vblk->config_lock);
--	if (!vblk->config_enable)
--		goto done;
- 
- 	/* Host must always specify the capacity. */
- 	virtio_cread(vdev, struct virtio_blk_config, capacity, &capacity);
-@@ -374,7 +369,7 @@ static void virtblk_config_changed_work(struct work_struct *work)
- 	set_capacity(vblk->disk, capacity);
- 	revalidate_disk(vblk->disk);
- 	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
--done:
-+
- 	mutex_unlock(&vblk->config_lock);
- }
- 
-@@ -609,7 +604,6 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	mutex_init(&vblk->config_lock);
- 
- 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
--	vblk->config_enable = true;
- 
- 	err = init_vq(vblk);
- 	if (err)
-@@ -772,9 +766,7 @@ static void virtblk_remove(struct virtio_device *vdev)
- 	int refc;
- 
- 	/* Prevent config work handler from accessing the device. */
--	mutex_lock(&vblk->config_lock);
--	vblk->config_enable = false;
--	mutex_unlock(&vblk->config_lock);
-+	flush_work(&vblk->config_work);
- 
- 	del_gendisk(vblk->disk);
- 	blk_cleanup_queue(vblk->disk->queue);
-@@ -784,8 +776,6 @@ static void virtblk_remove(struct virtio_device *vdev)
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
--	flush_work(&vblk->config_work);
--
- 	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
- 	put_disk(vblk->disk);
- 	vdev->config->del_vqs(vdev);
-@@ -806,10 +796,6 @@ static int virtblk_freeze(struct virtio_device *vdev)
- 	vdev->config->reset(vdev);
- 
- 	/* Prevent config work handler from accessing the device. */
--	mutex_lock(&vblk->config_lock);
--	vblk->config_enable = false;
--	mutex_unlock(&vblk->config_lock);
--
- 	flush_work(&vblk->config_work);
- 
- 	blk_mq_stop_hw_queues(vblk->disk->queue);
-@@ -823,7 +809,6 @@ static int virtblk_restore(struct virtio_device *vdev)
- 	struct virtio_blk *vblk = vdev->priv;
- 	int ret;
- 
--	vblk->config_enable = true;
- 	ret = init_vq(vdev->priv);
- 	if (!ret)
- 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
+Thanks.
+
 -- 
-MST
-
+tejun
