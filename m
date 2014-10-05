@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752022AbaJEU2q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 16:28:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34055 "EHLO
+	id S1751830AbaJEUhl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 16:37:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34081 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaJEU2o (ORCPT
+	with ESMTP id S1751384AbaJEUhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 16:28:44 -0400
-Date: Sun, 5 Oct 2014 13:28:43 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jason Noakes <jjnoakes@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kobject_init and the zeroed-out-memory requirement
-Message-ID: <20141005202843.GA1282@kroah.com>
-References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
+	Sun, 5 Oct 2014 16:37:38 -0400
+Date: Sun, 5 Oct 2014 13:37:37 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/238] 3.14.20-stable review
+Message-ID: <20141005203737.GA2528@kroah.com>
+References: <20141003212913.680985295@linuxfoundation.org>
+ <542F6694.5020103@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
+In-Reply-To: <542F6694.5020103@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 04:02:14PM -0400, Jason Noakes wrote:
-> I noticed that kobject_init() requres the kobject passed in to be zeroed out
-> fully first.
-
-That is because people were trying to reuse objects without destroying
-them first.  So try to detect this and prevent the developer from doing
-something "foolish" like this.
-
-Is there any in-kernel code that does not properly zero out the memory
-before calling kobject_init()?
-
-> Many other *_init kernel routines (cdev_init, kref_init, mutex_init,
-> spin_lock_init, etc) do not have the same requirement - they work on fully
-> uninitialized memory.
-
-They all do different things, you can't compare apples to oranges :)
-
-> Documentation/kobject.txt does not mention the requirement that the memory be
-> zero-initialized before it is passed to kobject_init.
+On Fri, Oct 03, 2014 at 08:16:36PM -0700, Guenter Roeck wrote:
+> On 10/03/2014 02:28 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.14.20 release.
+> >There are 238 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
+> >
+> >Responses should be made by Sun Oct  5 21:28:26 UTC 2014.
+> >Anything received after that time might be too late.
+> >
 > 
-> I would like to submit a patch - which solution is preferred?
+> Build results:
+> 	total: 137 pass: 135 fail: 2
+> Failed builds:
+> 	arm:omap2plus_defconfig
+> 	arm:multi_v7_defconfig
 > 
->   (a) Update Documentation/kobject.txt and explicitly add the requirement
->   (b) Modify kobject_init to zero out the memory itself like other *_init
-> routines
->         (It already initializes most of its members - just not all of them)
+> Qenu test results:
+> 	total: 28 pass: 28 fail: 0
+> 
+> ---
+> Build error:
+> 
+> arch/arm/mach-omap2/omap_hwmod_7xx_data.c: In function 'dra7xx_hwmod_init':
+> arch/arm/mach-omap2/omap_hwmod_7xx_data.c:2735:2: error: implicit declaration of function 'soc_is_dra74x'
+> arch/arm/mach-omap2/omap_hwmod_7xx_data.c:2737:2: error: implicit declaration of function 'soc_is_dra72x'
+> 
+> 
+> Culprit:
+> 
+> 'ARM: DRA7: hwmod: Add dra74x and dra72x specific ocp interface lists'
+> 
+> Needs patch af438fec6cb9 ("ARM: DRA7: Add support for soc_is_dra74x() and soc_is_dra72x() variants")
+> as prerequisit.
+> 
+> Same problem is in 3.16 as well.
 
-As mentioned above, this is not going to be ok, look at the third if
-statement in kobject_init() for why not.
-
->   (c) Something else?
-
-Add a line of text to the kerneldoc for kobject_init to mention this?
-
-Or (a) is fine as well, if it makes you feel better, but if you do so,
-just say that all memory for kobjects must be created with kzalloc() and
-don't mention memset as that will cause people to try to reuse kobjects,
-like they have in the past, and bad things will happen then.
-
-hope this helps,
+Thanks, I've added this to 3.14 and 3.16-stable queues now.
 
 greg k-h
