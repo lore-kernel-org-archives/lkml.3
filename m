@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaJETVY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 15:21:24 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:51997 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaJETVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 15:21:22 -0400
-Date: Sun, 5 Oct 2014 15:21:19 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Joe Lawrence <joe.lawrence@stratus.com>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, jiri@resnulli.us,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] workqueue: add quiescent state between work items
-Message-ID: <20141005192119.GE8549@htj.dyndns.org>
-References: <1412529862-17954-1-git-send-email-joe.lawrence@stratus.com>
- <1412529862-17954-2-git-send-email-joe.lawrence@stratus.com>
+	id S1751922AbaJETXw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 15:23:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751724AbaJETXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 15:23:51 -0400
+Date: Sun, 5 Oct 2014 21:23:12 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, namhyung@kernel.org,
+        peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
+Subject: Re: [PATCH] perf tools: fix off-by-one error in maps
+Message-ID: <20141005192312.GA10245@krava.redhat.com>
+References: <20141003104707.GA4435@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412529862-17954-2-git-send-email-joe.lawrence@stratus.com>
+In-Reply-To: <20141003104707.GA4435@quad>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 01:24:21PM -0400, Joe Lawrence wrote:
-> Similar to the stop_machine deadlock scenario on !PREEMPT kernels
-> addressed in b22ce2785d97 "workqueue: cond_resched() after processing
-> each work item", kworker threads requeueing back-to-back with zero jiffy
-> delay can stall RCU. The cond_resched call introduced in that fix will
-> yield only iff there are other higher priority tasks to run, so force a
-> quiescent RCU state between work items.
+On Fri, Oct 03, 2014 at 12:47:07PM +0200, Stephane Eranian wrote:
 > 
-> Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-> Link: https://lkml.kernel.org/r/20140926105227.01325697@jlaw-desktop.mno.stratus.com
-> Link: https://lkml.kernel.org/r/20140929115445.40221d8e@jlaw-desktop.mno.stratus.com
-> Fixes: b22ce2785d97 ("workqueue: cond_resched() after processing each work item")
-> Cc: <stable@vger.kernel.org>
 
-Applied to wq/for-3.17-fixes.  If 3.17 comes out before this gets
-merged, I'll send it as for-3.18.
+SNIP
 
-Thanks.
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index b709059..9e2c71e 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -556,7 +556,7 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
+>  
+>  int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
+>  {
+> -	if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
+> +	if (ams->addr < ams->map->start || ams->addr >= ams->map->end) {
+>  		if (ams->map->groups == NULL)
+>  			return -1;
+>  		ams->map = map_groups__find(ams->map->groups, ams->map->type,
+> @@ -678,7 +678,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+>  				goto move_map;
+>  			}
+>  
+> -			after->start = map->end + 1;
+> +			after->start = map->end;
+>  			map_groups__insert(mg, after);
+>  			if (verbose >= 2)
+>  				map__fprintf(after, fp);
 
--- 
-tejun
+hum, do we also need this one then?
+
+---
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9e2c71e51fce..186418ba18db 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -664,7 +664,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
+ 				goto move_map;
+ 			}
+ 
+-			before->end = map->start - 1;
++			before->end = map->start;
+ 			map_groups__insert(mg, before);
+ 			if (verbose >= 2)
+ 				map__fprintf(before, fp);
