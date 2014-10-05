@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaJELUh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 07:20:37 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:29990 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205AbaJELUb convert rfc822-to-8bit (ORCPT
+	id S1751718AbaJELUo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 07:20:44 -0400
+Received: from hygieia.santi-shop.eu ([78.46.175.2]:47044 "EHLO
+	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbaJELUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 07:20:31 -0400
-X-AuditID: cbfec372-b7f2f6d0000052b3-68-5431297d97bf
-Date: Sun, 05 Oct 2014 08:20:23 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: =?UTF-8?B?0JHRg9C00Lgg0KDQvtC80LDQvdGC0L4s?= AreMa Inc 
-	<info@are.ma>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org, crope@iki.fi,
-        mchehab@osg.samsung.com, hdegoede@redhat.com,
-        laurent.pinchart@ideasonboard.com, mkrufky@linuxtv.org,
-        sylvester.nawrocki@gmail.com, g.liakhovetski@gmx.de,
-        peter.senna@gmail.com
-Subject: Re: [PATCH 01/11] tc90522: better chip description
-Message-id: <20141005082023.4d364154.m.chehab@samsung.com>
-In-reply-to: <e12c8e2e2e0f84035f58d8a7848dd6f64746a0ba.1412497399.git.knightrider@are.ma>
-References: <cover.1412497399.git.knightrider@are.ma>
- <e12c8e2e2e0f84035f58d8a7848dd6f64746a0ba.1412497399.git.knightrider@are.ma>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsVy+t/hEN1aTcMQg2+3tC2+N79ns3i/cR6T
-	xZvj05ks3q6ZxmLROXEJu8XlXXPYLHo2bGW1WP2swuL54xPsFt/edjJazPu8k8mB22PaVhWP
-	nbPusnt8+BjnMbtjJqvH4a8LWTymT5Px2NIPFH6/7yqbx+dNcgGcUVw2Kak5mWWpRfp2CVwZ
-	M188Ziv4zFcx9x1vA+M2ni5GTg4JAROJ3yseMkLYYhIX7q1n62Lk4hASWMIoce7vTxYIp4FJ
-	Ysvu+0AZDg4WAVWJC0+lQRrYBIwkXjW2sILYIgIeEiefNbKC1DMLNDNJbD97kwUkISxgLdH2
-	opEJxOYVsJL4dfkYWAOnQLTEuUNnmSAWtDBK7Fr0jxVkgYSAs8T8z9kQ9YISPybfA5vDLKAu
-	MWneImYIW1viybsLrBMYBWYhKZuFpGwWkrIFjMyrGEVLi5MLipPScw31ihNzi0vz0vWS83M3
-	MUKipWgH47MNVocYBTgYlXh4NX4YhAixJpYVV+YeYpTgYFYS4c3hMAwR4k1JrKxKLcqPLyrN
-	SS0+xMjEwSnVwHht6euaORf/nnZylrf8dP6dKYcjU9mkk+/O6JpcNpqiuVFo75mVbQJLvf9P
-	T5v28WWT0eEfUdbvH37nuiMnWzeXVaD/y777LN6XuM7ovwutT5xslW+llDqj5Ogb5YP3F20t
-	YClhTri7ddvlO2/vN7ovvW5k9HxbcbNxRdK5sO1ab35IPa3KNpqkxFKckWioxVxUnAgA3qKH
-	IXQCAAA=
+	Sun, 5 Oct 2014 07:20:35 -0400
+Date: Sun, 5 Oct 2014 13:20:28 +0200
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: x86_64 3.x kernels with SMP=n and up with incorrect dirty memory
+ accounting
+Message-ID: <20141005132028.7c0fab9a@neptune.home>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i686-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, 05 Oct 2014 17:59:37 +0900
-"Буди Романто, AreMa Inc" <info@are.ma> escreveu:
+Since about any 3.x kernel release (I don't know since what release
+exactly) more or less randomly system starts to starve more or less
+because of dirty memory.
 
-> tc90522 has both satellite & terrestrial demodulators,
-> thus change the category description
-> 
-> Signed-off-by: Буди Романто, AreMa Inc <knightrider@are.ma>
-> ---
->  drivers/media/dvb-frontends/Kconfig  | 4 ++--
->  drivers/media/dvb-frontends/Makefile | 1 +
->  2 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/dvb-frontends/Kconfig b/drivers/media/dvb-frontends/Kconfig
-> index 5a13454..0c59825 100644
-> --- a/drivers/media/dvb-frontends/Kconfig
-> +++ b/drivers/media/dvb-frontends/Kconfig
-> @@ -621,7 +621,7 @@ config DVB_S5H1411
->  	  An ATSC 8VSB and QAM64/256 tuner module. Say Y when you want
->  	  to support this frontend.
->  
-> -comment "ISDB-T (terrestrial) frontends"
-> +comment "ISDB-S (satellite) & ISDB-T (terrestrial) frontends"
->  	depends on DVB_CORE
->  
->  config DVB_S921
-> @@ -653,7 +653,7 @@ config DVB_TC90522
->  	depends on DVB_CORE && I2C
->  	default m if !MEDIA_SUBDRV_AUTOSELECT
->  	help
-> -	  A Toshiba TC90522 2xISDB-T + 2xISDB-S demodulator.
-> +	  Toshiba TC90522 2xISDB-S 8PSK + 2xISDB-T OFDM demodulator.
->  	  Say Y when you want to support this frontend.
->  
->  comment "Digital terrestrial only tuners/PLL"
-> diff --git a/drivers/media/dvb-frontends/Makefile b/drivers/media/dvb-frontends/Makefile
-> index ba59df6..6f05615 100644
-> --- a/drivers/media/dvb-frontends/Makefile
-> +++ b/drivers/media/dvb-frontends/Makefile
-> @@ -116,3 +116,4 @@ obj-$(CONFIG_DVB_M88RS2000) += m88rs2000.o
->  obj-$(CONFIG_DVB_AF9033) += af9033.o
->  obj-$(CONFIG_DVB_AS102_FE) += as102_fe.o
->  obj-$(CONFIG_DVB_TC90522) += tc90522.o
-> +
+When it happens I get /proc/meminfo looking as follows:
+MemTotal:         508392 kB
+MemFree:           24120 kB
+MemAvailable:     322184 kB
+Buffers:               0 kB
+Cached:           229884 kB
+SwapCached:         2380 kB
+Active:           178616 kB
+Inactive:         160760 kB
+Active(anon):      51172 kB
+Inactive(anon):    68860 kB
+Active(file):     127444 kB
+Inactive(file):    91900 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:        524284 kB
+SwapFree:         502372 kB
+Dirty:          18446744073709551408 kB
+Writeback:             0 kB
+AnonPages:        107816 kB
+Mapped:            37096 kB
+Shmem:             10540 kB
+Slab:             105604 kB
+SReclaimable:      89340 kB
+SUnreclaim:        16264 kB
+KernelStack:        2128 kB
+PageTables:         4212 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:      778480 kB
+Committed_AS:     875200 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:        4452 kB
+VmallocChunk:   34359704615 kB
+AnonHugePages:         0 kB
+DirectMap4k:       10228 kB
+DirectMap2M:      514048 kB
 
-Why to add a blank line here?
+As seen above Dirty is very large (looks like small negative
+value interpreted as unsigned - too large compare to available
+memory!).
 
-Regards,
-Mauro
+System is running under kvm/qemu with a single CPU and 512MB of
+RAM while making use of memory cgroup.
 
+The userspace process triggering it and being mostly affected is
+rrdcached (from rrdtool) as it's the one dirtying memory at regular
+intervals and in reasonable amounts - it may very well be affected
+by memory pressure in its cgroup (at least all the RRDs don't fit
+in its soft/hard cgroup memory limit).
+
+Probably most critical parts of the config are CONFIG_SMP=n in combination
+with pretty tight memory availability.
+
+As soon as it hits, wchan for rrdcached looks like this:
+ grep . /proc/10045/task/*/wchan
+ /proc/10045/task/10045/wchan:poll_schedule_timeout
+ /proc/10045/task/10047/wchan:balance_dirty_pages_ratelimited
+ /proc/10045/task/10048/wchan:balance_dirty_pages_ratelimited
+ /proc/10045/task/10049/wchan:balance_dirty_pages_ratelimited
+ /proc/10045/task/10050/wchan:balance_dirty_pages_ratelimited
+ /proc/10045/task/10051/wchan:futex_wait_queue_me
+ /proc/10045/task/10052/wchan:poll_schedule_timeout
+
+I can kill rrdcached (but must use -KILL for it not to take an
+eternity) to stop system thinking to be in permanent IO-wait
+but when retarting rrdcached I pretty quickly get back into
+original state. Only way I know to get out of this is to reboot.
+
+
+How is dirty memory accounting happening, would it be possible for
+the accounting to complain if dirty memory goes "negative" and
+in such case reset accounting to 0 (or pause everything the time
+needed to recalculate correct accounting value)?
+
+Of all the systems I'm monitoring these x86_64 systems are the only
+ones I've seen this issue on, though they are probably the only ones
+running under such tight memory constraints.
+
+Bruno
