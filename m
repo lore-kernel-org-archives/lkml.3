@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058AbaJEQEL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 12:04:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38673 "EHLO mx1.redhat.com"
+	id S1752125AbaJEQEx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 12:04:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752018AbaJEQD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 12:03:59 -0400
-Date: Sun, 5 Oct 2014 19:07:27 +0300
+	id S1752048AbaJEQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 5 Oct 2014 12:04:10 -0400
+Date: Sun, 5 Oct 2014 19:07:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 13/16] virtio_blk: enable VQs early
-Message-ID: <1412525038-15871-14-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH 16/16] virtio_net: fix use after free on allocation failure
+Message-ID: <1412525038-15871-17-git-send-email-mst@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,31 +23,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after probe returns, virtio block violated this
-rule by calling add_disk, which causes the VQ to be used directly within
-probe.
+In the extremely unlikely event that driver initialization fails after
+RX buffers are added, virtio net frees RX buffers while VQs are
+still active, potentially causing device to use a freed buffer.
 
-To fix, call virtio_early_enable_vqs before using VQs.
+To fix, reset device first - same as we do on device removal.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/block/virtio_blk.c | 2 ++
+ drivers/net/virtio_net.c | 2 ++
  1 file changed, 2 insertions(+)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 13c384b..e59ae859 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -719,6 +719,8 @@ static int virtblk_probe(struct virtio_device *vdev)
- 	if (!err && opt_io_size)
- 		blk_queue_io_opt(q, blk_size * opt_io_size);
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 7afc990..85e6098 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1830,6 +1830,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	return 0;
  
-+	virtio_early_enable_vqs(vdev);
+ free_recv_bufs:
++	vi->vdev->config->reset(vdev);
 +
- 	add_disk(vblk->disk);
- 	err = device_create_file(disk_to_dev(vblk->disk), &dev_attr_serial);
- 	if (err)
+ 	free_receive_bufs(vi);
+ 	unregister_netdev(dev);
+ free_vqs:
 -- 
 MST
 
