@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaJEJA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 05:00:27 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:65504 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526AbaJEJAV (ORCPT
+	id S1751670AbaJEJAi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 05:00:38 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:55436 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaJEJAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 05:00:21 -0400
+	Sun, 5 Oct 2014 05:00:30 -0400
 From: "=?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?=" 
 	<info@are.ma>
 X-Google-Original-From: =?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?= <knightrider@are.ma>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, crope@iki.fi, m.chehab@samsung.com,
         laurent.pinchart@ideasonboard.com, mkrufky@linuxtv.org,
         sylvester.nawrocki@gmail.com, g.liakhovetski@gmx.de,
         peter.senna@gmail.com
-Subject: [PATCH 06/11] pt3: namespace cleanup
-Date: Sun,  5 Oct 2014 17:59:42 +0900
-Message-Id: <b05c5163dc74cb38418b4e3471c38d6278570a01.1412497399.git.knightrider@are.ma>
+Subject: [PATCH 08/11] qm1d1c0042: namespace cleanup
+Date: Sun,  5 Oct 2014 17:59:44 +0900
+Message-Id: <37bb3490954e27725cc9be5f1e44832c3907779a.1412497399.git.knightrider@are.ma>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <cover.1412497399.git.knightrider@are.ma>
 References: <cover.1412497399.git.knightrider@are.ma>
@@ -31,21 +31,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nothing to export
+minimize export
 
 Signed-off-by: Буди Романто, AreMa Inc <knightrider@are.ma>
 ---
- drivers/media/pci/pt3/pt3.h | 183 +++-----------------------------------------
- 1 file changed, 10 insertions(+), 173 deletions(-)
+ drivers/media/tuners/qm1d1c0042.h | 34 ++++++++++------------------------
+ 1 file changed, 10 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/media/pci/pt3/pt3.h b/drivers/media/pci/pt3/pt3.h
-index 1b3f2ad..13a0c8c 100644
---- a/drivers/media/pci/pt3/pt3.h
-+++ b/drivers/media/pci/pt3/pt3.h
+diff --git a/drivers/media/tuners/qm1d1c0042.h b/drivers/media/tuners/qm1d1c0042.h
+index 4f5c188..65bca43 100644
+--- a/drivers/media/tuners/qm1d1c0042.h
++++ b/drivers/media/tuners/qm1d1c0042.h
 @@ -1,12 +1,12 @@
  /*
-- * Earthsoft PT3 driver
-+ * DVB driver for Earthsoft PT3 ISDB-S/T PCI-E card
+- * Sharp QM1D1C0042 8PSK tuner driver
++ * Sharp VA4M6JC2103 - Earthsoft PT3 ISDB-S tuner driver QM1D1C0042
   *
 - * Copyright (C) 2014 Akihiro Tsukada <tskd08@gmail.com>
 - *
@@ -61,184 +61,35 @@ index 1b3f2ad..13a0c8c 100644
   *
   * This program is distributed in the hope that it will be useful,
   * but WITHOUT ANY WARRANTY; without even the implied warranty of
-@@ -14,173 +14,10 @@
+@@ -14,24 +14,10 @@
   * GNU General Public License for more details.
   */
  
--#ifndef PT3_H
--#define PT3_H
+-#ifndef QM1D1C0042_H
+-#define QM1D1C0042_H
 -
--#include <linux/atomic.h>
--#include <linux/types.h>
--
--#include "dvb_demux.h"
 -#include "dvb_frontend.h"
--#include "dmxdev.h"
 -
--#include "tc90522.h"
--#include "mxl301rf.h"
--#include "qm1d1c0042.h"
--
--#define DRV_NAME KBUILD_MODNAME
--
--#define PT3_NUM_FE 4
--
--/*
-- * register index of the FPGA chip
-- */
--#define REG_VERSION	0x00
--#define REG_BUS		0x04
--#define REG_SYSTEM_W	0x08
--#define REG_SYSTEM_R	0x0c
--#define REG_I2C_W	0x10
--#define REG_I2C_R	0x14
--#define REG_RAM_W	0x18
--#define REG_RAM_R	0x1c
--#define REG_DMA_BASE	0x40	/* regs for FE[i] = REG_DMA_BASE + 0x18 * i */
--#define OFST_DMA_DESC_L	0x00
--#define OFST_DMA_DESC_H	0x04
--#define OFST_DMA_CTL	0x08
--#define OFST_TS_CTL	0x0c
--#define OFST_STATUS	0x10
--#define OFST_TS_ERR	0x14
--
--/*
-- * internal buffer for I2C
-- */
--#define PT3_I2C_MAX 4091
--struct pt3_i2cbuf {
--	u8  data[PT3_I2C_MAX];
--	u8  tmp;
--	u32 num_cmds;
--};
--
--/*
-- * DMA things
-- */
--#define TS_PACKET_SZ  188
--/* DMA transfers must not cross 4GiB, so use one page / transfer */
--#define DATA_XFER_SZ   4096
--#define DATA_BUF_XFERS 47
--/* (num_bufs * DATA_BUF_SZ) % TS_PACKET_SZ must be 0 */
--#define DATA_BUF_SZ    (DATA_BUF_XFERS * DATA_XFER_SZ)
--#define MAX_DATA_BUFS  16
--#define MIN_DATA_BUFS   2
--
--#define DESCS_IN_PAGE (PAGE_SIZE / sizeof(struct xfer_desc))
--#define MAX_NUM_XFERS (MAX_DATA_BUFS * DATA_BUF_XFERS)
--#define MAX_DESC_BUFS DIV_ROUND_UP(MAX_NUM_XFERS, DESCS_IN_PAGE)
--
--/* DMA transfer description.
-- * device is passed a pointer to this struct, dma-reads it,
-- * and gets the DMA buffer ring for storing TS data.
-- */
--struct xfer_desc {
--	u32 addr_l; /* bus address of target data buffer */
--	u32 addr_h;
--	u32 size;
--	u32 next_l; /* bus adddress of the next xfer_desc */
--	u32 next_h;
--};
--
--/* A DMA mapping of a page containing xfer_desc's */
--struct xfer_desc_buffer {
--	dma_addr_t b_addr;
--	struct xfer_desc *descs; /* PAGE_SIZE (xfer_desc[DESCS_IN_PAGE]) */
--};
--
--/* A DMA mapping of a data buffer */
--struct dma_data_buffer {
--	dma_addr_t b_addr;
--	u8 *data; /* size: u8[PAGE_SIZE] */
--};
--
--/*
-- * device things
-- */
--struct pt3_adap_config {
--	struct i2c_board_info demod_info;
--	struct tc90522_config demod_cfg;
--
--	struct i2c_board_info tuner_info;
--	union tuner_config {
--		struct qm1d1c0042_config qm1d1c0042;
--		struct mxl301rf_config   mxl301rf;
--	} tuner_cfg;
--	u32 init_freq;
--};
--
--struct pt3_adapter {
--	struct dvb_adapter  dvb_adap;  /* dvb_adap.priv => struct pt3_board */
--	int adap_idx;
--
--	struct dvb_demux    demux;
--	struct dmxdev       dmxdev;
++#ifndef __QM1D1C0042_H__
++#define __QM1D1C0042_H__
+ 
+-struct qm1d1c0042_config {
 -	struct dvb_frontend *fe;
--	struct i2c_client   *i2c_demod;
--	struct i2c_client   *i2c_tuner;
--
--	/* data fetch thread */
--	struct task_struct *thread;
--	int num_feeds;
--
--	bool cur_lna;
--	bool cur_lnb; /* current LNB power status (on/off) */
--
--	/* items below are for DMA */
--	struct dma_data_buffer buffer[MAX_DATA_BUFS];
--	int buf_idx;
--	int buf_ofs;
--	int num_bufs;  /* == pt3_board->num_bufs */
--	int num_discard; /* how many access units to discard initially */
--
--	struct xfer_desc_buffer desc_buf[MAX_DESC_BUFS];
--	int num_desc_bufs;  /* == num_bufs * DATA_BUF_XFERS / DESCS_IN_PAGE */
--};
-+#ifndef	__PT3_H__
-+#define	__PT3_H__
++#define QM1D1C0042_DRVNAME "qm1d1c0042"
  
-+#define PT3_DRVNAME KBUILD_MODNAME
- 
--struct pt3_board {
--	struct pci_dev *pdev;
--	void __iomem *regs[2];
--	/* regs[0]: registers, regs[1]: internal memory, used for I2C */
--
--	struct mutex lock;
--
--	/* LNB power shared among sat-FEs */
--	int lnb_on_cnt; /* LNB power on count */
--
--	/* LNA shared among terr-FEs */
--	int lna_on_cnt; /* booster enabled count */
--
--	int num_bufs;  /* number of DMA buffers allocated/mapped per FE */
--
--	struct i2c_adapter i2c_adap;
--	struct pt3_i2cbuf *i2c_buf;
--
--	struct pt3_adapter *adaps[PT3_NUM_FE];
+-	u32  xtal_freq;    /* [kHz] */ /* currently ignored */
+-	bool lpf;          /* enable LPF */
+-	bool fast_srch;    /* enable fast search mode, no LPF */
+-	u32  lpf_wait;         /* wait in tuning with LPF enabled. [ms] */
+-	u32  fast_srch_wait;   /* with fast-search mode, no LPF. [ms] */
+-	u32  normal_srch_wait; /* with no LPF/fast-search mode. [ms] */
 -};
--
--
--/*
-- * prototypes
-- */
--extern int  pt3_alloc_dmabuf(struct pt3_adapter *adap);
--extern void pt3_init_dmabuf(struct pt3_adapter *adap);
--extern void pt3_free_dmabuf(struct pt3_adapter *adap);
--extern int  pt3_start_dma(struct pt3_adapter *adap);
--extern int  pt3_stop_dma(struct pt3_adapter *adap);
--extern int  pt3_proc_dma(struct pt3_adapter *adap);
+-/* special values indicating to use the default in qm1d1c0042_config */
+-#define QM1D1C0042_CFG_XTAL_DFLT 0
+-#define QM1D1C0042_CFG_WAIT_DFLT 0
 +#endif
  
--extern int  pt3_i2c_master_xfer(struct i2c_adapter *adap,
--				struct i2c_msg *msgs, int num);
--extern u32  pt3_i2c_functionality(struct i2c_adapter *adap);
--extern void pt3_i2c_reset(struct pt3_board *pt3);
--extern int  pt3_init_all_demods(struct pt3_board *pt3);
--extern int  pt3_init_all_mxl301rf(struct pt3_board *pt3);
--#endif /* PT3_H */
+-#endif /* QM1D1C0042_H */
 -- 
 1.8.4.5
 
