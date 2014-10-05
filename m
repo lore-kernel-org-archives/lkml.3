@@ -1,70 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaJEUvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 16:51:03 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:49749 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751366AbaJEUvB (ORCPT
+	id S1751915AbaJEU5z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 16:57:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54814 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaJEU5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 16:51:01 -0400
-Date: Sun, 5 Oct 2014 15:50:57 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3.16 000/357] 3.16.4-stable review
-Message-ID: <20141005155057.4a2c5a99@as>
-In-Reply-To: <20141005203914.GE2528@kroah.com>
-References: <20141003212933.458851516@linuxfoundation.org>
-	<20141004073839.125fa529@as>
-	<20141005203914.GE2528@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 5 Oct 2014 16:57:53 -0400
+Date: Sun, 05 Oct 2014 16:57:50 -0400 (EDT)
+Message-Id: <20141005.165750.1917530186306954555.davem@davemloft.net>
+To: fabf@skynet.be
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        sparclinux@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 08/13 linux-next] serial: sunsu: use container_of to
+ resolve uart_sunsu_port from uart_port
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1412528475-1449-9-git-send-email-fabf@skynet.be>
+References: <1412528475-1449-1-git-send-email-fabf@skynet.be>
+	<1412528475-1449-9-git-send-email-fabf@skynet.be>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 05 Oct 2014 13:57:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014 13:39:14 -0700
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+From: Fabian Frederick <fabf@skynet.be>
+Date: Sun,  5 Oct 2014 19:01:09 +0200
 
-> On Sat, Oct 04, 2014 at 07:38:39AM -0500, Chuck Ebbert wrote:
-> > On Fri,  3 Oct 2014 14:26:26 -0700
-> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
-> > 
-> > > ---------------------------------
-> > > Note: This is a big stable release.  Mostly my fault for being on the
-> > > road last week, combined with an unusually large number of patches being
-> > > tagged for the stable tree.  Anyway, I've caught up with all pending
-> > > patches before 3.17-rc7, so if you have marked something for the stable
-> > > tree that I have not applied, or emailed the stable@v.k.o list asking
-> > > for a patch, that is not here, please let me know.
-> > > ---------------------------------
-> > > 
-> > > This is the start of the stable review cycle for the 3.16.4 release.
-> > > There are 357 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
-> > > 
-> > > Responses should be made by Sun Oct  5 21:28:42 UTC 2014.
-> > > Anything received after that time might be too late.
-> > > 
-> > 
-> > Should also include this one, which fixes CVE-2014-6410:
-> > 
-> > commit c03aa9f6e1f938618e6db2e23afef0574efeeb65
-> > Author: Jan Kara <jack@suse.cz>
-> > Date:   Thu Sep 4 14:06:55 2014 +0200
-> > 
-> >     udf: Avoid infinite loop when processing indirect ICBs
+> Use container_of instead of casting first structure member.
 > 
-> Thanks, I'll queue that up for the next stable releases.
-> 
-> greg k-h
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-I built 3.16.4-rc1 for Fedora, which already has this patch included.
-
-It boots and runs on Fedora 21, and that patch has been in Fedora 21 for
-a while. Why not include it in 3.16.4?
+Acked-by: David S. Miller <davem@davemloft.net>
