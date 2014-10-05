@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048AbaJEVt1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 17:49:27 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39699 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752011AbaJEVtU (ORCPT
+	id S1752076AbaJEVvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 17:51:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34404 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978AbaJEVvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 17:49:20 -0400
-X-Sasl-enc: 8oRIF1Ha4COjpXmiC4bOhsDzAum/cOjm89/yAfy9DQ5a 1412545760
-Date: Sun, 5 Oct 2014 18:49:08 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
-Subject: Re: [PATCH 1/8] x86, microcode, intel: forbid some incorrect metadata
-Message-ID: <20141005214907.GA28396@khazad-dum.debian.net>
-References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
- <1410197875-19252-2-git-send-email-hmh@hmh.eng.br>
- <20141005173453.GC9377@pd.tnic>
- <20141005193703.GB24081@khazad-dum.debian.net>
- <20141005211304.GA12003@pd.tnic>
+	Sun, 5 Oct 2014 17:51:00 -0400
+Date: Sun, 5 Oct 2014 14:51:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jason Noakes <jjnoakes@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kobject_init and the zeroed-out-memory requirement
+Message-ID: <20141005215100.GA20426@kroah.com>
+References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
+ <20141005202843.GA1282@kroah.com>
+ <CAN2+FEKsVyjV8v98R+V-xHseH1E2NKPquo6Z9nQc0M8d0Z620A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141005211304.GA12003@pd.tnic>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAN2+FEKsVyjV8v98R+V-xHseH1E2NKPquo6Z9nQc0M8d0Z620A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Oct 2014, Borislav Petkov wrote:
-> On Sun, Oct 05, 2014 at 04:37:03PM -0300, Henrique de Moraes Holschuh wrote:
-> > Not realy, because it got you confused! :-)
+On Sun, Oct 05, 2014 at 04:47:42PM -0400, Jason Noakes wrote:
+> > Is there any in-kernel code that does not properly zero out the memory
+> > before calling kobject_init()?
 > 
-> No, it didn't get me confused - it got you confused that I'm confused.
+> I'm not sure. I didn't find any, but I've seen it bite people writing
+> drivers more than once where I work, and the latest oops I just
+> debugged a few days ago prompted me to address the issue and at least
+> get the documentation updated.
 
-Indeed.
+No driver should be working with "raw" kobjects.
 
-> You need to read the comment as a *whole*. The zero value is special
-> because it is *used* to *denote* a failure. You can use any other
-> invalid revision value for that matter.
+> >> Many other *_init kernel routines (cdev_init, kref_init, mutex_init,
+> >> spin_lock_init, etc) do not have the same requirement - they work on fully
+> >> uninitialized memory.
+> >
+> > They all do different things, you can't compare apples to oranges :)
+> 
+> Well, they are all named "_init", which to me implies that they
+> initialize the object/memory passed in, which is true in all of the
+> other cases I mentioned, but not for kobject_init. Perhaps it should
+> have been called kobject_setup or something. But I digress...
 
-Well, the new wording is confusing me... so maybe we can try a third time?
-:-)
+kobject_init() has been there for a very long time, and yes, we don't
+always have the best naming scheme in the kernel, that comes from
+evolution over the years.
 
-> Maybe "denote" was not precise enough - maybe it should say "0 is an
-> invalid microcode revision and is used to detect the failure of a
-> microcode update" or similar. Yeah, "detect" sounds better.
+> >> Documentation/kobject.txt does not mention the requirement that the memory be
+> >> zero-initialized before it is passed to kobject_init.
+> >
+> > Add a line of text to the kerneldoc for kobject_init to mention this?
+> >
+> > Or (a) is fine as well, if it makes you feel better, but if you do so,
+> > just say that all memory for kobjects must be created with kzalloc() and
+> > don't mention memset as that will cause people to try to reuse kobjects,
+> > like they have in the past, and bad things will happen then.
+> 
+> Here is a patch updating the documentation (kobject.txt and
+> kobject_init's usage documentation) so that the zeroed-out-memory
+> requirement is explicit.
+> 
+> Signed-off-by: Jason J. Noakes <jjnoakes@gmail.com>
 
-How about this:
+Care to resend this in a format I can apply it in (i.e. without this
+discussion above the patch forcing me to edit the changelog)?
 
-	/*
-	 * 0 is not a valid microcode revision as it is used to detect the
-	 * absence of any sucessful microcode update since reset /
-	 * power-on, see MSR 0x8b (IA32_BIOS_SIGN_ID):
-	 *
-	 * "It is required that this register field be pre-loaded with zero
-	 * prior to executing the CPUID, function 1. If the field remains
-	 * equal to zero, then there is no microcode update loaded. Another
-	 * non-zero value will be the signature."
-	 */
+thanks,
 
-?
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+greg k-h
