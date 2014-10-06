@@ -1,126 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752378AbaJFVER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:04:17 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:61552 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254AbaJFVEN (ORCPT
+	id S1752116AbaJFVFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:05:43 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37592 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaJFVFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:04:13 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
-        Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH v5 1/2] [media] V4L: Add camera pan/tilt speed controls
-Date: Mon,  6 Oct 2014 14:04:08 -0700
-Message-Id: <1412629448-16348-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <CAP_ceTznJfoE2CNzU+=Ysnx_pNbmUeggOPCEzysvUP9YnSiGgg@mail.gmail.com>
-References: <CAP_ceTznJfoE2CNzU+=Ysnx_pNbmUeggOPCEzysvUP9YnSiGgg@mail.gmail.com>
+	Mon, 6 Oct 2014 17:05:42 -0400
+Date: Mon, 6 Oct 2014 22:05:36 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Subject: Re: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
+Message-ID: <20141006210536.GD18035@lee--X1>
+References: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The V4L2_CID_PAN_SPEED and V4L2_CID_TILT_SPEED controls allow to move the
-camera by setting its rotation speed around its axis.
+On Thu, 18 Sep 2014, micky_ching@realsil.com.cn wrote:
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-Reviewed-by: Pawel Osciak <posciak@chromium.org>
----
-Changes from v1:
-- update the documentation wording according to Pawel suggestion.
-Changes from v2:
-- bump Linux kernel version for the API change.
+> From: Micky Ching <micky_ching@realsil.com.cn>
+> 
+> Fix rts5227&5249 failed send buffer cmd after suspend,
+> PM_CTRL3 should reset before send any buffer cmd after suspend.
+> Otherwise, buffer cmd will failed, this will lead resume fail.
+> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>  drivers/mfd/Makefile         |    2 +-
+>  drivers/mfd/rts5227.c        |    6 ++++++
+>  drivers/mfd/rts5249.c        |    4 ++++
+>  drivers/mfd/rtsx_gops.c      |   36 ++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/rtsx_pcr.h       |    3 +++
+>  include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
+>  6 files changed, 62 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/mfd/rtsx_gops.c
 
- Documentation/DocBook/media/v4l/compat.xml   | 10 ++++++++++
- Documentation/DocBook/media/v4l/controls.xml | 21 +++++++++++++++++++++
- drivers/media/v4l2-core/v4l2-ctrls.c         |  2 ++
- include/uapi/linux/v4l2-controls.h           |  2 ++
- 4 files changed, 35 insertions(+)
+[...]
 
-diff --git a/Documentation/DocBook/media/v4l/compat.xml b/Documentation/DocBook/media/v4l/compat.xml
-index 3a626d1..0a2debf 100644
---- a/Documentation/DocBook/media/v4l/compat.xml
-+++ b/Documentation/DocBook/media/v4l/compat.xml
-@@ -2569,6 +2569,16 @@ fields changed from _s32 to _u32.
-       </orderedlist>
-     </section>
- 
-+    <section>
-+      <title>V4L2 in Linux 3.18</title>
-+      <orderedlist>
-+	<listitem>
-+	  <para>Added <constant>V4L2_CID_PAN_SPEED</constant> and
-+ <constant>V4L2_CID_TILT_SPEED</constant> camera controls.</para>
-+	</listitem>
-+      </orderedlist>
-+    </section>
-+
-     <section id="other">
-       <title>Relation of V4L2 to other Linux multimedia APIs</title>
- 
-diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-index 9f5ffd8..124f287 100644
---- a/Documentation/DocBook/media/v4l/controls.xml
-+++ b/Documentation/DocBook/media/v4l/controls.xml
-@@ -3965,6 +3965,27 @@ by exposure, white balance or focus controls.</entry>
- 	  </row>
- 	  <row><entry></entry></row>
- 
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_PAN_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera horizontally at the specific speed. The unit is undefined. A
-+positive value moves the camera to the right (clockwise when viewed
-+from above), a negative value to the left. A value of zero stops the motion
-+if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
-+
-+	  <row>
-+	    <entry spanname="id"><constant>V4L2_CID_TILT_SPEED</constant>&nbsp;</entry>
-+	    <entry>integer</entry>
-+	  </row><row><entry spanname="descr">This control turns the
-+camera vertically at the specified speed. The unit is undefined. A
-+positive value moves the camera up, a negative value down. A value of zero
-+stops the motion if one is in progress and has no effect otherwise.</entry>
-+	  </row>
-+	  <row><entry></entry></row>
-+
- 	</tbody>
-       </tgroup>
-     </table>
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index f030d6a..4d050f9 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -796,6 +796,8 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_AUTO_FOCUS_STOP:		return "Auto Focus, Stop";
- 	case V4L2_CID_AUTO_FOCUS_STATUS:	return "Auto Focus, Status";
- 	case V4L2_CID_AUTO_FOCUS_RANGE:		return "Auto Focus, Range";
-+	case V4L2_CID_PAN_SPEED:		return "Pan, Speed";
-+	case V4L2_CID_TILT_SPEED:		return "Tilt, Speed";
- 
- 	/* FM Radio Modulator controls */
- 	/* Keep the order of the 'case's the same as in v4l2-controls.h! */
-diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-index e946e43..4de238b 100644
---- a/include/uapi/linux/v4l2-controls.h
-+++ b/include/uapi/linux/v4l2-controls.h
-@@ -746,6 +746,8 @@ enum v4l2_auto_focus_range {
- 	V4L2_AUTO_FOCUS_RANGE_INFINITY		= 3,
- };
- 
-+#define V4L2_CID_PAN_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+32)
-+#define V4L2_CID_TILT_SPEED			(V4L2_CID_CAMERA_CLASS_BASE+33)
- 
- /* FM Modulator class control IDs */
- 
+> diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
+> new file mode 100644
+> index 0000000..3cf596f
+> --- /dev/null
+> +++ b/drivers/mfd/rtsx_gops.c
+> @@ -0,0 +1,36 @@
+> +/* Driver for Realtek PCI-Express card reader
+> + *
+> + * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the
+> + * Free Software Foundation; either version 2, or (at your option) any
+> + * later version.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + *
+> + * Author:
+> + *   Micky Ching <micky_ching@realsil.com.cn>
+> + */
+> +
+> +#include <linux/mfd/rtsx_pci.h>
+> +#include "rtsx_pcr.h"
+> +
+> +int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
+> +{
+> +	int err;
+> +
+> +	/* init aspm */
+> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
+
+I'm not keen on the magic numbers here.  Can you #define them?
+
+> +	if (err < 0)
+> +		return err;
+> +
+> +	/* reset PM_CTRL3 before send buffer cmd */
+> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
+
+Same.
+
+> +}
+> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+> index 07e4c2e..fe2bbb6 100644
+> --- a/drivers/mfd/rtsx_pcr.h
+> +++ b/drivers/mfd/rtsx_pcr.h
+> @@ -72,4 +72,7 @@ do {									\
+>  	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
+>  } while (0)
+>  
+> +/* generic operations */
+> +int rtsx_gops_pm_reset(struct rtsx_pcr *pcr);
+> +
+>  #endif
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index 74346d5..b34fec8 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>  	return (u8 *)(pcr->host_cmds_ptr);
+>  }
+>  
+> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
+> +		u8 mask, u8 append)
+> +{
+> +	int err;
+> +	u8 val;
+> +
+> +	err = pci_read_config_byte(pcr->pci, addr, &val);
+> +	if (err < 0)
+> +		return err;
+> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
+> +}
+> +
+>  #endif
+
 -- 
-2.1.0.rc2.206.gedb03e5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
