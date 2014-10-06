@@ -1,116 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751814AbaJFVWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:22:42 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:50641 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaJFVWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:22:40 -0400
-Date: Mon, 6 Oct 2014 22:22:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johannes Pointner <johannes.pointner@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
- for  subnodes
-Message-ID: <20141006212232.GF18035@lee--X1>
-References: <1660410.j399mvljTo@lenovobook>
+	id S1752190AbaJFVWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:22:52 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57587 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751926AbaJFVWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:22:49 -0400
+Date: Mon, 6 Oct 2014 18:22:43 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141006212243.GE14113@kernel.org>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20141006150741.GB14113@kernel.org>
+ <20141006151605.GE4372@pd.tnic>
+ <20141006191227.GD14113@kernel.org>
+ <20141006195349.GE20739@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1660410.j399mvljTo@lenovobook>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141006195349.GE20739@pd.tnic>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Johannes Pointner wrote:
-
-> Add documentation for compatible property of subnodes.
+Em Mon, Oct 06, 2014 at 09:53:49PM +0200, Borislav Petkov escreveu:
+> On Mon, Oct 06, 2014 at 04:12:27PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Right, and it is being a great exercise, thanks for the patience so far
+> > ;-)
 > 
-> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-> ---
->  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
->  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
->  2 files changed, 12 insertions(+), 4 deletions(-)
+> I know, this is your secret agenda to keep me at bay working on this! :-P
 > 
-> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> index 4f05d20..8ae3a3b 100644
-> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
-> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> @@ -14,6 +14,9 @@ Required properties:
->  Optional properties:
->  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
->  
-> +Required subnode properties:
-> +- compatible: "ti,tps65217-pmic"
-> +
->    The valid names for regulators are:
->    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
->  
-> @@ -23,9 +26,11 @@ Example:
->  
->  	tps: tps@24 {
->  		compatible = "ti,tps65217";
-> +		reg = <0x24>;
->  		ti,pmic-shutdown-controller;
->  
-> -		regulators {
-> +		tps_pmic: regulators {
+> > Looking at those ifdefs we see things that are specific to tools/perf/,
+> > like perf_evsel having a struct hists embedded... I.e. that is of no
+> > interest whatsoever (so far) to rasd, and in turn pulls other object
+> > files.
+> > 
+> > So I think that right now we need to look at those ifdefs and go on
+> > making what is in tools/perf/util/ stop using it somehow, so that what
+> > then gets moved to tools/lib/api/perf/ (I guess this is where it should
+> > be, opinions?) have that sorted out.
 
-How is the tps_pmic label used?
+> > I.e. what goes to tools/lib/api/perf/ is what is common to the needs of
+> > tools/perf/ and rasd (wherever it may roam).
 
-> +			compatible = "ti,tps65217-pmic";
+> > Perhaps something like I did for sock/inet_sock/inet_connection_sock
+> > ages ago... I.e. the tools that want a hists will have a 
 
-I'd like to see a '\n' here.
+> > struct hists_evsel {
+> > 	struct perf_evsel evsel;
+> > 	struct hists	  hists;
+> > };
 
->  			dcdc1_reg: dcdc1 {
->  				regulator-min-microvolt = <900000>;
->  				regulator-max-microvolt = <1800000>;
-> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> index 5fb9279..f92f154 100644
-> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
->  Required properties:
->  - compatible: "ti,tps65217"
->  - reg: I2C slave address
-> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
-> +
-> +Required subnode properties:
-> +- compatible: "ti,tps65217-bl"
->  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
->  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
->  - default-brightness: valid values: 0-100
->  
-> -Each regulator is defined using the standard binding for regulators.
->  
->  Example:
->  
->  	tps: tps@24 {
->  		reg = <0x24>;
->  		compatible = "ti,tps65217";
+> > etc.
 
-I'd like to see a '\n' here.
+> > Experimenting with that, as it is the only thing ifdefed out in rasd's
+> > copy of evsel.h...
+ 
+> Right, this all reads like it is going in the right direction but the
+> more important question IMO is are we doing a libperf or are we still
+> doing tools/lib/api/perf/ of single object files to which people can
+> link?
 
-> -		backlight {
-> +		tps_bl: backlight {
+My preference would be for single object files, but the pressure to have
+a written in stone library seems to just build up...
+ 
+> Because if it is the second - and it sounds to me like it is - how do
+> you propose we link with external projects? IOW, if I want to have rasd
+> build *without* the kernel tree, is a simple
+ 
+> cp -r tools/lib/api/ <my_project>/path/to/perf/lib/
+ 
+> work?
 
-Same here.  Is this label used?
+It should, no matter if we end up with a library.
 
-> +			compatible = "ti,tps65217-bl";
->  			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
->  			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
->  			default-brightness = <50>;
+What I'm doing these days to test if perf builds on multiple distros is:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+#!/bin/sh
+remotebuild() {
+	target=$1
+	perfpkg=$2
+  	cmd="rm -rf ${perfpkg} ; tar xf ${perfpkg}.tar.gz && cd ${perfpkg} && rm -rf /tmp/build/perf ; mkdir -p /tmp/build/perf && make -C tools/perf O=/tmp/build/perf install && make -C tools/perf build-test"
+	scp ${perfpkg}.tar.gz gita@${target}:. && \
+  	ssh gita@${target} "${cmd}"
+}
+
+targets="fedora14 opensuse12.3 fedora19 ubuntu13.10"
+perfpkg=perf-3.17.0-rc4
+
+for target in ${targets} ; do
+	remotebuild ${target} ${perfpkg}
+done
+
+After doing a 'make perf-targz-src-pkg'
+
+I.e. no kernel sources involved on the machines where I build test.
+
+IOW, it is untangled from the kernel sources. As tools/lib/api/ should
+as well.
+
+> I mean, I don't know and I'm just asking. Is that the proposed way? Are
+> we fine with that? Do we want something different, maybe even a lib? Is
+> it time for a lib even?
+
+Well, the rasd experience is serving to show areas where there is
+unnecessary entanglement (hists inside perf_event, etc, the ifdefs you
+put in place).
+
+I'm working to remove the ones that are in rasd.c, aiming to have a
+tools/lib/api/ tree that can be used to build rasd and tools/perf/.
+
+What I don't want to do is to simply straight more
+tools/perf/util/evlist.c to tools/lib/api/perf/, some untanglement work
+is needed.
+ 
+> Because the whole perf functionality is being cravingly ogled by other
+> users - I know Matt wants it for cache QoS or whatever it is called and
+> there are probably a whole lot of projects which would like to process
+> events programatically in userspace.
+> 
+> So what I'm saying is, we probably should have a nice clean way
+> to be able to share that code with external projects instead of
+> external projects duplicating and building a whole library around
+> perf_event_open() and the likes...
+
+Agreed, hopefully we'll get that, finally.
+ 
+> Just a couple of thoughts...
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
