@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaJFMiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:38:20 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49273 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaJFMiP (ORCPT
+	id S1752544AbaJFMkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:40:23 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:47411 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaJFMkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:38:15 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-arm-kernel@lists.infradead.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: monstr@monstr.eu, Josh Cartwright <josh.cartwright@ni.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+	Mon, 6 Oct 2014 08:40:18 -0400
+Date: Mon, 6 Oct 2014 14:40:15 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/2] ARM: zynq: DT: Add OCM controller node
-Date: Mon,  6 Oct 2014 14:38:07 +0200
-Message-Id: <1b10d4e509caac663966788cd2df10120496eb1e.1412599051.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <e65e39088e0f571ee4905172f2f6c84dbc037805.1412599051.git.michal.simek@xilinx.com>
-References: <e65e39088e0f571ee4905172f2f6c84dbc037805.1412599051.git.michal.simek@xilinx.com>
-In-Reply-To: <e65e39088e0f571ee4905172f2f6c84dbc037805.1412599051.git.michal.simek@xilinx.com>
-References: <e65e39088e0f571ee4905172f2f6c84dbc037805.1412599051.git.michal.simek@xilinx.com>
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-17186-1412599090-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v7 10/11] ARM: at91/dt: add LCD panel description to
+ sama5d3xdm.dtsi
+Message-ID: <20141006124014.GD26833@ulmo>
+References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1412175188-28278-11-git-send-email-boris.brezillon@free-electrons.com>
+ <20141006110115.GH25202@ulmo>
+ <20141006142538.76d2df29@bbrezillon>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
+Content-Disposition: inline
+In-Reply-To: <20141006142538.76d2df29@bbrezillon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
 
---=_mimegpg-monstr-desktop-17186-1412599090-0001
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add the on-chip-memory controller node to the Zynq devicetree.
+On Mon, Oct 06, 2014 at 02:25:38PM +0200, Boris Brezillon wrote:
+> On Mon, 6 Oct 2014 13:01:16 +0200 Thierry Reding <thierry.reding@gmail.co=
+m> wrote:
+> > On Wed, Oct 01, 2014 at 04:53:07PM +0200, Boris Brezillon wrote:
+> > [...]
+> > > diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sa=
+ma5d3xdm.dtsi
+[...]
+> > > +		backlight =3D <&backlight>;
+> > > +		power-supply =3D <&panel_reg>;
+> > > +		#address-cells =3D <1>;
+> > > +		#size-cells =3D <0>;
+> > > +		status =3D "disabled";
+> > > +
+> > > +		port@0 {
+> > > +			#address-cells =3D <1>;
+> > > +			#size-cells =3D <0>;
+> > > +
+> > > +			panel_input: endpoint@0 {
+> > > +				reg =3D <0>;
+> > > +				remote-endpoint =3D <&hlcdc_panel_output>;
+> > > +			};
+> > >  		};
+> >=20
+> > There's no support for OF graphs in simple-panel, so this is unused,
+> > isn't it?
+>=20
+> Actually I use it in my atmel_hlcdc_ouput implementation to figure out
+> the link between a panel and a device connected on the RGB/DPI bus.=20
 
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+That's kind of weird and one of the reasons why I can't make myself like
+the OF graph bindings. It requires drivers for one device to reach into
+the device tree node of some other device and look for content. Or put
+another way, a DT node for a panel that works on one platform doesn't
+work on another because the display controller needs additional DT
+content that isn't required by the original binding for the panel.
 
-Changes in v3:
-- Extract from OCM driver
+Thierry
 
-Changes in v2: None
-
- arch/arm/boot/dts/zynq-7000.dtsi | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-7000.dtsi
-index 6cc83d4c6c76..b8e87d615635 100644
---- a/arch/arm/boot/dts/zynq-7000.dtsi
-+++ b/arch/arm/boot/dts/zynq-7000.dtsi
-@@ -146,6 +146,13 @@
- 			cache-level = <2>;
- 		};
-
-+		ocmc: ocmc@f800c000 {
-+			compatible = "xlnx,zynq-ocmc-1.0";
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 3 4>;
-+			reg = <0xf800c000 0x1000>;
-+		} ;
-+
- 		uart0: serial@e0000000 {
- 			compatible = "xlnx,xuartps", "cdns,uart-r1p8";
- 			status = "disabled";
---
-1.8.2.3
-
-
---=_mimegpg-monstr-desktop-17186-1412599090-0001
+--uxuisgdDHaNETlh8
 Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v2
 
-iEYEABECAAYFAlQyjTIACgkQykllyylKDCEO0wCfb3pcue06wc/LpNBSwNGWuqkR
-D/YAnjdh68ekd4vxp4XtZmirRozDeoru
-=SrVT
+iQIcBAEBAgAGBQJUMo2uAAoJEN0jrNd/PrOhev0QAIy54IWOvWGVgP6gPbnSqfNd
+ERgjVfwptdHhpAK+IV3zBgK2lk/M9E3GMAgcqU33ThNgnKxfCDHngJndQpOf0g8w
+GZFs1AqMvMOdF84Qf/phJ8i4ZuG2DdS8wdP6QG1ru13iwYcU3NsWfgU1ByVs92rG
+hlo6OBXZ2HCXPlY+uC1nee56A2NHzxVumg2nr2QWwxItSTm15KNVRCobu3RqIQrg
+s1w3dvoFGlSC+pSyuz3pkrIwL/7o3yQ+OA47mUadVWa6N7FX4RolPKEzaV1sMm+E
+Y6LlDCxPl00hSxMek5WSf4zD/EhrkRIntfwUvUH7QzIUsB32Zd0xnGbCAqfUAPFd
+PU1UC2XXi3wOdGo//fXwlFWL1xTlyzY/EpqANaApLFiAm17NNV7syjsn/i33oo1M
+YXy9S9WIWhLX5vq4/5N1483x6ZQxAKrSML3aeHJUIiNlWXeHsJjsxT8R8r0EjXhU
+j1eoIpXtC6sF9o71PhmMfLonGX3PZRaw0fhWF8hyuvrqZqzwm578cNlNKj3wME+L
+aUpCcZvWgStmLm1S8gNsM3obiqpjnPnHQd2oe1n3utxjvv7rvsm/f/uvtpAj3Gtj
+aIlKPK+5qB8DoU7rS4BNbcRy5JQ5HMcFsOEpimlSOLVwPhmPXybLc6gW0QMXsQV2
+jL/jZlBd6Grnod1n/uog
+=hwdk
 -----END PGP SIGNATURE-----
 
---=_mimegpg-monstr-desktop-17186-1412599090-0001--
+--uxuisgdDHaNETlh8--
