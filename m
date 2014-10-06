@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaJFJTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:19:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47847 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733AbaJFJT2 (ORCPT
+	id S1752550AbaJFJUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:20:33 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:36856 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaJFJUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:19:28 -0400
-Date: Mon, 6 Oct 2014 11:19:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
- __might_sleep()
-Message-ID: <20141006091915.GC6758@twins.programming.kicks-ass.net>
-References: <20140930080228.GD9561@wfg-t540p.sh.intel.com>
- <20141002110927.GE2849@worktop.programming.kicks-ass.net>
- <20141002123150.GC6324@worktop.programming.kicks-ass.net>
- <20141002124247.GD6324@worktop.programming.kicks-ass.net>
- <20141002201020.GA8907@redhat.com>
- <20141003115020.GG10583@worktop.programming.kicks-ass.net>
- <20141003175654.GA14952@redhat.com>
- <20141003193029.GA24399@redhat.com>
- <20141004084241.GT10583@worktop.programming.kicks-ass.net>
- <20141006002509.GA23955@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006002509.GA23955@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 6 Oct 2014 05:20:30 -0400
+Date: Mon, 6 Oct 2014 11:20:16 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nikhil Rao <nikhil.rao@intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Siva Yerramreddy <yshivakrishna@gmail.com>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 02/16] virtio: unify config_changed handling
+Message-ID: <20141006112016.0227d0d3.cornelia.huck@de.ibm.com>
+In-Reply-To: <1412525038-15871-3-git-send-email-mst@redhat.com>
+References: <1412525038-15871-1-git-send-email-mst@redhat.com>
+	<1412525038-15871-3-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100609-0342-0000-0000-0000014C029F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 02:25:09AM +0200, Oleg Nesterov wrote:
-> Yes, and the comments ;)
-> 
-> I showed this patch only to complete the discussion, I am not going to
-> send it now.
+On Sun, 5 Oct 2014 19:06:52 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Fair enough :-)
+> Replace duplicated code in all transports with a single wrapper in
+> virtio.c.
+> 
+> The only functional change is in virtio_mmio.c: if a buggy device sends
+> us an interrupt before driver is set, we previously returned IRQ_NONE,
+> now we return IRQ_HANDLED.
+> 
+> As this must not happen in practice, this does not look like a big deal.
+> 
+> See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
+> 	virtio-pci: do not oops on config change if driver not loaded.
+> for the original motivation behind the driver check.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/linux/virtio.h             |  2 ++
+>  drivers/misc/mic/card/mic_virtio.c |  6 +-----
+>  drivers/s390/kvm/kvm_virtio.c      |  9 +--------
+>  drivers/s390/kvm/virtio_ccw.c      |  6 +-----
+>  drivers/virtio/virtio.c            | 10 ++++++++++
+>  drivers/virtio/virtio_mmio.c       |  7 ++-----
+>  drivers/virtio/virtio_pci.c        |  6 +-----
+>  7 files changed, 18 insertions(+), 28 deletions(-)
 
-> But thanks for the review!
-> 
-> > > +static void kthread_kill(struct task_struct *k, struct kthread *kthread)
-> > > +{
-> > > +	smp_mb__before_atomic();
-> >
-> > test_bit isn't actually an atomic op so this barrier is 'wrong'. If you
-> > need an MB there smp_mb() it is.
-> 
-> Hmm. I specially checked Documentation/memory-barriers.txt,
-> 
->  (*) smp_mb__before_atomic();
->  (*) smp_mb__after_atomic();
-> 
->      These are for use with atomic (such as add, subtract, increment and
->      decrement) functions that don't return a value, especially when used for
->      reference counting.  These functions do not imply memory barriers.
-> 
->      These are also used for atomic bitop functions that do not return a
->      value (such as set_bit and clear_bit).
->                     ^^^^^^^^^^^^^^^^^^^^^
-> 
-> Either you or memory-barriers.txt should be fixed ;)
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
-Its in there, just not explicitly. All those functions listed are
-read-modify-write ops, test_bit() is not, its just a read. But yes I
-suppose we could make that more explicit.
-
-Also test_bit() obviously does return a value, so it doesn't fall in the
-{set,clear}_bit() class.
-
-Does the change below clarify things?
-
-> > > +	if (test_bit(KTHREAD_WANTS_SIGNAL, &kthread->flags)) {
-> > > +		unsigned long flags;
-> > > +		bool kill = true;
-> > > +
-> > > +		if (lock_task_sighand(k, &flags)) {
-> >
-> > Since we do the double test thing here, with the set side also done
-> > under the lock, so we really need a barrier above?
-> 
-> Yes, otherwise set_kthread_wants_signal() can miss a signal. And note
-> that the 2nd check is only needed to ensure that we can not race
-> with set_kthread_wants_signal(false).
-> 
-> BUT!!! I have to admit that I simply do not know if there is any arch
-> 
-> 	set_bit(&word, X);
-> 	test_bit(&word, Y);
-> 
-> which actually needs mb() in between, the word is the same. Probably
-> not.
-
-DEC Alpha? Wasn't it the problem there that dependencies didn't actually
-work as expected?
-
-Added Paul to Cc.
-
----
- Documentation/memory-barriers.txt | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 22a969cdd476..0d97c99ad957 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -1594,12 +1594,9 @@ CPU from reordering them.
-  (*) smp_mb__before_atomic();
-  (*) smp_mb__after_atomic();
- 
--     These are for use with atomic (such as add, subtract, increment and
--     decrement) functions that don't return a value, especially when used for
--     reference counting.  These functions do not imply memory barriers.
--
--     These are also used for atomic bitop functions that do not return a
--     value (such as set_bit and clear_bit).
-+     These are for use with atomic/bitop (r-m-w) functions that don't return
-+     a value (eg. atomic_{add,sub,inc,dec}(), {set,clear}_bit()). These
-+     functions do not imply memory barriers.
- 
-      As an example, consider a piece of code that marks an object as being dead
-      and then decrements the object's reference count:
