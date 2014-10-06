@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274AbaJFPQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:16:28 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:56843 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaJFPQY (ORCPT
+	id S1753327AbaJFPQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:16:32 -0400
+Received: from resqmta-ch2-10v.sys.comcast.net ([69.252.207.42]:56546 "EHLO
+	resqmta-ch2-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753278AbaJFPQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:16:24 -0400
-Date: Mon, 6 Oct 2014 17:16:14 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH v2 02/15] virtio: unify config_changed handling
-Message-ID: <20141006171614.376ba255.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412608214-31944-3-git-send-email-mst@redhat.com>
-References: <1412608214-31944-1-git-send-email-mst@redhat.com>
-	<1412608214-31944-3-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100615-3548-0000-0000-000001C53FBC
+	Mon, 6 Oct 2014 11:16:30 -0400
+Date: Mon, 6 Oct 2014 10:16:28 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <alpine.DEB.2.11.1410061449290.4383@nanos>
+Message-ID: <alpine.DEB.2.11.1410061014080.29937@gentwo.org>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+ <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.11.1410051824190.3424@gentwo.org> <alpine.DEB.2.11.1410060959510.4383@nanos> <alpine.DEB.2.11.1410060521010.27574@gentwo.org> <alpine.DEB.2.11.1410061449290.4383@nanos>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014 18:10:44 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Mon, 6 Oct 2014, Thomas Gleixner wrote:
 
-> Replace duplicated code in all transports with a single wrapper in
-> virtio.c.
-> 
-> The only functional change is in virtio_mmio.c: if a buggy device sends
-> us an interrupt before driver is set, we previously returned IRQ_NONE,
-> now we return IRQ_HANDLED.
-> 
-> As this must not happen in practice, this does not look like a big deal.
-> 
-> See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
-> 	virtio-pci: do not oops on config change if driver not loaded.
-> for the original motivation behind the driver check.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio.h             | 2 ++
->  drivers/misc/mic/card/mic_virtio.c | 6 +-----
->  drivers/s390/kvm/kvm_virtio.c      | 9 +--------
->  drivers/s390/kvm/virtio_ccw.c      | 6 +-----
->  drivers/virtio/virtio.c            | 9 +++++++++
->  drivers/virtio/virtio_mmio.c       | 7 ++-----
->  drivers/virtio/virtio_pci.c        | 6 +-----
->  7 files changed, 17 insertions(+), 28 deletions(-)
+> So if you want to fix that as well, you really need to think about the
+> 32 bit case because there is no serialization for the interrupts which
+> are delivered directly from their own vector. And no, we should not
+> diverge 32 and 64 bit artificially here simply because the same 50
+> days wrap applies to both.
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+Is it a divergence if both 64bit and 32 bit are unsing unsigned long?
+
+>
+> I really start to wonder whether all this is worth the trouble. It has
+> been this way forever and 1k timer interrupts per second is not really
+> a new thing either. So we did not change anything which suddenly makes
+> tools confused.
+
+Tools expect the number of interrupt to increase linearly and not jump by
+2^32 once in awhile. There are functions in the kernel (/proc/stat) that
+sum up various interrupt counters and that are types unsigned long. These
+larger numbers can suddenly jump by 2^32. Its pretty unusual for a 64 bit
+conter to do that and it requires some head scratching until we figured
+that one out.
 
