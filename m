@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaJFV1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:27:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46024 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264AbaJFV1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:27:12 -0400
-Date: Mon, 6 Oct 2014 23:27:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: Tony Luck <tony.luck@gmail.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, MCE, AMD: move invariant code out from loop body
-Message-ID: <20141006212707.GH20739@pd.tnic>
-References: <1411377812.1917.112.camel@cyc>
- <20140922191100.GC4709@pd.tnic>
- <20141002143819.GE16452@pd.tnic>
- <1412263212.8085.6.camel@debian>
+	id S1751658AbaJFVbV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:31:21 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48351 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaJFVbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:31:19 -0400
+Date: Mon, 6 Oct 2014 14:31:15 -0700
+From: Dmitry Torokhov <dtor@mail.ru>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
+Message-ID: <20141006213115.GB39707@dtor-ws>
+References: <20141003231109.GA4530@amd>
+ <20141006181202.GA22781@dtor-ws>
+ <20141006204526.GA28905@amd>
+ <20141006210358.GA39707@dtor-ws>
+ <20141006211430.GA31880@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412263212.8085.6.camel@debian>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141006211430.GA31880@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 11:20:12PM +0800, Chen Yucong wrote:
-> From: Chen Yucong <slaoub@gmail.com>
-> Subject: [PATCH] x86, MCE, AMD: move invariant code out from loop body
+On Mon, Oct 06, 2014 at 11:14:30PM +0200, Pavel Machek wrote:
+> On Mon 2014-10-06 14:03:58, Dmitry Torokhov wrote:
+> > On Mon, Oct 06, 2014 at 10:45:26PM +0200, Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > > > From the backtrace, it looks evdev related...?
+> > > > 
+> > > > Hmm, looks like it...
+> > > 
+> > > I don't think I can repeat that. I was doing crazy stuff at that
+> > > moment. (Typo fixes suggested below).
+> > > 
+> > > Thanks,
+> > > 								Pavel
+> > > 
+> > > Input: evdev - fix EVIOCG{type} ioctl
+> > > 
+> > > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > > 
+> > > The 'max' size passed into the function is measured in number of bits
+> > > (KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
+> > > 
+> > > ###                           need               accordingly(?)     trying
+> > 
+> > Thanks, I'll fix them up.
 > 
-> "mce_threshold_vector = amd_threshold_interrupt;" is loop invariant code
-> in mce_amd_feature_init(). So it should be moved out from loop body.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce_amd.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> index 5d4999f..f727701 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> @@ -253,9 +253,10 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
->  			}
->  
->  			mce_threshold_block_init(&b, offset);
-> -			mce_threshold_vector = amd_threshold_interrupt;
->  		}
->  	}
-> +
-> +	mce_threshold_vector = amd_threshold_interrupt;
+> No problem. BTW, I guess this should go to 3.17-stable at least, and
+> probably older stable releases, too...?
 
-Looking at this more, it is theoretically possible that we break out
-of the both loops without *any* thresholding registers detected and to
-still assign a thresholding interrupt vector which would be clearly
-wrong.
+Yep. I'll wait for a bit though to give a chance more people to look it
+over before committing to my tree.
 
-Thus I think something like below should be much safer (I tried it with
-a label and goto already but it is uglier):
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-index 9ce64955559d..9af7bd74828b 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -253,7 +253,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
- 			}
- 
- 			mce_threshold_block_init(&b, offset);
--			mce_threshold_vector = amd_threshold_interrupt;
-+
-+			if (mce_threshold_vector != amd_threshold_interrupt)
-+				mce_threshold_vector = amd_threshold_interrupt;
- 		}
- 	}
- }
-
-Looking at the asm, we still go and fetch those addresses so not really
-a win:
-
-	cmpq	$amd_threshold_interrupt, mce_threshold_vector(%rip)	#, mce_threshold_vector
-	je	.L235	#,
-	incl	%r13d	# block
-	movq	$amd_threshold_interrupt, mce_threshold_vector(%rip)	#, mce_threshold_vector
-	cmpl	$9, %r13d	#, block
-
-but this way the code is relatively clean. Unless you can come up with
-a nicer, cleaner version to handle the breaking out in the success and
-failure case...
-
-Hmmm.
+BTW, can I put you down as reviewed-by?
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Dmitry
