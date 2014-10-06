@@ -1,72 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaJFWrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 18:47:22 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36513 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaJFWrU (ORCPT
+	id S1751673AbaJFXKl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 19:10:41 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59692 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaJFXKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 18:47:20 -0400
-Date: Tue, 7 Oct 2014 00:47:17 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
-Message-ID: <20141006224717.GA11873@amd>
-References: <20141003231109.GA4530@amd>
- <20141006181202.GA22781@dtor-ws>
- <20141006204526.GA28905@amd>
- <20141006210358.GA39707@dtor-ws>
- <20141006211430.GA31880@amd>
- <20141006213115.GB39707@dtor-ws>
+	Mon, 6 Oct 2014 19:10:40 -0400
+Date: Mon, 6 Oct 2014 19:08:56 -0400
+From: Rich Felker <dalias@libc.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+Message-ID: <20141006230856.GC23797@brightrain.aerifal.cx>
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+ <20141006205459.GZ23797@brightrain.aerifal.cx>
+ <5433071B.4050606@caviumnetworks.com>
+ <20141006213101.GA23797@brightrain.aerifal.cx>
+ <54330D79.80102@caviumnetworks.com>
+ <20141006215813.GB23797@brightrain.aerifal.cx>
+ <543314DF.20808@caviumnetworks.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141006213115.GB39707@dtor-ws>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <543314DF.20808@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-10-06 14:31:15, Dmitry Torokhov wrote:
-> On Mon, Oct 06, 2014 at 11:14:30PM +0200, Pavel Machek wrote:
-> > On Mon 2014-10-06 14:03:58, Dmitry Torokhov wrote:
-> > > On Mon, Oct 06, 2014 at 10:45:26PM +0200, Pavel Machek wrote:
-> > > > Hi!
-> > > > 
-> > > > > > From the backtrace, it looks evdev related...?
-> > > > > 
-> > > > > Hmm, looks like it...
-> > > > 
-> > > > I don't think I can repeat that. I was doing crazy stuff at that
-> > > > moment. (Typo fixes suggested below).
-> > > > 
-> > > > Thanks,
-> > > > 								Pavel
-> > > > 
-> > > > Input: evdev - fix EVIOCG{type} ioctl
-> > > > 
-> > > > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > > 
-> > > > The 'max' size passed into the function is measured in number of bits
-> > > > (KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
-> > > > 
-> > > > ###                           need               accordingly(?)     trying
-> > > 
-> > > Thanks, I'll fix them up.
-> > 
-> > No problem. BTW, I guess this should go to 3.17-stable at least, and
-> > probably older stable releases, too...?
+On Mon, Oct 06, 2014 at 03:17:03PM -0700, David Daney wrote:
+> >>Furthermore the
+> >>userspace code has to be very careful in its use of the $sp
+> >>register, so that it doesn't store data in places that will be
+> >>used/clobbered by the kernel.
+> >
+> >This is not "being careful". The stack pointer can never become
+> >invalid unless you do wacky things in asm or invoke UB.
+> >
+> >>All of this is under the control of the userspace program and done
+> >>with userspace code.
+> >
+> >For the most part it just happens by default. There is no particular
+> >intentionality needed, and certainly no hideous MIPS-specific hacks
+> >needed.
 > 
-> Yep. I'll wait for a bit though to give a chance more people to look it
-> over before committing to my tree.
+> Yes, it happens by default.  But it wasn't magic.  It took careful
+> work by the ABI and toolchain designers to make it work.
+
+Here I disagree. All of these things are completely universal, not
+MIPS-specific.
+
+> >>I appreciate the fact that libc authors might prefer *not* to write
+> >>more code, but they could, especially if they wanted to add the
+> >>feature of non-executable stacks to their library implementation.
+> >
+> >So your position is that:
 > 
-> BTW, can I put you down as reviewed-by?
+> It is not really a position that I have.  Rather a proposal for one
+> possible way to make non-executable stacks work on MIPS.
+> 
+> >
+> >1. A non-exec-stack system can only run new code produced to do extra
+> >    stuff in userspace.
+> 
+> Any non-executable stack solution for MIPS will require changes to
+> the toolchain/libc.  So it is merely a question of what form the
+> change should take.
 
-I'm not an input expert, but yes, it looks ok to me.
-									Pavel
+I disagree with this, at least for the most part. If the kernel does
+the fpu emulation correctly, there's no reason it shouldn't be
+possible to run existing binaries on a hardened kernel that does not
+even support executable stack.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> >2. The startup code needs to do special work in userspace on MIPS to
+> >    setup an executable area for fpu emulation.
+> 
+> Yes. Similar to how startup code has to do special work to set up
+> the TLS areas,
+
+Yes. Actually the simple way to implement this in userspace would be
+with a page-sized, page-aligned object in TLS and a special call to
+mprotect and your new syscall. One thing I'm not clear on: should this
+memory have permissions r-x or rwx? If it has rwx, that defeats a lot
+of the purpose of non-executable-stack. Hopefully it's r-x and the
+kernel bypasses the non-writability to write to it.
+
+> and load shared libraries.
+
+Dynamic linking is completely a separate matter. Not all programs are
+even dynamic-linked.
+
+> >3. Every call to clone/CLONE_VM needs to be accompanied by a call to
+> >    mmap and this new syscall to set the address, and every call to
+> >    SYS_exit needs to be accompanies by a call to munmap for the
+> >    corresponding mapping.
+> >
+> 
+> No, We don't have to mmap() on each thread creation.  Many threads
+> (perhaps 512) could be handled by a single page, so the normal case
+> would be a single mmap() for the life of the program.
+
+That's nice from a standpoint of avoiding memory waste, but it's
+problematic if .////
+
+> >This is a huge ill-designed mess.
+> >
+> 
+> Have you seen the alternatives?
+
+I proposed a couple and I think they're much less ugly. Could you
+point me to the others?
+
+But perhaps you could clarify one thing for me: why is any of this
+even needed? A delay slot only exists for branch instructions, and I
+can't see any reason the kernel can't just emulate the branch
+instruction at the same time. This is a very restricted class of
+instructions that should not require any complex emulation of memory
+permissions, just manipulation of the resulting program counter value
+after the floating point instruction finishes. Or am I missing
+something?
+
+> Have you ever wondered why MIPS doesn't have non-executable stack support?
+
+I wasn't even aware that it didn't until your email.
+
+Rich
