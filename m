@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaJFRzE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 13:55:04 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:65358 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752355AbaJFRzB (ORCPT
+	id S1753284AbaJFSB1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 14:01:27 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:43714 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaJFSBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 13:55:01 -0400
-Message-ID: <5432D76D.70004@monstr.eu>
-Date: Mon, 06 Oct 2014 19:54:53 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Mon, 6 Oct 2014 14:01:25 -0400
+Date: Mon, 6 Oct 2014 14:01:13 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] thermal: core: fix: Initialize the max_state
+ variable to 0
+Message-ID: <20141006180110.GA5524@developer>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+ <1411547232-21493-3-git-send-email-l.majewski@samsung.com>
+ <20141002222649.GB11510@developer>
+ <20141003102628.7a8f36f7@amdc2363>
 MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: zynq: Extend SLCR driver to read OCM configuration
-References: <565908c2d70764e281d6a9b28d9599cea87823a3.1412595859.git.michal.simek@xilinx.com> <586ef67a22005316fd65cebbbd4019a8a2094e07.1412595859.git.michal.simek@xilinx.com> <30d758b569504e88a9b4a999f08be17b@BN1AFFO11FD055.protection.gbl>
-In-Reply-To: <30d758b569504e88a9b4a999f08be17b@BN1AFFO11FD055.protection.gbl>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="jMWP6AeG5EoHTRSbvW1OnCgR2vvKLAVFV"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141003102628.7a8f36f7@amdc2363>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---jMWP6AeG5EoHTRSbvW1OnCgR2vvKLAVFV
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 03, 2014 at 10:26:28AM +0200, Lukasz Majewski wrote:
+> Hi Eduardo,
+> 
+> > Hello Lukasz,
+> > 
+> > On Wed, Sep 24, 2014 at 10:27:11AM +0200, Lukasz Majewski wrote:
+> > > Pointer to the uninitialized max_state variable is passed to get the
+> > > maximal cooling state.
+> > > For CPU cooling device (cpu_cooling.c) the cpufreq_get_max_state()
+> > > is called, which even when error occurs will return the max_state
+> > > variable unchanged.
+> > > Since error for ->get_max_state() is not checked, the automatically
+> > 
+> > 
+> > Good that you added a fix in your series for this.
+> > 
+> > 
+> > > allocated value of max_state is used for (upper > max_state)
+> > > comparison. For any possible max_state value it is very unlikely
+> > > that it will be less than upper.
+> > > As a consequence, the cooling device is bind even without the backed
+> > > cpufreq table initialized.
+> > > 
+> > > This initialization will prevent from accidental binding trip
+> > > points to cpu freq cooling frequencies when cpufreq driver itself
+> > > is not yet fully initialized.
+> > 
+> > Although I agree with the fix, as long as we also include a check for
+> > the .get_max_state return value,  I believe the problem you are
+> > describing is about initialization sequence.
+> 
+> As you pointed out - the problem here is with initialization sequence.
+> Thermal and cpufreq cores are initialized very early.
+> 
+> However, the get_max_state() for cpu_cooling.c device (as it is the
+> pervasive way of cooling things) accesses cpufreq policy to get the
+> freq_table and count available states.
+> 
+> The issue here is with late initialization of cpufreq policy.
+> 
+> Up till now the cpu_cooling device was bind even when the
+> get_max_state() returned -EINVAL and everything worked after late
+> cpufreq policy initialization. However, during this time window the
+> thermal driver is not configured.
+> 
+> > 
+> > In general, I believe we need a better
+> > sequencing between thermal and cpufreq subsystems. One way out is to
+> > include a check for cpufreq driver in the thermal driver, and return
+> > -EPROBE_DEFER  when cpufreq is not ready.
+> 
+> I think that we could return -EPROBE_DEFER when cpufreq's policy is not
+> yet available and subscribe to cpufreq notifier to call
+> bind_cooling_device then.
 
-Hi Soren,
+I agree with this approach, as long as we keep the existing users of
+cpufreq cooling in a working state.
 
-On 10/06/2014 05:59 PM, S=C3=B6ren Brinkmann wrote:
-> Hi Michal,
->=20
-> On Mon, 2014-10-06 at 01:44PM +0200, Michal Simek wrote:
->> Get OCM configuration from SLCR.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->>  arch/arm/mach-zynq/slcr.c | 15 +++++++++++++++
->>  include/soc/zynq/common.h |  1 +
->>  2 files changed, 16 insertions(+)
->>
->> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
->> index cb7c46165728..0c3e45090c09 100644
->> --- a/arch/arm/mach-zynq/slcr.c
->> +++ b/arch/arm/mach-zynq/slcr.c
->> @@ -27,6 +27,7 @@
->>  #define SLCR_A9_CPU_RST_CTRL_OFFSET	0x244 /* CPU Software Reset Contr=
-ol */
->>  #define SLCR_REBOOT_STATUS_OFFSET	0x258 /* PS Reboot Status */
->>  #define SLCR_PSS_IDCODE			0x530 /* PS IDCODE */
->> +#define SLCR_OCM_CFG_OFFSET		0x910 /* OCM Address Mapping */
->>
->>  #define SLCR_UNLOCK_MAGIC		0xDF0D
->>  #define SLCR_A9_CPU_CLKSTOP		0x10
->> @@ -126,6 +127,20 @@ void zynq_slcr_system_reset(void)
->>  }
->>
->>  /**
->> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
->> + *
->> + * Return:	OCM config bits
->> + */
->> +u32 zynq_slcr_get_ocm_config(void)
->> +{
->> +	u32 val;
->> +
->> +	zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
->> +
->> +	return val;
->> +}
->=20
-> a different idea would be, instead of creating this specific API call
-> for the OCMC to let the OCMC driver use regmap and making git a subnode=
+Cheers
 
-> of the SLCR.
-> In the long run that might be a better option otherwise we'll end up
-> with a whole bunch of zynq_slcr_get_foo() calls for each driver that
-> needs to read an SLCR register.
-
-yes using regmap is also possible and I know that.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---jMWP6AeG5EoHTRSbvW1OnCgR2vvKLAVFV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlQy13EACgkQykllyylKDCFO2QCeJ9Viw3R1YV014xBplS5hujeh
-q24AoJL0zKJA5pyoKSAwM5OETfPppxwJ
-=NfzA
------END PGP SIGNATURE-----
-
---jMWP6AeG5EoHTRSbvW1OnCgR2vvKLAVFV--
+> 
+> Let's wait for Zhang opinion since he looks after the thermal core code.
+> 
+> > 
+> > > 
+> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > > ---
+> > >  drivers/thermal/thermal_core.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/thermal/thermal_core.c
+> > > b/drivers/thermal/thermal_core.c index 454884a..747618a 100644
+> > > --- a/drivers/thermal/thermal_core.c
+> > > +++ b/drivers/thermal/thermal_core.c
+> > > @@ -927,7 +927,7 @@ int thermal_zone_bind_cooling_device(struct
+> > > thermal_zone_device *tz, struct thermal_instance *pos;
+> > >  	struct thermal_zone_device *pos1;
+> > >  	struct thermal_cooling_device *pos2;
+> > > -	unsigned long max_state;
+> > > +	unsigned long max_state = 0;
+> > >  	int result;
+> > >  
+> > >  	if (trip >= tz->trips || (trip < 0 && trip !=
+> > > THERMAL_TRIPS_NONE)) -- 
+> > > 2.0.0.rc2
+> > > 
+> > 
+> 
+> 
+> 
+> -- 
+> Best regards,
+> 
+> Lukasz Majewski
+> 
+> Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
