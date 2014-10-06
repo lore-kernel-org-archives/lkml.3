@@ -1,149 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaJFE7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 00:59:41 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:49491 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaJFE7h (ORCPT
+	id S1752414AbaJFFGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 01:06:34 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:33032 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaJFFGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 00:59:37 -0400
-Message-ID: <543221B0.3020008@linaro.org>
-Date: Mon, 06 Oct 2014 13:59:28 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 6 Oct 2014 01:06:31 -0400
+Date: Sun, 5 Oct 2014 22:06:26 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 5/9] mtd: nand: stm_nand_bch: provide Device Tree
+ documentation
+Message-ID: <20141006050626.GF3248@norris-Latitude-E6410>
+References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+ <1409143344-22458-6-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2] arm64: kgdb: fix single stepping
-References: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org> <20141003160306.GC32451@arm.com>
-In-Reply-To: <20141003160306.GC32451@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409143344-22458-6-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2014 01:03 AM, Will Deacon wrote:
-> Hi Akashi,
->
-> On Fri, Sep 26, 2014 at 12:54:13PM +0100, AKASHI Takahiro wrote:
->> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
->> the single stepping with kgdb doesn't work correctly since its first
->> appearance at v3.15.
->>
->> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
->> steps forward to the next instruction, but the succeeding 'stepi' never
->> goes beyond that.
->> On v3.16, 'stepi' moves forward and stops at the next instruction just
->> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
->> behavior seems to come in with the following patch in v3.16:
->>
->>      commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
->>      paths where possible")
->>
->> This patch
->> (1) moves kgdb_disable_single_step() from 'c' command handling to single
->>      step handler.
->>      This makes sure that single stepping gets effective at every 's' command.
->>      Please note that, under the current implementation, single step bit in
->>      spsr, which is cleared by the first single stepping, will not be set
->>      again for the consecutive 's' commands because single step bit in mdscr
->>      is still kept on (that is, kernel_active_single_step() in
->>      kgdb_arch_handle_exception() is true).
->> (2) removes 'enable_dbg' in el1_dbg.
->>      Single step bit in mdscr is turned on in do_handle_exception()->
->>      kgdb_handle_expection() before returning to debugged context, and if
->>      debug exception is enabled in el1_dbg, we will see unexpected single-
->>      stepping in el1_dbg.
->> (3) masks interrupts while single-stepping one instruction.
->>      If an interrupt is caught during processing a single-stepping, debug
->>      exception is unintentionally enabled by el1_irq's 'enable_dbg' before
->>      returning to debugged context.
->>      Thus, like in (2), we will see unexpected single-stepping in el1_irq.
->>
->> Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
->>
->> With those changes, we will see another problem if a breakpoint is set
->> at interrupt-sensible places, like gic_handle_irq():
->
-> So it seems to me like kgdb is a complete mess in this area. The low-level
-> debug exception code for arm64 will single-step *into* interrupt handlers. I
-> believe that this is the correct behaviour, as otherwise we're artifically
-> restricting what you can and can't debug (for example, leaving debug
-> exceptions masked on the interrupt path means that you can't put breakpoints
-> in interrupt handlers).
+On Wed, Aug 27, 2014 at 01:42:20PM +0100, Lee Jones wrote:
+> This is where we describe the different new and generic options used by
+> the ST BCH driver.
+> 
+> Cc: devicetree@vger.kernel.org
+> Reviewed-By: Pekon Gupta <pekon@pek-sem.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  Documentation/devicetree/bindings/mtd/stm-nand.txt | 74 ++++++++++++++++++++++
+>  1 file changed, 74 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mtd/stm-nand.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mtd/stm-nand.txt b/Documentation/devicetree/bindings/mtd/stm-nand.txt
+> new file mode 100644
+> index 0000000..5872a39
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mtd/stm-nand.txt
+> @@ -0,0 +1,74 @@
+> +STM BCH NAND Support
+> +--------------------
+> +
+> +Required properties:
+> +
+> +- compatible		: Should be "st,nand-bch"
+> +- reg			: Should contain register's location and length
+> +- reg-names		: "emi_nand" - NAND Controller register map
+> +			  "emiss" - External Memory Interface Subsystem base
+> +- interrupts		: Interrupt number
+> +- interrupt-names	: "nand_irq" - NAND Controller IRQ
+> +- st,nand-banks		: Subnode representing one or more "banks" of NAND
+> +			  Flash, connected to an STM NAND Controller (see
+> +			  description below).
 
-I agree that we should be able to debug even in an interrupt context.
+Why plural? Shouldn't you have one node for each bank, as they are
+independent? Also, I don't see this property being used anywhere, even
+though it's listed as "required".
 
->>      KGDB: re-enter error: breakpoint removed ffffffc000081258
->>      ------------[ cut here ]------------
->>      WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
->> 					kgdb_handle_exception+0x1dc/0x1f4()
->>      Modules linked in:
->>      CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
->>      Call trace:
->>      [<ffffffc000087fac>] dump_backtrace+0x0/0x130
->>      [<ffffffc0000880ec>] show_stack+0x10/0x1c
->>      [<ffffffc0004d683c>] dump_stack+0x74/0xb8
->>      [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
->>      [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
->>      [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
->>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->>      Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
->>      ...
->>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
->>      [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
->>      [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
->>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
->>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
->>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
->>      Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
->>      ...
->>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
->>      [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
->>      [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
->>      [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
->>      [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
->>      [<ffffffc0001939b0>] SyS_write+0x40/0xa0
->>
->> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
->> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
->> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
->> use smp_call_function().
->> This eventually allows another interrupt to occur and likely results in
->> hitting a breakpoint at gic_handle_irq() again since debug exception is
->> always enabled in el1_irq.
->>
->> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
->> but this will also leave other cpus be in unknown state in terms of kgdb,
->> and may result in interfering with kgdb activity.
->
-> Yuck. This really sounds like kgdb is broken in its SMP synchronisation
-> for arm64. On x86, they use a NMI and powerpc uses an IPI which can run
-> with irqs disabled. Since we don't have an NMI, how about we do the
-> following to avoid the panic?
->
->    (1) Change our kgdb_roundup_cpus to use smp_call_function_single_async,
->        which will avoid the need to enable interrupts
+Really, this property shouldn't be listed here (under the NAND
+controller node), but should only be listed under the bank description
+below (and it should actually be *used* there).
 
-It seems that we will have to implement, some sort of, async-version of
-smp_call_function() here.
+> +- nand-ecc-strength	: Generic NAND property (See mtd/nand.txt)
+> +			  Options are; 0, 18 or 30. If not present, the driver
+> +			  will choose the strongest scheme compatible if the
+> +			  OOB size.
 
->    (2) Introduce a timeout into the waiting loop in kgdb_cpu_enter, where
->        we spin on &slaves_in_kgdb and warn if the timeout expires.
+nand-ecc-strength is optional, not required.
 
-Before trying this, I need understand more about smp_call_function(), especially
-why we can't call it with interrupts disabled.
+Also, this is probably where you should add a paragraph about how the
+NAND controller node should contain one or more banks, each of which
+represents an attached NAND flash and can be described using the
+following:
 
--Takahiro AKASHI
+> +
+> +Properties describing Bank of NAND Flash ("st,nand-banks"):
+> +
 
-> Will
->
+You should list a "compatible" property here (i.e., "st,nand-bank" or
+"st,nand-banks").
+
+> +- st,nand-csn		: Chip select associated with the Bank.
+
+I'm pretty sure a chip select is not very specific to ST. Maybe we
+should have a generic "nand-chip-select" or "nand-cs" property for
+Documentation/devicetree/bindings/mtd/nand.txt. I know of at least one
+other piece of hardware that could use this property.
+
+> +
+> +- st,nand-timing-relax	: [Optional] Number of IP clock cycles by which to
+> +			  "relax" timing configuration.  Required on some boards
+> +			  to accommodate board-level limitations. Applies to
+> +			  ONFI timing mode configuration.
+> +
+> +- nand-on-flash-bbt	: Generic NAND property (See mtd/nand.txt)
+> +
+> +- partitions		: [Optional] Subnode describing MTD partition map
+> +			  (see mtd/partition.txt)
+
+Hmm, does this really need a separate subnode? That doesn't seem to be
+the best description, and it doesn't match standard practice AFAICT.
+Can't you just have the partition nodes be direct subnodes of the NAND
+bank?
+
+> +
+> +Note, during initialisation, the NAND Controller timing registers are configured
+> +according to one of the following methods, in order of precedence:
+> +
+> +	   1. Configuration based on ONFI timing mode, as advertised by the
+> +	      device during ONFI-probing (ONFI-compliant NAND only).
+> +
+> +	   2. Use reset/safe timing values
+> +
+> +Example:
+> +
+> +	nand@fe901000 {
+> +		compatible = "st,nand-bch";
+> +		reg = <0xfe901000 0x1000>, <0xfef00800 0x0800>;
+> +		reg-names = "emi_nand", "emiss";
+> +		interrupts = <0 139 0x0>;
+> +		interrupt-names = "nand_irq";
+> +		nand-ecc-strength = <30>;
+> +
+> +		status = "okay";
+> +
+> +		bank0 {
+
+No "compatible" property? (BTW, be sure to update the *.dts* files if
+we're updating this binding doc.)
+
+> +			/* NAND_BBT_USE_FLASH */
+
+This comment doesn't belong here.
+
+> +			nand-on-flash-bbt;
+> +			st,nand-csn		= <0>;
+> +
+> +			partitions {
+> +				#address-cells = <1>;
+> +				#size-cells = <1>;
+> +
+> +				partition@0{
+> +					label = "NANDFlash1";
+> +					reg = <0x00000000 0x00800000>;
+> +				};
+> +
+> +				partition@800000{
+> +					label = "NANDFlash2";
+> +					reg = <0x00800000 0x0f800000>;
+> +				};
+> +			};
+> +		};
+> +	};
+
+Brian
