@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaJFL4V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 07:56:21 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35257 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaJFL4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 07:56:18 -0400
-Date: Mon, 6 Oct 2014 13:56:10 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 09/16] virtio-net: drop config_mutex
-Message-ID: <20141006135610.537c263b.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412525038-15871-10-git-send-email-mst@redhat.com>
+	id S1752452AbaJFL4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 07:56:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21220 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175AbaJFL4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 07:56:41 -0400
+Date: Mon, 6 Oct 2014 15:00:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 05/16] virtio: defer config changed notifications
+Message-ID: <20141006120007.GA26328@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
-	<1412525038-15871-10-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100611-0342-0000-0000-0000014CAE5A
+ <1412525038-15871-6-git-send-email-mst@redhat.com>
+ <20141006133338.236a1175.cornelia.huck@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006133338.236a1175.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014 19:07:16 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> config_mutex served two purposes: prevent multiple concurrent config
-> change handlers, and synchronize access to config_enable flag.
+On Mon, Oct 06, 2014 at 01:33:38PM +0200, Cornelia Huck wrote:
+> On Sun, 5 Oct 2014 19:07:05 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> Since commit dbf2576e37da0fcc7aacbfbb9fd5d3de7888a3c1
->     workqueue: make all workqueues non-reentrant
-> all workqueues are non-reentrant, and config_enable
-> is now gone.
+> > Defer config changed notifications that arrive during
+> > probe/scan/freeze/restore.
+> > 
+> > This will allow drivers to set DRIVER_OK earlier, without worrying about
+> > racing with config change interrupts.
+> > 
+> > This change will also benefit old hypervisors (before 2009)
+> > that send interrupts without checking DRIVER_OK: previously,
+> > the callback could race with driver-specific initialization.
+> > 
+> > This will also help simplify drivers.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio.h  |  6 ++++++
+> >  drivers/virtio/virtio.c | 55 +++++++++++++++++++++++++++++++++++++++++--------
+> >  2 files changed, 52 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
+> > index 657f817..578e02d 100644
+> > --- a/drivers/virtio/virtio.c
+> > +++ b/drivers/virtio/virtio.c
+> > @@ -117,6 +117,40 @@ void virtio_check_driver_offered_feature(const struct virtio_device *vdev,
+> >  }
+> >  EXPORT_SYMBOL_GPL(virtio_check_driver_offered_feature);
+> > 
+> > +static void __virtio_config_changed(struct virtio_device *dev)
+> > +{
+> > +	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
+> > +
+> > +	if (!dev->config_enabled)
+> > +		dev->config_changed = true;
+> > +	else if (drv && drv->config_changed)
+> > +		drv->config_changed(dev);
+> > +}
+> > +
+> > +void virtio_config_changed(struct virtio_device *dev)
+> > +{
+> > +	spin_lock_irq(&dev->config_lock);
+> > +	__virtio_config_changed(dev);
+> > +	spin_unlock_irq(&dev->config_lock);
 > 
-> Get rid of the unnecessary lock.
+> Hm, isn't this function called from the interrupt handler?
+>
+
+Good catch, will fix up, thanks!
+ 
+> > +}
+> > +EXPORT_SYMBOL_GPL(virtio_config_changed);
+> > +
+> > +static void virtio_config_disable(struct virtio_device *dev)
+> > +{
+> > +	spin_lock_irq(&dev->config_lock);
+> > +	dev->config_enabled = false;
+> > +	spin_unlock_irq(&dev->config_lock);
+> > +}
+> > +
+> > +static void virtio_config_enable(struct virtio_device *dev)
+> > +{
+> > +	spin_lock_irq(&dev->config_lock);
+> > +	dev->config_enabled = true;
+> > +	__virtio_config_changed(dev);
+> > +	dev->config_changed = false;
+> > +	spin_unlock_irq(&dev->config_lock);
+> > +}
+> > +
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
+> Maybe call these virtio_config_change_{dis,en}able()?
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index fa17afa..d80fef4 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-
-> @@ -1430,7 +1426,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
->  		netif_tx_stop_all_queues(vi->dev);
->  	}
->  done:
-> -	mutex_unlock(&vi->config_lock);
-> +	return;
->  }
-> 
->  static void virtnet_config_changed(struct virtio_device *vdev)
-
-I'd probably return directly in the remaining 'goto done;' cases, but still
-
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-
+> >  static int virtio_dev_probe(struct device *_d)
+> >  {
+> >  	int err, i;
