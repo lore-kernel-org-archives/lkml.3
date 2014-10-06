@@ -1,159 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaJFIuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 04:50:04 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7835 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaJFIt7 convert rfc822-to-8bit (ORCPT
+	id S1752148AbaJFIza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 04:55:30 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:57876 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaJFIz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 04:49:59 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 06 Oct 2014 01:48:17 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Krishna Thota <kthota@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
- tree
-Thread-Topic: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
- tree
-Thread-Index: AQHP1o7ln/2GHwUnqkWm/7z0JBMChZwNg2cAgApja8CAAGS6AIADOSDwgAANwwCAB0QhwA==
-Date: Mon, 6 Oct 2014 08:49:35 +0000
-Message-ID: <bd1591558b59409faf9edfd3eba2523e@bgmail104.nvidia.com>
-References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
- <5420731E.6040104@wwwdotorg.org>
- <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
- <54297E7E.1030306@wwwdotorg.org>
- <96955607a8414f75bb4110ebef5daa37@bgmail103.nvidia.com>
- <542C3E34.2060505@wwwdotorg.org>
-In-Reply-To: <542C3E34.2060505@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.24.46.27]
+	Mon, 6 Oct 2014 04:55:28 -0400
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20141003153826.GM2849@worktop.programming.kicks-ass.net>
+References: <1411488485-10025-1-git-send-email-vincent.guittot@linaro.org>
+ <1411488485-10025-6-git-send-email-vincent.guittot@linaro.org> <20141003153826.GM2849@worktop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 6 Oct 2014 10:55:07 +0200
+Message-ID: <CAKfTPtBrS=xJeDuW9_LjtUxdB0U-9ANnhhF8_u_-nxVDGfdHyw@mail.gmail.com>
+Subject: Re: [PATCH v6 5/6] sched: replace capacity_factor by usage
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 3 October 2014 17:38, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Sep 23, 2014 at 06:08:04PM +0200, Vincent Guittot wrote:
+>
+>> This implementation of utilization_avg_contrib doesn't solve the scaling
+>> in-variance problem, so i have to scale the utilization with original
+>> capacity of the CPU in order to get the CPU usage and compare it with the
+>> capacity. Once the scaling invariance will have been added in
+>> utilization_avg_contrib, we will remove the scale of utilization_avg_contrib
+>> by cpu_capacity_orig in get_cpu_usage. But the scaling invariance will come
+>> in another patchset.
+>
+> I would have expected this in the previous patch that introduced that
+> lot. Including a few words on how/why the cpu_capacity is a 'good'
+> approximation etc..
 
+That's fair, i can move the explanation
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> Sent: Wednesday, October 01, 2014 11:18 PM
-> To: Vidya Sagar
-> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
-> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
-> tree
-> 
-> On 10/01/2014 11:13 AM, Vidya Sagar wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >> Sent: Monday, September 29, 2014 9:15 PM
-> >> To: Vidya Sagar
-> >> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
-> >> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> >> kernel@vger.kernel.org
-> >> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1
-> >> device tree
-> >>
-> >> On 09/29/2014 04:25 AM, Vidya Sagar wrote:
-> >>>
-> >>>> -----Original Message-----
-> >>>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> >>>> Sent: Tuesday, September 23, 2014 12:36 AM
-> >>>> To: Vidya Sagar
-> >>>> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota;
-> >>>> linux- tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> >>>> kernel@vger.kernel.org
-> >>>> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1
-> >>>> device tree
-> >>>>
-> >>>> On 09/22/2014 11:57 AM, Vidya Sagar wrote:
-> >>>>> sd4 is an always on regulator which is turned on at boot time.
-> >>>>> It is externally controller through gpio. This change reflects the
-> >>>>> same in Jetson TK1 device tree
-> >>>>
-> >>>> In the schematics, the "Power Sequencing" timing diagram says "S/W
-> >>>> controlled" for SD4/+1.05V_RUN. I also don't see an "ENABLE1" pin
-> >>>> on the AS3722, which would be required for ...
-> >>
-> >> Can you please comment on this aspect of the issue?
-> >>
-> >>>>> +					ams,ext-control = <1>;
-> >>>>
-> >>>> ... to be valid.
-> >>>>
-> >>>> What's the source of information behind this change?
-> >>>>
-> >>>> What symptoms does this patch correct?
-> >>>
-> >>> I'm seeing one issue when I add support for PCIe suspend/resume
-> >> functionality.
-> >>> The issue is that, when regulator_bulk_diable() is called, disabling
-> >>> one of
-> >> the power rails (which is deriving its voltage from SD4) of PCIe is failing.
-> >>> The reason being, I2C controller is getting power gated
-> >>
-> >> Why is the fix being applied to SD4 if the issue is with a power rail
-> >> derived from SD4? Shouldn't any fix be applied directly to the
-> >> problematic rail rather than some parent rail?
-> >>
-> >> Since the I2C controller is part of the SoC and we don't have power
-> >> domain support yet, the only way the I2C controller can get power
-> >> gated is when the SoC as a whole is turned off.
-> >>
-> >>   > before power rail disable is called.
-> >>
-> >> ... so without making SD4 dependant on ext-control, since no SW can
-> >> be running at this point, the only way SD4 could get turned off is
-> >> that the PMIC turns it off itself at the appropriate point in the
-> >> system power sequence based on its OTP programming, or the board HW
-> >> is already set up to turn off
-> >> SD4 at the appropriate time somehow. Is that not happening?
-> >> That would imply incorrect PMIC programming wouldn't it?
-> >>
-> >
-> > After some debugging, found that the I2C driver's suspend is getting
-> > called before the suspend of PCIe is called (BTW, PCie has
-> > suspend_noirq..!) Hence, when PCIe driver wants to disable regulators it
-> fails because of I2C write failure, which is expected given I2C is already
-> suspended.
-> 
-> Ah. It sounds like the PCIe driver should have a regular suspend function not
-> a suspend_noirq function then. It's certainly expected that resources behind
-> an I2C bus (i.e. most regulators) can't be manipulated in a suspend_noirq
-> function.
-> 
+>
+>> Finally, the sched_group->sched_group_capacity->capacity_orig has been removed
+>> because it's more used during load balance.
+>
+> That sentence is a contradiction, I expect there's a negative gone
+> missing someplace.
 
-PCIe host controller driver can't have regular suspend function, because,
-PCI subsystem has its own suspend_noirq which tries to read Config registers of the connected PCIe devices, which
-in turn results in hang (because host controller would have been suspended by then...!)
-
-> > Hence, SD4 is made dependent on ENABLE1 input which is the sleep signal
-> from Tegra.
-> >
-> >>> Hence SD4 is made dependent on ENABLE1, which is nothing but the
-> >>> deep sleep signal coming from Tegra, So eventually, SD4 will be
-> >>> powered off
-> >> when system enters into deep-sleep state.
-> >>
-> >> This sounds like a workaround that happens to make the system do what
-> >> you want rather than a root-cause fix.
-> >>
-> >>> Source of information is from downstream kernel
-> >>
-> >> We need to use HW schematics and other primary data to determine the
-> >> correct approach.
-
+yes the "no" is of "because it is no more used during load balance" is missing
