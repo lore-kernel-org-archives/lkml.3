@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaJFJIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:08:15 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:62329 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751319AbaJFJIN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:08:13 -0400
-Message-ID: <1412586485.4054.40.camel@x220>
-Subject: [PATCH 2/4] [media] exynos4-is: Remove optional dependency on
- PLAT_S5P
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 06 Oct 2014 11:08:05 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2014 09:08:11.0238 (UTC) FILETIME=[0D7DE060:01CFE145]
-X-RcptDomain: vger.kernel.org
+	id S1752564AbaJFJIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:08:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15564 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752406AbaJFJIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 05:08:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,662,1406617200"; 
+   d="scan'208";a="601126757"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
+In-Reply-To: <20140908131230.GE6758@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net> <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com> <20140908113422.GD6758@twins.programming.kicks-ass.net> <87a96auv9s.fsf@ashishki-desk.ger.corp.intel.com> <20140908131230.GE6758@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 06 Oct 2014 12:08:19 +0300
+Message-ID: <87k34do9a4.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-removed the Kconfig symbol PLAT_S5P. Remove an optional dependency on
-that symbol from this Kconfig file too.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- drivers/media/platform/exynos4-is/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On Mon, Sep 08, 2014 at 03:55:11PM +0300, Alexander Shishkin wrote:
+>
+>> Fair enough. Then I'd like to disable the ACTIVE ones before freeing AUX
+>> stuff and then re-enabling them since perf_event_{en,dis}able() already
+>> provide the convenient cross-cpu calls, which would also avoid
+>> concurrency between pmu::{add,del} callbacks and this unmap path. Makes
+>> sense?
+>
+> But why? The buffer stuff is RCU freed, so if the hardware observes
+> pages and does get_page_unless_zero() on them its good. The memory will
+> not be freed from underneath the hardware writer because of the
+> get_page().
+>
+> Then when the buffer is full and we 'swap', we'll find there is no next
+> buffer. At that point we can not provide a new buffer, effectively
+> stopping the hardware writes and release the old buffer, freeing the
+> memory.
 
-diff --git a/drivers/media/platform/exynos4-is/Kconfig b/drivers/media/platform/exynos4-is/Kconfig
-index 77c951237744..775c3278d0eb 100644
---- a/drivers/media/platform/exynos4-is/Kconfig
-+++ b/drivers/media/platform/exynos4-is/Kconfig
-@@ -2,7 +2,7 @@
- config VIDEO_SAMSUNG_EXYNOS4_IS
- 	bool "Samsung S5P/EXYNOS4 SoC series Camera Subsystem driver"
- 	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API
--	depends on (PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST)
-+	depends on (ARCH_EXYNOS || COMPILE_TEST)
- 	depends on OF && COMMON_CLK
- 	help
- 	  Say Y here to enable camera host interface devices for
--- 
-1.9.3
+There are several problems with this. Firstly, aux buffers can be quite
+large, which means that we have to do get_page() on thousands of pages
+on every pmu::add, which is a hot path and free_page() again in
+pmu::del.
 
+Secondly, all the sg bookkeeping that the driver keeps in aux_priv needs
+to be refcounted. Right now, in the mmap_close path we just free
+everything. But if we want to free the aux_pages in pmu::del, we need to
+keep a list of these pages still around after mmap_close() and same goes
+for the actual sg tables. I can see a way of doing that on the ring
+buffer side (as opposed to the driver side), but are you quite sure we
+should go down this road?
+
+Regards,
+--
+Alex
