@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaJFJsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:48:19 -0400
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:62825 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387AbaJFJsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:48:15 -0400
+	id S1752050AbaJFJza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:55:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39790 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090AbaJFJz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 05:55:28 -0400
+Message-ID: <543266F3.4090200@ti.com>
+Date: Mon, 6 Oct 2014 15:24:59 +0530
+From: Mugunthan V N <mugunthanvnm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWwEoK__-qTdUmzx6vJJSQ1+XdvL3nZukUX_RjM1tDVGA@mail.gmail.com>
-References: <1411367422-2095-1-git-send-email-ssreedharan@mvista.com>
-	<CAMAWPa9R5HtGKkV=Ya-ekynY5maespZ0Q6BjwJcX3LN3857ZjQ@mail.gmail.com>
-	<CAMuHMdWwEoK__-qTdUmzx6vJJSQ1+XdvL3nZukUX_RjM1tDVGA@mail.gmail.com>
-Date: Mon, 6 Oct 2014 15:18:15 +0530
-Message-ID: <CAJJ77Wsec5TbeQrKsa2qU9c=SsQdFoSZC5RpXadwdNKYAjDPdw@mail.gmail.com>
-Subject: Re: [PATCH] serial/core: Initialize the console pm state
-From: Sudhir Sreedharan <ssreedharan@mvista.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Kevin Hilman <khilman@kernel.org>, linux-serial@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: <balbi@ti.com>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CPSW bug with AM437x SK
+References: <20141003010418.GA9612@saruman>
+In-Reply-To: <20141003010418.GA9612@saruman>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Friday 03 October 2014 06:34 AM, Felipe Balbi wrote:
+> [  261.177168] [<c0648d48>] (skb_panic) from [<c0565edc>] (skb_put+0x5c/0x60)
+> [  261.184415] [<c0565edc>] (skb_put) from [<c0605aac>] (unix_stream_sendmsg+0x164/0x390)
+> [  261.192712] [<c0605aac>] (unix_stream_sendmsg) from [<c055b364>] (sock_aio_write+0xdc/0xfc)
+> [  261.201475] [<c055b364>] (sock_aio_write) from [<c014c42c>] (do_sync_write+0x8c/0xb4)
+> [  261.209697] [<c014c42c>] (do_sync_write) from [<c014cf70>] (vfs_write+0x118/0x1c0)
+> [  261.217652] [<c014cf70>] (vfs_write) from [<c014d564>] (SyS_write+0x4c/0xa0)
+> [  261.225054] [<c014d564>] (SyS_write) from [<c000ed40>] (ret_fast_syscall+0x0/0x48)
+> [  261.232988] Code: e58d4008 e58de00c e59f0008 ebfff48e (e7f001f2) 
+> [  261.239378] ---[ end trace d64258d586f40104 ]---
 
-On Fri, Oct 3, 2014 at 5:52 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Wed, Oct 1, 2014 at 7:27 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> On Sun, Sep 21, 2014 at 11:30 PM, Sudhir Sreedharan
->> <ssreedharan@mvista.com> wrote:
->>> For console devices having UART_CAP_SLEEP capability, the uart_pm_state has
->>> to be initialized to UART_PM_STATE_ON. Otherwise the LCR regiser values
->>> are reinitialized when uart_change_pm is called from uart_configure_port.
->>>
->>> Signed-off-by: Sudhir Sreedharan <ssreedharan@mvista.com>
->>
->> Multiple boot failures on ARM[1] were bisected down to this patch.
->>
->> How was this patch tested, and on which platforms?
->>
->> Also, the changelog states that this should be done only for
->> UART_CAP_SLEEP, but the patch does it for every UART.
->>
->> Greg, I suggest this patch be dropped from tty-next until it has been
->> better described and tested.
->>
->> Kevin
->>
->> [1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-October/005550.html
->
-> Perhaps it should call "uart_change_pm(state, UART_PM_STATE_ON)"
-> instead, so the driver's .pm() method is called?
->
+The BT shows that the warn came from a unix socket interface, so this
+cannot be a CPSW bug, its a bug in unix socket.
 
-If  "uart_change_pm(state, UART_PM_STATE_ON);" is called, it will
-reinitialize the LCR register, thus changing the configuration of
-console port. This will throw garbage characters from the point where
-the serial driver initializes till startup is called from userland.
+Are you not seeing this issue with file system in any other media?
 
-Thanks,
-Sudhir
+I will try to reproduce this locally with my AM437x EVMsk.
+
+Regards
+Mugunthan V N
