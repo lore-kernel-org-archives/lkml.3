@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993AbaJFNxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:53:38 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35182 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876AbaJFNxD (ORCPT
+	id S1752877AbaJFNxC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:53:02 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:54974 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaJFNwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:53:03 -0400
+	Mon, 6 Oct 2014 09:52:54 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
         Fengguang Wu <fengguang.wu@intel.com>
@@ -17,9 +17,9 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
         linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] ARM: Use include/asm-generic/io.h
-Date: Mon,  6 Oct 2014 15:52:40 +0200
-Message-Id: <1412603561-27653-9-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 3/9] ARM: ixp4xx: Properly override I/O accessors
+Date: Mon,  6 Oct 2014 15:52:35 +0200
+Message-Id: <1412603561-27653-4-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
 References: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
@@ -29,236 +29,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Include the generic I/O header file so that duplicate implementations
-can be removed. This will also help to establish consistency across more
-architectures regarding which accessors they support.
+In order to override accessors properly they must be #define'd so that
+subsequent generic headers (the one for ARM and finally the architecture
+independent one) can properly detect it.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
-Changes in v5:
-- fix typo __raw_writew() -> __raw_writel() in iowrite32be()
-- allow virt_to_bus() and bus_to_virt() to be overridden
-- add volatile keyword to __raw_{read,write}s*()
+ arch/arm/mach-ixp4xx/include/mach/io.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Changes in v4:
-- define xlate_dev_{kmem,mem}_ptr() before asm-generic/io.h include
-
-Changes in v3:
-- override io{read,write}{16,32}be() since the generic ones don't have
-  the required memory barriers
-
- arch/arm/include/asm/io.h     | 89 +++++++++++++++++--------------------------
- arch/arm/include/asm/memory.h |  4 ++
- 2 files changed, 40 insertions(+), 53 deletions(-)
-
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 180567408ee8..db58deb00aa7 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -47,13 +47,13 @@ extern void atomic_io_modify_relaxed(void __iomem *reg, u32 mask, u32 set);
-  * Generic IO read/write.  These perform native-endian accesses.  Note
-  * that some architectures will want to re-define __raw_{read,write}w.
+diff --git a/arch/arm/mach-ixp4xx/include/mach/io.h b/arch/arm/mach-ixp4xx/include/mach/io.h
+index 559c69a47731..b47efdad95f4 100644
+--- a/arch/arm/mach-ixp4xx/include/mach/io.h
++++ b/arch/arm/mach-ixp4xx/include/mach/io.h
+@@ -226,6 +226,7 @@ static inline void __indirect_readsl(const volatile void __iomem *bus_addr,
+  * I/O functions.
   */
--extern void __raw_writesb(void __iomem *addr, const void *data, int bytelen);
--extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
--extern void __raw_writesl(void __iomem *addr, const void *data, int longlen);
-+void __raw_writesb(volatile void __iomem *addr, const void *data, int bytelen);
-+void __raw_writesw(volatile void __iomem *addr, const void *data, int wordlen);
-+void __raw_writesl(volatile void __iomem *addr, const void *data, int longlen);
  
--extern void __raw_readsb(const void __iomem *addr, void *data, int bytelen);
--extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
--extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
-+void __raw_readsb(const volatile void __iomem *addr, void *data, int bytelen);
-+void __raw_readsw(const volatile void __iomem *addr, void *data, int wordlen);
-+void __raw_readsl(const volatile void __iomem *addr, void *data, int longlen);
- 
- #if __LINUX_ARM_ARCH__ < 6
- /*
-@@ -69,6 +69,7 @@ extern void __raw_readsl(const void __iomem *addr, void *data, int longlen);
-  * writeback addressing modes as these incur a significant performance
-  * overhead (the address generation must be emulated in software).
-  */
-+#define __raw_writew __raw_writew
- static inline void __raw_writew(u16 val, volatile void __iomem *addr)
++#define outb outb
+ static inline void outb(u8 value, u32 addr)
  {
- 	asm volatile("strh %1, %0"
-@@ -76,6 +77,7 @@ static inline void __raw_writew(u16 val, volatile void __iomem *addr)
- 		     : "r" (val));
+ 	u32 n, byte_enables, data;
+@@ -235,12 +236,14 @@ static inline void outb(u8 value, u32 addr)
+ 	ixp4xx_pci_write(addr, byte_enables | NP_CMD_IOWRITE, data);
  }
  
-+#define __raw_readw __raw_readw
- static inline u16 __raw_readw(const volatile void __iomem *addr)
++#define outsb outsb
+ static inline void outsb(u32 io_addr, const u8 *vaddr, u32 count)
  {
- 	u16 val;
-@@ -86,6 +88,7 @@ static inline u16 __raw_readw(const volatile void __iomem *addr)
- }
- #endif
- 
-+#define __raw_writeb __raw_writeb
- static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
- {
- 	asm volatile("strb %1, %0"
-@@ -93,6 +96,7 @@ static inline void __raw_writeb(u8 val, volatile void __iomem *addr)
- 		     : "r" (val));
+ 	while (count--)
+ 		outb(*vaddr++, io_addr);
  }
  
-+#define __raw_writel __raw_writel
- static inline void __raw_writel(u32 val, volatile void __iomem *addr)
++#define outw outw
+ static inline void outw(u16 value, u32 addr)
  {
- 	asm volatile("str %1, %0"
-@@ -100,6 +104,7 @@ static inline void __raw_writel(u32 val, volatile void __iomem *addr)
- 		     : "r" (val));
+ 	u32 n, byte_enables, data;
+@@ -250,23 +253,27 @@ static inline void outw(u16 value, u32 addr)
+ 	ixp4xx_pci_write(addr, byte_enables | NP_CMD_IOWRITE, data);
  }
  
-+#define __raw_readb __raw_readb
- static inline u8 __raw_readb(const volatile void __iomem *addr)
++#define outsw outsw
+ static inline void outsw(u32 io_addr, const u16 *vaddr, u32 count)
  {
- 	u8 val;
-@@ -109,6 +114,7 @@ static inline u8 __raw_readb(const volatile void __iomem *addr)
- 	return val;
+ 	while (count--)
+ 		outw(cpu_to_le16(*vaddr++), io_addr);
  }
  
-+#define __raw_readl __raw_readl
- static inline u32 __raw_readl(const volatile void __iomem *addr)
++#define outl outl
+ static inline void outl(u32 value, u32 addr)
  {
- 	u32 val;
-@@ -267,20 +273,6 @@ extern int pci_ioremap_io(unsigned int offset, phys_addr_t phys_addr);
- #define insl(p,d,l)		__raw_readsl(__io(p),d,l)
- #endif
- 
--#define outb_p(val,port)	outb((val),(port))
--#define outw_p(val,port)	outw((val),(port))
--#define outl_p(val,port)	outl((val),(port))
--#define inb_p(port)		inb((port))
--#define inw_p(port)		inw((port))
--#define inl_p(port)		inl((port))
--
--#define outsb_p(port,from,len)	outsb(port,from,len)
--#define outsw_p(port,from,len)	outsw(port,from,len)
--#define outsl_p(port,from,len)	outsl(port,from,len)
--#define insb_p(port,to,len)	insb(port,to,len)
--#define insw_p(port,to,len)	insw(port,to,len)
--#define insl_p(port,to,len)	insl(port,to,len)
--
- /*
-  * String version of IO memory access ops:
-  */
-@@ -347,40 +339,42 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
- #define iounmap				__arm_iounmap
- 
- /*
-- * io{read,write}{8,16,32} macros
-+ * io{read,write}{16,32}be() macros
-  */
--#ifndef ioread8
--#define ioread8(p)	({ unsigned int __v = __raw_readb(p); __iormb(); __v; })
--#define ioread16(p)	({ unsigned int __v = le16_to_cpu((__force __le16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32(p)	({ unsigned int __v = le32_to_cpu((__force __le32)__raw_readl(p)); __iormb(); __v; })
--
--#define ioread16be(p)	({ unsigned int __v = be16_to_cpu((__force __be16)__raw_readw(p)); __iormb(); __v; })
--#define ioread32be(p)	({ unsigned int __v = be32_to_cpu((__force __be32)__raw_readl(p)); __iormb(); __v; })
--
--#define iowrite8(v,p)	({ __iowmb(); __raw_writeb(v, p); })
--#define iowrite16(v,p)	({ __iowmb(); __raw_writew((__force __u16)cpu_to_le16(v), p); })
--#define iowrite32(v,p)	({ __iowmb(); __raw_writel((__force __u32)cpu_to_le32(v), p); })
-+#define ioread16be(p)		({ __u16 __v = be16_to_cpu((__force __be16)__raw_readw(p)); __iormb(); __v; })
-+#define ioread32be(p)		({ __u32 __v = be32_to_cpu((__force __be32)__raw_readl(p)); __iormb(); __v; })
- 
--#define iowrite16be(v,p) ({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
--#define iowrite32be(v,p) ({ __iowmb(); __raw_writel((__force __u32)cpu_to_be32(v), p); })
--
--#define ioread8_rep(p,d,c)	__raw_readsb(p,d,c)
--#define ioread16_rep(p,d,c)	__raw_readsw(p,d,c)
--#define ioread32_rep(p,d,c)	__raw_readsl(p,d,c)
--
--#define iowrite8_rep(p,s,c)	__raw_writesb(p,s,c)
--#define iowrite16_rep(p,s,c)	__raw_writesw(p,s,c)
--#define iowrite32_rep(p,s,c)	__raw_writesl(p,s,c)
-+#define iowrite16be(v,p)	({ __iowmb(); __raw_writew((__force __u16)cpu_to_be16(v), p); })
-+#define iowrite32be(v,p)	({ __iowmb(); __raw_writel((__force __u32)cpu_to_be32(v), p); })
- 
-+#ifndef ioport_map
-+#define ioport_map ioport_map
- extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
-+#endif
-+#ifndef ioport_unmap
-+#define ioport_unmap ioport_unmap
- extern void ioport_unmap(void __iomem *addr);
- #endif
- 
- struct pci_dev;
- 
-+#define pci_iounmap pci_iounmap
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *addr);
- 
- /*
-+ * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-+ * access
-+ */
-+#define xlate_dev_mem_ptr(p)	__va(p)
-+
-+/*
-+ * Convert a virtual cached pointer to an uncached pointer
-+ */
-+#define xlate_dev_kmem_ptr(p)	p
-+
-+#include <asm-generic/io.h>
-+
-+/*
-  * can the hardware map this into one segment or not, given no other
-  * constraints.
-  */
-@@ -402,17 +396,6 @@ extern int devmem_is_allowed(unsigned long pfn);
- #endif
- 
- /*
-- * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-- * access
-- */
--#define xlate_dev_mem_ptr(p)	__va(p)
--
--/*
-- * Convert a virtual cached pointer to an uncached pointer
-- */
--#define xlate_dev_kmem_ptr(p)	p
--
--/*
-  * Register ISA memory and port locations for glibc iopl/inb/outb
-  * emulation.
-  */
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index e731018869a7..184def0e1652 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -274,11 +274,13 @@ static inline unsigned long __phys_to_virt(phys_addr_t x)
-  * translation for translating DMA addresses.  Use the driver
-  * DMA support - see dma-mapping.h.
-  */
-+#define virt_to_phys virt_to_phys
- static inline phys_addr_t virt_to_phys(const volatile void *x)
- {
- 	return __virt_to_phys((unsigned long)(x));
+ 	ixp4xx_pci_write(addr, NP_CMD_IOWRITE, value);
  }
  
-+#define phys_to_virt phys_to_virt
- static inline void *phys_to_virt(phys_addr_t x)
++#define outsl outsl
+ static inline void outsl(u32 io_addr, const u32 *vaddr, u32 count)
  {
- 	return (void *)__phys_to_virt(x);
-@@ -322,11 +324,13 @@ static inline phys_addr_t __virt_to_idmap(unsigned long x)
- #endif
- 
- #ifdef CONFIG_VIRT_TO_BUS
-+#define virt_to_bus virt_to_bus
- static inline __deprecated unsigned long virt_to_bus(void *x)
- {
- 	return __virt_to_bus((unsigned long)x);
+ 	while (count--)
+ 		outl(cpu_to_le32(*vaddr++), io_addr);
  }
  
-+#define bus_to_virt bus_to_virt
- static inline __deprecated void *bus_to_virt(unsigned long x)
++#define inb inb
+ static inline u8 inb(u32 addr)
  {
- 	return (void *)__bus_to_virt(x);
+ 	u32 n, byte_enables, data;
+@@ -278,12 +285,14 @@ static inline u8 inb(u32 addr)
+ 	return data >> (8*n);
+ }
+ 
++#define insb insb
+ static inline void insb(u32 io_addr, u8 *vaddr, u32 count)
+ {
+ 	while (count--)
+ 		*vaddr++ = inb(io_addr);
+ }
+ 
++#define inw inw
+ static inline u16 inw(u32 addr)
+ {
+ 	u32 n, byte_enables, data;
+@@ -295,12 +304,14 @@ static inline u16 inw(u32 addr)
+ 	return data>>(8*n);
+ }
+ 
++#define insw insw
+ static inline void insw(u32 io_addr, u16 *vaddr, u32 count)
+ {
+ 	while (count--)
+ 		*vaddr++ = le16_to_cpu(inw(io_addr));
+ }
+ 
++#define inl inl
+ static inline u32 inl(u32 addr)
+ {
+ 	u32 data;
+@@ -310,6 +321,7 @@ static inline u32 inl(u32 addr)
+ 	return data;
+ }
+ 
++#define insl insl
+ static inline void insl(u32 io_addr, u32 *vaddr, u32 count)
+ {
+ 	while (count--)
 -- 
 2.1.0
 
