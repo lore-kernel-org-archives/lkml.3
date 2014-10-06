@@ -1,274 +1,794 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbaJFL6I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 07:58:08 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:35952 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488AbaJFL6D (ORCPT
+	id S1752226AbaJFMFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:05:11 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:48718 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaJFMFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 07:58:03 -0400
+	Mon, 6 Oct 2014 08:05:08 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s96C4wxg013834, This message is accepted by code: ctloc85258
+From: Chun-Hao Lin <hau@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        Chun-Hao Lin <hau@realtek.com>
+Subject: [PATCH v3 net-next] r8169:add support for RTL8168EP
+Date: Mon, 6 Oct 2014 20:04:53 +0800
+Message-ID: <1412597093-22956-1-git-send-email-hau@realtek.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Date: Mon, 6 Oct 2014 13:58:01 +0200
-Message-ID: <CACRpkdb47TFJX=7kEM-D3+HB1JvBe1y+D10ohTqa5D=brp1dfQ@mail.gmail.com>
-Subject: [GIT PULL] bulk pin control changes for v3.18
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+RTL8168EP is Realtek PCIe Gigabit Ethernet controller with DASH support.
+It is a successor chip of RTL8168DP.
 
-here is the contents of the pin control development tree targeted at
-the v3.18 cycle. I think there is a minor conflict in -next, but it's
-agains my own GPIO tree, so will have a look at that before sending
-that pull request later this merge window.
+For RTL8168EP, the read/write ocp register is via eri channel type 2, so
+I modify ocp_read() ocp_write() and move related functions under
+rtl_eri_read() rtl_eri_write().
 
-Details are in the signed tag, please pull it in!
+The way of checking if dash is enabled and setting driver start/stop
+are also different with RTL8168DP.
 
-Yours,
-Linus Walleij
+Right now, RTL8168EP phy mcu did not need patch firmware code, so I
+did not add firmware code for it.
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+Signed-off-by: Chun-Hao Lin <hau@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 512 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 467 insertions(+), 45 deletions(-)
 
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 54476ba..1f63e0a 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -155,6 +155,9 @@ enum mac_version {
+ 	RTL_GIGA_MAC_VER_46,
+ 	RTL_GIGA_MAC_VER_47,
+ 	RTL_GIGA_MAC_VER_48,
++	RTL_GIGA_MAC_VER_49,
++	RTL_GIGA_MAC_VER_50,
++	RTL_GIGA_MAC_VER_51,
+ 	RTL_GIGA_MAC_NONE   = 0xff,
+ };
+ 
+@@ -302,6 +305,15 @@ static const struct {
+ 	[RTL_GIGA_MAC_VER_48] =
+ 		_R("RTL8107e",		RTL_TD_1, FIRMWARE_8107E_2,
+ 							JUMBO_1K, false),
++	[RTL_GIGA_MAC_VER_49] =
++		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
++							JUMBO_9K, false),
++	[RTL_GIGA_MAC_VER_50] =
++		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
++							JUMBO_9K, false),
++	[RTL_GIGA_MAC_VER_51] =
++		_R("RTL8168ep/8111ep",	RTL_TD_1, NULL,
++							JUMBO_9K, false),
+ };
+ #undef _R
+ 
+@@ -400,6 +412,10 @@ enum rtl_registers {
+ 	FuncEvent	= 0xf0,
+ 	FuncEventMask	= 0xf4,
+ 	FuncPresetState	= 0xf8,
++	IBCR0           = 0xf8,
++	IBCR2           = 0xf9,
++	IBIMR0          = 0xfa,
++	IBISR0          = 0xfb,
+ 	FuncForceEvent	= 0xfc,
+ };
+ 
+@@ -467,6 +483,7 @@ enum rtl8168_registers {
+ #define ERIAR_EXGMAC			(0x00 << ERIAR_TYPE_SHIFT)
+ #define ERIAR_MSIX			(0x01 << ERIAR_TYPE_SHIFT)
+ #define ERIAR_ASF			(0x02 << ERIAR_TYPE_SHIFT)
++#define ERIAR_OOB			(0x02 << ERIAR_TYPE_SHIFT)
+ #define ERIAR_MASK_SHIFT		12
+ #define ERIAR_MASK_0001			(0x1 << ERIAR_MASK_SHIFT)
+ #define ERIAR_MASK_0011			(0x3 << ERIAR_MASK_SHIFT)
+@@ -935,40 +952,6 @@ static const struct rtl_cond name = {			\
+ 							\
+ static bool name ## _check(struct rtl8169_private *tp)
+ 
+-DECLARE_RTL_COND(rtl_ocpar_cond)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	return RTL_R32(OCPAR) & OCPAR_FLAG;
+-}
+-
+-static u32 ocp_read(struct rtl8169_private *tp, u8 mask, u16 reg)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	RTL_W32(OCPAR, ((u32)mask & 0x0f) << 12 | (reg & 0x0fff));
+-
+-	return rtl_udelay_loop_wait_high(tp, &rtl_ocpar_cond, 100, 20) ?
+-		RTL_R32(OCPDR) : ~0;
+-}
+-
+-static void ocp_write(struct rtl8169_private *tp, u8 mask, u16 reg, u32 data)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	RTL_W32(OCPDR, data);
+-	RTL_W32(OCPAR, OCPAR_FLAG | ((u32)mask & 0x0f) << 12 | (reg & 0x0fff));
+-
+-	rtl_udelay_loop_wait_low(tp, &rtl_ocpar_cond, 100, 20);
+-}
+-
+-DECLARE_RTL_COND(rtl_eriar_cond)
+-{
+-	void __iomem *ioaddr = tp->mmio_addr;
+-
+-	return RTL_R32(ERIAR) & ERIAR_FLAG;
+-}
+-
+ static bool rtl_ocp_reg_failure(struct rtl8169_private *tp, u32 reg)
+ {
+ 	if (reg & 0xffff0001) {
+@@ -1110,6 +1093,13 @@ static int r8169_mdio_read(struct rtl8169_private *tp, int reg)
+ 	return value;
+ }
+ 
++DECLARE_RTL_COND(rtl_ocpar_cond)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	return RTL_R32(OCPAR) & OCPAR_FLAG;
++}
++
+ static void r8168dp_1_mdio_access(struct rtl8169_private *tp, int reg, u32 data)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+@@ -1245,6 +1235,13 @@ static u16 rtl_ephy_read(struct rtl8169_private *tp, int reg_addr)
+ 		RTL_R32(EPHYAR) & EPHYAR_DATA_MASK : ~0;
+ }
+ 
++DECLARE_RTL_COND(rtl_eriar_cond)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	return RTL_R32(ERIAR) & ERIAR_FLAG;
++}
++
+ static void rtl_eri_write(struct rtl8169_private *tp, int addr, u32 mask,
+ 			  u32 val, int type)
+ {
+@@ -1276,6 +1273,52 @@ static void rtl_w0w1_eri(struct rtl8169_private *tp, int addr, u32 mask, u32 p,
+ 	rtl_eri_write(tp, addr, mask, (val & ~m) | p, type);
+ }
+ 
++static u32 ocp_read(struct rtl8169_private *tp, u8 mask, u16 reg)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_27:
++	case RTL_GIGA_MAC_VER_28:
++	case RTL_GIGA_MAC_VER_31:
++		RTL_W32(OCPAR, ((u32)mask & 0x0f) << 12 | (reg & 0x0fff));
++		return rtl_udelay_loop_wait_high(tp, &rtl_ocpar_cond, 100, 20) ?
++			RTL_R32(OCPDR) : ~0;
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		return rtl_eri_read(tp, reg, ERIAR_OOB);
++	default:
++		BUG();
++		return ~0;
++	}
++}
++
++static void ocp_write(struct rtl8169_private *tp, u8 mask, u16 reg, u32 data)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_27:
++	case RTL_GIGA_MAC_VER_28:
++	case RTL_GIGA_MAC_VER_31:
++		RTL_W32(OCPDR, data);
++		RTL_W32(OCPAR, OCPAR_FLAG | ((u32)mask & 0x0f) << 12 |
++			(reg & 0x0fff));
++		rtl_udelay_loop_wait_low(tp, &rtl_ocpar_cond, 100, 20);
++		break;
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		rtl_eri_write(tp, reg, ((u32)mask & 0x0f) << ERIAR_MASK_SHIFT,
++			      data, ERIAR_OOB);
++		break;
++	default:
++		BUG();
++		break;
++	}
++}
++
+ static void rtl8168_oob_notify(struct rtl8169_private *tp, u8 cmd)
+ {
+ 	rtl_eri_write(tp, 0xe8, ERIAR_MASK_0001, cmd, ERIAR_EXGMAC);
+@@ -1301,25 +1344,84 @@ DECLARE_RTL_COND(rtl_ocp_read_cond)
+ 	return ocp_read(tp, 0x0f, reg) & 0x00000800;
+ }
+ 
+-static void rtl8168_driver_start(struct rtl8169_private *tp)
++DECLARE_RTL_COND(rtl_ep_ocp_read_cond)
+ {
+-	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
++	return ocp_read(tp, 0x0f, 0x124) & 0x00000001;
++}
++
++DECLARE_RTL_COND(rtl_ocp_tx_cond)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
+ 
+-	rtl_msleep_loop_wait_high(tp, &rtl_ocp_read_cond, 10, 10);
++	return RTL_R8(IBISR0) & 0x02;
++}
++
++static void rtl8168_driver_start(struct rtl8169_private *tp)
++{
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_27:
++	case RTL_GIGA_MAC_VER_28:
++	case RTL_GIGA_MAC_VER_31:
++		rtl8168_oob_notify(tp, OOB_CMD_DRIVER_START);
++		rtl_msleep_loop_wait_high(tp, &rtl_ocp_read_cond, 10, 10);
++		break;
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_START);
++		ocp_write(tp, 0x01, 0x30, ocp_read(tp, 0x01, 0x30) | 0x01);
++		rtl_msleep_loop_wait_high(tp, &rtl_ep_ocp_read_cond, 10, 10);
++		break;
++	default:
++		BUG();
++		break;
++	}
+ }
+ 
+ static void rtl8168_driver_stop(struct rtl8169_private *tp)
+ {
+-	rtl8168_oob_notify(tp, OOB_CMD_DRIVER_STOP);
++	void __iomem *ioaddr = tp->mmio_addr;
+ 
+-	rtl_msleep_loop_wait_low(tp, &rtl_ocp_read_cond, 10, 10);
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_27:
++	case RTL_GIGA_MAC_VER_28:
++	case RTL_GIGA_MAC_VER_31:
++		rtl8168_oob_notify(tp, OOB_CMD_DRIVER_STOP);
++		rtl_msleep_loop_wait_low(tp, &rtl_ocp_read_cond, 10, 10);
++		break;
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		RTL_W8(IBCR2, RTL_R8(IBCR2) & ~0x01);
++		rtl_msleep_loop_wait_low(tp, &rtl_ocp_tx_cond, 50, 2000);
++		RTL_W8(IBISR0, RTL_R8(IBISR0) | 0x20);
++		RTL_W8(IBCR0, RTL_R8(IBCR0) & ~0x01);
++		ocp_write(tp, 0x01, 0x180, OOB_CMD_DRIVER_STOP);
++		ocp_write(tp, 0x01, 0x30, ocp_read(tp, 0x01, 0x30) | 0x01);
++		rtl_msleep_loop_wait_low(tp, &rtl_ep_ocp_read_cond, 10, 10);
++		break;
++	default:
++		BUG();
++		break;
++	}
+ }
+ 
+ static int r8168_check_dash(struct rtl8169_private *tp)
+ {
+ 	u16 reg = rtl8168_get_ocp_reg(tp);
+ 
+-	return (ocp_read(tp, 0x0f, reg) & 0x00008000) ? 1 : 0;
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_27:
++	case RTL_GIGA_MAC_VER_28:
++	case RTL_GIGA_MAC_VER_31:
++		return (ocp_read(tp, 0x0f, reg) & 0x00008000) ? 1 : 0;
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		return (ocp_read(tp, 0x0f, 0x128) & 0x00000001) ? 1 : 0;
++	default:
++		return 0;
++	}
+ }
+ 
+ struct exgmac_reg {
+@@ -1553,6 +1655,9 @@ static u32 __rtl8169_get_wol(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		if (rtl_eri_read(tp, 0xdc, ERIAR_EXGMAC) & MagicPacket_v2)
+ 			wolopts |= WAKE_MAGIC;
+ 		break;
+@@ -1620,6 +1725,9 @@ static void __rtl8169_set_wol(struct rtl8169_private *tp, u32 wolopts)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		tmp = ARRAY_SIZE(cfg) - 1;
+ 		if (wolopts & WAKE_MAGIC)
+ 			rtl_w0w1_eri(tp,
+@@ -2126,6 +2234,11 @@ static void rtl8169_get_mac_version(struct rtl8169_private *tp,
+ 		u32 val;
+ 		int mac_version;
+ 	} mac_info[] = {
++		/* 8168EP family. */
++		{ 0x7cf00000, 0x50200000,	RTL_GIGA_MAC_VER_51 },
++		{ 0x7cf00000, 0x50100000,	RTL_GIGA_MAC_VER_50 },
++		{ 0x7cf00000, 0x50000000,	RTL_GIGA_MAC_VER_49 },
++
+ 		/* 8168H family. */
+ 		{ 0x7cf00000, 0x54100000,	RTL_GIGA_MAC_VER_46 },
+ 		{ 0x7cf00000, 0x54000000,	RTL_GIGA_MAC_VER_45 },
+@@ -3741,6 +3854,139 @@ static void rtl8168h_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x1f, 0x0000);
+ }
+ 
++static void rtl8168ep_1_hw_phy_config(struct rtl8169_private *tp)
++{
++	/* Enable PHY auto speed down */
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w0w1_phy(tp, 0x11, 0x000c, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* patch 10M & ALDPS */
++	rtl_writephy(tp, 0x1f, 0x0bcc);
++	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w0w1_phy(tp, 0x11, 0x00c0, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8084);
++	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x6000);
++	rtl_w0w1_phy(tp, 0x10, 0x1003, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Enable EEE auto-fallback function */
++	rtl_writephy(tp, 0x1f, 0x0a4b);
++	rtl_w0w1_phy(tp, 0x11, 0x0004, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Enable UC LPF tune function */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8012);
++	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* set rg_sel_sdm_rate */
++	rtl_writephy(tp, 0x1f, 0x0c42);
++	rtl_w0w1_phy(tp, 0x11, 0x4000, 0x2000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Check ALDPS bit, disable it if enabled */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	if (rtl_readphy(tp, 0x10) & 0x0004)
++		rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0004);
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++}
++
++static void rtl8168ep_2_hw_phy_config(struct rtl8169_private *tp)
++{
++	/* patch 10M & ALDPS */
++	rtl_writephy(tp, 0x1f, 0x0bcc);
++	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x0100);
++	rtl_writephy(tp, 0x1f, 0x0a44);
++	rtl_w0w1_phy(tp, 0x11, 0x00c0, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8084);
++	rtl_w0w1_phy(tp, 0x14, 0x0000, 0x6000);
++	rtl_w0w1_phy(tp, 0x10, 0x1003, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Enable UC LPF tune function */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8012);
++	rtl_w0w1_phy(tp, 0x14, 0x8000, 0x0000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Set rg_sel_sdm_rate */
++	rtl_writephy(tp, 0x1f, 0x0c42);
++	rtl_w0w1_phy(tp, 0x11, 0x4000, 0x2000);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Channel estimation parameters */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x80f3);
++	rtl_w0w1_phy(tp, 0x14, 0x8b00, ~0x8bff);
++	rtl_writephy(tp, 0x13, 0x80f0);
++	rtl_w0w1_phy(tp, 0x14, 0x3a00, ~0x3aff);
++	rtl_writephy(tp, 0x13, 0x80ef);
++	rtl_w0w1_phy(tp, 0x14, 0x0500, ~0x05ff);
++	rtl_writephy(tp, 0x13, 0x80f6);
++	rtl_w0w1_phy(tp, 0x14, 0x6e00, ~0x6eff);
++	rtl_writephy(tp, 0x13, 0x80ec);
++	rtl_w0w1_phy(tp, 0x14, 0x6800, ~0x68ff);
++	rtl_writephy(tp, 0x13, 0x80ed);
++	rtl_w0w1_phy(tp, 0x14, 0x7c00, ~0x7cff);
++	rtl_writephy(tp, 0x13, 0x80f2);
++	rtl_w0w1_phy(tp, 0x14, 0xf400, ~0xf4ff);
++	rtl_writephy(tp, 0x13, 0x80f4);
++	rtl_w0w1_phy(tp, 0x14, 0x8500, ~0x85ff);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x8110);
++	rtl_w0w1_phy(tp, 0x14, 0xa800, ~0xa8ff);
++	rtl_writephy(tp, 0x13, 0x810f);
++	rtl_w0w1_phy(tp, 0x14, 0x1d00, ~0x1dff);
++	rtl_writephy(tp, 0x13, 0x8111);
++	rtl_w0w1_phy(tp, 0x14, 0xf500, ~0xf5ff);
++	rtl_writephy(tp, 0x13, 0x8113);
++	rtl_w0w1_phy(tp, 0x14, 0x6100, ~0x61ff);
++	rtl_writephy(tp, 0x13, 0x8115);
++	rtl_w0w1_phy(tp, 0x14, 0x9200, ~0x92ff);
++	rtl_writephy(tp, 0x13, 0x810e);
++	rtl_w0w1_phy(tp, 0x14, 0x0400, ~0x04ff);
++	rtl_writephy(tp, 0x13, 0x810c);
++	rtl_w0w1_phy(tp, 0x14, 0x7c00, ~0x7cff);
++	rtl_writephy(tp, 0x13, 0x810b);
++	rtl_w0w1_phy(tp, 0x14, 0x5a00, ~0x5aff);
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	rtl_writephy(tp, 0x13, 0x80d1);
++	rtl_w0w1_phy(tp, 0x14, 0xff00, ~0xffff);
++	rtl_writephy(tp, 0x13, 0x80cd);
++	rtl_w0w1_phy(tp, 0x14, 0x9e00, ~0x9eff);
++	rtl_writephy(tp, 0x13, 0x80d3);
++	rtl_w0w1_phy(tp, 0x14, 0x0e00, ~0x0eff);
++	rtl_writephy(tp, 0x13, 0x80d5);
++	rtl_w0w1_phy(tp, 0x14, 0xca00, ~0xcaff);
++	rtl_writephy(tp, 0x13, 0x80d7);
++	rtl_w0w1_phy(tp, 0x14, 0x8400, ~0x84ff);
++
++	/* Force PWM-mode */
++	rtl_writephy(tp, 0x1f, 0x0bcd);
++	rtl_writephy(tp, 0x14, 0x5065);
++	rtl_writephy(tp, 0x14, 0xd065);
++	rtl_writephy(tp, 0x1f, 0x0bc8);
++	rtl_writephy(tp, 0x12, 0x00ed);
++	rtl_writephy(tp, 0x1f, 0x0bcd);
++	rtl_writephy(tp, 0x14, 0x1065);
++	rtl_writephy(tp, 0x14, 0x9065);
++	rtl_writephy(tp, 0x14, 0x1065);
++	rtl_writephy(tp, 0x1f, 0x0000);
++
++	/* Check ALDPS bit, disable it if enabled */
++	rtl_writephy(tp, 0x1f, 0x0a43);
++	if (rtl_readphy(tp, 0x10) & 0x0004)
++		rtl_w0w1_phy(tp, 0x10, 0x0000, 0x0004);
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++}
++
+ static void rtl8102e_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3940,6 +4186,14 @@ static void rtl_hw_phy_config(struct net_device *dev)
+ 		rtl8168h_2_hw_phy_config(tp);
+ 		break;
+ 
++	case RTL_GIGA_MAC_VER_49:
++		rtl8168ep_1_hw_phy_config(tp);
++		break;
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
++		rtl8168ep_2_hw_phy_config(tp);
++		break;
++
+ 	case RTL_GIGA_MAC_VER_41:
+ 	default:
+ 		break;
+@@ -4154,6 +4408,9 @@ static void rtl_init_mdio_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		ops->write	= r8168g_mdio_write;
+ 		ops->read	= r8168g_mdio_read;
+ 		break;
+@@ -4212,6 +4469,9 @@ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		RTL_W32(RxConfig, RTL_R32(RxConfig) |
+ 			AcceptBroadcast | AcceptMulticast | AcceptMyPhys);
+ 		break;
+@@ -4356,7 +4616,10 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
+ 
+ 	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
+ 	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
+-	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
++	     tp->mac_version == RTL_GIGA_MAC_VER_31 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_49 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_50 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_51) &&
+ 	    r8168_check_dash(tp)) {
+ 		return;
+ 	}
+@@ -4387,10 +4650,13 @@ static void r8168_pll_power_down(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_44:
+ 	case RTL_GIGA_MAC_VER_45:
+ 	case RTL_GIGA_MAC_VER_46:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_49:
+ 		rtl_w0w1_eri(tp, 0x1a8, ERIAR_MASK_1111, 0x00000000,
+ 			     0xfc000000, ERIAR_EXGMAC);
+ 		RTL_W8(PMCH, RTL_R8(PMCH) & ~0x80);
+@@ -4415,10 +4681,13 @@ static void r8168_pll_power_up(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_44:
+ 	case RTL_GIGA_MAC_VER_45:
+ 	case RTL_GIGA_MAC_VER_46:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
+ 		break;
+ 	case RTL_GIGA_MAC_VER_40:
+ 	case RTL_GIGA_MAC_VER_41:
++	case RTL_GIGA_MAC_VER_49:
+ 		RTL_W8(PMCH, RTL_R8(PMCH) | 0xc0);
+ 		rtl_w0w1_eri(tp, 0x1a8, ERIAR_MASK_1111, 0xfc000000,
+ 			     0x00000000, ERIAR_EXGMAC);
+@@ -4493,6 +4762,9 @@ static void rtl_init_pll_power_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_44:
+ 	case RTL_GIGA_MAC_VER_45:
+ 	case RTL_GIGA_MAC_VER_46:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		ops->down	= r8168_pll_power_down;
+ 		ops->up		= r8168_pll_power_up;
+ 		break;
+@@ -4547,6 +4819,9 @@ static void rtl_init_rxcfg(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		RTL_W32(RxConfig, RX128_INT_EN | RX_DMA_BURST | RX_EARLY_OFF);
+ 		break;
+ 	default:
+@@ -4712,6 +4987,9 @@ static void rtl_init_jumbo_ops(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 	default:
+ 		ops->disable	= NULL;
+ 		ops->enable	= NULL;
+@@ -4828,7 +5106,10 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ 		   tp->mac_version == RTL_GIGA_MAC_VER_45 ||
+ 		   tp->mac_version == RTL_GIGA_MAC_VER_46 ||
+ 		   tp->mac_version == RTL_GIGA_MAC_VER_47 ||
+-		   tp->mac_version == RTL_GIGA_MAC_VER_48) {
++		   tp->mac_version == RTL_GIGA_MAC_VER_48 ||
++		   tp->mac_version == RTL_GIGA_MAC_VER_49 ||
++		   tp->mac_version == RTL_GIGA_MAC_VER_50 ||
++		   tp->mac_version == RTL_GIGA_MAC_VER_51) {
+ 		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
+ 		rtl_udelay_loop_wait_high(tp, &rtl_txcfg_empty_cond, 100, 666);
+ 	} else {
+@@ -5754,6 +6035,120 @@ static void rtl_hw_start_8168h_1(struct rtl8169_private *tp)
+ 	r8168_mac_ocp_write(tp, 0xc09e, 0x0000);
+ }
+ 
++static void rtl_hw_start_8168ep(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	struct pci_dev *pdev = tp->pci_dev;
++
++	RTL_W32(TxConfig, RTL_R32(TxConfig) | TXCFG_AUTO_FIFO);
++
++	rtl_eri_write(tp, 0xc8, ERIAR_MASK_0101, 0x00080002, ERIAR_EXGMAC);
++	rtl_eri_write(tp, 0xcc, ERIAR_MASK_0001, 0x2f, ERIAR_EXGMAC);
++	rtl_eri_write(tp, 0xd0, ERIAR_MASK_0001, 0x5f, ERIAR_EXGMAC);
++	rtl_eri_write(tp, 0xe8, ERIAR_MASK_1111, 0x00100006, ERIAR_EXGMAC);
++
++	rtl_csi_access_enable_1(tp);
++
++	rtl_tx_performance_tweak(pdev, 0x5 << MAX_READ_REQUEST_SHIFT);
++
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x00, 0x01, ERIAR_EXGMAC);
++	rtl_w0w1_eri(tp, 0xdc, ERIAR_MASK_0001, 0x01, 0x00, ERIAR_EXGMAC);
++
++	rtl_w0w1_eri(tp, 0xd4, ERIAR_MASK_1111, 0x1f80, 0x00, ERIAR_EXGMAC);
++
++	rtl_eri_write(tp, 0x5f0, ERIAR_MASK_0011, 0x4f87, ERIAR_EXGMAC);
++
++	RTL_W8(ChipCmd, CmdTxEnb | CmdRxEnb);
++	RTL_W32(MISC, RTL_R32(MISC) & ~RXDV_GATED_EN);
++	RTL_W8(MaxTxPacketSize, EarlySize);
++
++	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000, ERIAR_EXGMAC);
++
++	/* Adjust EEE LED frequency */
++	RTL_W8(EEE_LED, RTL_R8(EEE_LED) & ~0x07);
++
++	rtl_w0w1_eri(tp, 0x2fc, ERIAR_MASK_0001, 0x01, 0x06, ERIAR_EXGMAC);
++
++	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~TX_10M_PS_EN);
++
++	rtl_pcie_state_l2l3_enable(tp, false);
++}
++
++static void rtl_hw_start_8168ep_1(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct ephy_info e_info_8168ep_1[] = {
++		{ 0x00, 0xffff,	0x10ab },
++		{ 0x06, 0xffff,	0xf030 },
++		{ 0x08, 0xffff,	0x2006 },
++		{ 0x0d, 0xffff,	0x1666 },
++		{ 0x0c, 0x3ff0,	0x0000 }
++	};
++
++	/* disable aspm and clock request before access ephy */
++	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
++	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
++	rtl_ephy_init(tp, e_info_8168ep_1, ARRAY_SIZE(e_info_8168ep_1));
++
++	rtl_hw_start_8168ep(tp);
++}
++
++static void rtl_hw_start_8168ep_2(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	static const struct ephy_info e_info_8168ep_2[] = {
++		{ 0x00, 0xffff,	0x10a3 },
++		{ 0x19, 0xffff,	0xfc00 },
++		{ 0x1e, 0xffff,	0x20ea }
++	};
++
++	/* disable aspm and clock request before access ephy */
++	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
++	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
++	rtl_ephy_init(tp, e_info_8168ep_2, ARRAY_SIZE(e_info_8168ep_2));
++
++	rtl_hw_start_8168ep(tp);
++
++	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++	RTL_W8(DLLPR, RTL_R8(MISC_1) & ~PFM_D3COLD_EN);
++}
++
++static void rtl_hw_start_8168ep_3(struct rtl8169_private *tp)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	u32 data;
++	static const struct ephy_info e_info_8168ep_3[] = {
++		{ 0x00, 0xffff,	0x10a3 },
++		{ 0x19, 0xffff,	0x7c00 },
++		{ 0x1e, 0xffff,	0x20eb },
++		{ 0x0d, 0xffff,	0x1666 }
++	};
++
++	/* disable aspm and clock request before access ephy */
++	RTL_W8(Config2, RTL_R8(Config2) & ~ClkReqEn);
++	RTL_W8(Config5, RTL_R8(Config5) & ~ASPM_en);
++	rtl_ephy_init(tp, e_info_8168ep_3, ARRAY_SIZE(e_info_8168ep_3));
++
++	rtl_hw_start_8168ep(tp);
++
++	RTL_W8(DLLPR, RTL_R8(DLLPR) & ~PFM_EN);
++	RTL_W8(DLLPR, RTL_R8(MISC_1) & ~PFM_D3COLD_EN);
++
++	data = r8168_mac_ocp_read(tp, 0xd3e2);
++	data &= 0xf000;
++	data |= 0x0271;
++	r8168_mac_ocp_write(tp, 0xd3e2, data);
++
++	data = r8168_mac_ocp_read(tp, 0xd3e4);
++	data &= 0xff00;
++	r8168_mac_ocp_write(tp, 0xd3e4, data);
++
++	data = r8168_mac_ocp_read(tp, 0xe860);
++	data |= 0x0080;
++	r8168_mac_ocp_write(tp, 0xe860, data);
++}
++
+ static void rtl_hw_start_8168(struct net_device *dev)
+ {
+ 	struct rtl8169_private *tp = netdev_priv(dev);
+@@ -5869,6 +6264,18 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 		rtl_hw_start_8168h_1(tp);
+ 		break;
+ 
++	case RTL_GIGA_MAC_VER_49:
++		rtl_hw_start_8168ep_1(tp);
++		break;
++
++	case RTL_GIGA_MAC_VER_50:
++		rtl_hw_start_8168ep_2(tp);
++		break;
++
++	case RTL_GIGA_MAC_VER_51:
++		rtl_hw_start_8168ep_3(tp);
++		break;
++
+ 	default:
+ 		printk(KERN_ERR PFX "%s: unknown chipset (mac_version = %d).\n",
+ 			dev->name, tp->mac_version);
+@@ -7399,7 +7806,10 @@ static void rtl_remove_one(struct pci_dev *pdev)
+ 
+ 	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
+ 	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
+-	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
++	     tp->mac_version == RTL_GIGA_MAC_VER_31 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_49 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_50 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_51) &&
+ 	    r8168_check_dash(tp)) {
+ 		rtl8168_driver_stop(tp);
+ 	}
+@@ -7556,6 +7966,9 @@ static void rtl_hw_initialize(struct rtl8169_private *tp)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		rtl_hw_init_8168g(tp);
+ 		break;
+ 
+@@ -7708,6 +8121,9 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	case RTL_GIGA_MAC_VER_46:
+ 	case RTL_GIGA_MAC_VER_47:
+ 	case RTL_GIGA_MAC_VER_48:
++	case RTL_GIGA_MAC_VER_49:
++	case RTL_GIGA_MAC_VER_50:
++	case RTL_GIGA_MAC_VER_51:
+ 		if (rtl_eri_read(tp, 0xdc, ERIAR_EXGMAC) & MagicPacket_v2)
+ 			tp->features |= RTL_FEATURE_WOL;
+ 		if ((RTL_R8(Config3) & LinkUp) != 0)
+@@ -7756,7 +8172,10 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_45 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_46 ||
+ 	    tp->mac_version == RTL_GIGA_MAC_VER_47 ||
+-	    tp->mac_version == RTL_GIGA_MAC_VER_48) {
++	    tp->mac_version == RTL_GIGA_MAC_VER_48 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_49 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_50 ||
++	    tp->mac_version == RTL_GIGA_MAC_VER_51) {
+ 		u16 mac_addr[3];
+ 
+ 		*(u32 *)&mac_addr[0] = rtl_eri_read(tp, 0xe0, ERIAR_EXGMAC);
+@@ -7835,7 +8254,10 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	if ((tp->mac_version == RTL_GIGA_MAC_VER_27 ||
+ 	     tp->mac_version == RTL_GIGA_MAC_VER_28 ||
+-	     tp->mac_version == RTL_GIGA_MAC_VER_31) &&
++	     tp->mac_version == RTL_GIGA_MAC_VER_31 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_49 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_50 ||
++	     tp->mac_version == RTL_GIGA_MAC_VER_51) &&
+ 	    r8168_check_dash(tp)) {
+ 		rtl8168_driver_start(tp);
+ 	}
+-- 
+1.8.3.2
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
-tags/pinctrl-v3.18-1
-
-for you to fetch changes up to 2cdef8f4e1ac28adc81326758a7767c18479a95d:
-
-  pinctrl: specify bindings for pins and groups (2014-10-02 09:41:46 +0200)
-
-----------------------------------------------------------------
-This is the bulk of pin control changes for the v3.18
-development series:
-
-- New drivers for the Freescale i.MX21, Qualcomm APQ8084
-  pin controllers.
-
-- Incremental new features on the Rockchip, atlas 6,
-  OMAP, AM437x, APQ8064, prima2, AT91, Tegra, i.MX, Berlin
-  and Nomadik.
-
-- Push Freescale drivers down into their own subdirectory.
-
-- Assorted sprays of syntax and semantic fixes.
-
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      pinctrl: Add i.MX21 pincontrol driver
-
-Antoine Tenart (1):
-      pinctrl: berlin: fix the dt_free_map function
-
-Bin Shi (2):
-      pinctrl: sirf: fix "quoted string split across lines"
-      pinctrl: sirf: fix lots of "line over 80 characters"
-
-Doug Anderson (1):
-      pinctrl: Add mux options 3 and 4 for rockchip pinctrl
-
-Geert Uytterhoeven (1):
-      pinctrl: generic: Fix PIN_CONFIG_DRIVE_OPEN_SOURCE source/drain
-doc mismatch
-
-Georgi Djakov (3):
-      pinctrl: qcom: Add APQ8084 pinctrl support
-      dt: Document Qualcomm APQ8084 pinctrl binding
-      pinctrl: qcom: Make the target processor value configurable
-
-Josh Cartwright (1):
-      pinctrl: qcom: use restart_notifier mechanism for ps_hold
-
-Keerthy (1):
-      pinctrl: single: AM437x: Add pinctrl compatibility
-
-Kiran Padwal (2):
-      pinctrl: Make of_device_id array const
-      pinctrl: imx6sl: introduce MODULE_DEVICE_TABLE for module autoloading
-
-Laurent Pinchart (1):
-      pinctrl: sh-pfc: sh73a0: Remove unnecessary SoC data allocation
-
-Linus Walleij (13):
-      pinctrl: sh-pfc: use a saner Kconfig symbol
-      pinctrl: clean up after enable refactoring
-      pinctrl: imx/mxs: move freescale drivers to subdir
-      pinctrl: sh-pfc: rename confusing pinmux ops variable
-      pinctrl: single: fix freudian slip
-      pinctrl: nomadik: use util function to reserve maps
-      pinctrl: nomadik: use utils map free function
-      pinctrl: nomadik: refactor DT parser to take two paths
-      pinctrl: alter device tree bindings for functions
-      pinctrl: abx500: use helpers for map allocation/free
-      pinctrl: abx500: refactor DT parser to take two paths
-      pinctrl: nomadik: improve GPIO debug prints
-      pinctrl: specify bindings for pins and groups
-
-Marek Roszko (2):
-      pinctrl: at91: add drive strength configuration
-      pinctrl: at91: update for drive strength options and tweaks
-
-Naveen Krishna Chatradhi (1):
-      pinctrl: samsung: use CONFIG_PINCTRL_SAMSUNG symbol in makefile
-
-Nishanth Menon (2):
-      pinctrl: bindings: Add OMAP pinctrl binding
-      pinctrl: single: Add DRA7 pinctrl compatibility
-
-Pramod Gurav (10):
-      pinctrl: qcom: remove gpiochip in failure cases
-      pinctrl: msm: Add ps_hold function in pinctrl-apq8064 binding
-documentation
-      pinctrl: qcom: Add support for reset for apq8064
-      pinctrl: sirf: Remove gpiochip on failure cases
-      pinctrl: adi2: Remove duplicate gpiochip_remove_pin_ranges
-      pinctrl: at91: Switch to using managed clk_get
-      pinctrl: lantiq: Release gpiochip resources in fail case
-      pinctrl: at91: Fix failure path in at91_gpio_probe path
-      pinctrl: at91: Fix error handling while doing gpiochio_irqchip_add
-      pinctrl: st: remove gpiochip in failure cases
-
-Rongjun Ying (3):
-      pinctrl: atlas6: take mclk pin out of i2s pingroup
-      pinctrl: atlas6: Add I2S external clock input pingroup
-      pinctrl: prima2: add I2S 2ch, 6ch, nodin, mclk groups
-
-Sean Paul (1):
-      pinctrl: tegra: Add MIPI pad control
-
-Stefan Agner (1):
-      pinctrl: imx: detect uninitialized pins
-
-Wenyou Yang (1):
-      pinctrl: at91: disable PD or PU before enabling PU or PD
-
- .../bindings/pinctrl/atmel,at91-pinctrl.txt        |   22 +-
- .../bindings/pinctrl/nvidia,tegra124-pinmux.txt    |   14 +-
- .../bindings/pinctrl/pinctrl-bindings.txt          |   50 +-
- .../bindings/pinctrl/qcom,apq8064-pinctrl.txt      |    2 +-
- .../bindings/pinctrl/qcom,apq8084-pinctrl.txt      |  179 +++
- .../bindings/pinctrl/rockchip,pinctrl.txt          |    6 +-
- .../bindings/pinctrl/ti,omap-pinctrl.txt           |   13 +
- Documentation/pinctrl.txt                          |   14 +-
- arch/arm/mach-at91/include/mach/at91_pio.h         |    6 +
- drivers/pinctrl/Kconfig                            |  103 +-
- drivers/pinctrl/Makefile                           |   23 +-
- drivers/pinctrl/berlin/berlin.c                    |   29 +-
- drivers/pinctrl/freescale/Kconfig                  |  108 ++
- drivers/pinctrl/freescale/Makefile                 |   19 +
- drivers/pinctrl/{ => freescale}/pinctrl-imx.c      |   17 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx.h      |    7 +-
- .../pinctrl/{ => freescale}/pinctrl-imx1-core.c    |    8 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx1.c     |    0
- drivers/pinctrl/{ => freescale}/pinctrl-imx1.h     |    0
- drivers/pinctrl/freescale/pinctrl-imx21.c          |  342 ++++++
- drivers/pinctrl/{ => freescale}/pinctrl-imx23.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx25.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx27.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx28.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx35.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx50.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx51.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx53.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx6dl.c   |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx6q.c    |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx6sl.c   |    3 +-
- drivers/pinctrl/{ => freescale}/pinctrl-imx6sx.c   |    2 +-
- drivers/pinctrl/{ => freescale}/pinctrl-mxs.c      |    8 +-
- drivers/pinctrl/{ => freescale}/pinctrl-mxs.h      |    0
- drivers/pinctrl/{ => freescale}/pinctrl-vf610.c    |    2 +-
- drivers/pinctrl/mvebu/pinctrl-mvebu.c              |    6 +-
- drivers/pinctrl/nomadik/pinctrl-abx500.c           |   99 +-
- drivers/pinctrl/nomadik/pinctrl-nomadik.c          |  142 +--
- drivers/pinctrl/pinctrl-adi2.c                     |    7 +-
- drivers/pinctrl/pinctrl-as3722.c                   |    4 +-
- drivers/pinctrl/pinctrl-at91.c                     |  212 +++-
- drivers/pinctrl/pinctrl-bcm281xx.c                 |    8 +-
- drivers/pinctrl/pinctrl-bcm2835.c                  |    4 +-
- drivers/pinctrl/pinctrl-lantiq.c                   |    8 +-
- drivers/pinctrl/pinctrl-palmas.c                   |    5 +-
- drivers/pinctrl/pinctrl-rockchip.c                 |    6 +-
- drivers/pinctrl/pinctrl-single.c                   |   18 +-
- drivers/pinctrl/pinctrl-st.c                       |    7 +-
- drivers/pinctrl/pinctrl-tb10x.c                    |    4 +-
- drivers/pinctrl/pinctrl-tegra-xusb.c               |    8 +-
- drivers/pinctrl/pinctrl-tegra.c                    |    7 +-
- drivers/pinctrl/pinctrl-tegra114.c                 |    2 +-
- drivers/pinctrl/pinctrl-tegra124.c                 |   69 +-
- drivers/pinctrl/pinctrl-tegra20.c                  |    2 +-
- drivers/pinctrl/pinctrl-tegra30.c                  |    2 +-
- drivers/pinctrl/pinctrl-tz1090-pdc.c               |    7 +-
- drivers/pinctrl/pinctrl-tz1090.c                   |    6 +-
- drivers/pinctrl/pinctrl-u300.c                     |    6 +-
- drivers/pinctrl/pinctrl-xway.c                     |    2 +
- drivers/pinctrl/pinmux.c                           |   10 +-
- drivers/pinctrl/qcom/Kconfig                       |    8 +
- drivers/pinctrl/qcom/Makefile                      |    1 +
- drivers/pinctrl/qcom/pinctrl-apq8064.c             |    9 +-
- drivers/pinctrl/qcom/pinctrl-apq8084.c             | 1245 ++++++++++++++++++++
- drivers/pinctrl/qcom/pinctrl-ipq8064.c             |    2 +
- drivers/pinctrl/qcom/pinctrl-msm.c                 |   49 +-
- drivers/pinctrl/qcom/pinctrl-msm.h                 |    3 +
- drivers/pinctrl/qcom/pinctrl-msm8960.c             |    2 +
- drivers/pinctrl/qcom/pinctrl-msm8x74.c             |    2 +
- drivers/pinctrl/samsung/pinctrl-exynos5440.c       |    7 +-
- drivers/pinctrl/samsung/pinctrl-samsung.c          |    7 +-
- drivers/pinctrl/sh-pfc/core.c                      |   10 +-
- drivers/pinctrl/sh-pfc/core.h                      |    1 -
- drivers/pinctrl/sh-pfc/pfc-r8a73a4.c               |    4 +-
- drivers/pinctrl/sh-pfc/pfc-r8a7740.c               |    4 +-
- drivers/pinctrl/sh-pfc/pfc-sh7372.c                |    4 +-
- drivers/pinctrl/sh-pfc/pfc-sh73a0.c                |   23 +-
- drivers/pinctrl/sh-pfc/pinctrl.c                   |    6 +-
- drivers/pinctrl/sh-pfc/sh_pfc.h                    |    1 -
- drivers/pinctrl/sirf/pinctrl-atlas6.c              |  129 +-
- drivers/pinctrl/sirf/pinctrl-prima2.c              |  173 ++-
- drivers/pinctrl/sirf/pinctrl-sirf.c                |   72 +-
- drivers/pinctrl/spear/pinctrl-spear.c              |    4 +-
- drivers/pinctrl/spear/pinctrl-spear1310.c          |    2 +-
- drivers/pinctrl/spear/pinctrl-spear1340.c          |    2 +-
- drivers/pinctrl/spear/pinctrl-spear300.c           |    2 +-
- drivers/pinctrl/spear/pinctrl-spear310.c           |    2 +-
- drivers/pinctrl/spear/pinctrl-spear320.c           |    2 +-
- drivers/pinctrl/sunxi/pinctrl-sunxi.c              |    8 +-
- drivers/pinctrl/vt8500/pinctrl-wmt.c               |    8 +-
- include/dt-bindings/pinctrl/at91.h                 |    5 +
- include/dt-bindings/pinctrl/rockchip.h             |    2 +
- include/linux/pinctrl/pinconf-generic.h            |    2 +-
- include/linux/pinctrl/pinmux.h                     |    7 +-
- 94 files changed, 2841 insertions(+), 615 deletions(-)
- create mode 100644
-Documentation/devicetree/bindings/pinctrl/qcom,apq8084-pinctrl.txt
- create mode 100644
-Documentation/devicetree/bindings/pinctrl/ti,omap-pinctrl.txt
- create mode 100644 drivers/pinctrl/freescale/Kconfig
- create mode 100644 drivers/pinctrl/freescale/Makefile
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx.c (97%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx.h (96%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1-core.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1.c (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx1.h (100%)
- create mode 100644 drivers/pinctrl/freescale/pinctrl-imx21.c
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx23.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx25.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx27.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx28.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx35.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx50.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx51.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx53.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6dl.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6q.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6sl.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-imx6sx.c (99%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-mxs.c (98%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-mxs.h (100%)
- rename drivers/pinctrl/{ => freescale}/pinctrl-vf610.c (99%)
- create mode 100644 drivers/pinctrl/qcom/pinctrl-apq8084.c
