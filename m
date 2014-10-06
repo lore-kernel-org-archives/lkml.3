@@ -1,40 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaJFEqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 00:46:52 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57805 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaJFEqs (ORCPT
+	id S1752391AbaJFEu5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 00:50:57 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19314 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaJFEuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 00:46:48 -0400
-Date: Mon, 06 Oct 2014 00:46:46 -0400 (EDT)
-Message-Id: <20141006.004646.685997864382345892.davem@davemloft.net>
-To: gang.chen.5i5j@gmail.com
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        richard@nod.at
-Subject: Re: [PATCH] drivers/net/phy/Kconfig: Let MDIO_BCM_UNIMAC depend on
- HAS_IOMEM
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <542FC3D9.4080607@gmail.com>
-References: <542FC3D9.4080607@gmail.com>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 6 Oct 2014 00:50:54 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 05 Oct 2014 21:49:14 -0700
+Message-ID: <54321F90.2010103@nvidia.com>
+Date: Mon, 6 Oct 2014 12:50:24 +0800
+From: Vince Hsu <vinceh@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Bill Huang <bilhuang@nvidia.com>, <dgreid@google.com>,
+        <olofj@chromium.org>
+Subject: Re: [PATCH] cpufreq: respect the min/max settings from user space
+References: <1412232900-11238-1-git-send-email-vinceh@nvidia.com> <CAKohpon=dwc--SSbwjREdrALfXH=7QCw8UJnyVX5x3TCKB=7Bw@mail.gmail.com>
+In-Reply-To: <CAKohpon=dwc--SSbwjREdrALfXH=7QCw8UJnyVX5x3TCKB=7Bw@mail.gmail.com>
+X-Originating-IP: [10.19.108.126]
+X-ClientProxiedBy: DRBGMAIL104.nvidia.com (10.18.16.23) To
+ HKMAIL101.nvidia.com (10.18.16.10)
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 05 Oct 2014 21:46:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-Date: Sat, 04 Oct 2014 17:54:33 +0800
+Hi Viresh,
 
-> MDIO_BCM_UNIMAC needs HAS_IOMEM, so depend on it, the related error (
-> with allmodconfig under um):
-> 
->     MODPOST 1205 modules
->   ERROR: "devm_ioremap" [drivers/net/phy/mdio-bcm-unimac.ko] undefined!
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+On 10/06/2014 12:45 PM, Viresh Kumar wrote:
+> On 2 October 2014 12:25, Vince Hsu <vinceh@nvidia.com> wrote:
+>> When the user space tries to set scaling_(max|min)_freq through
+>> sysfs, the cpufreq_set_policy() asks other driver's opinions
+>> for the max/min frequencies. Some device drivers, like Tegra
+>> CPU EDP which is not upstreamed yet though, may constrain the
+>> CPU maximum frequency dynamically because of board design.
+>> So if the user space access happens and some driver is capping
+>> the cpu frequency at the same time, the user_policy->(max|min)
+>> is overridden by the capped value, and that's not expected by
+>> the user space. And if the user space is not invoked again,
+>> the CPU will always be capped by the user_policy->(max|min)
+>> even no drivers limit the CPU frequency any more.
+>>
+>> This patch preserves the user specified min/max settings, so that
+>> every time the cpufreq policy is updated, the new max/min can
+>> be re-evaluated correctly based on the user's expection and
+>> the present device drivers' status.
+>>
+>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
+>> ---
+>> Hi,
+>>
+>> I'm not sure if any platform that is supported mainlin might have this
+>> issue, and this patch is complie tested only.
+> Why only compiled tested? Why haven't you tested it on tegra?
+I did test with Chrome kernel on Tegra platform. I can't do that with 
+mainline kernel because we haven't had the CPU EDP driver upstream yet.
 
-Applied, thanks.
+Thanks,
+Vince
+
+>
+>>   drivers/cpufreq/cpufreq.c | 6 ++++--
+>>   1 file changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 24bf76fba141..c007cf2a3d2a 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -524,7 +524,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+>>   static ssize_t store_##file_name                                       \
+>>   (struct cpufreq_policy *policy, const char *buf, size_t count)         \
+>>   {                                                                      \
+>> -       int ret;                                                        \
+>> +       int ret, temp;                                          \
+>>          struct cpufreq_policy new_policy;                               \
+>>                                                                          \
+>>          ret = cpufreq_get_policy(&new_policy, policy->cpu);             \
+>> @@ -535,8 +535,10 @@ static ssize_t store_##file_name                                   \
+>>          if (ret != 1)                                                   \
+>>                  return -EINVAL;                                         \
+>>                                                                          \
+>> +       temp = new_policy.object;                                       \
+>>          ret = cpufreq_set_policy(policy, &new_policy);          \
+>> -       policy->user_policy.object = policy->object;                    \
+>> +       if (!ret)                                                       \
+>> +               policy->user_policy.object = temp;                      \
+>>                                                                          \
+>>          return ret ? ret : count;                                       \
+>>   }
+> Looks fine otherwise.
+>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+
