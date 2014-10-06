@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaJFVBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:01:24 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:53864 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaJFVBW (ORCPT
+	id S1752213AbaJFVEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:04:05 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44021 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973AbaJFVED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:01:22 -0400
-Date: Mon, 6 Oct 2014 17:01:18 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
- built-in and modules
-Message-ID: <20141006210118.GG18303@htj.dyndns.org>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
- <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
- <20141006201926.GF18303@htj.dyndns.org>
- <20141006203627.GZ14081@wotan.suse.de>
+	Mon, 6 Oct 2014 17:04:03 -0400
+Date: Mon, 6 Oct 2014 14:03:58 -0700
+From: Dmitry Torokhov <dtor@mail.ru>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
+Message-ID: <20141006210358.GA39707@dtor-ws>
+References: <20141003231109.GA4530@amd>
+ <20141006181202.GA22781@dtor-ws>
+ <20141006204526.GA28905@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141006203627.GZ14081@wotan.suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141006204526.GA28905@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Oct 06, 2014 at 10:36:27PM +0200, Luis R. Rodriguez wrote:
-> > Do we intend to keep this param permanently?  Isn't this more of a
-> > temp tool to be used during development?  If so, maybe we should make
-> > that clear with __DEVEL__ too?
+On Mon, Oct 06, 2014 at 10:45:26PM +0200, Pavel Machek wrote:
+> Hi!
 > 
-> As its designed right now no, its not a temp tool, its there to
-> require compatibility with old userspace. For modules we can require
-> the module parameter but for built-in we need something else and this
-> is what came to mind. It is also what would allow the prefer_async_probe
-> flag too as otherwise we won't know if userspace is prepared.
+> > > From the backtrace, it looks evdev related...?
+> > 
+> > Hmm, looks like it...
+> 
+> I don't think I can repeat that. I was doing crazy stuff at that
+> moment. (Typo fixes suggested below).
+> 
+> Thanks,
+> 								Pavel
+> 
+> Input: evdev - fix EVIOCG{type} ioctl
+> 
+> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> 
+> The 'max' size passed into the function is measured in number of bits
+> (KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
+> 
+> ###                           need               accordingly(?)     trying
 
-I don't get it.  For in-kernel stuff, we already have a clear
-synchronization point where we already synchronize all async calls.
-Shouldn't we be flushing these async probes there too?  insmod'ing is
-userland visible but there's no reason this has to be for the built-in
-drivers.
-
-Thanks.
+Thanks, I'll fix them up.
 
 -- 
-tejun
+Dmitry
