@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341AbaJFPIp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:08:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39983 "EHLO mail.kernel.org"
+	id S1753370AbaJFPJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:09:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723AbaJFPIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:08:43 -0400
-Date: Mon, 6 Oct 2014 12:08:38 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Robert Richter <rric@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf & rasd integration plan
-Message-ID: <20141006150838.GC14113@kernel.org>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20140930132416.GB2799@kernel.org>
- <20141006090726.GQ20170@rric.localhost>
- <20141006145856.GA14113@kernel.org>
- <20141006150147.GD4372@pd.tnic>
+	id S1752867AbaJFPJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:09:02 -0400
+Date: Mon, 6 Oct 2014 18:11:08 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, netdev@vger.kernel.org
+Subject: [PATCH v2 08/15] virtio-net: drop config_mutex
+Message-ID: <1412608214-31944-9-git-send-email-mst@redhat.com>
+References: <1412608214-31944-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141006150147.GD4372@pd.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412608214-31944-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 06, 2014 at 05:01:47PM +0200, Borislav Petkov escreveu:
-> On Mon, Oct 06, 2014 at 11:58:56AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Agreed, we can use rasd as a reference, I'm now looking for the git repo
-> > url to see what it is using to prototype how I think this should be
-> > done.
-> 
-> https://git.kernel.org/cgit/utils/ras/rasd.git
+config_mutex served two purposes: prevent multiple concurrent config
+change handlers, and synchronize access to config_enable flag.
 
-I got Jean's "development" repo, should I get the g.k.o one?
+Since commit dbf2576e37da0fcc7aacbfbb9fd5d3de7888a3c1
+    workqueue: make all workqueues non-reentrant
+all workqueues are non-reentrant, and config_enable
+is now gone.
 
-- Arnaldo
+Get rid of the unnecessary lock.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+---
+ drivers/net/virtio_net.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 743fb04..23e4a69 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -132,9 +132,6 @@ struct virtnet_info {
+ 	/* Work struct for config space updates */
+ 	struct work_struct config_work;
+ 
+-	/* Lock for config space updates */
+-	struct mutex config_lock;
+-
+ 	/* Does the affinity hint is set for virtqueues? */
+ 	bool affinity_hint_set;
+ 
+@@ -1404,7 +1401,6 @@ static void virtnet_config_changed_work(struct work_struct *work)
+ 		container_of(work, struct virtnet_info, config_work);
+ 	u16 v;
+ 
+-	mutex_lock(&vi->config_lock);
+ 	if (virtio_cread_feature(vi->vdev, VIRTIO_NET_F_STATUS,
+ 				 struct virtio_net_config, status, &v) < 0)
+ 		goto done;
+@@ -1430,7 +1426,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
+ 		netif_tx_stop_all_queues(vi->dev);
+ 	}
+ done:
+-	mutex_unlock(&vi->config_lock);
++	return;
+ }
+ 
+ static void virtnet_config_changed(struct virtio_device *vdev)
+@@ -1751,7 +1747,6 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		u64_stats_init(&virtnet_stats->rx_syncp);
+ 	}
+ 
+-	mutex_init(&vi->config_lock);
+ 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
+ 
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+-- 
+MST
+
