@@ -1,126 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaJFKyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:54:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48733 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbaJFKyi (ORCPT
+	id S1752205AbaJFKyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:54:46 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:34420 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117AbaJFKyn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:54:38 -0400
-Date: Mon, 6 Oct 2014 12:54:34 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
-Subject: Re: [PATCH v7 06/11] drm: add DT bindings documentation for
- atmel-hlcdc-dc driver
-Message-ID: <20141006105433.GG25202@ulmo>
-References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
- <1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BzCohdixPhurzSK4"
-Content-Disposition: inline
-In-Reply-To: <1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 6 Oct 2014 06:54:43 -0400
+Date: Mon, 6 Oct 2014 12:54:35 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 04/16] virtio-pci: move freeze/restore to virtio core
+Message-ID: <20141006125435.12c69ab1.cornelia.huck@de.ibm.com>
+In-Reply-To: <1412525038-15871-5-git-send-email-mst@redhat.com>
+References: <1412525038-15871-1-git-send-email-mst@redhat.com>
+	<1412525038-15871-5-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100610-1948-0000-0000-000001588EA6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 5 Oct 2014 19:07:02 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
---BzCohdixPhurzSK4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Oct 01, 2014 at 04:53:03PM +0200, Boris Brezillon wrote:
-> From: Boris BREZILLON <boris.brezillon@free-electrons.com>
->=20
-> The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
-> at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
-> controller device.
->=20
-> The HLCDC block provides a single RGB output port, and only supports LCD
-> panels connection to LCD panels for now.
->=20
-> The atmel,panel property link the HLCDC RGB output with the LCD panel
-> connected on this port (note that the HLCDC RGB connector implementation
-> makes use of the DRM panel framework).
->=20
-> Connection to other external devices (DRM bridges) might be added later by
-> mean of a new atmel,xxx (atmel,bridge) property.
->=20
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> This is in preparation to extending config changed event handling
+> in core.
+> Wrapping these in an API also seems to make for a cleaner code.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > ---
->  .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     | 53 ++++++++++++++++=
-++++++
->  1 file changed, 53 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.=
-txt
->=20
-> diff --git a/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt b/D=
-ocumentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> new file mode 100644
-> index 0000000..ebc1a91
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> @@ -0,0 +1,53 @@
-> +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
-> +
-> +The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
-> +See ../mfd/atmel-hlcdc.txt for more details.
-> +
-> +Required properties:
-> + - compatible: value should be "atmel,hlcdc-display-controller"
-> + - pinctrl-names: the pin control state names. Should contain "default".
-> + - pinctrl-0: should contain the default pinctrl states.
-> + - #address-cells: should be set to 1.
-> + - #size-cells: should be set to 0.
-> +
-> +Required children nodes:
-> + Children nodes are encoding available output ports and their connections
-> + to external devices using the OF graph reprensentation (see ../graph.tx=
-t).
-> + At least one port node is required.
+>  include/linux/virtio.h      |  6 +++++
+>  drivers/virtio/virtio.c     | 53 +++++++++++++++++++++++++++++++++++++++++++
+>  drivers/virtio/virtio_pci.c | 55 ++-------------------------------------------
+>  3 files changed, 61 insertions(+), 53 deletions(-)
+> 
+> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> index 3c19bd3..8df7ba8 100644
+> --- a/include/linux/virtio.h
+> +++ b/include/linux/virtio.h
+> @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
+>  /**
+>   * virtio_device - representation of a device using virtio
+>   * @index: unique position on the virtio bus
+> + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
+>   * @dev: underlying device.
+>   * @id: the device type identification (used to match it with a driver).
+>   * @config: the configuration ops for this device.
 
-Are the connections configurable at runtime? Does the SoC have IP blocks
-for HDMI or other types of outputs or does it provide only RGB output to
-external blocks?
+The only minor gripe I have is with the naming of this field: To a
+cursory reader, it might indicate the current 'failed' status of the
+device. What about 'saved_failed'?
 
-When you say "at least one port", how are multiple ports going to work
-if you have only a single display controller?
+Otherwise, moving this into common virtio code makes sense.
 
-Thierry
+Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
 
---BzCohdixPhurzSK4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUMnTpAAoJEN0jrNd/PrOhUn0P/A2lojPJ+gPloP7KlZqjKsUs
-kbB5o0sCvIThRWB5lCw+md/C1tvir+dCVrqBE69r6kB8NiInOUdfHRZON+PZiyDc
-KBDAffKPzXNz4wl9LJwdpdm0AWqivZpxvL/n3abvfsZsUt6Sw0svt9yWW6NeStzJ
-AWNLghyx8pVNnZggiYgoA502Xhcd2nwtYab72PS54LRXZoOBIVHifJgaVBgScvvf
-Y9bxJYQ/Clyf2AOm3Rb4CoUsmJTACOIoDDwIDdsZK+tIf3MlUub27O76+/fiZ2uv
-2LbYuT+rB9Jg0e7haF5RcsQhyoNg5/KO6gIsEp/YyYu0lesFwR2A8g2XIHLU9OzA
-MyZhMX3byve4+myNYWqwvWrBfUHjxYtB3U4M6vkPiR11OpzxRJteglCAw7EDtX/V
-tiMpITZk6DcwIzjU4WF5pXkrJn732AhgrOaQrdGc/nY/WGCB1obOYHZusNrJQWFj
-SEWSKtFhPp54cUGu/DHOhr1v6CqPZ1jHXPSz+4stmjdrgZ0oG30SWWrYTVKzWG9b
-t8ECQAT+POBBp2VyArUHTwEIlH9+r8RuZ9kEqWLbxvhnqLQmCbKO8AN8bhW/jeUR
-KznMESMh0uZWjzTNxas+ruG2gt789C7lBaFTh04xwS1nrWT0AsL6FmOPaNHn7Tbr
-FrrKOJswUV94UJJOihQz
-=LgoW
------END PGP SIGNATURE-----
-
---BzCohdixPhurzSK4--
