@@ -1,108 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaJFOSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:18:37 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:38343 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaJFOSf (ORCPT
+	id S1752838AbaJFOTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:19:37 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:32767 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752472AbaJFOTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:18:35 -0400
-From: Tomas Melin <tomas.melin@iki.fi>
-To: m.chehab@samsung.com, david@hardeman.nu
-Cc: james.hogan@imgtec.com, a.seppala@gmail.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomas Melin <tomas.melin@iki.fi>
-Subject: [PATCH] [media] rc-core: fix protocol_change regression in ir_raw_event_register
-Date: Mon,  6 Oct 2014 17:18:06 +0300
-Message-Id: <1412605086-7263-1-git-send-email-tomas.melin@iki.fi>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 6 Oct 2014 10:19:35 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_0Am0uDbsqXSlyDPLWJIkRw)"
+X-AuditID: cbfec7f5-b7f776d000003e54-57-5432a4f4fd40
+Message-id: <5432A4F1.4040507@samsung.com>
+Date: Mon, 06 Oct 2014 17:19:29 +0300
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+To: David Howells <dhowells@redhat.com>, rusty@rustcorp.com.au
+Cc: linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Subject: Re: [PATCH 0/3] MODSIGN: Use PKCS#7 cert to avoid SKIDs
+References: <20141003143012.26457.54004.stgit@warthog.procyon.org.uk>
+In-reply-to: <20141003143012.26457.54004.stgit@warthog.procyon.org.uk>
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t/xy7pflhiFGNxeLG3xruk3i8WXpXUW
+	s3c9ZLG4vGsOm8WHnkdsFjenXWCx+LRiErMDu8fOWXfZPaadWMbi8eDQZhaP9/uusnms2HCC
+	2ePzJrkAtigum5TUnMyy1CJ9uwSujMcPf7EUbPWsOLE2tYGx2baLkZNDQsBEYsHNP8wQtpjE
+	hXvr2boYuTiEBJYySnx+eYMVJMErICjxY/I9FhCbWcBP4uu2DnYQW0igkUni2PZEiIZZjBL/
+	X29hhmjQkjjasxDMZhFQlVjX/xCsmU1AT2JD8w+wZlGBCImTd/eA2SICdhIbd15kBRnELLCd
+	UeLWnidgm4UFHCSuz+mG2uYqsbnjNthQTgE3iZW/H7BCxFUluteuZYN4QVHi9ORzzBMYhWYh
+	OXwWksMhbC2J749ageIcQLa8xMHzshBhG4llFx6ywYSPXMqGCJtLzN9ygHkBI/sqRtHU0uSC
+	4qT0XCO94sTc4tK8dL3k/NxNjJDY+7qDcekxq0OMAhyMSjy8kTsMQ4RYE8uKK3MPMaoAzXm0
+	YfUFRimWvPy8VCURXvN5RiFCvCmJlVWpRfnxRaU5qcWHGJk4OKWAkWPqHcbGkT5Nk0N95Ryf
+	VfaO4pJqMeUT1qvfnPgs9sSiiVIHDOS2lvHdLJjXMl+/c8F39pCVi7/viHjUkSjHyJbRb36k
+	Zu0zT+cTq6fNdE6UEQ2X3MT7IblohYzAvX27zwfF7m2vO3am4sgM9XMSx/a90/vuHdxZGSdz
+	ZmtHPr+Uy73umNgLSizFGYmGWsxFxYkAKNarQ6cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IR reciever using nuvoton-cir and lirc was not working anymore after
-upgrade from kernel 3.16 to 3.17-rcX.
-Bisected regression to commit da6e162d6a4607362f8478c715c797d84d449f8b
-("[media] rc-core: simplify sysfs code").
 
-The regression comes from adding function change_protocol in
-ir-raw.c. During registration, ir_raw_event_register enables all protocols
-by default. Later, rc_register_device also tests dev->change_protocol and
-changes the enabled protocols based on rc_map type. However, rc_map type
-only defines a single specific protocol, so in the case of a more generic
-driver, this disables all protocols but the one defined by the map.
+--Boundary_(ID_0Am0uDbsqXSlyDPLWJIkRw)
+Content-type: text/plain; CHARSET=US-ASCII
+Content-transfer-encoding: 7BIT
 
-Changed back to original behaviour by removing empty function
-change_protocol in ir-raw.c. Instead only calling change_protocol for
-drivers that actually have the function set up.
+Hi David,
 
-Signed-off-by: Tomas Melin <tomas.melin@iki.fi>
----
- drivers/media/rc/rc-ir-raw.c |    7 -------
- drivers/media/rc/rc-main.c   |   19 ++++++++-----------
- 2 files changed, 8 insertions(+), 18 deletions(-)
+I just applied these 3 patches, but got build problems..
+sign-file.c cannot be build.
+Log attached...
 
-diff --git a/drivers/media/rc/rc-ir-raw.c b/drivers/media/rc/rc-ir-raw.c
-index e8fff2a..a118539 100644
---- a/drivers/media/rc/rc-ir-raw.c
-+++ b/drivers/media/rc/rc-ir-raw.c
-@@ -240,12 +240,6 @@ ir_raw_get_allowed_protocols(void)
- 	return protocols;
- }
- 
--static int change_protocol(struct rc_dev *dev, u64 *rc_type)
--{
--	/* the caller will update dev->enabled_protocols */
--	return 0;
--}
--
- /*
-  * Used to (un)register raw event clients
-  */
-@@ -263,7 +257,6 @@ int ir_raw_event_register(struct rc_dev *dev)
- 
- 	dev->raw->dev = dev;
- 	dev->enabled_protocols = ~0;
--	dev->change_protocol = change_protocol;
- 	rc = kfifo_alloc(&dev->raw->kfifo,
- 			 sizeof(struct ir_raw_event) * MAX_IR_EVENT_SIZE,
- 			 GFP_KERNEL);
-diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
-index a7991c7..633c682 100644
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -1001,11 +1001,6 @@ static ssize_t store_protocols(struct device *device,
- 		set_filter = dev->s_wakeup_filter;
- 	}
- 
--	if (!change_protocol) {
--		IR_dprintk(1, "Protocol switching not supported\n");
--		return -EINVAL;
--	}
--
- 	mutex_lock(&dev->lock);
- 
- 	old_protocols = *current_protocols;
-@@ -1013,12 +1008,14 @@ static ssize_t store_protocols(struct device *device,
- 	rc = parse_protocol_change(&new_protocols, buf);
- 	if (rc < 0)
- 		goto out;
--
--	rc = change_protocol(dev, &new_protocols);
--	if (rc < 0) {
--		IR_dprintk(1, "Error setting protocols to 0x%llx\n",
--			   (long long)new_protocols);
--		goto out;
-+	/* Only if protocol change set up in driver */
-+	if (change_protocol) {
-+		rc = change_protocol(dev, &new_protocols);
-+		if (rc < 0) {
-+			IR_dprintk(1, "Error setting protocols to 0x%llx\n",
-+				   (long long)new_protocols);
-+			goto out;
-+		}
- 	}
- 
- 	if (new_protocols == old_protocols) {
--- 
-1.7.10.4
+Any ideas?
 
+Thanks
+
+- Dmitry
+
+On 03/10/14 17:30, David Howells wrote:
+> Hi Rusty,
+>
+> In the current module signing code, we try to use the subject and subjKeyId
+> fields from X.509 certificate representing the key used to sign the modules to
+> locate the X.509 certificate containing the public key required to verify the
+> signature.
+>
+> Unfortunately, we have situations where we have to deal with signatures
+> generated from keys that don't have a subjKeyId (it is, after all, optional in
+> the X.509 spec for none CA keys).
+>
+> Now that we have PKCS#7 message handling code in the kernel for kexec(), we can
+> make use of this for module signing.  By using a PKCS#7 message with detached
+> data and no embedded X.509 certs as the signature blob, we can forgo specifying
+> all the signature parameters (eg. hash algo, pubkey algo, name, id) elsewhere
+> and rely instead on the PKCS#7 message to supply all of those.
+>
+> PKCS#7 doesn't use the subjKeyId, but rather matches issuer name and
+> certificate serial number, both of which are mandatory in an X.509 certificate.
+>
+> We leave out the embedded X.509 certs to make the signature smaller and use
+> detached data so that we don't have to put the module content in there.
+>
+> The patches are as follows:
+>
+>  (1) Provide a function to pass detached data to the PKCS#7 verifier, rather
+>      than always requiring the data to be contained therein.
+>
+>  (2) Provide a utility to sign modules (a drop-in replacement for
+>      scripts/sign-file).  This does need to be built against -lcrypto from
+>      OpenSSL.  I couldn't work out how to make a PKCS#7 message with no
+>      embedded X.509 certs from the openssl command line.
+>
+>      I also haven't provided a way to externally specify the signature - that's
+>      something that will need to be worked out.  Quite likely it will involve
+>      taking a PKCS#7 message rather than generating one.
+>
+>  (3) Make use of the above and the PKCS#7 handling to sign modules and verify
+>      signatures.
+>
+> Note that this does make signatures generated by previous kernels incompatible
+> with newer kernels, but since the modules being signed may no longer be
+> compatible anyway for other reasons, I'm not sure how much of a problem that
+> will actually be.
+>
+> I have provided a function, mod_verify_pkcs7(), that takes a buffer containing
+> the actual module data, sans signature, and a buffer containing the PKCS#7
+> message that does the actual work.  This could be called, for instance, if
+> modules are ever loaded with detached signatures.
+>
+> The patches can be found here also:
+>
+> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=modsign-pkcs7
+>
+> This is based on James Morris's security/next branch as there are some keyring
+> and PKCS#7 changes in there that are prerequisites for this.
+>
+> David
+> ---
+> David Howells (3):
+>       PKCS#7: Allow detached data to be supplied for signature checking purposes
+>       MODSIGN: Provide a utility to append a PKCS#7 signature to a module
+>       MODSIGN: Use PKCS#7 messages as module signatures
+>
+>
+>  crypto/asymmetric_keys/pkcs7_verify.c |   26 ++
+>  include/crypto/pkcs7.h                |    3 
+>  include/crypto/public_key.h           |    1 
+>  init/Kconfig                          |    1 
+>  kernel/module_signing.c               |  220 +++--------------
+>  scripts/Makefile                      |    2 
+>  scripts/sign-file                     |  421 ---------------------------------
+>  scripts/sign-file.c                   |  189 +++++++++++++++
+>  8 files changed, 266 insertions(+), 597 deletions(-)
+>  delete mode 100755 scripts/sign-file
+>  create mode 100755 scripts/sign-file.c
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
+--Boundary_(ID_0Am0uDbsqXSlyDPLWJIkRw)
+Content-type: text/x-log; CHARSET=EUC-KR; name=sign-file.log
+Content-transfer-encoding: 8BIT
+Content-disposition: attachment; filename=sign-file.log
+
+EXTRAVERSION=-kds
+ARCH: x86_64
+  CHK     include/config/kernel.release
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+<stdin>:1226:2: warning: #warning syscall finit_module not implemented [-Wcpp]
+<stdin>:1229:2: warning: #warning syscall sched_setattr not implemented [-Wcpp]
+<stdin>:1232:2: warning: #warning syscall sched_getattr not implemented [-Wcpp]
+<stdin>:1235:2: warning: #warning syscall renameat2 not implemented [-Wcpp]
+<stdin>:1238:2: warning: #warning syscall seccomp not implemented [-Wcpp]
+  HOSTCC  scripts/sign-file
+scripts/sign-file.c: In function ‘main’:
+scripts/sign-file.c:136:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(!bd, dest_name);
+  ^
+scripts/sign-file.c:162:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   ERR(!b, pkcs7_name);
+   ^
+scripts/sign-file.c:163:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   ERR(i2d_PKCS7_bio_stream(b, pkcs7, NULL, 0) < 0, pkcs7_name);
+   ^
+scripts/sign-file.c:168:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(BIO_reset(bm) < 0, module_name);
+  ^
+scripts/sign-file.c:171:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   ERR(BIO_write(bd, buf, n) < 0, dest_name);
+   ^
+scripts/sign-file.c:173:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(n < 0, module_name);
+  ^
+scripts/sign-file.c:176:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(i2d_PKCS7_bio_stream(bd, pkcs7, NULL, 0) < 0, dest_name);
+  ^
+scripts/sign-file.c:179:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, dest_name);
+  ^
+scripts/sign-file.c:180:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, dest_name);
+  ^
+scripts/sign-file.c:182:2: warning: format not a string literal and no format arguments [-Wformat-security]
+  ERR(BIO_free(bd) < 0, dest_name);
+  ^
+scripts/sign-file.c:186:3: warning: format not a string literal and no format arguments [-Wformat-security]
+   ERR(rename(dest_name, module_name) < 0, dest_name);
+   ^
+/tmp/ccgSFKJd.o: In function `display_openssl_errors':
+sign-file.c:(.text+0x4e): undefined reference to `ERR_peek_error'
+sign-file.c:(.text+0xa1): undefined reference to `ERR_error_string'
+sign-file.c:(.text+0xd7): undefined reference to `ERR_get_error_line'
+/tmp/ccgSFKJd.o: In function `main':
+sign-file.c:(.text.startup+0xd5): undefined reference to `ERR_load_crypto_strings'
+sign-file.c:(.text.startup+0xda): undefined reference to `ERR_clear_error'
+sign-file.c:(.text.startup+0xe7): undefined reference to `BIO_new_file'
+sign-file.c:(.text.startup+0x10b): undefined reference to `PEM_read_bio_PrivateKey'
+sign-file.c:(.text.startup+0x118): undefined reference to `BIO_free'
+sign-file.c:(.text.startup+0x125): undefined reference to `BIO_new_file'
+sign-file.c:(.text.startup+0x149): undefined reference to `PEM_read_bio_X509'
+sign-file.c:(.text.startup+0x156): undefined reference to `BIO_free'
+sign-file.c:(.text.startup+0x165): undefined reference to `BIO_new_file'
+sign-file.c:(.text.startup+0x180): undefined reference to `OpenSSL_add_all_digests'
+sign-file.c:(.text.startup+0x192): undefined reference to `EVP_get_digestbyname'
+sign-file.c:(.text.startup+0x1b5): undefined reference to `BIO_new_file'
+sign-file.c:(.text.startup+0x1de): undefined reference to `PKCS7_sign'
+sign-file.c:(.text.startup+0x20f): undefined reference to `PKCS7_sign_add_signer'
+sign-file.c:(.text.startup+0x229): undefined reference to `PKCS7_final'
+sign-file.c:(.text.startup+0x286): undefined reference to `BIO_new_file'
+sign-file.c:(.text.startup+0x2ab): undefined reference to `i2d_PKCS7_bio_stream'
+sign-file.c:(.text.startup+0x2c9): undefined reference to `BIO_free'
+sign-file.c:(.text.startup+0x2da): undefined reference to `BIO_ctrl'
+sign-file.c:(.text.startup+0x303): undefined reference to `BIO_write'
+sign-file.c:(.text.startup+0x32b): undefined reference to `BIO_read'
+sign-file.c:(.text.startup+0x351): undefined reference to `BIO_number_written'
+sign-file.c:(.text.startup+0x363): undefined reference to `i2d_PKCS7_bio_stream'
+sign-file.c:(.text.startup+0x381): undefined reference to `BIO_number_written'
+sign-file.c:(.text.startup+0x39e): undefined reference to `BIO_write'
+sign-file.c:(.text.startup+0x3c4): undefined reference to `BIO_write'
+sign-file.c:(.text.startup+0x3dc): undefined reference to `BIO_free'
+collect2: error: ld returned 1 exit status
+make[1]: *** [scripts/sign-file] Error 1
+make: *** [scripts] Error 2
+
+--Boundary_(ID_0Am0uDbsqXSlyDPLWJIkRw)--
