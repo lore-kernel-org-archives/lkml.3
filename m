@@ -1,91 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559AbaJFLus (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 07:50:48 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:53248 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490AbaJFLup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 07:50:45 -0400
-Date: Mon, 6 Oct 2014 13:50:36 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 08/16] virtio_net: drop config_enable
-Message-ID: <20141006135036.77fea7de.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412525038-15871-9-git-send-email-mst@redhat.com>
+	id S1752356AbaJFLxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 07:53:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387AbaJFLxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 07:53:12 -0400
+Date: Mon, 6 Oct 2014 14:56:36 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 09/16] virtio-net: drop config_mutex
+Message-ID: <20141006115636.GA26184@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
-	<1412525038-15871-9-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100611-2966-0000-0000-0000015CC2F4
+ <1412525038-15871-10-git-send-email-mst@redhat.com>
+ <54328107.5090400@cogentembedded.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54328107.5090400@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014 19:07:13 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Mon, Oct 06, 2014 at 03:46:15PM +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 10/5/2014 8:07 PM, Michael S. Tsirkin wrote:
+> 
+> >config_mutex served two purposes: prevent multiple concurrent config
+> >change handlers, and synchronize access to config_enable flag.
+> 
+> >Since commit dbf2576e37da0fcc7aacbfbb9fd5d3de7888a3c1
+> >     workqueue: make all workqueues non-reentrant
+> >all workqueues are non-reentrant, and config_enable
+> >is now gone.
+> 
+> >Get rid of the unnecessary lock.
+> 
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> >  drivers/net/virtio_net.c | 7 +------
+> >  1 file changed, 1 insertion(+), 6 deletions(-)
+> 
+> >diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> >index fa17afa..d80fef4 100644
+> >--- a/drivers/net/virtio_net.c
+> >+++ b/drivers/net/virtio_net.c
+> [...]
+> >@@ -1430,7 +1426,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
+> >  		netif_tx_stop_all_queues(vi->dev);
+> >  	}
+> >  done:
+> >-	mutex_unlock(&vi->config_lock);
+> >+	return;
+> 
+>    There's no need for this *return*.
+>
 
-> Now that virtio core ensures config changes don't arrive during probing,
-> drop config_enable flag in virtio net.
-> On removal, flush is now sufficient to guarantee that no change work is
-> queued.
+I know - it's removed by the follow-up patch.
+It's formatted like this to make diff smaller
+and make review easier.
+ 
+> >  }
+> >
+> >  static void virtnet_config_changed(struct virtio_device *vdev)
 > 
-> This help simplify the driver, and will allow setting DRIVER_OK earlier
-> without losing config change notifications.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 23 ++---------------------
->  1 file changed, 2 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 59caa06..fa17afa 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-
-> @@ -1876,16 +1869,12 @@ static void virtnet_remove(struct virtio_device *vdev)
->  	unregister_hotcpu_notifier(&vi->nb);
-> 
->  	/* Prevent config work handler from accessing the device. */
-
-Same comment as for the equivalent comment in the virtio-blk code.
-
-> -	mutex_lock(&vi->config_lock);
-> -	vi->config_enable = false;
-> -	mutex_unlock(&vi->config_lock);
-> +	flush_work(&vi->config_work);
-> 
->  	unregister_netdev(vi->dev);
-> 
->  	remove_vq_common(vi);
-> 
-> -	flush_work(&vi->config_work);
-> -
->  	free_percpu(vi->stats);
->  	free_netdev(vi->dev);
->  }
-> @@ -1899,9 +1888,7 @@ static int virtnet_freeze(struct virtio_device *vdev)
->  	unregister_hotcpu_notifier(&vi->nb);
-> 
->  	/* Prevent config work handler from accessing the device */
-
-dito
-
-> -	mutex_lock(&vi->config_lock);
-> -	vi->config_enable = false;
-> -	mutex_unlock(&vi->config_lock);
-> +	flush_work(&vi->config_work);
-> 
->  	netif_device_detach(vi->dev);
->  	cancel_delayed_work_sync(&vi->refill);
-
+> WBR, Sergei
