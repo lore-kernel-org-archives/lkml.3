@@ -1,275 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaJFMxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:53:12 -0400
-Received: from mail-by2on0118.outbound.protection.outlook.com ([207.46.100.118]:11422
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752419AbaJFMxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:53:10 -0400
-From: Muthu Mani <muth@cypress.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, <linux-i2c@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Muthu Mani <muth@cypress.com>,
-        "Rajaram Regupathy" <rera@cypress.com>
-Subject: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
-Date: Mon, 6 Oct 2014 18:23:31 +0530
-Message-ID: <1412600011-3900-1-git-send-email-muth@cypress.com>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [121.243.89.10]
-X-ClientProxiedBy: CO1PR06CA047.namprd06.prod.outlook.com (10.242.160.37) To
- BLUPR06MB065.namprd06.prod.outlook.com (10.242.187.143)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR06MB065;
-X-Forefront-PRVS: 03569407CC
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(189002)(199003)(20776003)(106356001)(33646002)(77096002)(50986999)(31966008)(64706001)(46102003)(105586002)(95666004)(229853001)(107046002)(62966002)(97736003)(47776003)(42186005)(15975445006)(15202345003)(102836001)(85306004)(104166001)(21056001)(101416001)(48376002)(4396001)(76482002)(50226001)(85852003)(40100001)(120916001)(87976001)(89996001)(50466002)(66066001)(80022003)(19580405001)(19580395003)(77156001)(88136002)(2201001)(92566001)(92726001)(10300001)(87286001)(86362001)(93916002)(99396003)(122386002)(36756003)(2004002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR06MB065;H:prji-Latitude-E6420.india.cypress.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=muth@cypress.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR06MB017;
-X-OriginatorOrg: cypress.com
+	id S1752744AbaJFMy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:54:27 -0400
+Received: from smtprelay0224.hostedemail.com ([216.40.44.224]:50136 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752419AbaJFMyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 08:54:25 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:334:355:368:369:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2110:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3743:3865:3866:3867:3868:3870:3871:3872:3874:4321:5007:7652:7974:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mouth23_95005b23934a
+X-Filterd-Recvd-Size: 1565
+Message-ID: <1412600062.2916.19.camel@joe-AO725>
+Subject: Re: [PATCH] mips: Convert pr_warning to pr_warn
+From: Joe Perches <joe@perches.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips <linux-mips@linux-mips.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 06 Oct 2014 05:54:22 -0700
+In-Reply-To: <20141006124915.GA29036@linux-mips.org>
+References: <1412441442.3247.138.camel@joe-AO725>
+	 <20141006124915.GA29036@linux-mips.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for USB-GPIO interface of Cypress Semiconductor
-CYUSBS234 USB-Serial Bridge controller.
+On Mon, 2014-10-06 at 14:49 +0200, Ralf Baechle wrote:
+> On Sat, Oct 04, 2014 at 09:50:42AM -0700, Joe Perches wrote:
+> 
+> > Use the much more common pr_warn instead of pr_warning
+> > with the goal of removing pr_warning eventually.
+> 
+> While I agree that only one of pr_warn and pr_warning deserves to live
+> picking pr_warning introduces another logic inconsistency - for each
+> pr_<foo> function there is a KERN_<FOO> severity symbol.  And that in
+> this case is named KERN_WARNING, there's no KERN_WARN.
 
-The GPIO get/set can be done through vendor command on control endpoint
-for the configured gpios.
+Yes, I know.  It's a consistency thing that can really
+only be resolved one step at a time.
 
-Details about the device can be found at:
-http://www.cypress.com/?rID=84126
+Most everything else uses _warn (dev_warn, netdev_warn,
+etc...) so it'd be good to get pr_warn done too.
 
-Signed-off-by: Muthu Mani <muth@cypress.com>
-Signed-off-by: Rajaram Regupathy <rera@cypress.com>
----
- drivers/gpio/Kconfig          |  13 ++++
- drivers/gpio/Makefile         |   1 +
- drivers/gpio/gpio-cyusbs23x.c | 174 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 188 insertions(+)
- create mode 100644 drivers/gpio/gpio-cyusbs23x.c
+cheers, Joe
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 9de1515..932e07c 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -886,6 +886,19 @@ config GPIO_BCM_KONA
- 
- comment "USB GPIO expanders:"
- 
-+config GPIO_CYUSBS23X
-+	tristate "CYUSBS23x GPIO support"
-+	depends on MFD_CYUSBS23X && USB
-+	help
-+	  Say yes here to access the GPIO signals of Cypress
-+	  Semiconductor CYUSBS23x USB Serial Bridge Controller.
-+
-+	  This driver enables the GPIO interface of CYUSBS23x USB Serial
-+	  Bridge controller.
-+
-+	  This driver can also be built as a module. If so, the module will be
-+	  called gpio-cyusbs23x.
-+
- config GPIO_VIPERBOARD
- 	tristate "Viperboard GPIO a & b support"
- 	depends on MFD_VIPERBOARD && USB
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 5d024e3..3ad89f1 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -23,6 +23,7 @@ obj-$(CONFIG_GPIO_BT8XX)	+= gpio-bt8xx.o
- obj-$(CONFIG_GPIO_CLPS711X)	+= gpio-clps711x.o
- obj-$(CONFIG_GPIO_CS5535)	+= gpio-cs5535.o
- obj-$(CONFIG_GPIO_CRYSTAL_COVE)	+= gpio-crystalcove.o
-+obj-$(CONFIG_GPIO_CYUSBS23X)	+= gpio-cyusbs23x.o
- obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
- obj-$(CONFIG_GPIO_DA9055)	+= gpio-da9055.o
- obj-$(CONFIG_GPIO_DAVINCI)	+= gpio-davinci.o
-diff --git a/drivers/gpio/gpio-cyusbs23x.c b/drivers/gpio/gpio-cyusbs23x.c
-new file mode 100644
-index 0000000..f2acbb8
---- /dev/null
-+++ b/drivers/gpio/gpio-cyusbs23x.c
-@@ -0,0 +1,174 @@
-+/*
-+ * GPIO subdriver for Cypress CYUSBS234 USB-Serial Bridge controller.
-+ * Details about the device can be found at:
-+ *    http://www.cypress.com/?rID=84126
-+ *
-+ * Copyright (c) 2014 Cypress Semiconductor Corporation.
-+ *
-+ * Author:
-+ *   Muthu Mani <muth@cypress.com>
-+ *
-+ * Additional contributors include:
-+ *   Rajaram Regupathy <rera@cypress.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ */
-+
-+/*
-+ * All GPIOs are exposed for get operation. Only the GPIOs which are configured
-+ * by the user using the Configuration Utility can be set. Attempting to set
-+ * value of unconfigured GPIOs would fail
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/types.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/usb.h>
-+#include <linux/gpio.h>
-+
-+#include <linux/mfd/cyusbs23x.h>
-+
-+#define CY_GPIO_GET_LEN		2
-+
-+struct cyusbs_gpio {
-+	struct gpio_chip gpio;
-+	struct cyusbs23x *cyusbs;
-+};
-+
-+#define to_cyusbs_gpio(chip) container_of(chip, struct cyusbs_gpio, gpio)
-+
-+static int cy_gpio_get(struct gpio_chip *chip,
-+			unsigned offset)
-+{
-+	int ret;
-+	char *buf;
-+	u16 wIndex, wValue;
-+	struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
-+	struct cyusbs23x *cyusbs = gpio->cyusbs;
-+
-+	wValue = offset;
-+	wIndex = 0;
-+	buf = kmalloc(CY_GPIO_GET_LEN, GFP_KERNEL);
-+	if (buf == NULL)
-+		return -ENOMEM;
-+
-+	ret = usb_control_msg(cyusbs->usb_dev,
-+			usb_rcvctrlpipe(cyusbs->usb_dev, 0),
-+			CY_GPIO_GET_VALUE_CMD,
-+			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-+			wValue, wIndex, buf, CY_GPIO_GET_LEN,
-+			CY_USBS_CTRL_XFER_TIMEOUT);
-+	if (ret == CY_GPIO_GET_LEN) {
-+		dev_dbg(chip->dev, "%s: %02X %02X\n", __func__, buf[0], buf[1]);
-+		if (buf[0] == 0)
-+			ret = buf[1];
-+		else
-+			ret = -EIO;
-+	} else {
-+		dev_err(chip->dev, "%s: %d\n", __func__, ret);
-+		ret = -EIO;
-+	}
-+
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static void cy_gpio_set(struct gpio_chip *chip,
-+			unsigned offset, int value)
-+{
-+	int ret;
-+	u16 wIndex, wValue;
-+	struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
-+	struct cyusbs23x *cyusbs = gpio->cyusbs;
-+
-+	wValue = offset;
-+	wIndex = value;
-+
-+	ret = usb_control_msg(cyusbs->usb_dev,
-+			usb_sndctrlpipe(cyusbs->usb_dev, 0),
-+			CY_GPIO_SET_VALUE_CMD,
-+			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
-+			wValue, wIndex, NULL, 0, CY_USBS_CTRL_XFER_TIMEOUT);
-+	if (ret < 0)
-+		dev_err(chip->dev, "error setting gpio: %d\n", ret);
-+}
-+
-+static int cy_gpio_direction_input(struct gpio_chip *chip,
-+					unsigned offset)
-+{
-+	return 0;
-+}
-+
-+static int cy_gpio_direction_output(struct gpio_chip *chip,
-+					unsigned offset, int value)
-+{
-+	return 0;
-+}
-+
-+static int cyusbs23x_gpio_probe(struct platform_device *pdev)
-+{
-+	struct cyusbs23x *cyusbs;
-+	struct cyusbs_gpio *cy_gpio;
-+	int ret = 0;
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+
-+	cyusbs = dev_get_drvdata(pdev->dev.parent);
-+
-+	cy_gpio = devm_kzalloc(&pdev->dev, sizeof(*cy_gpio), GFP_KERNEL);
-+	if (cy_gpio == NULL)
-+		return -ENOMEM;
-+
-+	cy_gpio->cyusbs = cyusbs;
-+	/* registering gpio */
-+	cy_gpio->gpio.label = dev_name(&pdev->dev);
-+	cy_gpio->gpio.dev = &pdev->dev;
-+	cy_gpio->gpio.owner = THIS_MODULE;
-+	cy_gpio->gpio.base = -1;
-+	cy_gpio->gpio.ngpio = 12; /* total GPIOs */
-+	cy_gpio->gpio.can_sleep = true;
-+	cy_gpio->gpio.set = cy_gpio_set;
-+	cy_gpio->gpio.get = cy_gpio_get;
-+	cy_gpio->gpio.direction_input = cy_gpio_direction_input;
-+	cy_gpio->gpio.direction_output = cy_gpio_direction_output;
-+	ret = gpiochip_add(&cy_gpio->gpio);
-+	if (ret < 0) {
-+		dev_err(cy_gpio->gpio.dev, "could not add gpio\n");
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, cy_gpio);
-+
-+	dev_dbg(&pdev->dev, "added GPIO\n");
-+	return ret;
-+}
-+
-+static int cyusbs23x_gpio_remove(struct platform_device *pdev)
-+{
-+	struct cyusbs_gpio *cy_gpio = platform_get_drvdata(pdev);
-+
-+	dev_dbg(&pdev->dev, "%s\n", __func__);
-+	gpiochip_remove(&cy_gpio->gpio);
-+	return 0;
-+}
-+
-+static struct platform_driver cyusbs23x_gpio_driver = {
-+	.driver.name    = "cyusbs23x-gpio",
-+	.probe          = cyusbs23x_gpio_probe,
-+	.remove         = cyusbs23x_gpio_remove,
-+};
-+
-+module_platform_driver(cyusbs23x_gpio_driver);
-+
-+MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
-+MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
-+MODULE_DESCRIPTION("GPIO driver for CYUSBS23x");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:cyusbs23x-gpio");
--- 
-1.8.3.2
 
