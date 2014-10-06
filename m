@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaJFFL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 01:11:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21552 "EHLO mx1.redhat.com"
+	id S1752502AbaJFFJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 01:09:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17614 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529AbaJFFJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 01:09:23 -0400
+	id S1752232AbaJFFJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 01:09:16 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
         aviro@redhat.com, pmoore@redhat.com, arozansk@redhat.com,
         ebiederm@xmission.com, serge@hallyn.com
-Subject: [PATCH V5 06/13] audit: log creation and deletion of namespace instances
-Date: Mon,  6 Oct 2014 01:08:31 -0400
-Message-Id: <55b0228c68d0e74480ce73f88e05d16455c4c843.1412543112.git.rgb@redhat.com>
+Subject: [PATCH V5 01/13] namespaces: assign each namespace instance a serial number
+Date: Mon,  6 Oct 2014 01:08:26 -0400
+Message-Id: <8bc6e9595dea17bba389f4d2ce4077c30b3eb137.1412543112.git.rgb@redhat.com>
 In-Reply-To: <cover.1412543112.git.rgb@redhat.com>
 References: <cover.1412543112.git.rgb@redhat.com>
 In-Reply-To: <cover.1412543112.git.rgb@redhat.com>
@@ -23,415 +23,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Log the creation and deletion of namespace instances in all 6 types of
-namespaces.
+Generate and assign a serial number per namespace instance since boot.
 
-Twelve new audit message types have been introduced:
-AUDIT_NS_INIT_MNT       1330    /* Record mount namespace instance creation */
-AUDIT_NS_INIT_UTS       1331    /* Record UTS namespace instance creation */
-AUDIT_NS_INIT_IPC       1332    /* Record IPC namespace instance creation */
-AUDIT_NS_INIT_USER      1333    /* Record USER namespace instance creation */
-AUDIT_NS_INIT_PID       1334    /* Record PID namespace instance creation */
-AUDIT_NS_INIT_NET       1335    /* Record NET namespace instance creation */
-AUDIT_NS_DEL_MNT        1336    /* Record mount namespace instance deletion */
-AUDIT_NS_DEL_UTS        1337    /* Record UTS namespace instance deletion */
-AUDIT_NS_DEL_IPC        1338    /* Record IPC namespace instance deletion */
-AUDIT_NS_DEL_USER       1339    /* Record USER namespace instance deletion */
-AUDIT_NS_DEL_PID        1340    /* Record PID namespace instance deletion */
-AUDIT_NS_DEL_NET        1341    /* Record NET namespace instance deletion */
-
-As suggested by Eric Paris, there are 12 message types, one for each of
-creation and deletion, one for each type of namespace so that text searches are
-easier in conjunction with the AUDIT_NS_INFO message type, being able to search
-for all records such as "netns=7 " and to avoid fields disappearing per message
-type to make ausearch more efficient.
-
-A typical startup would look roughly like:
-
-	type=AUDIT_NS_INIT_UTS msg=audit(1408577534.868:5): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_utsns=0 utsns=2 res=1
-	type=AUDIT_NS_INIT_USER msg=audit(1408577534.868:6): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_userns=0 userns=3 res=1
-	type=AUDIT_NS_INIT_PID msg=audit(1408577534.868:7): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_pidns=0 pidns=4 res=1
-	type=AUDIT_NS_INIT_MNT msg=audit(1408577534.868:8): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_mntns=0 mntns=5 res=1
-	type=AUDIT_NS_INIT_IPC msg=audit(1408577534.868:9): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_ipcns=0 ipcns=1 res=1
-	type=AUDIT_NS_INIT_NET msg=audit(1408577533.500:10): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=kernel old_netns=0 netns=7 res=1
-
-And a CLONE action would result in:
-	type=type=AUDIT_NS_INIT_NET msg=audit(1408577535.306:81): pid=481 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 old_netns=7 netns=8 res=1
-	type=type=AUDIT_NS_INIT_MNT msg=audit(1408577535.307:83): pid=481 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 old_mntns=5 mntns=9 res=1
-
-While deleting a namespace would result in:
-	type=type=AUDIT_NS_DEL_MNT msg=audit(1408577552.221:85): pid=481 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 mntns=9 res=1
-
-If non-zero, old_snum lists the namespace from which it was cloned.
+Use a serial number per namespace (unique across one boot of one kernel)
+instead of the inode number (which is claimed to have had the right to change
+reserved and is not necessarily unique if there is more than one proc fs) to
+uniquely identify it per kernel boot.
 
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- fs/namespace.c             |   12 ++++++++++
- include/linux/audit.h      |    8 +++++++
- include/uapi/linux/audit.h |   12 ++++++++++
- ipc/namespace.c            |   10 +++++++++
- kernel/audit.c             |   49 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/pid_namespace.c     |   10 +++++++++
- kernel/user_namespace.c    |   11 +++++++++
- kernel/utsname.c           |   11 +++++++++
- net/core/net_namespace.c   |   12 ++++++++++
- 9 files changed, 135 insertions(+), 0 deletions(-)
+ fs/mount.h                     |    1 +
+ fs/namespace.c                 |    1 +
+ include/linux/ipc_namespace.h  |    1 +
+ include/linux/nsproxy.h        |   10 ++++++++++
+ include/linux/pid_namespace.h  |    1 +
+ include/linux/user_namespace.h |    1 +
+ include/linux/utsname.h        |    1 +
+ include/net/net_namespace.h    |    1 +
+ init/version.c                 |    1 +
+ ipc/msgutil.c                  |    1 +
+ ipc/namespace.c                |    2 ++
+ kernel/nsproxy.c               |   18 ++++++++++++++++++
+ kernel/pid.c                   |    1 +
+ kernel/pid_namespace.c         |    2 ++
+ kernel/user.c                  |    1 +
+ kernel/user_namespace.c        |    2 ++
+ kernel/utsname.c               |    2 ++
+ net/core/net_namespace.c       |    8 +++++++-
+ 18 files changed, 54 insertions(+), 1 deletions(-)
 
+diff --git a/fs/mount.h b/fs/mount.h
+index d55297f..c076f99 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -5,6 +5,7 @@
+ struct mnt_namespace {
+ 	atomic_t		count;
+ 	unsigned int		proc_inum;
++	long long	serial_num;
+ 	struct mount *	root;
+ 	struct list_head	list;
+ 	struct user_namespace	*user_ns;
 diff --git a/fs/namespace.c b/fs/namespace.c
-index f433f21..cb05b3d 100644
+index 182bc41..9af49ff 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -24,6 +24,7 @@
- #include <linux/proc_ns.h>
- #include <linux/magic.h>
- #include <linux/bootmem.h>
-+#include <linux/audit.h>
- #include "pnode.h"
- #include "internal.h"
+@@ -2486,6 +2486,7 @@ static struct mnt_namespace *alloc_mnt_ns(struct user_namespace *user_ns)
+ 		kfree(new_ns);
+ 		return ERR_PTR(ret);
+ 	}
++	new_ns->serial_num = ns_serial();
+ 	new_ns->seq = atomic64_add_return(1, &mnt_ns_seq);
+ 	atomic_set(&new_ns->count, 1);
+ 	new_ns->root = NULL;
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index 35e7eca..8ccfb2d 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -69,6 +69,7 @@ struct ipc_namespace {
+ 	struct user_namespace *user_ns;
  
-@@ -2459,6 +2460,7 @@ dput_out:
+ 	unsigned int	proc_inum;
++	long long	serial_num;
+ };
  
- static void free_mnt_ns(struct mnt_namespace *ns)
- {
-+	audit_log_ns_del(AUDIT_NS_DEL_MNT, ns->serial_num);
- 	proc_free_inum(ns->proc_inum);
- 	put_user_ns(ns->user_ns);
- 	kfree(ns);
-@@ -2519,6 +2521,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
- 	new_ns = alloc_mnt_ns(user_ns);
- 	if (IS_ERR(new_ns))
- 		return new_ns;
-+	audit_log_ns_init(AUDIT_NS_INIT_MNT, ns->serial_num, new_ns->serial_num);
- 
- 	namespace_lock();
- 	/* First pass: copy the tree topology */
-@@ -2831,6 +2834,15 @@ static void __init init_mount_tree(void)
- 	set_fs_root(current->fs, &root);
+ extern struct ipc_namespace init_ipc_ns;
+diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+index b4ec59d..9d627b5 100644
+--- a/include/linux/nsproxy.h
++++ b/include/linux/nsproxy.h
+@@ -66,6 +66,16 @@ static inline struct nsproxy *task_nsproxy(struct task_struct *tsk)
+ 	return rcu_dereference(tsk->nsproxy);
  }
  
-+/* log the serial number of init mnt namespace after audit service starts */
-+static int __init mnt_ns_init_log(void)
-+{
-+	struct mnt_namespace *init_mnt_ns = init_task.nsproxy->mnt_ns;
-+	audit_log_ns_init(AUDIT_NS_INIT_MNT, 0, init_mnt_ns->serial_num);
-+	return 0;
-+}
-+late_initcall(mnt_ns_init_log);
++long long ns_serial(void);
++enum {
++	NS_IPC_INIT_SN	= 1,
++	NS_UTS_INIT_SN	= 2,
++	NS_USER_INIT_SN	= 3,
++	NS_PID_INIT_SN	= 4,
++	__NS_MAX_INIT_SN= 5,
++};
++#define NS_DYN_INIT_SN	(__NS_MAX_INIT_SN - 1)
 +
- void __init mnt_init(void)
- {
- 	unsigned u;
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 7cdebdc..1474334 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -481,6 +481,9 @@ extern void		    audit_log_ns_info(struct task_struct *tsk);
- static inline void	    audit_log_ns_info(struct task_struct *tsk)
- { }
- #endif
-+extern int		    audit_log_ns_init(int type, long long old_snum,
-+					      long long snum);
-+extern int		    audit_log_ns_del(int type, long long snum);
+ int copy_namespaces(unsigned long flags, struct task_struct *tsk);
+ void exit_task_namespaces(struct task_struct *tsk);
+ void switch_task_namespaces(struct task_struct *tsk, struct nsproxy *new);
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 7246ef3..4d8023e 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -43,6 +43,7 @@ struct pid_namespace {
+ 	int hide_pid;
+ 	int reboot;	/* group exit code if this pidns was rebooted */
+ 	unsigned int proc_inum;
++	long long	serial_num;
+ };
  
- extern int		    audit_update_lsm_rules(void);
+ extern struct pid_namespace init_pid_ns;
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index 4836ba3..159ac26 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -27,6 +27,7 @@ struct user_namespace {
+ 	kuid_t			owner;
+ 	kgid_t			group;
+ 	unsigned int		proc_inum;
++	long long	serial_num;
  
-@@ -539,6 +542,11 @@ static inline void audit_log_task_info(struct audit_buffer *ab,
- { }
- static inline void audit_log_ns_info(struct task_struct *tsk)
- { }
-+static inline int audit_log_ns_init(int type, long long old_snum,
-+				    long long snum)
-+{ }
-+static inline int audit_log_ns_del(int type, long long snum)
-+{ }
- #define audit_enabled 0
- #endif /* CONFIG_AUDIT */
- static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 760357e..1acfea7 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -111,6 +111,18 @@
- #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
- #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
- #define AUDIT_NS_INFO		1329	/* Record process namespace IDs */
-+#define AUDIT_NS_INIT_MNT	1330	/* Record mount namespace instance creation */
-+#define AUDIT_NS_INIT_UTS	1331	/* Record UTS namespace instance creation */
-+#define AUDIT_NS_INIT_IPC	1332	/* Record IPC namespace instance creation */
-+#define AUDIT_NS_INIT_USER	1333	/* Record USER namespace instance creation */
-+#define AUDIT_NS_INIT_PID	1334	/* Record PID namespace instance creation */
-+#define AUDIT_NS_INIT_NET	1335	/* Record NET namespace instance creation */
-+#define AUDIT_NS_DEL_MNT	1336	/* Record mount namespace instance deletion */
-+#define AUDIT_NS_DEL_UTS	1337	/* Record UTS namespace instance deletion */
-+#define AUDIT_NS_DEL_IPC	1338	/* Record IPC namespace instance deletion */
-+#define AUDIT_NS_DEL_USER	1339	/* Record USER namespace instance deletion */
-+#define AUDIT_NS_DEL_PID	1340	/* Record PID namespace instance deletion */
-+#define AUDIT_NS_DEL_NET	1341	/* Record NET namespace instance deletion */
+ 	/* Register of per-UID persistent keyrings for this namespace */
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+diff --git a/include/linux/utsname.h b/include/linux/utsname.h
+index 239e277..8490197 100644
+--- a/include/linux/utsname.h
++++ b/include/linux/utsname.h
+@@ -24,6 +24,7 @@ struct uts_namespace {
+ 	struct new_utsname name;
+ 	struct user_namespace *user_ns;
+ 	unsigned int proc_inum;
++	long long	serial_num;
+ };
+ extern struct uts_namespace init_uts_ns;
  
- #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
- #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 361d260..5238a06 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -61,6 +61,7 @@ struct net {
+ 	struct user_namespace   *user_ns;	/* Owning user namespace */
+ 
+ 	unsigned int		proc_inum;
++	long long	serial_num;
+ 
+ 	struct proc_dir_entry 	*proc_net;
+ 	struct proc_dir_entry 	*proc_net_stat;
+diff --git a/init/version.c b/init/version.c
+index 1a4718e..cfdcb85 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -36,6 +36,7 @@ struct uts_namespace init_uts_ns = {
+ 	},
+ 	.user_ns = &init_user_ns,
+ 	.proc_inum = PROC_UTS_INIT_INO,
++	.serial_num = NS_UTS_INIT_SN /* ns_serial() */,
+ };
+ EXPORT_SYMBOL_GPL(init_uts_ns);
+ 
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index 7e70959..9aa66ae 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -32,6 +32,7 @@ struct ipc_namespace init_ipc_ns = {
+ 	.count		= ATOMIC_INIT(1),
+ 	.user_ns = &init_user_ns,
+ 	.proc_inum = PROC_IPC_INIT_INO,
++	.serial_num = NS_IPC_INIT_SN /* ns_serial() */,
+ };
+ 
+ atomic_t nr_ipc_ns = ATOMIC_INIT(1);
 diff --git a/ipc/namespace.c b/ipc/namespace.c
-index 36ce7ff..538c4b9 100644
+index 59451c1..76dac5c 100644
 --- a/ipc/namespace.c
 +++ b/ipc/namespace.c
-@@ -13,6 +13,7 @@
- #include <linux/mount.h>
- #include <linux/user_namespace.h>
- #include <linux/proc_ns.h>
-+#include <linux/audit.h>
- 
- #include "util.h"
- 
-@@ -42,6 +43,7 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
+@@ -41,6 +41,8 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
+ 	}
  	atomic_inc(&nr_ipc_ns);
  
- 	ns->serial_num = ns_serial();
-+	audit_log_ns_init(AUDIT_NS_INIT_IPC, old_ns->serial_num, ns->serial_num);
- 
++	ns->serial_num = ns_serial();
++
  	sem_init_ns(ns);
  	msg_init_ns(ns);
-@@ -121,6 +123,7 @@ static void free_ipc_ns(struct ipc_namespace *ns)
- 	 */
- 	ipcns_notify(IPCNS_REMOVED);
- 	put_user_ns(ns->user_ns);
-+	audit_log_ns_del(AUDIT_NS_DEL_IPC, ns->serial_num);
- 	proc_free_inum(ns->proc_inum);
- 	kfree(ns);
- }
-@@ -207,3 +210,10 @@ const struct proc_ns_operations ipcns_operations = {
- 	.inum		= ipcns_inum,
- 	.snum		= ipcns_snum,
+ 	shm_init_ns(ns);
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 8e78110..0c2f25e 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -41,6 +41,24 @@ struct nsproxy init_nsproxy = {
+ #endif
  };
-+
-+static int __init ipc_namespaces_init(void)
-+{
-+	return audit_log_ns_init(AUDIT_NS_INIT_IPC, 0, init_ipc_ns.serial_num);
-+}
-+
-+late_initcall(ipc_namespaces_init);
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 8ff7f28..a17a09f 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1960,6 +1960,55 @@ out:
- 	kfree(name);
- }
  
-+#ifdef CONFIG_NAMESPACES
-+static char* ns_name[] = {
-+	"mnt",
-+	"uts",
-+	"ipc",
-+	"user",
-+	"pid",
-+	"net",
-+};
-+
 +/**
-+ * audit_log_ns_init - report a namespace instance creation
-+ * @type: type of audit namespace instance created message
-+ * @old_snum: the serial number of the cloned namespace instance
-+ * @snum: the serial number of the new namespace instance
++ * ns_serial - compute a serial number for the namespace
++ *
++ * Compute a serial number for the namespace to uniquely identify it in
++ * audit records.
 + */
-+int audit_log_ns_init(int type, long long old_snum, long long snum)
++long long ns_serial(void)
 +{
-+	struct audit_buffer *ab;
-+	char* audit_ns_name = ns_name[type - AUDIT_NS_INIT_MNT];
++	/* reserved for IPC, UTS, user, PID */
++	static atomic64_t serial = ATOMIC_INIT(NS_DYN_INIT_SN);
++	long long ret;
 +
-+	if (type < AUDIT_NS_INIT_MNT || type > AUDIT_NS_INIT_NET)
-+		return 0;
-+	audit_log_common_recv_msg(&ab, type);
-+	audit_log_format(ab, " old_%sns=%llx %sns=%llx res=1",
-+			 audit_ns_name, old_snum, audit_ns_name, snum);
-+	audit_log_end(ab);
-+	return 0;
++	ret = atomic64_add_return(1, &serial);
++	BUG_ON(!ret);
++
++	return ret;
 +}
 +
-+/**
-+ * audit_log_ns_del - report a namespace instance deleted
-+ * @type: type of audit namespace instance deleted message
-+ * @snum: the serial number of the namespace instance
-+ */
-+int audit_log_ns_del(int type, long long snum)
-+{
-+	struct audit_buffer *ab;
-+	char* audit_ns_name = ns_name[type - AUDIT_NS_DEL_MNT];
-+
-+	if (type < AUDIT_NS_DEL_MNT || type > AUDIT_NS_DEL_NET)
-+		return 0;
-+	audit_log_common_recv_msg(&ab, type);
-+	audit_log_format(ab, " %ssn=%llx res=1", audit_ns_name, snum);
-+	audit_log_end(ab);
-+	return 0;
-+}
-+#endif /* CONFIG_NAMESPACES */
-+
- /**
-  * audit_log_end - end one audit record
-  * @ab: the audit_buffer
+ static inline struct nsproxy *create_nsproxy(void)
+ {
+ 	struct nsproxy *nsproxy;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 9b9a266..3bf7127 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -80,6 +80,7 @@ struct pid_namespace init_pid_ns = {
+ 	.child_reaper = &init_task,
+ 	.user_ns = &init_user_ns,
+ 	.proc_inum = PROC_PID_INIT_INO,
++	.serial_num = NS_PID_INIT_SN /* ns_serial() */,
+ };
+ EXPORT_SYMBOL_GPL(init_pid_ns);
+ 
 diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 059b330..7da351a 100644
+index db95d8e..40a8b36 100644
 --- a/kernel/pid_namespace.c
 +++ b/kernel/pid_namespace.c
-@@ -18,6 +18,7 @@
- #include <linux/proc_ns.h>
- #include <linux/reboot.h>
- #include <linux/export.h>
-+#include <linux/audit.h>
- 
- struct pid_cache {
- 	int nr_ids;
-@@ -110,6 +111,8 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
+@@ -109,6 +109,8 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
+ 	if (err)
  		goto out_free_map;
  
- 	ns->serial_num = ns_serial();
-+	audit_log_ns_init(AUDIT_NS_INIT_PID, parent_pid_ns->serial_num,
-+			  ns->serial_num);
- 
++	ns->serial_num = ns_serial();
++
  	kref_init(&ns->kref);
  	ns->level = level;
-@@ -144,6 +147,7 @@ static void destroy_pid_namespace(struct pid_namespace *ns)
- {
- 	int i;
- 
-+	audit_log_ns_del(AUDIT_NS_DEL_PID, ns->serial_num);
- 	proc_free_inum(ns->proc_inum);
- 	for (i = 0; i < PIDMAP_ENTRIES; i++)
- 		kfree(ns->pidmap[i].page);
-@@ -397,3 +401,9 @@ static __init int pid_namespaces_init(void)
- }
- 
- __initcall(pid_namespaces_init);
-+
-+static __init int pid_namespaces_late_init(void)
-+{
-+	return audit_log_ns_init(AUDIT_NS_INIT_PID, 0, init_pid_ns.serial_num);
-+}
-+late_initcall(pid_namespaces_late_init);
+ 	ns->parent = get_pid_ns(parent_pid_ns);
+diff --git a/kernel/user.c b/kernel/user.c
+index 4efa393..2f597e0 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -51,6 +51,7 @@ struct user_namespace init_user_ns = {
+ 	.owner = GLOBAL_ROOT_UID,
+ 	.group = GLOBAL_ROOT_GID,
+ 	.proc_inum = PROC_USER_INIT_INO,
++	.serial_num = NS_USER_INIT_SN /* ns_serial() */,
+ #ifdef CONFIG_PERSISTENT_KEYRINGS
+ 	.persistent_keyring_register_sem =
+ 	__RWSEM_INITIALIZER(init_user_ns.persistent_keyring_register_sem),
 diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 3f04df5..24497a0 100644
+index fcc0256..5c5c399 100644
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -22,6 +22,7 @@
- #include <linux/ctype.h>
- #include <linux/projid.h>
- #include <linux/fs_struct.h>
-+#include <linux/audit.h>
- 
- static struct kmem_cache *user_ns_cachep __read_mostly;
- 
-@@ -93,6 +94,8 @@ int create_user_ns(struct cred *new)
+@@ -92,6 +92,8 @@ int create_user_ns(struct cred *new)
+ 		return ret;
  	}
  
- 	ns->serial_num = ns_serial();
-+	audit_log_ns_init(AUDIT_NS_INIT_USER, parent_ns->serial_num,
-+			  ns->serial_num);
- 
++	ns->serial_num = ns_serial();
++
  	atomic_set(&ns->count, 1);
  	/* Leave the new->user_ns reference with the new user namespace. */
-@@ -138,6 +141,7 @@ void free_user_ns(struct user_namespace *ns)
- #ifdef CONFIG_PERSISTENT_KEYRINGS
- 		key_put(ns->persistent_keyring_register);
- #endif
-+		audit_log_ns_del(AUDIT_NS_DEL_USER, ns->serial_num);
- 		proc_free_inum(ns->proc_inum);
- 		kmem_cache_free(user_ns_cachep, ns);
- 		ns = parent;
-@@ -918,3 +922,10 @@ static __init int user_namespaces_init(void)
- 	return 0;
- }
- subsys_initcall(user_namespaces_init);
-+
-+static __init int user_namespaces_late_init(void)
-+{
-+	return audit_log_ns_init(AUDIT_NS_INIT_USER, 0,
-+				 init_user_ns.serial_num);
-+}
-+late_initcall(user_namespaces_late_init);
+ 	ns->parent = parent_ns;
 diff --git a/kernel/utsname.c b/kernel/utsname.c
-index ffeac1b..05ecc2d 100644
+index fd39312..d0cf7b5 100644
 --- a/kernel/utsname.c
 +++ b/kernel/utsname.c
-@@ -16,6 +16,7 @@
- #include <linux/slab.h>
- #include <linux/user_namespace.h>
- #include <linux/proc_ns.h>
-+#include <linux/audit.h>
- 
- static struct uts_namespace *create_uts_ns(void)
- {
-@@ -49,6 +50,7 @@ static struct uts_namespace *clone_uts_ns(struct user_namespace *user_ns,
+@@ -48,6 +48,8 @@ static struct uts_namespace *clone_uts_ns(struct user_namespace *user_ns,
+ 		return ERR_PTR(err);
  	}
  
- 	ns->serial_num = ns_serial();
-+	audit_log_ns_init(AUDIT_NS_INIT_UTS, old_ns->serial_num, ns->serial_num);
- 
++	ns->serial_num = ns_serial();
++
  	down_read(&uts_sem);
  	memcpy(&ns->name, &old_ns->name, sizeof(ns->name));
-@@ -86,6 +88,7 @@ void free_uts_ns(struct kref *kref)
- 
- 	ns = container_of(kref, struct uts_namespace, kref);
- 	put_user_ns(ns->user_ns);
-+	audit_log_ns_del(AUDIT_NS_DEL_UTS, ns->serial_num);
- 	proc_free_inum(ns->proc_inum);
- 	kfree(ns);
- }
-@@ -148,3 +151,11 @@ const struct proc_ns_operations utsns_operations = {
- 	.inum		= utsns_inum,
- 	.snum		= utsns_snum,
- };
-+
-+static int __init uts_namespaces_init(void)
-+{
-+	return audit_log_ns_init(AUDIT_NS_INIT_UTS, 0,
-+				 init_uts_ns.serial_num);
-+}
-+
-+late_initcall(uts_namespaces_init);
+ 	ns->user_ns = get_user_ns(user_ns);
 diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index c402eea..295ecc3 100644
+index 85b6269..3b5cfdb 100644
 --- a/net/core/net_namespace.c
 +++ b/net/core/net_namespace.c
-@@ -17,6 +17,7 @@
- #include <linux/user_namespace.h>
- #include <net/net_namespace.h>
- #include <net/netns/generic.h>
-+#include <linux/audit.h>
+@@ -384,7 +384,13 @@ EXPORT_SYMBOL_GPL(get_net_ns_by_pid);
  
- /*
-  *	Our network namespace constructor/destructor lists
-@@ -253,6 +254,8 @@ struct net *copy_net_ns(unsigned long flags,
- 	mutex_lock(&net_mutex);
- 	rv = setup_net(net, user_ns);
- 	if (rv == 0) {
-+		audit_log_ns_init(AUDIT_NS_INIT_NET, old_net->serial_num,
-+				  net->serial_num);
- 		rtnl_lock();
- 		list_add_tail_rcu(&net->list, &net_namespace_list);
- 		rtnl_unlock();
-@@ -395,6 +398,7 @@ static __net_init int net_ns_net_init(struct net *net)
- 
- static __net_exit void net_ns_net_exit(struct net *net)
+ static __net_init int net_ns_net_init(struct net *net)
  {
-+	audit_log_ns_del(AUDIT_NS_DEL_NET, net->serial_num);
- 	proc_free_inum(net->proc_inum);
+-	return proc_alloc_inum(&net->proc_inum);
++	int ret;
++
++	ret = proc_alloc_inum(&net->proc_inum);
++	if (ret)
++		return ret;
++	net->serial_num = ns_serial();
++	return 0;
  }
  
-@@ -441,6 +445,14 @@ static int __init net_ns_init(void)
- 
- pure_initcall(net_ns_init);
- 
-+/* log the serial number of init_net namespace after audit service starts */
-+static int __init net_ns_init_log(void)
-+{
-+	audit_log_ns_init(AUDIT_NS_INIT_NET, 0, init_net.serial_num);
-+	return 0;
-+}
-+late_initcall(net_ns_init_log);
-+
- #ifdef CONFIG_NET_NS
- static int __register_pernet_operations(struct list_head *list,
- 					struct pernet_operations *ops)
+ static __net_exit void net_ns_net_exit(struct net *net)
 -- 
 1.7.1
 
