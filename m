@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420AbaJFVOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:14:51 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:48631 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307AbaJFVOt (ORCPT
+	id S1751814AbaJFVWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:22:42 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:50641 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaJFVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:14:49 -0400
-Date: Mon, 6 Oct 2014 22:14:43 +0100
+	Mon, 6 Oct 2014 17:22:40 -0400
+Date: Mon, 6 Oct 2014 22:22:32 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Xiubo Li <Li.Xiubo@freescale.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: core: Fix possible ZERO_SIZE_PTR pointer
- dereferencing error.
-Message-ID: <20141006211443.GE18035@lee--X1>
-References: <1411028499-44474-1-git-send-email-Li.Xiubo@freescale.com>
+To: Johannes Pointner <johannes.pointner@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
+ for  subnodes
+Message-ID: <20141006212232.GF18035@lee--X1>
+References: <1660410.j399mvljTo@lenovobook>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411028499-44474-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1660410.j399mvljTo@lenovobook>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, Xiubo Li wrote:
+On Thu, 25 Sep 2014, Johannes Pointner wrote:
 
-> Since we cannot make sure the 'cell->num_resources' will always be none
-> zero here, and then if either equal to zero, the kzalloc() will return
-> ZERO_SIZE_PTR, which equals to ((void *)16).
+> Add documentation for compatible property of subnodes.
 > 
-> So this patch fix this with just doing the zero check before calling
-> kzalloc().
-> 
-> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
 > ---
->  drivers/mfd/mfd-core.c | 3 +++
->  1 file changed, 3 insertions(+)
+>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
+>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
+>  2 files changed, 12 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 892d343..54c7e35 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -89,6 +89,9 @@ static int mfd_add_device(struct device *parent, int id,
->  	int ret = -ENOMEM;
->  	int r;
+> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
+> index 4f05d20..8ae3a3b 100644
+> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
+> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
+> @@ -14,6 +14,9 @@ Required properties:
+>  Optional properties:
+>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
 >  
-> +	if (!cell->num_resources)
-> +		return -EINVAL;
+> +Required subnode properties:
+> +- compatible: "ti,tps65217-pmic"
+> +
+>    The valid names for regulators are:
+>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
+>  
+> @@ -23,9 +26,11 @@ Example:
+>  
+>  	tps: tps@24 {
+>  		compatible = "ti,tps65217";
+> +		reg = <0x24>;
+>  		ti,pmic-shutdown-controller;
+>  
+> -		regulators {
+> +		tps_pmic: regulators {
 
-Resources are not compulsory.
+How is the tps_pmic label used?
 
->  	pdev = platform_device_alloc(cell->name, id + cell->id);
->  	if (!pdev)
->  		goto fail_alloc;
+> +			compatible = "ti,tps65217-pmic";
+
+I'd like to see a '\n' here.
+
+>  			dcdc1_reg: dcdc1 {
+>  				regulator-min-microvolt = <900000>;
+>  				regulator-max-microvolt = <1800000>;
+> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> index 5fb9279..f92f154 100644
+> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
+>  Required properties:
+>  - compatible: "ti,tps65217"
+>  - reg: I2C slave address
+> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
+> +
+> +Required subnode properties:
+> +- compatible: "ti,tps65217-bl"
+>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+>  - default-brightness: valid values: 0-100
+>  
+> -Each regulator is defined using the standard binding for regulators.
+>  
+>  Example:
+>  
+>  	tps: tps@24 {
+>  		reg = <0x24>;
+>  		compatible = "ti,tps65217";
+
+I'd like to see a '\n' here.
+
+> -		backlight {
+> +		tps_bl: backlight {
+
+Same here.  Is this label used?
+
+> +			compatible = "ti,tps65217-bl";
+>  			isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+>  			fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+>  			default-brightness = <50>;
 
 -- 
 Lee Jones
