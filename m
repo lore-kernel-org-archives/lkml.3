@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaJFOtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:49:13 -0400
-Received: from mail-bn1bon0110.outbound.protection.outlook.com ([157.56.111.110]:3520
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751777AbaJFOtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:49:11 -0400
-Message-ID: <5432ABCE.90208@freescale.com>
-Date: Mon, 6 Oct 2014 09:48:46 -0500
-From: German Rivera <German.Rivera@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752844AbaJFOyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:54:09 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:46105 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687AbaJFOyH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 10:54:07 -0400
+Date: Mon, 6 Oct 2014 10:54:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20141006145403.GB18303@htj.dyndns.org>
+References: <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+ <20141001153114.GE8971@agordeev.usersys.redhat.com>
+ <20141005022311.GD8549@htj.dyndns.org>
+ <20141005161646.GB22223@mtj.dyndns.org>
+ <20141006072710.GH8971@agordeev.usersys.redhat.com>
+ <20141006125817.GA18303@htj.dyndns.org>
+ <20141006132445.GA18339@agordeev.usersys.redhat.com>
 MIME-Version: 1.0
-To: Timur Tabi <timur@codeaurora.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
-        <stuart.yoder@freescale.com>,
-        Kim Phillips <Kim.Phillips@freescale.com>,
-        Scott Wood <scottwood@freescale.com>, Alexander Graf <agraf@suse.de>,
-        <bhamciu1@freescale.com>, <R89243@freescale.com>,
-        <Geoff.Thorpe@freescale.com>, <bhupesh.sharma@freescale.com>,
-        <nir.erez@freescale.com>, <richard.schmitt@freescale.com>
-Subject: Re: [PATCH 3/3 v3] drivers/bus: Device driver for FSL-MC DPRC devices
-References: <1412429015-30564-1-git-send-email-German.Rivera@freescale.com>	<1412429015-30564-4-git-send-email-German.Rivera@freescale.com> <CAOZdJXWP4bwWiEcX10i4j96z49QahtpywK=XiuHm9VXWa0zOKw@mail.gmail.com>
-In-Reply-To: <CAOZdJXWP4bwWiEcX10i4j96z49QahtpywK=XiuHm9VXWa0zOKw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.88.168.50]
-X-ClientProxiedBy: BN1PR02CA0019.namprd02.prod.outlook.com (10.141.56.19) To
- BLUPR03MB328.namprd03.prod.outlook.com (10.141.48.27)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB328;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03569407CC
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(189002)(24454002)(164054003)(377454003)(51704005)(199003)(479174003)(36756003)(64706001)(85306004)(20776003)(105586002)(66066001)(95666004)(107046002)(50986999)(101416001)(106356001)(47776003)(122386002)(40100001)(21056001)(77096002)(97736003)(65956001)(110136001)(19580395003)(10300001)(33656002)(92726001)(120916001)(23676002)(76176999)(4396001)(76482002)(46102003)(85852003)(50466002)(86362001)(80022003)(99396003)(87976001)(19580405001)(102836001)(83506001)(65816999)(54356999)(42186005);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB328;H:[10.81.33.65];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006132445.GA18339@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 06, 2014 at 02:24:46PM +0100, Alexander Gordeev wrote:
+> On Mon, Oct 06, 2014 at 08:58:17AM -0400, Tejun Heo wrote:
+> > I don't think we'd be able to move libata handling to block softirq
+> > and probably end up just doing it from the irq context.  Anyways, as
+> > long as you're gonna keep working on it, I have no objection to the
+> > proposed changes.  Do you have a refreshed version or is the current
+> > version good for inclusion?
+> 
+> No, this one would not apply. I can send updated version on top of
+> v5 I posted earlier. Should I?
 
-On 10/05/2014 09:53 AM, Timur Tabi wrote:
-> On Sat, Oct 4, 2014 at 8:23 AM, J. German Rivera
-> <German.Rivera@freescale.com> wrote:
->> +EXPORT_SYMBOL_GPL(dprc_scan_objects);
->
-> I didn't notice this earlier, but I it was Freescale policy to use
-> EXPORT_SYMBOL() instead of EXPORT_SYMBOL_GPL().  Has that changed?
->
-Please see change history in the cover letter for this patch series.
+Yeap, please do so.
 
-Thanks,
+Thanks a lot for your patience!  :)
 
-German
+-- 
+tejun
