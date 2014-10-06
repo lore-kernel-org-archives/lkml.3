@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287AbaJFC7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 22:59:01 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41902 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaJFC66 (ORCPT
+	id S1752305AbaJFDOC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 23:14:02 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41715 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbaJFDOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 22:58:58 -0400
-Message-ID: <543206CD.1040505@gmail.com>
-Date: Mon, 06 Oct 2014 11:04:45 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Sun, 5 Oct 2014 23:14:00 -0400
+Date: Mon, 6 Oct 2014 04:13:55 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, bfields@redhat.com,
+        mszeredi@suse.cz, "Eric W. Biederman" <ebiederm@xmission.com>,
+        hch@lst.de, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: dcache: NULL ptr deref in dentry_kill
+Message-ID: <20141006031355.GA7996@ZenIV.linux.org.uk>
+References: <5431E203.9070501@oracle.com>
 MIME-Version: 1.0
-To: konrad.wilk@oracle.com, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, bhelgaas@google.com
-CC: xen-devel@lists.xenproject.org, linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH next] xen: pcifront: Process failure for pcifront_(re)scan_root()
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5431E203.9070501@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When pcifront_rescan_root() or pcifront_scan_root() fails, need return
-error code, neither set XenbusStateConnected state, just like the other
-areas have done.
+On Sun, Oct 05, 2014 at 08:27:47PM -0400, Sasha Levin wrote:
 
-For pcifront_rescan_root(), it will return error code ("num_roots = 0;",
-skip xenbus_switch_state return value).
+> [  434.580818] BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+> [  434.582208] IP: do_raw_spin_trylock (./arch/x86/include/asm/spinlock.h:108 kernel/locking/spinlock_debug.c:143)
+[snip]
+spin_lock((void *)0x90)
+> [  434.590025] ? _raw_spin_trylock (include/linux/spinlock_api_smp.h:89 kernel/locking/spinlock.c:135)
+> [  434.590025] ? lockref_put_or_lock (lib/lockref.c:131)
+> [  434.590025] dput (fs/dcache.c:513 fs/dcache.c:616)
 
-For pcifront_scan_root(), it will return 0 ("num_roots = 0;", set 0 by
-the return value of xenbus_switch_state, which always return 0, at
-present).
+ummm...  lockref_put_or_lock(&dentry->d_lockref) ending up with 0x90 passed
+to lockref_put_or_lock()...  What offset does d_lockref have on your build?
+On my config it's 0x80 (i.e. that would mean dput((void *)0x10)); could you
+check it on yours?  Do you have CONFIG_DEBUG_LOCK_ALLOC and CONFIG_LOCK_STAT?
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/pci/xen-pcifront.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+> [  434.590025] __fput (fs/file_table.c:235)
 
-diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
-index 53df39a..d78d884 100644
---- a/drivers/pci/xen-pcifront.c
-+++ b/drivers/pci/xen-pcifront.c
-@@ -866,6 +866,11 @@ static int pcifront_try_connect(struct pcifront_device *pdev)
- 		xenbus_dev_error(pdev->xdev, err,
- 				 "No PCI Roots found, trying 0000:00");
- 		err = pcifront_scan_root(pdev, 0, 0);
-+		if (err) {
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error scanning PCI root 0000:00");
-+			goto out;
-+		}
- 		num_roots = 0;
- 	} else if (err != 1) {
- 		if (err == 0)
-@@ -947,6 +952,11 @@ static int pcifront_attach_devices(struct pcifront_device *pdev)
- 		xenbus_dev_error(pdev->xdev, err,
- 				 "No PCI Roots found, trying 0000:00");
- 		err = pcifront_rescan_root(pdev, 0, 0);
-+		if (err) {
-+			xenbus_dev_fatal(pdev->xdev, err,
-+					 "Error scanning PCI root 0000:00");
-+			goto out;
-+		}
- 		num_roots = 0;
- 	} else if (err != 1) {
- 		if (err == 0)
--- 
-1.9.3
+... and here we have a struct file with ->f_path.dentry being a small positive
+number.
+
+Might make sense to slap BUG_ON((unsigned long)dentry < PAGE_SIZE); into
+__fput() and try to reproduce.  And throw
+	BUG_ON((unsigned long)file->f_path.dentry < PAGE_SIZE);
+into fput(), while we are at it, to see if that's bogus ->f_path.dentry at
+fput() time or if it's getting corrupted between task_work_add() and actual
+execution of __fput().
+
+And the value of offsetof(struct dentry, d_lock) on your build would be
+interesting to see - that would tell us which value are we seeing passed
+to dput().
