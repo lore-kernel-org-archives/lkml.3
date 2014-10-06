@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbaJFVOe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:14:34 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59243 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaJFVOd (ORCPT
+	id S1752420AbaJFVOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:14:51 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:48631 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307AbaJFVOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:14:33 -0400
-Date: Mon, 6 Oct 2014 23:14:30 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
-Message-ID: <20141006211430.GA31880@amd>
-References: <20141003231109.GA4530@amd>
- <20141006181202.GA22781@dtor-ws>
- <20141006204526.GA28905@amd>
- <20141006210358.GA39707@dtor-ws>
+	Mon, 6 Oct 2014 17:14:49 -0400
+Date: Mon, 6 Oct 2014 22:14:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: core: Fix possible ZERO_SIZE_PTR pointer
+ dereferencing error.
+Message-ID: <20141006211443.GE18035@lee--X1>
+References: <1411028499-44474-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141006210358.GA39707@dtor-ws>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411028499-44474-1-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-10-06 14:03:58, Dmitry Torokhov wrote:
-> On Mon, Oct 06, 2014 at 10:45:26PM +0200, Pavel Machek wrote:
-> > Hi!
-> > 
-> > > > From the backtrace, it looks evdev related...?
-> > > 
-> > > Hmm, looks like it...
-> > 
-> > I don't think I can repeat that. I was doing crazy stuff at that
-> > moment. (Typo fixes suggested below).
-> > 
-> > Thanks,
-> > 								Pavel
-> > 
-> > Input: evdev - fix EVIOCG{type} ioctl
-> > 
-> > From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > 
-> > The 'max' size passed into the function is measured in number of bits
-> > (KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
-> > 
-> > ###                           need               accordingly(?)     trying
+On Thu, 18 Sep 2014, Xiubo Li wrote:
+
+> Since we cannot make sure the 'cell->num_resources' will always be none
+> zero here, and then if either equal to zero, the kzalloc() will return
+> ZERO_SIZE_PTR, which equals to ((void *)16).
 > 
-> Thanks, I'll fix them up.
+> So this patch fix this with just doing the zero check before calling
+> kzalloc().
+> 
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  drivers/mfd/mfd-core.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+> index 892d343..54c7e35 100644
+> --- a/drivers/mfd/mfd-core.c
+> +++ b/drivers/mfd/mfd-core.c
+> @@ -89,6 +89,9 @@ static int mfd_add_device(struct device *parent, int id,
+>  	int ret = -ENOMEM;
+>  	int r;
+>  
+> +	if (!cell->num_resources)
+> +		return -EINVAL;
 
-No problem. BTW, I guess this should go to 3.17-stable at least, and
-probably older stable releases, too...?
+Resources are not compulsory.
 
-Thanks,
-									Pavel
+>  	pdev = platform_device_alloc(cell->name, id + cell->id);
+>  	if (!pdev)
+>  		goto fail_alloc;
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
