@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaJFTfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 15:35:04 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:36227 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750995AbaJFTfB (ORCPT
+	id S1752049AbaJFTgy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 15:36:54 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:54157 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaJFTgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 15:35:01 -0400
-X-Sasl-enc: KK8bcwQyUD2EcXXICSreJOccuwM4uH8P7PwXu/ssdK+v 1412624100
-Date: Mon, 6 Oct 2014 16:34:48 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Christoph Lameter <cl@linux.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters
- overflow within 50 days
-Message-ID: <20141006193448.GB8238@khazad-dum.debian.net>
-References: <alpine.DEB.2.11.1410030653040.8496@gentwo.org>
- <20141003120345.GA6652@localhost.localdomain>
- <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
- <alpine.DEB.2.11.1410052331420.4383@nanos>
- <alpine.DEB.2.11.1410051824190.3424@gentwo.org>
- <alpine.DEB.2.11.1410060959510.4383@nanos>
- <alpine.DEB.2.11.1410060521010.27574@gentwo.org>
- <alpine.DEB.2.11.1410061449290.4383@nanos>
- <alpine.DEB.2.11.1410061014080.29937@gentwo.org>
- <alpine.DEB.2.11.1410061726510.4383@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410061726510.4383@nanos>
-X-GPG-Fingerprint1: 4096R/39CB4807 C467 A717 507B BAFE D3C1  6092 0BD9 E811
- 39CB 4807
-X-GPG-Fingerprint2: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Oct 2014 15:36:53 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86: Add a comment clarifying LDT context switching
+Date: Mon,  6 Oct 2014 12:36:47 -0700
+Message-Id: <36275c99801a87d8dcf0502a41cf4e2ad81aae46.1412623954.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Tools expect the number of interrupt to increase linearly and not jump by
-> > 2^32 once in awhile. There are functions in the kernel (/proc/stat) that
+The code is correct, but only for a rather subtle reason.  This
+confused me for quite a while when I read switch_mm, so clarify the
+code to avoid confusing other people, too.
 
-...
+TBH, I wouldn't be surprised if this code was only correct by
+accident.
 
-> I understand that, I just wonder why nobody noticed before. It's been
-> that way forever :)
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+---
 
-Any proper tool that interfaces to snmp-like counters expects and deals with
-worse: sudden counter resets.
+I wouldn't normally send a comment-only patch, but it took me a long
+time to first figure out wtf was going on here, and then to figure
+out why this wasn't exploitable by malicious code, and then to
+figure out why this oddity had no user-visible effect at all.  Let's
+spare future readers the same confusion.
 
-And it has been that way forever :-)  So people who use such tools would
-hardly notice any warp-arounds...
+ arch/x86/include/asm/mmu_context.h | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-So, the question becomes: which tools are misbehaving?  Maybe they should
-adopt snmp-like counter reset detection for peak filtering, and we could
-leave 32-bit alone, and increase the counter size only on for 64-bit?
-
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 166af2a8e865..04478103df37 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -53,7 +53,16 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 		/* Stop flush ipis for the previous mm */
+ 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ 
+-		/* Load the LDT, if the LDT is different: */
++		/*
++		 * Load the LDT, if the LDT is different.
++		 *
++		 * It's possible leave_mm(prev) has been called.  If so,
++		 * then prev->context.ldt could be out of sync with the
++		 * LDT descriptor or the LDT register.  This can only happen
++		 * if prev->context.ldt is non-null, since we never free
++		 * an LDT.  But LDTs can't be shared across mms, so
++		 * prev->context.ldt won't be equal to next->context.ldt.
++		 */
+ 		if (unlikely(prev->context.ldt != next->context.ldt))
+ 			load_LDT_nolock(&next->context);
+ 	}
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.9.3
+
