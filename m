@@ -1,108 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaJFKH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:07:28 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63765 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751564AbaJFKH0 (ORCPT
+	id S1752166AbaJFKIr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:08:47 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:62939 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316AbaJFKIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:07:26 -0400
-Message-ID: <1412590043.4054.61.camel@x220>
-Subject: [PATCH] serial: samsung: Remove checks for CONFIG_SAMSUNG_CLOCK
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 06 Oct 2014 12:07:23 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2014 10:07:24.0254 (UTC) FILETIME=[534117E0:01CFE14D]
-X-RcptDomain: vger.kernel.org
+	Mon, 6 Oct 2014 06:08:46 -0400
+Date: Mon, 6 Oct 2014 12:08:42 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/pwm/Kconfig: Let PWM_CLPS711X depend on HAS_IOMEM
+Message-ID: <20141006100842.GC25202@ulmo>
+References: <542FC27A.8050006@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vEao7xgI/oilGqZ+"
+Content-Disposition: inline
+In-Reply-To: <542FC27A.8050006@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 32726d2d5502 ("ARM: SAMSUNG: Remove legacy clock code") removed
-the Kconfig symbol SAMSUNG_CLOCK. Remove the last checks for its macro,
-and the dead code they hide, too.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-This trivial fix has been discussed for some time now in the thread
-starting at http://lkml.kernel.org/r/1405502840.4408.2.camel@x220 It
-seems it's time to submit it.
+--vEao7xgI/oilGqZ+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Build tested on top of next-20141003, on x86_64 (!), with these horrific
-commands:
-    make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=3 drivers/tty/serial/samsung.o
-    make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=4 drivers/tty/serial/samsung.o
+On Sat, Oct 04, 2014 at 05:48:42PM +0800, Chen Gang wrote:
+> PWM_CLPS711X needs HAS_IOMEM, so depend on it, the related error (with
+> allmodconfig under um):
+>=20
+>     MODPOST 1205 modules
+>   ERROR: "devm_ioremap_resource" [drivers/pwm/pwm-clps711x.ko] undefined!
+>   ERROR: "devm_ioremap" [drivers/net/phy/mdio-bcm-unimac.ko] undefined!
+>=20
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  drivers/pwm/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 3865dfb..de1ffb5 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -82,7 +82,7 @@ config PWM_BFIN
+> =20
+>  config PWM_CLPS711X
+>  	tristate "CLPS711X PWM support"
+> -	depends on ARCH_CLPS711X || COMPILE_TEST
+> +	depends on (ARCH_CLPS711X || COMPILE_TEST) && HAS_IOMEM
 
-Please note that
-    make EXTRA_CFLAGS=-DCONFIG_SERIAL_SAMSUNG_UARTS=0 drivers/tty/serial/samsung.o
+Applied, thanks. I modified this slightly and put HAS_IOMEM on a line of
+its own. This is in my opinion (slightly) more readable and matches what
+we already have for other drivers.
 
-doesn't build. Perhaps some "range" should be added to config
-SERIAL_SAMSUNG_UARTS. And I also wonder whether SERIAL_SAMSUNG_UARTS
-should be a dependency (somehow) of config SERIAL_SAMSUNG. I have not
-looked into those questions.
+Thierry
 
- drivers/tty/serial/samsung.c | 27 ---------------------------
- 1 file changed, 27 deletions(-)
+--vEao7xgI/oilGqZ+
+Content-Type: application/pgp-signature
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index c78f43a481ce..796c04c77dc1 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -1226,24 +1226,6 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
- 	return 0;
- }
- 
--#ifdef CONFIG_SAMSUNG_CLOCK
--static ssize_t s3c24xx_serial_show_clksrc(struct device *dev,
--					  struct device_attribute *attr,
--					  char *buf)
--{
--	struct uart_port *port = s3c24xx_dev_to_port(dev);
--	struct s3c24xx_uart_port *ourport = to_ourport(port);
--
--	if (IS_ERR(ourport->baudclk))
--		return -EINVAL;
--
--	return snprintf(buf, PAGE_SIZE, "* %s\n",
--			ourport->baudclk->name ?: "(null)");
--}
--
--static DEVICE_ATTR(clock_source, S_IRUGO, s3c24xx_serial_show_clksrc, NULL);
--#endif
--
- /* Device driver serial port probe */
- 
- static const struct of_device_id s3c24xx_uart_dt_match[];
-@@ -1329,12 +1311,6 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
- 	 */
- 	clk_disable_unprepare(ourport->clk);
- 
--#ifdef CONFIG_SAMSUNG_CLOCK
--	ret = device_create_file(&pdev->dev, &dev_attr_clock_source);
--	if (ret < 0)
--		dev_err(&pdev->dev, "failed to add clock source attr.\n");
--#endif
--
- 	ret = s3c24xx_serial_cpufreq_register(ourport);
- 	if (ret < 0)
- 		dev_err(&pdev->dev, "failed to add cpufreq notifier\n");
-@@ -1348,9 +1324,6 @@ static int s3c24xx_serial_remove(struct platform_device *dev)
- 
- 	if (port) {
- 		s3c24xx_serial_cpufreq_deregister(to_ourport(port));
--#ifdef CONFIG_SAMSUNG_CLOCK
--		device_remove_file(&dev->dev, &dev_attr_clock_source);
--#endif
- 		uart_remove_one_port(&s3c24xx_uart_drv, port);
- 	}
- 
--- 
-1.9.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJUMmoqAAoJEN0jrNd/PrOhPu8P/jpKj19BR1wH5gP0s8k3Sg04
+n8SGlc9BQEbGKOOCcP8hct0x3S6Uk3WkxaraOr8Ee3JOlfS5GFSucxSHXMydqF8u
+fMTiOEtjTTwBKNtP2rnTl6fn/arvoO2HSL1lhiU31UOzN/UCe+/2XDqUStUxGuAP
+qiP1gvazqg2mDPdS+BuhhucZHLhow1NRITcFIxqumAvFza2uPTVc8QfFuWzjO+xX
+/NFwk2bOLGUl0oSIlRdnKs6h5TAXklbXOHNTbS2MG9qTNKp/BnnVA/PSq1Ix2hPR
+2ThHFKkx6AJlV3I8eH31zKBzuJqvDRJsOiucwtMyYRxqsu0PLINeeiTbgeBR9MXm
+XdeE1L3le9rVsrRFr/cDkeLv8SpIcgSZ32/Ol/vGt58jpSj/3zzbyQBRJPBsnGbG
+i+XlNCYOykpSXIG2PjEINQCtipmFAioNdT3gE4Ih/1ccFeOEOZtWm6Wb+H+E/B8l
+dWdLsYwomhJADvOndc/3lcSZpzZcl2z5hN4CoH5jNME0YhUaxdbMt/JNeb7ZspL1
+M+wgv0m798IcwpKZGtAsXf/UUS/isYa8amZMCaazWCxeuyydWt2wHXzjRGEBcWT4
+TrbmaxSrPTeTwyYUByBN3fNnEkk3N8Xcs1UWxP9npFYbJfi4kcJQ89oWr2L4Jx+x
+Q1Pto9yJXcKk7ybPQCbQ
+=w71G
+-----END PGP SIGNATURE-----
+
+--vEao7xgI/oilGqZ+--
