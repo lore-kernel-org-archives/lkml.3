@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662AbaJFVgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:36:40 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:24568 "EHLO
+	id S1752590AbaJFVgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:36:38 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38985 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751290AbaJFVgd (ORCPT
+	by vger.kernel.org with ESMTP id S1751264AbaJFVgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Oct 2014 17:36:33 -0400
-Message-Id: <20141006213631.841903258@goodmis.org>
+Message-Id: <20141006213630.530666793@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 06 Oct 2014 17:35:55 -0400
+Date: Mon, 06 Oct 2014 17:35:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 11/11] ftrace: Only disable ftrace_enabled to test buffer in selftest
+Subject: [PATCH 03/11] ftrace: Set callback to ftrace_stub when no ops are registered
 References: <20141006213544.344821619@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0011-ftrace-Only-disable-ftrace_enabled-to-test-buffer-in.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0003-ftrace-Set-callback-to-ftrace_stub-when-no-ops-are-r.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,40 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The ftrace_enabled variable is set to zero in the self tests to keep
-delayed functions from being traced and messing with the checks. This
-only needs to be done when the checks are being performed, otherwise,
-if ftrace_enabled is off when calls back to the utility that is being
-tested, it can cause errors to happen and the tests can fail with
-false positives.
+The clean up that adds the helper function ftrace_ops_get_func()
+caused the default function to not change when DYNAMIC_FTRACE was not
+set and no ftrace_ops were registered. Although static tracing is
+not very useful (not having DYNAMIC_FTRACE set), it is still supported
+and we don't want to break it.
+
+Clean up the if statement even more to specifically have the default
+function call ftrace_stub when no ftrace_ops are registered. This
+fixes the small bug for static tracing as well as makes the code a
+bit more understandable.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_selftest.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/trace/ftrace.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-index 5ef60499dc8e..61a6acd6025d 100644
---- a/kernel/trace/trace_selftest.c
-+++ b/kernel/trace/trace_selftest.c
-@@ -382,6 +382,8 @@ static int trace_selftest_startup_dynamic_tracing(struct tracer *trace,
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index dabf734f909c..708aea493d96 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -254,17 +254,24 @@ static void update_ftrace_function(void)
+ 	ftrace_func_t func;
  
- 	/* check the trace buffer */
- 	ret = trace_test_buffer(&tr->trace_buffer, &count);
+ 	/*
++	 * Prepare the ftrace_ops that the arch callback will use.
++	 * If there's only one ftrace_ops registered, the ftrace_ops_list
++	 * will point to the ops we want.
++	 */
++	set_function_trace_op = ftrace_ops_list;
 +
-+	ftrace_enabled = 1;
- 	tracing_start();
- 
- 	/* we should only have one item */
-@@ -679,6 +681,8 @@ trace_selftest_startup_function(struct tracer *trace, struct trace_array *tr)
- 
- 	/* check the trace buffer */
- 	ret = trace_test_buffer(&tr->trace_buffer, &count);
++	/* If there's no ftrace_ops registered, just call the stub function */
++	if (ftrace_ops_list == &ftrace_list_end) {
++		func = ftrace_stub;
 +
-+	ftrace_enabled = 1;
- 	trace->reset(tr);
- 	tracing_start();
- 
++	/*
+ 	 * If we are at the end of the list and this ops is
+ 	 * recursion safe and not dynamic and the arch supports passing ops,
+ 	 * then have the mcount trampoline call the function directly.
+ 	 */
+-	if (ftrace_ops_list == &ftrace_list_end ||
+-	    (ftrace_ops_list->next == &ftrace_list_end)) {
+-
+-		/* Set the ftrace_ops that the arch callback uses */
+-		set_function_trace_op = ftrace_ops_list;
+-
++	} else if (ftrace_ops_list->next == &ftrace_list_end) {
+ 		func = ftrace_ops_get_func(ftrace_ops_list);
++
+ 	} else {
+ 		/* Just use the default ftrace_ops */
+ 		set_function_trace_op = &ftrace_list_end;
 -- 
 2.0.1
 
