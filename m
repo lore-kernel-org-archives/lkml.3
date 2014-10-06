@@ -1,150 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbaJFJQn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:16:43 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:43029 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751157AbaJFJQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:16:41 -0400
-X-IronPort-AV: E=Sophos;i="5.04,662,1406563200"; 
-   d="scan'208";a="36858564"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: Richard Guy Briggs <rgb@redhat.com>,
-        "linux-audit@redhat.com" <linux-audit@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>
-CC: "eparis@redhat.com" <eparis@redhat.com>,
-        "pmoore@redhat.com" <pmoore@redhat.com>,
-        "aviro@redhat.com" <aviro@redhat.com>,
-        "sgrubb@redhat.com" <sgrubb@redhat.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Subject: RE: [PATCH V5 01/13] namespaces: assign each namespace instance a
- serial	number
-Thread-Topic: [PATCH V5 01/13] namespaces: assign each namespace instance a
- serial	number
-Thread-Index: AQHP4SO3i4QYR0K9KkudggenOXuwnpwiwAQA
-Date: Mon, 6 Oct 2014 09:16:40 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5DAB74@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <cover.1412543112.git.rgb@redhat.com>
- <8bc6e9595dea17bba389f4d2ce4077c30b3eb137.1412543112.git.rgb@redhat.com>
-In-Reply-To: <8bc6e9595dea17bba389f4d2ce4077c30b3eb137.1412543112.git.rgb@redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
+	id S1752519AbaJFJRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:17:21 -0400
+Received: from mga03.intel.com ([134.134.136.65]:25172 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751870AbaJFJRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 05:17:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,662,1406617200"; 
+   d="scan'208";a="613718178"
+Date: Mon, 6 Oct 2014 17:17:16 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Subject: Re: [rcu] 5057f55e543:  dmesg.BUG:soft_lockup-CPU_stuck_for_s
+Message-ID: <20141006091716.GA1608@wfg-t540p.sh.intel.com>
+References: <20141006055024.GD28732@wfg-t540p.sh.intel.com>
+ <20141006055456.GA650@wfg-t540p.sh.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141006055456.GA650@wfg-t540p.sh.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s969GlMX005296
+
+On Mon, Oct 06, 2014 at 01:54:56PM +0800, Fengguang Wu wrote:
+> On Mon, Oct 06, 2014 at 01:50:24PM +0800, Fengguang Wu wrote:
+> > Hi Paul,
+> > 
+> > FYI, we noticed a number of ups and downs for commit
+> > 
+> > 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
+> 
+> Here is an overview of the performance/power/latency/kernel size
+> index. The baseline (71a9b26963f8c2d) number is 100, the larger, the better.
+> 
+>     96      perf-index  5057f55e543b7859cfd26bc281291795eac93f8a
+>     99     power-index  5057f55e543b7859cfd26bc281291795eac93f8a
+>    101   latency-index  5057f55e543b7859cfd26bc281291795eac93f8a
+>    102      size-index  5057f55e543b7859cfd26bc281291795eac93f8a
+
+The performance changes seem to have a strong correlation with the
+time.involuntary_context_switches changes.
+
+71a9b26963f8c2d  5057f55e543b7859cfd26bc28  time.involuntary_context_switches
+---------------  -------------------------  ------------------------------------
+   1209498 ¬± 1%      -6.5%    1131376 ¬± 1%  lkp-a04/netperf/900s-200%-TCP_STREAM
+     31677 ¬± 0%     +42.5%      45147 ¬± 1%  lkp-a05/iperf/300s-tcp
+    116081 ¬± 0%     +12.5%     130610 ¬± 1%  lkp-a06/qperf/600s
+       546 ¬±24%   +2329.3%      13280 ¬± 8%  lkp-sb03/nepim/300s-100%-tcp
+       863 ¬±45%   +1260.1%      11737 ¬±12%  lkp-sb03/nepim/300s-100%-tcp6
+       343 ¬±18%  +12507.6%      43294 ¬± 2%  lkp-sb03/nepim/300s-100%-udp6
+       633 ¬±23%   +1292.7%       8816 ¬±15%  lkp-sb03/nepim/300s-25%-tcp
+       417 ¬± 5%   +1714.5%       7572 ¬±11%  lkp-sb03/nepim/300s-25%-tcp6
+       364 ¬±20%   +9569.9%      35198 ¬± 7%  lkp-sb03/nepim/300s-25%-udp
+       312 ¬± 0%  +12223.0%      38521 ¬± 1%  lkp-sb03/nepim/300s-25%-udp6
+       308 ¬± 0%   +6197.7%      19418 ¬± 0%  lkp-sb03/nuttcp/300s
+       418 ¬± 4%   +4948.2%      21101 ¬± 1%  lkp-sb03/thrulay/300s
+ 1.062e+09 ¬± 0%      -2.9%  1.031e+09 ¬± 0%  lkp-snb01/hackbench/50%-threads-pipe
+     18870 ¬± 0%    +265.8%      69025 ¬± 0%  lkp-snb01/will-it-scale/open2
+     20813 ¬± 0%     +95.2%      40618 ¬± 0%  xps/ftrace_onoff/5m
+
+iperf tcp:
+
+                                 iperf.tcp.sender.bps
+
+  2.2e+10 ++-----*-*---------*-*--------------------------------------------+
+          |     +   +       +                    .*.              .*        |
+  2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
+          *.*.        *.*.                   *.            .*        *    *.*
+          |                                            *.*.                 |
+    2e+10 ++                                                                |
+          |                                                                 |
+  1.9e+10 ++                                                                |
+          |                                                                 |
+  1.8e+10 ++                      O                                         |
+          |                    O      O      O                              |
+          O    O   O    O           O    O        O                         |
+  1.7e+10 ++O              O O                  O                           |
+          |      O    O                    O                                |
+  1.6e+10 ++----------------------------------------------------------------+
+
+        [*] bisect-good sample
+        [O] bisect-bad  sample
 
 
+                                iperf.tcp.receiver.bps
 
-> -----Original Message-----
-> From: containers-bounces@lists.linux-foundation.org
-> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Richard Guy
-> Briggs
-> Sent: Monday, October 06, 2014 1:08 PM
-> To: linux-audit@redhat.com; linux-kernel@vger.kernel.org;
-> containers@lists.linux-foundation.org
-> Cc: eparis@redhat.com; pmoore@redhat.com; aviro@redhat.com; sgrubb@redhat.com;
-> ebiederm@xmission.com
-> Subject: [PATCH V5 01/13] namespaces: assign each namespace instance a serial
-> number
-> 
-> Generate and assign a serial number per namespace instance since boot.
-> 
-> Use a serial number per namespace (unique across one boot of one kernel)
-> instead of the inode number (which is claimed to have had the right to change
-> reserved and is not necessarily unique if there is more than one proc fs) to
-> uniquely identify it per kernel boot.
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
->  fs/mount.h                     |    1 +
->  fs/namespace.c                 |    1 +
->  include/linux/ipc_namespace.h  |    1 +
->  include/linux/nsproxy.h        |   10 ++++++++++
->  include/linux/pid_namespace.h  |    1 +
->  include/linux/user_namespace.h |    1 +
->  include/linux/utsname.h        |    1 +
->  include/net/net_namespace.h    |    1 +
->  init/version.c                 |    1 +
->  ipc/msgutil.c                  |    1 +
->  ipc/namespace.c                |    2 ++
->  kernel/nsproxy.c               |   18 ++++++++++++++++++
->  kernel/pid.c                   |    1 +
->  kernel/pid_namespace.c         |    2 ++
->  kernel/user.c                  |    1 +
->  kernel/user_namespace.c        |    2 ++
->  kernel/utsname.c               |    2 ++
->  net/core/net_namespace.c       |    8 +++++++-
->  18 files changed, 54 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/mount.h b/fs/mount.h
-> index d55297f..c076f99 100644
-> --- a/fs/mount.h
-> +++ b/fs/mount.h
-> @@ -5,6 +5,7 @@
->  struct mnt_namespace {
->  	atomic_t		count;
->  	unsigned int		proc_inum;
-> +	long long	serial_num;
->  	struct mount *	root;
->  	struct list_head	list;
->  	struct user_namespace	*user_ns;
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 182bc41..9af49ff 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -2486,6 +2486,7 @@ static struct mnt_namespace *alloc_mnt_ns(struct
-> user_namespace *user_ns)
->  		kfree(new_ns);
->  		return ERR_PTR(ret);
->  	}
-> +	new_ns->serial_num = ns_serial();
->  	new_ns->seq = atomic64_add_return(1, &mnt_ns_seq);
->  	atomic_set(&new_ns->count, 1);
->  	new_ns->root = NULL;
-> diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-> index 35e7eca..8ccfb2d 100644
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -69,6 +69,7 @@ struct ipc_namespace {
->  	struct user_namespace *user_ns;
-> 
->  	unsigned int	proc_inum;
-> +	long long	serial_num;
->  };
-> 
->  extern struct ipc_namespace init_ipc_ns;
-> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-> index b4ec59d..9d627b5 100644
-> --- a/include/linux/nsproxy.h
-> +++ b/include/linux/nsproxy.h
-> @@ -66,6 +66,16 @@ static inline struct nsproxy *task_nsproxy(struct task_struct
-> *tsk)
->  	return rcu_dereference(tsk->nsproxy);
->  }
-> 
-> +long long ns_serial(void);
-> +enum {
-> +	NS_IPC_INIT_SN	= 1,
-> +	NS_UTS_INIT_SN	= 2,
-> +	NS_USER_INIT_SN	= 3,
-> +	NS_PID_INIT_SN	= 4,
-> +	__NS_MAX_INIT_SN= 5,
+  2.2e+10 ++-----*-*---------*-*--------------------------------------------+
+          |     +   +       +                    .*.              .*        |
+  2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
+          *.*.        *.*.                   *.            .*        *    *.*
+          |                                            *.*.                 |
+    2e+10 ++                                                                |
+          |                                                                 |
+  1.9e+10 ++                                                                |
+          |                                                                 |
+  1.8e+10 ++                      O                                         |
+          |                    O      O      O                              |
+          O    O   O    O           O    O        O                         |
+  1.7e+10 ++O              O O                  O                           |
+          |      O    O                    O                                |
+  1.6e+10 ++----------------------------------------------------------------+
 
-You may need a space before '='.
 
-The rest looks good to me.
+                          time.involuntary_context_switches
+
+  10000 ++----------------------------------O-------------------------------+
+   9000 ++                                                                  |
+        |         O    O   O    O    O    O    O O                          |
+   8000 O+O  O                O    O    O                                   |
+   7000 ++     O    O    O                                                  |
+        |                                                                   |
+   6000 ++                                                                  |
+   5000 ++                                                                  |
+   4000 ++                                                                  |
+        |                                                                   |
+   3000 ++                                                                  |
+   2000 ++*..*        .*.*                                                  *
+        *     +  .*.*.    +  .*.*..*.*.. .*.*..*.*..    .*.*.*.. .*..      +|
+   1000 ++     *.          *.           *           *.*.        *    *.*..* |
+      0 ++------------------------------------------------------------------+
+
+
+qperf:
+                          time.involuntary_context_switches
+
+  25000 ++------------------------------------------------------------------+
+        |                                                                   |
+        |                        O    O OO OO O OO                          |
+  20000 O+O  OO    O O  O  O OO O                   O  O O  O OO O O  OO OO |
+        |  O     O    O  O                                                  O
+        |                                                                   |
+  15000 ++                         OO              O  O             O       |
+        |       O                                          O                |
+  10000 ++                                                                  |
+        |                                                                   |
+        |                                                                   |
+   5000 ++                                                                  |
+        |.**.* .**.*.* .* .*. *.* .* .*.         *.**.**                    |
+        *     *       *  *   *   *  *   **.**.*.*                           |
+      0 ++------------------------------------------------------------------+
+
+
+                                   qperf.udp.send_bw
+
+  2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
+          |    *  **  *    **      **.*     **  *.*  *.**                   |
+    2e+09 ++                                                                |
+  1.8e+09 ++                                                                |
+          |                                 O                       O    O  O
+  1.6e+09 ++                          O   O  O OO OO O OO OO  O  O     O  O |
+          |                            O O                   O  O  O  O     |
+  1.4e+09 ++                                                                |
+          |                                                                 |
+  1.2e+09 ++                                                                |
+    1e+09 ++                                                                |
+          | O                                                               |
+    8e+08 O+       O    O  O  O    O                                        |
+          |  O OO O  OO  O  O  O O  O                                       |
+    6e+08 ++----------------------------------------------------------------+
+
+
+                                   qperf.udp.recv_bw
+
+  2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
+          |    *  **  *    **      **.*     **  *.*  *.**                   |
+    2e+09 ++                                                                |
+  1.8e+09 ++                                                                |
+          |                                                         O    O  O
+  1.6e+09 ++                          O   O OO OO OO O OO OO  O  O     O  O |
+          |                            O O                   O  O  O  O     |
+  1.4e+09 ++                                                                |
+          |                                                                 |
+  1.2e+09 ++                                                                |
+    1e+09 ++                                                                |
+          | O                                                               |
+    8e+08 O+       O    O  O  O    O                                        |
+          |  O OO O  OO  O  O  O O  O                                       |
+    6e+08 ++----------------------------------------------------------------+
+
+
+will-it-scale unlink1:
+
+                           time.voluntary_context_switches
+
+  40000 ++--O---------O-----------------------------------------------------+
+        |          O                                                        |
+  35000 O+     O          O          O  O      O       O                    |
+  30000 ++                   O   O                        O   O      O  O   |
+        |                                   O      O             O          O
+  25000 ++                                                                  |
+        |                                                                   |
+  20000 ++                                                                  |
+        |                                                                   |
+  15000 ++                                                                  |
+  10000 ++                                           ..*..*..               |
+        |            .*...*..*...             .*...*.        .     ..*..*...|
+   5000 *+..*..*...*.            *...*..*...*.                *..*.         *
+        |                                                                   |
+      0 ++------------------------------------------------------------------+
+
+
+                          time.involuntary_context_switches
+
+  60000 ++------------------------------------------------------------------+
+        |                                      O          O   O      O      |
+  50000 O+  O  O   O  O   O  O   O   O  O   O      O   O         O      O   O
+        |                                                                   |
+        |                                                                   |
+  40000 ++                                                                  |
+        |                                                                   |
+  30000 ++                                                                  |
+        |                                                                   |
+  20000 ++                                                                  |
+        |                                                                   |
+        |                                              *..                  |
+  10000 ++                                           ..   *..               |
+        |                                           .        .              |
+      0 *+--*--*---*--*---*--*---*---*--*---*--*---*----------*--*---*--*---*
 
 Thanks,
-
-- Chen
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Fengguang
