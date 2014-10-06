@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210AbaJFQBd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:01:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:54550 "EHLO
+	id S1753270AbaJFQBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:01:41 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:54573 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109AbaJFQB0 (ORCPT
+	with ESMTP id S1753198AbaJFQBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:01:26 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-e5-5432bcd3b29a
+	Mon, 6 Oct 2014 12:01:33 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-e5-5432bcdb9c19
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -23,54 +23,74 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
         Vegard Nossum <vegard.nossum@gmail.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 06/13] mm: slub: introduce virt_to_obj function.
-Date: Mon, 06 Oct 2014 19:54:00 +0400
-Message-id: <1412610847-27671-7-git-send-email-a.ryabinin@samsung.com>
+        x86@kernel.org, linux-mm@kvack.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v4 11/13] kmemleak: disable kasan instrumentation for kmemleak
+Date: Mon, 06 Oct 2014 19:54:05 +0400
+Message-id: <1412610847-27671-12-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.2
 In-reply-to: <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGLMWRmVeSWpSXmKPExsVy+t/xy7qX9xiFGHyeoWyx7dcjNovfe2ey
-	WsxZv4bN4si17+wW17+9YbT49PIBo8WW601MFs8fPmS3mPCwjd1i2kZxi5XdzWwW25+9ZbJY
-	2fmA1eLyrjlsFvfW/Ge1aPv8D0gs2chksfjIbWaLd88mM1tcXXWQ3eLHhsesDqIe83d+ZPTY
-	Oesuu8eCTaUei/e8ZPLYtKqTzWPTp0nsHl1vrzB5nJjxm8XjyZXpTB4fn95i8Xi/7yqbR9+W
-	VYwenzfJeZxo+cIawBfFZZOSmpNZllqkb5fAlXH88SH2gvusFR3/gxsYH7F0MXJySAiYSHyc
-	854JwhaTuHBvPVsXIxeHkMBSRonNEydBOX1MEr/n3WIFqWIT0JP4N2s7G4gtIqAgsbn3GStI
-	EbPAfVaJ3QveAo3i4BAWcJa49tQPpIZFQBWoZi4zSJhXwE1iyltniGVyEtP33gU7glPAXWLa
-	lZnsELuaGCUOfdnBNoGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkLj5uoNx6TGr
-	Q4wCHIxKPLyROwxDhFgTy4orcw8xSnAwK4nwms8zChHiTUmsrEotyo8vKs1JLT7EyMTBKdXA
-	WLzKc4rp74D7CwOu8fkzrl76h6vmRO72q/m7a99M45M5GR2j+WfF3hCVim8dfjMmWb3W/nPP
-	bq4dcwuXfkV2/MVi/f6jy2cFfJ/Y1qVVc2ifT790HfOdq+GLfFV/Ff+p+aDK0v3ow8njk6dm
-	is6+rFm0rFb4/pGKnca7nklI2W19N/NcyLwADyWW4oxEQy3mouJEAEVg3It5AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7q39xiFGNy6rWGx7dcjNovfe2ey
+	WsxZv4bN4si17+wW75f1MFpc//aG0eLTyweMFluuNzFZPH/4kN1iwsM2dotpG8UtVnY3s1ls
+	f/aWyWJl5wNWi8u75rBZ3Fvzn9Vi8ZHbzBbvnk1mtri66iC7xY8Nj1kdRDzWzFvD6DF/50dG
+	j52z7rJ7LNhU6rF4z0smj02rOtk8Nn2axO7R9fYKk8eJGb9ZPJ5cmc7k8fHpLRaP9/uusnn0
+	bVnF6PF5k5zHiZYvrAH8UVw2Kak5mWWpRfp2CVwZM5a9ZSmYw1Vx/ud9xgbGDRxdjBwcEgIm
+	Er9a4roYOYFMMYkL99azdTFycQgJLGWUmPRuLzOE08ckse/dRkaQKjYBPYl/s7azgdgiAgoS
+	m3ufsYIUMQscZJVY3tbDCpIQFvCT6Ho4AayIRUBVon3KBTCbV8Bd4tazR0wQ6+Qkpu+9ywJi
+	cwLFp12ZyQ6xrYlR4tCXHWwTGHkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAiJnS87
+	GBcfszrEKMDBqMTDG7HDMESINbGsuDL3EKMEB7OSCK/5PKMQId6UxMqq1KL8+KLSnNTiQ4xM
+	HJxSDYxKcYsl5LMmnfIVT7U7GNJYZaRr6vw4ZIFnt9rcxIe/+lmOfbh65UhnUvHx4onuuT2z
+	ls2/HmWm3/VWUjfY8ODRwDka2d+Euvy6zj5hNb2lrClXt9edbYdkhpKw24Gwh8b3j+6euVGm
+	jmnHl4aS9VJuAtsuPg1L0+T67Jl5vPHu7ABtrisHlyqxFGckGmoxFxUnAgC5XXAcewIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virt_to_obj takes kmem_cache address, address of slab page,
-address x pointing somewhere inside slab object,
-and returns address of the begging of object.
+kmalloc internally round up allocation size, and kmemleak
+uses rounded up size as object's size. This makes kasan
+to complain while kmemleak scans memory or calculates of object's
+checksum. The simplest solution here is to disable kasan.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/linux/slub_def.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ mm/kmemleak.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index d82abd4..c75bc1d 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -110,4 +110,9 @@ static inline void sysfs_slab_remove(struct kmem_cache *s)
- }
- #endif
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 3cda50c..9bda1b3 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -98,6 +98,7 @@
+ #include <asm/processor.h>
+ #include <linux/atomic.h>
  
-+static inline void *virt_to_obj(struct kmem_cache *s, void *slab_page, void *x)
-+{
-+	return x - ((x - slab_page) % s->size);
-+}
++#include <linux/kasan.h>
+ #include <linux/kmemcheck.h>
+ #include <linux/kmemleak.h>
+ #include <linux/memory_hotplug.h>
+@@ -1113,7 +1114,10 @@ static bool update_checksum(struct kmemleak_object *object)
+ 	if (!kmemcheck_is_obj_initialized(object->pointer, object->size))
+ 		return false;
+ 
++	kasan_disable_local();
+ 	object->checksum = crc32(0, (void *)object->pointer, object->size);
++	kasan_enable_local();
 +
- #endif /* _LINUX_SLUB_DEF_H */
+ 	return object->checksum != old_csum;
+ }
+ 
+@@ -1164,7 +1168,9 @@ static void scan_block(void *_start, void *_end,
+ 						  BYTES_PER_POINTER))
+ 			continue;
+ 
++		kasan_disable_local();
+ 		pointer = *ptr;
++		kasan_enable_local();
+ 
+ 		object = find_and_get_object(pointer, 1);
+ 		if (!object)
 -- 
 2.1.2
 
