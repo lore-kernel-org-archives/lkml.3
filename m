@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbaJFQYh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:24:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57451 "EHLO mx1.redhat.com"
+	id S1752938AbaJFQZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:25:34 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17905 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343AbaJFQYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:24:35 -0400
-Date: Mon, 6 Oct 2014 18:21:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
-	kernel/sched/core.c:7156 __might_sleep()
-Message-ID: <20141006162109.GA29890@redhat.com>
-References: <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <20141002201020.GA8907@redhat.com> <20141003115020.GG10583@worktop.programming.kicks-ass.net> <20141003175654.GA14952@redhat.com> <20141003193029.GA24399@redhat.com> <20141004084241.GT10583@worktop.programming.kicks-ass.net> <20141006002509.GA23955@redhat.com> <20141006091915.GC6758@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006091915.GC6758@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750888AbaJFQZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 12:25:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,664,1406617200"; 
+   d="scan'208";a="482286332"
+User-Agent: Microsoft-MacOutlook/14.4.3.140616
+Date: Mon, 06 Oct 2014 09:25:35 -0700
+Subject: Re: [RFC PATCH v2 01/16] ACPI: Add support for device specific
+ properties
+From: Darren Hart <dvhart@infradead.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, <linux-acpi@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Aaron Lu <aaron.lu@intel.com>
+Message-ID: <D058106C.ABC8C%dvhart@linux.intel.com>
+Thread-Topic: [RFC PATCH v2 01/16] ACPI: Add support for device specific
+ properties
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1410868367-11056-2-git-send-email-mika.westerberg@linux.intel.com>
+ <20141006135021.0EB04C43FBE@trevor.secretlab.ca>
+ <20141006143248.GE1583@lahna.fi.intel.com>
+In-Reply-To: <20141006143248.GE1583@lahna.fi.intel.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06, Peter Zijlstra wrote:
+On 10/6/14, 7:32, "Mika Westerberg" <mika.westerberg@linux.intel.com>
+wrote:
+
+>On Mon, Oct 06, 2014 at 02:50:21PM +0100, Grant Likely wrote:
+>>
+>> > +/* ACPI _DSD device properties UUID:
+>>daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
+>> > +static const u8 prp_uuid[16] = {
+>> > +	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
+>> > +	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
+>> > +};
+>> 
+>> ?
+>> 
+>> What is the encoding used here? I see the first 4 bytes for "daffd814"
+>> encoded in little endian (0x14 first), and then the remaining values
+>> encoded in big-endian for each number. Is this typical for UUID values?
 >
-> On Mon, Oct 06, 2014 at 02:25:09AM +0200, Oleg Nesterov wrote:
-> >
-> > Hmm. I specially checked Documentation/memory-barriers.txt,
-> >
-> >  (*) smp_mb__before_atomic();
-> >  (*) smp_mb__after_atomic();
-> >
-> >      These are for use with atomic (such as add, subtract, increment and
-> >      decrement) functions that don't return a value, especially when used for
-> >      reference counting.  These functions do not imply memory barriers.
-> >
-> >      These are also used for atomic bitop functions that do not return a
-> >      value (such as set_bit and clear_bit).
-> >                     ^^^^^^^^^^^^^^^^^^^^^
-> >
-> > Either you or memory-barriers.txt should be fixed ;)
-
-Heh.
-
-> Its in there, just not explicitly. All those functions listed are
-> read-modify-write ops, test_bit() is not, its just a read.
-
-OOPS! I was hypnotized by "_bit" suffix, I guess.
-
-Of course, of course, test_bit() must be a plain LOAD in any case, can't
-understand what I was thinking about.
-
-So in this particular case kthread_kill() needs smp_mb__AFTER_atomic(),
-and "after" applies to set_bit(KTHREAD_SHOULD_STOP).
-
-> --- a/Documentation/memory-barriers.txt
-> +++ b/Documentation/memory-barriers.txt
-> @@ -1594,12 +1594,9 @@ CPU from reordering them.
->   (*) smp_mb__before_atomic();
->   (*) smp_mb__after_atomic();
+>The buffer format is explained in ACPI 5.1 spec, page 823.
 >
-> -     These are for use with atomic (such as add, subtract, increment and
-> -     decrement) functions that don't return a value, especially when used for
-> -     reference counting.  These functions do not imply memory barriers.
-> -
-> -     These are also used for atomic bitop functions that do not return a
-> -     value (such as set_bit and clear_bit).
-> +     These are for use with atomic/bitop (r-m-w) functions that don't return
-> +     a value (eg. atomic_{add,sub,inc,dec}(), {set,clear}_bit()). These
-> +     functions do not imply memory barriers.
+>I generated the above so that I compiled a _DSD with correct UUID using
+>iASL and then disassambled it with the same tool.
+>
 
-Thanks!
+I bugged Mika with the same question, it's a fairly non-intuitive encoding
+:-)
 
-Oleg.
+-- 
+Darren Hart
+Intel Open Source Technology Center
+
+
 
