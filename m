@@ -1,99 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494AbaJFImF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 04:42:05 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:46920 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaJFIlq (ORCPT
+	id S1752122AbaJFIuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 04:50:04 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:7835 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaJFIt7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 04:41:46 -0400
-X-ASG-Debug-ID: 1412584904-0759e7116045290002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
-        Frans Klaver <frans.klaver@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v3 2/2] power: reset: document LTC2952 poweroff support
-Date: Mon, 6 Oct 2014 10:40:36 +0200
-X-ASG-Orig-Subj: [PATCH v3 2/2] power: reset: document LTC2952 poweroff support
-Message-ID: <1412584836-27677-3-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412584836-27677-1-git-send-email-frans.klaver@xsens.com>
-References: <1412584836-27677-1-git-send-email-frans.klaver@xsens.com>
+	Mon, 6 Oct 2014 04:49:59 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 06 Oct 2014 01:48:17 -0700
+From: Vidya Sagar <vidyas@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Krishna Thota <kthota@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+Thread-Topic: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+ tree
+Thread-Index: AQHP1o7ln/2GHwUnqkWm/7z0JBMChZwNg2cAgApja8CAAGS6AIADOSDwgAANwwCAB0QhwA==
+Date: Mon, 6 Oct 2014 08:49:35 +0000
+Message-ID: <bd1591558b59409faf9edfd3eba2523e@bgmail104.nvidia.com>
+References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
+ <5420731E.6040104@wwwdotorg.org>
+ <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
+ <54297E7E.1030306@wwwdotorg.org>
+ <96955607a8414f75bb4110ebef5daa37@bgmail103.nvidia.com>
+ <542C3E34.2060505@wwwdotorg.org>
+In-Reply-To: <542C3E34.2060505@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.24.46.27]
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.16.11.125]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1412584904
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10254
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: René Moll <linux@r-moll.nl>
 
-Signed-off-by: René Moll <linux@r-moll.nl>
-Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
----
- .../bindings/power/reset/ltc2952-poweroff.txt      | 31 ++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
 
-diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-new file mode 100644
-index 0000000..3d15814
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-@@ -0,0 +1,31 @@
-+Binding for the LTC2952 PowerPath controller
-+
-+This chip is used to externally trigger a system shut down. Once the trigger has
-+been sent, the chips' watchdog has to be reset to gracefully shut down.
-+If the Linux systems decides to shut down it powers off the platform via the
-+kill signal.
-+
-+Required properties:
-+
-+- compatible:		Must contain: "lltc,ltc2952"
-+- watchdog-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's watchdog line
-+- kill-gpios:		phandle + gpio-specifier for the GPIO connected to the
-+			chip's kill line
-+
-+Optional properties:
-+
-+- trigger-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's trigger line. If this property is not set, the
-+			trigger function is ignored and the chip is kept alive
-+			until an explicit kill signal is received
-+
-+Example:
-+
-+ltc2952 {
-+	compatible = "lltc,ltc2952";
-+
-+	trigger-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
-+	watchdog-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
-+	kill-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
-+};
--- 
-2.1.0
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Wednesday, October 01, 2014 11:18 PM
+> To: Vidya Sagar
+> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
+> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
+> tree
+> 
+> On 10/01/2014 11:13 AM, Vidya Sagar wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> >> Sent: Monday, September 29, 2014 9:15 PM
+> >> To: Vidya Sagar
+> >> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
+> >> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
+> >> kernel@vger.kernel.org
+> >> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1
+> >> device tree
+> >>
+> >> On 09/29/2014 04:25 AM, Vidya Sagar wrote:
+> >>>
+> >>>> -----Original Message-----
+> >>>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> >>>> Sent: Tuesday, September 23, 2014 12:36 AM
+> >>>> To: Vidya Sagar
+> >>>> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota;
+> >>>> linux- tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
+> >>>> kernel@vger.kernel.org
+> >>>> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1
+> >>>> device tree
+> >>>>
+> >>>> On 09/22/2014 11:57 AM, Vidya Sagar wrote:
+> >>>>> sd4 is an always on regulator which is turned on at boot time.
+> >>>>> It is externally controller through gpio. This change reflects the
+> >>>>> same in Jetson TK1 device tree
+> >>>>
+> >>>> In the schematics, the "Power Sequencing" timing diagram says "S/W
+> >>>> controlled" for SD4/+1.05V_RUN. I also don't see an "ENABLE1" pin
+> >>>> on the AS3722, which would be required for ...
+> >>
+> >> Can you please comment on this aspect of the issue?
+> >>
+> >>>>> +					ams,ext-control = <1>;
+> >>>>
+> >>>> ... to be valid.
+> >>>>
+> >>>> What's the source of information behind this change?
+> >>>>
+> >>>> What symptoms does this patch correct?
+> >>>
+> >>> I'm seeing one issue when I add support for PCIe suspend/resume
+> >> functionality.
+> >>> The issue is that, when regulator_bulk_diable() is called, disabling
+> >>> one of
+> >> the power rails (which is deriving its voltage from SD4) of PCIe is failing.
+> >>> The reason being, I2C controller is getting power gated
+> >>
+> >> Why is the fix being applied to SD4 if the issue is with a power rail
+> >> derived from SD4? Shouldn't any fix be applied directly to the
+> >> problematic rail rather than some parent rail?
+> >>
+> >> Since the I2C controller is part of the SoC and we don't have power
+> >> domain support yet, the only way the I2C controller can get power
+> >> gated is when the SoC as a whole is turned off.
+> >>
+> >>   > before power rail disable is called.
+> >>
+> >> ... so without making SD4 dependant on ext-control, since no SW can
+> >> be running at this point, the only way SD4 could get turned off is
+> >> that the PMIC turns it off itself at the appropriate point in the
+> >> system power sequence based on its OTP programming, or the board HW
+> >> is already set up to turn off
+> >> SD4 at the appropriate time somehow. Is that not happening?
+> >> That would imply incorrect PMIC programming wouldn't it?
+> >>
+> >
+> > After some debugging, found that the I2C driver's suspend is getting
+> > called before the suspend of PCIe is called (BTW, PCie has
+> > suspend_noirq..!) Hence, when PCIe driver wants to disable regulators it
+> fails because of I2C write failure, which is expected given I2C is already
+> suspended.
+> 
+> Ah. It sounds like the PCIe driver should have a regular suspend function not
+> a suspend_noirq function then. It's certainly expected that resources behind
+> an I2C bus (i.e. most regulators) can't be manipulated in a suspend_noirq
+> function.
+> 
+
+PCIe host controller driver can't have regular suspend function, because,
+PCI subsystem has its own suspend_noirq which tries to read Config registers of the connected PCIe devices, which
+in turn results in hang (because host controller would have been suspended by then...!)
+
+> > Hence, SD4 is made dependent on ENABLE1 input which is the sleep signal
+> from Tegra.
+> >
+> >>> Hence SD4 is made dependent on ENABLE1, which is nothing but the
+> >>> deep sleep signal coming from Tegra, So eventually, SD4 will be
+> >>> powered off
+> >> when system enters into deep-sleep state.
+> >>
+> >> This sounds like a workaround that happens to make the system do what
+> >> you want rather than a root-cause fix.
+> >>
+> >>> Source of information is from downstream kernel
+> >>
+> >> We need to use HW schematics and other primary data to determine the
+> >> correct approach.
 
