@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbaJFSWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 14:22:18 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53320 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaJFSWR (ORCPT
+	id S1753387AbaJFSXp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 14:23:45 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:40305 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022AbaJFSXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 14:22:17 -0400
-Date: Mon, 6 Oct 2014 19:21:53 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        catalin.marinas@arm.com, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-acpi@vger.kernel.org,
-        mark.rutland@arm.com, graeme.gregory@linaro.org, marc.zyngier@arm.com,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org, astone@redhat.com,
-        grant.likely@linaro.org, hanjun.guo@linaro.org, Sudeep.Holla@arm.com,
-        olof@lixom.net, jason@lakedaemon.net, "Duran, Leo" <leo.duran@amd.com>,
-        Jon Masters <jcm@redhat.com>
-Subject: Re: [PATCH 1/4] ata: ahci_platform: Add ACPI support for AMD Seattle
- SATA controller
-Message-ID: <20141006182153.GA31521@srcf.ucam.org>
-References: <1410828446-28502-1-git-send-email-suravee.suthikulpanit@amd.com>
- <4872185.h11DQxW6kP@wuerfel>
- <20141006163147.GA22482@srcf.ucam.org>
- <2026795.jAP8HDLAZo@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2026795.jAP8HDLAZo@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 6 Oct 2014 14:23:44 -0400
+Message-ID: <1412619822.11091.73.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH V2 linux-next] net: fix rcu access on phonet_routes
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Remi Denis-Courmont <courmisch@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Date: Mon, 06 Oct 2014 11:23:42 -0700
+In-Reply-To: <1412619321-2212-1-git-send-email-fabf@skynet.be>
+References: <1412619321-2212-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 08:19:37PM +0200, Arnd Bergmann wrote:
+On Mon, 2014-10-06 at 20:15 +0200, Fabian Frederick wrote:
+> -Add __rcu annotation on table to fix sparse warnings:
+> net/phonet/pn_dev.c:279:25: warning: incorrect type in assignment (different address spaces)
+> net/phonet/pn_dev.c:279:25:    expected struct net_device *<noident>
+> net/phonet/pn_dev.c:279:25:    got void [noderef] <asn:4>*<noident>
+> net/phonet/pn_dev.c:376:17: warning: incorrect type in assignment (different address spaces)
+> net/phonet/pn_dev.c:376:17:    expected struct net_device *volatile <noident>
+> net/phonet/pn_dev.c:376:17:    got struct net_device [noderef] <asn:4>*<noident>
+> net/phonet/pn_dev.c:392:17: warning: incorrect type in assignment (different address spaces)
+> net/phonet/pn_dev.c:392:17:    expected struct net_device *<noident>
+> net/phonet/pn_dev.c:392:17:    got void [noderef] <asn:4>*<noident>
+> 
+> -Access table with rcu_access_pointer (fixes the following sparse errors):
+> net/phonet/pn_dev.c:278:25: error: incompatible types in comparison expression (different address spaces)
+> net/phonet/pn_dev.c:391:17: error: incompatible types in comparison expression (different address spaces)
+> 
+> Suggested-by: Eric Dumazet <edumazet@google.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> V2: use rcu_access_pointer instead of rcu_dereference out of rcu_read_lock context
+>     (suggested by Eric Dumazet).
 
-> Interesting. Does this also define a way to get access to registers
-> that are normally in PCI config space, provided they are accessible at
-> all?
+Acked-by: Eric Dumazet <edumazet@google.com>
 
-Unfortunately not. I'd assume that PM registers are expected to be 
-accessed via the _PS* methods instead. Does MSI make sense outside the 
-context of PCI interrupts?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
