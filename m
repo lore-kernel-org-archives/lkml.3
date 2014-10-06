@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257AbaJFPiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:38:19 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39062 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbaJFPiR (ORCPT
+	id S1753300AbaJFPip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:38:45 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:18845 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753019AbaJFPgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:38:17 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] crypto: Remove unnecessary KERN_INFO from testmgr.c
-Date: Tue,  7 Oct 2014 00:37:54 +0900
-Message-Id: <1412609874-22311-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.1.273.g97b8860
+	Mon, 6 Oct 2014 11:36:48 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtASAEC2MlRXQzrG/2dsb2JhbABfgw6BK7gQAQUBc5phBAICgQMXAXuEBAEFJy8jEFE5HhmIQgGyW443GIYgiUFkBxaENQWdPoxSiS6DZTsvgQaBRAEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Fabian Frederick <fabf@skynet.be>, Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org
+Subject: [PATCH 3/7 linux-next] tw68: remove deprecated IRQF_DISABLED
+Date: Mon,  6 Oct 2014 17:35:50 +0200
+Message-Id: <1412609755-28627-4-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1412609755-28627-1-git-send-email-fabf@skynet.be>
+References: <1412609755-28627-1-git-send-email-fabf@skynet.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove unncessary KERN_INFO from pr_info within testmgr.c
+See include/linux/interrupt.h:
+"This flag is a NOOP and scheduled to be removed"
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- crypto/testmgr.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/media/pci/tw68/tw68-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 9459dfd..9d57e3f 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -3710,8 +3710,7 @@ test_done:
- 		panic("%s: %s alg self test failed in fips mode!\n", driver, alg);
+diff --git a/drivers/media/pci/tw68/tw68-core.c b/drivers/media/pci/tw68/tw68-core.c
+index a6fb48c..63f0b64 100644
+--- a/drivers/media/pci/tw68/tw68-core.c
++++ b/drivers/media/pci/tw68/tw68-core.c
+@@ -306,7 +306,7 @@ static int tw68_initdev(struct pci_dev *pci_dev,
  
- 	if (fips_enabled && !rc)
--		pr_info(KERN_INFO "alg: self-tests for %s (%s) passed\n",
--			driver, alg);
-+		pr_info("alg: self-tests for %s (%s) passed\n", driver, alg);
- 
- 	return rc;
- 
+ 	/* get irq */
+ 	err = devm_request_irq(&pci_dev->dev, pci_dev->irq, tw68_irq,
+-			  IRQF_SHARED | IRQF_DISABLED, dev->name, dev);
++			  IRQF_SHARED, dev->name, dev);
+ 	if (err < 0) {
+ 		pr_err("%s: can't get IRQ %d\n",
+ 		       dev->name, pci_dev->irq);
 -- 
-2.1.1.273.g97b8860
+1.9.3
 
