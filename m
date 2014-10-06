@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaJFVgi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:36:38 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38985 "EHLO
+	id S1752453AbaJFVgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:36:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:24568 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751264AbaJFVgd (ORCPT
+	by vger.kernel.org with ESMTP id S1750973AbaJFVgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:36:33 -0400
-Message-Id: <20141006213630.530666793@goodmis.org>
+	Mon, 6 Oct 2014 17:36:32 -0400
+Message-Id: <20141006213630.212497797@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 06 Oct 2014 17:35:47 -0400
+Date: Mon, 06 Oct 2014 17:35:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 03/11] ftrace: Set callback to ftrace_stub when no ops are registered
+Subject: [PATCH 01/11] ftrace: Add separate function for non recursive callbacks
 References: <20141006213544.344821619@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0003-ftrace-Set-callback-to-ftrace_stub-when-no-ops-are-r.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0001-ftrace-Add-separate-function-for-non-recursive-callb.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,57 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The clean up that adds the helper function ftrace_ops_get_func()
-caused the default function to not change when DYNAMIC_FTRACE was not
-set and no ftrace_ops were registered. Although static tracing is
-not very useful (not having DYNAMIC_FTRACE set), it is still supported
-and we don't want to break it.
+Instead of using the generic list function for callbacks that
+are not recursive, call a new helper function from the mcount
+trampoline called ftrace_ops_recur_func() that will do the recursion
+checking for the callback.
 
-Clean up the if statement even more to specifically have the default
-function call ftrace_stub when no ftrace_ops are registered. This
-fixes the small bug for static tracing as well as makes the code a
-bit more understandable.
+This eliminates an indirection as well as will help in future code
+that will use dynamically allocated trampolines.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ kernel/trace/ftrace.c | 33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index dabf734f909c..708aea493d96 100644
+index 5916a8e59e87..17b606362ab4 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -254,17 +254,24 @@ static void update_ftrace_function(void)
- 	ftrace_func_t func;
+@@ -113,6 +113,9 @@ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+ static struct ftrace_ops global_ops;
+ static struct ftrace_ops control_ops;
  
- 	/*
-+	 * Prepare the ftrace_ops that the arch callback will use.
-+	 * If there's only one ftrace_ops registered, the ftrace_ops_list
-+	 * will point to the ops we want.
-+	 */
-+	set_function_trace_op = ftrace_ops_list;
++static void ftrace_ops_recurs_func(unsigned long ip, unsigned long parent_ip,
++				   struct ftrace_ops *op, struct pt_regs *regs);
 +
-+	/* If there's no ftrace_ops registered, just call the stub function */
-+	if (ftrace_ops_list == &ftrace_list_end) {
-+		func = ftrace_stub;
-+
-+	/*
- 	 * If we are at the end of the list and this ops is
- 	 * recursion safe and not dynamic and the arch supports passing ops,
- 	 * then have the mcount trampoline call the function directly.
- 	 */
--	if (ftrace_ops_list == &ftrace_list_end ||
--	    (ftrace_ops_list->next == &ftrace_list_end)) {
--
--		/* Set the ftrace_ops that the arch callback uses */
--		set_function_trace_op = ftrace_ops_list;
--
-+	} else if (ftrace_ops_list->next == &ftrace_list_end) {
- 		func = ftrace_ops_get_func(ftrace_ops_list);
-+
+ #if ARCH_SUPPORTS_FTRACE_OPS
+ static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ 				 struct ftrace_ops *op, struct pt_regs *regs);
+@@ -258,11 +261,18 @@ static void update_ftrace_function(void)
+ 	if (ftrace_ops_list == &ftrace_list_end ||
+ 	    (ftrace_ops_list->next == &ftrace_list_end &&
+ 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
+-	     (ftrace_ops_list->flags & FTRACE_OPS_FL_RECURSION_SAFE) &&
+ 	     !FTRACE_FORCE_LIST_FUNC)) {
+ 		/* Set the ftrace_ops that the arch callback uses */
+ 		set_function_trace_op = ftrace_ops_list;
+-		func = ftrace_ops_list->func;
++		/*
++		 * If the func handles its own recursion, call it directly.
++		 * Otherwise call the recursion protected function that
++		 * will call the ftrace ops function.
++		 */
++		if (ftrace_ops_list->flags & FTRACE_OPS_FL_RECURSION_SAFE)
++			func = ftrace_ops_list->func;
++		else
++			func = ftrace_ops_recurs_func;
  	} else {
  		/* Just use the default ftrace_ops */
  		set_function_trace_op = &ftrace_list_end;
+@@ -4827,6 +4837,25 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
+ }
+ #endif
+ 
++/*
++ * If there's only one function registered but it does not support
++ * recursion, this function will be called by the mcount trampoline.
++ * This function will handle recursion protection.
++ */
++static void ftrace_ops_recurs_func(unsigned long ip, unsigned long parent_ip,
++				   struct ftrace_ops *op, struct pt_regs *regs)
++{
++	int bit;
++
++	bit = trace_test_and_set_recursion(TRACE_LIST_START, TRACE_LIST_MAX);
++	if (bit < 0)
++		return;
++
++	op->func(ip, parent_ip, op, regs);
++
++	trace_clear_recursion(bit);
++}
++
+ static void clear_ftrace_swapper(void)
+ {
+ 	struct task_struct *p;
 -- 
 2.0.1
 
