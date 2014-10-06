@@ -1,73 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088AbaJFQii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:38:38 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:52281 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752080AbaJFQih (ORCPT
+	id S1752751AbaJFQhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:37:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38608 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaJFQhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:38:37 -0400
-Message-ID: <1412613514.8561.3.camel@x220>
-Subject: Re: [PATCH] usb: Remove references to non-existent PLAT_S5P symbol
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Date: Mon, 06 Oct 2014 18:38:34 +0200
-In-Reply-To: <1412610430-8647-1-git-send-email-s.nawrocki@samsung.com>
-References: <1412610430-8647-1-git-send-email-s.nawrocki@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2014 16:38:34.0711 (UTC) FILETIME=[F8BC9E70:01CFE183]
-X-RcptDomain: vger.kernel.org
+	Mon, 6 Oct 2014 12:37:05 -0400
+Date: Mon, 6 Oct 2014 16:36:33 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH v2 0/3] fuse: Add support for mounts from pid/user
+ namespaces
+Message-ID: <20141006163633.GG26187@ubuntumail>
+References: <20140925184403.GB28101@ubuntu-hedt>
+ <87bnq3a4xy.fsf@x220.int.ebiederm.org>
+ <20140925194825.GB39447@ubuntu-hedt>
+ <874mvtkfg2.fsf@x220.int.ebiederm.org>
+ <20140927042447.GA19672@ubuntu-hedt>
+ <87tx3qdxuz.fsf@x220.int.ebiederm.org>
+ <20140930162559.GA1057@ubuntu-hedt>
+ <20141005164821.GA5691@ubuntu-mba51>
+ <20141006160006.GE26187@ubuntumail>
+ <20141006163136.GF131459@ubuntu-hedt>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006163136.GF131459@ubuntu-hedt>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-06 at 17:47 +0200, Sylwester Nawrocki wrote:
-> The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-> ("ARM: SAMSUNG: Remove remaining legacy code"). There are still
-> some references left, fix that by replacing them with ARCH_S5PV210.
+Quoting Seth Forshee (seth.forshee@canonical.com):
+> On Mon, Oct 06, 2014 at 04:00:06PM +0000, Serge Hallyn wrote:
+> > Quoting Seth Forshee (seth.forshee@canonical.com):
+> > ...
+> > > After digging into this some more I think I agree with you. At minimum
+> > > letting users insert arbitrary xattrs via fuse bypasses the usual
+> > > restrictions on setting xattrs. This is probably mitigated by the
+> > > limited visibility of the fuse mount in the usual case for unprivileged
+> > > users, but it does seem like a bad idea fundamentally.
+> > > 
+> > > So I was thinking of something like the following (untested) to let root
+> > > in the host support privileged xattrs while limiting unprivileged users
+> > > to user.*. Miklos, does this look acceptable or would you prefer
+> > > something different?
+> > 
+> > So it won't be possible to set capabilities in a fuse fs?  This may
+> > be necessary, but it will prevent i.e. live-iso builders from writing
+> > for instance a CAP_NET_RAW=pe (instead of setuid-root) /bin/ping in the
+> > iso.
 > 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> cap_inode_setxattr() already requires CAP_SETFCAP in the host to do
+> this, which I'd think root in in an unpriv container wouldn't have, so
+> aren't you prevented from doing so already? I suppose the LSM could
+> override this restriction though.
 
-As with the "[media]" patch: should
-     Fixes: d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
+It's true we'd have to complicated that path.  And really I was being silly.
+It's not safe (at least not trivially).
 
-be added so this will end up in stable for v3.17?
-
->  drivers/usb/host/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 82800a7..6f1d48e 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -220,7 +220,7 @@ config USB_EHCI_SH
->  
->  config USB_EHCI_EXYNOS
->         tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
-> -       depends on PLAT_S5P || ARCH_EXYNOS
-> +       depends on ARCH_S5PV210 || ARCH_EXYNOS
->         help
->  	Enable support for the Samsung Exynos SOC's on-chip EHCI controller.
->  
-> @@ -527,7 +527,7 @@ config USB_OHCI_SH
->  
->  config USB_OHCI_EXYNOS
->  	tristate "OHCI support for Samsung S5P/EXYNOS SoC Series"
-> -	depends on PLAT_S5P || ARCH_EXYNOS
-> +	depends on ARCH_S5PV210 || ARCH_EXYNOS
->  	help
->  	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
->  
-
-Thanks again!
-
-
-Paul Bolle
-
+> > > diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+> > > index e3123bfbc711..1a3ee5663dea 100644
+> > > --- a/fs/fuse/dir.c
+> > > +++ b/fs/fuse/dir.c
+> > > @@ -1882,6 +1882,10 @@ static int fuse_setxattr(struct dentry *entry, const char *name,
+> > >  	if (fc->no_setxattr)
+> > >  		return -EOPNOTSUPP;
+> > >  
+> > > +	if (!(fc->flags & FUSE_PRIV_XATTRS) &&
+> > > +	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) != 0)
+> > > +		return -EOPNOTSUPP;
+> > > +
+> > >  	req = fuse_get_req_nopages(fc);
+> > >  	if (IS_ERR(req))
+> > >  		return PTR_ERR(req);
+> > > @@ -1925,6 +1929,10 @@ static ssize_t fuse_getxattr(struct dentry *entry, const char *name,
+> > >  	if (fc->no_getxattr)
+> > >  		return -EOPNOTSUPP;
+> > >  
+> > > +	if (!(fc->flags & FUSE_PRIV_XATTRS) &&
+> > > +	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) != 0)
+> > > +		return -EOPNOTSUPP;
+> > > +
+> > >  	req = fuse_get_req_nopages(fc);
+> > >  	if (IS_ERR(req))
+> > >  		return PTR_ERR(req);
+> > > diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> > > index 81187ba04e4a..bc0fd14b962a 100644
+> > > --- a/fs/fuse/fuse_i.h
+> > > +++ b/fs/fuse/fuse_i.h
+> > > @@ -46,6 +46,11 @@
+> > >      doing the mount will be allowed to access the filesystem */
+> > >  #define FUSE_ALLOW_OTHER         (1 << 1)
+> > >  
+> > > +/** If the FUSE_PRIV_XATTRS flag is given, then xattrs outside the
+> > > +    user.* namespace are allowed. This option is only allowed for
+> > > +    system root. */
+> > > +#define FUSE_PRIV_XATTRS	(1 << 2)
+> > > +
+> > >  /** Number of page pointers embedded in fuse_req */
+> > >  #define FUSE_REQ_INLINE_PAGES 1
+> > >  
+> > > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> > > index b88b5a780228..6716b56d43a1 100644
+> > > --- a/fs/fuse/inode.c
+> > > +++ b/fs/fuse/inode.c
+> > > @@ -493,6 +493,7 @@ enum {
+> > >  	OPT_ALLOW_OTHER,
+> > >  	OPT_MAX_READ,
+> > >  	OPT_BLKSIZE,
+> > > +	OPT_PRIV_XATTRS,
+> > >  	OPT_ERR
+> > >  };
+> > >  
+> > > @@ -505,6 +506,7 @@ static const match_table_t tokens = {
+> > >  	{OPT_ALLOW_OTHER,		"allow_other"},
+> > >  	{OPT_MAX_READ,			"max_read=%u"},
+> > >  	{OPT_BLKSIZE,			"blksize=%u"},
+> > > +	{OPT_PRIV_XATTRS,		"priv_xattr"},
+> > >  	{OPT_ERR,			NULL}
+> > >  };
+> > >  
+> > > @@ -592,6 +594,12 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
+> > >  			d->blksize = value;
+> > >  			break;
+> > >  
+> > > +		case OPT_PRIV_XATTRS:
+> > > +			if (!capable(CAP_SYS_ADMIN))
+> > > +				return 0;
+> > > +			d->flags |= FUSE_PRIV_XATTRS;
+> > > +			break;
+> > > +
+> > >  		default:
+> > >  			return 0;
+> > >  		}
+> > > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
