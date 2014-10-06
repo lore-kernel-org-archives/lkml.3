@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbaJFVh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:37:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:14091 "EHLO
+	id S1752767AbaJFVh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:37:58 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:58304 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752019AbaJFVge (ORCPT
+	by vger.kernel.org with ESMTP id S1751809AbaJFVge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Oct 2014 17:36:34 -0400
-Message-Id: <20141006213631.655431043@goodmis.org>
+Message-Id: <20141006213631.498529423@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 06 Oct 2014 17:35:54 -0400
+Date: Mon, 06 Oct 2014 17:35:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 10/11] ftrace: Add sanity check when unregistering last ftrace_ops
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreea-Cristina Bernat <bernat.ada@gmail.com>
+Subject: [PATCH 09/11] kernel: trace_syscalls: Replace rcu_assign_pointer() with
+ RCU_INIT_POINTER()
 References: <20141006213544.344821619@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0010-ftrace-Add-sanity-check-when-unregistering-last-ftra.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0009-kernel-trace_syscalls-Replace-rcu_assign_pointer-wit.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 
-When the last ftrace_ops is unregistered, all the function records should
-have a zeroed flags value. Make sure that is the case when the last ftrace_ops
-is unregistered.
+The uses of "rcu_assign_pointer()" are NULLing out the pointers.
+According to RCU_INIT_POINTER()'s block comment:
+"1.   This use of RCU_INIT_POINTER() is NULLing out the pointer"
+it is better to use it instead of rcu_assign_pointer() because it has a
+smaller overhead.
 
+The following Coccinelle semantic patch was used:
+@@
+@@
+
+- rcu_assign_pointer
++ RCU_INIT_POINTER
+  (..., NULL)
+
+Link: http://lkml.kernel.org/p/20140822142822.GA32391@ada
+
+Signed-off-by: Andreea-Cristina Bernat <bernat.ada@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ kernel/trace/trace_syscalls.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index d325a1e76554..fb186b9ddf51 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2416,6 +2416,21 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
- 
- 	ftrace_run_update_code(command);
- 
-+	/*
-+	 * If there's no more ops registered with ftrace, run a
-+	 * sanity check to make sure all rec flags are cleared.
-+	 */
-+	if (ftrace_ops_list == &ftrace_list_end) {
-+		struct ftrace_page *pg;
-+		struct dyn_ftrace *rec;
-+
-+		do_for_each_ftrace_rec(pg, rec) {
-+			if (FTRACE_WARN_ON_ONCE(rec->flags))
-+				pr_warn("  %pS flags:%lx\n",
-+					(void *)rec->ip, rec->flags);
-+		} while_for_each_ftrace_rec();
-+	}
-+
- 	ops->old_hash.filter_hash = NULL;
- 	ops->old_hash.notrace_hash = NULL;
- 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 759d5e004517..4dc8b79c5f75 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_enter--;
+-	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_enter)
+ 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
+ 	mutex_unlock(&syscall_trace_lock);
+@@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
+ 		return;
+ 	mutex_lock(&syscall_trace_lock);
+ 	tr->sys_refcount_exit--;
+-	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
++	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
+ 	if (!tr->sys_refcount_exit)
+ 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
+ 	mutex_unlock(&syscall_trace_lock);
 -- 
 2.0.1
 
