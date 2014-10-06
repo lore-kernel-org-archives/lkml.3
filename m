@@ -1,241 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaJFK5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:57:20 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:34720 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaJFK5T (ORCPT
+	id S1752114AbaJFK7s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:59:48 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43261 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaJFK7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:57:19 -0400
-Date: Mon, 6 Oct 2014 03:57:12 -0700
+	Mon, 6 Oct 2014 06:59:47 -0400
+Date: Mon, 6 Oct 2014 03:59:40 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org
-Subject: Re: [rcu] 5057f55e543:  dmesg.BUG:soft_lockup-CPU_stuck_for_s
-Message-ID: <20141006105712.GX5015@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
+        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
+        linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at kernel/sched/core.c:7156
+ __might_sleep()
+Message-ID: <20141006105940.GY5015@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141006055024.GD28732@wfg-t540p.sh.intel.com>
- <20141006055456.GA650@wfg-t540p.sh.intel.com>
- <20141006091716.GA1608@wfg-t540p.sh.intel.com>
+References: <20141002110927.GE2849@worktop.programming.kicks-ass.net>
+ <20141002123150.GC6324@worktop.programming.kicks-ass.net>
+ <20141002124247.GD6324@worktop.programming.kicks-ass.net>
+ <20141002201020.GA8907@redhat.com>
+ <20141003115020.GG10583@worktop.programming.kicks-ass.net>
+ <20141003175654.GA14952@redhat.com>
+ <20141003193029.GA24399@redhat.com>
+ <20141004084241.GT10583@worktop.programming.kicks-ass.net>
+ <20141006002509.GA23955@redhat.com>
+ <20141006091915.GC6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141006091716.GA1608@wfg-t540p.sh.intel.com>
+In-Reply-To: <20141006091915.GC6758@twins.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100610-7164-0000-0000-000005239F94
+x-cbid: 14100610-6688-0000-0000-00000552EEA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 05:17:16PM +0800, Fengguang Wu wrote:
-> On Mon, Oct 06, 2014 at 01:54:56PM +0800, Fengguang Wu wrote:
-> > On Mon, Oct 06, 2014 at 01:50:24PM +0800, Fengguang Wu wrote:
-> > > Hi Paul,
-> > > 
-> > > FYI, we noticed a number of ups and downs for commit
-> > > 
-> > > 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
+On Mon, Oct 06, 2014 at 11:19:15AM +0200, Peter Zijlstra wrote:
+> On Mon, Oct 06, 2014 at 02:25:09AM +0200, Oleg Nesterov wrote:
+> > Yes, and the comments ;)
 > > 
-> > Here is an overview of the performance/power/latency/kernel size
-> > index. The baseline (71a9b26963f8c2d) number is 100, the larger, the better.
-> > 
-> >     96      perf-index  5057f55e543b7859cfd26bc281291795eac93f8a
-> >     99     power-index  5057f55e543b7859cfd26bc281291795eac93f8a
-> >    101   latency-index  5057f55e543b7859cfd26bc281291795eac93f8a
-> >    102      size-index  5057f55e543b7859cfd26bc281291795eac93f8a
+> > I showed this patch only to complete the discussion, I am not going to
+> > send it now.
 > 
-> The performance changes seem to have a strong correlation with the
-> time.involuntary_context_switches changes.
+> Fair enough :-)
+> 
+> > But thanks for the review!
+> > 
+> > > > +static void kthread_kill(struct task_struct *k, struct kthread *kthread)
+> > > > +{
+> > > > +	smp_mb__before_atomic();
+> > >
+> > > test_bit isn't actually an atomic op so this barrier is 'wrong'. If you
+> > > need an MB there smp_mb() it is.
+> > 
+> > Hmm. I specially checked Documentation/memory-barriers.txt,
+> > 
+> >  (*) smp_mb__before_atomic();
+> >  (*) smp_mb__after_atomic();
+> > 
+> >      These are for use with atomic (such as add, subtract, increment and
+> >      decrement) functions that don't return a value, especially when used for
+> >      reference counting.  These functions do not imply memory barriers.
+> > 
+> >      These are also used for atomic bitop functions that do not return a
+> >      value (such as set_bit and clear_bit).
+> >                     ^^^^^^^^^^^^^^^^^^^^^
+> > 
+> > Either you or memory-barriers.txt should be fixed ;)
+> 
+> Its in there, just not explicitly. All those functions listed are
+> read-modify-write ops, test_bit() is not, its just a read. But yes I
+> suppose we could make that more explicit.
+> 
+> Also test_bit() obviously does return a value, so it doesn't fall in the
+> {set,clear}_bit() class.
+> 
+> Does the change below clarify things?
+> 
+> > > > +	if (test_bit(KTHREAD_WANTS_SIGNAL, &kthread->flags)) {
+> > > > +		unsigned long flags;
+> > > > +		bool kill = true;
+> > > > +
+> > > > +		if (lock_task_sighand(k, &flags)) {
+> > >
+> > > Since we do the double test thing here, with the set side also done
+> > > under the lock, so we really need a barrier above?
+> > 
+> > Yes, otherwise set_kthread_wants_signal() can miss a signal. And note
+> > that the 2nd check is only needed to ensure that we can not race
+> > with set_kthread_wants_signal(false).
+> > 
+> > BUT!!! I have to admit that I simply do not know if there is any arch
+> > 
+> > 	set_bit(&word, X);
+> > 	test_bit(&word, Y);
+> > 
+> > which actually needs mb() in between, the word is the same. Probably
+> > not.
+> 
+> DEC Alpha? Wasn't it the problem there that dependencies didn't actually
+> work as expected?
 
-I bet that if you booted with additional CPUs not in nohz mode that
-the numbers of involuntary context switches would come down.  By
-default, only CPU 0 is non-nohz, so all of the RCU kthreads get bound
-to CPU 0.
+This looks to me to be an issue of cache coherence rather than
+dependency ordering, so I would expect that DEC Alpha would respect
+the ordering.
 
 							Thanx, Paul
 
-> 71a9b26963f8c2d  5057f55e543b7859cfd26bc28  time.involuntary_context_switches
-> ---------------  -------------------------  ------------------------------------
->    1209498 ± 1%      -6.5%    1131376 ± 1%  lkp-a04/netperf/900s-200%-TCP_STREAM
->      31677 ± 0%     +42.5%      45147 ± 1%  lkp-a05/iperf/300s-tcp
->     116081 ± 0%     +12.5%     130610 ± 1%  lkp-a06/qperf/600s
->        546 ±24%   +2329.3%      13280 ± 8%  lkp-sb03/nepim/300s-100%-tcp
->        863 ±45%   +1260.1%      11737 ±12%  lkp-sb03/nepim/300s-100%-tcp6
->        343 ±18%  +12507.6%      43294 ± 2%  lkp-sb03/nepim/300s-100%-udp6
->        633 ±23%   +1292.7%       8816 ±15%  lkp-sb03/nepim/300s-25%-tcp
->        417 ± 5%   +1714.5%       7572 ±11%  lkp-sb03/nepim/300s-25%-tcp6
->        364 ±20%   +9569.9%      35198 ± 7%  lkp-sb03/nepim/300s-25%-udp
->        312 ± 0%  +12223.0%      38521 ± 1%  lkp-sb03/nepim/300s-25%-udp6
->        308 ± 0%   +6197.7%      19418 ± 0%  lkp-sb03/nuttcp/300s
->        418 ± 4%   +4948.2%      21101 ± 1%  lkp-sb03/thrulay/300s
->  1.062e+09 ± 0%      -2.9%  1.031e+09 ± 0%  lkp-snb01/hackbench/50%-threads-pipe
->      18870 ± 0%    +265.8%      69025 ± 0%  lkp-snb01/will-it-scale/open2
->      20813 ± 0%     +95.2%      40618 ± 0%  xps/ftrace_onoff/5m
+> Added Paul to Cc.
 > 
-> iperf tcp:
+> ---
+>  Documentation/memory-barriers.txt | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
 > 
->                                  iperf.tcp.sender.bps
+> diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
+> index 22a969cdd476..0d97c99ad957 100644
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -1594,12 +1594,9 @@ CPU from reordering them.
+>   (*) smp_mb__before_atomic();
+>   (*) smp_mb__after_atomic();
 > 
->   2.2e+10 ++-----*-*---------*-*--------------------------------------------+
->           |     +   +       +                    .*.              .*        |
->   2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
->           *.*.        *.*.                   *.            .*        *    *.*
->           |                                            *.*.                 |
->     2e+10 ++                                                                |
->           |                                                                 |
->   1.9e+10 ++                                                                |
->           |                                                                 |
->   1.8e+10 ++                      O                                         |
->           |                    O      O      O                              |
->           O    O   O    O           O    O        O                         |
->   1.7e+10 ++O              O O                  O                           |
->           |      O    O                    O                                |
->   1.6e+10 ++----------------------------------------------------------------+
+> -     These are for use with atomic (such as add, subtract, increment and
+> -     decrement) functions that don't return a value, especially when used for
+> -     reference counting.  These functions do not imply memory barriers.
+> -
+> -     These are also used for atomic bitop functions that do not return a
+> -     value (such as set_bit and clear_bit).
+> +     These are for use with atomic/bitop (r-m-w) functions that don't return
+> +     a value (eg. atomic_{add,sub,inc,dec}(), {set,clear}_bit()). These
+> +     functions do not imply memory barriers.
 > 
->         [*] bisect-good sample
->         [O] bisect-bad  sample
-> 
-> 
->                                 iperf.tcp.receiver.bps
-> 
->   2.2e+10 ++-----*-*---------*-*--------------------------------------------+
->           |     +   +       +                    .*.              .*        |
->   2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
->           *.*.        *.*.                   *.            .*        *    *.*
->           |                                            *.*.                 |
->     2e+10 ++                                                                |
->           |                                                                 |
->   1.9e+10 ++                                                                |
->           |                                                                 |
->   1.8e+10 ++                      O                                         |
->           |                    O      O      O                              |
->           O    O   O    O           O    O        O                         |
->   1.7e+10 ++O              O O                  O                           |
->           |      O    O                    O                                |
->   1.6e+10 ++----------------------------------------------------------------+
-> 
-> 
->                           time.involuntary_context_switches
-> 
->   10000 ++----------------------------------O-------------------------------+
->    9000 ++                                                                  |
->         |         O    O   O    O    O    O    O O                          |
->    8000 O+O  O                O    O    O                                   |
->    7000 ++     O    O    O                                                  |
->         |                                                                   |
->    6000 ++                                                                  |
->    5000 ++                                                                  |
->    4000 ++                                                                  |
->         |                                                                   |
->    3000 ++                                                                  |
->    2000 ++*..*        .*.*                                                  *
->         *     +  .*.*.    +  .*.*..*.*.. .*.*..*.*..    .*.*.*.. .*..      +|
->    1000 ++     *.          *.           *           *.*.        *    *.*..* |
->       0 ++------------------------------------------------------------------+
-> 
-> 
-> qperf:
->                           time.involuntary_context_switches
-> 
->   25000 ++------------------------------------------------------------------+
->         |                                                                   |
->         |                        O    O OO OO O OO                          |
->   20000 O+O  OO    O O  O  O OO O                   O  O O  O OO O O  OO OO |
->         |  O     O    O  O                                                  O
->         |                                                                   |
->   15000 ++                         OO              O  O             O       |
->         |       O                                          O                |
->   10000 ++                                                                  |
->         |                                                                   |
->         |                                                                   |
->    5000 ++                                                                  |
->         |.**.* .**.*.* .* .*. *.* .* .*.         *.**.**                    |
->         *     *       *  *   *   *  *   **.**.*.*                           |
->       0 ++------------------------------------------------------------------+
-> 
-> 
->                                    qperf.udp.send_bw
-> 
->   2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
->           |    *  **  *    **      **.*     **  *.*  *.**                   |
->     2e+09 ++                                                                |
->   1.8e+09 ++                                                                |
->           |                                 O                       O    O  O
->   1.6e+09 ++                          O   O  O OO OO O OO OO  O  O     O  O |
->           |                            O O                   O  O  O  O     |
->   1.4e+09 ++                                                                |
->           |                                                                 |
->   1.2e+09 ++                                                                |
->     1e+09 ++                                                                |
->           | O                                                               |
->     8e+08 O+       O    O  O  O    O                                        |
->           |  O OO O  OO  O  O  O O  O                                       |
->     6e+08 ++----------------------------------------------------------------+
-> 
-> 
->                                    qperf.udp.recv_bw
-> 
->   2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
->           |    *  **  *    **      **.*     **  *.*  *.**                   |
->     2e+09 ++                                                                |
->   1.8e+09 ++                                                                |
->           |                                                         O    O  O
->   1.6e+09 ++                          O   O OO OO OO O OO OO  O  O     O  O |
->           |                            O O                   O  O  O  O     |
->   1.4e+09 ++                                                                |
->           |                                                                 |
->   1.2e+09 ++                                                                |
->     1e+09 ++                                                                |
->           | O                                                               |
->     8e+08 O+       O    O  O  O    O                                        |
->           |  O OO O  OO  O  O  O O  O                                       |
->     6e+08 ++----------------------------------------------------------------+
-> 
-> 
-> will-it-scale unlink1:
-> 
->                            time.voluntary_context_switches
-> 
->   40000 ++--O---------O-----------------------------------------------------+
->         |          O                                                        |
->   35000 O+     O          O          O  O      O       O                    |
->   30000 ++                   O   O                        O   O      O  O   |
->         |                                   O      O             O          O
->   25000 ++                                                                  |
->         |                                                                   |
->   20000 ++                                                                  |
->         |                                                                   |
->   15000 ++                                                                  |
->   10000 ++                                           ..*..*..               |
->         |            .*...*..*...             .*...*.        .     ..*..*...|
->    5000 *+..*..*...*.            *...*..*...*.                *..*.         *
->         |                                                                   |
->       0 ++------------------------------------------------------------------+
-> 
-> 
->                           time.involuntary_context_switches
-> 
->   60000 ++------------------------------------------------------------------+
->         |                                      O          O   O      O      |
->   50000 O+  O  O   O  O   O  O   O   O  O   O      O   O         O      O   O
->         |                                                                   |
->         |                                                                   |
->   40000 ++                                                                  |
->         |                                                                   |
->   30000 ++                                                                  |
->         |                                                                   |
->   20000 ++                                                                  |
->         |                                                                   |
->         |                                              *..                  |
->   10000 ++                                           ..   *..               |
->         |                                           .        .              |
->       0 *+--*--*---*--*---*--*---*---*--*---*--*---*----------*--*---*--*---*
-> 
-> Thanks,
-> Fengguang
+>       As an example, consider a piece of code that marks an object as being dead
+>       and then decrements the object's reference count:
 > 
 
