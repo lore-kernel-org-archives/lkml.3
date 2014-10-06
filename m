@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaJFVHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:07:47 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59672 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaJFVHq (ORCPT
+	id S1752080AbaJFVK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:10:28 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:63882 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaJFVK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:07:46 -0400
-X-Greylist: delayed 757 seconds by postgrey-1.27 at vger.kernel.org; Mon, 06 Oct 2014 17:07:46 EDT
-Date: Mon, 6 Oct 2014 16:54:59 -0400
-From: Rich Felker <dalias@libc.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: libc-alpha@sourceware.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-Message-ID: <20141006205459.GZ23797@brightrain.aerifal.cx>
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+	Mon, 6 Oct 2014 17:10:26 -0400
+Message-ID: <5433053F.6020507@amacapital.net>
+Date: Mon, 06 Oct 2014 14:10:23 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, wei@redhat.com,
+        acme@kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf/x86:  Tone down kernel messages when the
+ PMU check fails in a virtual environment
+References: <1411617314-24659-1-git-send-email-wei@redhat.com> <tip-cc6cd47e7395bc05c5077009808b820633eb3f18@git.kernel.org>
+In-Reply-To: <tip-cc6cd47e7395bc05c5077009808b820633eb3f18@git.kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 01:23:30PM -0700, David Daney wrote:
-> From: David Daney <david.daney@cavium.com>
+On 10/02/2014 10:28 PM, tip-bot for Wei Huang wrote:
+> Commit-ID:  cc6cd47e7395bc05c5077009808b820633eb3f18
+> Gitweb:     http://git.kernel.org/tip/cc6cd47e7395bc05c5077009808b820633eb3f18
+> Author:     Wei Huang <wei@redhat.com>
+> AuthorDate: Wed, 24 Sep 2014 22:55:14 -0500
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Fri, 3 Oct 2014 06:04:41 +0200
 > 
-> In order for MIPS to be able to support a non-executable stack, we
-> need to supply a method to specify a userspace area that can be used
-> for executing emulated branch delay slot instructions.
+> perf/x86: Tone down kernel messages when the PMU check fails in a virtual environment
 > 
-> We add a new system call, sys_set_fpuemul_xol_area so that userspace
-> threads that are using the FPU can specify the location of the FPU
-> emulation out of line execution area.
+> PMU checking can fail due to various reasons. On native machine, this
+> is mostly caused by faulty hardware and it is reasonable to use
+> KERN_ERR in reporting. However, when kernel is running on virtualized
+> environment, this checking can fail if virtual PMU is not supported
+> (e.g. KVM on AMD host). It is annoying to see an error message on
+> splash screen, even though we know such failure is benign on
+> virtualized environment.
 > 
-> Background:
+> This patch checks if the kernel is running in a virtualized environment.
+> If so, it will use KERN_INFO in reporting, which reduces the syslog
+> priority of them. This patch was tested successfully on KVM.
 > 
-> MIPS floating point support requires that any instruction that cannot
-> be directly executed by the FPU, be emulated by the kernel.  Part of
-> this emulation involves executing non-FPU instructions that fall in
-> the delay slots of FP branch instructions.  Since the beginning of
-> MIPS/Linux time, this has been done by placing the instructions on the
-> userspace thread stack, and executing them there, as the instructions
-> must be executed in the MM context of the thread receiving the
-> emulation.
+> Signed-off-by: Wei Huang <wei@redhat.com>
+> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+> Link: http://lkml.kernel.org/r/1411617314-24659-1-git-send-email-wei@redhat.com
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 > 
-> Because of this, the de facto MIPS Linux userspace ABI requires that
-> the userspace thread have an executable stack.  It is de facto,
-> because it is not written anywhere that this must be the case, but it
-> is never the less a requirement.
-> 
-> Problem:
-> 
-> How do we get MIPS Linux to use a non-executable stack in the face of
-> the FPU emulation problem?
-> 
-> Since userspace desires to change the ABI, put some of the onus on the
-> userspace code.  Any userspace thread desiring a non-executable stack,
-> must allocate a 4-byte aligned area at least 8 bytes long with that
-> has read/write/execute permissions and pass the address of that area
-> to the kernel with the new sys_set_fpuemul_xol_area system call.
-> 
-> This is similar to how we require userspace to notify the kernel of
-> the value of the thread local pointer.
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 918d75f..16c7302 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -243,7 +243,8 @@ static bool check_hw_exists(void)
+>  
+>  msr_fail:
+>  	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
+> -	printk(KERN_ERR "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
+> +	printk(boot_cpu_has(X86_FEATURE_HYPERVISOR) ? KERN_INFO : KERN_ERR
+> +	       "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
+>  
 
-Userspace should play no part in this; requiring userspace to help
-make special accomodations for fpu emulation largely defeats the
-purpose of fpu emulation. The kernel is perfectly capable of mapping
-an appropriate page. The mapping should happen at exec time, and at
-clone time with CLONE_VM unless the kernel is going to handle mutual
-exclusion so that only one thread can be using the page at a time.
-(Using one page for the whole process, and excluding simultaneous
-execution of fpu emulation in multiple threads, may be the more
-practical approach.)
+This is bogus.  String concatenation doesn't work like that.
 
-As an alternative, if the space of possible instruction with a delay
-slot is sufficiently small, all such instructions could be mapped as
-immutable code in a shared mapping, each at a fixed offset in the
-mapping. I suspect this would be borderline-impractical (multiple
-megabytes?), but it is the cleanest solution otherwise.
+Try "%sFailed...", boot_cpu_has(X86_FEATURE_HYPERVISOR) ? KERN_ERR :
+KERN_INFO), etc.
 
-Rich
+--Andy
