@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305AbaJFDOC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 23:14:02 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41715 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859AbaJFDOA (ORCPT
+	id S1752321AbaJFD0J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 23:26:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36199 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaJFD0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 23:14:00 -0400
-Date: Mon, 6 Oct 2014 04:13:55 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, bfields@redhat.com,
-        mszeredi@suse.cz, "Eric W. Biederman" <ebiederm@xmission.com>,
-        hch@lst.de, Dave Jones <davej@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: dcache: NULL ptr deref in dentry_kill
-Message-ID: <20141006031355.GA7996@ZenIV.linux.org.uk>
-References: <5431E203.9070501@oracle.com>
+	Sun, 5 Oct 2014 23:26:04 -0400
+Date: Sun, 5 Oct 2014 20:25:05 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jason Noakes <jjnoakes@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kobject_init and the zeroed-out-memory requirement
+Message-ID: <20141006032505.GD2722@kroah.com>
+References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
+ <20141005202843.GA1282@kroah.com>
+ <CAN2+FEKsVyjV8v98R+V-xHseH1E2NKPquo6Z9nQc0M8d0Z620A@mail.gmail.com>
+ <20141005215100.GA20426@kroah.com>
+ <20141005232457.GA22525@kroah.com>
+ <20141006020950.GA29722@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5431E203.9070501@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141006020950.GA29722@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 08:27:47PM -0400, Sasha Levin wrote:
+On Sun, Oct 05, 2014 at 07:09:50PM -0700, Guenter Roeck wrote:
+> On Sun, Oct 05, 2014 at 04:24:57PM -0700, Greg KH wrote:
+> > On Sun, Oct 05, 2014 at 06:13:05PM -0400, Jason Noakes wrote:
+> > > > No driver should be working with "raw" kobjects.
+> > > 
+> > > I don't agree, but it's irrelevant.
+> > 
+> > Not at all.  I'd wager that if a driver is messing around with a "raw"
+> > kobject, it is doing something seriously wrong.  Of course there are
+> > exceptions, but those are very rare, and exceptions.  A driver should be
+> > using the driver core, and the functions and objects provided there, and
+> > provided by the bus it lives on.
+> > 
+> > So, have a pointer to some driver code that is calling
+> > kobject_initialize()?  I'd love to see it.
+> > 
+> 
+> Lots to choose from. In drivers/:
+> 
+> $ git grep kobject_init | wc
+>      65     289    4880
+> $ git grep kobject_init | grep -v base | wc
+>      62     277    4694
+> $ git grep kobject_init_and_add | grep -v base | wc
+>      47     232    3698
+> $ git grep kobject_add | grep -v base | wc
+>      20     111    1486
 
-> [  434.580818] BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
-> [  434.582208] IP: do_raw_spin_trylock (./arch/x86/include/asm/spinlock.h:108 kernel/locking/spinlock_debug.c:143)
-[snip]
-spin_lock((void *)0x90)
-> [  434.590025] ? _raw_spin_trylock (include/linux/spinlock_api_smp.h:89 kernel/locking/spinlock.c:135)
-> [  434.590025] ? lockref_put_or_lock (lib/lockref.c:131)
-> [  434.590025] dput (fs/dcache.c:513 fs/dcache.c:616)
+Well, you hit firmware layer, and block devices, which have to deal with
+kobjects directly at times.  But these files look "suspicious":
+	edac/edac_device_sysfs.c
+	edac/edac_pci_sysfs.c
+	gpu/drm/ttm/ttm_bo.c
+	gpu/drm/ttm/ttm_memory.c
+	gpu/drm/ttm/ttm_page_alloc.c
+	gpu/drm/ttm/ttm_page_alloc_dma.c
+	infiniband/core/cm.c
+	infiniband/core/sysfs.c
+	infiniband/core/user_mad.c
+	infiniband/hw/mlx4/sysfs.c
+	infiniband/hw/qib/qib_sysfs.c
+	infiniband/hw/usnic/usnic_ib_sysfs.c
+	iommu/iommu.c
+	parisc/pdc_stable.c
+	pci/slot.c
+	power/ab8500_fg.c
+	power/abx500_chargalg.c
+	scsi/iscsi_boot_sysfs.c
+	uio/uio.c
+	video/fbdev/omap2/dss/manager-sysfs.c
+	video/fbdev/omap2/dss/overlay-sysfs.c
 
-ummm...  lockref_put_or_lock(&dentry->d_lockref) ending up with 0x90 passed
-to lockref_put_or_lock()...  What offset does d_lockref have on your build?
-On my config it's 0x80 (i.e. that would mean dput((void *)0x10)); could you
-check it on yours?  Do you have CONFIG_DEBUG_LOCK_ALLOC and CONFIG_LOCK_STAT?
+I'll look into them tomorrow...
 
-> [  434.590025] __fput (fs/file_table.c:235)
+But that's still a very small minority compared to the tens of thousands
+of drivers we have, so I still say it's wrong to have a driver deal with
+raw kobjects.
 
-... and here we have a struct file with ->f_path.dentry being a small positive
-number.
+thanks,
 
-Might make sense to slap BUG_ON((unsigned long)dentry < PAGE_SIZE); into
-__fput() and try to reproduce.  And throw
-	BUG_ON((unsigned long)file->f_path.dentry < PAGE_SIZE);
-into fput(), while we are at it, to see if that's bogus ->f_path.dentry at
-fput() time or if it's getting corrupted between task_work_add() and actual
-execution of __fput().
-
-And the value of offsetof(struct dentry, d_lock) on your build would be
-interesting to see - that would tell us which value are we seeing passed
-to dput().
+greg k-h
