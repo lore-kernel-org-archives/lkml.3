@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751477AbaJFPVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:21:07 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:40338 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJFPVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:21:04 -0400
-Date: Mon, 6 Oct 2014 17:20:55 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH v2 03/15] virtio-pci: move freeze/restore to virtio core
-Message-ID: <20141006172055.6fd0fa20.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412608214-31944-4-git-send-email-mst@redhat.com>
+	id S1752100AbaJFPVN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:21:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaJFPVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:21:10 -0400
+Date: Mon, 6 Oct 2014 18:11:29 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [PATCH v2 14/15] 9p/trans_virtio: enable VQs early
+Message-ID: <1412608214-31944-15-git-send-email-mst@redhat.com>
 References: <1412608214-31944-1-git-send-email-mst@redhat.com>
-	<1412608214-31944-4-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100615-1948-0000-0000-00000159BE50
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412608214-31944-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014 18:10:51 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+virtio spec requires drivers to set DRIVER_OK before using VQs.
+This is set automatically after probe returns, but virtio 9p device
+adds self to channel list within probe, at which point VQ can be
+used in violation of the spec.
 
-> This is in preparation to extending config changed event handling
-> in core.
-> Wrapping these in an API also seems to make for a cleaner code.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio.h      |  6 +++++
->  drivers/virtio/virtio.c     | 53 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/virtio/virtio_pci.c | 55 ++-------------------------------------------
->  3 files changed, 61 insertions(+), 53 deletions(-)
-> 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 3c19bd3..8df7ba8 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
->  /**
->   * virtio_device - representation of a device using virtio
->   * @index: unique position on the virtio bus
-> + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
+To fix, call virtio_enable_vqs_early before using VQs.
 
-Have you considered s/failed/saved_failed/ ?
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ net/9p/trans_virtio.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
->   * @dev: underlying device.
->   * @id: the device type identification (used to match it with a driver).
->   * @config: the configuration ops for this device.
-
-Otherwise, my
-
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
-
-still stands.
+diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
+index 6940d8f..766ba48 100644
+--- a/net/9p/trans_virtio.c
++++ b/net/9p/trans_virtio.c
+@@ -575,6 +575,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
+ 	/* Ceiling limit to avoid denial of service attacks */
+ 	chan->p9_max_pages = nr_free_buffer_pages()/4;
+ 
++	virtio_enable_vqs_early(vdev);
++
+ 	mutex_lock(&virtio_9p_lock);
+ 	list_add_tail(&chan->chan_list, &virtio_chan_list);
+ 	mutex_unlock(&virtio_9p_lock);
+-- 
+MST
 
