@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaJFM1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:27:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20711 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952AbaJFM1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:27:43 -0400
-Date: Mon, 6 Oct 2014 15:31:10 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 06/16] virtio_blk: drop config_enable
-Message-ID: <20141006123110.GA26815@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
- <1412525038-15871-7-git-send-email-mst@redhat.com>
- <20141006134229.45465bf7.cornelia.huck@de.ibm.com>
- <20141006120953.GA26549@redhat.com>
- <20141006142038.07ea01f0.cornelia.huck@de.ibm.com>
+	id S1752622AbaJFM2e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:28:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54057 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167AbaJFM2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 08:28:32 -0400
+Date: Mon, 6 Oct 2014 14:28:26 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: David Lang <david@lang.hm>
+cc: Christoph Lameter <cl@linux.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <alpine.DEB.2.02.1410060347300.26324@nftneq.ynat.uz>
+Message-ID: <alpine.DEB.2.11.1410061426471.4383@nanos>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+ <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.02.1410060347300.26324@nftneq.ynat.uz>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006142038.07ea01f0.cornelia.huck@de.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 02:20:38PM +0200, Cornelia Huck wrote:
-> On Mon, 6 Oct 2014 15:09:53 +0300
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Mon, 6 Oct 2014, David Lang wrote:
+> On Sun, 5 Oct 2014, Thomas Gleixner wrote:
 > 
-> > On Mon, Oct 06, 2014 at 01:42:29PM +0200, Cornelia Huck wrote:
-> > > On Sun, 5 Oct 2014 19:07:07 +0300
-> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > > > 
-> > > > Now that virtio core ensures config changes don't
-> > > > arrive during probing, drop config_enable flag
-> > > > in virtio blk.
-> > > > On removal, flush is now sufficient to guarantee that
-> > > > no change work is queued.
-> > > > 
-> > > > This help simplify the driver, and will allow
-> > > > setting DRIVER_OK earlier without losing config
-> > > > change notifications.
-> > > > 
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > ---
-> > > >  drivers/block/virtio_blk.c | 19 ++-----------------
-> > > >  1 file changed, 2 insertions(+), 17 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> > > > index 0a58140..c8cf6a1 100644
-> > > > --- a/drivers/block/virtio_blk.c
-> > > > +++ b/drivers/block/virtio_blk.c
-> > > 
-> > > > @@ -772,9 +766,7 @@ static void virtblk_remove(struct virtio_device *vdev)
-> > > >  	int refc;
-> > > > 
-> > > >  	/* Prevent config work handler from accessing the device. */
-> > > 
-> > > /* Common code ensures no further work will be queued. */
-> > > 
-> > > instead?
+> > > 64 bit counters on 32 bit machines are not an easy thing and could be
 > > 
-> > No, I think you missed the point:
-> > this comment now refers to the flush below: flush is required to
-> > ensure work handler is not running.
+> > Whats so hard about 64bit counters on 32bit machines?
 > > 
-> > Agree?
+> > > expensive to handle in particular because these counters are used in
+> > > performance critical hotpaths.
+> > 
+> > The expensive overhead is a single "adcl" instruction.
 > 
-> I think we both mean the same thing.
-> 
-> Preventing the handler from access sounds to me more like "when the
-> handler starts running, it is prevented from accessing the
-> device" (like with setting config_enable, as the code did before). What
-> I meant was "common code has already ensured that our work-queueing
-> function will not be called, therefore flushing the workqueue is
-> enough."
-> 
-> (same for net)
+> As I understand it, since the 64 bit math cannot be made atomic, it requires
+> protecting the counter with a lock so that it can't be read while half
+> updated. Aquiring a lock on every update is an expensive thing to do. It's not
+> something people like to see in a fast path, especially for something of as
+> low an importance as the counters.
 
-OK so I'll rewrite this to
-	/* Make sure no work handler is accessing the device. */
-?
-I prefer not duplicating core guarantees in all devices.
+As I said before. Both reader and writer side are already protected by
+the irq descriptor lock. We take that lock anyway.
 
--- 
-MST
+Thanks,
+
+	tglx
