@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaJFPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:47:25 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:55524 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaJFPrX (ORCPT
+	id S1752914AbaJFPss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:48:48 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:54063 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaJFPsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:47:23 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-01-5432b98a7056
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pebolle@tiscali.nl, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] usb: Remove references to non-existent PLAT_S5P symbol
-Date: Mon, 06 Oct 2014 17:47:10 +0200
-Message-id: <1412610430-8647-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOJMWRmVeSWpSXmKPExsVy+t9jAd2unUYhBk0HOC2aF69ns7i88BKr
-	xeVdc9gsZpzfx2SxaFkrs8WiW2eYLQ6/aWd1YPfYP3cNu0ffllWMHhu3P2Hy+LxJLoAlissm
-	JTUnsyy1SN8ugStj4uHLjAVLOCuerH7I2sC4j72LkZNDQsBEYuH2NVC2mMSFe+vZuhi5OIQE
-	FjFKLNs1mwXC6WCS2LZ/NStIFZuAoUTv0T5GEFtEQE7iye0/zCBFzAI7GCVWdoJ0cHIIC7hL
-	HH42C8xmEVCVOD33GJjNK+Aq8fTtU6BmDqB1ChJzJtlMYORewMiwilE0tSC5oDgpPddIrzgx
-	t7g0L10vOT93EyM4OJ5J72Bc1WBxiFGAg1GJhzdih2GIEGtiWXFl7iFGCQ5mJRFe83lGIUK8
-	KYmVValF+fFFpTmpxYcYpTlYlMR5D7ZaBwoJpCeWpGanphakFsFkmTg4pRoYu9tu3T7f5zYj
-	LyYmqrb5e+Tcw+aSFzf9rU7iV1rBZLxr85Jil0/HDxo0vo9dffnX/2tXc2ZblctuPzEpIY3/
-	2NWZkpP/ttUu7Jq5WEcnabbDY44He36kTlmuujg8/W9Y+4rZK07aNJzdnu9Qoit+KE18BtPn
-	TbsyI6I/PO/2PmK846bTuU1ipUosxRmJhlrMRcWJAAIxCaEKAgAA
+	Mon, 6 Oct 2014 11:48:47 -0400
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Mon, 6 Oct 2014 11:55:11 -0400 (EDT)
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: 3.17 another perf_fuzzer lockup
+In-Reply-To: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu>
+Message-ID: <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-("ARM: SAMSUNG: Remove remaining legacy code"). There are still
-some references left, fix that by replacing them with ARCH_S5PV210.
+On Mon, 6 Oct 2014, Vince Weaver wrote:
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/usb/host/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> [  843.700042] general protection fault: 0000 [#1] SMP 
+> ...
+> [  843.704001] task: ffff88011a874000 ti: ffff8800bc0ec000 task.ti: ffff8800bc0ec000
+> [  843.704001] RIP: 0010:[<ffffffff810cd913>]  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 82800a7..6f1d48e 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -220,7 +220,7 @@ config USB_EHCI_SH
- 
- config USB_EHCI_EXYNOS
-        tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
--       depends on PLAT_S5P || ARCH_EXYNOS
-+       depends on ARCH_S5PV210 || ARCH_EXYNOS
-        help
- 	Enable support for the Samsung Exynos SOC's on-chip EHCI controller.
- 
-@@ -527,7 +527,7 @@ config USB_OHCI_SH
- 
- config USB_OHCI_EXYNOS
- 	tristate "OHCI support for Samsung S5P/EXYNOS SoC Series"
--	depends on PLAT_S5P || ARCH_EXYNOS
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	help
- 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
- 
--- 
-1.7.9.5
+For what it's worth, this is 
 
+kernel/events/core.c:2646
+
+        if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+                perf_cgroup_sched_in(prev, task);
+
+
+ffffffff810cd902:       53                      push   %rbx
+ffffffff810cd903:       48 8b 07                mov    (%rdi),%rax
+ffffffff810cd906:       48 8b 58 40             mov    0x40(%rax),%rbx
+ffffffff810cd90a:       65 48 03 1c 25 08 ce    add    %gs:0xce08,%rbx
+ffffffff810cd911:       00 00 
+ffffffff810cd913:       48 39 bb d8 00 00 00    cmp    %rdi,0xd8(%rbx)
+ffffffff810cd91a:       74 63                   je     ffffffff810cd97f <perf_event_context_sched_in.isra.75+0x8b>
+
+
+> [  843.704001] RSP: 0018:ffff8800bc0efd50  EFLAGS: 00010087
+> [  843.704001] RAX: ffffea0002ba2d68 RBX: ffff1001e742c000 RCX: 000000000000038f
+> [  843.704001] RDX: ffff88011fc95b30 RSI: ffff880037d0eb00 RDI: ffff880037d0e700
+> [  843.704001] RBP: ffff8800bc0efd60 R08: ffff8800bc0ec000 R09: 000000000000baff
+> [  843.704001] R10: 0000000000000006 R11: 00000000000009bc R12: ffff880037d0e700
+> [  843.704001] R13: ffff8800c944f400 R14: 0000000000000001 R15: ffff88011b340800
+> [  843.704001] FS:  00007ffc76c17700(0000) GS:ffff88011fc80000(0000) knlGS:0000000000000000
+> [  843.704001] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  843.704001] DR0: 0000000001c7b000 DR1: 0000000000000000 DR2: 0000000001c7b000
+> [  843.704001] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [  843.704001] Stack:
+> [  843.704001]  ffff88011a874000 ffff88011b340800 ffff8800bc0efd90 ffffffff810cd9bb
+> [  843.704001]  ffff88011a8744e8 ffff88011b340800 ffff88011fc929c0 ffff8800c944f400
+> [  843.704001]  ffff8800bc0efdc0 ffffffff8105ae62 ffff88011fc929c0 ffff8800c944f400
+> [  843.704001] Call Trace:
+> [  843.704001]  [<ffffffff810cd9bb>] __perf_event_task_sched_in+0x37/0xf4
+> [  843.704001]  [<ffffffff8105ae62>] finish_task_switch+0x9b/0xa6
+> [  843.704001]  [<ffffffff815209c1>] __schedule+0x309/0x4a5
+> [  843.704001]  [<ffffffff81520df3>] _cond_resched+0x28/0x3b
+> [  843.704001]  [<ffffffff815217b5>] mutex_lock+0x12/0x2f
+> [  843.704001]  [<ffffffff810cb9bb>] find_get_context+0xfc/0x170
+> [  843.704001]  [<ffffffff810cff77>] SYSC_perf_event_open+0x47b/0x7f5
+> [  843.704001]  [<ffffffff810d0651>] SyS_perf_event_open+0xe/0x10
+> [  843.704001]  [<ffffffff81523ad1>] tracesys+0xd4/0xd9
+> [  843.704001] Code: 89 e7 e8 65 fe ff ff 5b 41 5c 5d c3 e8 c7 7e 45 00 55 48 89 e5 41 54 49 89 fc 53 48 8b 07 48 8b 58 40 65 48 03 1c 25 08 ce 00 00 <48> 39 bb d8 00 00 00 74 63 48 89 fe 48 89 df e8 f0 b4 ff ff 49 
+> [  843.704001] RIP  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
+> [  843.704001]  RSP <ffff8800bc0efd50>
