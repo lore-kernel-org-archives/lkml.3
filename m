@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaJFVgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:36:35 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:24568 "EHLO
+	id S1752684AbaJFVhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:37:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:38985 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750973AbaJFVgc (ORCPT
+	by vger.kernel.org with ESMTP id S1752262AbaJFVgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:36:32 -0400
-Message-Id: <20141006213630.212497797@goodmis.org>
+	Mon, 6 Oct 2014 17:36:35 -0400
+Message-Id: <20141006213631.352752419@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 06 Oct 2014 17:35:45 -0400
+Date: Mon, 06 Oct 2014 17:35:52 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 01/11] ftrace: Add separate function for non recursive callbacks
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
+        <paulmck@linux.vnet.ibm.com>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 08/11] tracing: generate RCU warnings even when tracepoints are disabled
 References: <20141006213544.344821619@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0001-ftrace-Add-separate-function-for-non-recursive-callb.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0008-tracing-generate-RCU-warnings-even-when-tracepoints-.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Instead of using the generic list function for callbacks that
-are not recursive, call a new helper function from the mcount
-trampoline called ftrace_ops_recur_func() that will do the recursion
-checking for the callback.
+Dave Jones reported seeing a bug from one of my TLB tracepoints:
 
-This eliminates an indirection as well as will help in future code
-that will use dynamically allocated trampolines.
+	http://lkml.kernel.org/r/20140806181801.GA4605@redhat.com
 
+I've been running these patches for months and never saw this.
+But, a big chunk of my testing, especially with all the debugging
+enabled, was in a vm where intel_idle doesn't work.  On the
+systems where I was using intel_idle, I never had lockdep enabled
+and this tracepoint on at the same time.
+
+This patch ensures that whenever we have lockdep available, we do
+_some_ RCU activity at the site of the tracepoint, despite
+whether the tracepoint's condition matches or even if the
+tracepoint itself is completely disabled.  This is a bit of a
+hack, but it is pretty self-contained.
+
+I confirmed that with this patch plus lockdep I get the same
+splat as Dave Jones did, but without enabling the tracepoint
+explicitly.
+
+Link: http://lkml.kernel.org/p/20140807175204.C257CAC5@viggo.jf.intel.com
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Dave Jones <davej@redhat.com>,
+Cc: paulmck@linux.vnet.ibm.com
+Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 33 +++++++++++++++++++++++++++++++--
- 1 file changed, 31 insertions(+), 2 deletions(-)
+ include/linux/tracepoint.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 5916a8e59e87..17b606362ab4 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -113,6 +113,9 @@ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
- static struct ftrace_ops global_ops;
- static struct ftrace_ops control_ops;
- 
-+static void ftrace_ops_recurs_func(unsigned long ip, unsigned long parent_ip,
-+				   struct ftrace_ops *op, struct pt_regs *regs);
-+
- #if ARCH_SUPPORTS_FTRACE_OPS
- static void ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 				 struct ftrace_ops *op, struct pt_regs *regs);
-@@ -258,11 +261,18 @@ static void update_ftrace_function(void)
- 	if (ftrace_ops_list == &ftrace_list_end ||
- 	    (ftrace_ops_list->next == &ftrace_list_end &&
- 	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC) &&
--	     (ftrace_ops_list->flags & FTRACE_OPS_FL_RECURSION_SAFE) &&
- 	     !FTRACE_FORCE_LIST_FUNC)) {
- 		/* Set the ftrace_ops that the arch callback uses */
- 		set_function_trace_op = ftrace_ops_list;
--		func = ftrace_ops_list->func;
-+		/*
-+		 * If the func handles its own recursion, call it directly.
-+		 * Otherwise call the recursion protected function that
-+		 * will call the ftrace ops function.
-+		 */
-+		if (ftrace_ops_list->flags & FTRACE_OPS_FL_RECURSION_SAFE)
-+			func = ftrace_ops_list->func;
-+		else
-+			func = ftrace_ops_recurs_func;
- 	} else {
- 		/* Just use the default ftrace_ops */
- 		set_function_trace_op = &ftrace_list_end;
-@@ -4827,6 +4837,25 @@ static void ftrace_ops_no_ops(unsigned long ip, unsigned long parent_ip)
- }
- #endif
- 
-+/*
-+ * If there's only one function registered but it does not support
-+ * recursion, this function will be called by the mcount trampoline.
-+ * This function will handle recursion protection.
-+ */
-+static void ftrace_ops_recurs_func(unsigned long ip, unsigned long parent_ip,
-+				   struct ftrace_ops *op, struct pt_regs *regs)
-+{
-+	int bit;
-+
-+	bit = trace_test_and_set_recursion(TRACE_LIST_START, TRACE_LIST_MAX);
-+	if (bit < 0)
-+		return;
-+
-+	op->func(ip, parent_ip, op, regs);
-+
-+	trace_clear_recursion(bit);
-+}
-+
- static void clear_ftrace_swapper(void)
- {
- 	struct task_struct *p;
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index b1293f15f592..e08e21e5f601 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -157,6 +157,12 @@ extern void syscall_unregfunc(void);
+  * Make sure the alignment of the structure in the __tracepoints section will
+  * not add unwanted padding between the beginning of the section and the
+  * structure. Force alignment to the same alignment as the section start.
++ *
++ * When lockdep is enabled, we make sure to always do the RCU portions of
++ * the tracepoint code, regardless of whether tracing is on or we match the
++ * condition.  This lets us find RCU issues triggered with tracepoints even
++ * when this tracepoint is off.  This code has no purpose other than poking
++ * RCU a bit.
+  */
+ #define __DECLARE_TRACE(name, proto, args, cond, data_proto, data_args) \
+ 	extern struct tracepoint __tracepoint_##name;			\
+@@ -167,6 +173,11 @@ extern void syscall_unregfunc(void);
+ 				TP_PROTO(data_proto),			\
+ 				TP_ARGS(data_args),			\
+ 				TP_CONDITION(cond),,);			\
++		if (IS_ENABLED(CONFIG_LOCKDEP)) {			\
++			rcu_read_lock_sched_notrace();			\
++			rcu_dereference_sched(__tracepoint_##name.funcs);\
++			rcu_read_unlock_sched_notrace();		\
++		}							\
+ 	}								\
+ 	__DECLARE_TRACE_RCU(name, PARAMS(proto), PARAMS(args),		\
+ 		PARAMS(cond), PARAMS(data_proto), PARAMS(data_args))	\
 -- 
 2.0.1
 
