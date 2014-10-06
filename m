@@ -1,102 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773AbaJFN3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:29:46 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:49955 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609AbaJFN3o (ORCPT
+	id S1752778AbaJFNbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:31:06 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:59053 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaJFNbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:29:44 -0400
+	Mon, 6 Oct 2014 09:31:04 -0400
+Date: Mon, 6 Oct 2014 15:30:59 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v7 10/11] ARM: at91/dt: add LCD panel description to
+ sama5d3xdm.dtsi
+Message-ID: <20141006133048.GE26921@ulmo>
+References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1412175188-28278-11-git-send-email-boris.brezillon@free-electrons.com>
+ <20141006110115.GH25202@ulmo>
+ <20141006142538.76d2df29@bbrezillon>
+ <20141006124014.GD26833@ulmo>
+ <20141006151111.446ed7d6@bbrezillon>
 MIME-Version: 1.0
-Date: Mon, 6 Oct 2014 17:29:42 +0400
-Message-ID: <CANaxB-zcCrJ5K5O8Wz4+h9XEE5BdV52N9mqWFQEpG_kECVJyvw@mail.gmail.com>
-Subject: BUG at /build/buildd/linux-3.13.0/fs/pnode.c:372!
-From: Andrey Wagin <avagin@gmail.com>
-To: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0QFb0wBpEddLcDHQ"
+Content-Disposition: inline
+In-Reply-To: <20141006151111.446ed7d6@bbrezillon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-Here is a small program, which triggers a bug. Is it interested for someone?
+--0QFb0wBpEddLcDHQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-root@ubuntu:/home/avagin# cat nsenter.c
-#define _GNU_SOURCE             /* See feature_test_macros(7) */
-#include <sched.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/mount.h>
+On Mon, Oct 06, 2014 at 03:11:11PM +0200, Boris Brezillon wrote:
+> On Mon, 6 Oct 2014 14:40:15 +0200
+> Thierry Reding <thierry.reding@gmail.com> wrote:
+>=20
+> > On Mon, Oct 06, 2014 at 02:25:38PM +0200, Boris Brezillon wrote:
+> > > On Mon, 6 Oct 2014 13:01:16 +0200 Thierry Reding <thierry.reding@gmai=
+l.com> wrote:
+> > > > On Wed, Oct 01, 2014 at 04:53:07PM +0200, Boris Brezillon wrote:
+> > > > [...]
+> > > > > diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dt=
+s/sama5d3xdm.dtsi
+> > [...]
+> > > > > +		backlight =3D <&backlight>;
+> > > > > +		power-supply =3D <&panel_reg>;
+> > > > > +		#address-cells =3D <1>;
+> > > > > +		#size-cells =3D <0>;
+> > > > > +		status =3D "disabled";
+> > > > > +
+> > > > > +		port@0 {
+> > > > > +			#address-cells =3D <1>;
+> > > > > +			#size-cells =3D <0>;
+> > > > > +
+> > > > > +			panel_input: endpoint@0 {
+> > > > > +				reg =3D <0>;
+> > > > > +				remote-endpoint =3D <&hlcdc_panel_output>;
+> > > > > +			};
+> > > > >  		};
+> > > >=20
+> > > > There's no support for OF graphs in simple-panel, so this is unused,
+> > > > isn't it?
+> > >=20
+> > > Actually I use it in my atmel_hlcdc_ouput implementation to figure out
+> > > the link between a panel and a device connected on the RGB/DPI bus.=
+=20
+> >=20
+> > That's kind of weird and one of the reasons why I can't make myself like
+> > the OF graph bindings. It requires drivers for one device to reach into
+> > the device tree node of some other device and look for content. Or put
+> > another way, a DT node for a panel that works on one platform doesn't
+> > work on another because the display controller needs additional DT
+> > content that isn't required by the original binding for the panel.
+>=20
+> I also have a working POC of a DPI bus implementation (with DPI support
+> in panel-simple driver).
+>=20
+> This is a solution I developed to provide a generic DPI implementation
+> in my HLCDC driver and rely on generic external implementations for
+> slave devices (panels, encoders, ...).
+>=20
+> But, IIRC, Laurent was not in favor of a bus approach because the DPI
+> bus is just a data bus and not a control bus.
+>=20
+> Anyway, I'll clean it up and post an RFC.
 
-int main(int argc, char **argv)
-{
-        int fd;
+According to the MIPI website there are also control signals and a
+command set to control display behaviour. Does your implementation
+handle any of that?
 
-        fd = open("/proc/self/ns/mnt", O_RDONLY);
-        if (fd < 0)
-                return 1;
-        umount2("/", MNT_DETACH);
-        if (setns(fd, CLONE_NEWNS))
-                return 1;
-        umount2("/", MNT_DETACH);
+Thierry
 
-        return 0;
-}
+--0QFb0wBpEddLcDHQ
+Content-Type: application/pgp-signature
 
-root@ubuntu:/home/avagin# gcc nsenter.c -o nsenter
-root@ubuntu:/home/avagin# ./nsenter
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBAgAGBQJUMpmIAAoJEN0jrNd/PrOh51YP/0kfP7SQppgCdVaCqJtq3oUw
+1C7vEMfDrgGpZzrGkjkPIL600B6xvUsHeVu4zUZPhw14bEM6EBZhPi9KA7xoixDx
+InbG+sMOTLX+jaQNTVvoJ9WnO6ikAgARKrZWmwUuxsAvFsia8TEJfNPRPYDB7kz6
+R/XsA+LXzESjmvPlGtqeuzNKTh8c5o995pSj34WBZ1TeZsbwC8uee/o2Bo8Y9BDg
+fpDh/lXEmzwWqTiJiE8vxJQOEXwhIsPo6fWrE9RjiTHu2BkEyQyd0ilVZUoedo39
+ltbX9NUq4ztnGHKZ7jSNzuq+5yrOzxu2jsiqzvvXYgv3zSCg0snFTT6PjSTMtOE+
+iNs7iqDHA3Fc8xZhwWO+FWoEI7S9p7E3TxbaK7axS17vqdDY5BtkBQvMBlW22UYj
+ejbwMGp4BCv8VNy4kYeelSptr/ANpr/4tpqFS7oJF2cCmEoqzCul/NhdLAFIxn9q
+ut0sYrdql9JkhqZziBOb7/APyA+ijQhpGxHkEe5TzApkecLRAlL73qlGYsxIBcIo
+w5boyP1t2nac84UCR7NLy/n2MHTz3IIjsZqYnnxqrkf2+a+5xNyFiAMcbT7roN3M
+EP0hrq+mCByKiFn4lOogZBxmgUihmJtXTCYnzZHZbOPLiPOKnvZC+9aVfAv3a0rL
+HnMsg4anSaa6tHS03c9t
+=yaay
+-----END PGP SIGNATURE-----
 
-[  260.548301] ------------[ cut here ]------------
-[  260.550941] kernel BUG at /build/buildd/linux-3.13.0/fs/pnode.c:372!
-[  260.552068] invalid opcode: 0000 [#1] SMP
-[  260.552068] Modules linked in: xt_CHECKSUM iptable_mangle xt_tcpudp
-xt_addrtype xt_conntrack ipt_MASQUERADE iptable_nat nf_conntrack_ipv4
-nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack bridge stp llc
-dm_thin_pool dm_persistent_data dm_bufio dm_bio_prison iptable_filter
-ip_tables x_tables crct10dif_pclmul crc32_pclmul ghash_clmulni_intel
-binfmt_misc nfsd auth_rpcgss nfs_acl aesni_intel nfs lockd aes_x86_64
-sunrpc fscache lrw gf128mul glue_helper ablk_helper cryptd serio_raw
-ppdev parport_pc lp parport btrfs xor raid6_pq libcrc32c psmouse
-floppy
-[  260.552068] CPU: 0 PID: 1723 Comm: nsenter Not tainted
-3.13.0-30-generic #55-Ubuntu
-[  260.552068] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  260.552068] task: ffff8800376097f0 ti: ffff880074824000 task.ti:
-ffff880074824000
-[  260.552068] RIP: 0010:[<ffffffff811e9483>]  [<ffffffff811e9483>]
-propagate_umount+0x123/0x130
-[  260.552068] RSP: 0018:ffff880074825e98  EFLAGS: 00010246
-[  260.552068] RAX: ffff88007c741140 RBX: 0000000000000002 RCX: ffff88007c741190
-[  260.552068] RDX: ffff88007c741190 RSI: ffff880074825ec0 RDI: ffff880074825ec0
-[  260.552068] RBP: ffff880074825eb0 R08: 00000000000172e0 R09: ffff88007fc172e0
-[  260.552068] R10: ffffffff811cc642 R11: ffffea0001d59000 R12: ffff88007c741140
-[  260.552068] R13: ffff88007c741140 R14: ffff88007c741140 R15: 0000000000000000
-[  260.552068] FS:  00007fd5c7e41740(0000) GS:ffff88007fc00000(0000)
-knlGS:0000000000000000
-[  260.552068] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  260.552068] CR2: 00007fd5c7968050 CR3: 0000000070124000 CR4: 00000000000406f0
-[  260.552068] Stack:
-[  260.552068]  0000000000000002 0000000000000002 ffff88007c631000
-ffff880074825ed8
-[  260.552068]  ffffffff811dcfac ffff88007c741140 0000000000000002
-ffff88007c741160
-[  260.552068]  ffff880074825f38 ffffffff811dd12b ffffffff811cc642
-0000000075640000
-[  260.552068] Call Trace:
-[  260.552068]  [<ffffffff811dcfac>] umount_tree+0x20c/0x260
-[  260.552068]  [<ffffffff811dd12b>] do_umount+0x12b/0x300
-[  260.552068]  [<ffffffff811cc642>] ? final_putname+0x22/0x50
-[  260.552068]  [<ffffffff811cc849>] ? putname+0x29/0x40
-[  260.552068]  [<ffffffff811dd88c>] SyS_umount+0xdc/0x100
-[  260.552068]  [<ffffffff8172aeff>] tracesys+0xe1/0xe6
-[  260.552068] Code: 89 50 08 48 8b 50 08 48 89 02 49 89 45 08 e9 72
-ff ff ff 0f 1f 44 00 00 4c 89 e6 4c 89 e7 e8 f5 f6 ff ff 48 89 c3 e9
-39 ff ff ff <0f> 0b 66 2e 0f 1f 84 00 00 00 00 00 90 66 66 66 66 90 55
-b8 01
-[  260.552068] RIP  [<ffffffff811e9483>] propagate_umount+0x123/0x130
-[  260.552068]  RSP <ffff880074825e98>
-[  260.611451] ---[ end trace 11c33d85f1d4c652 ]---
+--0QFb0wBpEddLcDHQ--
