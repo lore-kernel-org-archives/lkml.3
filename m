@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaJFDmV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 23:42:21 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:60616 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaJFDmS (ORCPT
+	id S1752396AbaJFDmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 23:42:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22239 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaJFDmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 23:42:18 -0400
+	Sun, 5 Oct 2014 23:42:53 -0400
+Message-ID: <54320FB0.7060403@oracle.com>
+Date: Sun, 05 Oct 2014 23:42:40 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <CAAr43iOugvZSsOO=J+yRkq25TyNmQG6CfwjtKCQuFx=uV5Mq=A@mail.gmail.com>
-References: <CAAr43iMnOnrLamgerGaxgAzo-dVpPmeFusk5RhJNqXZ1-6xs7A@mail.gmail.com>
-	<CALtyatFv7yH4o-MFW0vQN6RXVQuxpXVWLh5S1WqxPY6KvBohHQ@mail.gmail.com>
-	<CAAr43iOesCSCCVDHBGdc=dNO5J3LgGzVabLusZ75ZhPtHmiyMg@mail.gmail.com>
-	<20141005233542.GY7996@ZenIV.linux.org.uk>
-	<CALtyatEaTms_Hee=vUB-gOk2cx0xDnA4S5sGfAi3vKqWgrCZzg@mail.gmail.com>
-	<CAAr43iOugvZSsOO=J+yRkq25TyNmQG6CfwjtKCQuFx=uV5Mq=A@mail.gmail.com>
-Date: Mon, 6 Oct 2014 03:42:16 +0000
-Message-ID: <CALtyatH21NuOLdHsRmmZHWNiMqJAeH-huGG0oSrY8betff4CBQ@mail.gmail.com>
-Subject: Re: sock puppets (Re: (Song) ** SystemD)
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: Joel Rees <joel.rees@gmail.com>
-Cc: debian-user <debian-user@lists.debian.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>, bfields@redhat.com,
+        mszeredi@suse.cz, "Eric W. Biederman" <ebiederm@xmission.com>,
+        hch@lst.de, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: dcache: NULL ptr deref in dentry_kill
+References: <5431E203.9070501@oracle.com> <20141006031355.GA7996@ZenIV.linux.org.uk>
+In-Reply-To: <20141006031355.GA7996@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure if we are speaking the same language.
-In my language a metal bar chair is a bar stool with a back that is
-made from metal,
-usually steel.
+On 10/05/2014 11:13 PM, Al Viro wrote:
+> On Sun, Oct 05, 2014 at 08:27:47PM -0400, Sasha Levin wrote:
+> 
+>> [  434.580818] BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+>> [  434.582208] IP: do_raw_spin_trylock (./arch/x86/include/asm/spinlock.h:108 kernel/locking/spinlock_debug.c:143)
+> [snip]
+> spin_lock((void *)0x90)
+>> [  434.590025] ? _raw_spin_trylock (include/linux/spinlock_api_smp.h:89 kernel/locking/spinlock.c:135)
+>> [  434.590025] ? lockref_put_or_lock (lib/lockref.c:131)
+>> [  434.590025] dput (fs/dcache.c:513 fs/dcache.c:616)
+> 
+> ummm...  lockref_put_or_lock(&dentry->d_lockref) ending up with 0x90 passed
+> to lockref_put_or_lock()...  What offset does d_lockref have on your build?
 
-I guess it's something else in san-francisco. Don't really want to know.
+0x90
 
-On 10/6/14, Joel Rees <joel.rees@gmail.com> wrote:
-> Having forgotten to remove the list from the address line on my last
-> ranting response, I'll repeat the error.
->
-> 2014/10/06 9:15 "Gregory Smith" <gregorysmith1974a@gmail.com>:
->>
->> Lol, that was my metal bar chair moving.
->> Fucking idiot.
->
-> And with that you prove to those who might have still been listening that
-> you are more interested in getting attention than in solving problems, even
-> if that weren't your intent.
->
-> Can't you go join a project coding up some external daemons to catch the
-> trash that dbus, et. al. throw at sysvinit to "prove" it needs to be
-> replaced? At the very least, you could volunteer to be the list moderator.
->
+> On my config it's 0x80 (i.e. that would mean dput((void *)0x10)); could you
+> check it on yours?  Do you have CONFIG_DEBUG_LOCK_ALLOC and CONFIG_LOCK_STAT?
+
+I have both of the config options.
+
+>> [  434.590025] __fput (fs/file_table.c:235)
+> 
+> ... and here we have a struct file with ->f_path.dentry being a small positive
+> number.
+> 
+> Might make sense to slap BUG_ON((unsigned long)dentry < PAGE_SIZE); into
+> __fput() and try to reproduce.  And throw
+> 	BUG_ON((unsigned long)file->f_path.dentry < PAGE_SIZE);
+> into fput(), while we are at it, to see if that's bogus ->f_path.dentry at
+> fput() time or if it's getting corrupted between task_work_add() and actual
+> execution of __fput().
+
+I'll put those BUG_ONs in and will update if they get hit.
+
+> And the value of offsetof(struct dentry, d_lock) on your build would be
+> interesting to see - that would tell us which value are we seeing passed
+> to dput().
+
+This is 0x90 as well.
+
+
+Thanks,
+Sasha
