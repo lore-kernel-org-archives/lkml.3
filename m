@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaJFQDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:03:33 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:21586 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753086AbaJFQBb (ORCPT
+	id S1753416AbaJFQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:03:56 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:54558 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145AbaJFQB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:01:31 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-f4-5432bcd8c3d6
+	Mon, 6 Oct 2014 12:01:28 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-ee-5432bcd60dad
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -25,511 +25,99 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
         x86@kernel.org, linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 09/13] mm: slub: add kernel address sanitizer support for
- slub allocator
-Date: Mon, 06 Oct 2014 19:54:03 +0400
-Message-id: <1412610847-27671-10-git-send-email-a.ryabinin@samsung.com>
+Subject: [PATCH v4 08/13] mm: slub: introduce
+ metadata_access_enable()/metadata_access_disable()
+Date: Mon, 06 Oct 2014 19:54:02 +0400
+Message-id: <1412610847-27671-9-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.1.2
 In-reply-to: <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7o39hiFGOxZrGex7dcjNovfe2ey
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7rX9hiFGKx9rWex7dcjNovfe2ey
 	WsxZv4bN4si17+wW17+9YbT49PIBo8WW601MFs8fPmS3mPCwjd1i2kZxi5XdzWwW25+9ZbJY
 	2fmA1eLyrjlsFvfW/Ge1aPv8D0gs2chksfjIbWaLd88mM1tcXXWQ3eLHhsesDqIe83d+ZPTY
 	Oesuu8eCTaUei/e8ZPLYtKqTzWPTp0nsHl1vrzB5nJjxm8XjyZXpTB4fn95i8Xi/7yqbR9+W
-	VYwenzfJeZxo+cIawBfFZZOSmpNZllqkb5fAlXF67je2glelFc0/ljA1MO5L6GLk5JAQMJG4
-	vHQRO4QtJnHh3no2EFtIYCmjxN/Zil2MXEB2H5PEppbDTCAJNgE9iX+ztoMViQgoSGzufcYK
-	UsQscJ9VYveCt2BFwgKxEr/Wt4LZLAKqEtfnNoLZvALuEpPeHmOD2CYnMX3vXRYQmxMoPu3K
-	THaIbU2MEoe+7GCbwMi7gJFhFaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZI7Hzdwbj0mNUh
-	RgEORiUe3sgdhiFCrIllxZW5hxglOJiVRHjN5xmFCPGmJFZWpRblxxeV5qQWH2Jk4uCUamA8
-	xXzw9W05S4s5Jg93RAjdPlb07W/i1sSZ6uzzsv88uDHp3LZPqbFWyQan198+9+J9vlW5sMmG
-	S5kX2wR0JytsMb+VXpv4/cFbs6Lg1MU1ot9aS9Zv99zT6D51TmheWbnX84cdQuGlf/8oH/A5
-	/k1a7NGfO2vMfu1PTxLgnvV6UWVwYmeZcX2XEktxRqKhFnNRcSIAlYk/pHsCAAA=
+	VYwenzfJeZxo+cIawBfFZZOSmpNZllqkb5fAlXF+82mWgtP8FU96f7M2MF7m6WLk5JAQMJFo
+	eHWGHcIWk7hwbz1bFyMXh5DAUkaJ/wfnMEE4fUwSr6d9YgGpYhPQk/g3azsbiC0ioCCxufcZ
+	K0gRs8B9VondC94CdXBwCAskSSw45gNSwyKgKnGoYQ8jiM0r4CZxpr+FEWKbnMT0vXfBZnIK
+	uEtMuzKTHWJZE6PEoS872CYw8i5gZFjFKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERI7X3cw
+	Lj1mdYhRgINRiYc3codhiBBrYllxZe4hRgkOZiURXvN5RiFCvCmJlVWpRfnxRaU5qcWHGJk4
+	OKUaGHtE+8J1m3xvObOmHqgvPt/Wk+Zw8GVJtnDJ8mfrngocyjswOYFn+yKlVH7J/4YBQtMS
+	Du/XtvN+xrrj2/r/jnfV0x+nd13dq3qohOvI03ItKb6v+19c5PoabcWYH8BxN/1iq90hZs7m
+	qr+2mv6i0ol/K+UKzvjur31wjDX+k7absPnuoJ+TlViKMxINtZiLihMBUGUWg3sCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch kasan will be able to catch bugs in memory allocated
-by slub.
-Initially all objects in newly allocated slab page, marked as free.
-Later, when allocation of slub object happens, requested by caller
-number of bytes marked as accessible, and the rest of the object
-(including slub's metadata) marked as redzone (inaccessible).
+Wrap access to object's metadata in external functions with
+metadata_access_enable()/metadata_access_disable() function calls.
 
-We also mark object as accessible if ksize was called for this object.
-There is some places in kernel where ksize function is called to inquire
-size of really allocated area. Such callers could validly access whole
-allocated memory, so it should be marked as accessible.
-
-Code in slub.c and slab_common.c files could validly access to object's
-metadata, so instrumentation for this files are disabled.
+This hooks separates payload accesses from metadata accesses
+which might be useful for different checkers (e.g. KASan).
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/linux/kasan.h | 21 ++++++++++++
- include/linux/slab.h  | 11 ++++--
- lib/Kconfig.kasan     |  1 +
- mm/Makefile           |  3 ++
- mm/kasan/kasan.c      | 92 +++++++++++++++++++++++++++++++++++++++++++++++++++
- mm/kasan/kasan.h      |  4 +++
- mm/kasan/report.c     | 25 ++++++++++++++
- mm/slab_common.c      |  5 ++-
- mm/slub.c             | 35 ++++++++++++++++++--
- 9 files changed, 191 insertions(+), 6 deletions(-)
+ mm/slub.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/include/linux/kasan.h b/include/linux/kasan.h
-index 9714fba..0463b90 100644
---- a/include/linux/kasan.h
-+++ b/include/linux/kasan.h
-@@ -32,6 +32,16 @@ void kasan_unpoison_shadow(const void *address, size_t size);
- 
- void kasan_alloc_pages(struct page *page, unsigned int order);
- void kasan_free_pages(struct page *page, unsigned int order);
-+void kasan_mark_slab_padding(struct kmem_cache *s, void *object,
-+			struct page *page);
-+
-+void kasan_kmalloc_large(const void *ptr, size_t size);
-+void kasan_kfree_large(const void *ptr);
-+void kasan_kmalloc(struct kmem_cache *s, const void *object, size_t size);
-+void kasan_krealloc(const void *object, size_t new_size);
-+
-+void kasan_slab_alloc(struct kmem_cache *s, void *object);
-+void kasan_slab_free(struct kmem_cache *s, void *object);
- 
- #else /* CONFIG_KASAN */
- 
-@@ -42,6 +52,17 @@ static inline void kasan_disable_local(void) {}
- 
- static inline void kasan_alloc_pages(struct page *page, unsigned int order) {}
- static inline void kasan_free_pages(struct page *page, unsigned int order) {}
-+static inline void kasan_mark_slab_padding(struct kmem_cache *s, void *object,
-+					struct page *page) {}
-+
-+static inline void kasan_kmalloc_large(void *ptr, size_t size) {}
-+static inline void kasan_kfree_large(const void *ptr) {}
-+static inline void kasan_kmalloc(struct kmem_cache *s, const void *object,
-+				size_t size) {}
-+static inline void kasan_krealloc(const void *object, size_t new_size) {}
-+
-+static inline void kasan_slab_alloc(struct kmem_cache *s, void *object) {}
-+static inline void kasan_slab_free(struct kmem_cache *s, void *object) {}
- 
- #endif /* CONFIG_KASAN */
- 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index c265bec..5f97037 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -104,6 +104,7 @@
- 				(unsigned long)ZERO_SIZE_PTR)
- 
- #include <linux/kmemleak.h>
-+#include <linux/kasan.h>
- 
- struct mem_cgroup;
- /*
-@@ -326,7 +327,10 @@ kmem_cache_alloc_node_trace(struct kmem_cache *s,
- static __always_inline void *kmem_cache_alloc_trace(struct kmem_cache *s,
- 		gfp_t flags, size_t size)
- {
--	return kmem_cache_alloc(s, flags);
-+	void *ret = kmem_cache_alloc(s, flags);
-+
-+	kasan_kmalloc(s, ret, size);
-+	return ret;
- }
- 
- static __always_inline void *
-@@ -334,7 +338,10 @@ kmem_cache_alloc_node_trace(struct kmem_cache *s,
- 			      gfp_t gfpflags,
- 			      int node, size_t size)
- {
--	return kmem_cache_alloc_node(s, gfpflags, node);
-+	void *ret = kmem_cache_alloc_node(s, gfpflags, node);
-+
-+	kasan_kmalloc(s, ret, size);
-+	return ret;
- }
- #endif /* CONFIG_TRACING */
- 
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index b458a00..d16b899 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -6,6 +6,7 @@ if HAVE_ARCH_KASAN
- config KASAN
- 	bool "AddressSanitizer: runtime memory debugger"
- 	depends on !MEMORY_HOTPLUG
-+	depends on SLUB_DEBUG
- 	help
- 	  Enables address sanitizer - runtime memory debugger,
- 	  designed to find out-of-bounds accesses and use-after-free bugs.
-diff --git a/mm/Makefile b/mm/Makefile
-index 40d58a8..bef873a 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -2,6 +2,9 @@
- # Makefile for the linux memory manager.
- #
- 
-+KASAN_SANITIZE_slab_common.o := n
-+KASAN_SANITIZE_slub.o := n
-+
- mmu-y			:= nommu.o
- mmu-$(CONFIG_MMU)	:= gup.o highmem.o memory.o mincore.o \
- 			   mlock.o mmap.o mprotect.o mremap.o msync.o rmap.o \
-diff --git a/mm/kasan/kasan.c b/mm/kasan/kasan.c
-index 5782082..d4552a2 100644
---- a/mm/kasan/kasan.c
-+++ b/mm/kasan/kasan.c
-@@ -30,6 +30,7 @@
- #include <linux/kasan.h>
- 
- #include "kasan.h"
-+#include "../slab.h"
- 
- static inline bool kasan_enabled(void)
- {
-@@ -273,6 +274,97 @@ void kasan_free_pages(struct page *page, unsigned int order)
- 				KASAN_FREE_PAGE);
- }
- 
-+void kasan_mark_slab_padding(struct kmem_cache *s, void *object,
-+			struct page *page)
-+{
-+	unsigned long object_end = (unsigned long)object + s->size;
-+	unsigned long padding_start = round_up(object_end,
-+					KASAN_SHADOW_SCALE_SIZE);
-+	unsigned long padding_end = (unsigned long)page_address(page) +
-+					(PAGE_SIZE << compound_order(page));
-+	size_t size = padding_end - padding_start;
-+
-+	kasan_poison_shadow((void *)padding_start, size, KASAN_SLAB_PADDING);
-+}
-+
-+void kasan_slab_alloc(struct kmem_cache *cache, void *object)
-+{
-+	kasan_kmalloc(cache, object, cache->object_size);
-+}
-+
-+void kasan_slab_free(struct kmem_cache *cache, void *object)
-+{
-+	unsigned long size = cache->size;
-+	unsigned long rounded_up_size = round_up(size, KASAN_SHADOW_SCALE_SIZE);
-+
-+	/* RCU slabs could be legally used after free within the RCU period */
-+	if (unlikely(cache->flags & SLAB_DESTROY_BY_RCU))
-+		return;
-+
-+	kasan_poison_shadow(object, rounded_up_size, KASAN_KMALLOC_FREE);
-+}
-+
-+void kasan_kmalloc(struct kmem_cache *cache, const void *object, size_t size)
-+{
-+	unsigned long redzone_start;
-+	unsigned long redzone_end;
-+
-+	if (unlikely(object == NULL))
-+		return;
-+
-+	redzone_start = round_up((unsigned long)(object + size),
-+				KASAN_SHADOW_SCALE_SIZE);
-+	redzone_end = (unsigned long)object + cache->size;
-+
-+	kasan_unpoison_shadow(object, size);
-+	kasan_poison_shadow((void *)redzone_start, redzone_end - redzone_start,
-+		KASAN_KMALLOC_REDZONE);
-+
-+}
-+EXPORT_SYMBOL(kasan_kmalloc);
-+
-+void kasan_kmalloc_large(const void *ptr, size_t size)
-+{
-+	struct page *page;
-+	unsigned long redzone_start;
-+	unsigned long redzone_end;
-+
-+	if (unlikely(ptr == NULL))
-+		return;
-+
-+	page = virt_to_page(ptr);
-+	redzone_start = round_up((unsigned long)(ptr + size),
-+				KASAN_SHADOW_SCALE_SIZE);
-+	redzone_end = (unsigned long)ptr + (PAGE_SIZE << compound_order(page));
-+
-+	kasan_unpoison_shadow(ptr, size);
-+	kasan_poison_shadow((void *)redzone_start, redzone_end - redzone_start,
-+		KASAN_PAGE_REDZONE);
-+}
-+
-+void kasan_krealloc(const void *object, size_t size)
-+{
-+	struct page *page;
-+
-+	if (unlikely(object == ZERO_SIZE_PTR))
-+		return;
-+
-+	page = virt_to_head_page(object);
-+
-+	if (unlikely(!PageSlab(page)))
-+		kasan_kmalloc_large(object, size);
-+	else
-+		kasan_kmalloc(page->slab_cache, object, size);
-+}
-+
-+void kasan_kfree_large(const void *ptr)
-+{
-+	struct page *page = virt_to_page(ptr);
-+
-+	kasan_poison_shadow(ptr, PAGE_SIZE << compound_order(page),
-+			KASAN_FREE_PAGE);
-+}
-+
- void __asan_load1(unsigned long addr)
- {
- 	check_memory_region(addr, 1, false);
-diff --git a/mm/kasan/kasan.h b/mm/kasan/kasan.h
-index ee572c4..b70a3d1 100644
---- a/mm/kasan/kasan.h
-+++ b/mm/kasan/kasan.h
-@@ -7,6 +7,10 @@
- #define KASAN_SHADOW_MASK       (KASAN_SHADOW_SCALE_SIZE - 1)
- 
- #define KASAN_FREE_PAGE         0xFF  /* page was freed */
-+#define KASAN_PAGE_REDZONE      0xFE  /* redzone for kmalloc_large allocations */
-+#define KASAN_SLAB_PADDING      0xFD  /* Slab page padding, does not belong to any slub object */
-+#define KASAN_KMALLOC_REDZONE   0xFC  /* redzone inside slub object */
-+#define KASAN_KMALLOC_FREE      0xFB  /* object was freed (kmem_cache_free/kfree) */
- #define KASAN_SHADOW_GAP        0xF9  /* address belongs to shadow memory */
- 
- struct access_info {
-diff --git a/mm/kasan/report.c b/mm/kasan/report.c
-index 707323b..03ce28e 100644
---- a/mm/kasan/report.c
-+++ b/mm/kasan/report.c
-@@ -24,6 +24,7 @@
- #include <linux/kasan.h>
- 
- #include "kasan.h"
-+#include "../slab.h"
- 
- /* Shadow layout customization. */
- #define SHADOW_BYTES_PER_BLOCK 1
-@@ -54,10 +55,14 @@ static void print_error_description(struct access_info *info)
- 	shadow_val = *(u8 *)kasan_mem_to_shadow(info->first_bad_addr);
- 
- 	switch (shadow_val) {
-+	case KASAN_PAGE_REDZONE:
-+	case KASAN_SLAB_PADDING:
-+	case KASAN_KMALLOC_REDZONE:
- 	case 0 ... KASAN_SHADOW_SCALE_SIZE - 1:
- 		bug_type = "out of bounds access";
- 		break;
- 	case KASAN_FREE_PAGE:
-+	case KASAN_KMALLOC_FREE:
- 		bug_type = "use after free";
- 		break;
- 	case KASAN_SHADOW_GAP:
-@@ -73,11 +78,31 @@ static void print_error_description(struct access_info *info)
- static void print_address_description(struct access_info *info)
- {
- 	struct page *page;
-+	struct kmem_cache *cache;
- 	u8 shadow_val = *(u8 *)kasan_mem_to_shadow(info->first_bad_addr);
- 
- 	page = virt_to_head_page((void *)info->access_addr);
- 
- 	switch (shadow_val) {
-+	case KASAN_SLAB_PADDING:
-+		cache = page->slab_cache;
-+		slab_err(cache, page, "access to slab redzone");
-+		dump_stack();
-+		break;
-+	case KASAN_KMALLOC_FREE:
-+	case KASAN_KMALLOC_REDZONE:
-+	case 1 ... KASAN_SHADOW_SCALE_SIZE - 1:
-+		if (PageSlab(page)) {
-+			void *object;
-+			void *slab_page = page_address(page);
-+
-+			cache = page->slab_cache;
-+			object = virt_to_obj(cache, slab_page,
-+					(void *)info->access_addr);
-+			object_err(cache, page, object, "kasan error");
-+			break;
-+		}
-+	case KASAN_PAGE_REDZONE:
- 	case KASAN_FREE_PAGE:
- 		dump_page(page, "kasan error");
- 		dump_stack();
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 3a6e0cf..33868b4 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -795,6 +795,7 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
- 	page = alloc_kmem_pages(flags, order);
- 	ret = page ? page_address(page) : NULL;
- 	kmemleak_alloc(ret, size, 1, flags);
-+	kasan_kmalloc_large(ret, size);
- 	return ret;
- }
- EXPORT_SYMBOL(kmalloc_order);
-@@ -969,8 +970,10 @@ static __always_inline void *__do_krealloc(const void *p, size_t new_size,
- 	if (p)
- 		ks = ksize(p);
- 
--	if (ks >= new_size)
-+	if (ks >= new_size) {
-+		kasan_krealloc((void *)p, new_size);
- 		return (void *)p;
-+	}
- 
- 	ret = kmalloc_track_caller(new_size, flags);
- 	if (ret && p)
 diff --git a/mm/slub.c b/mm/slub.c
-index 9b1f75c..3863e20 100644
+index 82282f5..9b1f75c 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -33,6 +33,7 @@
- #include <linux/stacktrace.h>
- #include <linux/prefetch.h>
- #include <linux/memcontrol.h>
-+#include <linux/kasan.h>
+@@ -467,13 +467,23 @@ static int slub_debug;
+ static char *slub_debug_slabs;
+ static int disable_higher_order_debug;
  
- #include <trace/events/kmem.h>
- 
-@@ -469,10 +470,12 @@ static int disable_higher_order_debug;
- 
- static inline void metadata_access_enable(void)
- {
-+	kasan_disable_local();
- }
- 
- static inline void metadata_access_disable(void)
- {
-+	kasan_enable_local();
- }
- 
- /*
-@@ -1242,11 +1245,13 @@ static inline void dec_slabs_node(struct kmem_cache *s, int node,
- static inline void kmalloc_large_node_hook(void *ptr, size_t size, gfp_t flags)
- {
- 	kmemleak_alloc(ptr, size, 1, flags);
-+	kasan_kmalloc_large(ptr, size);
- }
- 
- static inline void kfree_hook(const void *x)
- {
- 	kmemleak_free(x);
-+	kasan_kfree_large(x);
- }
- 
- static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
-@@ -1264,11 +1269,13 @@ static inline void slab_post_alloc_hook(struct kmem_cache *s,
- 	flags &= gfp_allowed_mask;
- 	kmemcheck_slab_alloc(s, flags, object, slab_ksize(s));
- 	kmemleak_alloc_recursive(object, s->object_size, 1, s->flags, flags);
-+	kasan_slab_alloc(s, object);
- }
- 
- static inline void slab_free_hook(struct kmem_cache *s, void *x)
- {
- 	kmemleak_free_recursive(x, s->flags);
-+	kasan_slab_free(s, x);
- 
- 	/*
- 	 * Trouble is that we may no longer disable interrupts in the fast path
-@@ -1381,8 +1388,11 @@ static void setup_object(struct kmem_cache *s, struct page *page,
- 				void *object)
- {
- 	setup_object_debug(s, page, object);
--	if (unlikely(s->ctor))
-+	if (unlikely(s->ctor)) {
-+		kasan_slab_alloc(s, object);
- 		s->ctor(object);
-+	}
-+	kasan_slab_free(s, object);
- }
- 
- static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
-@@ -1416,8 +1426,10 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
- 		setup_object(s, page, p);
- 		if (likely(idx < page->objects))
- 			set_freepointer(s, p, p + s->size);
--		else
-+		else {
- 			set_freepointer(s, p, NULL);
-+			kasan_mark_slab_padding(s, p, page);
-+		}
- 	}
- 
- 	page->freelist = start;
-@@ -2488,6 +2500,7 @@ void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
- {
- 	void *ret = slab_alloc(s, gfpflags, _RET_IP_);
- 	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
-+	kasan_kmalloc(s, ret, size);
- 	return ret;
- }
- EXPORT_SYMBOL(kmem_cache_alloc_trace);
-@@ -2514,6 +2527,8 @@ void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
- 
- 	trace_kmalloc_node(_RET_IP_, ret,
- 			   size, s->size, gfpflags, node);
-+
-+	kasan_kmalloc(s, ret, size);
- 	return ret;
- }
- EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
-@@ -2897,6 +2912,7 @@ static void early_kmem_cache_node_alloc(int node)
- 	init_object(kmem_cache_node, n, SLUB_RED_ACTIVE);
- 	init_tracking(kmem_cache_node, n);
- #endif
-+	kasan_kmalloc(kmem_cache_node, n, sizeof(struct kmem_cache_node));
- 	init_kmem_cache_node(n);
- 	inc_slabs_node(kmem_cache_node, node, page->objects);
- 
-@@ -3269,6 +3285,8 @@ void *__kmalloc(size_t size, gfp_t flags)
- 
- 	trace_kmalloc(_RET_IP_, ret, size, s->size, flags);
- 
-+	kasan_kmalloc(s, ret, size);
-+
- 	return ret;
- }
- EXPORT_SYMBOL(__kmalloc);
-@@ -3312,12 +3330,14 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node)
- 
- 	trace_kmalloc_node(_RET_IP_, ret, size, s->size, flags, node);
- 
-+	kasan_kmalloc(s, ret, size);
-+
- 	return ret;
- }
- EXPORT_SYMBOL(__kmalloc_node);
- #endif
- 
--size_t ksize(const void *object)
-+static size_t __ksize(const void *object)
- {
- 	struct page *page;
- 
-@@ -3333,6 +3353,15 @@ size_t ksize(const void *object)
- 
- 	return slab_ksize(page->slab_cache);
- }
-+
-+size_t ksize(const void *object)
++static inline void metadata_access_enable(void)
 +{
-+	size_t size = __ksize(object);
-+	/* We assume that ksize callers could use whole allocated area,
-+	   so we need unpoison this area. */
-+	kasan_krealloc(object, size);
-+	return size;
 +}
- EXPORT_SYMBOL(ksize);
++
++static inline void metadata_access_disable(void)
++{
++}
++
+ /*
+  * Object debugging
+  */
+ static void print_section(char *text, u8 *addr, unsigned int length)
+ {
++	metadata_access_enable();
+ 	print_hex_dump(KERN_ERR, text, DUMP_PREFIX_ADDRESS, 16, 1, addr,
+ 			length, 1);
++	metadata_access_disable();
+ }
  
- void kfree(const void *x)
+ static struct track *get_track(struct kmem_cache *s, void *object,
+@@ -503,7 +513,9 @@ static void set_track(struct kmem_cache *s, void *object,
+ 		trace.max_entries = TRACK_ADDRS_COUNT;
+ 		trace.entries = p->addrs;
+ 		trace.skip = 3;
++		metadata_access_enable();
+ 		save_stack_trace(&trace);
++		metadata_access_disable();
+ 
+ 		/* See rant in lockdep.c */
+ 		if (trace.nr_entries != 0 &&
+@@ -677,7 +689,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
+ 	u8 *fault;
+ 	u8 *end;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(start, value, bytes);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 
+@@ -770,7 +784,9 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
+ 	if (!remainder)
+ 		return 1;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(end - remainder, POISON_INUSE, remainder);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 	while (end > fault && end[-1] == POISON_INUSE)
 -- 
 2.1.2
 
