@@ -1,41 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaJFNwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:52:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680AbaJFNwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:52:11 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <c7fc6e50a7854d537eef85ede24ba0792212ce59.1412327306.git.d.kasatkin@samsung.com>
-References: <c7fc6e50a7854d537eef85ede24ba0792212ce59.1412327306.git.d.kasatkin@samsung.com> <cover.1412327306.git.d.kasatkin@samsung.com> <cover.1412327306.git.d.kasatkin@samsung.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, zohar@linux.vnet.ibm.com,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        rusty@rustcorp.com.au, keyrings@linux-nfs.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH 2/4] KEYS: provide pure subject key identifier (fingerprint) as key id
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <9176.1412603503.1@warthog.procyon.org.uk>
-Date: Mon, 06 Oct 2014 14:51:43 +0100
-Message-ID: <9177.1412603503@warthog.procyon.org.uk>
+	id S1752813AbaJFNww (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:52:52 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:39389 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656AbaJFNwt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 09:52:49 -0400
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/9] asm-generic/io.h overhaul
+Date: Mon,  6 Oct 2014 15:52:32 +0200
+Message-Id: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+From: Thierry Reding <treding@nvidia.com>
 
-> -	memcpy(kid->data + len_1, val_2, len_2);
-> +	if (val_2)
-> +		memcpy(kid->data + len_1, val_2, len_2);
+Hi,
 
-Btw, I think this should probably be "if (len_2)" rather than "if (val_2)" so
-that we don't bother with the memcpy() if there's no second component.
+Here is the fifth version of a series that started out as an attempt to
+provide string versions of the read*() and write*() accessors to more
+architectures so that drivers can use them portably. The series has
+since evolved into a more general cleanup of asm-generic/io.h and the
+functions defined therein.
 
-David
+Patch 1 is trivial and removes a redundant redefinition of PCI_IOBASE
+from the asm/io.h header on ARC. Patches 2 and 3 remove unnecessary
+volatile keywoards from some functions, which is a prerequisite to clean
+up some of the functions in subsequent patches.
+
+The xlate_dev_{kmem,mem}_ptr() functions are used to map memory when the
+/dev/mem device is accessed. Patches 4 and 5 use more consistent data
+types for these functions, which will get a "standard" prototype in the
+asm-generic/io.h header in a subsequent patch.
+
+Patch 6 is the bulk of this series. It cleans up various parts of the
+asm-generic/io.h header file. Macros are converted to static inline
+functions for better type checking. Overriding generic implementations
+in architectures is handled more consistently.
+
+Patch 7 implements the string variants of the read*() and write*()
+accessors.
+
+Patches 8 and 9, finally, make use of the asm-generic/io.h header on the
+32-bit and 64-bit ARM architectures.
+
+This is compile- and runtime-tested on 32-bit and 64-bit ARM and compile
+tested on IA64, Microblaze, s390, SPARC, x86 and Xtensa. For ARC,
+Blackfin, Metag, OpenRISC, Score and Unicore32 which also use
+asm-generic/io.h I couldn't find or build a cross-compiler that would
+run on my system. But by code inspection they shouldn't break with this
+patch.
+
+I'm sending this to Olof and Fengguang in the hopes that they can help
+in getting more compile coverage of the series. I've uploaded the series
+to a branch here[0]. Are there instructions somewhere on how to submit a
+branch to your builder? If possible it would also be nice to get the
+series tested for possible bisectability issues.
+
+[0]: https://github.com/thierryreding/linux.git#asm-generic-io
+
+Thierry
+
+Thierry Reding (8):
+  ARC: Remove redundant PCI_IOBASE declaration
+  serial: sunzilog: Remove unnecessary volatile keyword
+  sparc: Remove unnecessary volatile usage
+  [IA64] Change xlate_dev_{kmem,mem}_ptr() prototypes
+  /dev/mem: Use more consistent data types
+  asm-generic/io.h: Implement generic {read,write}s*()
+  ARM: Use include/asm-generic/io.h
+  arm64: Use include/asm-generic/io.h
+
+ arch/arc/include/asm/io.h       |   2 -
+ arch/arm/include/asm/io.h       |  75 ++---
+ arch/arm/include/asm/memory.h   |   2 +
+ arch/arm64/Kconfig              |   1 -
+ arch/arm64/include/asm/io.h     | 122 ++-----
+ arch/arm64/include/asm/memory.h |   2 +
+ arch/ia64/include/asm/uaccess.h |  16 +-
+ arch/s390/include/asm/io.h      |   5 +-
+ arch/s390/mm/maccess.c          |   4 +-
+ arch/sparc/include/asm/io_32.h  |  18 +-
+ arch/x86/include/asm/io.h       |   4 +-
+ arch/x86/mm/ioremap.c           |   4 +-
+ drivers/char/mem.c              |  13 +-
+ drivers/tty/serial/sunzilog.h   |   8 +-
+ include/asm-generic/io.h        | 683 ++++++++++++++++++++++++++++++++--------
+ 15 files changed, 647 insertions(+), 312 deletions(-)
+
+-- 
+2.0.4
+
