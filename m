@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632AbaJFJex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:34:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:15228 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaJFJew (ORCPT
+	id S1752657AbaJFJfg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:35:36 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:52383 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751482AbaJFJfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:34:52 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-92-5432623973d6
-Message-id: <54326223.3050201@samsung.com>
-Date: Mon, 06 Oct 2014 11:34:27 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Cc: Paul Bolle <pebolle@tiscali.nl>, Kyungmin Park <kyungmin.park@samsung.com>,
+	Mon, 6 Oct 2014 05:35:32 -0400
+Message-ID: <1412588130.4054.49.camel@x220>
+Subject: Re: [PATCH 3/4] [media] Remove optional dependency on PLAT_S5P
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         Valentin Rothberg <valentinrothberg@gmail.com>
-Subject: Re: [PATCH 3/4] [media] Remove optional dependency on PLAT_S5P
+Date: Mon, 06 Oct 2014 11:35:30 +0200
+In-Reply-To: <4788945.SoI4OqN9Zu@wuerfel>
 References: <1412586626.4054.42.camel@x220> <4788945.SoI4OqN9Zu@wuerfel>
-In-reply-to: <4788945.SoI4OqN9Zu@wuerfel>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t/xy7qWSUYhBn8OyFv8nXSM3eJs0xt2
-	i02Pr7FaXN41h82iZ8NWVouL6+QtFt06w2zxqbmN2YHD4/evSYweO2fdZffYvKTeo2/LKkaP
-	jdufMHl83iQXwBbFZZOSmpNZllqkb5fAlbHp5Tumgn62ii8LZjE3MB5i6WLk5JAQMJG4MnMe
-	E4QtJnHh3nq2LkYuDiGBpYwS9152MkI4nxglnh+9DNTBwcEroCXReAusmUVAVWLFl6lgzWwC
-	hhK9R/sYQWxRgQiJk3f3sIPYvAKCEj8m3wOrFxFwl1g3fR4ryExmgdeMEqfWPAcrEgZKPGr4
-	BNYsJOAhseHrS3aQXZwCmhJrD6qAmMwCehL3L2qBVDALyEtsXvOWeQKjwCwkG2YhVM1CUrWA
-	kXkVo2hqaXJBcVJ6rqFecWJucWleul5yfu4mRkjAf9nBuPiY1SFGAQ5GJR7eiB2GIUKsiWXF
-	lbmHGCU4mJVEeL0SjUKEeFMSK6tSi/Lji0pzUosPMTJxcEo1MM6udm+1PLCdQe2AbPEhD8aw
-	z9vTbI51Mb11UHvvMHehpfOz2zYnrjnuYwr6t//JqmWGTzi47ywtmTrje8QeVyUhHfnkjRvX
-	ZBzyW3RRuk4/Z1/IZTbb51o5gqlXlRTKvxRXHxJdl9cksfnQFMkNHrsPFvKLR/n8+Mznu37/
-	jKqzFa3mxg/MPZVYijMSDbWYi4oTAYTQBhBWAgAA
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2014 09:35:30.0977 (UTC) FILETIME=[DEDA3110:01CFE148]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/10/14 11:26, Arnd Bergmann wrote:
+On Mon, 2014-10-06 at 11:26 +0200, Arnd Bergmann wrote:
 > On Monday 06 October 2014 11:10:26 Paul Bolle wrote:
->>  config VIDEO_SAMSUNG_S5P_TV
->>         bool "Samsung TV driver for S5P platform"
->>         depends on PM_RUNTIME
->> -       depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
->> +       depends on ARCH_EXYNOS || COMPILE_TEST
->>         default n
->>         ---help---
->>           Say Y here to enable selecting the TV output devices for
->>
+> >  config VIDEO_SAMSUNG_S5P_TV
+> >         bool "Samsung TV driver for S5P platform"
+> >         depends on PM_RUNTIME
+> > -       depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
+> > +       depends on ARCH_EXYNOS || COMPILE_TEST
+> >         default n
+> >         ---help---
+> >           Say Y here to enable selecting the TV output devices for
+> > 
 > 
 > I wonder if it should now allow being built for ARCH_S5PV210.
+
+That was what Tomasz Figa claimed in
+http://lkml.kernel.org/r/53C676DB.6070002@samsung.com
+
 > Maybe it was a mistake to remove the PLAT_S5P symbol without changing
 > the use here?
-> 
+
+At least it was a bit sloppy to remove the symbol without touching this
+(and six other) dependencies. But after nearly three months I lost
+patience waiting for a fix to be submitted.
+
+My cleanup doesn't really change a thing. And a proper fix, if needed,
+is still possible after this has landed.
+
 > Does S5PV210 have this device?
 
-Yes, it does. Indeed, in all patches in this series we should
-have replaced PLAT_S5P with ARCH_S5PV210.
 
---
-Thanks,
-Sylwester
+Paul Bolle
+
