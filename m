@@ -1,82 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753163AbaJFQNp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:13:45 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:57063 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaJFQNm (ORCPT
+	id S1753190AbaJFQQf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:16:35 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:46168 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbaJFQQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:13:42 -0400
-Message-ID: <5432BFB1.2060300@gmail.com>
-Date: Mon, 06 Oct 2014 18:13:37 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Benoit Masson <benoitm@perenite.com>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Benoit Masson <yahoo@perenite.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] Armada XP pinctrl consolidation and ix4-300d fixes
-References: <1411157684-6991-1-git-send-email-sebastian.hesselbarth@gmail.com> <-7443282711873112734@unknownmsgid> <20141003141102.GJ3895@titan.lakedaemon.net> <542EBB93.108@gmail.com> <A9781A2E-F3CA-4E8A-833C-D167B456D9F7@perenite.com> <542EC3A3.1060605@gmail.com> <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com>
-In-Reply-To: <1ACB5318-863E-40D8-8B27-41F1C0D0A4B8@perenite.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Mon, 6 Oct 2014 12:16:33 -0400
+From: "=?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?=" 
+	<info@are.ma>
+X-Google-Original-From: =?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?= <knightrider@are.ma>
+To: linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, crope@iki.fi, m.chehab@samsung.com,
+        mchehab@osg.samsung.com, hdegoede@redhat.com,
+        laurent.pinchart@ideasonboard.com, mkrufky@linuxtv.org,
+        sylvester.nawrocki@gmail.com, g.liakhovetski@gmx.de,
+        peter.senna@gmail.com
+Subject: [PATCH 1/1] dvbdev: add dvb_register_subdev() & dvb_unregister_subdev()
+Date: Tue,  7 Oct 2014 01:16:28 +0900
+Message-Id: <8871458fe6b20b802f045f0070d33e4a9be1e6cc.1412612011.git.knightrider@are.ma>
+X-Mailer: git-send-email 1.8.4.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 01:11 AM, Benoit Masson wrote:
-> Le 3 oct. 2014 ‡ 17:41, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a Ècrit :
->> On 10/03/2014 05:29 PM, Benoit Masson wrote:
->>> Le 3 oct. 2014 ‡ 17:06, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a Ècrit :
->>>> On 10/03/2014 04:11 PM, Jason Cooper wrote:
->>>>> On Sun, Sep 21, 2014 at 04:11:23PM +0200, Benoit Masson wrote:
->>>>>>> Le 19 sept. 2014 ‡ 22:14, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> a Ècrit :
->> [...]
->>>>>>> Patches are based on v3.17-rc1 and intended for v3.18 but I am not in
->>>>>>> a hurry. I only compile tested this, so a formal Tested-by from Benoit
->>>>>>> for the ix4 and any other Armada XP board would be great.
->>>>>>
->>>>>> I'm not sure what to test since I only receive some patch from the
->>>>>> series of 8. Should I get all 8 or only those you sent me. I'll be
->>>>>> able to test during next week.
->>>>>
->>>>> Did you ever get a chance to test this series?
->>>>
->>>> Uhm, I never prepared a branch for Benoit to test. I have pushed the
->>>> patches with Thomas Acked-by's and renamed eeprom node based on
->>>> v3.17-rc1 to
->>>>
->>>> https://github.com/shesselba/linux-dove.git devel/mvebu-ix4
->>>>
->> [...]
-> Maybe I missed something ? is this branch you sent me a bare fork
-> from mainline 3.17 ? does it includes the armada XP step A0 patch ?
+Taken from https://github.com/knight-rider/ptx/tree/master/pt3_dvb,
+these routines simplify I2C binding of subdevices.
 
-Benoit,
+Applicable at least to the followings:
+drivers/media/pci/bt8xx/bttv-input.c
+drivers/media/pci/cx23885/cx23885-dvb.c
+drivers/media/pci/cx23885/cx23885-i2c.c
+drivers/media/pci/cx23885/cx23885.h
+drivers/media/pci/cx25821/cx25821-i2c.c
+drivers/media/pci/cx25821/cx25821.h
+drivers/media/pci/cx88/cx88-input.c
+drivers/media/pci/cx88/cx88-video.c
+drivers/media/pci/pt3/pt3.c
+drivers/media/pci/saa7134/saa7134-i2c.c
+drivers/media/pci/saa7134/saa7134-input.c
+drivers/media/pci/saa7134/saa7134.h
+drivers/media/pci/saa7164/saa7164-i2c.c
+drivers/media/pci/saa7164/saa7164.h
+drivers/media/usb/au0828/au0828-i2c.c
+drivers/media/usb/au0828/au0828.h
+drivers/media/usb/cx231xx/cx231xx-dvb.c
+drivers/media/usb/cx231xx/cx231xx-i2c.c
+drivers/media/usb/cx231xx/cx231xx-input.c
+drivers/media/usb/cx231xx/cx231xx.h
+drivers/media/usb/dvb-usb-v2/af9035.c
+drivers/media/usb/dvb-usb-v2/anysee.c
+drivers/media/usb/dvb-usb-v2/dvbsky.c
+drivers/media/usb/dvb-usb-v2/rtl28xxu.c
+drivers/media/usb/dvb-usb/cxusb.c
+drivers/media/usb/em28xx/em28xx-cards.c
+drivers/media/usb/em28xx/em28xx-dvb.c
+drivers/media/usb/em28xx/em28xx-i2c.c
+drivers/media/usb/em28xx/em28xx.h
+drivers/media/usb/go7007/s2250-board.c
+drivers/media/usb/hdpvr/hdpvr-i2c.c
+drivers/media/usb/stk1160/stk1160-i2c.c
+drivers/media/usb/stk1160/stk1160.h
+drivers/media/usb/tm6000/tm6000-cards.c
+drivers/media/usb/tm6000/tm6000-i2c.c
+drivers/media/usb/tm6000/tm6000.h
+drivers/media/usb/usbvision/usbvision-i2c.c
+drivers/media/usb/usbvision/usbvision-video.c
+drivers/media/usb/usbvision/usbvision.h
 
-I prepared more branches with the series
-- on top of v3.17 release:
-https://github.com/shesselba/linux-dove.git devel/mvebu-ix4_v3.17
+Signed-off-by: –ë—É–¥–∏ –†–æ–º–∞–Ω—Ç–æ, AreMa Inc <knightrider@are.ma>
+---
+ drivers/media/dvb-core/dvbdev.c | 24 ++++++++++++++++++++++++
+ drivers/media/dvb-core/dvbdev.h |  3 +++
+ 2 files changed, 27 insertions(+)
 
-- on top of next-20141003 (i.e. what will become v3.18-rc1):
-https://github.com/shesselba/linux-dove.git devel/mvebu-ix4_next-20141003
+diff --git a/drivers/media/dvb-core/dvbdev.c b/drivers/media/dvb-core/dvbdev.c
+index 983db75..f449543 100644
+--- a/drivers/media/dvb-core/dvbdev.c
++++ b/drivers/media/dvb-core/dvbdev.c
+@@ -284,6 +284,30 @@ void dvb_unregister_device(struct dvb_device *dvbdev)
+ }
+ EXPORT_SYMBOL(dvb_unregister_device);
+ 
++struct i2c_client *dvb_register_subdev(struct i2c_adapter *adap, struct i2c_board_info const *info)
++{
++	struct i2c_client *clt;
++
++	request_module("%s", info->type);
++	clt = i2c_new_device(adap, info);
++	if (clt && clt->dev.driver)
++		if (!try_module_get(clt->dev.driver->owner)) {
++			i2c_unregister_device(clt);
++			clt = NULL;
++		}
++	return clt;
++}
++EXPORT_SYMBOL(dvb_register_subdev);
++
++void dvb_unregister_subdev(struct i2c_client *clt)
++{
++	if (clt) {
++		module_put(clt->dev.driver->owner);
++		i2c_unregister_device(clt);
++	}
++}
++EXPORT_SYMBOL(dvb_unregister_subdev);
++
+ static int dvbdev_check_free_adapter_num(int num)
+ {
+ 	struct list_head *entry;
+diff --git a/drivers/media/dvb-core/dvbdev.h b/drivers/media/dvb-core/dvbdev.h
+index f96b28e..cff2296 100644
+--- a/drivers/media/dvb-core/dvbdev.h
++++ b/drivers/media/dvb-core/dvbdev.h
+@@ -109,6 +109,9 @@ extern int dvb_register_device (struct dvb_adapter *adap,
+ 
+ extern void dvb_unregister_device (struct dvb_device *dvbdev);
+ 
++extern struct i2c_client *dvb_register_subdev(struct i2c_adapter *adap, struct i2c_board_info const *info);
++extern void dvb_unregister_subdev(struct i2c_client *clt);
++
+ extern int dvb_generic_open (struct inode *inode, struct file *file);
+ extern int dvb_generic_release (struct inode *inode, struct file *file);
+ extern long dvb_generic_ioctl (struct file *file,
+-- 
+1.8.4.5
 
-It would be great, if you can test in this order:
-- vanilla v3.17
-- mvebu-ix4_v3.17
-- mvebu-ix4_next-20141003
-
-If any branch fails, you can stop and please report back.
-
-I also have the ix4 but I need more time for a full setup like you
-already seem to have ready. Again, there is no hurry, take your time.
-
-Thanks!
-
-Sebastian
