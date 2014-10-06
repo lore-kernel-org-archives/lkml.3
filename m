@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbaJFVv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:51:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38524 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973AbaJFVvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:51:55 -0400
-Date: Mon, 06 Oct 2014 17:51:53 -0400 (EDT)
-Message-Id: <20141006.175153.1903557065173052671.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next v2] r8152: nway reset after setting eee
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-57-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-54-Taiwan-albertk@realtek.com>
-	<1394712342-15778-57-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 06 Oct 2014 14:51:55 -0700 (PDT)
+	id S1752493AbaJFVxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:53:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41722 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752419AbaJFVxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:53:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,665,1406617200"; 
+   d="scan'208";a="614129697"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com
+Subject: Re: [PATCH v4 02/22] perf: Add AUX area to ring buffer for raw data streams
+In-Reply-To: <20141006162056.GD6758@twins.programming.kicks-ass.net>
+References: <1408538179-792-1-git-send-email-alexander.shishkin@linux.intel.com> <1408538179-792-3-git-send-email-alexander.shishkin@linux.intel.com> <20140908070242.GS19379@twins.programming.kicks-ass.net> <87lhpuuztj.fsf@ashishki-desk.ger.corp.intel.com> <20140908113422.GD6758@twins.programming.kicks-ass.net> <87a96auv9s.fsf@ashishki-desk.ger.corp.intel.com> <20140908131230.GE6758@twins.programming.kicks-ass.net> <87k34do9a4.fsf@ashishki-desk.ger.corp.intel.com> <20141006162056.GD6758@twins.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 07 Oct 2014 00:52:49 +0300
+Message-ID: <87a958q30u.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 6 Oct 2014 10:36:04 +0800
+Peter Zijlstra <peterz@infradead.org> writes:
 
-> Restart autonegotiation is necessary after setting EEE.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> On Mon, Oct 06, 2014 at 12:08:19PM +0300, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Mon, Sep 08, 2014 at 03:55:11PM +0300, Alexander Shishkin wrote:
+>> >
+>> >> Fair enough. Then I'd like to disable the ACTIVE ones before freeing AUX
+>> >> stuff and then re-enabling them since perf_event_{en,dis}able() already
+>> >> provide the convenient cross-cpu calls, which would also avoid
+>> >> concurrency between pmu::{add,del} callbacks and this unmap path. Makes
+>> >> sense?
+>> >
+>> > But why? The buffer stuff is RCU freed, so if the hardware observes
+>> > pages and does get_page_unless_zero() on them its good. The memory will
+>> > not be freed from underneath the hardware writer because of the
+>> > get_page().
+>> >
+>> > Then when the buffer is full and we 'swap', we'll find there is no next
+>> > buffer. At that point we can not provide a new buffer, effectively
+>> > stopping the hardware writes and release the old buffer, freeing the
+>> > memory.
+>> 
+>> There are several problems with this. Firstly, aux buffers can be quite
+>> large, which means that we have to do get_page() on thousands of pages
+>> on every pmu::add, which is a hot path and free_page() again in
+>> pmu::del.
+>> 
+>> Secondly, all the sg bookkeeping that the driver keeps in aux_priv needs
+>> to be refcounted. Right now, in the mmap_close path we just free
+>> everything. But if we want to free the aux_pages in pmu::del, we need to
+>> keep a list of these pages still around after mmap_close() and same goes
+>> for the actual sg tables. I can see a way of doing that on the ring
+>> buffer side (as opposed to the driver side), but are you quite sure we
+>> should go down this road?
+>
+> No, and I think I realized this after sending that email, but at the
+> time I figured there was another way to do it. Of course, now that
+> several weeks have passed I cannot for the life of me remember what it
+> was.
+>
+> Lemme go over these patches again to refresh my mind and maybe I'll
+> remember.
 
-Applied, thanks.
+Yes, ring buffer can keep a refcount for the aux_priv object, which is
+grabbed once at mmap and once at perf_aux_output_begin() and released
+accordingly and whichever drops the refcount to zero calls
+pmu::free_aux. No need to grab page->_count and driver is a bit simpler.
+
+Regards,
+--
+Alex
