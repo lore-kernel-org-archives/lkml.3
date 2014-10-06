@@ -1,58 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaJFUpb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 16:45:31 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57196 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaJFUp3 (ORCPT
+	id S1752109AbaJFUri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 16:47:38 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:60515 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780AbaJFUrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 16:45:29 -0400
-Date: Mon, 6 Oct 2014 22:45:26 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: kernel list <linux-kernel@vger.kernel.org>, linux-input@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
-Message-ID: <20141006204526.GA28905@amd>
-References: <20141003231109.GA4530@amd>
- <20141006181202.GA22781@dtor-ws>
+	Mon, 6 Oct 2014 16:47:37 -0400
+Date: Mon, 6 Oct 2014 21:47:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] mfd: max77693: Initialize haptic register map
+Message-ID: <20141006204731.GA18035@lee--X1>
+References: <1410972026-25189-1-git-send-email-jaewon02.kim@samsung.com>
+ <1410972026-25189-2-git-send-email-jaewon02.kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141006181202.GA22781@dtor-ws>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1410972026-25189-2-git-send-email-jaewon02.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, 18 Sep 2014, Jaewon Kim wrote:
 
-> > From the backtrace, it looks evdev related...?
+> This patch add regmap_haptic initialization to use haptic register map
+> in haptic device driver.
 > 
-> Hmm, looks like it...
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
 
-I don't think I can repeat that. I was doing crazy stuff at that
-moment. (Typo fixes suggested below).
+Applied for v3.19.
 
-Thanks,
-								Pavel
-
-Input: evdev - fix EVIOCG{type} ioctl
-
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
-The 'max' size passed into the function is measured in number of bits
-(KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
-
-###                           need               accordingly(?)     trying
-
-to copy the data out, otherwise we will try copying too much and end up
-with up with a page fault.
-
-Reported-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 249c139..fbfed56 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+>  	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
+>  };
+>  
+> +static const struct regmap_config max77693_regmap_haptic_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.max_register = MAX77693_HAPTIC_REG_END,
+> +};
+> +
+>  static int max77693_i2c_probe(struct i2c_client *i2c,
+>  			      const struct i2c_device_id *id)
+>  {
+> @@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  	}
+>  	i2c_set_clientdata(max77693->haptic, max77693);
+>  
+> +	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
+> +					&max77693_regmap_haptic_config);
+> +	if (IS_ERR(max77693->regmap_haptic)) {
+> +		ret = PTR_ERR(max77693->regmap_haptic);
+> +		dev_err(max77693->dev,
+> +			"failed to initialize haptic register map: %d\n", ret);
+> +		goto err_regmap;
+> +	}
+> +
+>  	/*
+>  	 * Initialize register map for MUIC device because use regmap-muic
+>  	 * instance of MUIC device when irq of max77693 is initialized
+> @@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  		ret = PTR_ERR(max77693->regmap_muic);
+>  		dev_err(max77693->dev,
+>  			"failed to allocate register map: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  				&max77693->irq_data_led);
+>  	if (ret) {
+>  		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -265,7 +280,7 @@ err_irq_charger:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+>  err_irq_topsys:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+> -err_regmap_muic:
+> +err_regmap:
+>  	i2c_unregister_device(max77693->haptic);
+>  err_i2c_haptic:
+>  	i2c_unregister_device(max77693->muic);
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
