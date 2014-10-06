@@ -1,134 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaJFOsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:48:40 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:62402 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbaJFOsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:48:38 -0400
-Date: Mon, 6 Oct 2014 16:48:35 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, jonsmirl@gmail.com,
-        Simon <longsleep@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv7 1/2] pwm: Add Allwinner SoC support
-Message-ID: <20141006144835.GB1744@ulmo>
-References: <1410983638-24915-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1410983638-24915-2-git-send-email-alexandre.belloni@free-electrons.com>
- <20141006132404.GC26921@ulmo>
- <20141006143008.GC15599@piout.net>
+	id S1752901AbaJFOtN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:49:13 -0400
+Received: from mail-bn1bon0110.outbound.protection.outlook.com ([157.56.111.110]:3520
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751777AbaJFOtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 10:49:11 -0400
+Message-ID: <5432ABCE.90208@freescale.com>
+Date: Mon, 6 Oct 2014 09:48:46 -0500
+From: German Rivera <German.Rivera@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ftEhullJWpWg/VHq"
-Content-Disposition: inline
-In-Reply-To: <20141006143008.GC15599@piout.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Timur Tabi <timur@codeaurora.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, lkml <linux-kernel@vger.kernel.org>,
+        <stuart.yoder@freescale.com>,
+        Kim Phillips <Kim.Phillips@freescale.com>,
+        Scott Wood <scottwood@freescale.com>, Alexander Graf <agraf@suse.de>,
+        <bhamciu1@freescale.com>, <R89243@freescale.com>,
+        <Geoff.Thorpe@freescale.com>, <bhupesh.sharma@freescale.com>,
+        <nir.erez@freescale.com>, <richard.schmitt@freescale.com>
+Subject: Re: [PATCH 3/3 v3] drivers/bus: Device driver for FSL-MC DPRC devices
+References: <1412429015-30564-1-git-send-email-German.Rivera@freescale.com>	<1412429015-30564-4-git-send-email-German.Rivera@freescale.com> <CAOZdJXWP4bwWiEcX10i4j96z49QahtpywK=XiuHm9VXWa0zOKw@mail.gmail.com>
+In-Reply-To: <CAOZdJXWP4bwWiEcX10i4j96z49QahtpywK=XiuHm9VXWa0zOKw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.88.168.50]
+X-ClientProxiedBy: BN1PR02CA0019.namprd02.prod.outlook.com (10.141.56.19) To
+ BLUPR03MB328.namprd03.prod.outlook.com (10.141.48.27)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB328;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 03569407CC
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6049001)(6009001)(189002)(24454002)(164054003)(377454003)(51704005)(199003)(479174003)(36756003)(64706001)(85306004)(20776003)(105586002)(66066001)(95666004)(107046002)(50986999)(101416001)(106356001)(47776003)(122386002)(40100001)(21056001)(77096002)(97736003)(65956001)(110136001)(19580395003)(10300001)(33656002)(92726001)(120916001)(23676002)(76176999)(4396001)(76482002)(46102003)(85852003)(50466002)(86362001)(80022003)(99396003)(87976001)(19580405001)(102836001)(83506001)(65816999)(54356999)(42186005);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB328;H:[10.81.33.65];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ftEhullJWpWg/VHq
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/05/2014 09:53 AM, Timur Tabi wrote:
+> On Sat, Oct 4, 2014 at 8:23 AM, J. German Rivera
+> <German.Rivera@freescale.com> wrote:
+>> +EXPORT_SYMBOL_GPL(dprc_scan_objects);
+>
+> I didn't notice this earlier, but I it was Freescale policy to use
+> EXPORT_SYMBOL() instead of EXPORT_SYMBOL_GPL().  Has that changed?
+>
+Please see change history in the cover letter for this patch series.
 
-On Mon, Oct 06, 2014 at 04:30:08PM +0200, Alexandre Belloni wrote:
-> On 06/10/2014 at 15:24:05 +0200, Thierry Reding wrote :
-> > On Wed, Sep 17, 2014 at 09:53:57PM +0200, Alexandre Belloni wrote:
-> > [...]
-> > > diff --git a/drivers/pwm/pwm-sunxi.c b/drivers/pwm/pwm-sunxi.c
-> > > new file mode 100644
-> > > index 000000000000..643f84ea013e
-> > > --- /dev/null
-> > > +++ b/drivers/pwm/pwm-sunxi.c
-> > > @@ -0,0 +1,371 @@
-> > > +/*
-> > > + * Driver for Allwinner Pulse Width Modulation Controller
-> > > + *
-> > > + * Copyright (C) 2014 Alexandre Belloni <alexandre.belloni@free-elec=
-trons.com>
-> >=20
-> > This is somewhat weird. So you are the copyright holder, not your
-> > employer? The email address is somewhat misleading.
-> >=20
->=20
-> It has been done on my free, unpaid time so yes...
->=20
-> Anyway, even my employer could not actually claim to hold copyright on
-> what I'm writing as this right is not transferable in France.
+Thanks,
 
-Interesting. And yet there's a bunch of Copyright.*Free Electrons in the
-kernel. There's also this little mention on Wikipedia:
-
-	"The droit d=E2=80=99auteur or authors' rights, in France, Belgium or
-	Germany, grant (subject to some exceptions) the benefice of the
-	right to natural persons (the author or his heir(s)) and denies
-	it to legal persons (except for collective works, and for
-	software), ..."[0]
-
-Which indicates that for software this isn't true. Anyway, what I meant
-to say was that it's unusual (at least in my experience) to submit code
-authored and copyrighted using a corporate email address. So typically
-I've seen people that work on open source in their spare time use a
-different email address to separate these "identities".
-
-But I don't mind this all that much, it just jumped out at me.
-
-[0]: http://en.wikipedia.org/wiki/Copyright_law_of_France#Difference_betwee=
-n_copyright_and_droit_d.27auteur
-
-> > > +static const u32 prescaler_table[] =3D {
-> > > +	120,
-> > > +	180,
-> > > +	240,
-> > > +	360,
-> > > +	480,
-> > > +	0,
-> > > +	0,
-> > > +	0,
-> > > +	12000,
-> > > +	24000,
-> > > +	36000,
-> > > +	48000,
-> > > +	72000,
-> > > +	0,
-> > > +	0,
-> > > +	0, /* Actually 1 but tested separately */
-> > > +};
-> >=20
-> > Did I already mention that this was really weird?
-> >=20
->=20
-> I'm not sure what you want to do here then. This is simply coming from
-> the datasheet. The last one (0xF) being a bypass is actually only existin=
-g on=20
-
-No need to do anything about it. I just think it's really, really weird.
-
-Thierry
-
---ftEhullJWpWg/VHq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUMqvCAAoJEN0jrNd/PrOhYogP/2xCswAFUMvT562f8TOMDkr8
-DDmVTBAW1RPvzL5AguB6MZxmfrOrw7Zv1JqPQd+oG0H3GanwZLEWMp19ry7n7WoA
-KoLnOPaB9ckVVeGccVOab96PDji3WPhs/0Ju3TvCznP0bgqw5nngC4aEoOawXN9r
-SkAhauEBGsv2Yemc2t/20NRCORvLbFBjVCYgRFDhMK5MMpXnT1O3UtLV7FQ3sAJC
-rznD6pwXIZudvVm/X1UKLj6w4oQuxQPRUqIABO9Xs/YxbHj3+66UNOgGZs83zhvu
-oUYSpRAeCmimK0BzqX+vY156nPIBfTVFRNO4thMPpk2tMaqFVj+xQGPs0tJeO5Lq
-wU2itkX0VlafjLiqVqS/cHG/Z9Q02ykGnzux0t3fDesSwvuy4gA0DJp0nuPR95UQ
-ILj2NmrsiT1WBQ1u3zA9FwPDpADaWP8WNegOESBNp4IaY5t3ukPUDlUsJ52BK/Ee
-C3eIb0tnRP85lU5c0XvxaQ/RcLWhXFnHTsdb5lGxQMDmF7Ry9ohsfLAe+XWaV01H
-FyfWzAtQVOkwVRsMJSfdhHCA7aZGCfkr65oVRdeJ953vZhsALpdT4TX78O1QX/Fa
-B7hlXHUsacDMrJQkhO7oGioQWMG4nMkzuYH/EfOY8CXcElRL1W4C2a6QSg7OkSPS
-rf1QdIfWUzS8Dv9oS8vZ
-=rpnl
------END PGP SIGNATURE-----
-
---ftEhullJWpWg/VHq--
+German
