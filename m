@@ -1,172 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752974AbaJFOc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:32:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51041 "EHLO mga02.intel.com"
+	id S1752996AbaJFOeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:34:03 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36096 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681AbaJFOcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:32:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,664,1406617200"; 
-   d="scan'208";a="584150040"
-Date: Mon, 6 Oct 2014 17:32:48 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-acpi@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Aaron Lu <aaron.lu@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [RFC PATCH v2 01/16] ACPI: Add support for device specific
- properties
-Message-ID: <20141006143248.GE1583@lahna.fi.intel.com>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
- <1410868367-11056-2-git-send-email-mika.westerberg@linux.intel.com>
- <20141006135021.0EB04C43FBE@trevor.secretlab.ca>
+	id S1752330AbaJFOeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 10:34:00 -0400
+Date: Mon, 6 Oct 2014 09:33:38 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Mugunthan V N <mugunthanvnm@ti.com>
+CC: <balbi@ti.com>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: CPSW bug with AM437x SK
+Message-ID: <20141006143338.GC12392@saruman>
+Reply-To: <balbi@ti.com>
+References: <20141003010418.GA9612@saruman>
+ <543266F3.4090200@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aT9PWwzfKXlsBJM1"
 Content-Disposition: inline
-In-Reply-To: <20141006135021.0EB04C43FBE@trevor.secretlab.ca>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <543266F3.4090200@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 02:50:21PM +0100, Grant Likely wrote:
-> On Tue, 16 Sep 2014 14:52:32 +0300
-> , Mika Westerberg <mika.westerberg@linux.intel.com>
->  wrote:
-> > Device Tree is used in many embedded systems to describe the system
-> > configuration to the OS. It supports attaching properties or name-value
-> > pairs to the devices it describe. With these properties one can pass
-> > additional information to the drivers that would not be available
-> > otherwise.
-> > 
-> > ACPI is another configuration mechanism (among other things) typically
-> > seen, but not limited to, x86 machines. ACPI allows passing arbitrary
-> > data from methods but there has not been mechanism equivalent to Device
-> > Tree until the introduction of _DSD in the recent publication of the
-> > ACPI 5.1 specification.
-> > 
-> > In order to facilitate ACPI usage in systems where Device Tree is
-> > typically used, it would be beneficial to standardize a way to retrieve
-> > Device Tree style properties from ACPI devices, which is what we do in
-> > this patch.
-> > 
-> > If a given device described in ACPI namespace wants to export properties it
-> > must implement _DSD method (Device Specific Data, introduced with ACPI 5.1)
-> > that returns the properties in a package of packages. For example:
-> > 
-> > 	Name (_DSD, Package () {
-> > 		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
-> > 		Package () {
-> > 			Package () {"name1", <VALUE1>},
-> > 			Package () {"name2", <VALUE2>},
-> > 			...
-> > 		}
-> > 	})
-> > 
-> > The UUID reserved for properties is daffd814-6eba-4d8c-8a91-bc9bbf4aa301
-> > and is documented in the ACPI 5.1 companion document called "_DSD
-> > Implementation Guide" [1], [2].
-> > 
-> > We add several helper functions that can be used to extract these
-> > properties and convert them to different Linux data types.
-> > 
-> > The ultimate goal is that we only have one device property API that
-> > retrieves the requested properties from Device Tree or from ACPI
-> > transparent to the caller.
-> > 
-> > [1] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
-> > [2] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
-> > 
-> > Reviewed-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> > Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/acpi/Makefile   |   1 +
-> >  drivers/acpi/internal.h |   6 +
-> >  drivers/acpi/property.c | 364 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/acpi/scan.c     |   2 +
-> >  include/acpi/acpi_bus.h |   7 +
-> >  include/linux/acpi.h    |  40 ++++++
-> >  6 files changed, 420 insertions(+)
-> >  create mode 100644 drivers/acpi/property.c
-> > 
-> > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> > index 505d4d79fe3e..ba2cafe18fe4 100644
-> > --- a/drivers/acpi/Makefile
-> > +++ b/drivers/acpi/Makefile
-> > @@ -46,6 +46,7 @@ acpi-y				+= acpi_pnp.o
-> >  acpi-y				+= power.o
-> >  acpi-y				+= event.o
-> >  acpi-y				+= sysfs.o
-> > +acpi-y				+= property.o
-> >  acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
-> >  acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
-> >  acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
-> > diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> > index 4c5cf77e7576..e34290c7af9f 100644
-> > --- a/drivers/acpi/internal.h
-> > +++ b/drivers/acpi/internal.h
-> > @@ -181,4 +181,10 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev);
-> >  bool acpi_osi_is_win8(void);
-> >  #endif
-> >  
-> > +/*--------------------------------------------------------------------------
-> > +				Device properties
-> > +  -------------------------------------------------------------------------- */
-> > +void acpi_init_properties(struct acpi_device *adev);
-> > +void acpi_free_properties(struct acpi_device *adev);
-> > +
-> >  #endif /* _ACPI_INTERNAL_H_ */
-> > diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
-> > new file mode 100644
-> > index 000000000000..c4a3e800e82c
-> > --- /dev/null
-> > +++ b/drivers/acpi/property.c
-> > @@ -0,0 +1,364 @@
-> > +/*
-> > + * ACPI device specific properties support.
-> > + *
-> > + * Copyright (C) 2014, Intel Corporation
-> > + * All rights reserved.
-> > + *
-> > + * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > + *          Darren Hart <dvhart@linux.intel.com>
-> > + *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + */
-> > +
-> > +#include <linux/acpi.h>
-> > +#include <linux/device.h>
-> > +#include <linux/export.h>
-> > +
-> > +#include "internal.h"
-> > +
-> > +/* ACPI _DSD device properties UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
-> > +static const u8 prp_uuid[16] = {
-> > +	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
-> > +	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
-> > +};
-> 
-> ?
-> 
-> What is the encoding used here? I see the first 4 bytes for "daffd814"
-> encoded in little endian (0x14 first), and then the remaining values
-> encoded in big-endian for each number. Is this typical for UUID values?
+--aT9PWwzfKXlsBJM1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The buffer format is explained in ACPI 5.1 spec, page 823.
+Hi,
 
-I generated the above so that I compiled a _DSD with correct UUID using
-iASL and then disassambled it with the same tool.
+On Mon, Oct 06, 2014 at 03:24:59PM +0530, Mugunthan V N wrote:
+> On Friday 03 October 2014 06:34 AM, Felipe Balbi wrote:
+> > [  261.177168] [<c0648d48>] (skb_panic) from [<c0565edc>] (skb_put+0x5c=
+/0x60)
+> > [  261.184415] [<c0565edc>] (skb_put) from [<c0605aac>] (unix_stream_se=
+ndmsg+0x164/0x390)
+> > [  261.192712] [<c0605aac>] (unix_stream_sendmsg) from [<c055b364>] (so=
+ck_aio_write+0xdc/0xfc)
+> > [  261.201475] [<c055b364>] (sock_aio_write) from [<c014c42c>] (do_sync=
+_write+0x8c/0xb4)
+> > [  261.209697] [<c014c42c>] (do_sync_write) from [<c014cf70>] (vfs_writ=
+e+0x118/0x1c0)
+> > [  261.217652] [<c014cf70>] (vfs_write) from [<c014d564>] (SyS_write+0x=
+4c/0xa0)
+> > [  261.225054] [<c014d564>] (SyS_write) from [<c000ed40>] (ret_fast_sys=
+call+0x0/0x48)
+> > [  261.232988] Code: e58d4008 e58de00c e59f0008 ebfff48e (e7f001f2)=20
+> > [  261.239378] ---[ end trace d64258d586f40104 ]---
+>=20
+> The BT shows that the warn came from a unix socket interface, so this
+> cannot be a CPSW bug, its a bug in unix socket.
+>=20
+> Are you not seeing this issue with file system in any other media?
+
+Have not tried with other media, but since it comes from vfs_write() and
+my rootfs sits in NFS I figured "that might be the cause". Could not
+reproduce this with BeagleBone Black, btw.
+
+> I will try to reproduce this locally with my AM437x EVMsk.
+
+alright.
+
+--=20
+balbi
+
+--aT9PWwzfKXlsBJM1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUMqhCAAoJEIaOsuA1yqREIysP/AsA6ZF6jIIVVeOpsdKd7l3I
+xuJtSffNjHsPP7n0WAXCAUlLNYeS2uHFyN5vSHhf3c7dVuF7WpSSzTMkDaUHPd8y
+4V9BJQyf9D6g2ZnfwXy+GH0WH0nAXHSzk8qQnMnCM3VgSqmtEoT+x05hklqXyg4U
+lZ3D337PAI5+CAGPOKPUYDtA5c4LReFsm2enrYLFl8mjqeTIWT0bboM+usfv21c/
+fPKnTasIOGAzGrSGoubHcu7FFBvheEmpvRQ8NGg6U9ivaEsacedQ24R3oGvDyrPN
+LGMSE8TQ0l8QxIbqIFEIr2mI7MZDdNeZF0M9EyQ1HXsseDlUVijmGiJUwB9OW/zH
+wfacupD+gBgtUrLiWjftY9FSvNs1NvWysj9qRvKWoGExFJEKEKDdonfiGsY5o/i2
+cfx2Oa5yXY36n00Mxnn46KvI/xkA31lnL0Bu/q58qciGZNrVYsG0OGK4GmLco1Y2
+DfKPF6CzsNdXbSlGhGPGVrPkT1+nqqu7p5bvxzgta0fT3PHrza36cpgQdrim2bXX
+a9fC2+QWvPwC1j9OW38uSyQoclxUjYnZxYYTt6VWZCFqeriztCQPDsnfLxCV+mWs
+R0Mv8kENGZ3pV1FnXZ9RYjnjmhclQ68uMXLR8xKf54krveeM+Dqa6bFRalbmidlr
+2nvJ+CwyTSiz/294GCsj
+=VAWl
+-----END PGP SIGNATURE-----
+
+--aT9PWwzfKXlsBJM1--
