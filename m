@@ -1,60 +1,703 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaJFGVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 02:21:37 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:32850 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566AbaJFGVc (ORCPT
+	id S1751509AbaJFGZQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 02:25:16 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58185 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaJFGZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 02:21:32 -0400
-From: "=?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?=" 
-	<info@are.ma>
-X-Google-Original-From: =?UTF-8?q?=D0=91=D1=83=D0=B4=D0=B8=20=D0=A0=D0=BE=D0=BC=D0=B0=D0=BD=D1=82=D0=BE=2C=20AreMa=20Inc?= <knightrider@are.ma>
-To: linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, crope@iki.fi, m.chehab@samsung.com,
-        mchehab@osg.samsung.com, hdegoede@redhat.com,
-        laurent.pinchart@ideasonboard.com, mkrufky@linuxtv.org,
-        sylvester.nawrocki@gmail.com, g.liakhovetski@gmx.de,
-        peter.senna@gmail.com
-Subject: [PATCH 1/1] Kconfig: cosmetics, as Mauro suggested
-Date: Mon,  6 Oct 2014 15:21:27 +0900
-Message-Id: <62bede84374762a6a5a3081fb129b02014a66f6a.1412576221.git.knightrider@are.ma>
-X-Mailer: git-send-email 1.8.4.5
+	Mon, 6 Oct 2014 02:25:14 -0400
+Date: Sun, 5 Oct 2014 23:25:10 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 9/9] mtd: nand: stm_nand_bch: provide ST's implementation
+ of Back Block Table
+Message-ID: <20141006062510.GI3248@norris-Latitude-E6410>
+References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+ <1409143344-22458-10-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1409143344-22458-10-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PT3 is wrongly categorized, fix it
+Hi Lee,
 
-Signed-off-by: Буди Романто, AreMa Inc <knightrider@are.ma>
----
- drivers/media/dvb-frontends/Kconfig | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+On Wed, Aug 27, 2014 at 01:42:24PM +0100, Lee Jones wrote:
+> This is the BBT format ST use internally.  It has to be used on boards
+> which were flashed with or actively use ST's tooling and boards which
+> are booted using ST's bootloaders.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mtd/nand/Kconfig        |   8 +
+>  drivers/mtd/nand/Makefile       |   1 +
+>  drivers/mtd/nand/stm_nand_bbt.c | 601 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 610 insertions(+)
+>  create mode 100644 drivers/mtd/nand/stm_nand_bbt.c
+> 
+> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+> index 2738eec..5c04ec1 100644
+> --- a/drivers/mtd/nand/Kconfig
+> +++ b/drivers/mtd/nand/Kconfig
+> @@ -520,4 +520,12 @@ config MTD_NAND_STM_BCH
+>  	help
+>  	  Adds support for the STMicroelectronics NANDi BCH Controller.
+>  
+> +config MTD_NAND_STM_BCH_BBT
+> +	tristate "STMicroelectronics: NANDi BCH Controller Bad Block Table support"
+> +	default MTD_NAND_STM_BCH
+> +	help
+> +	  Adds support for the STMicroelectronics Bad Block Table support.
+> +	  If you are using a device which has has already been initialised
+> +	  by ST or using their tooling/bootloaders, leave this enabled.
+> +
+>  endif # MTD_NAND
+> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+> index 60f374b..5ef0462 100644
+> --- a/drivers/mtd/nand/Makefile
+> +++ b/drivers/mtd/nand/Makefile
+> @@ -47,6 +47,7 @@ obj-$(CONFIG_MTD_NAND_MPC5121_NFC)	+= mpc5121_nfc.o
+>  obj-$(CONFIG_MTD_NAND_RICOH)		+= r852.o
+>  obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
+>  obj-$(CONFIG_MTD_NAND_STM_BCH)		+= stm_nand_bch.o stm_nand_dt.o
+> +obj-$(CONFIG_MTD_NAND_STM_BCH_BBT)	+= stm_nand_bbt.o
+>  obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
+>  obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
+>  obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)	+= bcm47xxnflash/
+> diff --git a/drivers/mtd/nand/stm_nand_bbt.c b/drivers/mtd/nand/stm_nand_bbt.c
+> new file mode 100644
+> index 0000000..242bffd
+> --- /dev/null
+> +++ b/drivers/mtd/nand/stm_nand_bbt.c
+> @@ -0,0 +1,601 @@
+> +/*
+> + * Support for STMicroelectronics Bad Block Table (BBT)
+> + *
+> + * Copyright (c) 2014 STMicroelectronics Limited
+> + *
+> + * Authors: Angus Clark <Angus.Clark@st.com>
+> + *	    Lee Jones <lee.jones@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
 
-diff --git a/drivers/media/dvb-frontends/Kconfig b/drivers/media/dvb-frontends/Kconfig
-index 5a13454..6c75418 100644
---- a/drivers/media/dvb-frontends/Kconfig
-+++ b/drivers/media/dvb-frontends/Kconfig
-@@ -648,12 +648,15 @@ config DVB_MB86A20S
- 	  A driver for Fujitsu mb86a20s ISDB-T/ISDB-Tsb demodulator.
- 	  Say Y when you want to support this frontend.
- 
-+comment "ISDB-S (satellite) & ISDB-T (terrestrial) frontends"
-+	depends on DVB_CORE
-+
- config DVB_TC90522
- 	tristate "Toshiba TC90522"
- 	depends on DVB_CORE && I2C
- 	default m if !MEDIA_SUBDRV_AUTOSELECT
- 	help
--	  A Toshiba TC90522 2xISDB-T + 2xISDB-S demodulator.
-+	  Toshiba TC90522 2xISDB-S 8PSK + 2xISDB-T OFDM demodulator.
- 	  Say Y when you want to support this frontend.
- 
- comment "Digital terrestrial only tuners/PLL"
--- 
-1.8.4.5
+Can you provide some sort of prose summary of your BBT format? Maybe
+here at the top of the file, like with nand_bbt.c. Or a separate doc in
+Documentation/mtd/nand/, if you think that's more appropriate.
 
+> +
+> +#include <linux/mtd/stm_nand.h>
+> +#include <linux/mtd/stm_nand_bbt.h>
+> +#include <generated/utsrelease.h>
+> +
+> +/*
+> + * Inband Bad Block Table (IBBT)
+> + */
+> +#define NAND_IBBT_NBLOCKS	4
+> +#define NAND_IBBT_SIGLEN	4
+> +#define NAND_IBBT_PRIMARY	0
+> +#define NAND_IBBT_MIRROR	1
+> +#define NAND_IBBT_SCHEMA	0x10
+> +#define NAND_IBBT_BCH_SCHEMA	0x10
+> +
+> +static uint8_t ibbt_sigs[2][NAND_IBBT_SIGLEN] = {
+> +	{'B', 'b', 't', '0'},
+> +	{'1', 't', 'b', 'B'},
+> +};
+> +
+> +static char *bbt_strs[] = {
+> +	"primary",
+> +	"mirror",
+> +};
+> +
+> +/* IBBT header */
+> +struct nand_ibbt_header {
+> +	uint8_t	signature[4];		/* "Bbt0" or "1tbB" signature */
+> +	uint8_t version;		/* BBT version ("age") */
+> +	uint8_t reserved[3];		/* padding */
+> +	uint8_t schema[4];		/* "base" schema (x4) */
+> +} __packed;
+> +
+> +/* Extend IBBT header with some stm-nand-bch niceties */
+> +struct nand_ibbt_bch_header {
+> +	struct nand_ibbt_header base;
+> +	uint8_t schema[4];		/* "private" schema (x4) */
+> +	uint8_t ecc_size[4];		/* ECC bytes (0, 32, 54) (x4) */
+> +	char	author[64];		/* Arbitrary string for S/W to use */
+> +} __packed;
+> +
+> +/*
+> + * Bad Block Tables/Bad Block Markers
+> + */
+> +#define BBT_MARK_BAD_FACTORY	0x0
+> +#define BBT_MARK_BAD_WEAR	0x1
+> +#define BBT_MARK_GOOD		0x3
+> +
+> +static void bbt_set_block_mark(uint8_t *bbt, uint32_t block, uint8_t mark)
+> +{
+> +	unsigned int byte = block >> 2;
+> +	unsigned int shift = (block & 0x3) << 1;
+> +
+> +	bbt[byte] &= ~(0x3 << shift);
+> +	bbt[byte] |= ((mark & 0x3) << shift);
+> +}
+> +
+> +static uint8_t bbt_get_block_mark(uint8_t *bbt, uint32_t block)
+> +{
+> +	unsigned int byte = block >> 2;
+> +	unsigned int shift = (block & 0x3) << 1;
+> +
+> +	return (bbt[byte] >> shift) & 0x3;
+> +}
+> +
+> +static int bbt_is_block_bad(uint8_t *bbt, uint32_t block)
+> +{
+> +	return bbt_get_block_mark(bbt, block) == BBT_MARK_GOOD ? 0 : 1;
+> +}
+> +
+> +/* Scan page for BBM(s), according to specified BBT options */
+> +static int nandi_scan_bad_block_markers_page(struct nandi_controller *nandi,
+> +					     uint32_t page)
+> +{
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	struct nand_chip *chip = mtd->priv;
+> +	uint8_t *oob_buf = nandi->oob_buf;
+> +	int i, e;
+> +
+> +	/* Read the OOB area */
+> +	flex_read_raw(nandi, page, mtd->writesize, oob_buf, mtd->oobsize);
+> +
+> +	if (oob_buf[chip->badblockpos] == 0xff)
+> +		return 0;
+> +
+> +	/* Tolerate 'alien' Hamming Boot Mode ECC */
+> +	e = 0;
+> +	for (i = 0; i < mtd->oobsize; i += 16)
+> +		e += hweight8(oob_buf[i + 3] ^ 'B');
+> +	if (e <= 1)
+> +		return 0;
+> +
+> +	/* Tolerate 'alien' Hamming AFM ECC */
+> +	e = 0;
+> +	for (i = 0; i < mtd->oobsize; i += 16) {
+> +		e += hweight8(oob_buf[i + 3] ^ 'A');
+> +		e += hweight8(oob_buf[i + 4] ^ 'F');
+> +		e += hweight8(oob_buf[i + 5] ^ 'M');
+> +		if (e <= 1)
+> +			return 0;
+> +	}
+> +
+> +	return 1;
+> +}
+> +
+> +/* Scan block for BBM(s), according to specified BBT options */
+> +static int nandi_scan_bad_block_markers_block(struct nandi_controller *nandi,
+> +					      uint32_t block)
+> +
+> +{
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	struct nand_chip *chip = mtd->priv;
+> +	uint32_t pages_per_block = mtd->erasesize >> chip->page_shift;
+> +	uint32_t page = block << (chip->phys_erase_shift - chip->page_shift);
+> +
+> +	if (nandi_scan_bad_block_markers_page(nandi, page))
+> +		return 1;
+> +
+> +	if ((chip->bbt_options & NAND_BBT_SCAN2NDPAGE) &&
+> +	    nandi_scan_bad_block_markers_page(nandi, page + 1))
+> +		return 1;
+> +
+> +	if ((chip->bbt_options & NAND_BBT_SCANLASTPAGE) &&
+> +	    nandi_scan_bad_block_markers_page(nandi,
+> +					      page + pages_per_block - 1))
+> +		return 1;
+> +
+> +	return 0;
+> +}
+> +
+> +/* Scan for BBMs and build memory-resident BBT */
+> +static int nandi_scan_build_bbt(struct nandi_controller *nandi,
+> +				struct nandi_bbt_info *bbt_info)
+> +{
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	struct nand_chip *chip = mtd->priv;
+> +	uint32_t page_size = mtd->writesize;
+> +	uint8_t *bbt = bbt_info->bbt;
+> +	uint32_t block;
+> +
+> +	dev_dbg(nandi->dev,
+> +		"scan device for bad-block markers [bbt options = 0x%02x]\n",
+> +		chip->bbt_options);
+> +
+> +	memset(bbt, 0xff, page_size);
+> +	bbt_info->bbt_vers[0] = 0;
+> +	bbt_info->bbt_vers[1] = 0;
+> +	bbt_info->bbt_block[0] = nandi->blocks_per_device - 1;
+> +	bbt_info->bbt_block[1] = nandi->blocks_per_device - 2;
+> +
+> +	for (block = 0; block < nandi->blocks_per_device; block++)
+> +		if (nandi_scan_bad_block_markers_block(nandi, block))
+> +			bbt_set_block_mark(bbt, block, BBT_MARK_BAD_FACTORY);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Populate IBBT BCH Header */
+> +static void bch_fill_ibbt_header(struct nandi_controller *nandi,
+> +				 struct nand_ibbt_bch_header *ibbt_header,
+> +				 int bak, uint8_t vers)
+> +{
+> +	const char author[] = "STLinux " UTS_RELEASE " (stm-nand-bch)";
+> +
+> +	memcpy(ibbt_header->base.signature, ibbt_sigs[bak], NAND_IBBT_SIGLEN);
+> +	ibbt_header->base.version = vers;
+> +	memset(ibbt_header->base.schema, NAND_IBBT_SCHEMA, 4);
+> +
+> +	memset(ibbt_header->schema, NAND_IBBT_SCHEMA, 4);
+> +	memset(ibbt_header->ecc_size, bch_ecc_sizes[nandi->bch_ecc_mode], 4);
+> +	memcpy(ibbt_header->author, author, sizeof(author));
+> +}
+> +
+> +/* Write IBBT to Flash */
+> +static int bch_write_bbt_data(struct nandi_controller *nandi,
+> +			      struct nandi_bbt_info *bbt_info,
+> +			      uint32_t block, int bak, uint8_t vers)
+> +{
+> +	struct nand_ibbt_bch_header *ibbt_header =
+> +		(struct nand_ibbt_bch_header *)nandi->page_buf;
+> +	struct nand_chip *chip = &nandi->info.chip;
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	uint32_t page_size = mtd->writesize;
+> +	uint32_t block_size = mtd->erasesize;
+> +	loff_t offs;
+> +	size_t retlen;
+> +	int ret;
+> +
+> +	nandi->cached_page = -1;
+> +
+> +	/* Write BBT contents to first page of block */
+> +	offs = (loff_t)block << chip->phys_erase_shift;
+> +	ret = mtd_write(mtd, offs, page_size, &retlen, bbt_info->bbt);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Update IBBT header and write to last page of block */
+> +	memset(ibbt_header, 0xff, mtd->writesize);
+> +	bch_fill_ibbt_header(nandi, ibbt_header, bak, vers);
+> +	offs += block_size - page_size;
+> +	ret = mtd_write(mtd, offs, sizeof(*ibbt_header), &retlen,
+> +			     (uint8_t *)ibbt_header);
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Update Flash-resident BBT:
+> + *   erase/search suitable block, and write table data to Flash
+> + */
+> +static int bch_update_bbt(struct nandi_controller *nandi,
+> +			 struct nandi_bbt_info *bbt_info,
+> +			 int bak, uint8_t vers)
+> +{
+> +	struct nand_chip *chip = &nandi->info.chip;
+> +	loff_t offs;
+> +	uint32_t block;
+> +	uint32_t block_lower;
+> +	uint32_t block_other;
+> +
+> +	block_other = bbt_info->bbt_block[(bak+1)%2];
+> +	block_lower = nandi->blocks_per_device - NAND_IBBT_NBLOCKS;
+> +
+> +	for (block = bbt_info->bbt_block[bak]; block >= block_lower;  block--) {
+> +		offs = (loff_t)block << chip->phys_erase_shift;
+> +
+> +		/* Skip if block used by other table */
+> +		if (block == block_other)
+> +			continue;
+> +
+> +		/* Skip if block is marked bad */
+> +		if (bbt_is_block_bad(bbt_info->bbt, block))
+> +			continue;
+> +
+> +		/* Erase block, mark bad and skip on failure */
+> +		if (bch_erase_block(nandi, offs) & NAND_STATUS_FAIL) {
+> +			dev_info(nandi->dev,
+> +				 "failed to erase block [%u:0x%012llx] while updating BBT\n",
+> +				 block, offs);
+> +			vers++;
+> +			bbt_set_block_mark(bbt_info->bbt, block,
+> +					   BBT_MARK_BAD_WEAR);
+> +			continue;
+> +		}
+> +
+> +		/* Write BBT, mark bad and skip on failure */
+> +		if (bch_write_bbt_data(nandi, bbt_info, block, bak, vers)) {
+> +			dev_info(nandi->dev,
+> +				 "failed to write BBT to block [%u:0x%012llx]\n",
+> +				 block, offs);
+> +			vers++;
+> +			bbt_set_block_mark(bbt_info->bbt, block,
+> +					   BBT_MARK_BAD_WEAR);
+> +			continue;
+> +		}
+> +
+> +		/* Success */
+> +		bbt_info->bbt_block[bak] = block;
+> +		bbt_info->bbt_vers[bak] = vers;
+> +		break;
+> +	}
+> +
+> +	/* No space in BBT area */
+> +	if (block < block_lower) {
+> +		dev_err(nandi->dev, "no space left in BBT area\n");
+> +		dev_err(nandi->dev, "failed to update %s BBT\n", bbt_strs[bak]);
+> +		return -ENOSPC;
+> +	}
+> +
+> +	dev_info(nandi->dev, "wrote BBT [%s:%u] at 0x%012llx [%u]\n",
+> +		 bbt_strs[bak], vers, offs, block);
+> +
+> +	return 0;
+> +}
+> +
+> +#define NAND_IBBT_UPDATE_PRIMARY	0x1
+> +#define NAND_IBBT_UPDATE_MIRROR		0x2
+> +#define NAND_IBBT_UPDATE_BOTH		(NAND_IBBT_UPDATE_PRIMARY | \
+> +					 NAND_IBBT_UPDATE_MIRROR)
+> +static char *bbt_update_strs[] = {
+> +	"",
+> +	"primary",
+> +	"mirror",
+> +	"both",
+> +};
+> +
+> +/*
+> + * Update Flash-resident BBT(s):
+> + *   incrementing 'vers' number if required, and ensuring Primary
+> + *   and Mirror are kept in sync
+> + */
+> +static int bch_update_bbts(struct nandi_controller *nandi,
+> +			   struct nandi_bbt_info *bbt_info,
+> +			   unsigned int update, uint8_t vers)
+> +{
+> +	int err;
+> +
+> +	dev_info(nandi->dev, "updating %s BBT(s)\n", bbt_update_strs[update]);
+> +
+> +	do {
+> +		/* Update Primary if specified */
+> +		if (update & NAND_IBBT_UPDATE_PRIMARY) {
+> +			err = bch_update_bbt(nandi, bbt_info, NAND_IBBT_PRIMARY,
+> +					     vers);
+> +			/* Bail out on error (e.g. no space left in BBT area) */
+> +			if (err)
+> +				return err;
+> +
+> +			/*
+> +			 * If update resulted in a new BBT version
+> +			 * (e.g. Erase/Write fail on BBT block) update version
+> +			 * here, and force update of other table.
+> +			 */
+> +			if (bbt_info->bbt_vers[NAND_IBBT_PRIMARY] != vers) {
+> +				vers = bbt_info->bbt_vers[NAND_IBBT_PRIMARY];
+> +				update = NAND_IBBT_UPDATE_MIRROR;
+> +			}
+> +		}
+> +
+> +		/* Update Mirror if specified */
+> +		if (update & NAND_IBBT_UPDATE_MIRROR) {
+> +			err = bch_update_bbt(nandi, bbt_info, NAND_IBBT_MIRROR,
+> +					     vers);
+> +			/* Bail out on error (e.g. no space left in BBT area) */
+> +			if (err)
+> +				return err;
+> +
+> +			/*
+> +			 * If update resulted in a new BBT version
+> +			 * (e.g. Erase/Write fail on BBT block) update version
+> +			 * here, and force update of other table.
+> +			 */
+> +			if (bbt_info->bbt_vers[NAND_IBBT_MIRROR] != vers) {
+> +				vers = bbt_info->bbt_vers[NAND_IBBT_MIRROR];
+> +				update = NAND_IBBT_UPDATE_PRIMARY;
+> +			}
+> +		}
+> +
+> +		/* Continue, until Primary and Mirror versions are in sync */
+> +	} while (bbt_info->bbt_vers[NAND_IBBT_PRIMARY] !=
+> +		 bbt_info->bbt_vers[NAND_IBBT_MIRROR]);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Scan block for IBBT signature */
+> +static int bch_find_ibbt_sig(struct nandi_controller *nandi,
+> +			     uint32_t block, int *bak, uint8_t *vers,
+> +			     char *author)
+> +{
+> +	struct nand_chip *chip = &nandi->info.chip;
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	struct nand_ibbt_bch_header *ibbt_header;
+> +	loff_t offs;
+> +	uint8_t *buf = nandi->page_buf;
+> +	int match_sig;
+> +	unsigned int b;
+> +	unsigned int i;
+> +	size_t retlen;
+> +	int ret;
+> +
+> +	nandi->cached_page = -1;
+> +
+> +	/* Load last page of block */
+> +	offs = (loff_t)block << chip->phys_erase_shift;
+> +	offs += mtd->erasesize - mtd->writesize;
+> +	ret = mtd_read(mtd, offs, sizeof(*ibbt_header), &retlen, buf);
+> +	if (ret < 0) {
+> +		dev_info(nandi->dev,
+> +			 "Uncorrectable ECC error while scanning BBT signature at block %u [0x%012llx]\n",
+> +			 block, offs);
+> +		return 0;
+> +	}
+> +	ibbt_header = (struct nand_ibbt_bch_header *)buf;
+> +
+> +	/* Test IBBT signature */
+> +	match_sig = 0;
+> +	for (b = 0; b < 2 && !match_sig; b++) {
+> +		match_sig = 1;
+> +		for (i = 0; i < NAND_IBBT_SIGLEN; i++) {
+> +			if (ibbt_header->base.signature[i] != ibbt_sigs[b][i]) {
+> +				match_sig = 0;
+> +				break;
+> +			}
+> +		}
+> +
+> +	}
+> +
+> +	if (!match_sig)
+> +		return 0; /* Failed to match IBBT signature */
+> +
+> +	/* Test IBBT schema */
+> +	for (i = 0; i < 4; i++)
+> +		if (ibbt_header->base.schema[i] != NAND_IBBT_SCHEMA)
+> +			return 0;
+> +
+> +	/* Test IBBT BCH schema */
+> +	for (i = 0; i < 4; i++)
+> +		if (ibbt_header->schema[i] != NAND_IBBT_BCH_SCHEMA)
+> +			return 0;
+> +
+> +	/* We have a match */
+> +	*vers = ibbt_header->base.version;
+> +	*bak = b - 1;
+> +	strncpy(author, ibbt_header->author, 64);
+> +
+> +	return 1;
+> +}
+> +
+> +/* Search for and load Flash-resident BBT, updating Primary/Mirror if req'd */
+> +static int bch_load_bbt(struct nandi_controller *nandi,
+> +			struct nandi_bbt_info *bbt_info)
+> +{
+> +	struct nand_chip *chip = &nandi->info.chip;
+> +	struct mtd_info *mtd = &nandi->info.mtd;
+> +	uint32_t page_size = mtd->writesize;
+> +	unsigned int update = 0;
+> +	uint32_t block;
+> +	loff_t offs;
+> +	uint8_t vers;
+> +	char author[64];
+> +	size_t retlen;
+> +	int ret;
+> +	int bak;
+> +
+> +	dev_dbg(nandi->dev, "looking for Flash-resident BBTs\n");
+> +
+> +	bbt_info->bbt_block[0] = 0;
+> +	bbt_info->bbt_block[1] = 0;
+> +	bbt_info->bbt_vers[0] = 0;
+> +	bbt_info->bbt_vers[1] = 0;
+> +
+> +	/* Look for IBBT signatures */
+> +	for (block = nandi->blocks_per_device - NAND_IBBT_NBLOCKS;
+> +	     block < nandi->blocks_per_device;
+> +	     block++) {
+> +		offs = (loff_t)block << chip->phys_erase_shift;
+> +
+> +		if (bch_find_ibbt_sig(nandi, block, &bak, &vers, author)) {
+> +			dev_dbg(nandi->dev,
+> +				"found BBT [%s:%u] at 0x%012llx [%u] (%s)\n",
+> +				bbt_strs[bak], vers, offs, block,
+> +				author);
+> +
+> +			if (bbt_info->bbt_block[bak] == 0 ||
+> +			    ((int8_t)(bbt_info->bbt_vers[bak] - vers)) < 0) {
+> +				bbt_info->bbt_block[bak] = block;
+> +				bbt_info->bbt_vers[bak] = vers;
+> +			}
+> +		}
+> +	}
+> +
+> +	/* What have we found? */
+> +	if (bbt_info->bbt_block[0] == 0 && bbt_info->bbt_block[1] == 0) {
+> +		/* no primary, no mirror: return error */
+> +		return 1;
+> +	} else if (bbt_info->bbt_block[0] == 0) {
+> +		/* no primary: use mirror, update primary */
+> +		bak = 1;
+> +		update = NAND_IBBT_UPDATE_PRIMARY;
+> +		bbt_info->bbt_block[0] = nandi->blocks_per_device - 1;
+> +	} else if (bbt_info->bbt_block[1] == 0) {
+> +		/* no mirror: use primary, update mirror */
+> +		bak = 0;
+> +		update = NAND_IBBT_UPDATE_MIRROR;
+> +		bbt_info->bbt_block[1] = nandi->blocks_per_device - 1;
+> +	} else if (bbt_info->bbt_vers[0] == bbt_info->bbt_vers[1]) {
+> +		/* primary == mirror: use primary, no update required */
+> +		bak = 0;
+> +	} else if ((int8_t)(bbt_info->bbt_vers[1] -
+> +			    bbt_info->bbt_vers[0]) < 0) {
+> +		/* primary > mirror: use primary, update mirror */
+> +		bak = 0;
+> +		update = NAND_IBBT_UPDATE_MIRROR;
+> +	} else {
+> +		/* mirror > primary: use mirror, update primary */
+> +		bak = 1;
+> +		update = NAND_IBBT_UPDATE_PRIMARY;
+> +	}
+> +
+> +	vers = bbt_info->bbt_vers[bak];
+> +	block = bbt_info->bbt_block[bak];
+> +	offs = (loff_t)block << chip->phys_erase_shift;
+> +	dev_info(nandi->dev, "using BBT [%s:%u] at 0x%012llx [%u]\n",
+> +		 bbt_strs[bak], vers, offs, block);
+> +
+> +	/* Read BBT data */
+> +	ret = mtd_read(mtd, offs, page_size, &retlen, bbt_info->bbt);
+> +	if (ret < 0) {
+> +		dev_err(nandi->dev,
+> +			"error while reading BBT %s:%u] at 0x%012llx [%u]\n",
+> +			bbt_strs[bak], vers, offs, block);
+> +		return 1;
+> +	}
+> +
+> +	/* Update other BBT if required */
+> +	if (update)
+> +		bch_update_bbts(nandi, bbt_info, update, vers);
+> +
+> +	return 0;
+> +}
+> +
+> +int bch_scan_bbt(struct mtd_info *mtd)
+> +{
+> +	struct nand_chip *chip = mtd->priv;
+> +	struct nandi_controller *nandi = chip->priv;
+> +	struct nandi_bbt_info *bbt_info = &nandi->info.bbt_info;
+> +	int err;
+> +
+> +	/* Load Flash-resident BBT */
+> +	err = bch_load_bbt(nandi, bbt_info);
+> +	if (err) {
+> +		dev_warn(nandi->dev,
+> +			"failed to find BBTs:"
+> +			"  scanning device for bad-block markers\n");
+
+checkpatch.pl complains:
+
+WARNING: quoted string split across lines
+#580: FILE: drivers/mtd/nand/stm_nand_bbt.c:526:
++			"failed to find BBTs:"
++			"  scanning device for bad-block markers\n");
+
+> +
+> +		/* Scan, build, and write BBT */
+> +		nandi_scan_build_bbt(nandi, bbt_info);
+> +		err = bch_update_bbts(nandi, bbt_info, NAND_IBBT_UPDATE_BOTH,
+> +				      bbt_info->bbt_vers[0] + 1);
+> +		if (err)
+> +			return err;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +int bch_block_isbad(struct mtd_info *mtd, loff_t offs, int getchip)
+> +{
+> +	struct nand_chip *chip = mtd->priv;
+> +	struct nandi_controller *nandi = chip->priv;
+> +
+> +	uint32_t block;
+> +
+> +	/* Check for invalid offset */
+> +	if (offs > mtd->size)
+
+Should be >=
+
+> +		return -EINVAL;
+> +
+> +	block = offs >> chip->phys_erase_shift;
+> +
+> +	/* Protect blocks reserved for BBTs */
+> +	if (block >= (nandi->blocks_per_device - NAND_IBBT_NBLOCKS))
+> +		return 1;
+> +
+> +	return bbt_is_block_bad(nandi->info.bbt_info.bbt, block);
+> +}
+> +
+> +int bch_block_markbad(struct mtd_info *mtd, loff_t offs)
+> +{
+> +	struct nand_chip *chip = mtd->priv;
+> +	struct nandi_controller *nandi = chip->priv;
+> +
+> +	uint32_t block;
+> +	int ret;
+> +
+> +	/* Mark bad */
+> +	block = offs >> chip->phys_erase_shift;
+> +	bbt_set_block_mark(nandi->info.bbt_info.bbt, block, BBT_MARK_BAD_WEAR);
+> +
+> +	/* Update BBTs, incrementing bbt_vers */
+> +	ret = bch_update_bbts(nandi, &nandi->info.bbt_info,
+> +			      NAND_IBBT_UPDATE_BOTH,
+> +			      nandi->info.bbt_info.bbt_vers[0] + 1);
+> +
+> +	return ret;
+> +}
+> +
+> +void nandi_dump_bad_blocks(struct nandi_controller *nandi)
+> +{
+> +	struct nand_chip *chip = &nandi->info.chip;
+> +	int bad_count = 0;
+> +	uint32_t block;
+> +	uint8_t *bbt = nandi->info.bbt_info.bbt;
+> +	uint8_t mark;
+> +
+> +	pr_info("BBT:\n");
+> +	for (block = 0; block < nandi->blocks_per_device; block++) {
+> +		mark = bbt_get_block_mark(bbt, block);
+> +		if (mark != BBT_MARK_GOOD) {
+> +			pr_info("\t\tBlock 0x%08x [%05u] marked bad [%s]\n",
+> +				block << chip->phys_erase_shift, block,
+> +				(mark == BBT_MARK_BAD_FACTORY) ?
+> +				"Factory" : "Wear");
+> +			bad_count++;
+> +		}
+> +	}
+> +	if (bad_count == 0)
+> +		pr_info("\t\tNo bad blocks listed in BBT\n");
+> +}
+> +EXPORT_SYMBOL(nandi_dump_bad_blocks);
+
+You're currently allowing this source file to be built as a module. So
+you should probably specify some module information (MODULE_AUTHOR(),
+MODULE_LICENSE(), MODULE_DESCRIPTION()). Or else maybe you should just
+avoid the module issues, and just build all your source files into a
+single module, a la nand_base.c + nand_bbt.c = nand.{o,ko}.
+
+Brian
