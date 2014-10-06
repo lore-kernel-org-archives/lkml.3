@@ -1,130 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaJFXKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 19:10:41 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59692 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaJFXKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:10:40 -0400
-Date: Mon, 6 Oct 2014 19:08:56 -0400
-From: Rich Felker <dalias@libc.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-Message-ID: <20141006230856.GC23797@brightrain.aerifal.cx>
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
- <20141006205459.GZ23797@brightrain.aerifal.cx>
- <5433071B.4050606@caviumnetworks.com>
- <20141006213101.GA23797@brightrain.aerifal.cx>
- <54330D79.80102@caviumnetworks.com>
- <20141006215813.GB23797@brightrain.aerifal.cx>
- <543314DF.20808@caviumnetworks.com>
+	id S1752373AbaJFXK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 19:10:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35181 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071AbaJFXKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 19:10:53 -0400
+Date: Tue, 7 Oct 2014 01:10:46 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
+        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
+        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option
+	for built-in and modules
+Message-ID: <20141006231046.GD14081@wotan.suse.de>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com> <20141006201926.GF18303@htj.dyndns.org> <20141006203627.GZ14081@wotan.suse.de> <20141006210118.GG18303@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <543314DF.20808@caviumnetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141006210118.GG18303@htj.dyndns.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 03:17:03PM -0700, David Daney wrote:
-> >>Furthermore the
-> >>userspace code has to be very careful in its use of the $sp
-> >>register, so that it doesn't store data in places that will be
-> >>used/clobbered by the kernel.
-> >
-> >This is not "being careful". The stack pointer can never become
-> >invalid unless you do wacky things in asm or invoke UB.
-> >
-> >>All of this is under the control of the userspace program and done
-> >>with userspace code.
-> >
-> >For the most part it just happens by default. There is no particular
-> >intentionality needed, and certainly no hideous MIPS-specific hacks
-> >needed.
+On Mon, Oct 06, 2014 at 05:01:18PM -0400, Tejun Heo wrote:
+> Hello,
 > 
-> Yes, it happens by default.  But it wasn't magic.  It took careful
-> work by the ABI and toolchain designers to make it work.
-
-Here I disagree. All of these things are completely universal, not
-MIPS-specific.
-
-> >>I appreciate the fact that libc authors might prefer *not* to write
-> >>more code, but they could, especially if they wanted to add the
-> >>feature of non-executable stacks to their library implementation.
-> >
-> >So your position is that:
+> On Mon, Oct 06, 2014 at 10:36:27PM +0200, Luis R. Rodriguez wrote:
+> > > Do we intend to keep this param permanently?  Isn't this more of a
+> > > temp tool to be used during development?  If so, maybe we should make
+> > > that clear with __DEVEL__ too?
+> > 
+> > As its designed right now no, its not a temp tool, its there to
+> > require compatibility with old userspace. For modules we can require
+> > the module parameter but for built-in we need something else and this
+> > is what came to mind. It is also what would allow the prefer_async_probe
+> > flag too as otherwise we won't know if userspace is prepared.
 > 
-> It is not really a position that I have.  Rather a proposal for one
-> possible way to make non-executable stacks work on MIPS.
-> 
-> >
-> >1. A non-exec-stack system can only run new code produced to do extra
-> >    stuff in userspace.
-> 
-> Any non-executable stack solution for MIPS will require changes to
-> the toolchain/libc.  So it is merely a question of what form the
-> change should take.
+> I don't get it. 
 
-I disagree with this, at least for the most part. If the kernel does
-the fpu emulation correctly, there's no reason it shouldn't be
-possible to run existing binaries on a hardened kernel that does not
-even support executable stack.
+By prepared I meant that userspace can handle async probe, but
+you're right that we don't need to know that. I don't see how
+we'd be breaking old userspace by doing async probe of a driver
+is built-in right now... unless of course built-in always assumes
+all possible devices would be present after right before userspace
+init.
 
-> >2. The startup code needs to do special work in userspace on MIPS to
-> >    setup an executable area for fpu emulation.
-> 
-> Yes. Similar to how startup code has to do special work to set up
-> the TLS areas,
+> For in-kernel stuff, we already have a clear
+> synchronization point where we already synchronize all async calls.
+> Shouldn't we be flushing these async probes there too?
 
-Yes. Actually the simple way to implement this in userspace would be
-with a page-sized, page-aligned object in TLS and a special call to
-mprotect and your new syscall. One thing I'm not clear on: should this
-memory have permissions r-x or rwx? If it has rwx, that defeats a lot
-of the purpose of non-executable-stack. Hopefully it's r-x and the
-kernel bypasses the non-writability to write to it.
+This seems to be addressing if what I meant by prepared, "ready", so let
+me address this as I do think its important.
 
-> and load shared libraries.
+By async calls do you mean users of async_schedule()? I see it
+also uses system_unbound_wq as well but I do not see anyone calling
+flush_workqueue(system_unbound_wq) on the kernel. We do use
+async_synchronize_full() on kernel_init() but that just waits.
 
-Dynamic linking is completely a separate matter. Not all programs are
-even dynamic-linked.
+As it is we don't wait on init then, should we? Must we? Could / should
+we use bus.enable_kern_async=1 to enable avoiding having to wait ? At
+this point I'd prefer to address what we must do only.
 
-> >3. Every call to clone/CLONE_VM needs to be accompanied by a call to
-> >    mmap and this new syscall to set the address, and every call to
-> >    SYS_exit needs to be accompanies by a call to munmap for the
-> >    corresponding mapping.
-> >
-> 
-> No, We don't have to mmap() on each thread creation.  Many threads
-> (perhaps 512) could be handled by a single page, so the normal case
-> would be a single mmap() for the life of the program.
+> insmod'ing is
+> userland visible but there's no reason this has to be for the built-in
+> drivers.
 
-That's nice from a standpoint of avoiding memory waste, but it's
-problematic if .////
+Good point.
 
-> >This is a huge ill-designed mess.
-> >
-> 
-> Have you seen the alternatives?
+bus.enable_kern_async=1 would still also serve as a helper for the driver core
+to figure out if it should use async probe then on modules if prefer_async_probe
+was enabled. Let me know if you figure out a way to avoid it.
 
-I proposed a couple and I think they're much less ugly. Could you
-point me to the others?
-
-But perhaps you could clarify one thing for me: why is any of this
-even needed? A delay slot only exists for branch instructions, and I
-can't see any reason the kernel can't just emulate the branch
-instruction at the same time. This is a very restricted class of
-instructions that should not require any complex emulation of memory
-permissions, just manipulation of the resulting program counter value
-after the floating point instruction finishes. Or am I missing
-something?
-
-> Have you ever wondered why MIPS doesn't have non-executable stack support?
-
-I wasn't even aware that it didn't until your email.
-
-Rich
+  Luis
