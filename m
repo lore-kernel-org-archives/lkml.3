@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaJFPBp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:01:45 -0400
-Received: from mail.noteworthymedical.com ([69.16.157.150]:55411 "EHLO
-	mail.noteworthymedical.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752687AbaJFPBo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:01:44 -0400
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1752971AbaJFPBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:01:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40180 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946AbaJFPBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:01:51 -0400
+Date: Mon, 6 Oct 2014 17:01:47 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Robert Richter <rric@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141006150147.GD4372@pd.tnic>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
+ <20141006090726.GQ20170@rric.localhost>
+ <20141006145856.GA14113@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Description: Mail message body
-Subject: CONGRATULATIONS!!!!
-To: Recipients <user@noteworthymedical.com>
-From: OXFAM GB-UK <user@noteworthymedical.com>
-Date: Mon, 6 Oct 2014 16:01:16 +0100
-Reply-To: oxfamdepartmat010@secretary.net
-Message-ID: <31ca44ad-6fa9-4939-9978-e430200502b3@exsvr.MARS.PHX>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141006145856.GA14113@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have been entitled to £350,000.00 GBP. has a charity donations/aid from Oxfam GB (UK).
-please contact the National Secretary Dr. Thomas Best with your Qualification Number 
-[OXG /101/231/BDB] as soon as possible.
+On Mon, Oct 06, 2014 at 11:58:56AM -0300, Arnaldo Carvalho de Melo wrote:
+> Agreed, we can use rasd as a reference, I'm now looking for the git repo
+> url to see what it is using to prototype how I think this should be
+> done.
 
-Dr. Thomas Best
-Email: oxfamdepartmat010@secretary.net
-Oxfam-GB, United kingdom.
-www.oxfam.org.uk
+https://git.kernel.org/cgit/utils/ras/rasd.git
 
-CONGRATULATIONS! once again from all staff and board members.
-Yours faithfully,
-Robert Cornford
-(Online Coordinator)
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
