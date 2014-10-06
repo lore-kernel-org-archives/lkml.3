@@ -1,154 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaJFKWy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:22:54 -0400
-Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:36574 "EHLO
-	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751090AbaJFKWx (ORCPT
+	id S1751999AbaJFK14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:27:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:22156 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaJFK1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:22:53 -0400
-Date: Mon, 6 Oct 2014 05:22:51 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
- within 50 days
-In-Reply-To: <alpine.DEB.2.11.1410060959510.4383@nanos>
-Message-ID: <alpine.DEB.2.11.1410060521010.27574@gentwo.org>
-References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
- <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.11.1410051824190.3424@gentwo.org> <alpine.DEB.2.11.1410060959510.4383@nanos>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 6 Oct 2014 06:27:54 -0400
+X-AuditID: cbfee690-f79ab6d0000046f7-a3-54326ea8e6e3
+Message-id: <54326EAF.8060004@samsung.com>
+Date: Mon, 06 Oct 2014 19:27:59 +0900
+From: Heesub Shin <heesub.shin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.6.0
+MIME-version: 1.0
+To: Pintu Kumar <pintu.k@samsung.com>, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, john.stultz@linaro.org,
+        rebecca@android.com, ccross@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: pintu_agarwal@yahoo.com, vishnu.ps@samsung.com, iqbal.ams@samsung.com
+Subject: Re: [PATCH 1/1] [ion]: system-heap use PAGE_ALLOC_COSTLY_ORDER for
+ high order
+References: <1412584263-22531-1-git-send-email-pintu.k@samsung.com>
+In-reply-to: <1412584263-22531-1-git-send-email-pintu.k@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFIsWRmVeSWpSXmKPExsVy+t8zTd0VeUYhBlemGVjMWb+GzWL7xm+s
+	Fi8PaVrsOfOL3aJ58Xo2i4OzlzBZzP41icnizG9di8u75rBZ9H0/zG7x7e1tdosbkwstpvTd
+	ZXTg9di2exurx719h1k87lzbw+ZxYsZvFo/9c9ewe/RtWcXo8XmTnMesWYeZAjiiuGxSUnMy
+	y1KL9O0SuDJW979jL/jFV7Hk5RTmBsYpPF2MHBwSAiYSZ1ZWdjFyApliEhfurWfrYuTiEBJY
+	xigx430HK0TCROLJmRYmiMR0RonmR39ZQBJCAm8YJZY+kQQZxCugJfH2rSBImEVAVeLQp3ss
+	IGE2AW2JQ9uCQcKiAhESB/qegY3kFRCU+DEZpISLQ0TgNqPEuxOPwBLMAp4SEy+vZgaxhYEa
+	Xh/azgqxylli+pMfYDM5BVwk5n+vhyi3llg5aRsjhC0vsXnNW2aQmRICvRwSHU9PMUHcIyDx
+	bfIhFoh/ZSU2HWCGeEtS4uCKGywTGMVmITlpFpKxs5CMXcDIvIpRNLUguaA4Kb3IRK84Mbe4
+	NC9dLzk/dxMjJIon7GC8d8D6EKMAB6MSD2/kDsMQIdbEsuLK3EOMpkBXTGSWEk3OB6aKvJJ4
+	Q2MzIwtTE1NjI3NLMyVx3tdSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MPruOTy5YHHe
+	t+9f2075rDz8jF+l4enef5Jakmp3FXU/X9mxIipinfcVHvWrB3PmXE8UuiPlqMY/YY+88LW+
+	SddNtPIa5vpxzNJxOF3ZckB+Zs98A/aHv0p3SG4rnMe+dPLq/Vsn3/MuO1Gm8cVpQ6HYxwV/
+	dwZd3qPMdHzGvyMhocE/H4idrPFVYinOSDTUYi4qTgQA/f7Zdt0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQd0VeUYhBj3XtC3mrF/DZrF94zdW
+	i5eHNC32nPnFbtG8eD2bxcHZS5gsZv+axGRx5reuxeVdc9gs+r4fZrf49vY2u8WNyYUWU/ru
+	MjrwemzbvY3V496+wywed67tYfM4MeM3i8f+uWvYPfq2rGL0+LxJzmPWrMNMARxRDYw2GamJ
+	KalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAXKymUJeaUAoUC
+	EouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzVve/Yy/4xVex5OUU5gbGKTxdjJwcEgIm
+	Ek/OtDBB2GISF+6tZ+ti5OIQEpjOKNH86C8LSEJI4A2jxNInkl2MHBy8AloSb98KgoRZBFQl
+	Dn26xwISZhPQlji0LRgkLCoQIXGg7xkriM0rICjxYzJICReHiMBtRol3Jx6BJZgFPCUmXl7N
+	DGILAzW8PrSdFWKVs8T0Jz/AZnIKuEjM/14PUW4tsXLSNkYIW15i85q3zBMYBWYhWTELSdks
+	JGULGJlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQniWfSOxhXNVgcYhTgYFTi4Y3YYRgi
+	xJpYVlyZe4hRgoNZSYQ3Ps0oRIg3JbGyKrUoP76oNCe1+BCjKTAAJjJLiSbnAxNYXkm8obGJ
+	mZGlkZmxibmxsZI478FW60AhgfTEktTs1NSC1CKYPiYOTqkGRhlhy8Sv178efnxiR/zET1y/
+	VtSeYxFfc8e1wIP/Ns/ti61rzx9y65mX+Nr2jnOU2e3uVdwCCxX6fiZqrfCIUDbr1vRxtip9
+	zbjZ+cY+k7sygpyrFgV2lHQsOZOx4I0pz8RVh/dE+TY/UWP6HahqnmbX9VBiC/MywVfzV506
+	Iz3vh6hwE3PzGyWW4oxEQy3mouJEAFm2NiwoAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: Increase irq counters to 64 bit V3
+Hello Kumar,
 
-V2->V3
-  - Remove useless counter changes
-  - Track use cases for kstat_irq_cpu
-  - Verify it works on 32 bit.
+On 10/06/2014 05:31 PM, Pintu Kumar wrote:
+> The Android ion_system_heap uses allocation fallback mechanism
+> based on 8,4,0 order pages available in the system.
+> It changes gfp flags based on higher order allocation request.
+> This higher order value is hard-coded as 4, instead of using
+> the system defined higher order value.
+> Thus replacing this hard-coded value with PAGE_ALLOC_COSTLY_ORDER
+> which is defined as 3.
+> This will help mapping the higher order request in system heap with
+> the actual allocation request.
 
-V1->V2
-  - Wrong size at percpu alloc.
-  - Use u64 so that this will also work on 32 bit machines
+Quite reasonable.
 
-Irq counters can overflow easily if they are just 32 bit.
+Reviewed-by: Heesub Shin <heesub.shin@samsung.com>
 
-For example the timer interrupt occurs 1000 times per second, so
-it is predictable that the timer interrupt will overflow in
+BTW, Anyone knows how the allocation order (8,4 and 0) was decided? I 
+think only Google guys might know the answer.
 
+regards,
+heesub
 
-2^ 32 / 1000 [interrupts per second] / 86400 [seconds in a day]
-
-which results in approximately 50 days.
-
-Other irq counters for devices may wrap even faster for example
-those for high speed networking devices.
-
-This patch is needed to avoid the counter overflow by increasing
-the counters to 64 bit.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/include/linux/irqdesc.h
-===================================================================
---- linux.orig/include/linux/irqdesc.h
-+++ linux/include/linux/irqdesc.h
-@@ -41,7 +41,7 @@ struct irq_desc;
-  */
- struct irq_desc {
- 	struct irq_data		irq_data;
--	unsigned int __percpu	*kstat_irqs;
-+	u64 __percpu	*kstat_irqs;
- 	irq_flow_handler_t	handle_irq;
- #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
- 	irq_preflow_handler_t	preflow_handler;
-Index: linux/include/linux/kernel_stat.h
-===================================================================
---- linux.orig/include/linux/kernel_stat.h
-+++ linux/include/linux/kernel_stat.h
-@@ -51,7 +51,7 @@ DECLARE_PER_CPU(struct kernel_cpustat, k
-
- extern unsigned long long nr_context_switches(void);
-
--extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
-+extern u64 kstat_irqs_cpu(unsigned int irq, int cpu);
- extern void kstat_incr_irq_this_cpu(unsigned int irq);
-
- static inline void kstat_incr_softirqs_this_cpu(unsigned int irq)
-Index: linux/kernel/irq/irqdesc.c
-===================================================================
---- linux.orig/kernel/irq/irqdesc.c
-+++ linux/kernel/irq/irqdesc.c
-@@ -140,7 +140,7 @@ static struct irq_desc *alloc_desc(int i
- 	if (!desc)
- 		return NULL;
- 	/* allocate based on nr_cpu_ids */
--	desc->kstat_irqs = alloc_percpu(unsigned int);
-+	desc->kstat_irqs = alloc_percpu(u64);
- 	if (!desc->kstat_irqs)
- 		goto err_desc;
-
-@@ -532,7 +532,7 @@ void kstat_incr_irq_this_cpu(unsigned in
- 	kstat_incr_irqs_this_cpu(irq, irq_to_desc(irq));
- }
-
--unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
-+u64 kstat_irqs_cpu(unsigned int irq, int cpu)
- {
- 	struct irq_desc *desc = irq_to_desc(irq);
-
-Index: linux/kernel/irq/proc.c
-===================================================================
---- linux.orig/kernel/irq/proc.c
-+++ linux/kernel/irq/proc.c
-@@ -450,7 +450,7 @@ int show_interrupts(struct seq_file *p,
-
- 	seq_printf(p, "%*d: ", prec, i);
- 	for_each_online_cpu(j)
--		seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
-+		seq_printf(p, "%10llu ", kstat_irqs_cpu(i, j));
-
- 	if (desc->irq_data.chip) {
- 		if (desc->irq_data.chip->irq_print_chip)
-Index: linux/arch/m68k/sun3/sun3ints.c
-===================================================================
---- linux.orig/arch/m68k/sun3/sun3ints.c
-+++ linux/arch/m68k/sun3/sun3ints.c
-@@ -51,7 +51,7 @@ void sun3_disable_irq(unsigned int irq)
-
- static irqreturn_t sun3_int7(int irq, void *dev_id)
- {
--	unsigned int cnt;
-+	u64 cnt;
-
- 	cnt = kstat_irqs_cpu(irq, 0);
- 	if (!(cnt % 2000))
-Index: linux/arch/parisc/kernel/irq.c
-===================================================================
---- linux.orig/arch/parisc/kernel/irq.c
-+++ linux/arch/parisc/kernel/irq.c
-@@ -222,7 +222,7 @@ int show_interrupts(struct seq_file *p,
- 		seq_printf(p, "%3d: ", i);
- #ifdef CONFIG_SMP
- 		for_each_online_cpu(j)
--			seq_printf(p, "%10u ", kstat_irqs_cpu(i, j));
-+			seq_printf(p, "%10llu ", kstat_irqs_cpu(i, j));
- #else
- 		seq_printf(p, "%10u ", kstat_irqs(i));
- #endif
-Index: linux/arch/s390/kernel/irq.c
-===================================================================
---- linux.orig/arch/s390/kernel/irq.c
-+++ linux/arch/s390/kernel/irq.c
-@@ -136,7 +136,7 @@ int show_interrupts(struct seq_file *p,
- 		seq_printf(p, "%s: ", irqclass_main_desc[index].name);
- 		irq = irqclass_main_desc[index].irq;
- 		for_each_online_cpu(cpu)
--			seq_printf(p, "%10u ", kstat_irqs_cpu(irq, cpu));
-+			seq_printf(p, "%10llu ", kstat_irqs_cpu(irq, cpu));
- 		seq_putc(p, '\n');
- 		goto out;
- 	}
+>
+> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
+> ---
+>   drivers/staging/android/ion/ion_system_heap.c |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+> index da2a63c..e6c393f 100644
+> --- a/drivers/staging/android/ion/ion_system_heap.c
+> +++ b/drivers/staging/android/ion/ion_system_heap.c
+> @@ -65,7 +65,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
+>   	} else {
+>   		gfp_t gfp_flags = low_order_gfp_flags;
+>
+> -		if (order > 4)
+> +		if (order > PAGE_ALLOC_COSTLY_ORDER)
+>   			gfp_flags = high_order_gfp_flags;
+>   		page = alloc_pages(gfp_flags | __GFP_COMP, order);
+>   		if (!page)
+> @@ -276,7 +276,7 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
+>   		struct ion_page_pool *pool;
+>   		gfp_t gfp_flags = low_order_gfp_flags;
+>
+> -		if (orders[i] > 4)
+> +		if (orders[i] > PAGE_ALLOC_COSTLY_ORDER)
+>   			gfp_flags = high_order_gfp_flags;
+>   		pool = ion_page_pool_create(gfp_flags, orders[i]);
+>   		if (!pool)
+>
