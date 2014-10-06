@@ -1,73 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaJFSjU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 14:39:20 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:49124 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155AbaJFSjT (ORCPT
+	id S1753367AbaJFSlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 14:41:13 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:39891 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011AbaJFSlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 14:39:19 -0400
+	Mon, 6 Oct 2014 14:41:11 -0400
+Date: Mon, 6 Oct 2014 14:41:03 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] thermal: ti-soc-thermal: Switch to using managed
+ resources
+Message-ID: <20141006184101.GB5524@developer>
+References: <1411149909-13007-1-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
-In-Reply-To: <1412620095-593-1-git-send-email-geert@linux-m68k.org>
-References: <1412620095-593-1-git-send-email-geert@linux-m68k.org>
-Date: Mon, 6 Oct 2014 20:39:17 +0200
-X-Google-Sender-Auth: zO9bJDwpqe6q18szj5LxBhyWDmY
-Message-ID: <CAMuHMdWCTfJWWdeHSh3jOJx+9CCGfsONrR6X4vew4j5cULUpzg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.17
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411149909-13007-1-git-send-email-pramod.gurav@smartplayin.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 8:28 PM, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.17[1]  to v3.17-rc7[3], the summaries are:
->   - build errors: +12/-6
+Hello Pramod,
 
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_check_functionality'
-[-Werror=implicit-function-declaration]:  => 117:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_master_send'
-[-Werror=implicit-function-declaration]:  => 96:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_smbus_read_byte_data'
-[-Werror=implicit-function-declaration]:  => 28:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_smbus_read_word_data'
-[-Werror=implicit-function-declaration]:  => 64:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_smbus_write_byte_data'
-[-Werror=implicit-function-declaration]:  => 46:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_smbus_write_word_data'
-[-Werror=implicit-function-declaration]:  => 82:2
-  + /scratch/kisskb/src/drivers/base/regmap/regmap-i2c.c: error:
-implicit declaration of function 'i2c_transfer'
-[-Werror=implicit-function-declaration]:  => 130:2
-  + /scratch/kisskb/src/drivers/extcon/extcon-sm5502.c: error:
-implicit declaration of function 'i2c_add_driver'
-[-Werror=implicit-function-declaration]:  => 718:2
+On Fri, Sep 19, 2014 at 11:35:09PM +0530, Pramod Gurav wrote:
+> This change switches to managed resource APIs to allocated resources
+> such as irq, clock. Hence does away with release statements of the
+> same resorces in error lables and remove function.
+> 
+> Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: linux-pm@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/thermal/ti-soc-thermal/ti-bandgap.c | 46 ++++++++---------------------
+>  1 file changed, 12 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> index 634b6ce..e068dd5 100644
+> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+> @@ -1060,7 +1060,7 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
+>  	int status;
+>  
+>  	/* Request for gpio_86 line */
+> -	status = gpio_request(gpio_nr, "tshut");
+> +	status = devm_gpio_request(&pdev->dev, gpio_nr, "tshut");
+>  	if (status < 0) {
+>  		dev_err(bgp->dev, "Could not request for TSHUT GPIO:%i\n", 86);
+>  		return status;
+> @@ -1071,11 +1071,12 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
+>  		return status;
+>  	}
+>  
+> -	status = request_irq(gpio_to_irq(gpio_nr), ti_bandgap_tshut_irq_handler,
+> -			     IRQF_TRIGGER_RISING, "tshut", NULL);
+> +	status = devm_request_irq(&pdev->dev, gpio_to_irq(gpio_nr),
+> +				  ti_bandgap_tshut_irq_handler,
+> +				  IRQF_TRIGGER_RISING, "tshut", NULL);
+>  	if (status) {
+> -		gpio_free(gpio_nr);
+>  		dev_err(bgp->dev, "request irq failed for TSHUT");
+> +		return status;
+>  	}
+>  
+>  	return 0;
+> @@ -1104,7 +1105,7 @@ static int ti_bandgap_talert_init(struct ti_bandgap *bgp,
+>  		dev_err(&pdev->dev, "get_irq failed\n");
+>  		return bgp->irq;
+>  	}
+> -	ret = request_threaded_irq(bgp->irq, NULL,
+> +	ret = devm_request_threaded_irq(&pdev->dev, bgp->irq, NULL,
+>  				   ti_bandgap_talert_irq_handler,
+>  				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
+>  				   "talert", bgp);
+> @@ -1212,21 +1213,17 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>  		}
+>  	}
+>  
+> -	bgp->fclock = clk_get(NULL, bgp->conf->fclock_name);
+> -	ret = IS_ERR(bgp->fclock);
+> -	if (ret) {
+> +	bgp->fclock = devm_clk_get(NULL, bgp->conf->fclock_name);
+> +	if (IS_ERR(bgp->fclock)) {
+>  		dev_err(&pdev->dev, "failed to request fclock reference\n");
+> -		ret = PTR_ERR(bgp->fclock);
+> -		goto free_irqs;
+> +		return PTR_ERR(bgp->fclock);
+>  	}
+>  
+> -	bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
+> -	ret = IS_ERR(bgp->div_clk);
+> -	if (ret) {
+> +	bgp->div_clk = devm_clk_get(NULL,  bgp->conf->div_ck_name);
 
-x86_64-randconfig
+How the manager is supposed to handle  and free the clocks' resources if
+no dev is passed to devm_ functions?
 
-Fix available, even promised by the maintainer to be in 3.17-rc2:
-
-https://lkml.org/lkml/2014/8/20/874
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7938/ (118 out of 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7921/ (all 119 configs)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> +	if (IS_ERR(bgp->div_clk)) {
+>  		dev_err(&pdev->dev,
+>  			"failed to request div_ts_ck clock ref\n");
+> -		ret = PTR_ERR(bgp->div_clk);
+> -		goto free_irqs;
+> +		return PTR_ERR(bgp->div_clk);
+>  	}
+>  
+>  	for (i = 0; i < bgp->conf->sensor_count; i++) {
+> @@ -1251,7 +1248,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
+>  	    clk_rate <= 0) {
+>  		ret = -ENODEV;
+>  		dev_err(&pdev->dev, "wrong clock rate (%d)\n", clk_rate);
+> -		goto put_clks;
+>  	}
+>  
+>  	ret = clk_set_rate(bgp->div_clk, clk_rate);
+> @@ -1357,14 +1353,6 @@ remove_sensors:
+>  disable_clk:
+>  	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
+>  		clk_disable_unprepare(bgp->fclock);
+> -put_clks:
+> -	clk_put(bgp->fclock);
+> -	clk_put(bgp->div_clk);
+> -free_irqs:
+> -	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+> -		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
+> -		gpio_free(bgp->tshut_gpio);
+> -	}
+>  
+>  	return ret;
+>  }
+> @@ -1388,16 +1376,6 @@ int ti_bandgap_remove(struct platform_device *pdev)
+>  
+>  	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
+>  		clk_disable_unprepare(bgp->fclock);
+> -	clk_put(bgp->fclock);
+> -	clk_put(bgp->div_clk);
+> -
+> -	if (TI_BANDGAP_HAS(bgp, TALERT))
+> -		free_irq(bgp->irq, bgp);
+> -
+> -	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+> -		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
+> -		gpio_free(bgp->tshut_gpio);
+> -	}
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.8.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
