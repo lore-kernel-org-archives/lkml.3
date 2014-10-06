@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbaJFTo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 15:44:29 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:38895 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751316AbaJFTo0 (ORCPT
+	id S1752357AbaJFTqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 15:46:00 -0400
+Received: from resqmta-ch2-01v.sys.comcast.net ([69.252.207.33]:53906 "EHLO
+	resqmta-ch2-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750909AbaJFTp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 15:44:26 -0400
-Date: Mon, 6 Oct 2014 21:44:18 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: Oussama Ghorbel <ghorbel@pivasoftware.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>, linux-kernel@vger.kernel.org,
-        rogerq@ti.com, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] phy: omap-usb2: Enable runtime PM of omap-usb2 phy
- properly
-Message-ID: <20141006194418.GA399@debian>
-References: <1411575303-18858-1-git-send-email-ghorbel@pivasoftware.com>
- <5425677B.9030700@pivasoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5425677B.9030700@pivasoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 6 Oct 2014 15:45:58 -0400
+Date: Mon, 6 Oct 2014 14:45:56 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: David Lang <david@lang.hm>
+cc: Thomas Gleixner <tglx@linutronix.de>,
+        Richard Cochran <richardcochran@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <alpine.DEB.2.02.1410060830100.26324@nftneq.ynat.uz>
+Message-ID: <alpine.DEB.2.11.1410061445170.31391@gentwo.org>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+ <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.11.1410051824190.3424@gentwo.org> <alpine.DEB.2.11.1410060959510.4383@nanos> <alpine.DEB.2.11.1410060521010.27574@gentwo.org> <alpine.DEB.2.11.1410061449290.4383@nanos> <alpine.DEB.2.11.1410061014080.29937@gentwo.org>
+ <alpine.DEB.2.02.1410060830100.26324@nftneq.ynat.uz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 02:17:47PM +0100, Oussama Ghorbel wrote:
-> You may find merge conflict since v3.17-rc5.
-> If necessary I can send a re-based version of this patch on v3.17-rc5 for
-> seamless integration.
+On Mon, 6 Oct 2014, David Lang wrote:
 
-Looks like pandaboard USB is still broken on v3.17 due to this bug.
-Please do send an updated patch based on latest mainline so that Kishon
-can apply it easily when he gets around to it.
+> No, tools recognize that things happen (wraps, reboots, etc) and have some
+> threshold that they say "if this value changes more than the threshold,
+> something happened and it's not valid to use this delta"
+>
+> This has been the case for decades. If you have a monitoring tool that does
+> not account for this sort of thing, you have an immature tool.
 
-> On 09/24/2014 05:15 PM, Oussama Ghorbel wrote:
-> >The USB OTG port does not work since v3.16 on omap platform.
-> >This is a regression introduced by the commit
-> >eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
-> >  and remove).
-> >This because the call to pm_runtime_enable() function is moved after the
-> >call to devm_phy_create() function, which has side effect since later in
-> >the subsequent calls of devm_phy_create() there is a check with
-> >pm_runtime_enabled() to configure few things.
-> >
-> >Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
-> >---
-> >  drivers/phy/phy-omap-usb2.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> >
-> >diff --git a/drivers/phy/phy-omap-usb2.c b/drivers/phy/phy-omap-usb2.c
-> >index 34b3961..3fb9293 100644
-> >--- a/drivers/phy/phy-omap-usb2.c
-> >+++ b/drivers/phy/phy-omap-usb2.c
-> >@@ -262,14 +262,16 @@ static int omap_usb2_probe(struct platform_device *pdev)
-> >  	otg->phy		= &phy->phy;
-> >  	platform_set_drvdata(pdev, phy);
-> >+	pm_runtime_enable(phy->dev);
-> >  	generic_phy = devm_phy_create(phy->dev, &ops, NULL);
-> >-	if (IS_ERR(generic_phy))
-> >+	if (IS_ERR(generic_phy)) {
-> >+		pm_runtime_disable(phy->dev);
-> >  		return PTR_ERR(generic_phy);
-> >+	}
-> >  	phy_set_drvdata(generic_phy, phy);
-> >-	pm_runtime_enable(phy->dev);
-> >  	phy_provider = devm_of_phy_provider_register(phy->dev,
-> >  			of_phy_simple_xlate);
-> >  	if (IS_ERR(phy_provider)) {
+Well maybe put those statement somewhere to find for those writing
+diagnostics tools that use the counters.
+
