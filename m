@@ -1,133 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaJFVGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:06:05 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:34424 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbaJFVGD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:06:03 -0400
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
-        Zach Kuznia <zork@chromium.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH v5 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
-Date: Mon,  6 Oct 2014 14:05:59 -0700
-Message-Id: <1412629559-16624-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <CAP_ceTz8BRQoFxkgb085_gOh29x8anvQNodAGMkgOukk02x29g@mail.gmail.com>
-References: <CAP_ceTz8BRQoFxkgb085_gOh29x8anvQNodAGMkgOukk02x29g@mail.gmail.com>
+	id S1752562AbaJFVG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:06:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113AbaJFVG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:06:26 -0400
+From: Josh Stone <jistone@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Josh Stone <jistone@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jakub Jelinek <jakub@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        =?UTF-8?q?Michel=20D=C3=A4nzer?= <michel@daenzer.net>
+Subject: [PATCH] Kbuild: Add an option to enable GCC VTA
+Date: Mon,  6 Oct 2014 14:05:36 -0700
+Message-Id: <1412629536-21512-1-git-send-email-jistone@redhat.com>
+In-Reply-To: <CA+55aFz_wx5BVir=WviqwE_ysKMXb1Ka8T7L+Gq2NT9S=yo2_w@mail.gmail.com>
+References: <CA+55aFz_wx5BVir=WviqwE_ysKMXb1Ka8T7L+Gq2NT9S=yo2_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
-CT_PANTILT_RELATIVE_CONTROL terminal control request.
+Due to recent codegen issues, gcc -fvar-tracking-assignments was
+unconditionally disabled in commit 2062afb4f804a ("Fix gcc-4.9.0
+miscompilation of load_balance() in scheduler").  However, this reduces
+the debuginfo coverage for variable locations, especially in inline
+functions.  VTA is certainly not perfect either in those cases, but it
+is much better than without.  With compiler versions that have fixed the
+codegen bugs, we would prefer to have the better details for SystemTap,
+and surely other debuginfo consumers like perf will benefit as well.
 
-Tested by plugging a Logitech ConferenceCam C3000e USB camera
-and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
-Verified that it can pan and tilt at the same time in both directions.
+This patch simply makes CONFIG_DEBUG_INFO_VTA an option.  I considered
+Frank and Linus's discussion of a cc-option-like -fcompare-debug test,
+but I'm convinced that a narrow test of an arch-specific codegen issue
+is not really useful.  GCC has their own regression tests for this, so
+I'd suggest GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle is more
+useful for kernel developers to test confidence.
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-Reviewed-by: Pawel Osciak <posciak@chromium.org>
+In fact, I ran into a couple more issues when testing for this patch[1],
+although neither of those had any codegen impact.
+ [1] https://bugzilla.redhat.com/show_bug.cgi?id=1140872
+
+With gcc-4.9.1-11.fc22, I can now build 3.17 with Fedora's i686 and
+x86_64 configs, and this is completely clean with GCC_COMPARE_DEBUG.
+
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Michel Dänzer <michel@daenzer.net>
+Signed-off-by: Josh Stone <jistone@redhat.com>
 ---
-Changes from v1/v2:
-- rebased
-Changes from v3:
-- removed gerrit-id
-Chnages from v4:
-- switched "offset" to unsigned int
+ Makefile          |  4 ++++
+ lib/Kconfig.debug | 18 +++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
- drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 55 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
-index 0eb82106..d2d1755 100644
---- a/drivers/media/usb/uvc/uvc_ctrl.c
-+++ b/drivers/media/usb/uvc/uvc_ctrl.c
-@@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
- 		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
- 		.index		= 12,
- 		.size		= 4,
--		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
--				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
--				| UVC_CTRL_FLAG_GET_DEF
-+		.flags		= UVC_CTRL_FLAG_SET_CUR
-+				| UVC_CTRL_FLAG_GET_RANGE
- 				| UVC_CTRL_FLAG_AUTO_UPDATE,
- 	},
- 	{
-@@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
- 	data[2] = min((int)abs(value), 0xff);
- }
+diff --git a/Makefile b/Makefile
+index b77de27e58fc..dc107248beb5 100644
+--- a/Makefile
++++ b/Makefile
+@@ -709,7 +709,11 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
+ endif
+ endif
  
-+static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
-+	__u8 query, const __u8 *data)
-+{
-+	unsigned int first = mapping->offset / 8;
-+	__s8 rel = (__s8)data[first];
++ifdef CONFIG_DEBUG_INFO_VTA
++KBUILD_CFLAGS   += $(call cc-option, -fvar-tracking-assignments)
++else
+ KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
++endif
+ 
+ ifdef CONFIG_DEBUG_INFO
+ ifdef CONFIG_DEBUG_INFO_SPLIT
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a28590083622..ce1107439d7d 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -165,7 +165,23 @@ config DEBUG_INFO_DWARF4
+ 	  Generate dwarf4 debug info. This requires recent versions
+ 	  of gcc and gdb. It makes the debug information larger.
+ 	  But it significantly improves the success of resolving
+-	  variables in gdb on optimized code.
++	  variables in gdb on optimized code.  The gcc docs also
++	  recommend enabling -fvar-tracking-assignments for maximum
++	  benefit. (see DEBUG_INFO_VTA)
 +
-+	switch (query) {
-+	case UVC_GET_CUR:
-+		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
-+						 : -data[first+1]);
-+	case UVC_GET_MIN:
-+		return -data[first+1];
-+	case UVC_GET_MAX:
-+	case UVC_GET_RES:
-+	case UVC_GET_DEF:
-+	default:
-+		return data[first+1];
-+	}
-+}
++config DEBUG_INFO_VTA
++	bool "Enable var-tracking-assignments for debuginfo"
++	depends on DEBUG_INFO
++	help
++	  Enable gcc -fvar-tracking-assignments for improved debug
++	  information on variable locations in optimized code.  Per
++	  gcc, DEBUG_INFO_DWARF4 is recommended for best use of VTA.
 +
-+static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
-+	__s32 value, __u8 *data)
-+{
-+	unsigned int first = mapping->offset / 8;
-+
-+	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
-+	data[first+1] = min_t(int, abs(value), 0xff);
-+}
-+
- static struct uvc_control_mapping uvc_ctrl_mappings[] = {
- 	{
- 		.id		= V4L2_CID_BRIGHTNESS,
-@@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
- 		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
- 	},
- 	{
-+		.id		= V4L2_CID_PAN_SPEED,
-+		.name		= "Pan (Speed)",
-+		.entity		= UVC_GUID_UVC_CAMERA,
-+		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-+		.size		= 16,
-+		.offset		= 0,
-+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-+		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-+		.get		= uvc_ctrl_get_rel_speed,
-+		.set		= uvc_ctrl_set_rel_speed,
-+	},
-+	{
-+		.id		= V4L2_CID_TILT_SPEED,
-+		.name		= "Tilt (Speed)",
-+		.entity		= UVC_GUID_UVC_CAMERA,
-+		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
-+		.size		= 16,
-+		.offset		= 16,
-+		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
-+		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
-+		.get		= uvc_ctrl_get_rel_speed,
-+		.set		= uvc_ctrl_set_rel_speed,
-+	},
-+	{
- 		.id		= V4L2_CID_PRIVACY,
- 		.name		= "Privacy",
- 		.entity		= UVC_GUID_UVC_CAMERA,
++	  VTA has been implicated in codegen bugs (gcc PR61801,
++	  PR61904), so this may deserve some caution.  One can set
++	  GCC_COMPARE_DEBUG=-fvar-tracking-assignments-toggle in the
++	  environment to automatically compile everything both ways,
++	  generating an error if anything differs.
+ 
+ config ENABLE_WARN_DEPRECATED
+ 	bool "Enable __deprecated logic"
 -- 
-2.1.0.rc2.206.gedb03e5
+1.9.3
 
