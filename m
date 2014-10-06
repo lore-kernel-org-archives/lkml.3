@@ -1,158 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbaJFM3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:29:04 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:40209 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaJFM3A (ORCPT
+	id S1752661AbaJFM3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:29:33 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:55371 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895AbaJFM3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:29:00 -0400
-Date: Mon, 6 Oct 2014 14:28:57 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
-Subject: Re: [PATCH v7 03/11] pwm: add support for atmel-hlcdc-pwm device
-Message-ID: <20141006122856.GB26833@ulmo>
-References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
- <1412175188-28278-4-git-send-email-boris.brezillon@free-electrons.com>
- <20141006104634.GE25202@ulmo>
- <20141006135009.6cd980a1@bbrezillon>
+	Mon, 6 Oct 2014 08:29:30 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Shuah Khan <shuahkh@osg.samsung.com>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Antti Palosaari <crope@iki.fi>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        sakari.ailus@linux.intel.com, ramakrmu@cisco.com,
+        Devin Heitmueller <dheitmueller@kernellabs.co>, olebowle@gmx.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] media: v4l2-core changes to use media tuner token api
+Date: Mon, 06 Oct 2014 15:29:37 +0300
+Message-ID: <2124234.6Vac6srKHs@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <5422B857.9020007@xs4all.nl>
+References: <cover.1411397045.git.shuahkh@osg.samsung.com> <5421DC1A.4030509@osg.samsung.com> <5422B857.9020007@xs4all.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
-Content-Disposition: inline
-In-Reply-To: <20141006135009.6cd980a1@bbrezillon>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans,
 
---XOIedfhf+7KOe/yw
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday 24 September 2014 14:25:59 Hans Verkuil wrote:
+> On 09/23/2014 10:46 PM, Shuah Khan wrote:
+> > Hi Devin/Mauro/Hans,
+> > 
+> > Summarizing the discussion on v4l to keep others on this
+> > thread in the loop. Please see below:
+> > 
+> > Hans! Could you please take a look and see if it raises
+> > any red flags for you.
+> > 
+> > On 09/23/2014 08:17 AM, Devin Heitmueller wrote:
+> >> We can always start with coarse locking on open/close, and do finer
+> >> grained locking down the road if needed - or simply change the
+> >> currently undefined behavior in the spec to say that you have to close
+> >> the device handle before attempting to open the other side of the
+> >> device.
+> > 
+> > I share the same concerns about fine grain locking approach that
+> > requires changes to various v4l2 ioctls to hold the token. My
+> > concern with the current approach is that we won't be able to find
+> > all the v4l paths to secure. During my testing, it is clear that
+> > several applications don't seem to check ioctls return codes and
+> > even if one of the ioctls returns -EBUSY, applications keep calling
+> > other ioctls instead of exiting with device busy condition.
+> 
+> Let's be realistic: if an application doesn't test for error codes,
+> then that's the problem of the application. Also, EBUSY will only be
+> returned if someone else is holding the tuner in a different mode.
+> And that didn't work anyway (and probably in worse ways too if the
+> driver would forcefully change the tuner mode).
+> 
+> So I really don't see a problem with this.
 
-On Mon, Oct 06, 2014 at 01:50:09PM +0200, Boris Brezillon wrote:
-> On Mon, 6 Oct 2014 12:46:35 +0200 Thierry Reding <thierry.reding@gmail.co=
-m> wrote:
-> > On Wed, Oct 01, 2014 at 04:53:00PM +0200, Boris Brezillon wrote:
-[...]
-> > > +	if (pres > ATMEL_HLCDC_PWMPS_MAX)
-> > > +		return -EINVAL;
-> >=20
-> > I think the condition above needs to be "pres =3D=3D ATMEL_HLCDC_PWMPS_=
-MAX",
-> > otherwise this will never be true.
->=20
-> Actually the previous loop is:
->=20
-> 	for (pres =3D 0; pres *<=3D* ATMEL_HLCDC_PWMPS_MAX; pres++)
->=20
-> thus pres will be equal to ATMEL_HLCDC_PWMPS_MAX + 1 when no
-> appropriate prescaler is found.
+I somehow agree, but I believe for this to work we need to offer applications 
+with a way to find out about the constraints associated with the shared tuner. 
+We can't expect userspace to properly deal with errors if they can't find out 
+from information exposed by the kernel how to deal with them. From an end-user 
+point of view, a dialog box saying EBUSY is pretty much useless if we can't 
+tell the user that they can't watch TV on their XYZ DVB device because the 
+radio device ABC is currently in use.
 
-Indeed so.
+> > Compared to the current approach, holding lock in open and releasing
+> > it in close is cleaner with predictable failure conditions. It is lot
+> > easier to maintain. In addition, this approach keeps it same as the
+> > dvb core token hold approach as outlined below.
+> 
+> Absolutely not an option for v4l2. You should always be able to open
+> a v4l2 device, regardless of the tuner mode or any other mode.
+> 
+> The only exception is a radio tuner device: that should take the tuner
+> on open. I think this is a very unfortunate design and I wish that that
+> could be dropped.
+> 
+> One thing that we haven't looked at at all is what should be done if
+> the current input is not a tuner but a composite or S-Video input.
+> 
+> It is likely (I would have to test this to be sure) that you can capture
+> from a DVB tuner and at the same time from an S-Video input without any
+> problems. By taking the tuner token unconditionally this would become
+> impossible. But doing this right will require more work.
+> 
+> BTW, what happens if the analog video part of a hybrid board doesn't have
+> a tuner but only S-Video/Composite inputs? I think I've seen such boards
+> actually. I would have to dig through my collection though.
+> 
+> > dvb on the other hand is easier with its clean entry and exit points.
+> > In the case of dvb, the lock is held when the device is opened in
+> > read/write mode before dvb front-end thread gets started and released
+> > when thread exits.
+> > 
+> > I discussed this a couple of times in the past during development
+> > for this current patch series. The concern has been that a number of
+> > currently supported use-cases will break with the simpler approach
+> > to lock when v4l device is opened and unlock when it is closed.
+> > 
+> > As we discussed this morning and agreed on giving the simpler
+> > approach a try first keeping the finer grain locking option
+> > open for revisit. This would be acceptable provided the token
+> > code is tested on existing apps, including mythtv, kradio,
+> > gnome-radio.
+> 
+> Nack from me. Taking a tuner token should only happen when the device
+> actually needs the tuner. For DVB that's easy, since whenever you open
+> the frontend you *know* you want the tuner.
+> 
+> But that's much more difficult for V4L2 since there are so many
+> combinations, including many that don't need a tuner at all such as HDMI,
+> Composite etc. inputs.
+> 
+> > In addition to releasing the token at device close, release the token
+> > if an app decides to use S_PRIORITY to release the streaming ownership
+> > e. g. V4L2_PRIORITY_BACKGROUND
+> 
+> S_PRIORITY has nothing to do with tuner ownership. If there is a real need
+> to release the token at another time than on close (and I don't see
+> such a need), then make a new ioctl. Let's not overload S_PRIO with an
+> unrelated action.
+> 
+> > Devin recommended testing on devices that have an encoder to cover
+> > the cases where there are multiple /dev/videoX nodes tied to the
+> > same tuner.
+> 
+> Good examples are cx23885 (already vb2) and cx88 (the vb2 patches have
+> been posted, but not yet merged). It shouldn't be too hard to find
+> hardware based on those chipsets.
+> 
+> > Please check if I captured it correctly. I can get started on the
+> > simpler approach and see where it takes us. I have to change the
+> > v4l2 and driver v4l2 patches. dvb and the rest can stay the same.
+> 
+> As mentioned, Nack for the simpler approach from me. That's simply
+> too simple :-)
+> 
+> Note: I'm travelling and attending a conference, so my availability for
+> the rest of the week will probably be limited.
 
-> > > +		regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(0),
-> > > +				   ATMEL_HLCDC_CLKPWMSEL, gencfg);
-> > > +	}
-> > > +
-> > > +	do_div(pwmcval, period_ns);
-> > > +	if (pwmcval > 255)
-> >=20
-> > The PWM core already makes sure that duty_ns <=3D period_ns, so pwmcval
-> > could be anywhere between 0 and 256 here. Where does the disconnect come
-> > from? Why not make pwmcval =3D duty_ns * 255 if that's the maximum?
->=20
-> Here is what the datasheet says:
->=20
-> "Due to the comparison mechanism, the output pulse has a width between
-> zero and 255 PWM counter cycles. Thus by adding a simple passive filter
-> outside the chip, an analog voltage between 0 and (255/256) =C3=97 VDD can
-> be obtained (for the positive polarity case, or between (1/256) =C3=97 VDD
-> and VDD for the negative polarity case). Other voltage values can be
-> obtained by adding active external circuitry."
->=20
-> Given this explanation we should divide by 256, but 256/256 is a
-> forbidden value, hence I just use the maximum available one (255) when
-> I'm asked to configure a duty cycle occupying the whole period.
+-- 
+Regards,
 
-Okay, perhaps you can summarize the above explanation from the datasheet
-in a comment to clarify.
+Laurent Pinchart
 
-> > > +		pwmcval =3D 255;
-> > > +
-> > > +	pwmcfg |=3D ATMEL_HLCDC_PWMCVAL(pwmcval);
-> > > +
-> > > +	regmap_update_bits(hlcdc->regmap, ATMEL_HLCDC_CFG(6),
-> > > +			   ATMEL_HLCDC_PWMCVAL_MASK | ATMEL_HLCDC_PWMPS_MASK,
-> > > +			   pwmcfg);
-> > > +
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int atmel_hlcdc_pwm_set_polarity(struct pwm_chip *c,
-> > > +					struct pwm_device *pwm,
-> > > +					enum pwm_polarity polarity)
-> > > +{
-> > > +	struct atmel_hlcdc_pwm_chip *chip =3D
-> > > +				pwm_chip_to_atmel_hlcdc_pwm_chip(c);
-> > > +	struct atmel_hlcdc *hlcdc =3D chip->hlcdc;
-> > > +	u32 cfg =3D 0;
-> > > +
-> > > +	if (polarity =3D=3D PWM_POLARITY_NORMAL)
-> > > +		cfg =3D ATMEL_HLCDC_PWMPOL;
-> >=20
-> > That's strange. Inverse polarity is the default on this hardware?
->=20
-> Quote from the datasheet:
->=20
-> "
-> =E2=80=A2 PWMPOL: LCD Controller PWM Signal Polarity
-> This bit defines the polarity of the PWM output signal. If set to one,
-> the output pulses are high level (the output will be high when- ever
-> the value in the counter is less than the value CVAL) If set to zero,
-> the output pulses are low level.
-> "
->=20
-> My understanding is that ATMEL_HLCDC_PWMPOL should be set when using
-> normal polarity (and my tests confirm that it works as expected ;-)).
-
-Yes, sounds good then.
-
-Thierry
-
---XOIedfhf+7KOe/yw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUMosIAAoJEN0jrNd/PrOhipMQALRQNSCSyeBPiLC0t4MxuVqd
-QCZFte0SHv0+ubzwx9NgF4VIG/3TmMB5zfqITh+38j/mIzaP/iLrEG6A++nwLUja
-qfEGWmHpQJWYLZV/XTkhpFY2R7xiyVtKEJ5X2/ijneBnqPvRgTYH7dixBpgnk0iy
-aHTXAFwKTxvSpz+hgk2HfQU+XKy92qwYJAdwq/xpoM1K4D0D4Q+mJqzzrhyMpk3u
-8j7aLNfnRlM7vDclxRPuIWqczcIpRsxFlBMMNPtB2X1heoAE+yHhysMHrgYDAaLq
-QLjKdWDpC3EOms9s5he6j0r0Yhr7lmG0W+qUPeurs5F1I1TyApBl9hVGZFDBrMkm
-mkG/bambm3JVoQCFZ8gQ4dbPxUepvSTDpq94pELNkX5BAsaYJE7Qsl2nUXf3sSrF
-dVKYDEOIYMHBumDCG0NjqC7pRYvB2XAD0KwcaSsaGOMZrGmR7rG+ataA+7zkASmN
-vuRmP8IMq2Gw//Ty+tFeIiTlDylEqX6LpwliAoGJxSFZ0FJloVK1ObuXJ+9DoqkH
-JCh5MP8UkbiYE/aa0Q/u/ce900YUHN5UPOh/gaENFsbZPmnC+Qcwtv5BQqfGCQOQ
-eOVLFH+eFVXN2eu69sGETaVPu0M63DJrWeP7ilM8v+rKz337bLHVPrOH5WMdpjGz
-xnwlNW8O+FZBWlYYSpL4
-=fOLP
------END PGP SIGNATURE-----
-
---XOIedfhf+7KOe/yw--
