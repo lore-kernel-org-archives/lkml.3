@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbaJFWE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 18:04:29 -0400
-Received: from smtprelay0076.hostedemail.com ([216.40.44.76]:49874 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750956AbaJFWE2 (ORCPT
+	id S1752042AbaJFWMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 18:12:32 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:39627 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaJFWMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 18:04:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3874:4321:5007:6691:7576:7652:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13018:13019:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: patch44_99d406c83f2c
-X-Filterd-Recvd-Size: 1632
-Message-ID: <1412633064.2916.46.camel@joe-AO725>
+	Mon, 6 Oct 2014 18:12:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412632298.2916.42.camel@joe-AO725>
+References: <1412632298.2916.42.camel@joe-AO725>
+Date: Mon, 6 Oct 2014 15:12:28 -0700
+Message-ID: <CAHA+R7NjP42U+oggUMVXLOde22=d46BGA2Hrjms16+288pGbuw@mail.gmail.com>
 Subject: Re: [PATCH net-next] net: core: Quiet W=1 warnings for unused vars
  and static functions
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.fastabend@gmail.com
-Date: Mon, 06 Oct 2014 15:04:24 -0700
-In-Reply-To: <20141006.175612.1709169088283433326.davem@davemloft.net>
-References: <1412632298.2916.42.camel@joe-AO725>
-	 <20141006.175612.1709169088283433326.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+From: Cong Wang <cwang@twopensource.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        John Fastabend <john.fastabend@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-06 at 17:56 -0400, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Mon, 06 Oct 2014 14:51:38 -0700
-> 
-> > Reduce noise when compiling W=1.
-[]
-> BTW, this patch reminds me that if people think there are
-> subdirectories where we can turn on things like -Werror in the
-> networking I would be very happy to apply such patches.
-[]
-> Things like net/core/ for example should be doable for sure.
+On Mon, Oct 6, 2014 at 2:51 PM, Joe Perches <joe@perches.com> wrote:
+> John, can you please verify that these gen_stats accesses
+> are unnecessary?  I believe the compiler can elide them in
+> any case, but I'm not sure what you intended here.
+>
+>  net/core/dev.c       | 4 ++--
+>  net/core/gen_stats.c | 4 ----
+>  net/core/rtnetlink.c | 3 +--
+>  3 files changed, 3 insertions(+), 8 deletions(-)
 
-I don't have any significant opposition to -Werror, but
-I think there are real arguments _against_ using -Werror.
-
-I think the primary one is new compiler versions have a
-tendency to add new warnings for various things that can
-unnecessarily and unpredictably break the build.
+You need to split this patch.
 
 
+> diff --git a/net/core/gen_stats.c b/net/core/gen_stats.c
+> index 14681b9..01be9cf 100644
+> --- a/net/core/gen_stats.c
+> +++ b/net/core/gen_stats.c
+> @@ -106,13 +106,9 @@ __gnet_stats_copy_basic_cpu(struct gnet_stats_basic_packed *bstats,
+>         for_each_possible_cpu(i) {
+>                 struct gnet_stats_basic_cpu *bcpu = per_cpu_ptr(cpu, i);
+>                 unsigned int start;
+> -               __u64 bytes;
+> -               __u32 packets;
+>
+>                 do {
+>                         start = u64_stats_fetch_begin_irq(&bcpu->syncp);
+> -                       bytes = bcpu->bstats.bytes;
+> -                       packets = bcpu->bstats.packets;
+>                 } while (u64_stats_fetch_retry_irq(&bcpu->syncp, start));
 
 
+Looks like we really need them:
+
+diff --git a/net/core/gen_stats.c b/net/core/gen_stats.c
+index 14681b9..7948ecf 100644
+--- a/net/core/gen_stats.c
++++ b/net/core/gen_stats.c
+@@ -115,8 +115,8 @@ __gnet_stats_copy_basic_cpu(struct
+gnet_stats_basic_packed *bstats,
+                        packets = bcpu->bstats.packets;
+                } while (u64_stats_fetch_retry_irq(&bcpu->syncp, start));
+
+-               bstats->bytes += bcpu->bstats.bytes;
+-               bstats->packets += bcpu->bstats.packets;
++               bstats->bytes += bytes;
++               bstats->packets += packets;
+        }
+ }
