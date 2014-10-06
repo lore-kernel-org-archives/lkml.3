@@ -1,417 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050AbaJFNyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:54:04 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:32794 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaJFNxB (ORCPT
+	id S1753094AbaJFNy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:54:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55905 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753023AbaJFNyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:53:01 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] asm-generic/io.h: Implement generic {read,write}s*()
-Date: Mon,  6 Oct 2014 15:52:39 +0200
-Message-Id: <1412603561-27653-8-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
-References: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
+	Mon, 6 Oct 2014 09:54:02 -0400
+Date: Mon, 6 Oct 2014 15:53:58 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v7 06/11] drm: add DT bindings documentation for
+ atmel-hlcdc-dc driver
+Message-ID: <20141006155358.61a2a30c@bbrezillon>
+In-Reply-To: <20141006123506.GC26833@ulmo>
+References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
+	<20141006105433.GG25202@ulmo>
+	<20141006141440.32fae2ef@bbrezillon>
+	<20141006123506.GC26833@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Mon, 6 Oct 2014 14:35:06 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-Currently driver writers need to use io{read,write}{8,16,32}_rep() when
-accessing FIFO registers portably. This is bad for two reasons: it is
-inconsistent with how other registers are accessed using the standard
-{read,write}{b,w,l}() functions, which can lead to confusion. On some
-architectures the io{read,write}*() functions also need to perform some
-extra checks to determine whether an address is memory-mapped or refers
-to I/O space. Drivers which can be expected to never use I/O can safely
-use the {read,write}s{b,w,l,q}(), just like they use their non-string
-variants and there's no need for these extra checks.
+> On Mon, Oct 06, 2014 at 02:14:40PM +0200, Boris Brezillon wrote:
+> > On Mon, 6 Oct 2014 12:54:34 +0200
+> > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > 
+> > > On Wed, Oct 01, 2014 at 04:53:03PM +0200, Boris Brezillon wrote:
+> > > > From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > 
+> > > > The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
+> > > > at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
+> > > > controller device.
+> > > > 
+> > > > The HLCDC block provides a single RGB output port, and only supports LCD
+> > > > panels connection to LCD panels for now.
+> > > > 
+> > > > The atmel,panel property link the HLCDC RGB output with the LCD panel
+> > > > connected on this port (note that the HLCDC RGB connector implementation
+> > > > makes use of the DRM panel framework).
+> > > > 
+> > > > Connection to other external devices (DRM bridges) might be added later by
+> > > > mean of a new atmel,xxx (atmel,bridge) property.
+> > > > 
+> > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > ---
+> > > >  .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     | 53 ++++++++++++++++++++++
+> > > >  1 file changed, 53 insertions(+)
+> > > >  create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > new file mode 100644
+> > > > index 0000000..ebc1a91
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > @@ -0,0 +1,53 @@
+> > > > +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
+> > > > +
+> > > > +The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
+> > > > +See ../mfd/atmel-hlcdc.txt for more details.
+> > > > +
+> > > > +Required properties:
+> > > > + - compatible: value should be "atmel,hlcdc-display-controller"
+> > > > + - pinctrl-names: the pin control state names. Should contain "default".
+> > > > + - pinctrl-0: should contain the default pinctrl states.
+> > > > + - #address-cells: should be set to 1.
+> > > > + - #size-cells: should be set to 0.
+> > > > +
+> > > > +Required children nodes:
+> > > > + Children nodes are encoding available output ports and their connections
+> > > > + to external devices using the OF graph reprensentation (see ../graph.txt).
+> > > > + At least one port node is required.
+> > > 
+> > > Are the connections configurable at runtime? Does the SoC have IP blocks
+> > > for HDMI or other types of outputs or does it provide only RGB output to
+> > > external blocks?
+> > 
+> > No, there's only one RGB output port, but you can connect more than one
+> > device on the RGB port (should we call it DPI port ?).
+> > Actually Atmel connected an HDMI encoder and an LCD panel connected on
+> > the same port on their dev kit.
+> 
+> This was discussed in some other thread if I remember correctly. I still
+> think that the HLCDC node should only contain a single output, no matter
+> how many encoders or panels get connected.
+> 
+> So the output represents the set of signals that exit the IP block, but
+> what's connected to them on the board is a board-level detail and
+> therefore should go into the board DTS.
+> 
+> In the above case of the Atmel devkit, is there any way to control where
+> the signal goes or does it just go to both the panel and HDMI encoder at
+> the same time and it's up to the user to properly configure the output
+> in order to get either HDMI or panel to display anything?
 
-This patch implements generic versions of readsb(), readsw(), readsl(),
-readsq(), writesb(), writesw(), writesl() and writesq(). Variants of
-these string functions for I/O accesses (ins*() and outs*() as well as
-ioread*_rep() and iowrite*_rep()) are now implemented in terms of the
-new functions.
+No there's no way to control where the signal goes.
+What you can control though, is the activation of the associated
+encoder/connectors connected on this bus (using dpms).
 
-Going forward, {read,write}{,s}{b,w,l,q}() should be used consistently
-by drivers for devices that will only ever be memory-mapped and hence
-don't need to access I/O space, whereas io{read,write}{8,16,32}_rep()
-should be used by drivers for devices that can be either memory-mapped
-or I/O-mapped.
+And yes it's up to the user to choose the appropriate mode:
+- display on only one slave device: in this case you're free to choose
+  any of the mode supported by the slave device
+- display on all slave devices: in this case you'll have to find a mode
+  (drm_display_mode) and an bus format (video_bus_format) that suits all
+  slave devices
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Changes in v5:
-- split off from reconciliation patch
 
- include/asm-generic/io.h | 271 +++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 238 insertions(+), 33 deletions(-)
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index fb62c621acf9..00483d769d86 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -174,96 +174,137 @@ static inline void writeq(u64 value, volatile void __iomem *addr)
- #endif
- #endif /* CONFIG_64BIT */
- 
--#ifndef insb
--static inline void insb(unsigned long addr, void *buffer, int count)
-+/*
-+ * {read,write}s{b,w,l,q}() repeatedly access the same memory address in
-+ * native endianness in 8-, 16-, 32- or 64-bit chunks (@count times).
-+ */
-+#ifndef readsb
-+#define readsb readsb
-+static inline void readsb(const volatile void __iomem *addr, void *buffer,
-+			  unsigned int count)
- {
- 	if (count) {
- 		u8 *buf = buffer;
-+
- 		do {
--			u8 x = __raw_readb(addr + PCI_IOBASE);
-+			u8 x = __raw_readb(addr);
- 			*buf++ = x;
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef insw
--static inline void insw(unsigned long addr, void *buffer, int count)
-+#ifndef readsw
-+#define readsw readsw
-+static inline void readsw(const volatile void __iomem *addr, void *buffer,
-+			  unsigned int count)
- {
- 	if (count) {
- 		u16 *buf = buffer;
-+
- 		do {
--			u16 x = __raw_readw(addr + PCI_IOBASE);
-+			u16 x = __raw_readw(addr);
- 			*buf++ = x;
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef insl
--static inline void insl(unsigned long addr, void *buffer, int count)
-+#ifndef readsl
-+#define readsl readsl
-+static inline void readsl(const volatile void __iomem *addr, void *buffer,
-+			  unsigned int count)
- {
- 	if (count) {
- 		u32 *buf = buffer;
-+
- 		do {
--			u32 x = __raw_readl(addr + PCI_IOBASE);
-+			u32 x = __raw_readl(addr);
- 			*buf++ = x;
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef outsb
--static inline void outsb(unsigned long addr, const void *buffer, int count)
-+#ifdef CONFIG_64BIT
-+#ifndef readsq
-+#define readsq readsq
-+static inline void readsq(const volatile void __iomem *addr, void *buffer,
-+			  unsigned int count)
-+{
-+	if (count) {
-+		u64 *buf = buffer;
-+
-+		do {
-+			u64 x = __raw_readq(addr);
-+			*buf++ = x;
-+		} while (--count);
-+	}
-+}
-+#endif
-+#endif /* CONFIG_64BIT */
-+
-+#ifndef writesb
-+#define writesb writesb
-+static inline void writesb(volatile void __iomem *addr, const void *buffer,
-+			   unsigned int count)
- {
- 	if (count) {
- 		const u8 *buf = buffer;
-+
- 		do {
--			__raw_writeb(*buf++, addr + PCI_IOBASE);
-+			__raw_writeb(*buf++, addr);
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef outsw
--static inline void outsw(unsigned long addr, const void *buffer, int count)
-+#ifndef writesw
-+#define writesw writesw
-+static inline void writesw(volatile void __iomem *addr, const void *buffer,
-+			   unsigned int count)
- {
- 	if (count) {
- 		const u16 *buf = buffer;
-+
- 		do {
--			__raw_writew(*buf++, addr + PCI_IOBASE);
-+			__raw_writew(*buf++, addr);
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef outsl
--static inline void outsl(unsigned long addr, const void *buffer, int count)
-+#ifndef writesl
-+#define writesl writesl
-+static inline void writesl(volatile void __iomem *addr, const void *buffer,
-+			   unsigned int count)
- {
- 	if (count) {
- 		const u32 *buf = buffer;
-+
- 		do {
--			__raw_writel(*buf++, addr + PCI_IOBASE);
-+			__raw_writel(*buf++, addr);
- 		} while (--count);
- 	}
- }
- #endif
- 
--#ifndef CONFIG_GENERIC_IOMAP
--#define ioread8_rep(p, dst, count) \
--	insb((unsigned long) (p), (dst), (count))
--#define ioread16_rep(p, dst, count) \
--	insw((unsigned long) (p), (dst), (count))
--#define ioread32_rep(p, dst, count) \
--	insl((unsigned long) (p), (dst), (count))
--
--#define iowrite8_rep(p, src, count) \
--	outsb((unsigned long) (p), (src), (count))
--#define iowrite16_rep(p, src, count) \
--	outsw((unsigned long) (p), (src), (count))
--#define iowrite32_rep(p, src, count) \
--	outsl((unsigned long) (p), (src), (count))
--#endif /* CONFIG_GENERIC_IOMAP */
-+#ifdef CONFIG_64BIT
-+#ifndef writesq
-+#define writesq writesq
-+static inline void writesq(volatile void __iomem *addr, const void *buffer,
-+			   unsigned int count)
-+{
-+	if (count) {
-+		const u64 *buf = buffer;
-+
-+		do {
-+			__raw_writeq(*buf++, addr);
-+		} while (--count);
-+	}
-+}
-+#endif
-+#endif /* CONFIG_64BIT */
- 
- #ifndef PCI_IOBASE
- #define PCI_IOBASE ((void __iomem *)0)
-@@ -375,6 +416,113 @@ static inline void outl_p(u32 value, unsigned long addr)
- }
- #endif
- 
-+/*
-+ * {in,out}s{b,w,l}{,_p}() are variants of the above that repeatedly access a
-+ * single I/O port multiple times.
-+ */
-+
-+#ifndef insb
-+#define insb insb
-+static inline void insb(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	readsb(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef insw
-+#define insw insw
-+static inline void insw(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	readsw(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef insl
-+#define insl insl
-+static inline void insl(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	readsl(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsb
-+#define outsb outsb
-+static inline void outsb(unsigned long addr, const void *buffer,
-+			 unsigned int count)
-+{
-+	writesb(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsw
-+#define outsw outsw
-+static inline void outsw(unsigned long addr, const void *buffer,
-+			 unsigned int count)
-+{
-+	writesw(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsl
-+#define outsl outsl
-+static inline void outsl(unsigned long addr, const void *buffer,
-+			 unsigned int count)
-+{
-+	writesl(PCI_IOBASE + addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef insb_p
-+#define insb_p insb_p
-+static inline void insb_p(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	insb(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef insw_p
-+#define insw_p insw_p
-+static inline void insw_p(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	insw(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef insl_p
-+#define insl_p insl_p
-+static inline void insl_p(unsigned long addr, void *buffer, unsigned int count)
-+{
-+	insl(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsb_p
-+#define outsb_p outsb_p
-+static inline void outsb_p(unsigned long addr, const void *buffer,
-+			   unsigned int count)
-+{
-+	outsb(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsw_p
-+#define outsw_p outsw_p
-+static inline void outsw_p(unsigned long addr, const void *buffer,
-+			   unsigned int count)
-+{
-+	outsw(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef outsl_p
-+#define outsl_p outsl_p
-+static inline void outsl_p(unsigned long addr, const void *buffer,
-+			   unsigned int count)
-+{
-+	outsl(addr, buffer, count);
-+}
-+#endif
-+
- #ifndef CONFIG_GENERIC_IOMAP
- #ifndef ioread8
- #define ioread8 ioread8
-@@ -455,6 +603,63 @@ static inline void iowrite32be(u32 value, volatile void __iomem *addr)
- 	__raw_writel(__cpu_to_be32(value), addr);
- }
- #endif
-+
-+#ifndef ioread8_rep
-+#define ioread8_rep ioread8_rep
-+static inline void ioread8_rep(const volatile void __iomem *addr, void *buffer,
-+			       unsigned int count)
-+{
-+	readsb(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef ioread16_rep
-+#define ioread16_rep ioread16_rep
-+static inline void ioread16_rep(const volatile void __iomem *addr,
-+				void *buffer, unsigned int count)
-+{
-+	readsw(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef ioread32_rep
-+#define ioread32_rep ioread32_rep
-+static inline void ioread32_rep(const volatile void __iomem *addr,
-+				void *buffer, unsigned int count)
-+{
-+	readsl(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef iowrite8_rep
-+#define iowrite8_rep iowrite8_rep
-+static inline void iowrite8_rep(volatile void __iomem *addr,
-+				const void *buffer,
-+				unsigned int count)
-+{
-+	writesb(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef iowrite16_rep
-+#define iowrite16_rep iowrite16_rep
-+static inline void iowrite16_rep(volatile void __iomem *addr,
-+				 const void *buffer,
-+				 unsigned int count)
-+{
-+	writesw(addr, buffer, count);
-+}
-+#endif
-+
-+#ifndef iowrite32_rep
-+#define iowrite32_rep iowrite32_rep
-+static inline void iowrite32_rep(volatile void __iomem *addr,
-+				 const void *buffer,
-+				 unsigned int count)
-+{
-+	writesl(addr, buffer, count);
-+}
-+#endif
- #endif /* CONFIG_GENERIC_IOMAP */
- 
- #ifdef __KERNEL__
 -- 
-2.1.0
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
