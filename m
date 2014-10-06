@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538AbaJFIFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 04:05:14 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:57613 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaJFIFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 04:05:08 -0400
-Message-ID: <54324D29.8050804@linaro.org>
-Date: Mon, 06 Oct 2014 17:04:57 +0900
-From: AKASHI Takahiro <takahiro.akashi@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752073AbaJFIHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 04:07:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41673 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585AbaJFIHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 04:07:01 -0400
+Date: Mon, 6 Oct 2014 10:06:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Thanos Makatos <thanos.makatos@citrix.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        jlayton@poochiereds.net, bfields@fieldses.org, jack@suse.cz
+Subject: Re: [PATCH RFC] introduce ioctl to completely invalidate page cache
+Message-ID: <20141006080659.GA7526@quack.suse.cz>
+References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
+ <542DAEAC.8010203@kernel.dk>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Kees Cook <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Deepak Saxena <dsaxena@linaro.org>, "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 2/6] arm64: ptrace: allow tracer to skip a system call
-References: <1408611405-8943-1-git-send-email-takahiro.akashi@linaro.org> <1408611405-8943-3-git-send-email-takahiro.akashi@linaro.org> <CAGXu5jJCyqpXkdvNDCu+eMr0qnqwbqUUo4u+2p_7DvFMzfKoEw@mail.gmail.com> <53F69045.7010301@linaro.org> <20140826175128.GD23445@arm.com> <542BE095.3010107@linaro.org> <20141003152328.GB32451@arm.com>
-In-Reply-To: <20141003152328.GB32451@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542DAEAC.8010203@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2014 12:23 AM, Will Deacon wrote:
-> On Wed, Oct 01, 2014 at 12:08:05PM +0100, AKASHI Takahiro wrote:
->> Will,
->>
->> When I was looking into syscall_trace_exit() more closely, I found
->> another (big) problem.
->> There are two system calls, execve() and rt_sigreturn(), which change
->> 'syscallno' in pt_regs to -1 in start_thread() and restore_sigframe(),
->> respectively.
+On Thu 02-10-14 13:59:40, Jens Axboe wrote:
+> On 10/02/2014 10:09 AM, Thanos Makatos wrote:
+> > This patch introduces a new ioctl called BLKFLUSHBUFS2, which is pretty
+> > similar to BLKFLUSHBUFS except that is also invalidates the page cache.
+> > This allows for a complete invalidation of the cached data of a
+> > particular block device, which might be useful for cases like
+> > synchronising the caches of an iSCSI block device used by multiple
+> > hosts.
+> > 
+> > Signed-off-by: Thanos Makatos <thanos.makatos@citrix.com>
+> > ---
+> >  block/compat_ioctl.c    |    1 +
+> >  block/ioctl.c           |   13 +++++++++++--
+> >  include/uapi/linux/fs.h |    1 +
+> >  3 files changed, 13 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
+> > index 18b282c..672388ab 100644
+> > --- a/block/compat_ioctl.c
+> > +++ b/block/compat_ioctl.c
+> > @@ -688,6 +688,7 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+> >  	case BLKDISCARDZEROES:
+> >  		return compat_put_uint(arg, bdev_discard_zeroes_data(bdev));
+> >  	case BLKFLSBUF:
+> > +	case BLKFLSBUF2:
+> >  	case BLKROSET:
+> >  	case BLKDISCARD:
+> >  	case BLKSECDISCARD:
+> > diff --git a/block/ioctl.c b/block/ioctl.c
+> > index d6cda81..0c427a7 100644
+> > --- a/block/ioctl.c
+> > +++ b/block/ioctl.c
+> > @@ -268,6 +268,12 @@ static inline int is_unrecognized_ioctl(int ret)
+> >  		ret == -ENOIOCTLCMD;
+> >  }
+> >  
+> > +static void flush_buffer_cache(struct block_device *bdev)
+> > +{
+> > +	fsync_bdev(bdev);
+> > +	invalidate_bdev(bdev);
+> > +}
+> > +
+> >  /*
+> >   * always keep this in sync with compat_blkdev_ioctl()
+> >   */
+> > @@ -282,6 +288,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+> >  
+> >  	switch(cmd) {
+> >  	case BLKFLSBUF:
+> > +	case BLKFLSBUF2:
+> >  		if (!capable(CAP_SYS_ADMIN))
+> >  			return -EACCES;
+> >  
+> > @@ -289,8 +296,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+> >  		if (!is_unrecognized_ioctl(ret))
+> >  			return ret;
+> >  
+> > -		fsync_bdev(bdev);
+> > -		invalidate_bdev(bdev);
+> > +		flush_buffer_cache(bdev);
+> > +		if (BLKFLSBUF2 == cmd)
+> > +			return invalidate_inode_pages2(
+> > +					bdev->bd_inode->i_mapping);
+> >  		return 0;
+> 
+> We're currently ignoring the buffer cache sync and invalidation (which
+> is odd), but at least being consistent would be good.
+  Well, invalidate_bdev() doesn't return anything. And
+invalidate_mapping_pages() inside invalidate_bdev() returns only number of
+invalidated pages. I don't think there's any value in returning that.
 
-I need to correct my mis-understandings here:
+OTOH invalidate_inode_pages2() returns 0 / -EBUSY / other error when
+invalidation of some page fails so returning that seems useful.
 
->> Since syscallno is not valid anymore in syscall_trace_exit() for these
->> system calls, we cannot create a correct syscall exit record for tracepoint
->> in trace_sys_exit() (=> ftrace_syscall_exit())
+> Might also need a filemap_write_and_wait() to sync before invalidation.
+  That's what fsync_bdev() is doing under the hoods. Sometimes I'm not
+sure whether all these wrappers are useful...
 
-This is true, but since rt_sigreturn() doesn't have a syscall tracepoint (and so
-there is no entry under /sys/kernel/tracing/events/syscalls/), it cannot be
-traced anyway.
+Trond also had a comment that if we extended the ioctl to work for all
+inodes (not just blkdev) and allowed some additional flags of what needs to
+be invalidated, the new ioctl would be also useful to NFS userspace - see
+Trond's email at
 
->> and for audit in audit_syscall_exit().
+http://www.spinics.net/lists/linux-fsdevel/msg78917.html
 
-not true. Since a syscall number is saved as 'major' in a per-thread audit context
-at audit_syscall_exit(), we will see a correct audit log for both system calls.
+and the following thread. I would prefer to cover that usecase when we are
+introducing new invalidation ioctl. Have you considered that Thanos?
 
->> This does not happen on arm because syscall numbers are kept in
->> thread_info on arm.
->>
->> How can we deal with this issue?
->
-> How is this handled on other architectures? x86, for example, seems to zero
-> orig_ax when restoring the sigcontext, but leaves it alone in start_thread.
-
-> What is the impact of this problem? AFAICT, we just miss some exits, right
-> (as opposed to an OOPs or the like)?
-
-So the impacts here are:
-1) We just miss a syscall exit for execve tracepoint (syscalls:sys_exit_execve).
-    (no fatal errors like kernel panic)
-    (FYI, on x86, there is no tracepoint entry for execve nor sigreturn.)
-
-2) From the viewpoint of my seccomp patch, we cannot skip some syscall exit tracing
-    for invalid system calls by adding a check for syscallno in the following way:
-    (I'm not quite sure this might cause a threat with DDoS attach as Russell suggested.)
-
-    syscall_trace_exit(struct pt_regs *regs) {
-       if (regs->syscallno < NR_syscalls) { /* Adding this check */
-          audit_syscall_exit(regs);
-          if (test_thread_flags(TIF_SYSCALL_TRACEPOINT))
-             trace_sys_exit(regs, regs_return_value(regs));
-       }
-       ...
-    }
-
-    As you can imagine, any system call after execve() will hit BUG_ON()
-    in audit_syscall_exit() since audit_syscall_exit() is not called for execve().
-
-Thanks,
--Takahiro AKASHI
-
-> Will
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
