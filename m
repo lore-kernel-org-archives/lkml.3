@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaJFPss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:48:48 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:54063 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523AbaJFPsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:48:47 -0400
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 6 Oct 2014 11:55:11 -0400 (EDT)
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: perf: 3.17 another perf_fuzzer lockup
-In-Reply-To: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu>
-Message-ID: <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1752798AbaJFP7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:59:42 -0400
+Received: from mail-bn1on0084.outbound.protection.outlook.com ([157.56.110.84]:10544
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751658AbaJFP7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:59:41 -0400
+Date: Mon, 6 Oct 2014 08:59:27 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <monstr@monstr.eu>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ARM: zynq: Extend SLCR driver to read OCM
+ configuration
+References: <565908c2d70764e281d6a9b28d9599cea87823a3.1412595859.git.michal.simek@xilinx.com>
+ <586ef67a22005316fd65cebbbd4019a8a2094e07.1412595859.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <586ef67a22005316fd65cebbbd4019a8a2094e07.1412595859.git.michal.simek@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-20998.005
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <30d758b569504e88a9b4a999f08be17b@BN1AFFO11FD055.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(24454002)(51704005)(199003)(377424004)(164054003)(108616004)(80022003)(44976005)(19580405001)(46102003)(21056001)(83506001)(19580395003)(85306004)(76482002)(99396003)(47776003)(33646002)(10300001)(6806004)(74316001)(20776003)(4396001)(120916001)(64706001)(104016003)(50466002)(106466001)(54356999)(76176999)(107046002)(86362001)(110136001)(77096002)(85202003)(53416004)(95666004)(85182001)(102836001)(575784001)(50986999)(85852003)(87936001)(23676002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB016;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB016;
+X-Forefront-PRVS: 03569407CC
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014, Vince Weaver wrote:
+Hi Michal,
 
-> [  843.700042] general protection fault: 0000 [#1] SMP 
-> ...
-> [  843.704001] task: ffff88011a874000 ti: ffff8800bc0ec000 task.ti: ffff8800bc0ec000
-> [  843.704001] RIP: 0010:[<ffffffff810cd913>]  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
+On Mon, 2014-10-06 at 01:44PM +0200, Michal Simek wrote:
+> Get OCM configuration from SLCR.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+> 
+>  arch/arm/mach-zynq/slcr.c | 15 +++++++++++++++
+>  include/soc/zynq/common.h |  1 +
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/arch/arm/mach-zynq/slcr.c b/arch/arm/mach-zynq/slcr.c
+> index cb7c46165728..0c3e45090c09 100644
+> --- a/arch/arm/mach-zynq/slcr.c
+> +++ b/arch/arm/mach-zynq/slcr.c
+> @@ -27,6 +27,7 @@
+>  #define SLCR_A9_CPU_RST_CTRL_OFFSET	0x244 /* CPU Software Reset Control */
+>  #define SLCR_REBOOT_STATUS_OFFSET	0x258 /* PS Reboot Status */
+>  #define SLCR_PSS_IDCODE			0x530 /* PS IDCODE */
+> +#define SLCR_OCM_CFG_OFFSET		0x910 /* OCM Address Mapping */
+> 
+>  #define SLCR_UNLOCK_MAGIC		0xDF0D
+>  #define SLCR_A9_CPU_CLKSTOP		0x10
+> @@ -126,6 +127,20 @@ void zynq_slcr_system_reset(void)
+>  }
+> 
+>  /**
+> + * zynq_slcr_get_ocm_config - Get SLCR OCM config
+> + *
+> + * Return:	OCM config bits
+> + */
+> +u32 zynq_slcr_get_ocm_config(void)
+> +{
+> +	u32 val;
+> +
+> +	zynq_slcr_read(&val, SLCR_OCM_CFG_OFFSET);
+> +
+> +	return val;
+> +}
 
-For what it's worth, this is 
+a different idea would be, instead of creating this specific API call
+for the OCMC to let the OCMC driver use regmap and making git a subnode
+of the SLCR.
+In the long run that might be a better option otherwise we'll end up
+with a whole bunch of zynq_slcr_get_foo() calls for each driver that
+needs to read an SLCR register.
 
-kernel/events/core.c:2646
-
-        if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
-                perf_cgroup_sched_in(prev, task);
-
-
-ffffffff810cd902:       53                      push   %rbx
-ffffffff810cd903:       48 8b 07                mov    (%rdi),%rax
-ffffffff810cd906:       48 8b 58 40             mov    0x40(%rax),%rbx
-ffffffff810cd90a:       65 48 03 1c 25 08 ce    add    %gs:0xce08,%rbx
-ffffffff810cd911:       00 00 
-ffffffff810cd913:       48 39 bb d8 00 00 00    cmp    %rdi,0xd8(%rbx)
-ffffffff810cd91a:       74 63                   je     ffffffff810cd97f <perf_event_context_sched_in.isra.75+0x8b>
-
-
-> [  843.704001] RSP: 0018:ffff8800bc0efd50  EFLAGS: 00010087
-> [  843.704001] RAX: ffffea0002ba2d68 RBX: ffff1001e742c000 RCX: 000000000000038f
-> [  843.704001] RDX: ffff88011fc95b30 RSI: ffff880037d0eb00 RDI: ffff880037d0e700
-> [  843.704001] RBP: ffff8800bc0efd60 R08: ffff8800bc0ec000 R09: 000000000000baff
-> [  843.704001] R10: 0000000000000006 R11: 00000000000009bc R12: ffff880037d0e700
-> [  843.704001] R13: ffff8800c944f400 R14: 0000000000000001 R15: ffff88011b340800
-> [  843.704001] FS:  00007ffc76c17700(0000) GS:ffff88011fc80000(0000) knlGS:0000000000000000
-> [  843.704001] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  843.704001] DR0: 0000000001c7b000 DR1: 0000000000000000 DR2: 0000000001c7b000
-> [  843.704001] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [  843.704001] Stack:
-> [  843.704001]  ffff88011a874000 ffff88011b340800 ffff8800bc0efd90 ffffffff810cd9bb
-> [  843.704001]  ffff88011a8744e8 ffff88011b340800 ffff88011fc929c0 ffff8800c944f400
-> [  843.704001]  ffff8800bc0efdc0 ffffffff8105ae62 ffff88011fc929c0 ffff8800c944f400
-> [  843.704001] Call Trace:
-> [  843.704001]  [<ffffffff810cd9bb>] __perf_event_task_sched_in+0x37/0xf4
-> [  843.704001]  [<ffffffff8105ae62>] finish_task_switch+0x9b/0xa6
-> [  843.704001]  [<ffffffff815209c1>] __schedule+0x309/0x4a5
-> [  843.704001]  [<ffffffff81520df3>] _cond_resched+0x28/0x3b
-> [  843.704001]  [<ffffffff815217b5>] mutex_lock+0x12/0x2f
-> [  843.704001]  [<ffffffff810cb9bb>] find_get_context+0xfc/0x170
-> [  843.704001]  [<ffffffff810cff77>] SYSC_perf_event_open+0x47b/0x7f5
-> [  843.704001]  [<ffffffff810d0651>] SyS_perf_event_open+0xe/0x10
-> [  843.704001]  [<ffffffff81523ad1>] tracesys+0xd4/0xd9
-> [  843.704001] Code: 89 e7 e8 65 fe ff ff 5b 41 5c 5d c3 e8 c7 7e 45 00 55 48 89 e5 41 54 49 89 fc 53 48 8b 07 48 8b 58 40 65 48 03 1c 25 08 ce 00 00 <48> 39 bb d8 00 00 00 74 63 48 89 fe 48 89 df e8 f0 b4 ff ff 49 
-> [  843.704001] RIP  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
-> [  843.704001]  RSP <ffff8800bc0efd50>
+	Thanks,
+	Sören
