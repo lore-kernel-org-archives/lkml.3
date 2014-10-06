@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbaJFV0N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:26:13 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57696 "EHLO mail.kernel.org"
+	id S1752603AbaJFV1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:27:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46024 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825AbaJFV0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:26:11 -0400
-Date: Mon, 6 Oct 2014 18:26:06 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
-Message-ID: <20141006212606.GF14113@kernel.org>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+	id S1751264AbaJFV1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:27:12 -0400
+Date: Mon, 6 Oct 2014 23:27:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chen Yucong <slaoub@gmail.com>
+Cc: Tony Luck <tony.luck@gmail.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, MCE, AMD: move invariant code out from loop body
+Message-ID: <20141006212707.GH20739@pd.tnic>
+References: <1411377812.1917.112.camel@cyc>
+ <20140922191100.GC4709@pd.tnic>
+ <20141002143819.GE16452@pd.tnic>
+ <1412263212.8085.6.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <1412263212.8085.6.camel@debian>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya, please check if this is OK.
+On Thu, Oct 02, 2014 at 11:20:12PM +0800, Chen Yucong wrote:
+> From: Chen Yucong <slaoub@gmail.com>
+> Subject: [PATCH] x86, MCE, AMD: move invariant code out from loop body
+> 
+> "mce_threshold_vector = amd_threshold_interrupt;" is loop invariant code
+> in mce_amd_feature_init(). So it should be moved out from loop body.
+> 
+> Signed-off-by: Chen Yucong <slaoub@gmail.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> index 5d4999f..f727701 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> @@ -253,9 +253,10 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+>  			}
+>  
+>  			mce_threshold_block_init(&b, offset);
+> -			mce_threshold_vector = amd_threshold_interrupt;
+>  		}
+>  	}
+> +
+> +	mce_threshold_vector = amd_threshold_interrupt;
 
-This was while looking the set of methods used by rasd, trying to reduce
-it to the bare minimum.
+Looking at this more, it is theoretically possible that we break out
+of the both loops without *any* thresholding registers detected and to
+still assign a thresholding interrupt vector which would be clearly
+wrong.
 
-Perhaps even that cpu_map__new() one can be ditched, leaving to use the
-default of a NULL cpumap that will end up being one with -1, i.e. all
-cpus.
+Thus I think something like below should be much safer (I tried it with
+a label and goto already but it is uglier):
 
-- Arnaldo
-
->From 8dc34bd2824c7843182f4fc6deabaf573e42e806 Mon Sep 17 00:00:00 2001
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Mon, 6 Oct 2014 15:43:42 -0300
-Subject: [PATCH] rasd: Use perf_evlist__open() instead of open coded
- equivalent
-
-Cc: Borislav Petkov <bp@suse.de>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- src/rasd.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
-
-diff --git a/src/rasd.c b/src/rasd.c
-index 06ccdcdd9d56..fb33fca131fa 100644
---- a/src/rasd.c
-+++ b/src/rasd.c
-@@ -241,7 +241,6 @@ static void daemonize(void)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+index 9ce64955559d..9af7bd74828b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+@@ -253,7 +253,9 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+ 			}
  
- int main()
- {
--	struct perf_evsel *c;
- 	struct thread_map *threads;
- 	struct cpu_map *cpus;
- 	int i;
-@@ -278,12 +277,9 @@ int main()
- 	perf_evlist__set_maps(evlist, cpus, threads);
- 
- 	/* Open events */
--	evlist__for_each(evlist, c) {
--		/* On all online cpus by default, system wide tracing */
--		if (perf_evsel__open(c, evlist->cpus, NULL) < 0)
--			err("opening tracepoint, are you root?");
--	}
--	perf_evlist__set_id_pos(evlist);
-+	/* On all online cpus by default, system wide tracing */
-+	if (perf_evlist__open(evlist) < 0)
-+		err("opening tracepoint, are you root?");
- 
- 	/* mmap buffers */
- 	if (perf_evlist__mmap(evlist, 4 /* opts->mmap_pages */, false) < 0)
+ 			mce_threshold_block_init(&b, offset);
+-			mce_threshold_vector = amd_threshold_interrupt;
++
++			if (mce_threshold_vector != amd_threshold_interrupt)
++				mce_threshold_vector = amd_threshold_interrupt;
+ 		}
+ 	}
+ }
+
+Looking at the asm, we still go and fetch those addresses so not really
+a win:
+
+	cmpq	$amd_threshold_interrupt, mce_threshold_vector(%rip)	#, mce_threshold_vector
+	je	.L235	#,
+	incl	%r13d	# block
+	movq	$amd_threshold_interrupt, mce_threshold_vector(%rip)	#, mce_threshold_vector
+	cmpl	$9, %r13d	#, block
+
+but this way the code is relatively clean. Unless you can come up with
+a nicer, cleaner version to handle the breaking out in the success and
+failure case...
+
+Hmmm.
+
 -- 
-1.9.3
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
