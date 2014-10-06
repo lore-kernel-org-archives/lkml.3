@@ -1,90 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaJFR0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 13:26:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8749 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753124AbaJFR0I convert rfc822-to-8bit (ORCPT
+	id S1753222AbaJFR2z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 13:28:55 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:45067 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaJFR2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 13:26:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: jmorris@namei.org
-cc: dhowells@redhat.com, d.kasatkin@samsung.com, keyrings@linux-nfs.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] KEYS: 
+	Mon, 6 Oct 2014 13:28:52 -0400
+Date: Mon, 6 Oct 2014 10:28:45 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: atull@opensource.altera.com
+Cc: jdelvare@suse.de, lm-sensors@lm-sensors.org, lgirdwood@gmail.com,
+        broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
+Message-ID: <20141006172845.GA21902@roeck-us.net>
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
+ <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <4791.1412616356.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 06 Oct 2014 18:25:56 +0100
-Message-ID: <4792.1412616356@warthog.procyon.org.uk>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Thu, Oct 02, 2014 at 01:37:48PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Add device tree bindings documentation for ltc2978.
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+> v2: clean whitespace
+> ---
+>  .../devicetree/bindings/hwmon/ltc2978.txt          |   41 ++++++++++++++++++++
+>  1 file changed, 41 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/hwmon/ltc2978.txt b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> new file mode 100644
+> index 0000000..b2d9c4d
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/hwmon/ltc2978.txt
+> @@ -0,0 +1,41 @@
+> +ltc2978
+> +
+> +Required properties:
+> + - compatible: one of: ltc2974, ltc2977, ltc2978, ltc3880, ltc3883, ltm4676
+> + - reg: I2C address
+> +
+> +Optional properties:
+> + Name of the optional regulator subnode must be "regulators".
 
-Can you pull these fixes into your next branch?
+This is currently a problem. The regulator core trats it as mandatory,
+meaning I get error messages such as
 
- (1) Handle error codes in pointers correctly so as not to crash.
+ltc2978 5-005e: Failed to find regulator container node
 
- (2) Fix the asymmetric key description to make module signature checking work
-     right (I changed the description to include the X.509 serial number, but
-     the module uses the subjectKeyId still).
+if not specified. We'll have to sort out with the regulator core how this should
+be handled.
 
- (3) Bring back matching of keys based on partial matches on the auxiliary
-     IDs (required for IMA).
+> +  - #address-cells must be 1.
+> +  - #size-cells must be 0.
+> +
 
- (4) Make the PGP fingerprint field in /proc/keys hold the tail end of the
-     SKID once again (if present).
+Checking this out, those do not seem to be necessary.
 
- (5) IMA needs to zero-pad the key ID it requests a match on because the hex
-     string will be rejected if it's not a multiple of two digits.
+> + For each regulator:
+> +  - reg: regulator number
 
-David
----
-The following changes since commit c867d07e3c861e75509650b8a359351d634db93a:
+This does not seem to be necessary either.
 
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into next (2014-10-02 19:47:23 +1000)
+> +  - regulator-compatible: must be vout_en<regulator number> such as vout_en3
+> +    valid range is:
+> +      ltc2977, ltc2978 : vout_en0 - vout_en7
+> +      ltc2974          : vout_en0 - vout_en3
+> +      ltc3880, ltm4676 : vout_en0 - vout_en1
+> +      ltc3883          : vout_en0 only
 
-are available in the git repository at:
+Besides the unnecessary _en, this is a problem if there is more than one
+supported chip in the system, if DEBUG_FS is enabled, and if names are not
+specified in the devicetree file. I get a lot of error messages in a
+system with a large number of LTC2978 chips.
 
+vout3: Failed to create debugfs directory
+vout4: Failed to create debugfs directory
+vout5: Failed to create debugfs directory
+vout6: Failed to create debugfs directory
+vout7: Failed to create debugfs directory
+vout2: Failed to create debugfs directory
+vout3: Failed to create debugfs directory
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/keys-next-fixes-20141006
+and so on (40+ times in my system). We will have to find a solution for this
+problem.
 
-for you to fetch changes up to 594081ee7145cc30a3977cb4e218f81213b63dc5:
+I also get
 
-  integrity: do zero padding of the key id (2014-10-06 17:33:27 +0100)
+vout7: no parameters
 
-----------------------------------------------------------------
-(from the branch description for keys-next-fixes local branch)
+for each regulator which is a bit annoying with 50+ of those regulators
+in the system.
 
-clone of "keys-fixes"
-Keyrings fixes for next
+Guenter
 
-----------------------------------------------------------------
-David Howells (1):
-      X.509: If available, use the raw subjKeyId to form the key description
-
-Dmitry Kasatkin (6):
-      KEYS: handle error code encoded in pointer
-      KEYS: Restore partial ID matching functionality for asymmetric keys
-      KEYS: use swapped SKID for performing partial matching
-      KEYS: strip 'id:' from ca_keyid
-      KEYS: output last portion of fingerprint in /proc/keys
-      integrity: do zero padding of the key id
-
- crypto/asymmetric_keys/asymmetric_keys.h  |  3 --
- crypto/asymmetric_keys/asymmetric_type.c  | 84 +++++++++++++++++++++++--------
- crypto/asymmetric_keys/pkcs7_trust.c      |  9 ++--
- crypto/asymmetric_keys/x509_cert_parser.c | 14 +++---
- crypto/asymmetric_keys/x509_parser.h      |  8 +--
- crypto/asymmetric_keys/x509_public_key.c  | 29 ++++++++---
- include/crypto/public_key.h               |  3 +-
- include/keys/asymmetric-type.h            |  3 ++
- security/integrity/digsig_asymmetric.c    |  2 +-
- 9 files changed, 110 insertions(+), 45 deletions(-)
+> +  - regulator-name: arbitrary name for regulator
+> +
+> +Example:
+> +ltc2978@5e {
+> +	compatible = "ltc2978";
+> +	reg = <0x5e>;
+> +	regulators {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		vdacp0_reg: regulator@0 {
+> +			reg = <0>;
+> +			regulator-compatible = "vout_en0";
+> +			regulator-name = "FPGA-2.5V";
+> +		};
+> +		vdacp2_reg: regulator@2 {
+> +			reg = <2>;
+> +			regulator-compatible = "vout_en2";
+> +			regulator-name = "FPGA-1.5V";
+> +		};
+> +	};
+> +};
+> -- 
+> 1.7.9.5
+> 
