@@ -1,88 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaJFOI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:08:27 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59668 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaJFOI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:08:26 -0400
-Date: Mon, 6 Oct 2014 16:08:16 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 10/16] virtio: add API to enable VQs early
-Message-ID: <20141006160816.68490a49.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412525038-15871-11-git-send-email-mst@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
-	<1412525038-15871-11-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752805AbaJFOLU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:11:20 -0400
+Received: from mga14.intel.com ([192.55.52.115]:39317 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752662AbaJFOLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 10:11:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396050796"
+Message-ID: <5432A474.7000700@intel.com>
+Date: Mon, 06 Oct 2014 17:17:24 +0300
+From: Daniel Baluta <daniel.baluta@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        irina.tirdea@intel.com
+Subject: Re: [RFC PATCH 3/8] iio: core: Introduce new MOTION event
+References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com> <1412257439-15683-4-git-send-email-daniel.baluta@intel.com> <542FF252.1020206@kernel.org>
+In-Reply-To: <542FF252.1020206@kernel.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100614-5024-0000-0000-0000018D5154
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014 19:07:19 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-> virtio spec requires DRIVER_OK to be set before
-> VQs are used, but some drivers use VQs before probe
-> function returns.
-> Since DRIVER_OK is set after probe, this violates the spec.
 
-"Even though transitional devices support this behaviour, we want to
-make it possible for those early callers to become spec compliant."
+On 10/04/2014 04:12 PM, Jonathan Cameron wrote:
+> On 02/10/14 14:43, Daniel Baluta wrote:
+>> This is to be used by drivers to signal detection of motion. We also
+>> add some possible values for motion as IIO events modifiers:
+>> 	* running
+>> 	* jogging
+>> 	* walking
+>> 	* still
+>>
+>> These values are supported by Frescale's MMA9553 sensor:
+>>
+>> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+>>
+>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> Hmm.. This is the interesting one.
+> Not immediately obvious how best to represent this stuff.
+>> ---
+>>   Documentation/ABI/testing/sysfs-bus-iio | 7 +++++++
+>>   drivers/iio/industrialio-core.c         | 4 ++++
+>>   drivers/iio/industrialio-event.c        | 1 +
+>>   include/linux/iio/types.h               | 7 ++++++-
+>>   4 files changed, 18 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+>> index d760b02..070346d 100644
+>> --- a/Documentation/ABI/testing/sysfs-bus-iio
+>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+>> @@ -808,6 +808,13 @@ Description:
+>>   		number or direction is not specified, applies to all channels of
+>>   		this type.
+>>
+>> +What:		/sys/.../events/in_activity_motion_either_en
+>> +KernelVersion:	3.17
+>> +Contact:	linux-iio@vger.kernel.org
+>> +Description:
+>> +		Enables or disables motion detection. Each time motion is detected an
+>> +		event of this type will be generated.
+>> +
+> The either bit seems a bit random but I can see there is no particularly obvious
+> alternative.
 
-?
+I wonder if introducing a new IIO_EV_DIR_NONE event direction type would 
+make sense. In this case the sysfs attribute will drop event direction 
+text from its name (e.g /sys/.../events/in_activity_motion_en)
 
-> 
-> Add API for drivers to call before using VQs.
-> 
-> Sets DRIVER_OK internally.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio_config.h | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-> index e8f8f71..6127fc8 100644
-> --- a/include/linux/virtio_config.h
-> +++ b/include/linux/virtio_config.h
-> @@ -109,6 +109,23 @@ struct virtqueue *virtio_find_single_vq(struct virtio_device *vdev,
->  	return vq;
->  }
-> 
-> +/**
-> + * virtio_early_enable_vqs - enable vq use in probe function
-> + * @vdev: the device
-> + *
-> + * Driver must call this to use vqs in the probe function.
-> + *
-> + * Note: vqs are enabled automatically after probe returns.
-> + */
-> +static inline
-> +void virtio_early_enable_vqs(struct virtio_device *dev)
-> +{
-> +	unsigned status = dev->config->get_status(dev);
-> +
-> +	BUG_ON(status & VIRTIO_CONFIG_S_DRIVER_OK);
-> +	dev->config->set_status(dev, status | VIRTIO_CONFIG_S_DRIVER_OK);
-> +}
-> +
+>
+> We really need a clean way of representing a multilevel 'state change' like this.
+>
+> Looking at the event code, I almost wonder if we would be better using the
+> direction element for running, walking etc rather than a modifier.
 
-Maybe virtio_enable_vqs_early() instead?
+When pushing events code to userspace the modifier seemed to be the only 
+option.
 
->  static inline
->  const char *virtio_bus_name(struct virtio_device *vdev)
->  {
+>
+> Having said that we will probably also get devices where this is polled rather than
+> event.  'What activity is currently going on?'
 
+Adding IIO_EV_INFO_VALUE bit, would create an attribute 
+/sys/.../events/in_activity_motion_either_value that could expose the 
+current activity going on.
+
+> If we take that view modifiers make sense as it becomes
+> 'Is the user running?'  Perhaps even offering a confidence interval, e.g units as
+> percentage
+> in_activity_running_input 0..100
+> in_activity_walking_input 0..100
+> etc
+>
+> Then our event becomes a state change event (yup we'll need to add that)
+>
+> /events/in_activity_walking_rising_en  will then cause events when the percentage
+> confidence on a state rises above the provided threshold or goes above it
+> (default of 50% perhaps on devices which only report one state).
+>
+> /events/in_activity_walking_falling_en will do the leaving case.
+
+This is a very nice idea and it will also offer more flexibility. I am 
+not sure about the use case of confidence interval but using 0 and 100 
+will do the trick for us.
+
+We will use this interface for implementation of significant motion in 
+Android's HAL. [1]
+
+I will experiment more with how IIO attributes work and I will send a v2
+using direction instead of modifier for activity type (running, walking 
+etc).
+
+
+>
+> Note these are just some quick initial thoughts on alternative methods.
+> I'll want to think on this more and get responses from more interested
+> parties!
+
+Thanks a lot for your time!
+
+Daniel.
+
+[1] https://source.android.com/devices/sensors/composite_sensors.html
