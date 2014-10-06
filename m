@@ -1,136 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaJFVFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:05:43 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:37592 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbaJFVFm (ORCPT
+	id S1752495AbaJFVGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:06:05 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:34424 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbaJFVGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:05:42 -0400
-Date: Mon, 6 Oct 2014 22:05:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH] mfd: rtsx: fix PM suspend for 5227 & 5249
-Message-ID: <20141006210536.GD18035@lee--X1>
-References: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411023333-1816-1-git-send-email-micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Oct 2014 17:06:03 -0400
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Hans de Goede <hdegoede@redhat.com>, Pawel Osciak <posciak@chromium.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olofj@chromium.org>,
+        Zach Kuznia <zork@chromium.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: [PATCH v5 2/2] V4L: uvcvideo: Add support for pan/tilt speed controls
+Date: Mon,  6 Oct 2014 14:05:59 -0700
+Message-Id: <1412629559-16624-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <CAP_ceTz8BRQoFxkgb085_gOh29x8anvQNodAGMkgOukk02x29g@mail.gmail.com>
+References: <CAP_ceTz8BRQoFxkgb085_gOh29x8anvQNodAGMkgOukk02x29g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Sep 2014, micky_ching@realsil.com.cn wrote:
+Map V4L2_CID_TILT_SPEED and V4L2_CID_PAN_SPEED to the standard UVC
+CT_PANTILT_RELATIVE_CONTROL terminal control request.
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Fix rts5227&5249 failed send buffer cmd after suspend,
-> PM_CTRL3 should reset before send any buffer cmd after suspend.
-> Otherwise, buffer cmd will failed, this will lead resume fail.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/Makefile         |    2 +-
->  drivers/mfd/rts5227.c        |    6 ++++++
->  drivers/mfd/rts5249.c        |    4 ++++
->  drivers/mfd/rtsx_gops.c      |   36 ++++++++++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.h       |    3 +++
->  include/linux/mfd/rtsx_pci.h |   12 ++++++++++++
->  6 files changed, 62 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/mfd/rtsx_gops.c
+Tested by plugging a Logitech ConferenceCam C3000e USB camera
+and controlling pan/tilt from the userspace using the VIDIOC_S_CTRL ioctl.
+Verified that it can pan and tilt at the same time in both directions.
 
-[...]
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+Reviewed-by: Pawel Osciak <posciak@chromium.org>
+---
+Changes from v1/v2:
+- rebased
+Changes from v3:
+- removed gerrit-id
+Chnages from v4:
+- switched "offset" to unsigned int
 
-> diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
-> new file mode 100644
-> index 0000000..3cf596f
-> --- /dev/null
-> +++ b/drivers/mfd/rtsx_gops.c
-> @@ -0,0 +1,36 @@
-> +/* Driver for Realtek PCI-Express card reader
-> + *
-> + * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License as published by the
-> + * Free Software Foundation; either version 2, or (at your option) any
-> + * later version.
-> + *
-> + * This program is distributed in the hope that it will be useful, but
-> + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> + * General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, see <http://www.gnu.org/licenses/>.
-> + *
-> + * Author:
-> + *   Micky Ching <micky_ching@realsil.com.cn>
-> + */
-> +
-> +#include <linux/mfd/rtsx_pci.h>
-> +#include "rtsx_pcr.h"
-> +
-> +int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
-> +{
-> +	int err;
-> +
-> +	/* init aspm */
-> +	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, 0xFC, 0);
+ drivers/media/usb/uvc/uvc_ctrl.c | 58 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 55 insertions(+), 3 deletions(-)
 
-I'm not keen on the magic numbers here.  Can you #define them?
-
-> +	if (err < 0)
-> +		return err;
-> +
-> +	/* reset PM_CTRL3 before send buffer cmd */
-> +	return rtsx_pci_write_register(pcr, PM_CTRL3, 0x10, 0x00);
-
-Same.
-
-> +}
-> diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-> index 07e4c2e..fe2bbb6 100644
-> --- a/drivers/mfd/rtsx_pcr.h
-> +++ b/drivers/mfd/rtsx_pcr.h
-> @@ -72,4 +72,7 @@ do {									\
->  	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
->  } while (0)
->  
-> +/* generic operations */
-> +int rtsx_gops_pm_reset(struct rtsx_pcr *pcr);
-> +
->  #endif
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index 74346d5..b34fec8 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -967,4 +967,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
->  	return (u8 *)(pcr->host_cmds_ptr);
->  }
->  
-> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-> +		u8 mask, u8 append)
-> +{
-> +	int err;
-> +	u8 val;
-> +
-> +	err = pci_read_config_byte(pcr->pci, addr, &val);
-> +	if (err < 0)
-> +		return err;
-> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-> +}
-> +
->  #endif
-
+diff --git a/drivers/media/usb/uvc/uvc_ctrl.c b/drivers/media/usb/uvc/uvc_ctrl.c
+index 0eb82106..d2d1755 100644
+--- a/drivers/media/usb/uvc/uvc_ctrl.c
++++ b/drivers/media/usb/uvc/uvc_ctrl.c
+@@ -309,9 +309,8 @@ static struct uvc_control_info uvc_ctrls[] = {
+ 		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
+ 		.index		= 12,
+ 		.size		= 4,
+-		.flags		= UVC_CTRL_FLAG_SET_CUR | UVC_CTRL_FLAG_GET_MIN
+-				| UVC_CTRL_FLAG_GET_MAX | UVC_CTRL_FLAG_GET_RES
+-				| UVC_CTRL_FLAG_GET_DEF
++		.flags		= UVC_CTRL_FLAG_SET_CUR
++				| UVC_CTRL_FLAG_GET_RANGE
+ 				| UVC_CTRL_FLAG_AUTO_UPDATE,
+ 	},
+ 	{
+@@ -391,6 +390,35 @@ static void uvc_ctrl_set_zoom(struct uvc_control_mapping *mapping,
+ 	data[2] = min((int)abs(value), 0xff);
+ }
+ 
++static __s32 uvc_ctrl_get_rel_speed(struct uvc_control_mapping *mapping,
++	__u8 query, const __u8 *data)
++{
++	unsigned int first = mapping->offset / 8;
++	__s8 rel = (__s8)data[first];
++
++	switch (query) {
++	case UVC_GET_CUR:
++		return (rel == 0) ? 0 : (rel > 0 ? data[first+1]
++						 : -data[first+1]);
++	case UVC_GET_MIN:
++		return -data[first+1];
++	case UVC_GET_MAX:
++	case UVC_GET_RES:
++	case UVC_GET_DEF:
++	default:
++		return data[first+1];
++	}
++}
++
++static void uvc_ctrl_set_rel_speed(struct uvc_control_mapping *mapping,
++	__s32 value, __u8 *data)
++{
++	unsigned int first = mapping->offset / 8;
++
++	data[first] = value == 0 ? 0 : (value > 0) ? 1 : 0xff;
++	data[first+1] = min_t(int, abs(value), 0xff);
++}
++
+ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 	{
+ 		.id		= V4L2_CID_BRIGHTNESS,
+@@ -677,6 +705,30 @@ static struct uvc_control_mapping uvc_ctrl_mappings[] = {
+ 		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
+ 	},
+ 	{
++		.id		= V4L2_CID_PAN_SPEED,
++		.name		= "Pan (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 0,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
++		.id		= V4L2_CID_TILT_SPEED,
++		.name		= "Tilt (Speed)",
++		.entity		= UVC_GUID_UVC_CAMERA,
++		.selector	= UVC_CT_PANTILT_RELATIVE_CONTROL,
++		.size		= 16,
++		.offset		= 16,
++		.v4l2_type	= V4L2_CTRL_TYPE_INTEGER,
++		.data_type	= UVC_CTRL_DATA_TYPE_SIGNED,
++		.get		= uvc_ctrl_get_rel_speed,
++		.set		= uvc_ctrl_set_rel_speed,
++	},
++	{
+ 		.id		= V4L2_CID_PRIVACY,
+ 		.name		= "Privacy",
+ 		.entity		= UVC_GUID_UVC_CAMERA,
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+2.1.0.rc2.206.gedb03e5
+
