@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaJFJ0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:26:08 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:39113 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537AbaJFJ0D (ORCPT
+	id S1752653AbaJFJ1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:27:05 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:51538 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309AbaJFJ1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:26:03 -0400
+	Mon, 6 Oct 2014 05:27:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Paul Bolle <pebolle@tiscali.nl>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Valentin Rothberg <valentinrothberg@gmail.com>
+Subject: Re: [PATCH 3/4] [media] Remove optional dependency on PLAT_S5P
+Date: Mon, 06 Oct 2014 11:26:50 +0200
+Message-ID: <4788945.SoI4OqN9Zu@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412586626.4054.42.camel@x220>
+References: <1412586626.4054.42.camel@x220>
 MIME-Version: 1.0
-In-Reply-To: <20140929150009.GA9102@console-pimps.org>
-References: <20140928202702.GB18635@console-pimps.org>
-	<20140929124321.GB18825@gmail.com>
-	<20140929140516.GL5430@worktop>
-	<20140929150009.GA9102@console-pimps.org>
-Date: Mon, 6 Oct 2014 11:26:01 +0200
-Message-ID: <CAKv+Gu8V=g59c3ef_M_OZDR7G5TA=Vd79qi7Lvb4zpx1jUSbYg@mail.gmail.com>
-Subject: Re: [GIT PULL] EFI changes for v3.18
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:bOT3ZurGOJmvI3UMUEo+9G5KMo8Ls+URmVqLwKzSo7s
+ wRcgR9oO8mTpFeTdnVWsSjOqIy4NqF+zYjkf9kxBjXBh8RRrOK
+ I3KhDUtYAc58gtko38BXQmpPGLXrQTlqwkuUPzr3A/exPsQvvS
+ xTpa6STEMQNFWGeXc8dRq6enOXgLZDE52yWlmaGN+L9SXEWvej
+ p29f+uHIMEqdwbf3MsF3mLZy8NNqWMsggywxK78PYbNKZIxdpT
+ ALyAlknFf+2ZCgL2eHx99Gtg/HU5LDsBh/u9XoO6mgJSpc82l7
+ R0HJuT2HzIWVUh/TqHUmiQkbONrNG9Mx4/DEwlk8DFYE3E48r1
+ wQpJcekXOhBPizokxhG8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 September 2014 17:00, Matt Fleming <matt@console-pimps.org> wrote:
-> On Mon, 29 Sep, at 04:05:16PM, Peter Zijlstra wrote:
->>
->> OMFG what a trainwreck... if they are reentrant like that, a lock isn't
->> going to help you in any way. The implementation of these calls must be
->> lockfree otherwise they cannot possibly be correct.
->
-> The only way these services are going to be called is if we (the OS)
-> invoke them. These NMI shenanigans we're playing in the locking
-> functions are actually for our benefit, not the firmware's.
->
+On Monday 06 October 2014 11:10:26 Paul Bolle wrote:
+>  config VIDEO_SAMSUNG_S5P_TV
+>         bool "Samsung TV driver for S5P platform"
+>         depends on PM_RUNTIME
+> -       depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
+> +       depends on ARCH_EXYNOS || COMPILE_TEST
+>         default n
+>         ---help---
+>           Say Y here to enable selecting the TV output devices for
+> 
 
-The thing to understand here is that these Runtime Services are never
-supposed to be *reentrant*, even under NMI. The special case for NMI,
-machine check etc allows the OS to issue a concurrent Runtime Services
-call that /preempts/ the call that is already in progress. The spec
-explicitly mentions that the preempted function call is entirely
-expected to fail.
+I wonder if it should now allow being built for ARCH_S5PV210.
+Maybe it was a mistake to remove the PLAT_S5P symbol without changing
+the use here?
 
-This is exactly why the spec is so specific on which calls can be
-issued concurrently: it puts the burden of exclusive access on the OS,
-and the implementation can abort/fail a call in progress if another
-one comes in concurrently.
+Does S5PV210 have this device?
 
-This does imply that even the NMI case should take the lock if it is
-free, which makes my implementation incorrect.
-
-Note that I am by no means suggesting that relying on any of this
-having been implemented correctly in most firmwares is a good idea.
-
->> Conditional locking like above is just plain broken, disgusting doesn't
->> even begin to cover it. Full NAK on this. If this is required by the EFI
->> spec someone needs to pull their head from their arse and smell the real
->> world.
->
-> The conditional locking isn't intended to conform to the spec, it's
-> intended to write a pstore object to the EFI variable NVRAM with our
-> last dying breath, even if someone was in the middle of a SetVariable()
-> call. All the spec says is that, if we're in a non-recoverable state,
-> it's OK to do that. Whether that'll be implemented correctly across a
-> range of firmware implementations is another matter.
->
-> In fact, maybe we shouldn't support that lockless access at all. I've no
-> huge problem changing the code in efi_pstore_write() to bail if we can't
-> grab the lock, so that we can be serialized all of the time.
->
-> That would certainly make the runtime lock code much simpler.
->
-
-I think there is value in the ability to issue those calls under
-MCHECK to record fault metadata, and obviously, the authors of the
-spec did as well. However, the question is indeed how robust existing
-firmware implementations are under this kind of behavior, so I agree
-it is better to make the exclusive access unconditional. Note that
-these exception are specific to Intel architectures, for arm64 the
-locking was unconditional already.
-
--- 
-Ard.
+	Arnd
