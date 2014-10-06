@@ -1,357 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250AbaJFQBj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:01:39 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:37814 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753109AbaJFQBf (ORCPT
+	id S1753333AbaJFQC0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:02:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56838 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753262AbaJFQCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:01:35 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-06-5432bcdd4f2e
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org
-Subject: [PATCH v4 12/13] lib: add kasan test module
-Date: Mon, 06 Oct 2014 19:54:06 +0400
-Message-id: <1412610847-27671-13-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.2
-In-reply-to: <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1412610847-27671-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t/xy7p39xiFGLybyG+x7dcjNovfe2ey
-	WsxZv4bN4si17+wW17+9YbT49PIBo8WW601MFs8fPmS3mPCwjd1i2kZxi5XdzWwW25+9ZbJY
-	2fmA1eLyrjlsFvfW/Ge1WHzkNrPFu2eTmS2urjrIbvFjw2NWB2GP+Ts/MnrsnHWX3WPBplKP
-	xXteMnlsWtXJ5rHp0yR2j663V5g8Tsz4zeLx5Mp0Jo+PT2+xeLzfd5XNo2/LKkaPz5vkPE60
-	fGEN4IvisklJzcksSy3St0vgymj6dIO54K1ZxYY3GxkbGOfodDFyckgImEgc2fOCHcIWk7hw
-	bz1bFyMXh5DAUkaJ82f6WCGcPiaJbwt+sIJUsQnoSfybtZ0NxBYRUJDY3PsMrIhZYAqrxLvl
-	uxi7GDk4hIHGnrtjAVLDIqAq0dZ1hRHE5hVwl/hz5DAjxDY5iel777KA2JxA8WlXZrJDLGti
-	lDj0ZQfbBEbeBYwMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFC4uTrDsalx6wOMQpwMCrx
-	8EbuMAwRYk0sK67MPcQowcGsJMJrPs8oRIg3JbGyKrUoP76oNCe1+BAjEwenVAOj6gtG/4Kz
-	rBey40Q+pUb16D2ccYtbk1Nyq/J1x4d/1MpE6wKOH3y356rTjuttzralEoqeGU3f7/6KXb7M
-	wFaiaYfukhrNxmQzbbn4ZRevlfe/LHdQKTo2u0/EOEly606/qxprq0wfBW7glp7QOH1D9Mbk
-	RHVhnTrJAw9F+zaxVn93KLn0K16JpTgj0VCLuag4EQB+/CkUcQIAAA==
+	Mon, 6 Oct 2014 12:02:22 -0400
+Date: Mon, 6 Oct 2014 18:02:17 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
+Subject: Re: [PATCH v7 06/11] drm: add DT bindings documentation for
+ atmel-hlcdc-dc driver
+Message-ID: <20141006180217.3b98a67e@bbrezillon>
+In-Reply-To: <20141006142608.GA1744@ulmo>
+References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
+	<20141006105433.GG25202@ulmo>
+	<20141006141440.32fae2ef@bbrezillon>
+	<20141006123506.GC26833@ulmo>
+	<20141006155358.61a2a30c@bbrezillon>
+	<20141006142608.GA1744@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a test module doing various nasty things like
-out of bounds accesses, use after free. It is useful for testing
-kernel debugging features like kernel address sanitizer.
+On Mon, 6 Oct 2014 16:26:10 +0200
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
-It mostly concentrates on testing of slab allocator, but we
-might want to add more different stuff here in future (like
-stack/global variables out of bounds accesses and so on).
+> On Mon, Oct 06, 2014 at 03:53:58PM +0200, Boris Brezillon wrote:
+> > On Mon, 6 Oct 2014 14:35:06 +0200
+> > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > 
+> > > On Mon, Oct 06, 2014 at 02:14:40PM +0200, Boris Brezillon wrote:
+> > > > On Mon, 6 Oct 2014 12:54:34 +0200
+> > > > Thierry Reding <thierry.reding@gmail.com> wrote:
+> > > > 
+> > > > > On Wed, Oct 01, 2014 at 04:53:03PM +0200, Boris Brezillon wrote:
+> > > > > > From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> > > > > > 
+> > > > > > The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
+> > > > > > at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
+> > > > > > controller device.
+> > > > > > 
+> > > > > > The HLCDC block provides a single RGB output port, and only supports LCD
+> > > > > > panels connection to LCD panels for now.
+> > > > > > 
+> > > > > > The atmel,panel property link the HLCDC RGB output with the LCD panel
+> > > > > > connected on this port (note that the HLCDC RGB connector implementation
+> > > > > > makes use of the DRM panel framework).
+> > > > > > 
+> > > > > > Connection to other external devices (DRM bridges) might be added later by
+> > > > > > mean of a new atmel,xxx (atmel,bridge) property.
+> > > > > > 
+> > > > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > > > ---
+> > > > > >  .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     | 53 ++++++++++++++++++++++
+> > > > > >  1 file changed, 53 insertions(+)
+> > > > > >  create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > > > 
+> > > > > > diff --git a/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > > > new file mode 100644
+> > > > > > index 0000000..ebc1a91
+> > > > > > --- /dev/null
+> > > > > > +++ b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
+> > > > > > @@ -0,0 +1,53 @@
+> > > > > > +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
+> > > > > > +
+> > > > > > +The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
+> > > > > > +See ../mfd/atmel-hlcdc.txt for more details.
+> > > > > > +
+> > > > > > +Required properties:
+> > > > > > + - compatible: value should be "atmel,hlcdc-display-controller"
+> > > > > > + - pinctrl-names: the pin control state names. Should contain "default".
+> > > > > > + - pinctrl-0: should contain the default pinctrl states.
+> > > > > > + - #address-cells: should be set to 1.
+> > > > > > + - #size-cells: should be set to 0.
+> > > > > > +
+> > > > > > +Required children nodes:
+> > > > > > + Children nodes are encoding available output ports and their connections
+> > > > > > + to external devices using the OF graph reprensentation (see ../graph.txt).
+> > > > > > + At least one port node is required.
+> > > > > 
+> > > > > Are the connections configurable at runtime? Does the SoC have IP blocks
+> > > > > for HDMI or other types of outputs or does it provide only RGB output to
+> > > > > external blocks?
+> > > > 
+> > > > No, there's only one RGB output port, but you can connect more than one
+> > > > device on the RGB port (should we call it DPI port ?).
+> > > > Actually Atmel connected an HDMI encoder and an LCD panel connected on
+> > > > the same port on their dev kit.
+> > > 
+> > > This was discussed in some other thread if I remember correctly. I still
+> > > think that the HLCDC node should only contain a single output, no matter
+> > > how many encoders or panels get connected.
+> > > 
+> > > So the output represents the set of signals that exit the IP block, but
+> > > what's connected to them on the board is a board-level detail and
+> > > therefore should go into the board DTS.
+> > > 
+> > > In the above case of the Atmel devkit, is there any way to control where
+> > > the signal goes or does it just go to both the panel and HDMI encoder at
+> > > the same time and it's up to the user to properly configure the output
+> > > in order to get either HDMI or panel to display anything?
+> > 
+> > No there's no way to control where the signal goes.
+> > What you can control though, is the activation of the associated
+> > encoder/connectors connected on this bus (using dpms).
+> 
+> But the bus is really only the CRTC, so using DPMS for this is not how
+> it's usually done in DRM. Can't you model both outputs as separate
+> encoders and then attach them to the CRTC? This should work
+> automatically for the framebuffer console and any userspace that can
+> talk KMS.
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- lib/Kconfig.kasan |   8 ++
- lib/Makefile      |   1 +
- lib/test_kasan.c  | 254 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 263 insertions(+)
- create mode 100644 lib/test_kasan.c
+That's exactly what I'm proposing, except there's a layer in between
+handling the video bus format configuration.
 
-diff --git a/lib/Kconfig.kasan b/lib/Kconfig.kasan
-index d16b899..94293c8 100644
---- a/lib/Kconfig.kasan
-+++ b/lib/Kconfig.kasan
-@@ -19,4 +19,12 @@ config KASAN_SHADOW_OFFSET
- 	hex
- 	default 0xdfffe90000000000 if X86_64
- 
-+config TEST_KASAN
-+	tristate "Module for testing kasan for bug detection"
-+	depends on m
-+	help
-+	  This is a test module doing various nasty things like
-+	  out of bounds accesses, use after free. It is useful for testing
-+	  kernel debugging features like kernel address sanitizer.
-+
- endif
-diff --git a/lib/Makefile b/lib/Makefile
-index 84000ec..b387570 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_TEST_LKM) += test_module.o
- obj-$(CONFIG_TEST_USER_COPY) += test_user_copy.o
- obj-$(CONFIG_TEST_BPF) += test_bpf.o
- obj-$(CONFIG_TEST_FIRMWARE) += test_firmware.o
-+obj-$(CONFIG_TEST_KASAN) += test_kasan.o
- 
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/test_kasan.c b/lib/test_kasan.c
-new file mode 100644
-index 0000000..66a04eb
---- /dev/null
-+++ b/lib/test_kasan.c
-@@ -0,0 +1,254 @@
-+/*
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Andrey Ryabinin <a.ryabinin@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#define pr_fmt(fmt) "kasan test: %s " fmt, __func__
-+
-+#include <linux/kernel.h>
-+#include <linux/printk.h>
-+#include <linux/slab.h>
-+#include <linux/string.h>
-+#include <linux/module.h>
-+
-+static noinline void __init kmalloc_oob_right(void)
-+{
-+	char *ptr;
-+	size_t size = 123;
-+
-+	pr_info("out-of-bounds to right\n");
-+	ptr = kmalloc(size , GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 'x';
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_oob_left(void)
-+{
-+	char *ptr;
-+	size_t size = 15;
-+
-+	pr_info("out-of-bounds to left\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	*ptr = *(ptr - 1);
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_node_oob_right(void)
-+{
-+	char *ptr;
-+	size_t size = 4096;
-+
-+	pr_info("kmalloc_node(): out-of-bounds to right\n");
-+	ptr = kmalloc_node(size , GFP_KERNEL, 0);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 0;
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_large_oob_rigth(void)
-+{
-+	char *ptr;
-+	size_t size = KMALLOC_MAX_CACHE_SIZE + 10;
-+
-+	pr_info("kmalloc large allocation: out-of-bounds to right\n");
-+	ptr = kmalloc(size , GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr[size] = 0;
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_oob_krealloc_more(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size1 = 17;
-+	size_t size2 = 19;
-+
-+	pr_info("out-of-bounds after krealloc more\n");
-+	ptr1 = kmalloc(size1, GFP_KERNEL);
-+	ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		return;
-+	}
-+
-+	ptr2[size2] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_krealloc_less(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size1 = 17;
-+	size_t size2 = 15;
-+
-+	pr_info("out-of-bounds after krealloc less\n");
-+	ptr1 = kmalloc(size1, GFP_KERNEL);
-+	ptr2 = krealloc(ptr1, size2, GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		return;
-+	}
-+	ptr2[size1] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_16(void)
-+{
-+	struct {
-+		u64 words[2];
-+	} *ptr1, *ptr2;
-+
-+	pr_info("kmalloc out-of-bounds for 16-bytes access\n");
-+	ptr1 = kmalloc(sizeof(*ptr1) - 3, GFP_KERNEL);
-+	ptr2 = kmalloc(sizeof(*ptr2), GFP_KERNEL);
-+	if (!ptr1 || !ptr2) {
-+		pr_err("Allocation failed\n");
-+		kfree(ptr1);
-+		kfree(ptr2);
-+		return;
-+	}
-+	*ptr1 = *ptr2;
-+	kfree(ptr1);
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmalloc_oob_in_memset(void)
-+{
-+	char *ptr;
-+	size_t size = 666;
-+
-+	pr_info("out-of-bounds in memset\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	memset(ptr, 0, size+5);
-+	kfree(ptr);
-+}
-+
-+static noinline void __init kmalloc_uaf(void)
-+{
-+	char *ptr;
-+	size_t size = 10;
-+
-+	pr_info("use-after-free\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr);
-+	*(ptr + 8) = 'x';
-+}
-+
-+static noinline void __init kmalloc_uaf_memset(void)
-+{
-+	char *ptr;
-+	size_t size = 33;
-+
-+	pr_info("use-after-free in memset\n");
-+	ptr = kmalloc(size, GFP_KERNEL);
-+	if (!ptr) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr);
-+	memset(ptr, 0, size);
-+}
-+
-+static noinline void __init kmalloc_uaf2(void)
-+{
-+	char *ptr1, *ptr2;
-+	size_t size = 43;
-+
-+	pr_info("use-after-free after another kmalloc\n");
-+	ptr1 = kmalloc(size, GFP_KERNEL);
-+	if (!ptr1) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	kfree(ptr1);
-+	ptr2 = kmalloc(size, GFP_KERNEL);
-+	if (!ptr2) {
-+		pr_err("Allocation failed\n");
-+		return;
-+	}
-+
-+	ptr1[40] = 'x';
-+	kfree(ptr2);
-+}
-+
-+static noinline void __init kmem_cache_oob(void)
-+{
-+	char *p;
-+	size_t size = 200;
-+	struct kmem_cache *cache = kmem_cache_create("test_cache",
-+						size, 0,
-+						0, NULL);
-+	if (!cache) {
-+		pr_err("Cache allocation failed\n");
-+		return;
-+	}
-+	pr_info("out-of-bounds in kmem_cache_alloc\n");
-+	p = kmem_cache_alloc(cache, GFP_KERNEL);
-+	if (!p) {
-+		pr_err("Allocation failed\n");
-+		kmem_cache_destroy(cache);
-+		return;
-+	}
-+
-+	*p = p[size];
-+	kmem_cache_free(cache, p);
-+	kmem_cache_destroy(cache);
-+}
-+
-+int __init kmalloc_tests_init(void)
-+{
-+	kmalloc_oob_right();
-+	kmalloc_oob_left();
-+	kmalloc_node_oob_right();
-+	kmalloc_large_oob_rigth();
-+	kmalloc_oob_krealloc_more();
-+	kmalloc_oob_krealloc_less();
-+	kmalloc_oob_16();
-+	kmalloc_oob_in_memset();
-+	kmalloc_uaf();
-+	kmalloc_uaf_memset();
-+	kmalloc_uaf2();
-+	kmem_cache_oob();
-+	return -EAGAIN;
-+}
-+
-+module_init(kmalloc_tests_init);
-+MODULE_LICENSE("GPL");
+I just sent you an RFC, proposing an implementation of the DPI/raw-RGB
+bus layer.
+
+> 
+> Perhaps that's already what's being done and I misunderstand what you're
+> saying. I should go back to reviewing the DRM driver. I started this
+> morning, then got interrupted by other things.
+
+No problem. I'm glad to see that things are eventually moving on.
+
 -- 
-2.1.2
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
