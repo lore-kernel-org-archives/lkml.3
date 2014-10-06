@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaJFGkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 02:40:41 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39177 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaJFGkk (ORCPT
+	id S1751453AbaJFGxz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 02:53:55 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:61327 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaJFGxw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 02:40:40 -0400
-Date: Sun, 5 Oct 2014 23:40:30 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
- NAND controller
-Message-ID: <20141006064030.GA20598@norris-Latitude-E6410>
-References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
- <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
+	Mon, 6 Oct 2014 02:53:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141005182442.GA1934@krava.redhat.com>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+	<20140930132416.GB2799@kernel.org>
+	<20141005174801.GD9377@pd.tnic>
+	<20141005182442.GA1934@krava.redhat.com>
+Date: Mon, 6 Oct 2014 08:53:51 +0200
+Message-ID: <CAFrcx1=73idqC9DTx9f6H4sRo0CMTzMewv28usDWk8wKmdAgaA@mail.gmail.com>
+Subject: Re: perf & rasd integration plan
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 27, 2014 at 01:42:23PM +0100, Lee Jones wrote:
-> Reviewed-By: Pekon Gupta <pekon@pek-sem.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mtd/nand/Kconfig        |    7 +
->  drivers/mtd/nand/Makefile       |    1 +
->  drivers/mtd/nand/stm_nand_bch.c | 1616 +++++++++++++++++++++++++++++++++++++++
->  drivers/mtd/nand/stm_nand_dt.c  |  110 +++
->  drivers/mtd/nand/stm_nand_dt.h  |   24 +
->  include/linux/mtd/stm_nand.h    |  147 ++++
->  6 files changed, 1905 insertions(+)
->  create mode 100644 drivers/mtd/nand/stm_nand_bch.c
->  create mode 100644 drivers/mtd/nand/stm_nand_dt.c
->  create mode 100644 drivers/mtd/nand/stm_nand_dt.h
->  create mode 100644 include/linux/mtd/stm_nand.h
+Hi Jiri,
 
-One more thing: you never answered my question from [1]: 
 
-Does your driver pass the MTD tests? (drivers/mtd/tests/)
+On 5 October 2014 20:24, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Sun, Oct 05, 2014 at 07:48:01PM +0200, Borislav Petkov wrote:
+>> Top-posting on purpose:
+>>
+>> Btw, jolsa, if you get your LCE proposal for the perf splitting
+>> approved, please post the time here so people can come.
+>
+> yep, it got accepted, ther schedule is:
+>   Friday, October 17, 2014 from 9:00am – Noon
+>   Room 2
+>
+> https://pdxplumbers.osuosl.org/2014/ocw/events/LPC2014/tracks/351
+Great! Are there slides that we can download?
 
-Brian
+I have a couple of weeks to work on this, I can prepare the first set
+of patches.
 
-[1] http://lists.infradead.org/pipermail/linux-mtd/2014-August/055084.html
+Note: I will not be at ELCE/LPC but could attend remotely or have a
+call to discuss the points.
+
+Cheers,
+Jean
+
+>
+> jirka
