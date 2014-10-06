@@ -1,181 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaJFQMi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:12:38 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:2281 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaJFQMg convert rfc822-to-8bit (ORCPT
+	id S1752968AbaJFQN2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:13:28 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:54211 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaJFQN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:12:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 06 Oct 2014 09:10:52 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Krishna Thota <kthota@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
- tree
-Thread-Topic: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
- tree
-Thread-Index: AQHP1o7ln/2GHwUnqkWm/7z0JBMChZwNg2cAgApja8CAAGS6AIADOSDwgAANwwCAB0QhwIAAcnyAgAAJtpA=
-Date: Mon, 6 Oct 2014 16:12:30 +0000
-Message-ID: <20d267b9f02645828af53c72110a4bcb@bgmail104.nvidia.com>
-References: <1411408675-32315-1-git-send-email-vidyas@nvidia.com>
- <5420731E.6040104@wwwdotorg.org>
- <1862760b05184b95948b5e4952db010d@bgmail103.nvidia.com>
- <54297E7E.1030306@wwwdotorg.org>
- <96955607a8414f75bb4110ebef5daa37@bgmail103.nvidia.com>
- <542C3E34.2060505@wwwdotorg.org>
- <bd1591558b59409faf9edfd3eba2523e@bgmail104.nvidia.com>
- <20141006153456.GB23362@ulmo>
-In-Reply-To: <20141006153456.GB23362@ulmo>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.25.3.150]
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 Oct 2014 12:13:27 -0400
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH RFC] perf kvm stat record: print kvm specific --help output
+Date: Mon,  6 Oct 2014 20:13:17 +0400
+Message-Id: <1412611998-8690-1-git-send-email-yarygin@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100616-2966-0000-0000-0000015DDFE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
+
+The 'perf kvm stat record' tool is an alias for 'perf record' tool.
+When 'perf kvm stat record' is running with '--help' option, it prints
+help output for 'perf record':
 
 
-> -----Original Message-----
-> From: Thierry Reding [mailto:thierry.reding@gmail.com]
-> Sent: Monday, October 06, 2014 9:05 PM
-> To: Vidya Sagar
-> Cc: Stephen Warren; Laxman Dewangan; Krishna Thota; linux-
-> tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1 device
-> tree
-> 
-> * PGP Signed by an unknown key
-> 
-> On Mon, Oct 06, 2014 at 08:49:35AM +0000, Vidya Sagar wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> > > Sent: Wednesday, October 01, 2014 11:18 PM
-> > > To: Vidya Sagar
-> > > Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota; linux-
-> > > tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> > > kernel@vger.kernel.org
-> > > Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson TK1
-> > > device tree
-> > >
-> > > On 10/01/2014 11:13 AM, Vidya Sagar wrote:
-> > > >
-> > > >
-> > > >> -----Original Message-----
-> > > >> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> > > >> Sent: Monday, September 29, 2014 9:15 PM
-> > > >> To: Vidya Sagar
-> > > >> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota;
-> > > >> linux- tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> > > >> kernel@vger.kernel.org
-> > > >> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson
-> > > >> TK1 device tree
-> > > >>
-> > > >> On 09/29/2014 04:25 AM, Vidya Sagar wrote:
-> > > >>>
-> > > >>>> -----Original Message-----
-> > > >>>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
-> > > >>>> Sent: Tuesday, September 23, 2014 12:36 AM
-> > > >>>> To: Vidya Sagar
-> > > >>>> Cc: thierry.reding@gmail.com; Laxman Dewangan; Krishna Thota;
-> > > >>>> linux- tegra@vger.kernel.org; linux@arm.linux.org.uk; linux-
-> > > >>>> kernel@vger.kernel.org
-> > > >>>> Subject: Re: [PATCH v1] ARM: tegra: Fix sd4 regulator in Jetson
-> > > >>>> TK1 device tree
-> > > >>>>
-> > > >>>> On 09/22/2014 11:57 AM, Vidya Sagar wrote:
-> > > >>>>> sd4 is an always on regulator which is turned on at boot time.
-> > > >>>>> It is externally controller through gpio. This change reflects
-> > > >>>>> the same in Jetson TK1 device tree
-> > > >>>>
-> > > >>>> In the schematics, the "Power Sequencing" timing diagram says
-> > > >>>> "S/W controlled" for SD4/+1.05V_RUN. I also don't see an
-> > > >>>> "ENABLE1" pin on the AS3722, which would be required for ...
-> > > >>
-> > > >> Can you please comment on this aspect of the issue?
-> > > >>
-> > > >>>>> +					ams,ext-control = <1>;
-> > > >>>>
-> > > >>>> ... to be valid.
-> > > >>>>
-> > > >>>> What's the source of information behind this change?
-> > > >>>>
-> > > >>>> What symptoms does this patch correct?
-> > > >>>
-> > > >>> I'm seeing one issue when I add support for PCIe suspend/resume
-> > > >> functionality.
-> > > >>> The issue is that, when regulator_bulk_diable() is called,
-> > > >>> disabling one of
-> > > >> the power rails (which is deriving its voltage from SD4) of PCIe is
-> failing.
-> > > >>> The reason being, I2C controller is getting power gated
-> > > >>
-> > > >> Why is the fix being applied to SD4 if the issue is with a power
-> > > >> rail derived from SD4? Shouldn't any fix be applied directly to
-> > > >> the problematic rail rather than some parent rail?
-> > > >>
-> > > >> Since the I2C controller is part of the SoC and we don't have
-> > > >> power domain support yet, the only way the I2C controller can get
-> > > >> power gated is when the SoC as a whole is turned off.
-> > > >>
-> > > >>   > before power rail disable is called.
-> > > >>
-> > > >> ... so without making SD4 dependant on ext-control, since no SW
-> > > >> can be running at this point, the only way SD4 could get turned
-> > > >> off is that the PMIC turns it off itself at the appropriate point
-> > > >> in the system power sequence based on its OTP programming, or the
-> > > >> board HW is already set up to turn off
-> > > >> SD4 at the appropriate time somehow. Is that not happening?
-> > > >> That would imply incorrect PMIC programming wouldn't it?
-> > > >>
-> > > >
-> > > > After some debugging, found that the I2C driver's suspend is
-> > > > getting called before the suspend of PCIe is called (BTW, PCie has
-> > > > suspend_noirq..!) Hence, when PCIe driver wants to disable
-> > > > regulators it
-> > > fails because of I2C write failure, which is expected given I2C is
-> > > already suspended.
-> > >
-> > > Ah. It sounds like the PCIe driver should have a regular suspend
-> > > function not a suspend_noirq function then. It's certainly expected
-> > > that resources behind an I2C bus (i.e. most regulators) can't be
-> > > manipulated in a suspend_noirq function.
-> > >
-> >
-> > PCIe host controller driver can't have regular suspend function,
-> > because, PCI subsystem has its own suspend_noirq which tries to read
-> > Config registers of the connected PCIe devices, which in turn results
-> > in hang (because host controller would have been suspended by
-> > then...!)
-> 
-> I'd consider it a bug for the PCI core to try to access configuration space when
-> the host controller has been suspended, so I'd say this needs to be fixed
-> somewhere else.
-> 
-> Can you point out which function does this so that I can help coming up with
-> a more suitable fix?
-> 
+$ sudo perf kvm stat record --help
+ usage: perf record [<options>] [<command>]
+    or: perf record [<options>] -- <command> [<options>]
 
-This is the flow causing Config reads to take place in suspend_noirq path.
-pm_suspend -> suspend_devices_and_enter -> dpm_suspend_end ->
-dpm_run_callback -> pci_pm_suspend_noirq -> pci_save_state -> pci_bus_read_config_dword
+    -e, --event <event>   event selector. use 'perf list' to list available events
+        --filter <filter>
+                          event filter
+    -p, --pid <pid>       record events on existing process id
+    -t, --tid <tid>       record events on existing thread id
+    -r, --realtime <n>    collect data with this RT SCHED_FIFO priority
+    -D, --no-delay        collect data without buffering
+    -R, --raw-samples     collect raw sample records from all opened counters
+    -a, --all-cpus        system-wide collection from all CPUs
+    -C, --cpu <cpu>       list of cpus to monitor
+    -c, --count <n>       event period to sample
+    -o, --output <file>   output file name
+    .. snip ..
 
 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
+Some of these options can be used with 'kvm stat record', however others
+can break recording (i.e. --no-samples), or don't change anything kvm related
+(but they can add more details to the output file that are ignored by
+'kvm stat report' and visible with 'perf report')
+
+Plus the other 'perf kvm stat' tools have their own --help.
+
+The patch is an proof-of-concept attempt to fix that inconsistency
+by printing useful for 'perf kvm stat record' options in addition
+to generic help. Like as follows:
+
+
+$ sudo perf kvm stat record --help
+
+ usage: perf kvm stat record [<options>]
+
+    -p, --pid <pid>      record events on existing process id
+    -t, --tid <tid>      record events on existing thread id
+    -r, --realtime <n>   collect data with this RT SCHED_FIFO priority
+        --no-buffering   collect data without buffering
+    -a, --all-cpus       system-wide collection from all CPUs
+    -C, --cpu <cpu>      list of cpus to monitor
+    -c, --count <n>      event period to sample
+    -o, --output <file>  output file name
+    -i, --no-inherit     child tasks do not inherit counters
+    -m, --mmap-pages <pages>
+                         number of mmap data pages
+    -v, --verbose        be more verbose (show counter open errors, etc)
+    -q, --quiet          don't print any message
+    -D, --delay <n>      ms to wait before starting measurement after program start
+    -u, --uid <user>     user to profile
+        --per-thread     use per-thread mmaps
+
+Otherwise, it is the alias of 'perf record:'
+
+ usage: perf record [<options>] [<command>]
+    or: perf record [<options>] -- <command> [<options>]
+
+    -e, --event <event>   event selector. use 'perf list' to list available events
+        --filter <filter>
+                          event filter
+    -p, --pid <pid>       record events on existing process id
+     .. here is the rest of the 'perf record' options ..
+
+
+Problems:
+1) I could drop some useful options.
+2) Running 'perf kvm stat record' with invalid command leads to help message
+  from 'perf record':
+
+
+perf kvm stat record --i-want-help-from-record
+  Error: unknown option `i-want-help-from-record'
+
+ usage: perf record [<options>] [<command>]
+    or: perf record [<options>] -- <command> [<options>]
+    .. snip ..
+
+
+Any ideas?
+
+Thanks.
+
+
+Alexander Yarygin (1):
+  perf kvm stat record: print kvm specific --help output
+
+ tools/perf/builtin-kvm.c | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+-- 
+1.9.1
+
