@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaJFMSy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:18:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992AbaJFMSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:18:50 -0400
-Date: Mon, 6 Oct 2014 15:22:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 09/16] virtio-net: drop config_mutex
-Message-ID: <20141006122215.GA26790@redhat.com>
+	id S1752546AbaJFMUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:20:50 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:59316 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbaJFMUs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 08:20:48 -0400
+Date: Mon, 6 Oct 2014 14:20:38 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 06/16] virtio_blk: drop config_enable
+Message-ID: <20141006142038.07ea01f0.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141006120953.GA26549@redhat.com>
 References: <1412525038-15871-1-git-send-email-mst@redhat.com>
- <1412525038-15871-10-git-send-email-mst@redhat.com>
- <54328107.5090400@cogentembedded.com>
- <20141006115636.GA26184@redhat.com>
- <54328604.30403@cogentembedded.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54328604.30403@cogentembedded.com>
+	<1412525038-15871-7-git-send-email-mst@redhat.com>
+	<20141006134229.45465bf7.cornelia.huck@de.ibm.com>
+	<20141006120953.GA26549@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100612-4966-0000-0000-0000018F4D8B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 04:07:32PM +0400, Sergei Shtylyov wrote:
-> On 10/6/2014 3:56 PM, Michael S. Tsirkin wrote:
-> 
-> >>>config_mutex served two purposes: prevent multiple concurrent config
-> >>>change handlers, and synchronize access to config_enable flag.
-> 
-> >>>Since commit dbf2576e37da0fcc7aacbfbb9fd5d3de7888a3c1
-> >>>     workqueue: make all workqueues non-reentrant
-> >>>all workqueues are non-reentrant, and config_enable
-> >>>is now gone.
-> 
-> >>>Get rid of the unnecessary lock.
-> 
-> >>>Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >>>---
-> >>>  drivers/net/virtio_net.c | 7 +------
-> >>>  1 file changed, 1 insertion(+), 6 deletions(-)
-> 
-> >>>diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >>>index fa17afa..d80fef4 100644
-> >>>--- a/drivers/net/virtio_net.c
-> >>>+++ b/drivers/net/virtio_net.c
-> >>[...]
-> >>>@@ -1430,7 +1426,7 @@ static void virtnet_config_changed_work(struct work_struct *work)
-> >>>  		netif_tx_stop_all_queues(vi->dev);
-> >>>  	}
-> >>>  done:
-> >>>-	mutex_unlock(&vi->config_lock);
-> >>>+	return;
-> 
-> >>    There's no need for this *return*.
-> 
-> >I know - it's removed by the follow-up patch.
-> 
->    Yeah, I saw.
-> 
-> >It's formatted like this to make diff smaller
-> >and make review easier.
-> 
->    Don't understand how adding this line makes diff smaller though...
-> You first need to add it and then to delete it, where's the save?
-> 
-> WBR, Sergei
+On Mon, 6 Oct 2014 15:09:53 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
+> On Mon, Oct 06, 2014 at 01:42:29PM +0200, Cornelia Huck wrote:
+> > On Sun, 5 Oct 2014 19:07:07 +0300
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > Now that virtio core ensures config changes don't
+> > > arrive during probing, drop config_enable flag
+> > > in virtio blk.
+> > > On removal, flush is now sufficient to guarantee that
+> > > no change work is queued.
+> > > 
+> > > This help simplify the driver, and will allow
+> > > setting DRIVER_OK earlier without losing config
+> > > change notifications.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  drivers/block/virtio_blk.c | 19 ++-----------------
+> > >  1 file changed, 2 insertions(+), 17 deletions(-)
+> > > 
+> > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+> > > index 0a58140..c8cf6a1 100644
+> > > --- a/drivers/block/virtio_blk.c
+> > > +++ b/drivers/block/virtio_blk.c
+> > 
+> > > @@ -772,9 +766,7 @@ static void virtblk_remove(struct virtio_device *vdev)
+> > >  	int refc;
+> > > 
+> > >  	/* Prevent config work handler from accessing the device. */
+> > 
+> > /* Common code ensures no further work will be queued. */
+> > 
+> > instead?
+> 
+> No, I think you missed the point:
+> this comment now refers to the flush below: flush is required to
+> ensure work handler is not running.
+> 
+> Agree?
 
-If I don't add it, gcc generates a compiler warning: it does not like
-labels at the end of functions.
-So I don't want to just drop the return function: I must drop the label too.
+I think we both mean the same thing.
 
+Preventing the handler from access sounds to me more like "when the
+handler starts running, it is prevented from accessing the
+device" (like with setting config_enable, as the code did before). What
+I meant was "common code has already ensured that our work-queueing
+function will not be called, therefore flushing the workqueue is
+enough."
+
+(same for net)
 
