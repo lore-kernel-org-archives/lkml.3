@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaJFNLT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:11:19 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55693 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752524AbaJFNLQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:11:16 -0400
-Date: Mon, 6 Oct 2014 15:11:11 +0200
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
-Subject: Re: [PATCH v7 10/11] ARM: at91/dt: add LCD panel description to
- sama5d3xdm.dtsi
-Message-ID: <20141006151111.446ed7d6@bbrezillon>
-In-Reply-To: <20141006124014.GD26833@ulmo>
-References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1412175188-28278-11-git-send-email-boris.brezillon@free-electrons.com>
-	<20141006110115.GH25202@ulmo>
-	<20141006142538.76d2df29@bbrezillon>
-	<20141006124014.GD26833@ulmo>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752613AbaJFNQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:16:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752428AbaJFNQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 09:16:07 -0400
+Date: Mon, 6 Oct 2014 14:24:46 +0100
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20141006132445.GA18339@agordeev.usersys.redhat.com>
+References: <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+ <20141001153114.GE8971@agordeev.usersys.redhat.com>
+ <20141005022311.GD8549@htj.dyndns.org>
+ <20141005161646.GB22223@mtj.dyndns.org>
+ <20141006072710.GH8971@agordeev.usersys.redhat.com>
+ <20141006125817.GA18303@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006125817.GA18303@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014 14:40:15 +0200
-Thierry Reding <thierry.reding@gmail.com> wrote:
+On Mon, Oct 06, 2014 at 08:58:17AM -0400, Tejun Heo wrote:
+> I don't think we'd be able to move libata handling to block softirq
+> and probably end up just doing it from the irq context.  Anyways, as
+> long as you're gonna keep working on it, I have no objection to the
+> proposed changes.  Do you have a refreshed version or is the current
+> version good for inclusion?
 
-> On Mon, Oct 06, 2014 at 02:25:38PM +0200, Boris Brezillon wrote:
-> > On Mon, 6 Oct 2014 13:01:16 +0200 Thierry Reding <thierry.reding@gmail.com> wrote:
-> > > On Wed, Oct 01, 2014 at 04:53:07PM +0200, Boris Brezillon wrote:
-> > > [...]
-> > > > diff --git a/arch/arm/boot/dts/sama5d3xdm.dtsi b/arch/arm/boot/dts/sama5d3xdm.dtsi
-> [...]
-> > > > +		backlight = <&backlight>;
-> > > > +		power-supply = <&panel_reg>;
-> > > > +		#address-cells = <1>;
-> > > > +		#size-cells = <0>;
-> > > > +		status = "disabled";
-> > > > +
-> > > > +		port@0 {
-> > > > +			#address-cells = <1>;
-> > > > +			#size-cells = <0>;
-> > > > +
-> > > > +			panel_input: endpoint@0 {
-> > > > +				reg = <0>;
-> > > > +				remote-endpoint = <&hlcdc_panel_output>;
-> > > > +			};
-> > > >  		};
-> > > 
-> > > There's no support for OF graphs in simple-panel, so this is unused,
-> > > isn't it?
-> > 
-> > Actually I use it in my atmel_hlcdc_ouput implementation to figure out
-> > the link between a panel and a device connected on the RGB/DPI bus. 
-> 
-> That's kind of weird and one of the reasons why I can't make myself like
-> the OF graph bindings. It requires drivers for one device to reach into
-> the device tree node of some other device and look for content. Or put
-> another way, a DT node for a panel that works on one platform doesn't
-> work on another because the display controller needs additional DT
-> content that isn't required by the original binding for the panel.
+No, this one would not apply. I can send updated version on top of
+v5 I posted earlier. Should I?
 
-I also have a working POC of a DPI bus implementation (with DPI support
-in panel-simple driver).
-
-This is a solution I developed to provide a generic DPI implementation
-in my HLCDC driver and rely on generic external implementations for
-slave devices (panels, encoders, ...).
-
-But, IIRC, Laurent was not in favor of a bus approach because the DPI
-bus is just a data bus and not a control bus.
-
-Anyway, I'll clean it up and post an RFC.
+> tejun
 
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
