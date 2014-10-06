@@ -1,29 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaJFPHm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:07:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11071 "EHLO mx1.redhat.com"
+	id S1753179AbaJFPL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:11:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62826 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112AbaJFPHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:07:39 -0400
-Date: Mon, 6 Oct 2014 18:10:44 +0300
+	id S1753085AbaJFPHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:07:32 -0400
+Date: Mon, 6 Oct 2014 18:10:58 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Siva Yerramreddy <yshivakrishna@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>, linux-s390@vger.kernel.org
-Subject: [PATCH v2 02/15] virtio: unify config_changed handling
-Message-ID: <1412608214-31944-3-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v2 05/15] virtio_blk: drop config_enable
+Message-ID: <1412608214-31944-6-git-send-email-mst@redhat.com>
 References: <1412608214-31944-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,166 +23,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace duplicated code in all transports with a single wrapper in
-virtio.c.
+Now that virtio core ensures config changes don't
+arrive during probing, drop config_enable flag
+in virtio blk.
+On removal, flush is now sufficient to guarantee that
+no change work is queued.
 
-The only functional change is in virtio_mmio.c: if a buggy device sends
-us an interrupt before driver is set, we previously returned IRQ_NONE,
-now we return IRQ_HANDLED.
-
-As this must not happen in practice, this does not look like a big deal.
-
-See also commit 3fff0179e33cd7d0a688dab65700c46ad089e934
-	virtio-pci: do not oops on config change if driver not loaded.
-for the original motivation behind the driver check.
+This help simplify the driver, and will allow
+setting DRIVER_OK earlier without losing config
+change notifications.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/linux/virtio.h             | 2 ++
- drivers/misc/mic/card/mic_virtio.c | 6 +-----
- drivers/s390/kvm/kvm_virtio.c      | 9 +--------
- drivers/s390/kvm/virtio_ccw.c      | 6 +-----
- drivers/virtio/virtio.c            | 9 +++++++++
- drivers/virtio/virtio_mmio.c       | 7 ++-----
- drivers/virtio/virtio_pci.c        | 6 +-----
- 7 files changed, 17 insertions(+), 28 deletions(-)
+ drivers/block/virtio_blk.c | 23 ++++-------------------
+ 1 file changed, 4 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-index b46671e..3c19bd3 100644
---- a/include/linux/virtio.h
-+++ b/include/linux/virtio.h
-@@ -108,6 +108,8 @@ void unregister_virtio_device(struct virtio_device *dev);
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 0a58140..91272f1a 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -44,9 +44,6 @@ struct virtio_blk
+ 	/* Lock for config space updates */
+ 	struct mutex config_lock;
  
- void virtio_break_device(struct virtio_device *dev);
- 
-+void virtio_config_changed(struct virtio_device *dev);
-+
- /**
-  * virtio_driver - operations for a virtio I/O driver
-  * @driver: underlying device driver (populate name and owner).
-diff --git a/drivers/misc/mic/card/mic_virtio.c b/drivers/misc/mic/card/mic_virtio.c
-index f14b600..e647947 100644
---- a/drivers/misc/mic/card/mic_virtio.c
-+++ b/drivers/misc/mic/card/mic_virtio.c
-@@ -462,16 +462,12 @@ static void mic_handle_config_change(struct mic_device_desc __iomem *d,
- 	struct mic_device_ctrl __iomem *dc
- 		= (void __iomem *)d + mic_aligned_desc_size(d);
- 	struct mic_vdev *mvdev = (struct mic_vdev *)ioread64(&dc->vdev);
--	struct virtio_driver *drv;
- 
- 	if (ioread8(&dc->config_change) != MIC_VIRTIO_PARAM_CONFIG_CHANGED)
- 		return;
- 
- 	dev_dbg(mdrv->dev, "%s %d\n", __func__, __LINE__);
--	drv = container_of(mvdev->vdev.dev.driver,
--				struct virtio_driver, driver);
--	if (drv->config_changed)
--		drv->config_changed(&mvdev->vdev);
-+	virtio_config_changed(&mvdev->vdev);
- 	iowrite8(1, &dc->guest_ack);
- }
- 
-diff --git a/drivers/s390/kvm/kvm_virtio.c b/drivers/s390/kvm/kvm_virtio.c
-index a134965..6431290 100644
---- a/drivers/s390/kvm/kvm_virtio.c
-+++ b/drivers/s390/kvm/kvm_virtio.c
-@@ -406,15 +406,8 @@ static void kvm_extint_handler(struct ext_code ext_code,
- 
- 	switch (param) {
- 	case VIRTIO_PARAM_CONFIG_CHANGED:
--	{
--		struct virtio_driver *drv;
--		drv = container_of(vq->vdev->dev.driver,
--				   struct virtio_driver, driver);
--		if (drv->config_changed)
--			drv->config_changed(vq->vdev);
+-	/* enable config space updates */
+-	bool config_enable;
 -
-+		virtio_config_changed(vq->vdev);
- 		break;
--	}
- 	case VIRTIO_PARAM_DEV_ADD:
- 		schedule_work(&hotplug_work);
- 		break;
-diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-index d2c0b44..6cbe6ef 100644
---- a/drivers/s390/kvm/virtio_ccw.c
-+++ b/drivers/s390/kvm/virtio_ccw.c
-@@ -940,11 +940,7 @@ static void virtio_ccw_int_handler(struct ccw_device *cdev,
- 		vring_interrupt(0, vq);
- 	}
- 	if (test_bit(0, &vcdev->indicators2)) {
--		drv = container_of(vcdev->vdev.dev.driver,
--				   struct virtio_driver, driver);
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
+ 
+@@ -348,8 +345,6 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	u64 capacity, size;
+ 
+ 	mutex_lock(&vblk->config_lock);
+-	if (!vblk->config_enable)
+-		goto done;
+ 
+ 	/* Host must always specify the capacity. */
+ 	virtio_cread(vdev, struct virtio_blk_config, capacity, &capacity);
+@@ -374,7 +369,7 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	set_capacity(vblk->disk, capacity);
+ 	revalidate_disk(vblk->disk);
+ 	kobject_uevent_env(&disk_to_dev(vblk->disk)->kobj, KOBJ_CHANGE, envp);
+-done:
++
+ 	mutex_unlock(&vblk->config_lock);
+ }
+ 
+@@ -609,7 +604,6 @@ static int virtblk_probe(struct virtio_device *vdev)
+ 	mutex_init(&vblk->config_lock);
+ 
+ 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
+-	vblk->config_enable = true;
+ 
+ 	err = init_vq(vblk);
+ 	if (err)
+@@ -771,10 +765,8 @@ static void virtblk_remove(struct virtio_device *vdev)
+ 	int index = vblk->index;
+ 	int refc;
+ 
+-	/* Prevent config work handler from accessing the device. */
+-	mutex_lock(&vblk->config_lock);
+-	vblk->config_enable = false;
+-	mutex_unlock(&vblk->config_lock);
++	/* Make sure no work handler is accessing the device. */
++	flush_work(&vblk->config_work);
+ 
+ 	del_gendisk(vblk->disk);
+ 	blk_cleanup_queue(vblk->disk->queue);
+@@ -784,8 +776,6 @@ static void virtblk_remove(struct virtio_device *vdev)
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-	flush_work(&vblk->config_work);
 -
--		if (drv && drv->config_changed)
--			drv->config_changed(&vcdev->vdev);
-+		virtio_config_changed(&vcdev->vdev);
- 		clear_bit(0, &vcdev->indicators2);
- 	}
- }
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index fed0ce1..3980687 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -239,6 +239,15 @@ void unregister_virtio_device(struct virtio_device *dev)
- }
- EXPORT_SYMBOL_GPL(unregister_virtio_device);
+ 	refc = atomic_read(&disk_to_dev(vblk->disk)->kobj.kref.refcount);
+ 	put_disk(vblk->disk);
+ 	vdev->config->del_vqs(vdev);
+@@ -805,11 +795,7 @@ static int virtblk_freeze(struct virtio_device *vdev)
+ 	/* Ensure we don't receive any more interrupts */
+ 	vdev->config->reset(vdev);
  
-+void virtio_config_changed(struct virtio_device *dev)
-+{
-+	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
-+
-+	if (drv && drv->config_changed)
-+		drv->config_changed(dev);
-+}
-+EXPORT_SYMBOL_GPL(virtio_config_changed);
-+
- static int virtio_init(void)
- {
- 	if (bus_register(&virtio_bus) != 0)
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index c600ccf..ef9a165 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -234,8 +234,6 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
- {
- 	struct virtio_mmio_device *vm_dev = opaque;
- 	struct virtio_mmio_vq_info *info;
--	struct virtio_driver *vdrv = container_of(vm_dev->vdev.dev.driver,
--			struct virtio_driver, driver);
- 	unsigned long status;
- 	unsigned long flags;
- 	irqreturn_t ret = IRQ_NONE;
-@@ -244,9 +242,8 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
- 	status = readl(vm_dev->base + VIRTIO_MMIO_INTERRUPT_STATUS);
- 	writel(status, vm_dev->base + VIRTIO_MMIO_INTERRUPT_ACK);
+-	/* Prevent config work handler from accessing the device. */
+-	mutex_lock(&vblk->config_lock);
+-	vblk->config_enable = false;
+-	mutex_unlock(&vblk->config_lock);
+-
++	/* Make sure no work handler is accessing the device. */
+ 	flush_work(&vblk->config_work);
  
--	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)
--			&& vdrv && vdrv->config_changed) {
--		vdrv->config_changed(&vm_dev->vdev);
-+	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
-+		virtio_config_changed(&vm_dev->vdev);
- 		ret = IRQ_HANDLED;
- 	}
+ 	blk_mq_stop_hw_queues(vblk->disk->queue);
+@@ -823,7 +809,6 @@ static int virtblk_restore(struct virtio_device *vdev)
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int ret;
  
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index 0f2db51..58cbf6e 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -211,12 +211,8 @@ static bool vp_notify(struct virtqueue *vq)
- static irqreturn_t vp_config_changed(int irq, void *opaque)
- {
- 	struct virtio_pci_device *vp_dev = opaque;
--	struct virtio_driver *drv;
--	drv = container_of(vp_dev->vdev.dev.driver,
--			   struct virtio_driver, driver);
- 
--	if (drv && drv->config_changed)
--		drv->config_changed(&vp_dev->vdev);
-+	virtio_config_changed(&vp_dev->vdev);
- 	return IRQ_HANDLED;
- }
- 
+-	vblk->config_enable = true;
+ 	ret = init_vq(vdev->priv);
+ 	if (!ret)
+ 		blk_mq_start_stopped_hw_queues(vblk->disk->queue, true);
 -- 
 MST
 
