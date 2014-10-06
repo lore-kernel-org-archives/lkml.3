@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaJFJHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:07:04 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:63478 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751140AbaJFJHA (ORCPT
+	id S1752403AbaJFJHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:07:32 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62712 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239AbaJFJHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:07:00 -0400
-Message-ID: <1412586417.4054.38.camel@x220>
-Subject: [PATCH 0/4] Remove optional dependencies on PLAT_S5P
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 06 Oct 2014 11:06:57 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2014 09:06:57.0549 (UTC) FILETIME=[E191D3D0:01CFE144]
-X-RcptDomain: vger.kernel.org
+	Mon, 6 Oct 2014 05:07:30 -0400
+Date: Mon, 6 Oct 2014 11:07:26 +0200
+From: Robert Richter <rric@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141006090726.GQ20170@rric.localhost>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140930132416.GB2799@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-removed the Kconfig symbol PLAT_S5P. The seven dependencies on that
-symbol have evaluated to false since next-20140716 (for linux-next) and
-v3.17-rc1 (for mainline). Probably no one noticed because these are all
-optional dependencies.
+On 30.09.14 10:24:16, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Sep 30, 2014 at 11:06:21AM +0200, Jean Pihet escreveu:
+> > The plan is to move the small and generic functions first: util,
+> > xyarray, cpumap, thread_map etc; then evlist, evsel, trace-event,
+> > trace-event-parse; and finally integrate rasd into the tools/ dir.
+> > 
+> > Any thought? Can evlist, evsel etc. be moved at once?
+> > 
+> > Patches should come soon, when time allows.
+> 
+> Why don't you add it to tools/rasd/ and in tools/rasd/Makefile you just
+> go on and add tools/perf/util/evlist.o et all to be linked directly, as
+> a first step.
+> 
+> Then, as a second step, we can create a tools/lib/perf/evlist.c having
+> what is currently used by both tools/perf/ and tools/rasd/, i.e. what is
+> proven to be useful for something other than perf.
 
-I've mentioned this a few times:
-- http://lkml.kernel.org/r/1405505756.4408.24.camel@x220
-- http://lkml.kernel.org/r/1409825817.5546.99.camel@x220
-- http://lkml.kernel.org/r/1411068565.2017.83.camel@x220
+It would be good to have tools/lib/perf or so with some base
+implementation to setup and connect to perf buffers. This is useful
+for tools not only in tools/. The rasd would be a good reference for
+this regardless if it is in tools/ or not. I am not sure whether and
+when rasd will be moved there.
 
-As far as I know no fix for this is pending. So let's remove these
-optional dependencies. If it turns out that they should actually be
-replaced by another symbol, as was said in a reply to my first message
-but never done, this series can be used as a reference for the places
-that need fixing.
+> As the need arises, we go on moving things into tools/lib/perf/evlist.c
+> et all from wherever it appeared first, be it from tools/rasd/,
+> tools/perf/util/evlist.c or anywhere else.
+> 
+> Initial rule being that once it is used by multiple tools living in
+> tools/, then it deserves a place in tools/lib/perf/.
 
-This series is done on top of next-20141003. It is tested by grepping
-the tree only.
+So this wouldn't quite work well as it excludes tools not in tools/.
 
-Paul Bolle (4):
-  [media] Remove optional dependencies on PLAT_S5P
-  [media] exynos4-is: Remove optional dependency on PLAT_S5P
-  [media] Remove optional dependency on PLAT_S5P
-  usb: host: Remove optional dependencies on PLAT_S5P
+-Robert
 
- drivers/media/platform/Kconfig            | 6 +++---
- drivers/media/platform/exynos4-is/Kconfig | 2 +-
- drivers/media/platform/s5p-tv/Kconfig     | 2 +-
- drivers/usb/host/Kconfig                  | 4 ++--
- 4 files changed, 7 insertions(+), 7 deletions(-)
-
--- 
-1.9.3
-
+> 
+> Ditto for other stuff currently living in tools/perf/util/.
