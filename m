@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaJFQqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:46:19 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:61524 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaJFQqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:46:18 -0400
+	id S1753205AbaJFQrQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:47:16 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:39589 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752839AbaJFQrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 12:47:13 -0400
+Message-ID: <5432C788.50609@osg.samsung.com>
+Date: Mon, 06 Oct 2014 10:47:04 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <5432C62C.704@zytor.com>
-References: <cover.1412189265.git.luto@amacapital.net> <CALCETrVmoNP-vXVv_EpFtccsqjDMnUN9cxJc4pNU=Nb1_ekMZg@mail.gmail.com>
- <5432C62C.704@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 6 Oct 2014 09:45:56 -0700
-Message-ID: <CALCETrXp+EkMzrA2PobS2rBfNjrD+JnAEOp5bYPz_P4bsBqCjg@mail.gmail.com>
-Subject: Re: [PATCH v4 0/2] x86_64,entry: Clear NT on entry and speed up switch_to
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Sebastian Lackner <sebastian@fds-team.de>,
-        Anish Bhatt <anish@chelsio.com>,
+To: linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "open list:KERNEL SELFTEST F..." <linux-api@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chuck Ebbert <cebbert.lkml@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: [GIT PULL] kselftest 3.18-updates-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 9:41 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/06/2014 09:39 AM, Andy Lutomirski wrote:
->> On Wed, Oct 1, 2014 at 11:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Anish Bhatt noticed that user programs can set RFLAGS.NT before
->>> syscall or sysenter, and the kernel entry code doesn't filter out
->>> NT.  This causes kernel C code and, depending on thread flags, the
->>> exit slow path to run with NT set.
->>>
->>
->> Quick ping: now that the merge window is (sort of) open, what's
->> happening with these patches?
->>
->> Thanks,
->> Andy
->>
->
-> My preference would be to queue them up for 3.19 since they arrived late
-> in the 3.18 cycle.
+Hi Linus,
 
-I see nothing wrong with deferring patch 2 for 3.19, but deferring
-patch 1, which is tagged for stable, for an entire release seems a bit
-silly to me.
+Here are the updates for kselftest for 3.18. Please see
+details in the signed tag.
 
---Andy
+thanks,
+-- Shuah
+
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+
+are available in the git repository at:
+
+
+git@gitolite.kernel.org:/pub/scm/linux/kernel/git/shuah/linux-kselftest
+tags/kselftest-3.18-updates-1
+
+for you to fetch changes up to ce6a144a0d01c6628496e4c0d18fbf3a0362cc67:
+
+  selftests/memfd: Run test on all architectures (2014-09-17 08:00:16 -0600)
+
+----------------------------------------------------------------
+kselftest Updates for 3.18
+- Fix for missing arguments to printf
+- Fix to build failures on 32-bit systems.
+- Enhancement to run memfd_test run on all architectures
+  as most architectures support __NR_memfd_create
+----------------------------------------------------------------
+Pranith Kumar (3):
+      memfd_test: Make it work on 32-bit systems
+      memfd_test: Add missing argument to printf()
+      selftests/memfd: Run test on all architectures
+
+ tools/testing/selftests/memfd/Makefile     | 21 -----------------
+ tools/testing/selftests/memfd/memfd_test.c | 36
+++++++++++++++----------------
+ 2 files changed, 17 insertions(+), 40 deletions(-)
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
