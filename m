@@ -1,131 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaJFJmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:42:25 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:52839 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbaJFJmW (ORCPT
+	id S1752481AbaJFJpC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:45:02 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:49469 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaJFJo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:42:22 -0400
-Date: Mon, 6 Oct 2014 02:42:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Suleiman Souhlal <suleiman@google.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [patch for-3.17] mm, thp: fix collapsing of hugepages on
- madvise
-In-Reply-To: <20141005184115.GA21713@node.dhcp.inet.fi>
-Message-ID: <alpine.DEB.2.02.1410060237580.12568@chino.kir.corp.google.com>
-References: <alpine.DEB.2.02.1410041947080.7055@chino.kir.corp.google.com> <20141005184115.GA21713@node.dhcp.inet.fi>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 6 Oct 2014 05:44:59 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [85.250.61.162]
+In-Reply-To: <5425938C.6070007@ti.com>
+References: <1389658764-39199-1-git-send-email-s-anna@ti.com>
+ <1389658764-39199-5-git-send-email-s-anna@ti.com> <CAJAp7Oj-3ZxvN8o=rg8YeTiXYWyQ1iowgisdU1R5UcZeh4VmOQ@mail.gmail.com>
+ <5425938C.6070007@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 6 Oct 2014 12:44:39 +0300
+Message-ID: <CAK=WgbYf3++K4MVXW_n4zj-8fMEee61XG5+r40cW=trapRtJ7w@mail.gmail.com>
+Subject: Re: [PATCHv4 4/7] hwspinlock/core: add common OF helpers
+To: Suman Anna <s-anna@ti.com>
+Cc: Bjorn Andersson <bjorn@kryo.se>, Mark Rutland <mark.rutland@arm.com>,
+        Tony Lindgren <tony@atomide.com>, Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014, Kirill A. Shutemov wrote:
+On Fri, Sep 26, 2014 at 7:25 PM, Suman Anna <s-anna@ti.com> wrote:
+> I am yet to receive any comments on v6, but that series should address
+> both your need for a probe deferral and Ohad's request to not change any
+> return types. Please give it a try and let me know if you have any comments.
 
-> On Sat, Oct 04, 2014 at 07:48:04PM -0700, David Rientjes wrote:
-> > If an anonymous mapping is not allowed to fault thp memory and then
-> > madvise(MADV_HUGEPAGE) is used after fault, khugepaged will never
-> > collapse this memory into thp memory.
-> > 
-> > This occurs because the madvise(2) handler for thp, hugepage_advise(),
-> > clears VM_NOHUGEPAGE on the stack and it isn't stored in vma->vm_flags
-> > until the final action of madvise_behavior().  This causes the
-> > khugepaged_enter_vma_merge() to be a no-op in hugepage_advise() when the
+Guys,
 
-This should be hugepage_madvise().
+Just to let you know we have several holidays around here these days,
+and I intend to review all pending patches immediately soon after.
 
-> > vma had previously had VM_NOHUGEPAGE set.
-> > 
-> > Fix this by passing the correct vma flags to the khugepaged mm slot
-> > handler.  There's no chance khugepaged can run on this vma until after
-> > madvise_behavior() returns since we hold mm->mmap_sem.
-> > 
-> > It would be possible to clear VM_NOHUGEPAGE directly from vma->vm_flags
-> > in hugepage_advise(), but I didn't want to introduce special case
-> > behavior into madvise_behavior().  I think it's best to just let it
-> > always set vma->vm_flags itself.
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Reported-by: Suleiman Souhlal <suleiman@google.com>
-> > Signed-off-by: David Rientjes <rientjes@google.com>
-> 
-> Look like rather complex fix for a not that complex bug.
-> What about untested patch below?
-> 
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> Date: Sun, 5 Oct 2014 21:22:43 +0300
-> Subject: [PATCH] thp: fix registering VMA into khugepaged on
->  madvise(MADV_HUGEPAGE)
-> 
-> hugepage_madvise() tries to register VMA into khugepaged with
-> khugepaged_enter_vma_merge() on madvise(MADV_HUGEPAGE). Unfortunately
-> it's effectevely nop, since khugepaged_enter_vma_merge() rely on
-> vma->vm_flags which has not yet updated by the time of
-> hugepage_madvise().
-> 
-> Let's move khugepaged_enter_vma_merge() to the end of madvise_behavior().
-> Now we also have chance to catch VMAs which become good for THP after
-> vma_merge().
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> ---
->  mm/huge_memory.c | 8 +++-----
->  mm/madvise.c     | 6 ++++++
->  2 files changed, 9 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index f8ffd9412ec5..f84d52158a66 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1966,12 +1966,10 @@ int hugepage_madvise(struct vm_area_struct *vma,
->  		*vm_flags &= ~VM_NOHUGEPAGE;
->  		*vm_flags |= VM_HUGEPAGE;
->  		/*
-> -		 * If the vma become good for khugepaged to scan,
-> -		 * register it here without waiting a page fault that
-> -		 * may not happen any time soon.
-> +		 * vma->vm_flags is not yet updated here. madvise_behavior()
-> +		 * will take care to register it in khugepaged once flags
-> +		 * updated.
->  		 */
-> -		if (unlikely(khugepaged_enter_vma_merge(vma)))
-> -			return -ENOMEM;
->  		break;
->  	case MADV_NOHUGEPAGE:
->  		/*
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 0938b30da4ab..60effd2c5e9c 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -128,6 +128,12 @@ success:
->  	 */
->  	vma->vm_flags = new_flags;
->  
-> +	/*
-> +	 * If the vma become good for khugepaged to scan, register it here
-> +	 * without waiting a page fault that may not happen any time soon.
-> +	 */
-> +	if (unlikely(khugepaged_enter_vma_merge(vma)))
-> +		error = -ENOMEM;
->  out:
->  	if (error == -ENOMEM)
->  		error = -EAGAIN;
-
-I'm pretty sure this won't compile, but I'm also pretty sure it's easy to 
-come up with an madvise() bit for anon vmas that would cause the BUG_ON() 
-to trigger for CONFIG_DEBUG_VM and unnecessarily do alloc_mm_slot() for 
-madvise() calls that aren't MADV_HUGEPAGE with this that go through the 
-madvise_behavior() path, and for that reason it's probably not as 
-extendable as we'd like.  I can verify this tomorrow if you'd like.  This 
-is the point of the last paragraph of my changelog to isolate all thp 
-behavior changes to MADV_HUGEPAGE and MADV_NOHUGEPAGE in one place as it's 
-currently done and not add any special handling in madvise_behavior().
+Thanks,
+Ohad.
