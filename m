@@ -1,47 +1,513 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaJFKuI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:50:08 -0400
-Received: from mail.lang.hm ([64.81.33.126]:37795 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090AbaJFKuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:50:05 -0400
-Date: Mon, 6 Oct 2014 03:49:44 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Christoph Lameter <cl@linux.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
- within 50 days
-In-Reply-To: <alpine.DEB.2.11.1410052331420.4383@nanos>
-Message-ID: <alpine.DEB.2.02.1410060347300.26324@nftneq.ynat.uz>
-References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
- <alpine.DEB.2.11.1410052331420.4383@nanos>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751885AbaJFKyg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:54:36 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:55273 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaJFKyd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 06:54:33 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Chris Kohn <ckohn@xilinx.com>, Michal Simek <michal.simek@xilinx.com>,
+        Jason Wu <huanyu@xilinx.com>, Hyun Kwon <hyunk@xilinx.com>
+Subject: Re: [PATCH v3] staging: Add Xilinx Clocking Wizard driver
+Date: Mon, 06 Oct 2014 13:54:37 +0300
+Message-ID: <3435019.ofZVSE4pU7@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1412266415-8411-1-git-send-email-soren.brinkmann@xilinx.com>
+References: <1412266415-8411-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014, Thomas Gleixner wrote:
+Hi Sören,
 
->>
->> 64 bit counters on 32 bit machines are not an easy thing and could be
->
-> Whats so hard about 64bit counters on 32bit machines?
->
->> expensive to handle in particular because these counters are used in
->> performance critical hotpaths.
->
-> The expensive overhead is a single "adcl" instruction.
+Thank you for the patch.
 
-As I understand it, since the 64 bit math cannot be made atomic, it requires 
-protecting the counter with a lock so that it can't be read while half updated. 
-Aquiring a lock on every update is an expensive thing to do. It's not something 
-people like to see in a fast path, especially for something of as low an 
-importance as the counters.
+On Thursday 02 October 2014 09:13:35 Soren Brinkmann wrote:
+> Add a driver for the Xilinx Clocking Wizard soft IP. The clocking wizard
+> provides an AXI interface to dynamically reconfigure the clocking
+> resources of Xilinx FPGAs.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-David Lang
+For the DT bindings,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+> v3:
+>  - allow building the driver as module
+>  - make speed grade positive
+>  - document valid values for speed-grade DT property
+> v2:
+>  - implement dev_pm_ops
+>  - don't use array for clock inputs
+>  - add more information in error output
+>  - fix style issues
+>  - fix error path
+> ---
+>  drivers/staging/Kconfig                            |   2 +
+>  drivers/staging/Makefile                           |   1 +
+>  drivers/staging/clocking-wizard/Kconfig            |   9 +
+>  drivers/staging/clocking-wizard/Makefile           |   1 +
+>  drivers/staging/clocking-wizard/TODO               |  12 +
+>  .../clocking-wizard/clk-xlnx-clock-wizard.c        | 335 ++++++++++++++++++
+>  drivers/staging/clocking-wizard/dt-binding.txt     |  30 ++
+>  7 files changed, 390 insertions(+)
+>  create mode 100644 drivers/staging/clocking-wizard/Kconfig
+>  create mode 100644 drivers/staging/clocking-wizard/Makefile
+>  create mode 100644 drivers/staging/clocking-wizard/TODO
+>  create mode 100644 drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+>  create mode 100644 drivers/staging/clocking-wizard/dt-binding.txt
+> 
+> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+> index 35b494f5667f..7daf345bec0e 100644
+> --- a/drivers/staging/Kconfig
+> +++ b/drivers/staging/Kconfig
+> @@ -118,4 +118,6 @@ source "drivers/staging/skein/Kconfig"
+> 
+>  source "drivers/staging/unisys/Kconfig"
+> 
+> +source "drivers/staging/clocking-wizard/Kconfig"
+> +
+>  endif # STAGING
+> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+> index e66a5dbd9b02..03fec7f981cc 100644
+> --- a/drivers/staging/Makefile
+> +++ b/drivers/staging/Makefile
+> @@ -51,3 +51,4 @@ obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
+>  obj-$(CONFIG_BT_NOKIA_H4P)	+= nokia_h4p/
+>  obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
+>  obj-$(CONFIG_UNISYSSPAR)	+= unisys/
+> +obj-$(CONFIG_COMMON_CLK_XLNX_CLKWZRD)	+= clocking-wizard/
+> diff --git a/drivers/staging/clocking-wizard/Kconfig
+> b/drivers/staging/clocking-wizard/Kconfig new file mode 100644
+> index 000000000000..357af02c562c
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/Kconfig
+> @@ -0,0 +1,9 @@
+> +#
+> +# Xilinx Clocking Wizard Driver
+> +#
+> +
+> +config COMMON_CLK_XLNX_CLKWZRD
+> +	tristate "Xilinx Clocking Wizard"
+> +	depends on COMMON_CLK && OF
+> +	---help---
+> +	  Support for the Xilinx Clocking Wizard IP core clock generator.
+> diff --git a/drivers/staging/clocking-wizard/Makefile
+> b/drivers/staging/clocking-wizard/Makefile new file mode 100644
+> index 000000000000..5ad352f521fe
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/Makefile
+> @@ -0,0 +1 @@
+> +obj-$(CONFIG_COMMON_CLK_XLNX_CLKWZRD)	+= clk-xlnx-clock-wizard.o
+> diff --git a/drivers/staging/clocking-wizard/TODO
+> b/drivers/staging/clocking-wizard/TODO new file mode 100644
+> index 000000000000..ebe99db7d153
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/TODO
+> @@ -0,0 +1,12 @@
+> +TODO:
+> +	- support for fractional multiplier
+> +	- support for fractional divider (output 0 only)
+> +	- support for set_rate() operations (may benefit from Stephen Boyd's
+> +	  refactoring of the clk primitives: https://lkml.org/lkml/2014/9/5/766)
+> +	- review arithmetic
+> +	  - overflow after multiplication?
+> +	  - maximize accuracy before divisions
+> +
+> +Patches to:
+> +	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> +	Sören Brinkmann <soren.brinkmann@xilinx.com>
+> diff --git a/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+> b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c new file mode
+> 100644
+> index 000000000000..b8d89525bffd
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/clk-xlnx-clock-wizard.c
+> @@ -0,0 +1,335 @@
+> +/*
+> + * Xilinx 'Clocking Wizard' driver
+> + *
+> + *  Copyright (C) 2013 - 2014 Xilinx
+> + *
+> + *  Sören Brinkmann <soren.brinkmann@xilinx.com>
+> + *
+> + * This program is free software: you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License v2 as published by
+> + * the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/platform_device.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +
+> +#define WZRD_NUM_OUTPUTS	7
+> +#define WZRD_ACLK_MAX_FREQ	250000000UL
+> +
+> +#define WZRD_CLK_CFG_REG(n)	(0x200 + 4 * n)
+> +
+> +#define WZRD_CLkOUT0_FRAC_EN	BIT(18)
+> +#define WZRD_CLkFBOUT_FRAC_EN	BIT(26)
+> +
+> +#define WZRD_CLKFBOUT_MULT_SHIFT	8
+> +#define WZRD_CLKFBOUT_MULT_MASK		(0xff << WZRD_CLKFBOUT_MULT_SHIFT)
+> +#define WZRD_DIVCLK_DIVIDE_SHIFT	0
+> +#define WZRD_DIVCLK_DIVIDE_MASK		(0xff << WZRD_DIVCLK_DIVIDE_SHIFT)
+> +#define WZRD_CLKOUT_DIVIDE_SHIFT	0
+> +#define WZRD_CLKOUT_DIVIDE_MASK		(0xff << WZRD_DIVCLK_DIVIDE_SHIFT)
+> +
+> +enum clk_wzrd_int_clks {
+> +	wzrd_clk_mul,
+> +	wzrd_clk_mul_div,
+> +	wzrd_clk_int_max
+> +};
+> +
+> +/**
+> + * struct clk_wzrd:
+> + * @clk_data:		Clock data
+> + * @nb:			Notifier block
+> + * @base:		Memory base
+> + * @clk_in1:		Handle to input clock 'clk_in1'
+> + * @axi_clk:		Handle to input clock 's_axi_aclk'
+> + * @clks_internal:	Internal clocks
+> + * @clkout:		Output clocks
+> + * @speed_grade:	Speed grade of the device
+> + * @suspended:		Flag indicating power state of the device
+> + */
+> +struct clk_wzrd {
+> +	struct clk_onecell_data clk_data;
+> +	struct notifier_block nb;
+> +	void __iomem *base;
+> +	struct clk *clk_in1;
+> +	struct clk *axi_clk;
+> +	struct clk *clks_internal[wzrd_clk_int_max];
+> +	struct clk *clkout[WZRD_NUM_OUTPUTS];
+> +	int speed_grade;
+> +	bool suspended;
+> +};
+> +#define to_clk_wzrd(_nb) container_of(_nb, struct clk_wzrd, nb)
+> +
+> +/* maximum frequencies for input/output clocks per speed grade */
+> +static const unsigned long clk_wzrd_max_freq[] = {
+> +	800000000UL,
+> +	933000000UL,
+> +	1066000000UL
+> +};
+> +
+> +static int clk_wzrd_clk_notifier(struct notifier_block *nb, unsigned long
+> event, +				 void *data)
+> +{
+> +	unsigned long max;
+> +	struct clk_notifier_data *ndata = data;
+> +	struct clk_wzrd *clk_wzrd = to_clk_wzrd(nb);
+> +
+> +	if (clk_wzrd->suspended)
+> +		return NOTIFY_OK;
+> +
+> +	if (ndata->clk == clk_wzrd->clk_in1)
+> +		max = clk_wzrd_max_freq[clk_wzrd->speed_grade - 1];
+> +	if (ndata->clk == clk_wzrd->axi_clk)
+> +		max = WZRD_ACLK_MAX_FREQ;
+> +
+> +	switch (event) {
+> +	case PRE_RATE_CHANGE:
+> +		if (ndata->new_rate > max)
+> +			return NOTIFY_BAD;
+> +		return NOTIFY_OK;
+> +	case POST_RATE_CHANGE:
+> +	case ABORT_RATE_CHANGE:
+> +	default:
+> +		return NOTIFY_DONE;
+> +	}
+> +}
+> +
+> +static int __maybe_unused clk_wzrd_suspend(struct device *dev)
+> +{
+> +	struct clk_wzrd *clk_wzrd = dev_get_drvdata(dev);
+> +
+> +	clk_disable_unprepare(clk_wzrd->axi_clk);
+> +	clk_wzrd->suspended = true;
+> +
+> +	return 0;
+> +}
+> +
+> +static int __maybe_unused clk_wzrd_resume(struct device *dev)
+> +{
+> +	int ret;
+> +	struct clk_wzrd *clk_wzrd = dev_get_drvdata(dev);
+> +
+> +	ret = clk_prepare_enable(clk_wzrd->axi_clk);
+> +	if (ret) {
+> +		dev_err(dev, "unable to enable s_axi_aclk\n");
+> +		return ret;
+> +	}
+> +
+> +	clk_wzrd->suspended = false;
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(clk_wzrd_dev_pm_ops, clk_wzrd_suspend,
+> +			 clk_wzrd_resume);
+> +
+> +static int clk_wzrd_probe(struct platform_device *pdev)
+> +{
+> +	int i, ret;
+> +	u32 reg;
+> +	unsigned long rate;
+> +	const char *clk_name;
+> +	struct clk_wzrd *clk_wzrd;
+> +	struct resource *mem;
+> +	struct device_node *np = pdev->dev.of_node;
+> +
+> +	clk_wzrd = devm_kzalloc(&pdev->dev, sizeof(*clk_wzrd), GFP_KERNEL);
+> +	if (!clk_wzrd)
+> +		return -ENOMEM;
+> +	platform_set_drvdata(pdev, clk_wzrd);
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	clk_wzrd->base = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(clk_wzrd->base))
+> +		return PTR_ERR(clk_wzrd->base);
+> +
+> +	ret = of_property_read_u32(np, "speed-grade", &clk_wzrd->speed_grade);
+> +	if (!ret) {
+> +		if (clk_wzrd->speed_grade < 1 || clk_wzrd->speed_grade > 3) {
+> +			dev_warn(&pdev->dev, "invalid speed grade '%d'\n",
+> +				 clk_wzrd->speed_grade);
+> +			clk_wzrd->speed_grade = 0;
+> +		}
+> +	}
+> +
+> +	clk_wzrd->clk_in1 = devm_clk_get(&pdev->dev, "clk_in1");
+> +	if (IS_ERR(clk_wzrd->clk_in1)) {
+> +		if (clk_wzrd->clk_in1 != ERR_PTR(-EPROBE_DEFER))
+> +			dev_err(&pdev->dev, "clk_in1 not found\n");
+> +		return PTR_ERR(clk_wzrd->clk_in1);
+> +	}
+> +
+> +	clk_wzrd->axi_clk = devm_clk_get(&pdev->dev, "s_axi_aclk");
+> +	if (IS_ERR(clk_wzrd->axi_clk)) {
+> +		if (clk_wzrd->axi_clk != ERR_PTR(-EPROBE_DEFER))
+> +			dev_err(&pdev->dev, "s_axi_aclk not found\n");
+> +		return PTR_ERR(clk_wzrd->axi_clk);
+> +	}
+> +	ret = clk_prepare_enable(clk_wzrd->axi_clk);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "enabling s_axi_aclk failed\n");
+> +		return ret;
+> +	}
+> +	rate = clk_get_rate(clk_wzrd->axi_clk);
+> +	if (rate > WZRD_ACLK_MAX_FREQ) {
+> +		dev_err(&pdev->dev, "s_axi_aclk frequency (%lu) too high\n",
+> +			rate);
+> +		ret = -EINVAL;
+> +		goto err_disable_clk;
+> +	}
+> +
+> +	/* we don't support fractional div/mul yet */
+> +	reg = readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) &
+> +		    WZRD_CLkFBOUT_FRAC_EN;
+> +	reg |= readl(clk_wzrd->base + WZRD_CLK_CFG_REG(2)) &
+> +		     WZRD_CLkOUT0_FRAC_EN;
+> +	if (reg)
+> +		dev_warn(&pdev->dev, "fractional div/mul not supported\n");
+> +
+> +	/* register multiplier */
+> +	reg = (readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) &
+> +		     WZRD_CLKFBOUT_MULT_MASK) >> WZRD_CLKFBOUT_MULT_SHIFT;
+> +	clk_name = kasprintf(GFP_KERNEL, "%s_mul", dev_name(&pdev->dev));
+> +	if (!clk_name) {
+> +		ret = -ENOMEM;
+> +		goto err_disable_clk;
+> +	}
+> +	clk_wzrd->clks_internal[wzrd_clk_mul] = clk_register_fixed_factor(
+> +			&pdev->dev, clk_name,
+> +			__clk_get_name(clk_wzrd->clk_in1),
+> +			0, reg, 1);
+> +	kfree(clk_name);
+> +	if (IS_ERR(clk_wzrd->clks_internal[wzrd_clk_mul])) {
+> +		dev_err(&pdev->dev, "unable to register fixed-factor clock\n");
+> +		ret = PTR_ERR(clk_wzrd->clks_internal[wzrd_clk_mul]);
+> +		goto err_disable_clk;
+> +	}
+> +
+> +	/* register div */
+> +	reg = (readl(clk_wzrd->base + WZRD_CLK_CFG_REG(0)) &
+> +			WZRD_DIVCLK_DIVIDE_MASK) >> WZRD_DIVCLK_DIVIDE_SHIFT;
+> +	clk_name = kasprintf(GFP_KERNEL, "%s_mul_div", dev_name(&pdev->dev));
+> +	clk_wzrd->clks_internal[wzrd_clk_mul_div] = clk_register_fixed_factor(
+> +			&pdev->dev, clk_name,
+> +			__clk_get_name(clk_wzrd->clks_internal[wzrd_clk_mul]),
+> +			0, 1, reg);
+> +	if (IS_ERR(clk_wzrd->clks_internal[wzrd_clk_mul_div])) {
+> +		dev_err(&pdev->dev, "unable to register divider clock\n");
+> +		ret = PTR_ERR(clk_wzrd->clks_internal[wzrd_clk_mul_div]);
+> +		goto err_rm_int_clk;
+> +	}
+> +
+> +	/* register div per output */
+> +	for (i = WZRD_NUM_OUTPUTS - 1; i >= 0 ; i--) {
+> +		const char *clkout_name;
+> +		if (of_property_read_string_index(np, "clock-output-names", i,
+> +						  &clkout_name)) {
+> +			dev_err(&pdev->dev,
+> +				"clock output name not specified\n");
+> +			ret = -EINVAL;
+> +			goto err_rm_int_clks;
+> +		}
+> +		reg = readl(clk_wzrd->base + WZRD_CLK_CFG_REG(2) + i * 12);
+> +		reg &= WZRD_CLKOUT_DIVIDE_MASK;
+> +		reg >>= WZRD_CLKOUT_DIVIDE_SHIFT;
+> +		clk_wzrd->clkout[i] = clk_register_fixed_factor(&pdev->dev,
+> +				clkout_name, clk_name, 0, 1, reg);
+> +		if (IS_ERR(clk_wzrd->clkout[i])) {
+> +			int j;
+> +			for (j = i + 1; j < WZRD_NUM_OUTPUTS; j++)
+> +				clk_unregister(clk_wzrd->clkout[j]);
+> +			dev_err(&pdev->dev,
+> +				"unable to register divider clock\n");
+> +			ret = PTR_ERR(clk_wzrd->clkout[i]);
+> +			goto err_rm_int_clks;
+> +		}
+> +	}
+> +
+> +	kfree(clk_name);
+> +
+> +	clk_wzrd->clk_data.clks = clk_wzrd->clkout;
+> +	clk_wzrd->clk_data.clk_num = ARRAY_SIZE(clk_wzrd->clkout);
+> +	of_clk_add_provider(np, of_clk_src_onecell_get, &clk_wzrd->clk_data);
+> +
+> +	if (clk_wzrd->speed_grade) {
+> +		clk_wzrd->nb.notifier_call = clk_wzrd_clk_notifier;
+> +
+> +		ret = clk_notifier_register(clk_wzrd->clk_in1,
+> +					    &clk_wzrd->nb);
+> +		if (ret)
+> +			dev_warn(&pdev->dev,
+> +				 "unable to register clock notifier\n");
+> +
+> +		ret = clk_notifier_register(clk_wzrd->axi_clk, &clk_wzrd->nb);
+> +		if (ret)
+> +			dev_warn(&pdev->dev,
+> +				 "unable to register clock notifier\n");
+> +	}
+> +
+> +	return 0;
+> +
+> +err_rm_int_clks:
+> +	clk_unregister(clk_wzrd->clks_internal[1]);
+> +err_rm_int_clk:
+> +	kfree(clk_name);
+> +	clk_unregister(clk_wzrd->clks_internal[0]);
+> +err_disable_clk:
+> +	clk_disable_unprepare(clk_wzrd->axi_clk);
+> +
+> +	return ret;
+> +}
+> +
+> +static int clk_wzrd_remove(struct platform_device *pdev)
+> +{
+> +	int i;
+> +	struct clk_wzrd *clk_wzrd = platform_get_drvdata(pdev);
+> +
+> +	of_clk_del_provider(pdev->dev.of_node);
+> +
+> +	for (i = 0; i < WZRD_NUM_OUTPUTS; i++)
+> +		clk_unregister(clk_wzrd->clkout[i]);
+> +	for (i = 0; i < wzrd_clk_int_max; i++)
+> +		clk_unregister(clk_wzrd->clks_internal[i]);
+> +
+> +	if (clk_wzrd->speed_grade) {
+> +		clk_notifier_unregister(clk_wzrd->axi_clk, &clk_wzrd->nb);
+> +		clk_notifier_unregister(clk_wzrd->clk_in1, &clk_wzrd->nb);
+> +	}
+> +
+> +	clk_disable_unprepare(clk_wzrd->axi_clk);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id clk_wzrd_ids[] = {
+> +	{ .compatible = "xlnx,clocking-wizard" },
+> +	{ },
+> +};
+> +MODULE_DEVICE_TABLE(of, clk_wzrd_ids);
+> +
+> +static struct platform_driver clk_wzrd_driver = {
+> +	.driver = {
+> +		.name = "clk-wizard",
+> +		.of_match_table = clk_wzrd_ids,
+> +		.pm = &clk_wzrd_dev_pm_ops,
+> +	},
+> +	.probe = clk_wzrd_probe,
+> +	.remove = clk_wzrd_remove,
+> +};
+> +module_platform_driver(clk_wzrd_driver);
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Soeren Brinkmann <soren.brinkmann@xilinx.com");
+> +MODULE_DESCRIPTION("Driver for the Xilinx Clocking Wizard IP core");
+> diff --git a/drivers/staging/clocking-wizard/dt-binding.txt
+> b/drivers/staging/clocking-wizard/dt-binding.txt new file mode 100644
+> index 000000000000..723271e93316
+> --- /dev/null
+> +++ b/drivers/staging/clocking-wizard/dt-binding.txt
+> @@ -0,0 +1,30 @@
+> +Binding for Xilinx Clocking Wizard IP Core
+> +
+> +This binding uses the common clock binding[1]. Details about the devices
+> can be +found in the product guide[2].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +[2] Clocking Wizard Product Guide
+> +http://www.xilinx.com/support/documentation/ip_documentation/clk_wiz/v5_1/p
+> g065-clk-wiz.pdf +
+> +Required properties:
+> + - compatible: Must be 'xlnx,clocking-wizard'
+> + - reg: Base and size of the cores register space
+> + - clocks: Handle to input clock
+> + - clock-names: Tuple containing 'clk_in1' and 's_axi_aclk'
+> + - clock-output-names: Names for the output clocks
+> +
+> +Optional properties:
+> + - speed-grade: Speed grade of the device (valid values are 1..3)
+> +
+> +Example:
+> +	clock-generator@40040000 {
+> +		reg = <0x40040000 0x1000>;
+> +		compatible = "xlnx,clocking-wizard";
+> +		speed-grade = <1>;
+> +		clock-names = "clk_in1", "s_axi_aclk";
+> +		clocks = <&clkc 15>, <&clkc 15>;
+> +		clock-output-names = "clk_out0", "clk_out1", "clk_out2",
+> +				     "clk_out3", "clk_out4", "clk_out5",
+> +				     "clk_out6", "clk_out7";
+> +	};
+
+-- 
+Regards,
+
+Laurent Pinchart
+
