@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaJFGGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 02:06:39 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42286 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbaJFGGh (ORCPT
+	id S1751497AbaJFGV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 02:21:27 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:50225 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaJFGVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 02:06:37 -0400
-Date: Mon, 6 Oct 2014 07:06:35 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Gregory Smith <gregorysmith1974a@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Joel Rees <joel.rees@gmail.com>
-Subject: Re: sock puppets (Re: (Song) ** SystemD)
-Message-ID: <20141006060635.GE7996@ZenIV.linux.org.uk>
-References: <CAAr43iMnOnrLamgerGaxgAzo-dVpPmeFusk5RhJNqXZ1-6xs7A@mail.gmail.com>
- <CALtyatFv7yH4o-MFW0vQN6RXVQuxpXVWLh5S1WqxPY6KvBohHQ@mail.gmail.com>
- <CAAr43iOesCSCCVDHBGdc=dNO5J3LgGzVabLusZ75ZhPtHmiyMg@mail.gmail.com>
- <20141005233542.GY7996@ZenIV.linux.org.uk>
- <CALtyatEaTms_Hee=vUB-gOk2cx0xDnA4S5sGfAi3vKqWgrCZzg@mail.gmail.com>
- <20141006024914.GZ7996@ZenIV.linux.org.uk>
- <CALtyatEXvZo27fe1X2UGTAwZGgy1+Jwpm1j7_=8QQM68nnBVfA@mail.gmail.com>
- <20141006050938.GC7996@ZenIV.linux.org.uk>
- <CALtyatHxnJibPVVv+O4+hrPCnFYSneVnBS5pAK70BFet0G48pQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALtyatHxnJibPVVv+O4+hrPCnFYSneVnBS5pAK70BFet0G48pQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Oct 2014 02:21:23 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, stern@rowland.harvard.edu,
+        drake@endlessm.com, grant.likely@secretlab.ca, kgene.kim@samsung.com,
+        jg1.han@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH] usb: ehci/ohci-exynos: Fix of_node_put() for child when getting PHYs
+Date: Mon,  6 Oct 2014 11:51:10 +0530
+Message-Id: <1412576470-23974-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 05:29:57AM +0000, Gregory Smith wrote:
+On enabling CONFIG_OF_SELFTEST which enables CONFIG_OF_DYNAMIC,
+we found out that while getting PHYs for the controller we were
+doing an extra of_node_put on the child node in our routines -
+exynos_e/ohci_get_phy().
+This child is however already put by of_get_next_available_child()
+which does a of_node_put() on the "prev" node. So there's no point
+in putting the same node again in our routine.
 
-You really can't live without audience, can you?  Adding cc to list to
-reply to a private flame...  Piss-poor.
+Reported-by: Daniel Drake <drake@endlessm.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ drivers/usb/host/ehci-exynos.c |    1 -
+ drivers/usb/host/ohci-exynos.c |    1 -
+ 2 files changed, 2 deletions(-)
 
-> Go and fuck yourself.
-> 
-> You're a weak piece of shit if words of derision pull you from a goal.
-> If your community is affected by being "associated" with someone
-> they don't like arguing in the same direction that they are
-> then they are a bunch of women and faggots.
+diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+index 7189f2e..1b726bf 100644
+--- a/drivers/usb/host/ehci-exynos.c
++++ b/drivers/usb/host/ehci-exynos.c
+@@ -74,7 +74,6 @@ static int exynos_ehci_get_phy(struct device *dev,
+ 
+ 		phy = devm_of_phy_get(dev, child, NULL);
+ 		exynos_ehci->phy[phy_number] = phy;
+-		of_node_put(child);
+ 		if (IS_ERR(phy)) {
+ 			ret = PTR_ERR(phy);
+ 			if (ret == -EPROBE_DEFER) {
+diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+index d28b658..39f366b 100644
+--- a/drivers/usb/host/ohci-exynos.c
++++ b/drivers/usb/host/ohci-exynos.c
+@@ -63,7 +63,6 @@ static int exynos_ohci_get_phy(struct device *dev,
+ 
+ 		phy = devm_of_phy_get(dev, child, NULL);
+ 		exynos_ohci->phy[phy_number] = phy;
+-		of_node_put(child);
+ 		if (IS_ERR(phy)) {
+ 			ret = PTR_ERR(phy);
+ 			if (ret == -EPROBE_DEFER) {
+-- 
+1.7.10.4
 
-Hmm...  You just might be a systemd advocate, after all.  I still doubt
-it - you sound more like a general-purpose teenage wanker, but...
-
-> But we knew that since 2006 when you all folded to the distro-women
-> groups that took up residency, no? You curtsied and kicked out
-> any man they told you to kick out, because they were not
-> "respectful" of the womyn.
-
-Interesting, seeing that I'm not respectful of anything and never hid that...
-
-> Fuck you and yours you damned piece of
-> worthless fucking trash.
-
-Learn to swear, kid.  This is simply pathetic.  And try to realize that
-the word "fuck" won't impress anyone but teenagers.  Neither will "women"
-or "faggots".
-
-*plonk*
