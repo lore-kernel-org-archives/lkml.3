@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaJFXk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 19:40:28 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:57794 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaJFXk0 (ORCPT
+	id S1752541AbaJFXnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 19:43:04 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:48361 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaJFXnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:40:26 -0400
+	Mon, 6 Oct 2014 19:43:03 -0400
 From: Zach Brown <zab@zabbo.net>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] target/file: fix inclusive vfs_fsync_range() end
-Date: Mon,  6 Oct 2014 16:40:13 -0700
-Message-Id: <1412638813-13285-1-git-send-email-zab@zabbo.net>
+To: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] nfsd: fix inclusive vfs_fsync_range() end
+Date: Mon,  6 Oct 2014 16:42:52 -0700
+Message-Id: <1412638972-14617-1-git-send-email-zab@zabbo.net>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both of the file target's calls to vfs_fsync_range() got the end offset
-off by one.  The range is inclusive, not exclusive.  It would sync a bit
-more data than was required.
+The vfs_fsync_range() call during write processing got the end of the
+range off by one.  The range is inclusive, not exclusive.  The error has
+nfsd sync more data than requested -- it's correct but unnecessary
+overhead.
 
-The sync path already tested the length of the range and fell back to
-LLONG_MAX so I copied that pattern in the rw path.
+The call during commit processing is correct so I copied that pattern in
+write processing.  Maybe a helper would be nice but I kept it trivial.
 
-This is untested. I found the errors by inspection while following other
-code.
+This is untested.  I found it while reviewing code for something else
+entirely.
 
 Signed-off-by: Zach Brown <zab@zabbo.net>
 ---
- drivers/target/target_core_file.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/nfsd/vfs.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 7d6cdda..176588f 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -415,7 +415,7 @@ fd_execute_sync_cache(struct se_cmd *cmd)
- 	} else {
- 		start = cmd->t_task_lba * dev->dev_attrib.block_size;
- 		if (cmd->data_length)
--			end = start + cmd->data_length;
-+			end = start + cmd->data_length - 1;
- 		else
- 			end = LLONG_MAX;
- 	}
-@@ -680,7 +680,12 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
- 			struct fd_dev *fd_dev = FD_DEV(dev);
- 			loff_t start = cmd->t_task_lba *
- 				dev->dev_attrib.block_size;
--			loff_t end = start + cmd->data_length;
-+			loff_t end;
-+
-+			if (cmd->data_length)
-+				end = start + cmd->data_length - 1;
-+			else
-+				end = LLONG_MAX;
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index f501a9b..825250e 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -921,6 +921,7 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 	int			stable = *stablep;
+ 	int			use_wgather;
+ 	loff_t			pos = offset;
++	loff_t			end = LLONG_MAX;
+ 	unsigned int		pflags = current->flags;
  
- 			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
- 		}
+ 	if (rqstp->rq_local)
+@@ -952,10 +953,13 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 	fsnotify_modify(file);
+ 
+ 	if (stable) {
+-		if (use_wgather)
++		if (use_wgather) {
+ 			host_err = wait_for_concurrent_writes(file);
+-		else
+-			host_err = vfs_fsync_range(file, offset, offset+*cnt, 0);
++		} else {
++			if (*cnt)
++				end = offset + *cnt - 1;
++			host_err = vfs_fsync_range(file, offset, end, 0);
++		}
+ 	}
+ 
+ out_nfserr:
 -- 
 1.9.3
 
