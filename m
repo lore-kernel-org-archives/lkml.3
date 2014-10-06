@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaJFPVN (ORCPT <rfc822;w@1wt.eu>);
+	id S1752331AbaJFPVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:21:19 -0400
+Received: from smtp.eu.citrix.com ([185.25.65.24]:8904 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926AbaJFPVN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Oct 2014 11:21:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaJFPVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:21:10 -0400
-Date: Mon, 6 Oct 2014 18:11:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        v9fs-developer@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [PATCH v2 14/15] 9p/trans_virtio: enable VQs early
-Message-ID: <1412608214-31944-15-git-send-email-mst@redhat.com>
-References: <1412608214-31944-1-git-send-email-mst@redhat.com>
+X-IronPort-AV: E=Sophos;i="5.04,664,1406592000"; 
+   d="scan'208";a="25726108"
+From: Thanos Makatos <thanos.makatos@citrix.com>
+To: "'Jan Kara'" <jack@suse.cz>
+CC: Jens Axboe <axboe@kernel.dk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "jlayton@poochiereds.net" <jlayton@poochiereds.net>,
+        "bfields@fieldses.org" <bfields@fieldses.org>
+Subject: RE: [PATCH RFC] introduce ioctl to completely invalidate page cache
+Thread-Topic: [PATCH RFC] introduce ioctl to completely invalidate page cache
+Thread-Index: AQHP3ltJMeutIaA2t0eKb6z3ckY5/ZwdGI8AgAWCNICAADKhoIAAKHWwgAAQBICAAC+Z0A==
+Date: Mon, 6 Oct 2014 15:21:10 +0000
+Message-ID: <2368A3FCF9F7214298E53C823B0A48EC04241BC4@AMSPEX01CL02.citrite.net>
+References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
+ <542DAEAC.8010203@kernel.dk> <20141006080659.GA7526@quack.suse.cz>
+ <2368A3FCF9F7214298E53C823B0A48EC042405BC@AMSPEX01CL02.citrite.net>
+ <2368A3FCF9F7214298E53C823B0A48EC0424106C@AMSPEX01CL02.citrite.net>
+ <20141006143019.GG7526@quack.suse.cz>
+In-Reply-To: <20141006143019.GG7526@quack.suse.cz>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412608214-31944-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+X-DLP: AMS1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio spec requires drivers to set DRIVER_OK before using VQs.
-This is set automatically after probe returns, but virtio 9p device
-adds self to channel list within probe, at which point VQ can be
-used in violation of the spec.
+Thanks, Jan, it's much clearer now what I need to do.
 
-To fix, call virtio_enable_vqs_early before using VQs.
+>   So most notably they want the ioctl to work not only for block devices but also for any regular file. That's easily doable - you just call
+> filemap_write_and_wait() and invalidate_inode_pages2() in the ioctl handler for regular files.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- net/9p/trans_virtio.c | 2 ++
- 1 file changed, 2 insertions(+)
+All right, so I need to find out how I can direct the new ioctl to
+file-systems as well. I thought that I could get away with it by simply looking
+at which file-systems have the same block device as the one to which the ioctl
+is directed, but IIUC this doesn't make sense as NFS doesn't use a block device
+at all.
 
-diff --git a/net/9p/trans_virtio.c b/net/9p/trans_virtio.c
-index 6940d8f..766ba48 100644
---- a/net/9p/trans_virtio.c
-+++ b/net/9p/trans_virtio.c
-@@ -575,6 +575,8 @@ static int p9_virtio_probe(struct virtio_device *vdev)
- 	/* Ceiling limit to avoid denial of service attacks */
- 	chan->p9_max_pages = nr_free_buffer_pages()/4;
- 
-+	virtio_enable_vqs_early(vdev);
-+
- 	mutex_lock(&virtio_9p_lock);
- 	list_add_tail(&chan->chan_list, &virtio_chan_list);
- 	mutex_unlock(&virtio_9p_lock);
--- 
-MST
+> Also they wanted to be able to specify a range of a mapping to invalidate -
+> that's easily doable as well. Finally they wanted a 'flags' argument so you can
+> additionally ask fs to invalidate also some metadata. How invalidation is done
+> will be a fs specific thing and for now I guess we don't need to go into
+> details. NFS guys can sort that out when they decide to implement it.
 
+So after I've figured out how to direct this new ioctl to a file-system, I need
+to understand out how to invalidate a specific range of data. I will gracefully
+fail metadata invalidation operations with EOPNOTSUPP or ENOSYS.
+
+> So in the beginning we can just have u64 flags argument and in it a single
+> 'INVAL_DATA' flag meaning that invalidation of data in a given range is
+> requested. Later NFS guys can add further flags.
+
+OK that I can do.
+
+I suppose we'll always fail metadata invalidation operations when the target
+of the ioctl is a block device.
+
+Thanks
