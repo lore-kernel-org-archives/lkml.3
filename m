@@ -1,560 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673AbaJFXon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 19:44:43 -0400
-Received: from mail-bn1on0117.outbound.protection.outlook.com ([157.56.110.117]:1440
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751213AbaJFXol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:44:41 -0400
-X-WSS-ID: 0ND1RAA-07-PKI-02
-X-M-MSG: 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>, <tglx@linutronix.de>,
-        <hpa@zytor.com>, <x86@kernel.org>, <bp@suse.de>,
-        <dan.carpenter@oracle.com>, <dougthompson@xmission.com>,
-        <bp@alien8.de>, <m.chehab@samsung.com>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Subject: [PATCH V2 4/4] edac, amd64_edac: Add F15h M60h support
-Date: Mon, 6 Oct 2014 19:04:40 -0500
-Message-ID: <1412640280-11452-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-X-Mailer: git-send-email 2.0.2
+	id S1752689AbaJFXqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 19:46:13 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:38089 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaJFXqL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 19:46:11 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 7 Oct 2014 08:46:29 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
+        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
+Subject: Re: [PATCH v1 4/5] zram: add swap full hint
+Message-ID: <20141006234629.GB19445@bbox>
+References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
+ <1411344191-2842-5-git-send-email-minchan@kernel.org>
+ <CALZtONB+NBMa8xf8xuAoeYHDoMtS56VLGP-a46LZgpppFyz7ag@mail.gmail.com>
+ <20140925010229.GA17364@bbox>
+ <CALZtONDnrqPZEBgJb5t8v_pmgh5YMSCA649sCPObb+U=5hAX_A@mail.gmail.com>
+ <20141006233608.GA19445@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(53416004)(50986999)(31966008)(47776003)(102836001)(101416001)(120916001)(85306004)(2201001)(92566001)(92726001)(76482002)(86362001)(106466001)(10300001)(88136002)(93916002)(105586002)(20776003)(95666004)(85852003)(99396003)(104166001)(87936001)(77156001)(107046002)(62966002)(4396001)(229853001)(19580405001)(44976005)(19580395003)(68736004)(77096002)(48376002)(97736003)(50466002)(21056001)(84676001)(50226001)(87286001)(80022003)(36756003)(89996001)(46102003)(921003)(1121002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB200;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB200;
-X-Forefront-PRVS: 03569407CC
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141006233608.GA19445@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for ECC error decoding for F15h M60h processor.
-Aside from the usual changes, the patch adds support for some new features
-in the processor:
- - DDR4(unbuffered, registered); LRDIMM DDR3 support
-   - relevant debug messages have been modified/added to report these
-     memory types
- - new dbam_to_cs mappers
-   - if (F15h M60h && LRDIMM); we need a 'multiplier' value to find
-     cs_size. This multiplier value is obtained from the per-dimm
-     DCSM register. So, change the interface to accept a 'cs_mask_nr'
-     value to facilitate this calculation
- - new determine_memory_type low_ops
-   - introduced to remove too many if-else conditions in
-     determine_memory_type().
-   - This is now called early in read_mc_regs() to cache dram_type
+On Tue, Oct 07, 2014 at 08:36:08AM +0900, Minchan Kim wrote:
+> Hello Dan,
+> 
+> Sorry for the delay. I had internal works which should be handled
+> urgent. I hope you don't lose your interest due to my bad response
+> latency.
+> 
+> On Thu, Sep 25, 2014 at 11:52:22AM -0400, Dan Streetman wrote:
+> > On Wed, Sep 24, 2014 at 9:02 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > > On Wed, Sep 24, 2014 at 10:01:03AM -0400, Dan Streetman wrote:
+> > >> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > >> > This patch implement SWAP_FULL handler in zram so that VM can
+> > >> > know whether zram is full or not and use it to stop anonymous
+> > >> > page reclaim.
+> > >> >
+> > >> > How to judge fullness is below,
+> > >> >
+> > >> > fullness = (100 * used space / total space)
+> > >> >
+> > >> > It means the higher fullness is, the slower we reach zram full.
+> > >> > Now, default of fullness is 80 so that it biased more momory
+> > >> > consumption rather than early OOM kill.
+> > >> >
+> > >> > Above logic works only when used space of zram hit over the limit
+> > >> > but zram also pretend to be full once 32 consecutive allocation
+> > >> > fail happens. It's safe guard to prevent system hang caused by
+> > >> > fragment uncertainty.
+> > >> >
+> > >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
+> > >> > ---
+> > >> >  drivers/block/zram/zram_drv.c | 60 ++++++++++++++++++++++++++++++++++++++++---
+> > >> >  drivers/block/zram/zram_drv.h |  1 +
+> > >> >  2 files changed, 57 insertions(+), 4 deletions(-)
+> > >> >
+> > >> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > >> > index 22a37764c409..649cad9d0b1c 100644
+> > >> > --- a/drivers/block/zram/zram_drv.c
+> > >> > +++ b/drivers/block/zram/zram_drv.c
+> > >> > @@ -43,6 +43,20 @@ static const char *default_compressor = "lzo";
+> > >> >  /* Module params (documentation at end) */
+> > >> >  static unsigned int num_devices = 1;
+> > >> >
+> > >> > +/*
+> > >> > + * If (100 * used_pages / total_pages) >= ZRAM_FULLNESS_PERCENT),
+> > >> > + * we regards it as zram-full. It means that the higher
+> > >> > + * ZRAM_FULLNESS_PERCENT is, the slower we reach zram full.
+> > >> > + */
+> > >> > +#define ZRAM_FULLNESS_PERCENT 80
+> > >>
+> > >> As Andrew said, this (or the user-configurable fullness param from the
+> > >> next patch) should have more detail about exactly why it's needed and
+> > >> what it does.  The details of how zram considers itself "full" should
+> > >> be clear, which probably includes explaining zsmalloc fragmentation.
+> > >> It should be also clear this param only matters when limit_pages is
+> > >> set, and this param is only checked when zsmalloc's total size has
+> > >> reached that limit.
+> > >
+> > > Sure, How about this?
+> > >
+> > >                 The fullness file is read/write and specifies how easily
+> > >                 zram become full state. Normally, we can think "full"
+> > >                 once all of memory is consumed but it's not simple with
+> > >                 zram because zsmalloc has some issue by internal design
+> > >                 so that write could fail once consumed *page* by zram
+> > >                 reaches the mem_limit and zsmalloc cannot have a empty
+> > >                 slot for the compressed object's size on fragmenet space
+> > >                 although it has more empty slots for other sizes.
+> > 
+> > I understand that, but it might be confusing or unclear to anyone
+> > who's not familiar with how zsmalloc works.
+> > 
+> > Maybe it could be explained by referencing the existing
+> > compr_data_size and mem_used_total?  In addition to some or all of the
+> > above, you could add something like:
+> > 
+> > This controls when zram decides that it is "full".  It is a percent
+> > value, checked against compr_data_size / mem_used_total.  When
+> > mem_used_total is equal to mem_limit, the fullness is checked and if
+> > the compr_data_size / mem_used_total percentage is higher than this
+> > specified fullness value, zram is considered "full".
+> 
+> Better than my verbose version.
+> 
+> > 
+> > 
+> > >
+> > >                 We regard zram as full once consumed *page* reaches the
+> > >                 mem_limit and consumed memory until now is higher the value
+> > >                 resulted from the knob. So, if you set the value high,
+> > >                 you can squeeze more pages into fragment space so you could
+> > >                 avoid early OOM while you could see more write-fail warning,
+> > >                 overhead to fail-write recovering by VM and reclaim latency.
+> > >                 If you set the value low, you can see OOM kill easily
+> > >                 even though there are memory space in zram but you could
+> > >                 avoid shortcomings mentioned above.
+> > 
+> > You should clarify also that this is currently only used by
+> > swap-on-zram, and this value prevents swap from writing to zram once
+> > it is "full".  This setting has no effect when using zram for a
+> > mounted filesystem.
+> 
+> Sure.
+> 
+> > 
+> > >
+> > >                 This knobs is valid ony if you set mem_limit.
+> > >                 Currently, initial value is 80% but it could be changed.
+> > >
+> > > I didn't decide how to change it from percent.
+> > > Decimal fraction Jerome mentioned does make sense to me so please ignore
+> > > percent part in above.
+> > >
+> > >>
+> > >> Also, since the next patch changes it to be used only as a default,
+> > >> shouldn't it be DEFAULT_ZRAM_FULLNESS_PERCENT or similar?
+> > >
+> > > Okay, I will do it in 5/5.
+> > >
+> > >>
+> > >> > +
+> > >> > +/*
+> > >> > + * If zram fails to allocate memory consecutively up to this,
+> > >> > + * we regard it as zram-full. It's safe guard to prevent too
+> > >> > + * many swap write fail due to lack of fragmentation uncertainty.
+> > >> > + */
+> > >> > +#define ALLOC_FAIL_MAX 32
+> > >> > +
+> > >> >  #define ZRAM_ATTR_RO(name)                                             \
+> > >> >  static ssize_t zram_attr_##name##_show(struct device *d,               \
+> > >> >                                 struct device_attribute *attr, char *b) \
+> > >> > @@ -148,6 +162,7 @@ static ssize_t mem_limit_store(struct device *dev,
+> > >> >
+> > >> >         down_write(&zram->init_lock);
+> > >> >         zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
+> > >> > +       atomic_set(&zram->alloc_fail, 0);
+> > >> >         up_write(&zram->init_lock);
+> > >> >
+> > >> >         return len;
+> > >> > @@ -410,6 +425,7 @@ static void zram_free_page(struct zram *zram, size_t index)
+> > >> >         atomic64_sub(zram_get_obj_size(meta, index),
+> > >> >                         &zram->stats.compr_data_size);
+> > >> >         atomic64_dec(&zram->stats.pages_stored);
+> > >> > +       atomic_set(&zram->alloc_fail, 0);
+> > >> >
+> > >> >         meta->table[index].handle = 0;
+> > >> >         zram_set_obj_size(meta, index, 0);
+> > >> > @@ -597,10 +613,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> > >> >         }
+> > >> >
+> > >> >         alloced_pages = zs_get_total_pages(meta->mem_pool);
+> > >> > -       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
+> > >> > -               zs_free(meta->mem_pool, handle);
+> > >> > -               ret = -ENOMEM;
+> > >> > -               goto out;
+> > >> > +       if (zram->limit_pages) {
+> > >> > +               if (alloced_pages > zram->limit_pages) {
+> > >> > +                       zs_free(meta->mem_pool, handle);
+> > >> > +                       atomic_inc(&zram->alloc_fail);
+> > >> > +                       ret = -ENOMEM;
+> > >> > +                       goto out;
+> > >> > +               } else {
+> > >> > +                       atomic_set(&zram->alloc_fail, 0);
+> > >> > +               }
+> > >>
+> > >> So, with zram_full() checking for alloced_pages >= limit_pages, this
+> > >> will need to be changed; the way it is now it prevents that from ever
+> > >> being true.
+> > >>
+> > >> Instead I believe this check has to be moved to before zs_malloc(), so
+> > >> that alloced_pages > limit_pages is true.
+> > >
+> > > I don't get it why you said "it prevents that from ever being true".
+> > > Now, zram can use up until limit_pages (ie, used memory == zram->limit_pages)
+> > > and trying to get more is failed. so zram_full checks it as
+> > > toal_pages >= zram->limit_pages so what is problem?
+> > > If I miss your point, could you explain more?
+> > 
+> > ok, that's true, it's possible for alloc_pages == limit_pages, but
+> > since zsmalloc will increase its size by a full zspage, and those can
+> > be anywhere between 1 and 4 pages in size, it's only a (very roughly)
+> > 25% chance that an alloc will cause alloc_pages == limit_pages, it's
+> > more likely that an alloc will cause alloc_pages > limit_pages.  Now,
+> > after some number of write failures, that 25% (-ish) probability will
+> > be met, and alloc_pages == limit_pages will happen, but there's a
+> > rather high chance that there will be some number of write failures
+> > first.
+> > 
+> > To summarize or restate that, I guess what I'm saying is that for
+> > users who don't care about some write failures and/or users with no
+> > other swap devices except zram, it probably does not matter.  However
+> > for them, they probably will rely on the 32 write failure limit, and
+> > not the fullness limit.  For users where zram is only the primary swap
+> > device, and there is a backup swap device, they probably will want
+> > zram to fail over to the backup fairly quickly, with as few write
+> > failures as possible (preferably, none, I would think).  And this
+> > situation makes that highly unlikely - since there's only about a 25%
+> > chance of alloc_pages == limit_pages with no previous write failures,
+> > it's almost a certainty that there will be write failures before zram
+> > is decided to be "full", even if "fullness" is set to 0.
+> > 
+> > With that said, you're right that it will eventually work, and those
+> > few write failures while trying to get to alloc_pages == limit_pages
+> > would probably not be noticable.  However, do remember that zram won't
+> > stay full forever, so if it is only the primary swap device, it's
+> > likely it will move between "full" and "not full" quite a lot, and
+> > those few write failures may start adding up.
+> 
+> Fair enough.
+> 
+> But it is possible to see write-failure even though we correct
+> it because there is potential chance for zram to fail to allocate
+> order-0 page by a few reason which one of them is CMA I got several
+> reports because zRAM cannot allocate a movable page due to lack of
+> migration while usersapce goes with it well. I have a plan to fix it
+> with zsmalloc migration work but there are another chances to make
+> fail order-0 page by serval ways so I don't think we cannot prevent
+> write-failure completely unless we have reserved memory for zram.
+> 
+> Having said that, I agree it would be better to reduce such fails
+> with small code piece so I will check zram_full as follows,
+> 
+> /*
+>  * XXX: zsmalloc_maxpages check should be removed when zsmalloc
+>  * implement using of fragmented spaces in last page of zspage.
+>  */
+> if (total_pages >= zram->limit_pages - zsmalloc_maxpages()) {
+>         ...
+> }
+> 
 
-Misc cleanup:
- - amd64_pci_table[] is condensed by using PCI_VDEVICE macro.
+How about this?
 
-Testing details:
-Tested the patch by injecting 'ECC' type errors using mce_amd_inj
-and error decoding works fine.
-
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
----
-Changes in V2
- - Cache dram_type in amd64_pvt structure (per Boris suggestion)
- - Introduce per-family low_ops for determine_memory_type() to reduce
-   number of if-else statements
-   - Call this early in read_mc_regs() to cache dram_type
-   - The debug messages are moved around a bit as a result to print
-     dram_type immediately
-
- drivers/edac/amd64_edac.c | 253 ++++++++++++++++++++++++++++++++--------------
- drivers/edac/amd64_edac.h |  16 ++-
- 2 files changed, 188 insertions(+), 81 deletions(-)
-
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index bbd6514..6cc3243 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -692,9 +692,18 @@ static void debug_dump_dramcfg_low(struct amd64_pvt *pvt, u32 dclr, int chan)
- {
- 	edac_dbg(1, "F2x%d90 (DRAM Cfg Low): 0x%08x\n", chan, dclr);
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 19da34aaf4f5..f03a94d7aa17 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -978,7 +978,7 @@ static void zram_full(struct block_device *bdev, bool *full)
+ 	meta = zram->meta;
+ 	total_pages = zs_get_total_pages(meta->mem_pool);
  
--	edac_dbg(1, "  DIMM type: %sbuffered; all DIMMs support ECC: %s\n",
--		 (dclr & BIT(16)) ?  "un" : "",
--		 (dclr & BIT(19)) ? "yes" : "no");
-+	if (pvt->dram_type == MEM_LRDDR3) {
-+		u32 dcsm = pvt->csels[chan].csmasks[0];
-+		/*
-+		 * It's assumed all LRDIMMs in a DCT are going to be of
-+		 * same 'type' until proven otherwise. So, use a cs
-+		 * value of '0' here to get dcsm value.
-+		 */
-+		edac_dbg(1, " LRDIMM %dx rank multiply\n", (dcsm & 0x3));
-+	}
-+
-+	edac_dbg(1, "All DIMMs support ECC:%s\n",
-+		    (dclr & BIT(19)) ? "yes" : "no");
+-	if (total_pages >= zram->limit_pages) {
++	if (total_pages > zram->limit_pages - zs_get_maxpages_per_zspage()) {
  
- 	edac_dbg(1, "  PAR/ERR parity: %s\n",
- 		 (dclr & BIT(8)) ?  "enabled" : "disabled");
-@@ -756,7 +765,7 @@ static void prep_chip_selects(struct amd64_pvt *pvt)
- 	if (pvt->fam == 0xf && pvt->ext_model < K8_REV_F) {
- 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 8;
- 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 8;
--	} else if (pvt->fam == 0x15 && pvt->model >= 0x30) {
-+	} else if (pvt->fam == 0x15 && pvt->model == 0x30) {
- 		pvt->csels[0].b_cnt = pvt->csels[1].b_cnt = 4;
- 		pvt->csels[0].m_cnt = pvt->csels[1].m_cnt = 2;
- 	} else {
-@@ -813,25 +822,57 @@ static void read_dct_base_mask(struct amd64_pvt *pvt)
- 	}
- }
+ 		compr_pages = atomic64_read(&zram->stats.compr_data_size)
+ 					>> PAGE_SHIFT;
+diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+index 05c214760977..73eb87bc5a4e 100644
+--- a/include/linux/zsmalloc.h
++++ b/include/linux/zsmalloc.h
+@@ -48,4 +48,5 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
  
--static enum mem_type determine_memory_type(struct amd64_pvt *pvt, int cs)
-+void determine_memory_type_k8(struct amd64_pvt *pvt)
- {
--	enum mem_type type;
--
--	/* F15h supports only DDR3 */
--	if (pvt->fam >= 0x15)
--		type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
--	else if (pvt->fam == 0x10 || pvt->ext_model >= K8_REV_F) {
-+	if (pvt->ext_model >= K8_REV_F) {
- 		if (pvt->dchr0 & DDR3_MODE)
--			type = (pvt->dclr0 & BIT(16)) ?	MEM_DDR3 : MEM_RDDR3;
-+			pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+					 MEM_DDR3 : MEM_RDDR3;
- 		else
--			type = (pvt->dclr0 & BIT(16)) ? MEM_DDR2 : MEM_RDDR2;
-+			pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+					 MEM_DDR2 : MEM_RDDR2;
- 	} else {
--		type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
-+		pvt->dram_type = (pvt->dclr0 & BIT(18)) ? MEM_DDR : MEM_RDDR;
- 	}
-+}
+ unsigned long zs_get_total_pages(struct zs_pool *pool);
  
--	amd64_info("CS%d: %s\n", cs, edac_mem_types[type]);
-+void determine_memory_type_f10(struct amd64_pvt *pvt)
++int zs_get_maxpages_per_zspage(void);
+ #endif
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 839a48c3ca27..6b6653455573 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -316,6 +316,12 @@ static struct zpool_driver zs_zpool_driver = {
+ MODULE_ALIAS("zpool-zsmalloc");
+ #endif /* CONFIG_ZPOOL */
+ 
++int zs_get_maxpages_per_zspage(void)
 +{
-+	if (pvt->dchr0 & DDR3_MODE)
-+		pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+				 MEM_DDR3 : MEM_RDDR3;
-+	else
-+		pvt->dram_type = (pvt->dclr0 & BIT(16)) ?
-+				 MEM_DDR2 : MEM_RDDR2;
++	return ZS_MAX_PAGES_PER_ZSPAGE;
 +}
- 
--	return type;
-+void determine_memory_type_f15(struct amd64_pvt *pvt)
-+{
-+	if (pvt->model == 0x60) {
-+		/*
-+		 * We use a Chip Select value of '0' to obtain dcsm.
-+		 * Theoretically, it is possible to populate LRDIMMs
-+		 * of different 'Rank' value on a DCT. But this is
-+		 * not a common case. So, it's reasonable to assume
-+		 * all DIMMs are going to be of same 'type' until
-+		 * proven otherwise.
-+		 */
-+		u32 dram_ctrl;
-+		u32 dcsm = pvt->csels[0].csmasks[0];
++EXPORT_SYMBOL_GPL(zs_get_maxpages_per_zspage);
 +
-+		amd64_read_dct_pci_cfg(pvt, 0, DRAM_CONTROL,
-+				       &dram_ctrl);
-+		pvt->dram_type = (((dram_ctrl >> 8) & 0x7) == 0x2) ? MEM_DDR4 :
-+				 (pvt->dclr0 & BIT(16)) ? MEM_DDR3 :
-+				 (dcsm & 0x3) ? MEM_LRDDR3 : MEM_RDDR3;
-+	} else {
-+		pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR3 : MEM_RDDR3;
-+	}
-+}
-+
-+void determine_memory_type_f16(struct amd64_pvt *pvt)
-+{
-+	pvt->dram_type = (pvt->dclr0 & BIT(16)) ? MEM_DDR3 : MEM_RDDR3;
- }
+ /* per-cpu VM mapping areas for zspage accesses that cross page boundaries */
+ static DEFINE_PER_CPU(struct mapping_area, zs_map_area);
  
- /* Get the number of DCT channels the memory controller is using. */
-@@ -958,8 +999,12 @@ static void read_dram_base_limit_regs(struct amd64_pvt *pvt, unsigned range)
- 	if (WARN_ON(!nb))
- 		return;
- 
--	pci_func = (pvt->model == 0x30) ? PCI_DEVICE_ID_AMD_15H_M30H_NB_F1
--					: PCI_DEVICE_ID_AMD_15H_NB_F1;
-+	if (pvt->model == 0x60)
-+		pci_func = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1;
-+	else if (pvt->model == 0x30)
-+		pci_func = PCI_DEVICE_ID_AMD_15H_M30H_NB_F1;
-+	else
-+		pci_func = PCI_DEVICE_ID_AMD_15H_NB_F1;
- 
- 	f1 = pci_get_related_function(nb->misc->vendor, pci_func, nb->misc);
- 	if (WARN_ON(!f1))
-@@ -1049,7 +1094,7 @@ static int ddr2_cs_size(unsigned i, bool dct_width)
- }
- 
- static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				  unsigned cs_mode)
-+				  unsigned cs_mode, int cs_mask_nr)
- {
- 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
- 
-@@ -1167,8 +1212,43 @@ static int ddr3_cs_size(unsigned i, bool dct_width)
- 	return cs_size;
- }
- 
-+static int ddr3_lrdimm_cs_size(unsigned i, unsigned rank_multiply)
-+{
-+	unsigned shift = 0;
-+	int cs_size = 0;
-+
-+	if (i < 4 || i == 6)
-+		cs_size = -1;
-+	else if (i == 12)
-+		shift = 7;
-+	else if (!(i & 0x1))
-+		shift = i >> 1;
-+	else
-+		shift = (i + 1) >> 1;
-+
-+	if (cs_size != -1)
-+		cs_size = rank_multiply * (128 << shift);
-+
-+	return cs_size;
-+}
-+
-+static int ddr4_cs_size(unsigned i)
-+{
-+	int cs_size = 0;
-+
-+	if (i == 0)
-+		cs_size = -1;
-+	else if (i == 1)
-+		cs_size = 1024;
-+	else
-+		/* Min cs_size = 1G */
-+		cs_size = 1024 * (1 << (i >> 1));
-+
-+	return cs_size;
-+}
-+
- static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				   unsigned cs_mode)
-+				   unsigned cs_mode, int cs_mask_nr)
- {
- 	u32 dclr = dct ? pvt->dclr1 : pvt->dclr0;
- 
-@@ -1184,18 +1264,49 @@ static int f10_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-  * F15h supports only 64bit DCT interfaces
-  */
- static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				   unsigned cs_mode)
-+				   unsigned cs_mode, int cs_mask_nr)
- {
- 	WARN_ON(cs_mode > 12);
- 
- 	return ddr3_cs_size(cs_mode, false);
- }
- 
-+/* F15h M60h supports DDR4 mapping as well.. */
-+static int f15_m60h_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-+					unsigned cs_mode, int cs_mask_nr)
-+{
-+	int cs_size;
-+	u32 dcsm = pvt->csels[dct].csmasks[cs_mask_nr];
-+
-+	WARN_ON(cs_mode > 12);
-+
-+	if (pvt->dram_type == MEM_DDR4) {
-+		if (cs_mode > 9)
-+			return -1;
-+
-+		cs_size = ddr4_cs_size(cs_mode);
-+	} else if (pvt->dram_type == MEM_LRDDR3) {
-+		unsigned rank_multiply = dcsm & 0xf;
-+
-+		if (rank_multiply == 3)
-+			rank_multiply = 4;
-+		cs_size = ddr3_lrdimm_cs_size(cs_mode, rank_multiply);
-+	} else {
-+		/* Minimum cs size is 512mb for F15hM60h*/
-+		if (cs_mode == 0x1)
-+			return -1;
-+
-+		cs_size = ddr3_cs_size(cs_mode, false);
-+	}
-+
-+	return cs_size;
-+}
-+
- /*
-  * F16h and F15h model 30h have only limited cs_modes.
-  */
- static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
--				unsigned cs_mode)
-+				unsigned cs_mode, int cs_mask_nr)
- {
- 	WARN_ON(cs_mode > 12);
- 
-@@ -1757,13 +1868,20 @@ static void debug_display_dimm_sizes(struct amd64_pvt *pvt, u8 ctrl)
- 
- 		size0 = 0;
- 		if (dcsb[dimm*2] & DCSB_CS_ENABLE)
-+			/* For f15m60h, need multiplier for LRDIMM cs_size
-+			 * calculation. We pass 'dimm' value to the dbam_to_cs
-+			 * mapper so we can find the multiplier from the
-+			 * corresponding DCSM.
-+			 */
- 			size0 = pvt->ops->dbam_to_cs(pvt, ctrl,
--						     DBAM_DIMM(dimm, dbam));
-+						     DBAM_DIMM(dimm, dbam),
-+						     dimm);
- 
- 		size1 = 0;
- 		if (dcsb[dimm*2 + 1] & DCSB_CS_ENABLE)
- 			size1 = pvt->ops->dbam_to_cs(pvt, ctrl,
--						     DBAM_DIMM(dimm, dbam));
-+						     DBAM_DIMM(dimm, dbam),
-+						     dimm);
- 
- 		amd64_info(EDAC_MC ": %d: %5dMB %d: %5dMB\n",
- 				dimm * 2,     size0,
-@@ -1780,6 +1898,7 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= k8_early_channel_count,
- 			.map_sysaddr_to_csrow	= k8_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= k8_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_k8,
- 		}
- 	},
- 	[F10_CPUS] = {
-@@ -1790,6 +1909,7 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f10_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f10,
- 		}
- 	},
- 	[F15_CPUS] = {
-@@ -1800,6 +1920,7 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f15_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f15,
- 		}
- 	},
- 	[F15_M30H_CPUS] = {
-@@ -1810,6 +1931,18 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f15,
-+		}
-+	},
-+	[F15_M60H_CPUS] = {
-+		.ctl_name = "F15h_M60h",
-+		.f1_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F1,
-+		.f3_id = PCI_DEVICE_ID_AMD_15H_M60H_NB_F3,
-+		.ops = {
-+			.early_channel_count	= f1x_early_channel_count,
-+			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
-+			.dbam_to_cs		= f15_m60h_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f15,
- 		}
- 	},
- 	[F16_CPUS] = {
-@@ -1820,6 +1953,7 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f16,
- 		}
- 	},
- 	[F16_M30H_CPUS] = {
-@@ -1830,6 +1964,7 @@ static struct amd64_family_type family_types[] = {
- 			.early_channel_count	= f1x_early_channel_count,
- 			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
- 			.dbam_to_cs		= f16_dbam_to_chip_select,
-+			.determine_memory_type	= determine_memory_type_f16,
- 		}
- 	},
- };
-@@ -2175,6 +2310,8 @@ static void read_mc_regs(struct amd64_pvt *pvt)
- 	}
- 
- 	pvt->ecc_sym_sz = 4;
-+	pvt->ops->determine_memory_type(pvt);
-+	edac_dbg(1, "  DIMM type: %s\n", edac_mem_types[pvt->dram_type]);
- 
- 	if (pvt->fam >= 0x10) {
- 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
-@@ -2238,7 +2375,8 @@ static u32 get_csrow_nr_pages(struct amd64_pvt *pvt, u8 dct, int csrow_nr)
- 	 */
- 	cs_mode = DBAM_DIMM(csrow_nr / 2, dbam);
- 
--	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode) << (20 - PAGE_SHIFT);
-+	nr_pages = pvt->ops->dbam_to_cs(pvt, dct, cs_mode, (csrow_nr / 2))
-+							   << (20 - PAGE_SHIFT);
- 
- 	edac_dbg(0, "csrow: %d, channel: %d, DBAM idx: %d\n",
- 		    csrow_nr, dct,  cs_mode);
-@@ -2257,7 +2395,6 @@ static int init_csrows(struct mem_ctl_info *mci)
- 	struct csrow_info *csrow;
- 	struct dimm_info *dimm;
- 	enum edac_type edac_mode;
--	enum mem_type mtype;
- 	int i, j, empty = 1;
- 	int nr_pages = 0;
- 	u32 val;
-@@ -2302,8 +2439,6 @@ static int init_csrows(struct mem_ctl_info *mci)
- 			nr_pages += row_dct1_pages;
- 		}
- 
--		mtype = determine_memory_type(pvt, i);
--
- 		edac_dbg(1, "Total csrow%d pages: %u\n", i, nr_pages);
- 
- 		/*
-@@ -2317,7 +2452,7 @@ static int init_csrows(struct mem_ctl_info *mci)
- 
- 		for (j = 0; j < pvt->channel_count; j++) {
- 			dimm = csrow->channels[j]->dimm;
--			dimm->mtype = mtype;
-+			dimm->mtype = pvt->dram_type;
- 			dimm->edac_mode = edac_mode;
- 		}
- 	}
-@@ -2604,6 +2739,10 @@ static struct amd64_family_type *per_family_init(struct amd64_pvt *pvt)
- 			fam_type = &family_types[F15_M30H_CPUS];
- 			pvt->ops = &family_types[F15_M30H_CPUS].ops;
- 			break;
-+		} else if (pvt->model == 0x60) {
-+			fam_type = &family_types[F15_M60H_CPUS];
-+			pvt->ops = &family_types[F15_M60H_CPUS].ops;
-+			break;
- 		}
- 
- 		fam_type	= &family_types[F15_CPUS];
-@@ -2828,55 +2967,13 @@ static void remove_one_instance(struct pci_dev *pdev)
-  * inquiry this table to see if this driver is for a given device found.
-  */
- static const struct pci_device_id amd64_pci_table[] = {
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_K8_NB_MEMCTL,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_10H_NB_DRAM,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_15H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_15H_M30H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--	{
--		.vendor		= PCI_VENDOR_ID_AMD,
--		.device		= PCI_DEVICE_ID_AMD_16H_M30H_NB_F2,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--		.class		= 0,
--		.class_mask	= 0,
--	},
--
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_K8_NB_MEMCTL) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_10H_NB_DRAM) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M30H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_M60H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F2) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_M30H_NB_F2) },
- 	{0, }
- };
- MODULE_DEVICE_TABLE(pci, amd64_pci_table);
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 55fb594..8bdc805 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -162,10 +162,12 @@
- /*
-  * PCI-defined configuration space registers
-  */
--#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
--#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F1 0x141b
-+#define PCI_DEVICE_ID_AMD_15H_M30H_NB_F2 0x141c
-+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F1 0x1571
-+#define PCI_DEVICE_ID_AMD_15H_M60H_NB_F2 0x1572
- #define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
- #define PCI_DEVICE_ID_AMD_16H_NB_F2	0x1532
- #define PCI_DEVICE_ID_AMD_16H_M30H_NB_F1 0x1581
-@@ -221,6 +223,8 @@
- 
- #define csrow_enabled(i, dct, pvt)	((pvt)->csels[(dct)].csbases[(i)] & DCSB_CS_ENABLE)
- 
-+#define DRAM_CONTROL			0x78
-+
- #define DBAM0				0x80
- #define DBAM1				0x180
- 
-@@ -301,6 +305,7 @@ enum amd_families {
- 	F10_CPUS,
- 	F15_CPUS,
- 	F15_M30H_CPUS,
-+	F15_M60H_CPUS,
- 	F16_CPUS,
- 	F16_M30H_CPUS,
- 	NUM_FAMILIES,
-@@ -379,6 +384,9 @@ struct amd64_pvt {
- 
- 	/* place to store error injection parameters prior to issue */
- 	struct error_injection injection;
-+
-+	/* cache the dram_type */
-+	enum mem_type dram_type;
- };
- 
- enum err_codes {
-@@ -480,7 +488,9 @@ struct low_ops {
- 	int (*early_channel_count)	(struct amd64_pvt *pvt);
- 	void (*map_sysaddr_to_csrow)	(struct mem_ctl_info *mci, u64 sys_addr,
- 					 struct err_info *);
--	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct, unsigned cs_mode);
-+	int (*dbam_to_cs)		(struct amd64_pvt *pvt, u8 dct,
-+					 unsigned cs_mode, int cs_mask_nr);
-+	void (*determine_memory_type)	(struct amd64_pvt *pvt);
- };
- 
- struct amd64_family_type {
 -- 
-2.0.2
-
+Kind regards,
+Minchan Kim
