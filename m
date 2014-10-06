@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbaJFPQc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:16:32 -0400
-Received: from resqmta-ch2-10v.sys.comcast.net ([69.252.207.42]:56546 "EHLO
-	resqmta-ch2-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753278AbaJFPQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:16:30 -0400
-Date: Mon, 6 Oct 2014 10:16:28 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
- within 50 days
-In-Reply-To: <alpine.DEB.2.11.1410061449290.4383@nanos>
-Message-ID: <alpine.DEB.2.11.1410061014080.29937@gentwo.org>
-References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
- <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.11.1410051824190.3424@gentwo.org> <alpine.DEB.2.11.1410060959510.4383@nanos> <alpine.DEB.2.11.1410060521010.27574@gentwo.org> <alpine.DEB.2.11.1410061449290.4383@nanos>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753312AbaJFPRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:17:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49415 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166AbaJFPRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:17:01 -0400
+Date: Mon, 6 Oct 2014 17:16:58 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Robert Richter <rric@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141006151658.GF4372@pd.tnic>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
+ <20141006090726.GQ20170@rric.localhost>
+ <20141006145856.GA14113@kernel.org>
+ <20141006150147.GD4372@pd.tnic>
+ <20141006150838.GC14113@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141006150838.GC14113@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014, Thomas Gleixner wrote:
+On Mon, Oct 06, 2014 at 12:08:38PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Oct 06, 2014 at 05:01:47PM +0200, Borislav Petkov escreveu:
+> > On Mon, Oct 06, 2014 at 11:58:56AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Agreed, we can use rasd as a reference, I'm now looking for the git repo
+> > > url to see what it is using to prototype how I think this should be
+> > > done.
+> > 
+> > https://git.kernel.org/cgit/utils/ras/rasd.git
+> 
+> I got Jean's "development" repo, should I get the g.k.o one?
 
-> So if you want to fix that as well, you really need to think about the
-> 32 bit case because there is no serialization for the interrupts which
-> are delivered directly from their own vector. And no, we should not
-> diverge 32 and 64 bit artificially here simply because the same 50
-> days wrap applies to both.
+Right, this one above is the official rasd one and Jean's stuff goes
+ontop. So you can look at both. :-)
 
-Is it a divergence if both 64bit and 32 bit are unsing unsigned long?
+-- 
+Regards/Gruss,
+    Boris.
 
->
-> I really start to wonder whether all this is worth the trouble. It has
-> been this way forever and 1k timer interrupts per second is not really
-> a new thing either. So we did not change anything which suddenly makes
-> tools confused.
-
-Tools expect the number of interrupt to increase linearly and not jump by
-2^32 once in awhile. There are functions in the kernel (/proc/stat) that
-sum up various interrupt counters and that are types unsigned long. These
-larger numbers can suddenly jump by 2^32. Its pretty unusual for a 64 bit
-conter to do that and it requires some head scratching until we figured
-that one out.
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
