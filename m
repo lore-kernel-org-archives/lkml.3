@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbaJFJHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 05:07:32 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:62712 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaJFJHa (ORCPT
+	id S1752498AbaJFJHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 05:07:40 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:52243 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752445AbaJFJHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:07:30 -0400
-Date: Mon, 6 Oct 2014 11:07:26 +0200
-From: Robert Richter <rric@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf & rasd integration plan
-Message-ID: <20141006090726.GQ20170@rric.localhost>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20140930132416.GB2799@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140930132416.GB2799@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 6 Oct 2014 05:07:35 -0400
+Message-ID: <1412586453.4054.39.camel@x220>
+Subject: [PATCH 1/4] [media] Remove optional dependencies on PLAT_S5P
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 06 Oct 2014 11:07:33 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2014 09:07:33.0819 (UTC) FILETIME=[F73030B0:01CFE144]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.09.14 10:24:16, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Sep 30, 2014 at 11:06:21AM +0200, Jean Pihet escreveu:
-> > The plan is to move the small and generic functions first: util,
-> > xyarray, cpumap, thread_map etc; then evlist, evsel, trace-event,
-> > trace-event-parse; and finally integrate rasd into the tools/ dir.
-> > 
-> > Any thought? Can evlist, evsel etc. be moved at once?
-> > 
-> > Patches should come soon, when time allows.
-> 
-> Why don't you add it to tools/rasd/ and in tools/rasd/Makefile you just
-> go on and add tools/perf/util/evlist.o et all to be linked directly, as
-> a first step.
-> 
-> Then, as a second step, we can create a tools/lib/perf/evlist.c having
-> what is currently used by both tools/perf/ and tools/rasd/, i.e. what is
-> proven to be useful for something other than perf.
+Commit d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
+removed the Kconfig symbol PLAT_S5P. Remove three optional dependencies
+on that symbol from this Kconfig file too.
 
-It would be good to have tools/lib/perf or so with some base
-implementation to setup and connect to perf buffers. This is useful
-for tools not only in tools/. The rasd would be a good reference for
-this regardless if it is in tools/ or not. I am not sure whether and
-when rasd will be moved there.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ drivers/media/platform/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> As the need arises, we go on moving things into tools/lib/perf/evlist.c
-> et all from wherever it appeared first, be it from tools/rasd/,
-> tools/perf/util/evlist.c or anywhere else.
-> 
-> Initial rule being that once it is used by multiple tools living in
-> tools/, then it deserves a place in tools/lib/perf/.
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index bee9074ebc13..19774b60ba38 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -166,7 +166,7 @@ config VIDEO_MEM2MEM_DEINTERLACE
+ config VIDEO_SAMSUNG_S5P_G2D
+ 	tristate "Samsung S5P and EXYNOS4 G2D 2d graphics accelerator driver"
+ 	depends on VIDEO_DEV && VIDEO_V4L2
+-	depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
++	depends on ARCH_EXYNOS || COMPILE_TEST
+ 	depends on HAS_DMA
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+@@ -178,7 +178,7 @@ config VIDEO_SAMSUNG_S5P_G2D
+ config VIDEO_SAMSUNG_S5P_JPEG
+ 	tristate "Samsung S5P/Exynos3250/Exynos4 JPEG codec driver"
+ 	depends on VIDEO_DEV && VIDEO_V4L2
+-	depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
++	depends on ARCH_EXYNOS || COMPILE_TEST
+ 	depends on HAS_DMA
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select V4L2_MEM2MEM_DEV
+@@ -189,7 +189,7 @@ config VIDEO_SAMSUNG_S5P_JPEG
+ config VIDEO_SAMSUNG_S5P_MFC
+ 	tristate "Samsung S5P MFC Video Codec"
+ 	depends on VIDEO_DEV && VIDEO_V4L2
+-	depends on PLAT_S5P || ARCH_EXYNOS || COMPILE_TEST
++	depends on ARCH_EXYNOS || COMPILE_TEST
+ 	depends on HAS_DMA
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	default n
+-- 
+1.9.3
 
-So this wouldn't quite work well as it excludes tools not in tools/.
-
--Robert
-
-> 
-> Ditto for other stuff currently living in tools/perf/util/.
