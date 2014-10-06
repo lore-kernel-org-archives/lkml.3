@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764AbaJFMzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:55:21 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:35467 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529AbaJFMzT (ORCPT
+	id S1752610AbaJFM6X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:58:23 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:61342 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330AbaJFM6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:55:19 -0400
-Date: Mon, 6 Oct 2014 14:55:05 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 06/16] virtio_blk: drop config_enable
-Message-ID: <20141006145505.697bc5ca.cornelia.huck@de.ibm.com>
-In-Reply-To: <20141006123110.GA26815@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
-	<1412525038-15871-7-git-send-email-mst@redhat.com>
-	<20141006134229.45465bf7.cornelia.huck@de.ibm.com>
-	<20141006120953.GA26549@redhat.com>
-	<20141006142038.07ea01f0.cornelia.huck@de.ibm.com>
-	<20141006123110.GA26815@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100612-0542-0000-0000-00000112ABA4
+	Mon, 6 Oct 2014 08:58:20 -0400
+Date: Mon, 6 Oct 2014 08:58:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH RESEND v3 5/6] AHCI: Optimize single IRQ interrupt
+ processing
+Message-ID: <20141006125817.GA18303@htj.dyndns.org>
+References: <b1a04379e05e40f9774fb4668609fac4255a6514.1411297686.git.agordeev@redhat.com>
+ <20140923205710.GB17332@mtj.dyndns.org>
+ <20140924104213.GA2695@agordeev.usersys.redhat.com>
+ <20140924130444.GA16555@htj.dyndns.org>
+ <20140924140844.GB2695@agordeev.usersys.redhat.com>
+ <20140924143913.GH16555@htj.dyndns.org>
+ <20141001153114.GE8971@agordeev.usersys.redhat.com>
+ <20141005022311.GD8549@htj.dyndns.org>
+ <20141005161646.GB22223@mtj.dyndns.org>
+ <20141006072710.GH8971@agordeev.usersys.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006072710.GH8971@agordeev.usersys.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014 15:31:10 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Hello, Alexander.
 
-> On Mon, Oct 06, 2014 at 02:20:38PM +0200, Cornelia Huck wrote:
-> > On Mon, 6 Oct 2014 15:09:53 +0300
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > On Mon, Oct 06, 2014 at 01:42:29PM +0200, Cornelia Huck wrote:
-> > > > On Sun, 5 Oct 2014 19:07:07 +0300
-> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > 
-> > > > > Now that virtio core ensures config changes don't
-> > > > > arrive during probing, drop config_enable flag
-> > > > > in virtio blk.
-> > > > > On removal, flush is now sufficient to guarantee that
-> > > > > no change work is queued.
-> > > > > 
-> > > > > This help simplify the driver, and will allow
-> > > > > setting DRIVER_OK earlier without losing config
-> > > > > change notifications.
-> > > > > 
-> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > > ---
-> > > > >  drivers/block/virtio_blk.c | 19 ++-----------------
-> > > > >  1 file changed, 2 insertions(+), 17 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> > > > > index 0a58140..c8cf6a1 100644
-> > > > > --- a/drivers/block/virtio_blk.c
-> > > > > +++ b/drivers/block/virtio_blk.c
-> > > > 
-> > > > > @@ -772,9 +766,7 @@ static void virtblk_remove(struct virtio_device *vdev)
-> > > > >  	int refc;
-> > > > > 
-> > > > >  	/* Prevent config work handler from accessing the device. */
-> > > > 
-> > > > /* Common code ensures no further work will be queued. */
-> > > > 
-> > > > instead?
-> > > 
-> > > No, I think you missed the point:
-> > > this comment now refers to the flush below: flush is required to
-> > > ensure work handler is not running.
-> > > 
-> > > Agree?
-> > 
-> > I think we both mean the same thing.
-> > 
-> > Preventing the handler from access sounds to me more like "when the
-> > handler starts running, it is prevented from accessing the
-> > device" (like with setting config_enable, as the code did before). What
-> > I meant was "common code has already ensured that our work-queueing
-> > function will not be called, therefore flushing the workqueue is
-> > enough."
-> > 
-> > (same for net)
+On Mon, Oct 06, 2014 at 08:27:11AM +0100, Alexander Gordeev wrote:
+> > Why are we bouncing the context twice?
 > 
-> OK so I'll rewrite this to
-> 	/* Make sure no work handler is accessing the device. */
-> ?
-> I prefer not duplicating core guarantees in all devices.
-> 
+> I *did* consider moving the threaded handler code to the softirq part.
+> I just wanted to get updates in stages: to address hardware interrupts
+> latency first and possibly threaded hander next. Getting done these two
+> together would be too big change for me ;)
 
-Sounds good to me.
+I don't think we'd be able to move libata handling to block softirq
+and probably end up just doing it from the irq context.  Anyways, as
+long as you're gonna keep working on it, I have no objection to the
+proposed changes.  Do you have a refreshed version or is the current
+version good for inclusion?
 
+Thanks.
+
+-- 
+tejun
