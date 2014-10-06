@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaJFUgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 16:36:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60995 "EHLO mx2.suse.de"
+	id S1752149AbaJFUh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 16:37:57 -0400
+Received: from mga14.intel.com ([192.55.52.115]:56026 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751098AbaJFUgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 16:36:33 -0400
-Date: Mon, 6 Oct 2014 22:36:27 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option
-	for built-in and modules
-Message-ID: <20141006203627.GZ14081@wotan.suse.de>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com> <20141006201926.GF18303@htj.dyndns.org>
+	id S1751264AbaJFUh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 16:37:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396233125"
+Date: Mon, 6 Oct 2014 13:37:31 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKP <lkp@01.org>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        linux-kernel@vger.kernel.org, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>
+Subject: Re: [LKP] [x86LKP] PANIC: double fault, error_code:
+ 0xffffffffffffffff
+Message-ID: <20141006203731.GF3264@tassilo.jf.intel.com>
+References: <20141004134729.GB5214@wfg-t540p.sh.intel.com>
+ <20141005063802.GE3264@tassilo.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141006201926.GF18303@htj.dyndns.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20141005063802.GE3264@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 04:19:26PM -0400, Tejun Heo wrote:
-> Hello, Luis.
-> 
-> The patchset generally looks good to me.  Please feel free to add
-> 
->  Reviewed-by: Tejun Heo <tj@kernel.org>
 
-Will do.
+I cannot reproduce with the config/kvm script. 
 
-> A question below.
-> 
-> On Fri, Oct 03, 2014 at 02:44:43PM -0700, Luis R. Rodriguez wrote:
-> > +	bus.enable_kern_async=1 [KNL]
-> > +			This tells the kernel userspace has been vetted for
-> > +			asynchronous probe support and can listen to the device
-> > +			driver prefer_async_probe flag for both built-in device
-> > +			drivers and modules.
-> 
-> Do we intend to keep this param permanently?  Isn't this more of a
-> temp tool to be used during development?  If so, maybe we should make
-> that clear with __DEVEL__ too?
+Well the user space in your initrd hangs after boot, but I presume that's some
+different issue.
 
-As its designed right now no, its not a temp tool, its there to
-require compatibility with old userspace. For modules we can require
-the module parameter but for built-in we need something else and this
-is what came to mind. It is also what would allow the prefer_async_probe
-flag too as otherwise we won't know if userspace is prepared.
+Do you have a different config or setup that shows it too?
 
-If we want to get rid of it, it would mean that we're letting go of the idea
-that some userspace might exist which depends on *not* doing async probe. As
-such I would not consider it a __DEVEL__ param and it'd be a judgement call
-to eventually *not require* it. I can see that happening but perhaps a large
-series of kernels down the road?
-
-  Luis
+-Andi
