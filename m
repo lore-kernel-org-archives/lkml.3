@@ -1,182 +1,468 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaJFNzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:55:16 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:58529 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831AbaJFNw7 (ORCPT
+	id S1753174AbaJFNzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 09:55:49 -0400
+Received: from mail-1.atlantis.sk ([80.94.52.57]:46875 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905AbaJFNzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 09:52:59 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-arm-kernel@lists.infradead.org, linux-ia64@vger.kernel.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org, x86@kernel.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] /dev/mem: Use more consistent data types
-Date: Mon,  6 Oct 2014 15:52:37 +0200
-Message-Id: <1412603561-27653-6-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
-References: <1412603561-27653-1-git-send-email-thierry.reding@gmail.com>
+	Mon, 6 Oct 2014 09:55:47 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Takashi Iwai <tiwai@suse.de>
+Subject: Re: [alsa-devel] [PATCH v3] ES938 support for ES18xx driver
+Date: Mon, 6 Oct 2014 15:55:18 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: alsa-devel@alsa-project.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andreas Mohr <andi@lisas.de>
+References: <1412027079-15876-1-git-send-email-linux@rainbow-software.org> <s5h7g0dzgd5.wl-tiwai@suse.de>
+In-Reply-To: <s5h7g0dzgd5.wl-tiwai@suse.de>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201410061555.19007.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Monday 06 October 2014, Takashi Iwai wrote:
+> At Mon, 29 Sep 2014 23:44:39 +0200,
+>
+> Ondrej Zary wrote:
+> > Add support for ES938 3-D Audio Effects Processor found on some ES18xx
+> > (and possibly other) sound cards, doing bass/treble and 3D control.
+>
+> As this is seen only on es18xx, we don't need to make it as an
+> individual module.  Just merge into snd-es18xx module.
 
-The xlate_dev_{kmem,mem}_ptr() functions take either a physical address
-or a kernel virtual address, so data types should be phys_addr_t and
-void *. They both return a kernel virtual address which is only ever
-used in calls to copy_{from,to}_user(), so make variables that store it
-void * rather than char * for consistency.
+ES938 does not depend on ES18xx and can be connected to any device with MIDI 
+interface. Maybe there are some other cards with this chip.
 
-Also only define a weak unxlate_dev_mem_ptr() function if architectures
-haven't overridden them in the asm/io.h header file.
+> > ES938 is controlled by MIDI SysEx commands sent through card's MPU401
+> > port.
+> >
+> > The code opens/closes the MIDI device everytime a mixer control value is
+> > changed so userspace apps can still use the MIDI port. Changing the mixer
+> > controls will fail when the MIDI port is open by an application.
+>
+> Why the kernel open/close is needed for snd_es938_init(), too?
+> Also, adding controls after snd_card_register() call isn't good in
+> most cases.
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- arch/s390/include/asm/io.h |  5 +++--
- arch/s390/mm/maccess.c     |  4 ++--
- arch/x86/include/asm/io.h  |  4 ++--
- arch/x86/mm/ioremap.c      |  4 ++--
- drivers/char/mem.c         | 13 ++++++++-----
- 5 files changed, 17 insertions(+), 13 deletions(-)
+chip->rfile must be a valid snd_rawmidi_file handle for snd_es938_write_reg() 
+and snd_es938_write_reg() to work.
 
-diff --git a/arch/s390/include/asm/io.h b/arch/s390/include/asm/io.h
-index cd6b9ee7b69c..d22c2eeae78f 100644
---- a/arch/s390/include/asm/io.h
-+++ b/arch/s390/include/asm/io.h
-@@ -13,9 +13,10 @@
- #include <asm/page.h>
- #include <asm/pci_io.h>
- 
--void *xlate_dev_mem_ptr(unsigned long phys);
- #define xlate_dev_mem_ptr xlate_dev_mem_ptr
--void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
-+void *xlate_dev_mem_ptr(phys_addr_t phys);
-+#define unxlate_dev_mem_ptr unxlate_dev_mem_ptr
-+void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr);
- 
- /*
-  * Convert a virtual cached pointer to an uncached pointer
-diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
-index 2a2e35416d2f..2eb34bdfc613 100644
---- a/arch/s390/mm/maccess.c
-+++ b/arch/s390/mm/maccess.c
-@@ -176,7 +176,7 @@ static int is_swapped(unsigned long addr)
-  * For swapped prefix pages a new buffer is returned that contains a copy of
-  * the absolute memory. The buffer size is maximum one page large.
-  */
--void *xlate_dev_mem_ptr(unsigned long addr)
-+void *xlate_dev_mem_ptr(phys_addr_t addr)
- {
- 	void *bounce = (void *) addr;
- 	unsigned long size;
-@@ -197,7 +197,7 @@ void *xlate_dev_mem_ptr(unsigned long addr)
- /*
-  * Free converted buffer for /dev/mem access (if necessary)
-  */
--void unxlate_dev_mem_ptr(unsigned long addr, void *buf)
-+void unxlate_dev_mem_ptr(phys_addr_t addr, void *buf)
- {
- 	if ((void *) addr != buf)
- 		free_page((unsigned long) buf);
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index b8237d8a1e0c..ae2b593e7c6e 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -310,8 +310,8 @@ BUILDIO(b, b, char)
- BUILDIO(w, w, short)
- BUILDIO(l, , int)
- 
--extern void *xlate_dev_mem_ptr(unsigned long phys);
--extern void unxlate_dev_mem_ptr(unsigned long phys, void *addr);
-+extern void *xlate_dev_mem_ptr(phys_addr_t phys);
-+extern void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr);
- 
- extern int ioremap_change_attr(unsigned long vaddr, unsigned long size,
- 				unsigned long prot_val);
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index af78e50ca6ce..b12f43c192cf 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -327,7 +327,7 @@ EXPORT_SYMBOL(iounmap);
-  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
-  * access
-  */
--void *xlate_dev_mem_ptr(unsigned long phys)
-+void *xlate_dev_mem_ptr(phys_addr_t phys)
- {
- 	void *addr;
- 	unsigned long start = phys & PAGE_MASK;
-@@ -343,7 +343,7 @@ void *xlate_dev_mem_ptr(unsigned long phys)
- 	return addr;
- }
- 
--void unxlate_dev_mem_ptr(unsigned long phys, void *addr)
-+void unxlate_dev_mem_ptr(phys_addr_t phys, void *addr)
- {
- 	if (page_is_ram(phys >> PAGE_SHIFT))
- 		return;
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 524b707894ef..4c58333b4257 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -84,9 +84,12 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
- }
- #endif
- 
--void __weak unxlate_dev_mem_ptr(unsigned long phys, void *addr)
-+#ifndef unxlate_dev_mem_ptr
-+#define unxlate_dev_mem_ptr unxlate_dev_mem_ptr
-+void __weak unxlate_dev_mem_ptr(phys_addr_t phys, void *addr)
- {
- }
-+#endif
- 
- /*
-  * This funcion reads the *physical* memory. The f_pos points directly to the
-@@ -97,7 +100,7 @@ static ssize_t read_mem(struct file *file, char __user *buf,
- {
- 	phys_addr_t p = *ppos;
- 	ssize_t read, sz;
--	char *ptr;
-+	void *ptr;
- 
- 	if (p != *ppos)
- 		return 0;
-@@ -400,7 +403,7 @@ static ssize_t read_kmem(struct file *file, char __user *buf,
- 			 * uncached, then it must also be accessed uncached
- 			 * by the kernel or data corruption may occur
- 			 */
--			kbuf = xlate_dev_kmem_ptr((char *)p);
-+			kbuf = xlate_dev_kmem_ptr((void *)p);
- 
- 			if (copy_to_user(buf, kbuf, sz))
- 				return -EFAULT;
-@@ -461,7 +464,7 @@ static ssize_t do_write_kmem(unsigned long p, const char __user *buf,
- #endif
- 
- 	while (count > 0) {
--		char *ptr;
-+		void *ptr;
- 
- 		sz = size_inside_page(p, count);
- 
-@@ -470,7 +473,7 @@ static ssize_t do_write_kmem(unsigned long p, const char __user *buf,
- 		 * it must also be accessed uncached by the kernel or data
- 		 * corruption may occur.
- 		 */
--		ptr = xlate_dev_kmem_ptr((char *)p);
-+		ptr = xlate_dev_kmem_ptr((void *)p);
- 
- 		copied = copy_from_user(ptr, buf, sz);
- 		if (copied) {
+IIRC, there is a chicken-and-egg problem with adding controls and sound card's 
+MIDI interface initialization:
+we need a working MIDI interface to detect ES938 presence - that's after 
+snd_card_register() is called
+
+vs.
+
+we need to add conttrols before snd_card_register() is called
+
+>
+> thanks,
+>
+> Takashi
+>
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> >
+> > ---
+> > Changes in v3:
+> >  - constify buf argument to snd_rawmidi_kernel_write
+> >  - remove double if from probe
+> >  - spelling fix
+> > Changes in v2:
+> >  - debug message when ES938 detected
+> >  - reworked sysex messages to use structs
+> >  - ktime instead of jiffies for timeout
+> > ---
+> >  sound/isa/Kconfig  |    4 +
+> >  sound/isa/Makefile |    2 +
+> >  sound/isa/es18xx.c |   13 +++-
+> >  sound/isa/es938.c  |  217
+> > ++++++++++++++++++++++++++++++++++++++++++++++++++++ sound/isa/es938.h  |
+> >   48 ++++++++++++
+> >  5 files changed, 283 insertions(+), 1 deletion(-)
+> >  create mode 100644 sound/isa/es938.c
+> >  create mode 100644 sound/isa/es938.h
+> >
+> > diff --git a/sound/isa/Kconfig b/sound/isa/Kconfig
+> > index 0216475..db0b678 100644
+> > --- a/sound/isa/Kconfig
+> > +++ b/sound/isa/Kconfig
+> > @@ -17,6 +17,9 @@ config SND_SB16_DSP
+> >          select SND_PCM
+> >          select SND_SB_COMMON
+> >
+> > +config SND_ES938
+> > +	tristate
+> > +
+> >  menuconfig SND_ISA
+> >  	bool "ISA sound devices"
+> >  	depends on ISA && ISA_DMA_API
+> > @@ -183,6 +186,7 @@ config SND_ES18XX
+> >  	select SND_OPL3_LIB
+> >  	select SND_MPU401_UART
+> >  	select SND_PCM
+> > +	select SND_ES938
+> >  	help
+> >  	  Say Y here to include support for ESS AudioDrive ES18xx chips.
+> >
+> > diff --git a/sound/isa/Makefile b/sound/isa/Makefile
+> > index 9a15f14..d59e0bf 100644
+> > --- a/sound/isa/Makefile
+> > +++ b/sound/isa/Makefile
+> > @@ -8,6 +8,7 @@ snd-als100-objs := als100.o
+> >  snd-azt2320-objs := azt2320.o
+> >  snd-cmi8328-objs := cmi8328.o
+> >  snd-cmi8330-objs := cmi8330.o
+> > +snd-es938-objs := es938.o
+> >  snd-es18xx-objs := es18xx.o
+> >  snd-opl3sa2-objs := opl3sa2.o
+> >  snd-sc6000-objs := sc6000.o
+> > @@ -19,6 +20,7 @@ obj-$(CONFIG_SND_ALS100) += snd-als100.o
+> >  obj-$(CONFIG_SND_AZT2320) += snd-azt2320.o
+> >  obj-$(CONFIG_SND_CMI8328) += snd-cmi8328.o
+> >  obj-$(CONFIG_SND_CMI8330) += snd-cmi8330.o
+> > +obj-$(CONFIG_SND_ES938) += snd-es938.o
+> >  obj-$(CONFIG_SND_ES18XX) += snd-es18xx.o
+> >  obj-$(CONFIG_SND_OPL3SA2) += snd-opl3sa2.o
+> >  obj-$(CONFIG_SND_SC6000) += snd-sc6000.o
+> > diff --git a/sound/isa/es18xx.c b/sound/isa/es18xx.c
+> > index 6faaac6..72dad69 100644
+> > --- a/sound/isa/es18xx.c
+> > +++ b/sound/isa/es18xx.c
+> > @@ -96,6 +96,7 @@
+> >  #define SNDRV_LEGACY_FIND_FREE_IRQ
+> >  #define SNDRV_LEGACY_FIND_FREE_DMA
+> >  #include <sound/initval.h>
+> > +#include "es938.h"
+> >
+> >  #define PFX "es18xx: "
+> >
+> > @@ -122,6 +123,7 @@ struct snd_es18xx {
+> >  	struct snd_pcm_substream *playback_b_substream;
+> >
+> >  	struct snd_rawmidi *rmidi;
+> > +	struct snd_es938 es938;
+> >
+> >  	struct snd_kcontrol *hw_volume;
+> >  	struct snd_kcontrol *hw_switch;
+> > @@ -2167,7 +2169,16 @@ static int snd_audiodrive_probe(struct snd_card
+> > *card, int dev) return err;
+> >  	}
+> >
+> > -	return snd_card_register(card);
+> > +	err = snd_card_register(card);
+> > +	if (err < 0)
+> > +		return err;
+> > +
+> > +	/* no error if this fails because ES938 is optional */
+> > +	if (mpu_port[dev] > 0 && mpu_port[dev] != SNDRV_AUTO_PORT &&
+> > +				snd_es938_init(&chip->es938, card, 0, 0) == 0)
+> > +		snd_printk(KERN_DEBUG "found ES938 audio processor\n");
+> > +
+> > +	return 0;
+> >  }
+> >
+> >  static int snd_es18xx_isa_match(struct device *pdev, unsigned int dev)
+> > diff --git a/sound/isa/es938.c b/sound/isa/es938.c
+> > new file mode 100644
+> > index 0000000..75d1fbe
+> > --- /dev/null
+> > +++ b/sound/isa/es938.c
+> > @@ -0,0 +1,217 @@
+> > +/*
+> > + *  Driver for ESS ES938 3-D Audio Effects Processor
+> > + *  Copyright (c) 2014 Ondrej Zary
+> > + *
+> > + *
+> > + *   This program is free software; you can redistribute it and/or
+> > modify + *   it under the terms of the GNU General Public License as
+> > published by + *   the Free Software Foundation; either version 2 of the
+> > License, or + *   (at your option) any later version.
+> > + *
+> > + *   This program is distributed in the hope that it will be useful,
+> > + *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + *   GNU General Public License for more details.
+> > + *
+> > + *   You should have received a copy of the GNU General Public License
+> > + *   along with this program; if not, write to the Free Software
+> > + *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 
+> > 02111-1307 USA + *
+> > + */
+> > +
+> > +#include <linux/module.h>
+> > +#include <sound/asoundef.h>
+> > +#include <sound/control.h>
+> > +#include <sound/core.h>
+> > +#include <sound/rawmidi.h>
+> > +#include "es938.h"
+> > +
+> > +MODULE_AUTHOR("Ondrej Zary");
+> > +MODULE_DESCRIPTION("ESS ES938");
+> > +MODULE_LICENSE("GPL");
+> > +
+> > +static int snd_es938_read_reg(struct snd_es938 *chip, u8 reg, u8 *out)
+> > +{
+> > +	int i = 0, res;
+> > +	const struct snd_es938_sysex_reg req = {
+> > +		.midi_cmd = MIDI_CMD_COMMON_SYSEX,
+> > +		.id = ES938_ID,
+> > +		.cmd = ES938_CMD_REG_R,
+> > +		.reg = reg,
+> > +		.midi_end = MIDI_CMD_COMMON_SYSEX_END,
+> > +	};
+> > +	struct snd_es938_sysex_regval reply = { };
+> > +	u8 *p = (void *)&reply;
+> > +	ktime_t end_time;
+> > +
+> > +	snd_rawmidi_kernel_write(chip->rfile.output,
+> > +				(const void *)&req, sizeof(req));
+> > +
+> > +	end_time = ktime_add_ms(ktime_get(), 100);
+> > +	while (i < sizeof(reply)) {
+> > +		res = snd_rawmidi_kernel_read(chip->rfile.input, p + i,
+> > +					      sizeof(reply) - i);
+> > +		if (res > 0)
+> > +			i += res;
+> > +		if (ktime_after(ktime_get(), end_time))
+> > +			return -1;
+> > +	}
+> > +
+> > +	/* check if the reply is ours and has SYSEX_END at the end */
+> > +	if (memcmp(&reply, &req, sizeof(req) - 1) ||
+> > +				reply.midi_end != MIDI_CMD_COMMON_SYSEX_END)
+> > +		return -1;
+> > +
+> > +	if (out)
+> > +		*out = reply.val;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void snd_es938_write_reg(struct snd_es938 *chip, u8 reg, u8 val)
+> > +{
+> > +	const struct snd_es938_sysex_regval req = {
+> > +		.midi_cmd = MIDI_CMD_COMMON_SYSEX,
+> > +		.id = ES938_ID,
+> > +		.cmd = ES938_CMD_REG_W,
+> > +		.reg = reg,
+> > +		.val = val,
+> > +		.midi_end = MIDI_CMD_COMMON_SYSEX_END,
+> > +	};
+> > +
+> > +	snd_rawmidi_kernel_write(chip->rfile.output,
+> > +				(const void *)&req, sizeof(req));
+> > +	chip->regs[reg] = val;
+> > +}
+> > +
+> > +#define ES938_MIXER(xname, xindex, reg, shift, mask) \
+> > +{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .index = xindex, \
+> > +.info = snd_es938_info_mixer, \
+> > +.get = snd_es938_get_mixer, .put = snd_es938_put_mixer, \
+> > +.private_value = reg | (shift << 8) | (mask << 16) }
+> > +
+> > +#define ES938_MIXER_TLV(xname, xindex, reg, shift, mask, xtlv) \
+> > +{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .index = xindex, \
+> > +.access = SNDRV_CTL_ELEM_ACCESS_READWRITE |
+> > SNDRV_CTL_ELEM_ACCESS_TLV_READ, \ +.info = snd_es938_info_mixer, \
+> > +.get = snd_es938_get_mixer, .put = snd_es938_put_mixer, \
+> > +.private_value = reg | (shift << 8) | (mask << 16), \
+> > +.tlv = { .p = (xtlv) } }
+> > +
+> > +static const DECLARE_TLV_DB_SCALE(db_scale_tone, -900, 300, 0);
+> > +
+> > +static struct snd_kcontrol_new snd_es938_controls[] = {
+> > +ES938_MIXER_TLV("Tone Control - Bass", 0, ES938_REG_TONE, 0, 7,
+> > db_scale_tone), +ES938_MIXER_TLV("Tone Control - Treble", 0,
+> > ES938_REG_TONE, 4, 7, db_scale_tone), +ES938_MIXER("3D Control - Level",
+> > 0, ES938_REG_SPATIAL, 1, 63), +ES938_MIXER("3D Control - Switch", 0,
+> > ES938_REG_SPATIAL_EN, 0, 1), +};
+> > +
+> > +int snd_es938_init(struct snd_es938 *chip, struct snd_card *card, int
+> > device, +		   int subdevice)
+> > +{
+> > +	int ret, i;
+> > +
+> > +	ret = snd_rawmidi_kernel_open(card, device, subdevice,
+> > +			SNDRV_RAWMIDI_LFLG_OPEN | SNDRV_RAWMIDI_LFLG_APPEND,
+> > +			&chip->rfile);
+> > +	if (ret < 0) {
+> > +		snd_printk(KERN_WARNING "es938: unable to open MIDI device\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	/* try to read a register to detect chip presence */
+> > +	if (snd_es938_read_reg(chip, ES938_REG_MISC, NULL) < 0) {
+> > +		ret = -ENODEV;
+> > +		goto err;
+> > +	}
+> > +
+> > +	/* write default values (there's no reset) */
+> > +	snd_es938_write_reg(chip, ES938_REG_MISC, 0x49);
+> > +	snd_es938_write_reg(chip, ES938_REG_TONE, 0x33);
+> > +	/* reserved bit 0 must be set for 3D to work */
+> > +	snd_es938_write_reg(chip, ES938_REG_SPATIAL, 0x01);
+> > +	/* datasheet specifies invalid value 0x00 as default */
+> > +	snd_es938_write_reg(chip, ES938_REG_SPATIAL_EN, 0x02);
+> > +	snd_es938_write_reg(chip, ES938_REG_POWER, 0x0e);
+> > +
+> > +	strlcat(card->mixername, " + ES938", sizeof(card->mixername));
+> > +	for (i = 0; i < ARRAY_SIZE(snd_es938_controls); i++) {
+> > +		ret = snd_ctl_add(card,
+> > +				  snd_ctl_new1(&snd_es938_controls[i], chip));
+> > +		if (ret < 0)
+> > +			goto err;
+> > +	}
+> > +
+> > +	chip->card = card;
+> > +	chip->device = device;
+> > +	chip->subdevice = subdevice;
+> > +err:
+> > +	snd_rawmidi_kernel_release(&chip->rfile);
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL(snd_es938_init);
+> > +
+> > +int snd_es938_info_mixer(struct snd_kcontrol *kcontrol,
+> > +			 struct snd_ctl_elem_info *uinfo)
+> > +{
+> > +	int mask = (kcontrol->private_value >> 16) & 0xff;
+> > +
+> > +	uinfo->type = mask == 1 ? SNDRV_CTL_ELEM_TYPE_BOOLEAN :
+> > +				  SNDRV_CTL_ELEM_TYPE_INTEGER;
+> > +	uinfo->count = 1;
+> > +	uinfo->value.integer.min = 0;
+> > +	uinfo->value.integer.max = mask;
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(snd_es938_info_mixer);
+> > +
+> > +int snd_es938_get_mixer(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol)
+> > +{
+> > +	struct snd_es938 *chip = snd_kcontrol_chip(kcontrol);
+> > +	int reg = kcontrol->private_value & 0xff;
+> > +	int shift = (kcontrol->private_value >> 8) & 0xff;
+> > +	int mask = (kcontrol->private_value >> 16) & 0xff;
+> > +	u8 val = chip->regs[reg];
+> > +
+> > +	ucontrol->value.integer.value[0] = (val >> shift) & mask;
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(snd_es938_get_mixer);
+> > +
+> > +int snd_es938_put_mixer(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol)
+> > +{
+> > +	struct snd_es938 *chip = snd_kcontrol_chip(kcontrol);
+> > +	int reg = kcontrol->private_value & 0xff;
+> > +	int shift = (kcontrol->private_value >> 8) & 0xff;
+> > +	int mask = (kcontrol->private_value >> 16) & 0xff;
+> > +	u8 val = ucontrol->value.integer.value[0] & mask;
+> > +	u8 oldval = chip->regs[reg];
+> > +	u8 newval;
+> > +	int err;
+> > +
+> > +	mask <<= shift;
+> > +	val <<= shift;
+> > +
+> > +	newval = (oldval & ~mask) | val;
+> > +	if (newval == oldval)
+> > +		return 0;
+> > +
+> > +	/* this will fail if the MIDI port is used by an application */
+> > +	err = snd_rawmidi_kernel_open(chip->card, chip->device,
+> > +			chip->subdevice,
+> > +			SNDRV_RAWMIDI_LFLG_OPEN | SNDRV_RAWMIDI_LFLG_APPEND,
+> > +			&chip->rfile);
+> > +	if (err < 0)
+> > +		return err;
+> > +
+> > +	snd_es938_write_reg(chip, reg, newval);
+> > +
+> > +	snd_rawmidi_kernel_release(&chip->rfile);
+> > +
+> > +	return 1;
+> > +}
+> > +EXPORT_SYMBOL(snd_es938_put_mixer);
+> > diff --git a/sound/isa/es938.h b/sound/isa/es938.h
+> > new file mode 100644
+> > index 0000000..08148ff
+> > --- /dev/null
+> > +++ b/sound/isa/es938.h
+> > @@ -0,0 +1,48 @@
+> > +#include <sound/tlv.h>
+> > +
+> > +#define ES938_ID		0x7b
+> > +
+> > +#define ES938_CMD_REG_R		0x7e
+> > +#define ES938_CMD_REG_W		0x7f
+> > +
+> > +#define ES938_REG_MISC		0
+> > +#define ES938_REG_TONE		1
+> > +#define ES938_REG_SPATIAL	5
+> > +#define ES938_REG_SPATIAL_EN	6
+> > +#define ES938_REG_POWER		7
+> > +
+> > +struct snd_es938 {
+> > +	u8 regs[8];
+> > +	struct snd_card *card;
+> > +	int device;
+> > +	int subdevice;
+> > +	struct snd_rawmidi_file rfile;
+> > +};
+> > +
+> > +struct snd_es938_sysex_reg {
+> > +	u8 midi_cmd;
+> > +	u8 zeros[2];
+> > +	u8 id;
+> > +	u8 cmd;
+> > +	u8 reg;
+> > +	u8 midi_end;
+> > +};
+> > +
+> > +struct snd_es938_sysex_regval {
+> > +	u8 midi_cmd;
+> > +	u8 zeros[2];
+> > +	u8 id;
+> > +	u8 cmd;
+> > +	u8 reg;
+> > +	u8 val;
+> > +	u8 midi_end;
+> > +};
+> > +
+> > +int snd_es938_init(struct snd_es938 *chip, struct snd_card *card, int
+> > device, +		   int subdevice);
+> > +int snd_es938_info_mixer(struct snd_kcontrol *kcontrol,
+> > +			 struct snd_ctl_elem_info *uinfo);
+> > +int snd_es938_get_mixer(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol);
+> > +int snd_es938_put_mixer(struct snd_kcontrol *kcontrol,
+> > +			struct snd_ctl_elem_value *ucontrol);
+> > --
+> > Ondrej Zary
+> >
+> > _______________________________________________
+> > Alsa-devel mailing list
+> > Alsa-devel@alsa-project.org
+> > http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
 -- 
-2.1.0
-
+Ondrej Zary
