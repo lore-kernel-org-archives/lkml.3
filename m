@@ -1,68 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaJFKyq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:54:46 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:34420 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117AbaJFKyn (ORCPT
+	id S1752268AbaJFK5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:57:20 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:34720 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751961AbaJFK5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 06:54:43 -0400
-Date: Mon, 6 Oct 2014 12:54:35 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 04/16] virtio-pci: move freeze/restore to virtio core
-Message-ID: <20141006125435.12c69ab1.cornelia.huck@de.ibm.com>
-In-Reply-To: <1412525038-15871-5-git-send-email-mst@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
-	<1412525038-15871-5-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 6 Oct 2014 06:57:19 -0400
+Date: Mon, 6 Oct 2014 03:57:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org
+Subject: Re: [rcu] 5057f55e543:  dmesg.BUG:soft_lockup-CPU_stuck_for_s
+Message-ID: <20141006105712.GX5015@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141006055024.GD28732@wfg-t540p.sh.intel.com>
+ <20141006055456.GA650@wfg-t540p.sh.intel.com>
+ <20141006091716.GA1608@wfg-t540p.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141006091716.GA1608@wfg-t540p.sh.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100610-1948-0000-0000-000001588EA6
+x-cbid: 14100610-7164-0000-0000-000005239F94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 5 Oct 2014 19:07:02 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> This is in preparation to extending config changed event handling
-> in core.
-> Wrapping these in an API also seems to make for a cleaner code.
+On Mon, Oct 06, 2014 at 05:17:16PM +0800, Fengguang Wu wrote:
+> On Mon, Oct 06, 2014 at 01:54:56PM +0800, Fengguang Wu wrote:
+> > On Mon, Oct 06, 2014 at 01:50:24PM +0800, Fengguang Wu wrote:
+> > > Hi Paul,
+> > > 
+> > > FYI, we noticed a number of ups and downs for commit
+> > > 
+> > > 5057f55e543b7859cfd26bc281291795eac93f8a ("rcu: Bind RCU grace-period kthreads if NO_HZ_FULL")
+> > 
+> > Here is an overview of the performance/power/latency/kernel size
+> > index. The baseline (71a9b26963f8c2d) number is 100, the larger, the better.
+> > 
+> >     96      perf-index  5057f55e543b7859cfd26bc281291795eac93f8a
+> >     99     power-index  5057f55e543b7859cfd26bc281291795eac93f8a
+> >    101   latency-index  5057f55e543b7859cfd26bc281291795eac93f8a
+> >    102      size-index  5057f55e543b7859cfd26bc281291795eac93f8a
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/linux/virtio.h      |  6 +++++
->  drivers/virtio/virtio.c     | 53 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/virtio/virtio_pci.c | 55 ++-------------------------------------------
->  3 files changed, 61 insertions(+), 53 deletions(-)
+> The performance changes seem to have a strong correlation with the
+> time.involuntary_context_switches changes.
+
+I bet that if you booted with additional CPUs not in nohz mode that
+the numbers of involuntary context switches would come down.  By
+default, only CPU 0 is non-nohz, so all of the RCU kthreads get bound
+to CPU 0.
+
+							Thanx, Paul
+
+> 71a9b26963f8c2d  5057f55e543b7859cfd26bc28  time.involuntary_context_switches
+> ---------------  -------------------------  ------------------------------------
+>    1209498 ± 1%      -6.5%    1131376 ± 1%  lkp-a04/netperf/900s-200%-TCP_STREAM
+>      31677 ± 0%     +42.5%      45147 ± 1%  lkp-a05/iperf/300s-tcp
+>     116081 ± 0%     +12.5%     130610 ± 1%  lkp-a06/qperf/600s
+>        546 ±24%   +2329.3%      13280 ± 8%  lkp-sb03/nepim/300s-100%-tcp
+>        863 ±45%   +1260.1%      11737 ±12%  lkp-sb03/nepim/300s-100%-tcp6
+>        343 ±18%  +12507.6%      43294 ± 2%  lkp-sb03/nepim/300s-100%-udp6
+>        633 ±23%   +1292.7%       8816 ±15%  lkp-sb03/nepim/300s-25%-tcp
+>        417 ± 5%   +1714.5%       7572 ±11%  lkp-sb03/nepim/300s-25%-tcp6
+>        364 ±20%   +9569.9%      35198 ± 7%  lkp-sb03/nepim/300s-25%-udp
+>        312 ± 0%  +12223.0%      38521 ± 1%  lkp-sb03/nepim/300s-25%-udp6
+>        308 ± 0%   +6197.7%      19418 ± 0%  lkp-sb03/nuttcp/300s
+>        418 ± 4%   +4948.2%      21101 ± 1%  lkp-sb03/thrulay/300s
+>  1.062e+09 ± 0%      -2.9%  1.031e+09 ± 0%  lkp-snb01/hackbench/50%-threads-pipe
+>      18870 ± 0%    +265.8%      69025 ± 0%  lkp-snb01/will-it-scale/open2
+>      20813 ± 0%     +95.2%      40618 ± 0%  xps/ftrace_onoff/5m
 > 
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 3c19bd3..8df7ba8 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
->  /**
->   * virtio_device - representation of a device using virtio
->   * @index: unique position on the virtio bus
-> + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
->   * @dev: underlying device.
->   * @id: the device type identification (used to match it with a driver).
->   * @config: the configuration ops for this device.
-
-The only minor gripe I have is with the naming of this field: To a
-cursory reader, it might indicate the current 'failed' status of the
-device. What about 'saved_failed'?
-
-Otherwise, moving this into common virtio code makes sense.
-
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> iperf tcp:
+> 
+>                                  iperf.tcp.sender.bps
+> 
+>   2.2e+10 ++-----*-*---------*-*--------------------------------------------+
+>           |     +   +       +                    .*.              .*        |
+>   2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
+>           *.*.        *.*.                   *.            .*        *    *.*
+>           |                                            *.*.                 |
+>     2e+10 ++                                                                |
+>           |                                                                 |
+>   1.9e+10 ++                                                                |
+>           |                                                                 |
+>   1.8e+10 ++                      O                                         |
+>           |                    O      O      O                              |
+>           O    O   O    O           O    O        O                         |
+>   1.7e+10 ++O              O O                  O                           |
+>           |      O    O                    O                                |
+>   1.6e+10 ++----------------------------------------------------------------+
+> 
+>         [*] bisect-good sample
+>         [O] bisect-bad  sample
+> 
+> 
+>                                 iperf.tcp.receiver.bps
+> 
+>   2.2e+10 ++-----*-*---------*-*--------------------------------------------+
+>           |     +   +       +                    .*.              .*        |
+>   2.1e+10 ++  .*     +    .*      *.*.*..*.*.  .*   *..      .*.*.  + .*..  |
+>           *.*.        *.*.                   *.            .*        *    *.*
+>           |                                            *.*.                 |
+>     2e+10 ++                                                                |
+>           |                                                                 |
+>   1.9e+10 ++                                                                |
+>           |                                                                 |
+>   1.8e+10 ++                      O                                         |
+>           |                    O      O      O                              |
+>           O    O   O    O           O    O        O                         |
+>   1.7e+10 ++O              O O                  O                           |
+>           |      O    O                    O                                |
+>   1.6e+10 ++----------------------------------------------------------------+
+> 
+> 
+>                           time.involuntary_context_switches
+> 
+>   10000 ++----------------------------------O-------------------------------+
+>    9000 ++                                                                  |
+>         |         O    O   O    O    O    O    O O                          |
+>    8000 O+O  O                O    O    O                                   |
+>    7000 ++     O    O    O                                                  |
+>         |                                                                   |
+>    6000 ++                                                                  |
+>    5000 ++                                                                  |
+>    4000 ++                                                                  |
+>         |                                                                   |
+>    3000 ++                                                                  |
+>    2000 ++*..*        .*.*                                                  *
+>         *     +  .*.*.    +  .*.*..*.*.. .*.*..*.*..    .*.*.*.. .*..      +|
+>    1000 ++     *.          *.           *           *.*.        *    *.*..* |
+>       0 ++------------------------------------------------------------------+
+> 
+> 
+> qperf:
+>                           time.involuntary_context_switches
+> 
+>   25000 ++------------------------------------------------------------------+
+>         |                                                                   |
+>         |                        O    O OO OO O OO                          |
+>   20000 O+O  OO    O O  O  O OO O                   O  O O  O OO O O  OO OO |
+>         |  O     O    O  O                                                  O
+>         |                                                                   |
+>   15000 ++                         OO              O  O             O       |
+>         |       O                                          O                |
+>   10000 ++                                                                  |
+>         |                                                                   |
+>         |                                                                   |
+>    5000 ++                                                                  |
+>         |.**.* .**.*.* .* .*. *.* .* .*.         *.**.**                    |
+>         *     *       *  *   *   *  *   **.**.*.*                           |
+>       0 ++------------------------------------------------------------------+
+> 
+> 
+>                                    qperf.udp.send_bw
+> 
+>   2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
+>           |    *  **  *    **      **.*     **  *.*  *.**                   |
+>     2e+09 ++                                                                |
+>   1.8e+09 ++                                                                |
+>           |                                 O                       O    O  O
+>   1.6e+09 ++                          O   O  O OO OO O OO OO  O  O     O  O |
+>           |                            O O                   O  O  O  O     |
+>   1.4e+09 ++                                                                |
+>           |                                                                 |
+>   1.2e+09 ++                                                                |
+>     1e+09 ++                                                                |
+>           | O                                                               |
+>     8e+08 O+       O    O  O  O    O                                        |
+>           |  O OO O  OO  O  O  O O  O                                       |
+>     6e+08 ++----------------------------------------------------------------+
+> 
+> 
+>                                    qperf.udp.recv_bw
+> 
+>   2.2e+09 *+**--*----*--**----**-*-----*-**----*---*------------------------+
+>           |    *  **  *    **      **.*     **  *.*  *.**                   |
+>     2e+09 ++                                                                |
+>   1.8e+09 ++                                                                |
+>           |                                                         O    O  O
+>   1.6e+09 ++                          O   O OO OO OO O OO OO  O  O     O  O |
+>           |                            O O                   O  O  O  O     |
+>   1.4e+09 ++                                                                |
+>           |                                                                 |
+>   1.2e+09 ++                                                                |
+>     1e+09 ++                                                                |
+>           | O                                                               |
+>     8e+08 O+       O    O  O  O    O                                        |
+>           |  O OO O  OO  O  O  O O  O                                       |
+>     6e+08 ++----------------------------------------------------------------+
+> 
+> 
+> will-it-scale unlink1:
+> 
+>                            time.voluntary_context_switches
+> 
+>   40000 ++--O---------O-----------------------------------------------------+
+>         |          O                                                        |
+>   35000 O+     O          O          O  O      O       O                    |
+>   30000 ++                   O   O                        O   O      O  O   |
+>         |                                   O      O             O          O
+>   25000 ++                                                                  |
+>         |                                                                   |
+>   20000 ++                                                                  |
+>         |                                                                   |
+>   15000 ++                                                                  |
+>   10000 ++                                           ..*..*..               |
+>         |            .*...*..*...             .*...*.        .     ..*..*...|
+>    5000 *+..*..*...*.            *...*..*...*.                *..*.         *
+>         |                                                                   |
+>       0 ++------------------------------------------------------------------+
+> 
+> 
+>                           time.involuntary_context_switches
+> 
+>   60000 ++------------------------------------------------------------------+
+>         |                                      O          O   O      O      |
+>   50000 O+  O  O   O  O   O  O   O   O  O   O      O   O         O      O   O
+>         |                                                                   |
+>         |                                                                   |
+>   40000 ++                                                                  |
+>         |                                                                   |
+>   30000 ++                                                                  |
+>         |                                                                   |
+>   20000 ++                                                                  |
+>         |                                                                   |
+>         |                                              *..                  |
+>   10000 ++                                           ..   *..               |
+>         |                                           .        .              |
+>       0 *+--*--*---*--*---*--*---*---*--*---*--*---*----------*--*---*--*---*
+> 
+> Thanks,
+> Fengguang
+> 
 
