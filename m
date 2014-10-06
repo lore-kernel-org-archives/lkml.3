@@ -1,126 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaJFPHp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:07:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42707 "EHLO mx1.redhat.com"
+	id S1753233AbaJFPHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:07:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39860 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753107AbaJFPHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:07:39 -0400
-Date: Mon, 6 Oct 2014 18:11:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH v2 07/15] virtio_net: drop config_enable
-Message-ID: <1412608214-31944-8-git-send-email-mst@redhat.com>
-References: <1412608214-31944-1-git-send-email-mst@redhat.com>
+	id S1753107AbaJFPHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:07:46 -0400
+Date: Mon, 6 Oct 2014 12:07:41 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141006150741.GB14113@kernel.org>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412608214-31944-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that virtio core ensures config changes don't arrive during probing,
-drop config_enable flag in virtio net.
-On removal, flush is now sufficient to guarantee that no change work is
-queued.
+Em Tue, Sep 30, 2014 at 11:06:21AM +0200, Jean Pihet escreveu:
+> The RAS Deamon (rasd) as available at [1] and the development version
+> at [2], allows to enable kernel tracepoints and outputs the
+> tracepoints fields according to the kernel format.
+> 
+> [1] https://git.kernel.org/cgit/utils/ras/rasd.git/
+> [2] https://git.linaro.org/people/jean.pihet/rasd.git
+> 
+> rasd currently is a duplicate of the perf tool code, ultimately perf
+> and rasd will use the same common code. The goal is to factor out the
+> common code from perf and place it in small librairies in tools/lib.
+> 
+> Here is the code that rasd currently uses and that should be moved to tools/lib:
+> 
+> - debugfs: already in tools/lib/api/fs
+>   . mount and retrieve path
+> 
+> - evlist: tools/perf/util/evlist.[ch]
+>   . create and init new evlist,
+>   . set cpu and thread maps,
+>   . add events to evlist,
+>   . init and use internal event id,
+>   . alloc and mmap events buffers, manage file descriptors,
+>   . enable events,
+>   . read events buffers, parse data,
+>   . unmap and free buffers
+> 
+> - evsel: tools/perf/util/evsel.[ch]
+>   . create and init new tracepoints events,
+>   . init and use internal event id,
+>   . open events, manage fds,
+>   . close and free events
 
-This help simplify the driver, and will allow setting DRIVER_OK earlier
-without losing config change notifications.
+So, why have you commented out the perf_missing_features fallbacks? Are
+they getting in the way somehow, what can we do upstream, i.e. in
+tools/perf/util/ so that it gets closer to what you want to have?
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/virtio_net.c | 27 ++++-----------------------
- 1 file changed, 4 insertions(+), 23 deletions(-)
+Ditto for all the other ifdef'ed code, can you elaborate on why each is
+needed? That will help in moving what is used by rasd from
+tools/perf/util/ to tools/perf/lib/ so that we can eliminate the
+duplicity.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 59caa06..743fb04 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -123,9 +123,6 @@ struct virtnet_info {
- 	/* Host can handle any s/g split between our header and packet data */
- 	bool any_header_sg;
- 
--	/* enable config space updates */
--	bool config_enable;
--
- 	/* Active statistics */
- 	struct virtnet_stats __percpu *stats;
- 
-@@ -1408,9 +1405,6 @@ static void virtnet_config_changed_work(struct work_struct *work)
- 	u16 v;
- 
- 	mutex_lock(&vi->config_lock);
--	if (!vi->config_enable)
--		goto done;
--
- 	if (virtio_cread_feature(vi->vdev, VIRTIO_NET_F_STATUS,
- 				 struct virtio_net_config, status, &v) < 0)
- 		goto done;
-@@ -1758,7 +1752,6 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	}
- 
- 	mutex_init(&vi->config_lock);
--	vi->config_enable = true;
- 	INIT_WORK(&vi->config_work, virtnet_config_changed_work);
- 
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
-@@ -1875,17 +1868,13 @@ static void virtnet_remove(struct virtio_device *vdev)
- 
- 	unregister_hotcpu_notifier(&vi->nb);
- 
--	/* Prevent config work handler from accessing the device. */
--	mutex_lock(&vi->config_lock);
--	vi->config_enable = false;
--	mutex_unlock(&vi->config_lock);
-+	/* Make sure no work handler is accessing the device. */
-+	flush_work(&vi->config_work);
- 
- 	unregister_netdev(vi->dev);
- 
- 	remove_vq_common(vi);
- 
--	flush_work(&vi->config_work);
--
- 	free_percpu(vi->stats);
- 	free_netdev(vi->dev);
- }
-@@ -1898,10 +1887,8 @@ static int virtnet_freeze(struct virtio_device *vdev)
- 
- 	unregister_hotcpu_notifier(&vi->nb);
- 
--	/* Prevent config work handler from accessing the device */
--	mutex_lock(&vi->config_lock);
--	vi->config_enable = false;
--	mutex_unlock(&vi->config_lock);
-+	/* Make sure no work handler is accessing the device */
-+	flush_work(&vi->config_work);
- 
- 	netif_device_detach(vi->dev);
- 	cancel_delayed_work_sync(&vi->refill);
-@@ -1916,8 +1903,6 @@ static int virtnet_freeze(struct virtio_device *vdev)
- 
- 	remove_vq_common(vi);
- 
--	flush_work(&vi->config_work);
--
- 	return 0;
- }
- 
-@@ -1941,10 +1926,6 @@ static int virtnet_restore(struct virtio_device *vdev)
- 
- 	netif_device_attach(vi->dev);
- 
--	mutex_lock(&vi->config_lock);
--	vi->config_enable = true;
--	mutex_unlock(&vi->config_lock);
--
- 	rtnl_lock();
- 	virtnet_set_queues(vi, vi->curr_queue_pairs);
- 	rtnl_unlock();
--- 
-MST
-
+- Arnaldo
