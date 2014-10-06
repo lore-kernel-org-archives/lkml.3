@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaJFQWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 12:22:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41858 "EHLO arroyo.ext.ti.com"
+	id S1752875AbaJFQYh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 12:24:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57451 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751289AbaJFQWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 12:22:01 -0400
-Date: Mon, 6 Oct 2014 11:21:51 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Masanari Iida <standby24x7@gmail.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP2: Remove unnecessary KERN_* in
- omap_phy_internal.c
-Message-ID: <20141006162151.GA21908@kahuna>
-References: <1412612181-23774-1-git-send-email-standby24x7@gmail.com>
+	id S1751343AbaJFQYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 12:24:35 -0400
+Date: Mon, 6 Oct 2014 18:21:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [rfcomm_run] WARNING: CPU: 1 PID: 79 at
+	kernel/sched/core.c:7156 __might_sleep()
+Message-ID: <20141006162109.GA29890@redhat.com>
+References: <20141002110927.GE2849@worktop.programming.kicks-ass.net> <20141002123150.GC6324@worktop.programming.kicks-ass.net> <20141002124247.GD6324@worktop.programming.kicks-ass.net> <20141002201020.GA8907@redhat.com> <20141003115020.GG10583@worktop.programming.kicks-ass.net> <20141003175654.GA14952@redhat.com> <20141003193029.GA24399@redhat.com> <20141004084241.GT10583@worktop.programming.kicks-ass.net> <20141006002509.GA23955@redhat.com> <20141006091915.GC6758@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412612181-23774-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141006091915.GC6758@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01:16-20141007, Masanari Iida wrote:
-> This patch remove unnecessary KERN_INFO and KERN_ERR from omap_phy_internal.c.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  arch/arm/mach-omap2/omap_phy_internal.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
-> index 50640b3..f4d942a 100644
-> --- a/arch/arm/mach-omap2/omap_phy_internal.c
-> +++ b/arch/arm/mach-omap2/omap_phy_internal.c
+On 10/06, Peter Zijlstra wrote:
+>
+> On Mon, Oct 06, 2014 at 02:25:09AM +0200, Oleg Nesterov wrote:
+> >
+> > Hmm. I specially checked Documentation/memory-barriers.txt,
+> >
+> >  (*) smp_mb__before_atomic();
+> >  (*) smp_mb__after_atomic();
+> >
+> >      These are for use with atomic (such as add, subtract, increment and
+> >      decrement) functions that don't return a value, especially when used for
+> >      reference counting.  These functions do not imply memory barriers.
+> >
+> >      These are also used for atomic bitop functions that do not return a
+> >      value (such as set_bit and clear_bit).
+> >                     ^^^^^^^^^^^^^^^^^^^^^
+> >
+> > Either you or memory-barriers.txt should be fixed ;)
 
-With the cleanups, maybe add a
-#define pr_fmt(fmt) "%s: " fmt, __func__
-at the start to make the log info a little more relevant?
+Heh.
 
-> @@ -97,13 +97,13 @@ void am35x_musb_phy_power(u8 on)
->  
->  		omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
->  
-> -		pr_info(KERN_INFO "Waiting for PHY clock good...\n");
-> +		pr_info("Waiting for PHY clock good...\n");
->  		while (!(omap_ctrl_readl(AM35XX_CONTROL_DEVCONF2)
->  				& CONF2_PHYCLKGD)) {
->  			cpu_relax();
->  
->  			if (time_after(jiffies, timeout)) {
-> -				pr_err(KERN_ERR "musb PHY clock good timed out\n");
-> +				pr_err("musb PHY clock good timed out\n");
->  				break;
->  			}
->  		}
-> @@ -145,7 +145,7 @@ void am35x_set_mode(u8 musb_mode)
->  		devconf2 |= CONF2_NO_OVERRIDE;
->  		break;
->  	default:
-> -		pr_info(KERN_INFO "Unsupported mode %u\n", musb_mode);
-> +		pr_info("Unsupported mode %u\n", musb_mode);
->  	}
->  
->  	omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
-> -- 
-> 2.1.1.273.g97b8860
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Its in there, just not explicitly. All those functions listed are
+> read-modify-write ops, test_bit() is not, its just a read.
 
--- 
-Regards,
-Nishanth Menon
+OOPS! I was hypnotized by "_bit" suffix, I guess.
+
+Of course, of course, test_bit() must be a plain LOAD in any case, can't
+understand what I was thinking about.
+
+So in this particular case kthread_kill() needs smp_mb__AFTER_atomic(),
+and "after" applies to set_bit(KTHREAD_SHOULD_STOP).
+
+> --- a/Documentation/memory-barriers.txt
+> +++ b/Documentation/memory-barriers.txt
+> @@ -1594,12 +1594,9 @@ CPU from reordering them.
+>   (*) smp_mb__before_atomic();
+>   (*) smp_mb__after_atomic();
+>
+> -     These are for use with atomic (such as add, subtract, increment and
+> -     decrement) functions that don't return a value, especially when used for
+> -     reference counting.  These functions do not imply memory barriers.
+> -
+> -     These are also used for atomic bitop functions that do not return a
+> -     value (such as set_bit and clear_bit).
+> +     These are for use with atomic/bitop (r-m-w) functions that don't return
+> +     a value (eg. atomic_{add,sub,inc,dec}(), {set,clear}_bit()). These
+> +     functions do not imply memory barriers.
+
+Thanks!
+
+Oleg.
+
