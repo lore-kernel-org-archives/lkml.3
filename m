@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073AbaJFIHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 04:07:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41673 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585AbaJFIHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752180AbaJFIHL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 04:07:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53021 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624AbaJFIHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 6 Oct 2014 04:07:01 -0400
-Date: Mon, 6 Oct 2014 10:06:59 +0200
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Thanos Makatos <thanos.makatos@citrix.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        jlayton@poochiereds.net, bfields@fieldses.org, jack@suse.cz
-Subject: Re: [PATCH RFC] introduce ioctl to completely invalidate page cache
-Message-ID: <20141006080659.GA7526@quack.suse.cz>
-References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
- <542DAEAC.8010203@kernel.dk>
+Date: Mon, 6 Oct 2014 10:06:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Lameter <cl@linux.com>
+cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Why do we still have 32 bit counters? Interrupt counters overflow
+ within 50 days
+In-Reply-To: <alpine.DEB.2.11.1410051824190.3424@gentwo.org>
+Message-ID: <alpine.DEB.2.11.1410060959510.4383@nanos>
+References: <alpine.DEB.2.11.1410030435260.8324@gentwo.org> <alpine.DEB.2.11.1410031231420.4383@nanos> <alpine.DEB.2.11.1410030653040.8496@gentwo.org> <20141003120345.GA6652@localhost.localdomain> <alpine.DEB.2.11.1410030706220.8990@gentwo.org>
+ <alpine.DEB.2.11.1410052331420.4383@nanos> <alpine.DEB.2.11.1410051824190.3424@gentwo.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <542DAEAC.8010203@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 02-10-14 13:59:40, Jens Axboe wrote:
-> On 10/02/2014 10:09 AM, Thanos Makatos wrote:
-> > This patch introduces a new ioctl called BLKFLUSHBUFS2, which is pretty
-> > similar to BLKFLUSHBUFS except that is also invalidates the page cache.
-> > This allows for a complete invalidation of the cached data of a
-> > particular block device, which might be useful for cases like
-> > synchronising the caches of an iSCSI block device used by multiple
-> > hosts.
-> > 
-> > Signed-off-by: Thanos Makatos <thanos.makatos@citrix.com>
-> > ---
-> >  block/compat_ioctl.c    |    1 +
-> >  block/ioctl.c           |   13 +++++++++++--
-> >  include/uapi/linux/fs.h |    1 +
-> >  3 files changed, 13 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
-> > index 18b282c..672388ab 100644
-> > --- a/block/compat_ioctl.c
-> > +++ b/block/compat_ioctl.c
-> > @@ -688,6 +688,7 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
-> >  	case BLKDISCARDZEROES:
-> >  		return compat_put_uint(arg, bdev_discard_zeroes_data(bdev));
-> >  	case BLKFLSBUF:
-> > +	case BLKFLSBUF2:
-> >  	case BLKROSET:
-> >  	case BLKDISCARD:
-> >  	case BLKSECDISCARD:
-> > diff --git a/block/ioctl.c b/block/ioctl.c
-> > index d6cda81..0c427a7 100644
-> > --- a/block/ioctl.c
-> > +++ b/block/ioctl.c
-> > @@ -268,6 +268,12 @@ static inline int is_unrecognized_ioctl(int ret)
-> >  		ret == -ENOIOCTLCMD;
-> >  }
-> >  
-> > +static void flush_buffer_cache(struct block_device *bdev)
-> > +{
-> > +	fsync_bdev(bdev);
-> > +	invalidate_bdev(bdev);
-> > +}
-> > +
-> >  /*
-> >   * always keep this in sync with compat_blkdev_ioctl()
-> >   */
-> > @@ -282,6 +288,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-> >  
-> >  	switch(cmd) {
-> >  	case BLKFLSBUF:
-> > +	case BLKFLSBUF2:
-> >  		if (!capable(CAP_SYS_ADMIN))
-> >  			return -EACCES;
-> >  
-> > @@ -289,8 +296,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
-> >  		if (!is_unrecognized_ioctl(ret))
-> >  			return ret;
-> >  
-> > -		fsync_bdev(bdev);
-> > -		invalidate_bdev(bdev);
-> > +		flush_buffer_cache(bdev);
-> > +		if (BLKFLSBUF2 == cmd)
-> > +			return invalidate_inode_pages2(
-> > +					bdev->bd_inode->i_mapping);
-> >  		return 0;
-> 
-> We're currently ignoring the buffer cache sync and invalidation (which
-> is odd), but at least being consistent would be good.
-  Well, invalidate_bdev() doesn't return anything. And
-invalidate_mapping_pages() inside invalidate_bdev() returns only number of
-invalidated pages. I don't think there's any value in returning that.
+On Sun, 5 Oct 2014, Christoph Lameter wrote:
+> -DEFINE_PER_CPU(unsigned int, irq_count) __visible = -1;
+> +DEFINE_PER_CPU(u64, irq_count) __visible = -1;
 
-OTOH invalidate_inode_pages2() returns 0 / -EBUSY / other error when
-invalidation of some page fails so returning that seems useful.
+What's the point of this? irq_count is solely used to figure out
+whether interrupts are nested, i.e. whether we need to switch the
+stack on x86_64 or not. See the usage sites in arch/x86/kernel/entry_64.S
+ 
+> @@ -51,7 +51,7 @@ struct irq_desc {
+>  	unsigned int		core_internal_state__do_not_mess_with_it;
+>  	unsigned int		depth;		/* nested irq disables */
+>  	unsigned int		wake_depth;	/* nested wake enables */
+> -	unsigned int		irq_count;	/* For detecting broken IRQs */
+> +	u64			irq_count;	/* For detecting broken IRQs */
 
-> Might also need a filemap_write_and_wait() to sync before invalidation.
-  That's what fsync_bdev() is doing under the hoods. Sometimes I'm not
-sure whether all these wrappers are useful...
+This is pointless as this count is solely used for the spurious
+detector and reset to 0 when irq_count reaches 100000. See
+note_interrupt().
 
-Trond also had a comment that if we extended the ioctl to work for all
-inodes (not just blkdev) and allowed some additional flags of what needs to
-be invalidated, the new ioctl would be also useful to NFS userspace - see
-Trond's email at
+> -extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
+> +extern u64 kstat_irqs_cpu(unsigned int irq, int cpu);
 
-http://www.spinics.net/lists/linux-fsdevel/msg78917.html
+Care to fixup the other call sites of this as well? git grep is your friend.
 
-and the following thread. I would prefer to cover that usecase when we are
-introducing new invalidation ioctl. Have you considered that Thanos?
+Thanks,
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+	tglx
