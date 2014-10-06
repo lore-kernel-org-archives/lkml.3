@@ -1,36 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaJFEza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 00:55:30 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39818 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaJFEzZ (ORCPT
+	id S1752393AbaJFE7l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 00:59:41 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:49491 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027AbaJFE7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 00:55:25 -0400
+	Mon, 6 Oct 2014 00:59:37 -0400
+Message-ID: <543221B0.3020008@linaro.org>
+Date: Mon, 06 Oct 2014 13:59:28 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <54321F90.2010103@nvidia.com>
-References: <1412232900-11238-1-git-send-email-vinceh@nvidia.com>
-	<CAKohpon=dwc--SSbwjREdrALfXH=7QCw8UJnyVX5x3TCKB=7Bw@mail.gmail.com>
-	<54321F90.2010103@nvidia.com>
-Date: Mon, 6 Oct 2014 10:25:24 +0530
-Message-ID: <CAKohpo=LFLRimA=_PH_OK4XddpphciaZdDEc2dirJifKnL=4Tw@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: respect the min/max settings from user space
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Vince Hsu <vinceh@nvidia.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bill Huang <bilhuang@nvidia.com>, dgreid@google.com,
-        olofj@chromium.org
-Content-Type: text/plain; charset=UTF-8
+To: Will Deacon <will.deacon@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2] arm64: kgdb: fix single stepping
+References: <1411732453-5437-1-git-send-email-takahiro.akashi@linaro.org> <20141003160306.GC32451@arm.com>
+In-Reply-To: <20141003160306.GC32451@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 October 2014 10:20, Vince Hsu <vinceh@nvidia.com> wrote:
-> I did test with Chrome kernel on Tegra platform. I can't do that with
-> mainline kernel because we haven't had the CPU EDP driver upstream yet.
+On 10/04/2014 01:03 AM, Will Deacon wrote:
+> Hi Akashi,
+>
+> On Fri, Sep 26, 2014 at 12:54:13PM +0100, AKASHI Takahiro wrote:
+>> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
+>> the single stepping with kgdb doesn't work correctly since its first
+>> appearance at v3.15.
+>>
+>> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
+>> steps forward to the next instruction, but the succeeding 'stepi' never
+>> goes beyond that.
+>> On v3.16, 'stepi' moves forward and stops at the next instruction just
+>> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
+>> behavior seems to come in with the following patch in v3.16:
+>>
+>>      commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
+>>      paths where possible")
+>>
+>> This patch
+>> (1) moves kgdb_disable_single_step() from 'c' command handling to single
+>>      step handler.
+>>      This makes sure that single stepping gets effective at every 's' command.
+>>      Please note that, under the current implementation, single step bit in
+>>      spsr, which is cleared by the first single stepping, will not be set
+>>      again for the consecutive 's' commands because single step bit in mdscr
+>>      is still kept on (that is, kernel_active_single_step() in
+>>      kgdb_arch_handle_exception() is true).
+>> (2) removes 'enable_dbg' in el1_dbg.
+>>      Single step bit in mdscr is turned on in do_handle_exception()->
+>>      kgdb_handle_expection() before returning to debugged context, and if
+>>      debug exception is enabled in el1_dbg, we will see unexpected single-
+>>      stepping in el1_dbg.
+>> (3) masks interrupts while single-stepping one instruction.
+>>      If an interrupt is caught during processing a single-stepping, debug
+>>      exception is unintentionally enabled by el1_irq's 'enable_dbg' before
+>>      returning to debugged context.
+>>      Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+>>
+>> Basically (1) is for v3.15, (2) and (3) with (1) for v3.16.
+>>
+>> With those changes, we will see another problem if a breakpoint is set
+>> at interrupt-sensible places, like gic_handle_irq():
+>
+> So it seems to me like kgdb is a complete mess in this area. The low-level
+> debug exception code for arm64 will single-step *into* interrupt handlers. I
+> believe that this is the correct behaviour, as otherwise we're artifically
+> restricting what you can and can't debug (for example, leaving debug
+> exceptions masked on the interrupt path means that you can't put breakpoints
+> in interrupt handlers).
 
-You should have mentioned this clearly :)
+I agree that we should be able to debug even in an interrupt context.
 
-Looks fine to me then.
+>>      KGDB: re-enter error: breakpoint removed ffffffc000081258
+>>      ------------[ cut here ]------------
+>>      WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
+>> 					kgdb_handle_exception+0x1dc/0x1f4()
+>>      Modules linked in:
+>>      CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
+>>      Call trace:
+>>      [<ffffffc000087fac>] dump_backtrace+0x0/0x130
+>>      [<ffffffc0000880ec>] show_stack+0x10/0x1c
+>>      [<ffffffc0004d683c>] dump_stack+0x74/0xb8
+>>      [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
+>>      [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
+>>      [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
+>>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>      Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
+>>      ...
+>>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>      [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
+>>      [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
+>>      [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>      [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>      [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>      Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
+>>      ...
+>>      [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>      [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
+>>      [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
+>>      [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
+>>      [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
+>>      [<ffffffc0001939b0>] SyS_write+0x40/0xa0
+>>
+>> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
+>> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
+>> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
+>> use smp_call_function().
+>> This eventually allows another interrupt to occur and likely results in
+>> hitting a breakpoint at gic_handle_irq() again since debug exception is
+>> always enabled in el1_irq.
+>>
+>> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
+>> but this will also leave other cpus be in unknown state in terms of kgdb,
+>> and may result in interfering with kgdb activity.
+>
+> Yuck. This really sounds like kgdb is broken in its SMP synchronisation
+> for arm64. On x86, they use a NMI and powerpc uses an IPI which can run
+> with irqs disabled. Since we don't have an NMI, how about we do the
+> following to avoid the panic?
+>
+>    (1) Change our kgdb_roundup_cpus to use smp_call_function_single_async,
+>        which will avoid the need to enable interrupts
+
+It seems that we will have to implement, some sort of, async-version of
+smp_call_function() here.
+
+>    (2) Introduce a timeout into the waiting loop in kgdb_cpu_enter, where
+>        we spin on &slaves_in_kgdb and warn if the timeout expires.
+
+Before trying this, I need understand more about smp_call_function(), especially
+why we can't call it with interrupts disabled.
+
+-Takahiro AKASHI
+
+> Will
+>
