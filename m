@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaJFCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 5 Oct 2014 22:09:58 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:39857 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809AbaJFCJ4 (ORCPT
+	id S1752252AbaJFCgp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 5 Oct 2014 22:36:45 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:46201 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaJFCgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 5 Oct 2014 22:09:56 -0400
-Date: Sun, 5 Oct 2014 19:09:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jason Noakes <jjnoakes@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kobject_init and the zeroed-out-memory requirement
-Message-ID: <20141006020950.GA29722@roeck-us.net>
-References: <CAN2+FEJY29jDF2PkGAYcG_0z=VQ4T+y7Ro56aeqrhSPYQ6ZEdw@mail.gmail.com>
- <20141005202843.GA1282@kroah.com>
- <CAN2+FEKsVyjV8v98R+V-xHseH1E2NKPquo6Z9nQc0M8d0Z620A@mail.gmail.com>
- <20141005215100.GA20426@kroah.com>
- <20141005232457.GA22525@kroah.com>
+	Sun, 5 Oct 2014 22:36:40 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s962aVPj019276, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next v2] r8152: nway reset after setting eee
+Date: Mon, 6 Oct 2014 10:36:04 +0800
+Message-ID: <1394712342-15778-57-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <1394712342-15778-54-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-54-Taiwan-albertk@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141005232457.GA22525@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 04:24:57PM -0700, Greg KH wrote:
-> On Sun, Oct 05, 2014 at 06:13:05PM -0400, Jason Noakes wrote:
-> > > No driver should be working with "raw" kobjects.
-> > 
-> > I don't agree, but it's irrelevant.
-> 
-> Not at all.  I'd wager that if a driver is messing around with a "raw"
-> kobject, it is doing something seriously wrong.  Of course there are
-> exceptions, but those are very rare, and exceptions.  A driver should be
-> using the driver core, and the functions and objects provided there, and
-> provided by the bus it lives on.
-> 
-> So, have a pointer to some driver code that is calling
-> kobject_initialize()?  I'd love to see it.
-> 
+Restart autonegotiation is necessary after setting EEE.
 
-Lots to choose from. In drivers/:
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-$ git grep kobject_init | wc
-     65     289    4880
-$ git grep kobject_init | grep -v base | wc
-     62     277    4694
-$ git grep kobject_init_and_add | grep -v base | wc
-     47     232    3698
-$ git grep kobject_add | grep -v base | wc
-     20     111    1486
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index b9a9815..6532620 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -3471,6 +3471,8 @@ rtl_ethtool_set_eee(struct net_device *net, struct ethtool_eee *edata)
+ 		goto out;
+ 
+ 	ret = tp->rtl_ops.eee_set(tp, edata);
++	if (!ret)
++		ret = mii_nway_restart(&tp->mii);
+ 
+ 	usb_autopm_put_interface(tp->intf);
+ 
+-- 
+1.9.3
 
-Guenter
