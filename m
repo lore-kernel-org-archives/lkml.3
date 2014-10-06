@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752567AbaJFFJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 01:09:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59658 "EHLO mx1.redhat.com"
+	id S1752617AbaJFFJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 01:09:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52459 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752510AbaJFFJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 01:09:26 -0400
+	id S1752568AbaJFFJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 01:09:28 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
         aviro@redhat.com, pmoore@redhat.com, arozansk@redhat.com,
         ebiederm@xmission.com, serge@hallyn.com
-Subject: [PATCH V5 09/13] fork: audit on creation of new namespace(s)
-Date: Mon,  6 Oct 2014 01:08:34 -0400
-Message-Id: <b9607ab778a84381b4a82cf0110d031f19b17525.1412543112.git.rgb@redhat.com>
+Subject: [PATCH V5 10/13] audit: log on switching namespace (setns)
+Date: Mon,  6 Oct 2014 01:08:35 -0400
+Message-Id: <5df56a7fa372cf86ca7d5f3807178710097b4c27.1412543112.git.rgb@redhat.com>
 In-Reply-To: <cover.1412543112.git.rgb@redhat.com>
 References: <cover.1412543112.git.rgb@redhat.com>
 In-Reply-To: <cover.1412543112.git.rgb@redhat.com>
@@ -23,41 +23,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When clone(2) is called to fork a new process creating one or more namespaces,
-audit the event to tie the new pid with the namespace IDs.
+Added six new audit message types, AUDIT_NS_SET_* and function
+audit_log_ns_set() to log a switch of namespace.
 
-Signed-off-by: Richard Guy Briggs
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- kernel/fork.c    |    3 +++
- kernel/nsproxy.c |    1 +
- 2 files changed, 4 insertions(+), 0 deletions(-)
+ include/linux/audit.h      |    4 +++
+ include/uapi/linux/audit.h |    6 +++++
+ kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/nsproxy.c           |    3 ++
+ 4 files changed, 59 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 6a13c46..a7fe4d5 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1624,6 +1624,9 @@ long do_fork(unsigned long clone_flags,
- 			get_task_struct(p);
- 		}
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 1474334..9de9b25 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -26,6 +26,7 @@
+ #include <linux/sched.h>
+ #include <linux/ptrace.h>
+ #include <uapi/linux/audit.h>
++#include <linux/proc_ns.h>
  
-+		if (unlikely(clone_flags & CLONE_NEW_MASK)) {
-+			audit_log_ns_info(p);
-+		}
- 		wake_up_new_task(p);
+ struct audit_sig_info {
+ 	uid_t		uid;
+@@ -484,6 +485,7 @@ static inline void	    audit_log_ns_info(struct task_struct *tsk)
+ extern int		    audit_log_ns_init(int type, long long old_snum,
+ 					      long long snum);
+ extern int		    audit_log_ns_del(int type, long long snum);
++extern void		    audit_log_ns_set(const struct proc_ns_operations *ops, void *ns);
  
- 		/* forking complete and child started to run, tell ptracer */
+ extern int		    audit_update_lsm_rules(void);
+ 
+@@ -547,6 +549,8 @@ static inline int audit_log_ns_init(int type, long long old_snum,
+ { }
+ static inline int audit_log_ns_del(int type, long long snum)
+ { }
++static inline void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
++{ }
+ #define audit_enabled 0
+ #endif /* CONFIG_AUDIT */
+ static inline void audit_log_string(struct audit_buffer *ab, const char *buf)
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 1acfea7..7ec7209 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -123,6 +123,12 @@
+ #define AUDIT_NS_DEL_USER	1339	/* Record USER namespace instance deletion */
+ #define AUDIT_NS_DEL_PID	1340	/* Record PID namespace instance deletion */
+ #define AUDIT_NS_DEL_NET	1341	/* Record NET namespace instance deletion */
++#define AUDIT_NS_SET_MNT	1342	/* Record mount namespace instance deletion */
++#define AUDIT_NS_SET_UTS	1343	/* Record UTS namespace instance deletion */
++#define AUDIT_NS_SET_IPC	1344	/* Record IPC namespace instance deletion */
++#define AUDIT_NS_SET_USER	1345	/* Record USER namespace instance deletion */
++#define AUDIT_NS_SET_PID	1346	/* Record PID namespace instance deletion */
++#define AUDIT_NS_SET_NET	1347	/* Record NET namespace instance deletion */
+ 
+ #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+ #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+diff --git a/kernel/audit.c b/kernel/audit.c
+index cc63445..84590d1 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -2021,6 +2021,52 @@ int audit_log_ns_del(int type, long long snum)
+ 	audit_log_end(ab);
+ 	return 0;
+ }
++
++/**
++ * audit_log_ns_set - report a namespace set change
++ * @ops: the ops structure for the namespace to be changed
++ * @ns: the new namespace
++ */
++void audit_log_ns_set(const struct proc_ns_operations *ops, void *ns)
++{
++	struct audit_buffer *ab;
++	void *old_ns;
++	int msg_type;
++
++	switch (ops->type) {
++	case CLONE_NEWNS:
++		msg_type = AUDIT_NS_SET_MNT;
++		break;
++	case CLONE_NEWUTS:
++		msg_type = AUDIT_NS_SET_UTS;
++		break;
++	case CLONE_NEWIPC:
++		msg_type = AUDIT_NS_SET_IPC;
++		break;
++	case CLONE_NEWUSER:
++		msg_type = AUDIT_NS_SET_USER;
++		break;
++	case CLONE_NEWPID:
++		msg_type = AUDIT_NS_SET_PID;
++		break;
++	case CLONE_NEWNET:
++		msg_type = AUDIT_NS_SET_NET;
++		break;
++	default:
++		return;
++	}
++	//ab = audit_log_start(tsk->audit_context, GFP_KERNEL, msg_type);
++	//audit_log_format(ab, " pid=%d", current->pid);
++	audit_log_common_recv_msg(&ab, ops->type);
++	if (!ab)
++		return;
++ 	old_ns = ops->get(current);
++	audit_log_format(ab, " old-%ssn=%llx %ssn=%llx",
++			 ops->name, ops->snum(old_ns),
++			 ops->name, ops->snum(ns));
++	ops->put(old_ns);
++	audit_log_end(ab);
++}
+ #endif /* CONFIG_NAMESPACES */
+ 
+ /**
 diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 0c2f25e..2cdc16b 100644
+index 2cdc16b..e37409a 100644
 --- a/kernel/nsproxy.c
 +++ b/kernel/nsproxy.c
-@@ -25,6 +25,7 @@
- #include <linux/proc_ns.h>
- #include <linux/file.h>
- #include <linux/syscalls.h>
-+#include <linux/audit.h>
- 
- static struct kmem_cache *nsproxy_cachep;
- 
+@@ -275,6 +275,9 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 		goto out;
+ 	}
+ 	switch_task_namespaces(tsk, new_nsproxy);
++
++	audit_log_ns_set(ops, ei->ns);
++
+ out:
+ 	fput(file);
+ 	return err;
 -- 
 1.7.1
 
