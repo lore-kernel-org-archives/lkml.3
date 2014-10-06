@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbaJFRbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 13:31:31 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:57855 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753272AbaJFRb3 convert rfc822-to-8bit (ORCPT
+	id S1753072AbaJFRes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 13:34:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50397 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaJFRer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 13:31:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <1689163249.303621412612771982.JavaMail.weblogic@epmlwas07b>
-References: <1689163249.303621412612771982.JavaMail.weblogic@epmlwas07b>
-Date: Mon, 6 Oct 2014 10:31:28 -0700
-X-Google-Sender-Auth: AtwxGBbXMy5EIhJR9YEOOEITnVA
-Message-ID: <CAMbhsRSiA=yo21EHBZX96sq+EPKkjSHrnMqN-02kzWe8pHjkqA@mail.gmail.com>
-Subject: Re: Re: [PATCH 1/1] [ion]: system-heap use PAGE_ALLOC_COSTLY_ORDER
- for high order
-From: Colin Cross <ccross@android.com>
-To: pintu.k@samsung.com
-Cc: Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "rebecca@android.com" <rebecca@android.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        IQBAL SHAREEF <iqbal.ams@samsung.com>,
-        "pintu_agarwal@yahoo.com" <pintu_agarwal@yahoo.com>,
-        Vishnu Pratap Singh <vishnu.ps@samsung.com>,
-        "cpgs@samsung.com" <cpgs@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 6 Oct 2014 13:34:47 -0400
+Message-ID: <1412616877.32313.55.camel@smoke>
+Subject: Re: [PATCH 1/5] kexec: Fix make headers_check
+From: Geoff Levand <geoff@infradead.org>
+To: Paul Bolle <pebolle@tiscali.nl>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        maximilian attems <max@stro.at>
+Date: Mon, 06 Oct 2014 10:34:37 -0700
+In-Reply-To: <1412604734.4054.72.camel@x220>
+References: <cover.1408731991.git.geoff@infradead.org>
+	 <115373b6ac68ee7a305975896e1c4971e8e51d4c.1408731991.git.geoff@infradead.org>
+	 <20140825172234.GD14379@redhat.com> <1409402838.21896.99.camel@x220>
+	 <1412604734.4054.72.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 9:26 AM, PINTU KUMAR <pintu.k@samsung.com> wrote:
->
-> Hi,
-> >________________________________
-> > From: Laura Abbott <lauraa@codeaurora.org>
-> >To: Heesub Shin <heesub.shin@samsung.com>; Pintu Kumar <pintu.k@samsung.com>; akpm@linux-foundation.org; gregkh@linuxfoundation.org; john.stultz@linaro.org; rebecca@android.com; ccross@android.com; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org
-> >Cc: iqbal.ams@samsung.com; pintu_agarwal@yahoo.com; vishnu.ps@samsung.com
-> >Sent: Monday, 6 October 2014 7:37 PM
-> >Subject: Re: [PATCH 1/1] [ion]: system-heap use PAGE_ALLOC_COSTLY_ORDER for high order
-> >
-> >
-> >On 10/6/2014 3:27 AM, Heesub Shin wrote:
-> >
-> >
-> >
-> >
-> >> Hello Kumar,
-> >>
-> >> On 10/06/2014 05:31 PM, Pintu Kumar wrote:
-> >>> The Android ion_system_heap uses allocation fallback mechanism
-> >>> based on 8,4,0 order pages available in the system.
-> >>> It changes gfp flags based on higher order allocation request.
-> >>> This higher order value is hard-coded as 4, instead of using
-> >>> the system defined higher order value.
-> >>> Thus replacing this hard-coded value with PAGE_ALLOC_COSTLY_ORDER
-> >>> which is defined as 3.
-> >>> This will help mapping the higher order request in system heap with
-> >>> the actual allocation request.
-> >>
-> >> Quite reasonable.
-> >>
-> >> Reviewed-by: Heesub Shin <heesub.shin@samsung.com>
-> >>
-> >> BTW, Anyone knows how the allocation order (8,4 and 0) was decided? I
-> >> think only Google guys might know the answer.
-> >>
-> >> regards,
-> >> heesub
-> >>
-> >
-> >My understanding was this was completely unrelated to the costly order
-> >and was related to the page sizes corresponding to IOMMU page sizes
-> >(1MB, 64K, 4K). This won't make a difference for the uncached page
-> >pool case but for the not page pool case, I'm not sure if there would
-> >be a benefit for trying to get 32K pages with some effort vs. just
-> >going back to 4K pages.
->
-> No, it is not just related to IOMMU case. It comes into picture also for
-> normal system-heap allocation (without iommu cases).
-> Also, it is applicable for both uncached and page_pool cases.
-> Please also check the changes under ion_system_heap_create.
-> Here the gfp_flags are set under the pool structure.
-> This value is used in ion_page_pool_alloc_pages.
-> In both the cases, it internally calls alloc_pages, with this gfp_flags.
-> Now, during memory pressure scenario, when alloc_pages moves to slowpath
-> this gfp_flags will be used to decide allocation retry.
-> In the current code, the higher-order flag is set only when order is greater than 4.
-> But, in MM, the order 4 is also considered as higher-order request.
-> This higher-order is decided based on PAGE_ALLOC_COSTLY_ORDER (3) value.
-> Hence, I think this value should be in sync with the MM code.
-> >
-> >Do you have any data/metrics that show a benefit from this patch?
-> I think it is not related to any data or metrics.
-> It is about replacing the hard-coded higher-order check to be in sync with
-> the MM code.
->
+Hi,
 
-The selection of the orders used for allocation (8, then 4, then 0) is
-designed to match with the sizes often found in IOMMUs, but this isn't
-changing the order of the allocation, it is changing the GFP flags
-used for the order 4 allocation.  Right now we are using the
-low_order_gfp_flags for order 4, this patch would change it to use
-high_order_gfp_flags.  We originally used low_order_gfp_flags here
-because the MM subsystem can usually satisfy these allocations, and
-the additional load placed on the MM subsystem to kick off kswapd to
-free up more order 4 chunks is generally worth it.  Using order 4
-pages instead of order 0 pages can significantly improve the
-performance of many IOMMUs by reducing TLB pressure and time spent
-updating page tables.  Unless you have data showing that this improves
-something, and doesn't just cause all allocations to be order 0 when
-under memory pressure, I don't suggest merging this.
+On Mon, 2014-10-06 at 16:12 +0200, Paul Bolle wrote:
+> On Sat, 2014-08-30 at 14:47 +0200, Paul Bolle wrote:
+> > [Added Peter Anvin.]
+> > 
+> > On Mon, 2014-08-25 at 13:22 -0400, Vivek Goyal wrote:
+> > > On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
+> > > > Remove the unneded declaration for a kexec_load() routine.
+> > > > 
+> > > > Fixes errors like these when running 'make headers_check':
+> > > > 
+> > > > include/uapi/linux/kexec.h: userspace cannot reference function or variable defined in the kernel
+> > > > 
+> > > > Signed-off-by: Geoff Levand <geoff@infradead.org>
+> > > 
+> > > I think Paul Bolle tried to remove this in the past and maximilian
+> > > had objections.
+> > > 
+> > > http://lists.infradead.org/pipermail/kexec/2014-January/010902.html
+> > 
+> > I've wanted to resend my patch, perhaps with a new commit explanation,
+> > for quite some time now. I never got around doing that.
+> > 
+> > > I can't see that how exporting kernel prototype helps here.
+> > 
+> > It doesn't, for the reasons I've set out in
+> > http://lists.infradead.org/pipermail/kexec/2014-January/010900.html . In
+> > short: why bother using this prototype if one still needs to define the
+> > matching function oneself?
+> > 
+> > > kexec-tools
+> > > seems to be using syscall(__NR_kexec_load) directly for non-xen case. So
+> > > I would be fine with removing this definition. Just trying to make sure
+> > > that it does not break any other library or users of this declaration.
+> > 
+> > Obviously, this can only break compiling those libraries, or other
+> > users. It can't break already compiled binaries. Besides I don't think
+> > those libraries, etc actually exist. Maximilian mentioned klibc in
+> > January, but I wasn't able to find a version of klibc that cared about
+> > this prototype. No one pointed me at a version that does (or any other
+> > library, etc., for that matter).
+> > 
+> > (If we do decide to keep this prototype, we should special case this
+> > prototype in headers_check.pl just to silence the build.)
+> > 
+> > The above can be summarized like this:
+> >     Acked-by: Paul Bolle <pebolle@tiscali.nl>
+> 
+> It seems not much happened after I added my Acked-by. I assume you still
+> want to get this merged. Is that correct?
+
+Yes, I think we concluded there are no real users of this kexec_load()
+ptototype, and so it can be removed.
+
+-Geoff
+
