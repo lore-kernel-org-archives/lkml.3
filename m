@@ -1,112 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329AbaJFMOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 08:14:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55310 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751895AbaJFMOp (ORCPT
+	id S1752499AbaJFMR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 08:17:27 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:46292 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160AbaJFMRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 08:14:45 -0400
-Date: Mon, 6 Oct 2014 14:14:40 +0200
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-pwm@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mark Yao <mark.yao@rock-chips.com>
-Subject: Re: [PATCH v7 06/11] drm: add DT bindings documentation for
- atmel-hlcdc-dc driver
-Message-ID: <20141006141440.32fae2ef@bbrezillon>
-In-Reply-To: <20141006105433.GG25202@ulmo>
-References: <1412175188-28278-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1412175188-28278-7-git-send-email-boris.brezillon@free-electrons.com>
-	<20141006105433.GG25202@ulmo>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 6 Oct 2014 08:17:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141003171207.GC2394@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+	<1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
+	<20141003171207.GC2394@localhost>
+Date: Mon, 6 Oct 2014 15:17:22 +0300
+Message-ID: <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 6 Oct 2014 12:54:34 +0200
-Thierry Reding <thierry.reding@gmail.com> wrote:
+On Fri, Oct 3, 2014 at 8:12 PM, Johan Hovold <johan@kernel.org> wrote:
+>
+> On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
+> > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> > Master Adapter DLN-2. Details about the device can be found here:
+> >
 
-> On Wed, Oct 01, 2014 at 04:53:03PM +0200, Boris Brezillon wrote:
-> > From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > 
-> > The Atmel HLCDC (HLCD Controller) IP available on some Atmel SoCs (i.e.
-> > at91sam9n12, at91sam9x5 family or sama5d3 family) provides a display
-> > controller device.
-> > 
-> > The HLCDC block provides a single RGB output port, and only supports LCD
-> > panels connection to LCD panels for now.
-> > 
-> > The atmel,panel property link the HLCDC RGB output with the LCD panel
-> > connected on this port (note that the HLCDC RGB connector implementation
-> > makes use of the DRM panel framework).
-> > 
-> > Connection to other external devices (DRM bridges) might be added later by
-> > mean of a new atmel,xxx (atmel,bridge) property.
-> > 
-> > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> > ---
-> >  .../devicetree/bindings/drm/atmel-hlcdc-dc.txt     | 53 ++++++++++++++++++++++
-> >  1 file changed, 53 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> > new file mode 100644
-> > index 0000000..ebc1a91
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/drm/atmel-hlcdc-dc.txt
-> > @@ -0,0 +1,53 @@
-> > +Device-Tree bindings for Atmel's HLCDC (High LCD Controller) DRM driver
+<snip>
+
 > > +
-> > +The Atmel HLCDC Display Controller is subdevice of the HLCDC MFD device.
-> > +See ../mfd/atmel-hlcdc.txt for more details.
-> > +
-> > +Required properties:
-> > + - compatible: value should be "atmel,hlcdc-display-controller"
-> > + - pinctrl-names: the pin control state names. Should contain "default".
-> > + - pinctrl-0: should contain the default pinctrl states.
-> > + - #address-cells: should be set to 1.
-> > + - #size-cells: should be set to 0.
-> > +
-> > +Required children nodes:
-> > + Children nodes are encoding available output ports and their connections
-> > + to external devices using the OF graph reprensentation (see ../graph.txt).
-> > + At least one port node is required.
-> 
-> Are the connections configurable at runtime? Does the SoC have IP blocks
-> for HDMI or other types of outputs or does it provide only RGB output to
-> external blocks?
+> > +             ret = dln2_submit_urb(dln2, dln2->rx_urb[i], GFP_KERNEL);
+> > +             if (ret < 0)
+> > +                     return ret;
+>
+> Is it really worth having this helper only to save a couple of lines on
+> a dev_err? If you do all resubmissions on completion inline in the
+> handler, you only have three places where usb_submit_urb is called.
+>
 
-No, there's only one RGB output port, but you can connect more than one
-device on the RGB port (should we call it DPI port ?).
-Actually Atmel connected an HDMI encoder and an LCD panel connected on
-the same port on their dev kit.
+I moved the completion in the handler as you suggested. I have kept
+the helper, would you prefer to remove it?
 
-> 
-> When you say "at least one port", how are multiple ports going to work
-> if you have only a single display controller?
+<snip>
 
-No there's only one port for now, I'll rework the last statement.
+> > +     id = dln2->usb_dev->bus->busnum << 8 | dln2->usb_dev->devnum;
+>
+> After giving this some more thought, I think you should just
+> use PLATFORM_DEVID_AUTO as id. I have submitted a series to fix the
+> other USB MFD drivers and add a convenience helper to register
+> hotpluggable MFDs here:
+>
 
-> 
-> Thierry
+OK, I will use PLATFORM_DEVID_AUTO for now. If your series merges
+first and I have to resubmit mine, I will switch to using
+mfd_add_hotplug_devices.
 
+> I'll try to take a quick look on the subdrivers on Monday.
+>
 
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+Thanks Johan. I have addressed the rest of the comments as well and I
+will send another series after your reviews on the sub-drivers.
