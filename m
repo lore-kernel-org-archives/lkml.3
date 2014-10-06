@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbaJFPVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 11:21:19 -0400
-Received: from smtp.eu.citrix.com ([185.25.65.24]:8904 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaJFPVN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 11:21:13 -0400
-X-IronPort-AV: E=Sophos;i="5.04,664,1406592000"; 
-   d="scan'208";a="25726108"
-From: Thanos Makatos <thanos.makatos@citrix.com>
-To: "'Jan Kara'" <jack@suse.cz>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "jlayton@poochiereds.net" <jlayton@poochiereds.net>,
-        "bfields@fieldses.org" <bfields@fieldses.org>
-Subject: RE: [PATCH RFC] introduce ioctl to completely invalidate page cache
-Thread-Topic: [PATCH RFC] introduce ioctl to completely invalidate page cache
-Thread-Index: AQHP3ltJMeutIaA2t0eKb6z3ckY5/ZwdGI8AgAWCNICAADKhoIAAKHWwgAAQBICAAC+Z0A==
-Date: Mon, 6 Oct 2014 15:21:10 +0000
-Message-ID: <2368A3FCF9F7214298E53C823B0A48EC04241BC4@AMSPEX01CL02.citrite.net>
-References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
- <542DAEAC.8010203@kernel.dk> <20141006080659.GA7526@quack.suse.cz>
- <2368A3FCF9F7214298E53C823B0A48EC042405BC@AMSPEX01CL02.citrite.net>
- <2368A3FCF9F7214298E53C823B0A48EC0424106C@AMSPEX01CL02.citrite.net>
- <20141006143019.GG7526@quack.suse.cz>
-In-Reply-To: <20141006143019.GG7526@quack.suse.cz>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752959AbaJFPX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 11:23:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40897 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752723AbaJFPX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 11:23:27 -0400
+Date: Mon, 6 Oct 2014 18:26:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH v2 03/15] virtio-pci: move freeze/restore to virtio core
+Message-ID: <20141006152655.GA32277@redhat.com>
+References: <1412608214-31944-1-git-send-email-mst@redhat.com>
+ <1412608214-31944-4-git-send-email-mst@redhat.com>
+ <20141006172055.6fd0fa20.cornelia.huck@de.ibm.com>
 MIME-Version: 1.0
-X-DLP: AMS1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141006172055.6fd0fa20.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, Jan, it's much clearer now what I need to do.
+On Mon, Oct 06, 2014 at 05:20:55PM +0200, Cornelia Huck wrote:
+> On Mon, 6 Oct 2014 18:10:51 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > This is in preparation to extending config changed event handling
+> > in core.
+> > Wrapping these in an API also seems to make for a cleaner code.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/linux/virtio.h      |  6 +++++
+> >  drivers/virtio/virtio.c     | 53 +++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/virtio/virtio_pci.c | 55 ++-------------------------------------------
+> >  3 files changed, 61 insertions(+), 53 deletions(-)
+> > 
+> > diff --git a/include/linux/virtio.h b/include/linux/virtio.h
+> > index 3c19bd3..8df7ba8 100644
+> > --- a/include/linux/virtio.h
+> > +++ b/include/linux/virtio.h
+> > @@ -78,6 +78,7 @@ bool virtqueue_is_broken(struct virtqueue *vq);
+> >  /**
+> >   * virtio_device - representation of a device using virtio
+> >   * @index: unique position on the virtio bus
+> > + * @failed: saved value for CONFIG_S_FAILED bit (for restore)
+> 
+> Have you considered s/failed/saved_failed/ ?
 
->   So most notably they want the ioctl to work not only for block devices but also for any regular file. That's easily doable - you just call
-> filemap_write_and_wait() and invalidate_inode_pages2() in the ioctl handler for regular files.
+I kind of prefer the shorter name, your reviewed tag made me think
+you don't cosider this too important?
 
-All right, so I need to find out how I can direct the new ioctl to
-file-systems as well. I thought that I could get away with it by simply looking
-at which file-systems have the same block device as the one to which the ioctl
-is directed, but IIUC this doesn't make sense as NFS doesn't use a block device
-at all.
-
-> Also they wanted to be able to specify a range of a mapping to invalidate -
-> that's easily doable as well. Finally they wanted a 'flags' argument so you can
-> additionally ask fs to invalidate also some metadata. How invalidation is done
-> will be a fs specific thing and for now I guess we don't need to go into
-> details. NFS guys can sort that out when they decide to implement it.
-
-So after I've figured out how to direct this new ioctl to a file-system, I need
-to understand out how to invalidate a specific range of data. I will gracefully
-fail metadata invalidation operations with EOPNOTSUPP or ENOSYS.
-
-> So in the beginning we can just have u64 flags argument and in it a single
-> 'INVAL_DATA' flag meaning that invalidation of data in a given range is
-> requested. Later NFS guys can add further flags.
-
-OK that I can do.
-
-I suppose we'll always fail metadata invalidation operations when the target
-of the ioctl is a block device.
-
-Thanks
+> >   * @dev: underlying device.
+> >   * @id: the device type identification (used to match it with a driver).
+> >   * @config: the configuration ops for this device.
+> 
+> Otherwise, my
+> 
+> Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+> 
+> still stands.
