@@ -1,90 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072AbaJFRes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 13:34:48 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50397 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaJFRer (ORCPT
+	id S1753082AbaJFRkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 13:40:42 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:50046 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaJFRkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 13:34:47 -0400
-Message-ID: <1412616877.32313.55.camel@smoke>
-Subject: Re: [PATCH 1/5] kexec: Fix make headers_check
-From: Geoff Levand <geoff@infradead.org>
-To: Paul Bolle <pebolle@tiscali.nl>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, kexec@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        maximilian attems <max@stro.at>
-Date: Mon, 06 Oct 2014 10:34:37 -0700
-In-Reply-To: <1412604734.4054.72.camel@x220>
-References: <cover.1408731991.git.geoff@infradead.org>
-	 <115373b6ac68ee7a305975896e1c4971e8e51d4c.1408731991.git.geoff@infradead.org>
-	 <20140825172234.GD14379@redhat.com> <1409402838.21896.99.camel@x220>
-	 <1412604734.4054.72.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
+	Mon, 6 Oct 2014 13:40:40 -0400
+Message-ID: <5432D414.4060408@kernel.dk>
+Date: Mon, 06 Oct 2014 11:40:36 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
+        Ming Lei <ming.lei@canonical.com>, Sagi Grimberg <sagig@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: Avoid that I/O hangs in bt_get()
+References: <54328A97.3030201@acm.org>
+In-Reply-To: <54328A97.3030201@acm.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, 2014-10-06 at 16:12 +0200, Paul Bolle wrote:
-> On Sat, 2014-08-30 at 14:47 +0200, Paul Bolle wrote:
-> > [Added Peter Anvin.]
-> > 
-> > On Mon, 2014-08-25 at 13:22 -0400, Vivek Goyal wrote:
-> > > On Fri, Aug 22, 2014 at 06:39:47PM +0000, Geoff Levand wrote:
-> > > > Remove the unneded declaration for a kexec_load() routine.
-> > > > 
-> > > > Fixes errors like these when running 'make headers_check':
-> > > > 
-> > > > include/uapi/linux/kexec.h: userspace cannot reference function or variable defined in the kernel
-> > > > 
-> > > > Signed-off-by: Geoff Levand <geoff@infradead.org>
-> > > 
-> > > I think Paul Bolle tried to remove this in the past and maximilian
-> > > had objections.
-> > > 
-> > > http://lists.infradead.org/pipermail/kexec/2014-January/010902.html
-> > 
-> > I've wanted to resend my patch, perhaps with a new commit explanation,
-> > for quite some time now. I never got around doing that.
-> > 
-> > > I can't see that how exporting kernel prototype helps here.
-> > 
-> > It doesn't, for the reasons I've set out in
-> > http://lists.infradead.org/pipermail/kexec/2014-January/010900.html . In
-> > short: why bother using this prototype if one still needs to define the
-> > matching function oneself?
-> > 
-> > > kexec-tools
-> > > seems to be using syscall(__NR_kexec_load) directly for non-xen case. So
-> > > I would be fine with removing this definition. Just trying to make sure
-> > > that it does not break any other library or users of this declaration.
-> > 
-> > Obviously, this can only break compiling those libraries, or other
-> > users. It can't break already compiled binaries. Besides I don't think
-> > those libraries, etc actually exist. Maximilian mentioned klibc in
-> > January, but I wasn't able to find a version of klibc that cared about
-> > this prototype. No one pointed me at a version that does (or any other
-> > library, etc., for that matter).
-> > 
-> > (If we do decide to keep this prototype, we should special case this
-> > prototype in headers_check.pl just to silence the build.)
-> > 
-> > The above can be summarized like this:
-> >     Acked-by: Paul Bolle <pebolle@tiscali.nl>
+On 10/06/2014 06:27 AM, Bart Van Assche wrote:
+> Ensure that bt_clear_tag() increments bs->wait_cnt if one or more
+> threads are waiting for a tag. Remove a superfluous
+> waitqueue_active() call from blk_mq_tag_wakeup_all(). This patch
+> avoids that bt_get() hangs as follows if the number of hardware
+> contexts is below the number of CPU threads:
 > 
-> It seems not much happened after I added my Acked-by. I assume you still
-> want to get this merged. Is that correct?
+> INFO: task fio:6739 blocked for more than 120 seconds.
+>       Not tainted 3.17.0-rc7+ #1
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> fio             D ffff88085fcd2740     0  6739   6688 0x00000000
+>  ffff8807fb96f830 0000000000000086 ffff8808350eb000 ffff8807fb96ffd8
+>  0000000000012740 0000000000012740 ffff88085b885000 ffff8808350eb000
+>  ffff88085fcd2fe0 ffff8807fb96f920 ffff88080061ddc8 ffffe8ffffcc4600
+> Call Trace:
+>  [<ffffffff8142f52d>] io_schedule+0x9d/0x130
+>  [<ffffffff812016bf>] bt_get+0xef/0x180
+>  [<ffffffff8107f440>] ? prepare_to_wait_event+0x110/0x110
+>  [<ffffffff81201a0f>] blk_mq_get_tag+0x9f/0xd0
+>  [<ffffffff811fdedb>] __blk_mq_alloc_request+0x1b/0x200
+>  [<ffffffff811ff3bc>] blk_mq_map_request+0x15c/0x1b0
+>  [<ffffffff8120079e>] blk_mq_make_request+0x6e/0x270
+>  [<ffffffff8110a99f>] ? mempool_alloc+0x4f/0x130
+>  [<ffffffff811f3af0>] generic_make_request+0xc0/0x110
+>  [<ffffffff811f3bab>] submit_bio+0x6b/0x140
+>  [<ffffffff81110e4b>] ? set_page_dirty_lock+0x2b/0x40
+>  [<ffffffff811eea57>] ? bio_set_pages_dirty+0x47/0x60
+>  [<ffffffff811907d0>] do_blockdev_direct_IO+0x2080/0x3220
+>  [<ffffffff8118bac0>] ? I_BDEV+0x10/0x10
+>  [<ffffffff811919bc>] __blockdev_direct_IO+0x4c/0x50
+>  [<ffffffff8118bac0>] ? I_BDEV+0x10/0x10
+>  [<ffffffff8118c1de>] blkdev_direct_IO+0x4e/0x50
+>  [<ffffffff8118bac0>] ? I_BDEV+0x10/0x10
+>  [<ffffffff81109a13>] generic_file_read_iter+0x513/0x5e0
+>  [<ffffffff8119d8a7>] ? kiocb_free+0x37/0x40
+>  [<ffffffff8118c660>] ? ioctl_by_bdev+0x40/0x40
+>  [<ffffffff8118c697>] blkdev_read_iter+0x37/0x40
+>  [<ffffffff8119e6b4>] aio_run_iocb+0x1e4/0x3c0
+>  [<ffffffff8114dfa6>] ? kmem_cache_alloc+0xd6/0x3d0
+>  [<ffffffff8114e045>] ? kmem_cache_alloc+0x175/0x3d0
+>  [<ffffffff8119f5cc>] do_io_submit+0x11c/0x490
+>  [<ffffffff8119f950>] SyS_io_submit+0x10/0x20
+>  [<ffffffff81432fd2>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Ming Lei <ming.lei@canonical.com>
+> Cc: Robert Elliott <Elliott@hp.com>
+> Cc: <stable@vger.kernel.org>
+> ---
+>  block/blk-mq-tag.c | 31 +++++++++++++++----------------
+>  1 file changed, 15 insertions(+), 16 deletions(-)
+> 
+> diff --git a/block/blk-mq-tag.c b/block/blk-mq-tag.c
+> index b5088f0..08d3b1c 100644
+> --- a/block/blk-mq-tag.c
+> +++ b/block/blk-mq-tag.c
+> @@ -80,8 +80,7 @@ static void blk_mq_tag_wakeup_all(struct blk_mq_tags *tags)
+>  	for (i = 0; i < BT_WAIT_QUEUES; i++) {
+>  		struct bt_wait_state *bs = &bt->bs[wake_index];
+>  
+> -		if (waitqueue_active(&bs->wait))
+> -			wake_up(&bs->wait);
+> +		wake_up(&bs->wait);
+>  
+>  		wake_index = bt_index_inc(wake_index);
+>  	}
+> @@ -346,20 +345,20 @@ static void bt_clear_tag(struct blk_mq_bitmap_tags *bt, unsigned int tag)
+>  	 */
+>  	clear_bit_unlock(TAG_TO_BIT(bt, tag), &bt->map[index].word);
+>  
+> -	bs = bt_wake_ptr(bt);
+> -	if (!bs)
+> -		return;
+> -
+> -	wait_cnt = atomic_dec_return(&bs->wait_cnt);
+> -	if (wait_cnt == 0) {
+> -wake:
+> -		atomic_add(bt->wake_cnt, &bs->wait_cnt);
+> -		bt_index_atomic_inc(&bt->wake_index);
+> -		wake_up(&bs->wait);
+> -	} else if (wait_cnt < 0) {
+> -		wait_cnt = atomic_inc_return(&bs->wait_cnt);
+> -		if (!wait_cnt)
+> -			goto wake;
+> +	for (;;) {
+> +		bs = bt_wake_ptr(bt);
+> +		if (!bs)
+> +			return;
+> +
+> +		wait_cnt = atomic_dec_return(&bs->wait_cnt);
+> +		if (unlikely(wait_cnt < 0))
+> +			wait_cnt = atomic_inc_return(&bs->wait_cnt);
+> +		if (wait_cnt == 0) {
+> +			atomic_add(bt->wake_cnt, &bs->wait_cnt);
+> +			bt_index_atomic_inc(&bt->wake_index);
+> +			wake_up(&bs->wait);
+> +			return;
+> +		}
+>  	}
+>  }
 
-Yes, I think we concluded there are no real users of this kexec_load()
-ptototype, and so it can be removed.
+I've been able to reproduce this this morning, and your patch does seem
+to fix it. The inc/add logic is making my head spin a bit. And we now
+end up banging a lot more on the waitqueue lock through
+prepare_to_wait(), so there's a substantial performance regression to go
+with the change.
 
--Geoff
+I'll fiddle with this a bit and see if we can't retain existing
+performance properties under tag contention, while still fixing the hang.
+
+-- 
+Jens Axboe
 
