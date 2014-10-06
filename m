@@ -1,368 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896AbaJFXfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 19:35:52 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:34305 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750859AbaJFXfu (ORCPT
+	id S1752255AbaJFXiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 19:38:20 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:60546 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaJFXiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:35:50 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 7 Oct 2014 08:36:08 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Dan Streetman <ddstreet@ieee.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shli@kernel.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Nitin Gupta <ngupta@vflare.org>,
-        Luigi Semenzato <semenzato@google.com>, juno.choi@lge.com
-Subject: Re: [PATCH v1 4/5] zram: add swap full hint
-Message-ID: <20141006233608.GA19445@bbox>
-References: <1411344191-2842-1-git-send-email-minchan@kernel.org>
- <1411344191-2842-5-git-send-email-minchan@kernel.org>
- <CALZtONB+NBMa8xf8xuAoeYHDoMtS56VLGP-a46LZgpppFyz7ag@mail.gmail.com>
- <20140925010229.GA17364@bbox>
- <CALZtONDnrqPZEBgJb5t8v_pmgh5YMSCA649sCPObb+U=5hAX_A@mail.gmail.com>
+	Mon, 6 Oct 2014 19:38:19 -0400
+Message-ID: <543327E7.4020608@amacapital.net>
+Date: Mon, 06 Oct 2014 16:38:15 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CALZtONDnrqPZEBgJb5t8v_pmgh5YMSCA649sCPObb+U=5hAX_A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rich Felker <dalias@libc.org>, David Daney <ddaney@caviumnetworks.com>
+CC: David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx>
+In-Reply-To: <20141006215813.GB23797@brightrain.aerifal.cx>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
-
-Sorry for the delay. I had internal works which should be handled
-urgent. I hope you don't lose your interest due to my bad response
-latency.
-
-On Thu, Sep 25, 2014 at 11:52:22AM -0400, Dan Streetman wrote:
-> On Wed, Sep 24, 2014 at 9:02 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > On Wed, Sep 24, 2014 at 10:01:03AM -0400, Dan Streetman wrote:
-> >> On Sun, Sep 21, 2014 at 8:03 PM, Minchan Kim <minchan@kernel.org> wrote:
-> >> > This patch implement SWAP_FULL handler in zram so that VM can
-> >> > know whether zram is full or not and use it to stop anonymous
-> >> > page reclaim.
-> >> >
-> >> > How to judge fullness is below,
-> >> >
-> >> > fullness = (100 * used space / total space)
-> >> >
-> >> > It means the higher fullness is, the slower we reach zram full.
-> >> > Now, default of fullness is 80 so that it biased more momory
-> >> > consumption rather than early OOM kill.
-> >> >
-> >> > Above logic works only when used space of zram hit over the limit
-> >> > but zram also pretend to be full once 32 consecutive allocation
-> >> > fail happens. It's safe guard to prevent system hang caused by
-> >> > fragment uncertainty.
-> >> >
-> >> > Signed-off-by: Minchan Kim <minchan@kernel.org>
-> >> > ---
-> >> >  drivers/block/zram/zram_drv.c | 60 ++++++++++++++++++++++++++++++++++++++++---
-> >> >  drivers/block/zram/zram_drv.h |  1 +
-> >> >  2 files changed, 57 insertions(+), 4 deletions(-)
-> >> >
-> >> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> >> > index 22a37764c409..649cad9d0b1c 100644
-> >> > --- a/drivers/block/zram/zram_drv.c
-> >> > +++ b/drivers/block/zram/zram_drv.c
-> >> > @@ -43,6 +43,20 @@ static const char *default_compressor = "lzo";
-> >> >  /* Module params (documentation at end) */
-> >> >  static unsigned int num_devices = 1;
-> >> >
-> >> > +/*
-> >> > + * If (100 * used_pages / total_pages) >= ZRAM_FULLNESS_PERCENT),
-> >> > + * we regards it as zram-full. It means that the higher
-> >> > + * ZRAM_FULLNESS_PERCENT is, the slower we reach zram full.
-> >> > + */
-> >> > +#define ZRAM_FULLNESS_PERCENT 80
-> >>
-> >> As Andrew said, this (or the user-configurable fullness param from the
-> >> next patch) should have more detail about exactly why it's needed and
-> >> what it does.  The details of how zram considers itself "full" should
-> >> be clear, which probably includes explaining zsmalloc fragmentation.
-> >> It should be also clear this param only matters when limit_pages is
-> >> set, and this param is only checked when zsmalloc's total size has
-> >> reached that limit.
-> >
-> > Sure, How about this?
-> >
-> >                 The fullness file is read/write and specifies how easily
-> >                 zram become full state. Normally, we can think "full"
-> >                 once all of memory is consumed but it's not simple with
-> >                 zram because zsmalloc has some issue by internal design
-> >                 so that write could fail once consumed *page* by zram
-> >                 reaches the mem_limit and zsmalloc cannot have a empty
-> >                 slot for the compressed object's size on fragmenet space
-> >                 although it has more empty slots for other sizes.
+On 10/06/2014 02:58 PM, Rich Felker wrote:
+> On Mon, Oct 06, 2014 at 02:45:29PM -0700, David Daney wrote:
+>> On 10/06/2014 02:31 PM, Rich Felker wrote:
+>>> On Mon, Oct 06, 2014 at 02:18:19PM -0700, David Daney wrote:
+>>>>> Userspace should play no part in this; requiring userspace to help
+>>>>> make special accomodations for fpu emulation largely defeats the
+>>>>> purpose of fpu emulation.
+>>>>
+>>>> That is certainly one way of looking at it.  Really it is opinion,
+>>>> rather than fact though.
+>>>
+>>> It's an opinion, yes, but it has substantial reason behind it.
+>>>
+>>>> GLibc is full of code (see ld.so) that in earlier incantations of
+>>>> Unix/Linux was in kernel space, and was moved to userspace.  Given
+>>>> that there is a partitioning of code between kernel space and
+>>>> userspace, I think it not totally unreasonable to consider doing
+>>>> some of this in userspace.
+>>>>
+>>>> Even on systems with hardware FPU, the architecture specification
+>>>> allows for/requires emulation of certain cases (denormals, etc.)  So
+>>>> it is already a requirement that userspace cooperate by always
+>>>> having free space below $SP for use by the kernel.  So the current
+>>>> situation is that userspace is providing services for the kernel FPU
+>>>> emulator.
+>>>>
+>>>> My suggestion is to change the nature of the way these services are
+>>>> provided by the userspace program.
+>>>
+>>> But this isn't setup by the userspace program. It's setup by the
+>>> kernel on program entry. Despite that, though, I think it's an
+>>> unnecessary (and undocumented!) constraint; the fact that it requires
+>>> the stack to be executable makes it even more harmful and
+>>> inappropriate.
+>>>
+>>
+>> The management of the stack is absolutely done by userspace code.
+>> Any time you do pthread_create(), userspace code does mmap() to
+>> allocate the stack area, it then sets permissions on the area, and
+>> then it passes the address of the area to clone().
 > 
-> I understand that, but it might be confusing or unclear to anyone
-> who's not familiar with how zsmalloc works.
+> This is hardly management.
 > 
-> Maybe it could be explained by referencing the existing
-> compr_data_size and mem_used_total?  In addition to some or all of the
-> above, you could add something like:
+>> Furthermore the
+>> userspace code has to be very careful in its use of the $sp
+>> register, so that it doesn't store data in places that will be
+>> used/clobbered by the kernel.
 > 
-> This controls when zram decides that it is "full".  It is a percent
-> value, checked against compr_data_size / mem_used_total.  When
-> mem_used_total is equal to mem_limit, the fullness is checked and if
-> the compr_data_size / mem_used_total percentage is higher than this
-> specified fullness value, zram is considered "full".
+> This is not "being careful". The stack pointer can never become
+> invalid unless you do wacky things in asm or invoke UB.
 
-Better than my verbose version.
+I disagree a bit here.  There are runtimes that aren't libc or even C at
+all.  See, for example, Go.  (Ugh!)
+
+What happens if a signal happens while executing from this magic
+trampoline?  Allocation of another one?  Crash on return from the outer
+trampoline invocation?
+
+Also, if this ends up being solved with a hack of this type, please do
+it right: have *two* aliases of the trampoline, one writable, and one
+executable (unless the MIPS kernel can bypass write-protection).
+
 
 > 
+>> All of this is under the control of the userspace program and done
+>> with userspace code.
 > 
-> >
-> >                 We regard zram as full once consumed *page* reaches the
-> >                 mem_limit and consumed memory until now is higher the value
-> >                 resulted from the knob. So, if you set the value high,
-> >                 you can squeeze more pages into fragment space so you could
-> >                 avoid early OOM while you could see more write-fail warning,
-> >                 overhead to fail-write recovering by VM and reclaim latency.
-> >                 If you set the value low, you can see OOM kill easily
-> >                 even though there are memory space in zram but you could
-> >                 avoid shortcomings mentioned above.
+> For the most part it just happens by default. There is no particular
+> intentionality needed, and certainly no hideous MIPS-specific hacks
+> needed.
 > 
-> You should clarify also that this is currently only used by
-> swap-on-zram, and this value prevents swap from writing to zram once
-> it is "full".  This setting has no effect when using zram for a
-> mounted filesystem.
-
-Sure.
-
+>> I appreciate the fact that libc authors might prefer *not* to write
+>> more code, but they could, especially if they wanted to add the
+>> feature of non-executable stacks to their library implementation.
 > 
-> >
-> >                 This knobs is valid ony if you set mem_limit.
-> >                 Currently, initial value is 80% but it could be changed.
-> >
-> > I didn't decide how to change it from percent.
-> > Decimal fraction Jerome mentioned does make sense to me so please ignore
-> > percent part in above.
-> >
-> >>
-> >> Also, since the next patch changes it to be used only as a default,
-> >> shouldn't it be DEFAULT_ZRAM_FULLNESS_PERCENT or similar?
-> >
-> > Okay, I will do it in 5/5.
-> >
-> >>
-> >> > +
-> >> > +/*
-> >> > + * If zram fails to allocate memory consecutively up to this,
-> >> > + * we regard it as zram-full. It's safe guard to prevent too
-> >> > + * many swap write fail due to lack of fragmentation uncertainty.
-> >> > + */
-> >> > +#define ALLOC_FAIL_MAX 32
-> >> > +
-> >> >  #define ZRAM_ATTR_RO(name)                                             \
-> >> >  static ssize_t zram_attr_##name##_show(struct device *d,               \
-> >> >                                 struct device_attribute *attr, char *b) \
-> >> > @@ -148,6 +162,7 @@ static ssize_t mem_limit_store(struct device *dev,
-> >> >
-> >> >         down_write(&zram->init_lock);
-> >> >         zram->limit_pages = PAGE_ALIGN(limit) >> PAGE_SHIFT;
-> >> > +       atomic_set(&zram->alloc_fail, 0);
-> >> >         up_write(&zram->init_lock);
-> >> >
-> >> >         return len;
-> >> > @@ -410,6 +425,7 @@ static void zram_free_page(struct zram *zram, size_t index)
-> >> >         atomic64_sub(zram_get_obj_size(meta, index),
-> >> >                         &zram->stats.compr_data_size);
-> >> >         atomic64_dec(&zram->stats.pages_stored);
-> >> > +       atomic_set(&zram->alloc_fail, 0);
-> >> >
-> >> >         meta->table[index].handle = 0;
-> >> >         zram_set_obj_size(meta, index, 0);
-> >> > @@ -597,10 +613,15 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> >> >         }
-> >> >
-> >> >         alloced_pages = zs_get_total_pages(meta->mem_pool);
-> >> > -       if (zram->limit_pages && alloced_pages > zram->limit_pages) {
-> >> > -               zs_free(meta->mem_pool, handle);
-> >> > -               ret = -ENOMEM;
-> >> > -               goto out;
-> >> > +       if (zram->limit_pages) {
-> >> > +               if (alloced_pages > zram->limit_pages) {
-> >> > +                       zs_free(meta->mem_pool, handle);
-> >> > +                       atomic_inc(&zram->alloc_fail);
-> >> > +                       ret = -ENOMEM;
-> >> > +                       goto out;
-> >> > +               } else {
-> >> > +                       atomic_set(&zram->alloc_fail, 0);
-> >> > +               }
-> >>
-> >> So, with zram_full() checking for alloced_pages >= limit_pages, this
-> >> will need to be changed; the way it is now it prevents that from ever
-> >> being true.
-> >>
-> >> Instead I believe this check has to be moved to before zs_malloc(), so
-> >> that alloced_pages > limit_pages is true.
-> >
-> > I don't get it why you said "it prevents that from ever being true".
-> > Now, zram can use up until limit_pages (ie, used memory == zram->limit_pages)
-> > and trying to get more is failed. so zram_full checks it as
-> > toal_pages >= zram->limit_pages so what is problem?
-> > If I miss your point, could you explain more?
+> So your position is that:
 > 
-> ok, that's true, it's possible for alloc_pages == limit_pages, but
-> since zsmalloc will increase its size by a full zspage, and those can
-> be anywhere between 1 and 4 pages in size, it's only a (very roughly)
-> 25% chance that an alloc will cause alloc_pages == limit_pages, it's
-> more likely that an alloc will cause alloc_pages > limit_pages.  Now,
-> after some number of write failures, that 25% (-ish) probability will
-> be met, and alloc_pages == limit_pages will happen, but there's a
-> rather high chance that there will be some number of write failures
-> first.
+> 1. A non-exec-stack system can only run new code produced to do extra
+>    stuff in userspace.
 > 
-> To summarize or restate that, I guess what I'm saying is that for
-> users who don't care about some write failures and/or users with no
-> other swap devices except zram, it probably does not matter.  However
-> for them, they probably will rely on the 32 write failure limit, and
-> not the fullness limit.  For users where zram is only the primary swap
-> device, and there is a backup swap device, they probably will want
-> zram to fail over to the backup fairly quickly, with as few write
-> failures as possible (preferably, none, I would think).  And this
-> situation makes that highly unlikely - since there's only about a 25%
-> chance of alloc_pages == limit_pages with no previous write failures,
-> it's almost a certainty that there will be write failures before zram
-> is decided to be "full", even if "fullness" is set to 0.
+> 2. The startup code needs to do special work in userspace on MIPS to
+>    setup an executable area for fpu emulation.
 > 
-> With that said, you're right that it will eventually work, and those
-> few write failures while trying to get to alloc_pages == limit_pages
-> would probably not be noticable.  However, do remember that zram won't
-> stay full forever, so if it is only the primary swap device, it's
-> likely it will move between "full" and "not full" quite a lot, and
-> those few write failures may start adding up.
-
-Fair enough.
-
-But it is possible to see write-failure even though we correct
-it because there is potential chance for zram to fail to allocate
-order-0 page by a few reason which one of them is CMA I got several
-reports because zRAM cannot allocate a movable page due to lack of
-migration while usersapce goes with it well. I have a plan to fix it
-with zsmalloc migration work but there are another chances to make
-fail order-0 page by serval ways so I don't think we cannot prevent
-write-failure completely unless we have reserved memory for zram.
-
-Having said that, I agree it would be better to reduce such fails
-with small code piece so I will check zram_full as follows,
-
-/*
- * XXX: zsmalloc_maxpages check should be removed when zsmalloc
- * implement using of fragmented spaces in last page of zspage.
- */
-if (total_pages >= zram->limit_pages - zsmalloc_maxpages()) {
-        ...
-}
-
-It will reduce 3 pages at maximum but shouldn't a big deal.
-
+> 3. Every call to clone/CLONE_VM needs to be accompanied by a call to
+>    mmap and this new syscall to set the address, and every call to
+>    SYS_exit needs to be accompanies by a call to munmap for the
+>    corresponding mapping.
 > 
-> I suppose testing would show if those few write failures are
-> significant.  Also, if nobody ever uses zram with a backup (real disk)
-> secondary swap device, then it likely doesn't matter.
+> This is a huge ill-designed mess.
 
-I think it's really reasonable scenario.
+Amen.
 
-> 
-> >
-> >>
-> >>
-> >> >         }
-> >> >
-> >> >         update_used_max(zram, alloced_pages);
-> >> > @@ -711,6 +732,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
-> >> >         down_write(&zram->init_lock);
-> >> >
-> >> >         zram->limit_pages = 0;
-> >> > +       atomic_set(&zram->alloc_fail, 0);
-> >> >
-> >> >         if (!init_done(zram)) {
-> >> >                 up_write(&zram->init_lock);
-> >> > @@ -944,6 +966,34 @@ static int zram_slot_free_notify(struct block_device *bdev,
-> >> >         return 0;
-> >> >  }
-> >> >
-> >> > +static int zram_full(struct block_device *bdev, void *arg)
-> >> > +{
-> >> > +       struct zram *zram;
-> >> > +       struct zram_meta *meta;
-> >> > +       unsigned long total_pages, compr_pages;
-> >> > +
-> >> > +       zram = bdev->bd_disk->private_data;
-> >> > +       if (!zram->limit_pages)
-> >> > +               return 0;
-> >> > +
-> >> > +       meta = zram->meta;
-> >> > +       total_pages = zs_get_total_pages(meta->mem_pool);
-> >> > +
-> >> > +       if (total_pages >= zram->limit_pages) {
-> >> > +
-> >> > +               compr_pages = atomic64_read(&zram->stats.compr_data_size)
-> >> > +                                       >> PAGE_SHIFT;
-> >> > +               if ((100 * compr_pages / total_pages)
-> >> > +                       >= ZRAM_FULLNESS_PERCENT)
-> >> > +                       return 1;
-> >> > +       }
-> >> > +
-> >> > +       if (atomic_read(&zram->alloc_fail) > ALLOC_FAIL_MAX)
-> >> > +               return 1;
-> >> > +
-> >> > +       return 0;
-> >> > +}
-> >> > +
-> >> >  static int zram_swap_hint(struct block_device *bdev,
-> >> >                                 unsigned int hint, void *arg)
-> >> >  {
-> >> > @@ -951,6 +1001,8 @@ static int zram_swap_hint(struct block_device *bdev,
-> >> >
-> >> >         if (hint == SWAP_FREE)
-> >> >                 ret = zram_slot_free_notify(bdev, (unsigned long)arg);
-> >> > +       else if (hint == SWAP_FULL)
-> >> > +               ret = zram_full(bdev, arg);
-> >> >
-> >> >         return ret;
-> >> >  }
-> >> > diff --git a/drivers/block/zram/zram_drv.h b/drivers/block/zram/zram_drv.h
-> >> > index c6ee271317f5..fcf3176a9f15 100644
-> >> > --- a/drivers/block/zram/zram_drv.h
-> >> > +++ b/drivers/block/zram/zram_drv.h
-> >> > @@ -113,6 +113,7 @@ struct zram {
-> >> >         u64 disksize;   /* bytes */
-> >> >         int max_comp_streams;
-> >> >         struct zram_stats stats;
-> >> > +       atomic_t alloc_fail;
-> >> >         /*
-> >> >          * the number of pages zram can consume for storing compressed data
-> >> >          */
-> >> > --
-> >> > 2.0.0
-> >> >
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> > --
-> > Kind regards,
-> > Minchan Kim
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Can the kernel not just emulate the instructions directly?  Can it
+single-step through them in place?
 
--- 
-Kind regards,
-Minchan Kim
+FWIW, I have considered playing trampoline games like this on x86.  It's
+a giant bloody mess, and it will almost certainly never happen, even
+though the performance win is dramatic.  No, you don't want to know why. [1]
+
+[1] If you actually want to know, imagine returning from a page fault
+with sysret.
+
+--Andy
