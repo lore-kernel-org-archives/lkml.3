@@ -1,67 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438AbaJFF37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 01:29:59 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61906 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307AbaJFF36 (ORCPT
+	id S1752401AbaJFFbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 01:31:16 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:37935 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720AbaJFFbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 01:29:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141006050938.GC7996@ZenIV.linux.org.uk>
-References: <CAAr43iMnOnrLamgerGaxgAzo-dVpPmeFusk5RhJNqXZ1-6xs7A@mail.gmail.com>
-	<CALtyatFv7yH4o-MFW0vQN6RXVQuxpXVWLh5S1WqxPY6KvBohHQ@mail.gmail.com>
-	<CAAr43iOesCSCCVDHBGdc=dNO5J3LgGzVabLusZ75ZhPtHmiyMg@mail.gmail.com>
-	<20141005233542.GY7996@ZenIV.linux.org.uk>
-	<CALtyatEaTms_Hee=vUB-gOk2cx0xDnA4S5sGfAi3vKqWgrCZzg@mail.gmail.com>
-	<20141006024914.GZ7996@ZenIV.linux.org.uk>
-	<CALtyatEXvZo27fe1X2UGTAwZGgy1+Jwpm1j7_=8QQM68nnBVfA@mail.gmail.com>
-	<20141006050938.GC7996@ZenIV.linux.org.uk>
-Date: Mon, 6 Oct 2014 05:29:57 +0000
-Message-ID: <CALtyatHxnJibPVVv+O4+hrPCnFYSneVnBS5pAK70BFet0G48pQ@mail.gmail.com>
-Subject: Re: sock puppets (Re: (Song) ** SystemD)
-From: Gregory Smith <gregorysmith1974a@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Cc: Joel Rees <joel.rees@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 6 Oct 2014 01:31:14 -0400
+X-Original-SENDERIP: 10.177.226.38
+X-Original-MAILFROM: karam.lee@lge.com
+From: karam.lee@lge.com
+To: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org
+Cc: seungho1.park@lge.com, karam.lee@lge.com
+Subject: [PATCH] zram: implement rw_page operation of zram block device operation
+Date: Mon,  6 Oct 2014 14:31:05 +0900
+Message-Id: <1412573465-28286-1-git-send-email-karam.lee@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Go and fuck yourself.
+From: "karam.lee" <karam.lee@lge.com>
 
-You're a weak piece of shit if words of derision pull you from a goal.
-If your community is affected by being "associated" with someone
-they don't like arguing in the same direction that they are
-then they are a bunch of women and faggots.
+Recently rw_page block device operation is added.
+This patch implements rw_page operation for zram block device so
+zram can process page sized I/O without bio.
+---
+---
+ drivers/block/zram/zram_drv.c |   60 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 52 insertions(+), 8 deletions(-)
 
-But we knew that since 2006 when you all folded to the distro-women
-groups that took up residency, no? You curtsied and kicked out
-any man they told you to kick out, because they were not
-"respectful" of the womyn. Fuck you and yours you damned piece of
-worthless fucking trash.
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 48eccb3..b76a5dc 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -368,7 +368,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+ }
+ 
+ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+-			  u32 index, int offset, struct bio *bio)
++			  u32 index, int offset)
+ {
+ 	int ret;
+ 	struct page *page;
+@@ -535,14 +535,13 @@ out:
+ }
+ 
+ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+-			int offset, struct bio *bio)
++			int offset, int rw)
+ {
+ 	int ret;
+-	int rw = bio_data_dir(bio);
+ 
+ 	if (rw == READ) {
+ 		atomic64_inc(&zram->stats.num_reads);
+-		ret = zram_bvec_read(zram, bvec, index, offset, bio);
++		ret = zram_bvec_read(zram, bvec, index, offset);
+ 	} else {
+ 		atomic64_inc(&zram->stats.num_writes);
+ 		ret = zram_bvec_write(zram, bvec, index, offset);
+@@ -718,7 +717,7 @@ out:
+ 
+ static void __zram_make_request(struct zram *zram, struct bio *bio)
+ {
+-	int offset;
++	int offset, rw;
+ 	u32 index;
+ 	struct bio_vec bvec;
+ 	struct bvec_iter iter;
+@@ -733,6 +732,7 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+ 		return;
+ 	}
+ 
++	rw = bio_data_dir(bio);
+ 	bio_for_each_segment(bvec, bio, iter) {
+ 		int max_transfer_size = PAGE_SIZE - offset;
+ 
+@@ -747,15 +747,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+ 			bv.bv_len = max_transfer_size;
+ 			bv.bv_offset = bvec.bv_offset;
+ 
+-			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
++			if (zram_bvec_rw(zram, &bv, index, offset, rw) < 0)
+ 				goto out;
+ 
+ 			bv.bv_len = bvec.bv_len - max_transfer_size;
+ 			bv.bv_offset += max_transfer_size;
+-			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
++			if (zram_bvec_rw(zram, &bv, index + 1, 0, rw) < 0)
+ 				goto out;
+ 		} else
+-			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
++			if (zram_bvec_rw(zram, &bvec, index, offset, rw) < 0)
+ 				goto out;
+ 
+ 		update_position(&index, &offset, &bvec);
+@@ -810,8 +810,52 @@ static void zram_slot_free_notify(struct block_device *bdev,
+ 	atomic64_inc(&zram->stats.notify_free);
+ }
+ 
++static int zram_rw_page(struct block_device *bdev, sector_t sector,
++		       struct page *page, int rw)
++{
++	int offset, ret = 1;
++	u32 index;
++	u64 start, end, bound;
++	struct zram *zram;
++	struct bio_vec bv;
++
++	zram = bdev->bd_disk->private_data;
++
++	if (unlikely(sector&
++			(ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
++		goto out;
++
++	start = sector;
++	end = start + (PAGE_SIZE >> SECTOR_SHIFT);
++	bound = zram->disksize >> SECTOR_SHIFT;
++	if (unlikely(start >= bound || end > bound || start > end))
++		goto out;
++
++	down_read(&zram->init_lock);
++	if (unlikely(!init_done(zram))) {
++		ret = -ENOMEM;
++		goto out_unlock;
++	}
++
++	index = sector >> SECTORS_PER_PAGE_SHIFT;
++	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
++
++	bv.bv_page = page;
++	bv.bv_len = PAGE_SIZE;
++	bv.bv_offset = 0;
++
++	ret = zram_bvec_rw(zram, &bv, index, offset, rw);
++	page_endio(page, rw, ret);
++
++out_unlock:
++	up_read(&zram->init_lock);
++out:
++	return ret;
++}
++
+ static const struct block_device_operations zram_devops = {
+ 	.swap_slot_free_notify = zram_slot_free_notify,
++	.rw_page = zram_rw_page,
+ 	.owner = THIS_MODULE
+ };
+ 
+-- 
+1.7.9.5
 
-
-On 10/6/14, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Oct 06, 2014 at 03:39:06AM +0000, Gregory Smith wrote:
->> A bar stool scraping against the floor is too much information?
->
-> No, your use of "fucking idiot" in place where it reads as a signature.
-> OTOH, that information was already apparent from your earlier drivel...
->
-> Sod off, wankstain.  Doing a systemd-free fork will take time and efforts
-> of people who can do work.  And we tend to have other things to do *and*
-> nowhere near enough time.  "Raising awareness", pardon the obscenity, is
-> completely pointless in that situation - anybody who *can* contribute is
-> bloody well aware of the situation already.  The only difference you are
-> making (other than self-gratification) is adding reasons for potential
-> contributors to stay away from that work, simply to avoid being associated
-> with obnoxious twats like you.  Which means fewer people to spread the work
-> among, with everything that implies.
->
-> The situation is bad enough as it is.  You are actively making it worse.
-> What the fuck did you expect for that, gratitude?  From Lennart - maybe,
-> but as for those of us who want a maintainable system free of his shite
-> and understand that it won't happen without doing a non-trivial amount
-> of work...
->
