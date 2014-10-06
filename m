@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaJFVZo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 17:25:44 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:53589 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaJFVZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 17:25:42 -0400
-Date: Mon, 6 Oct 2014 22:25:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johannes Pointner <johannes.pointner@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mfd: tps65217: add compatible string for
- subdevices
-Message-ID: <20141006212536.GH18035@lee--X1>
-References: <3292130.zy6yLkolne@lenovobook>
+	id S1752537AbaJFV0N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 17:26:13 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57696 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751825AbaJFV0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 17:26:11 -0400
+Date: Mon, 6 Oct 2014 18:26:06 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+Message-ID: <20141006212606.GF14113@kernel.org>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3292130.zy6yLkolne@lenovobook>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Sep 2014, Johannes Pointner wrote:
+Heya, please check if this is OK.
 
-> Adds of_compatible strings to mfd_cells for sub devices of the tps65217.
-> 
-> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-> ---
->  drivers/mfd/tps65217.c | 2 ++
->  1 file changed, 2 insertions(+)
+This was while looking the set of methods used by rasd, trying to reduce
+it to the bare minimum.
 
-Applied for v3.19.
+Perhaps even that cpu_map__new() one can be ditched, leaving to use the
+default of a NULL cpumap that will end up being one with -1, i.e. all
+cpus.
 
-> diff --git a/drivers/mfd/tps65217.c b/drivers/mfd/tps65217.c
-> index 3cc4c70..77708f9 100644
-> --- a/drivers/mfd/tps65217.c
-> +++ b/drivers/mfd/tps65217.c
-> @@ -33,9 +33,11 @@
->  static const struct mfd_cell tps65217s[] = {
->  	{
->  		.name = "tps65217-pmic",
-> +		.of_compatible = "ti,tps65217-pmic",
->  	},
->  	{
->  		.name = "tps65217-bl",
-> +		.of_compatible = "ti,tps65217-bl",
->  	},
->  };
->  
+- Arnaldo
 
+>From 8dc34bd2824c7843182f4fc6deabaf573e42e806 Mon Sep 17 00:00:00 2001
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Mon, 6 Oct 2014 15:43:42 -0300
+Subject: [PATCH] rasd: Use perf_evlist__open() instead of open coded
+ equivalent
+
+Cc: Borislav Petkov <bp@suse.de>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ src/rasd.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/src/rasd.c b/src/rasd.c
+index 06ccdcdd9d56..fb33fca131fa 100644
+--- a/src/rasd.c
++++ b/src/rasd.c
+@@ -241,7 +241,6 @@ static void daemonize(void)
+ 
+ int main()
+ {
+-	struct perf_evsel *c;
+ 	struct thread_map *threads;
+ 	struct cpu_map *cpus;
+ 	int i;
+@@ -278,12 +277,9 @@ int main()
+ 	perf_evlist__set_maps(evlist, cpus, threads);
+ 
+ 	/* Open events */
+-	evlist__for_each(evlist, c) {
+-		/* On all online cpus by default, system wide tracing */
+-		if (perf_evsel__open(c, evlist->cpus, NULL) < 0)
+-			err("opening tracepoint, are you root?");
+-	}
+-	perf_evlist__set_id_pos(evlist);
++	/* On all online cpus by default, system wide tracing */
++	if (perf_evlist__open(evlist) < 0)
++		err("opening tracepoint, are you root?");
+ 
+ 	/* mmap buffers */
+ 	if (perf_evlist__mmap(evlist, 4 /* opts->mmap_pages */, false) < 0)
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.3
+
