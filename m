@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567AbaJFKAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 06:00:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33700 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288AbaJFJ75 (ORCPT
+	id S1751798AbaJFKEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 06:04:38 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:17101 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaJFKEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 05:59:57 -0400
-Date: Mon, 6 Oct 2014 10:59:31 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: Perf lockups / stack overflows on v3.17-rc6, x86_64, arm, arm64
-Message-ID: <20141006095931.GB24686@leverpostej>
-References: <20140925152825.GA6531@leverpostej>
- <alpine.DEB.2.11.1410050106360.9898@vincent-weaver-1.umelst.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410050106360.9898@vincent-weaver-1.umelst.maine.edu>
-Thread-Topic: Perf lockups / stack overflows on v3.17-rc6, x86_64, arm, arm64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 6 Oct 2014 06:04:37 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-9f-5432693220ad
+Message-id: <54326930.1090805@samsung.com>
+Date: Mon, 06 Oct 2014 12:04:32 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Chuck Ebbert <cebbert.lkml@gmail.com>, Jean Delvare <jdelvare@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH v2] cma: make default CMA area size zero for x86
+References: <1412517260-3832-1-git-send-email-akinobu.mita@gmail.com>
+In-reply-to: <1412517260-3832-1-git-send-email-akinobu.mita@gmail.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e/4VV2jTKMQg8ajghavDnQwWsxZv4bN
+	4si17+wWMz/sZLbon7Ga2WLiysnMFtM2ilss2G9tsfTuJzaLZYufMlpc3jWHzeLSgQVMFscu
+	/WO02LxpKrPFjw2PWS3+b/nM5iDgMX/nR0aPnbPusnus+LOezWPzCi2PTas62TzenTvH7nFi
+	xm8Wj8k3ljN6fHx6i8Xj/b6rQBWnqz0+b5LzONHyhTWAN4rLJiU1J7MstUjfLoEr49fkP6wF
+	z0Qqtu7axNLAeFCgi5GTQ0LAROLtnDUsELaYxIV769m6GLk4hASWMkpc7ZnIBOF8YpR4Nv0C
+	G0gVr4CWxNId58E6WARUJX4uX8gIYrMJGEp0ve0CquHgEBWIkXjTXgBRLijxY/I9sHIRgRSJ
+	/49nM4PMZBa4xiyxcNMCdpCEsICLxLoZ68DmCwm4Srz5PhUszingJnH97h9WEJtZwEziy8vD
+	ULa8xOY1b5knMArMQrJjFpKyWUjKFjAyr2IUTS1NLihOSs811CtOzC0uzUvXS87P3cQIicQv
+	OxgXH7M6xCjAwajEwxuxwzBEiDWxrLgy9xCjBAezkghvfJpRiBBvSmJlVWpRfnxRaU5q8SFG
+	Jg5OqQbG2PBdUdeM3q9wkHJatU/pZ9e26GsrqwKCpA/r2LrE2f/9fup8PafOXUPuG1PMpCXj
+	Q8LFDntJLkrgYVmTVBhx/bHa5tXntjcITD579oONYsflezd1a+q0moS4b6gxhDeb3P1daa2n
+	suWTYPhvn2x95uz7O7c/CnQP/2hwQJk5kFf0U/pchjwlluKMREMt5qLiRADZPaw6ogIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 06:13:24AM +0100, Vince Weaver wrote:
-> On Thu, 25 Sep 2014, Mark Rutland wrote:
-> 
-> > Log 1, x86_64 lockup
-> > [  223.007005]  [<ffffffff81168910>] ? poll_select_copy_remaining+0x130/0x130
-> > [  223.007005]  [<ffffffff811600ea>] ? getname_flags+0x4a/0x1a0
-> > [  223.007005]  [<ffffffff8116007d>] ? final_putname+0x1d/0x40
-> > [  223.007005]  [<ffffffff811602f4>] ? putname+0x24/0x40
-> > [  223.007005]  [<ffffffff8116581a>] ? user_path_at_empty+0x5a/0x90
-> > [  223.007005]  [<ffffffff810701c0>] ? wake_up_state+0x10/0x10
-> > [  223.007005]  [<ffffffff81198078>] ? eventfd_read+0x38/0x60
-> > [  223.007005]  [<ffffffff810a1e75>] ? ktime_get_ts64+0x45/0xf0
-> > [  223.007005]  [<ffffffff81169f00>] SyS_poll+0x60/0xf0
-> 
-> I have seen issues similar to this before, where the problem appeared
-> to be in poll/hrtimer.  Never managed to track down anything useful about
-> the bug.
+Hello,
 
-Ok. 
+On 2014-10-05 15:54, Akinobu Mita wrote:
+> This makes CMA memory area size zero for x86 in default configuration
+> (doesn't change on the other architectures).  If default CMA size is
+> zero, DMA_CMA is disabled.  It can be enabled by passing cma= to the
+> kernel.
+>
+> This makes less impact on x86.  Because there is no mainline driver that
+> requires it for x86, and Peter Hurley reported the performance
+> regression, as this is trying to drive _all_ dma mapping allocations
+> through a _very_ small window.
+>
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Reported-by: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Peter Hurley <peter@hurleysoftware.com>
+> Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Don Dutile <ddutile@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Andi Kleen <andi@firstfloor.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: x86@kernel.org
+> Cc: iommu@lists.linux-foundation.org
 
-> > Log 2, x86_64 stack overflow
-> 
-> > [  346.641345] divide error: 0000 [#1] SMP
-> > [  346.642010] Modules linked in:
-> > [  346.642010] CPU: 0 PID: 4076 Comm: perf_fuzzer Not tainted 3.17.0-rc6hark-perf-lockup+ #1
-> > [  346.642010] Hardware name: LENOVO 7484A3G/LENOVO, BIOS 5CKT54AUS 09/07/2009
-> > [  346.642010] task: ffff8801ac449a70 ti: ffff8801ac574000 task.ti: ffff8801ac574000
-> > [  346.642010] RIP: 0010:[<ffffffff81078bce>]  [<ffffffff81078bce>] find_busiest_group+0x28e/0x8a0
-> > [  346.642010] RSP: 0018:ffff8801ac577760  EFLAGS: 00010006
-> > [  346.642010] RAX: 00000000000003ff RBX: 0000000000000000 RCX: 00000000ffff8801
-> > [  346.642010] RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
-> > [  346.642010] RBP: ffff8801ac577890 R08: 0000000000000000 R09: 0000000000000000
-> > [  346.704010] ------------[ cut here ]------------
-> > [  346.704017] WARNING: CPU: 2 PID: 5 at arch/x86/kernel/irq_64.c:70 handle_irq+0x141/0x150()
-> > [  346.704019] do_IRQ():  has overflown the kernel stack (cur:1,sp:ffff8801b653fe88,irq stk top-bottom:ffff8801bed00080-ffff8801bed03fc0,exception stk top-bottom:ffff8801bed04080-ffff8801bed0a000)
-> 
-> weird, have not seen this before.  Though I was hitting a reboot issue
-> that would give really strange crash messages that was possibly fixed by
-> a patch that went into 3.17-rc7.
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
 
-Interesting. I'll retry with v3.17.
+> ---
+> * v2
+> - Add information in help text, suggested by Chuck Ebbert
+>
+>   drivers/base/Kconfig | 8 +++++++-
+>   1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 4e7f0ff..115882f 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -240,18 +240,24 @@ comment "Default contiguous memory area size:"
+>   config CMA_SIZE_MBYTES
+>   	int "Size in Mega Bytes"
+>   	depends on !CMA_SIZE_SEL_PERCENTAGE
+> +	default 0 if X86
+>   	default 16
+>   	help
+>   	  Defines the size (in MiB) of the default memory area for Contiguous
+> -	  Memory Allocator.
+> +	  Memory Allocator.  If the size of 0 is selected, CMA is disabled by
+> +	  default, but it can be enabled by passing cma=size[MG] to the kernel.
+> +
+>   
+>   config CMA_SIZE_PERCENTAGE
+>   	int "Percentage of total memory"
+>   	depends on !CMA_SIZE_SEL_MBYTES
+> +	default 0 if X86
+>   	default 10
+>   	help
+>   	  Defines the size of the default memory area for Contiguous Memory
+>   	  Allocator as a percentage of the total memory in the system.
+> +	  If 0 percent is selected, CMA is disabled by default, but it can be
+> +	  enabled by passing cma=size[MG] to the kernel.
+>   
+>   choice
+>   	prompt "Selected region size"
 
-> > Log 3, arm64 lockup
-> > ---->8----
-> 
-> >         Seeding random number generator with 1411488270
-> >         /proc/sys/kernel/perf_event_max_sample_rate currently: 285518974/s
-> >         /proc/sys/kernel/perf_event_paranoid currently: 1142898651
-> 
-> Those last two lines are suspect.  Is my fuzzer broken on arm64 somehow?
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-Good point. I'd mainly paid attention to the stack dump and hadn't
-noticed. I'll take a look shortly and see what's going on.
-
-> Sorry that I don't have good answers for these bugs, but I will stick them 
-> in my perf_fuzzer outstanding bugs list.
-
-Cheers anyhow. I'll see if I can figure out anything further.
-
-Mark.
