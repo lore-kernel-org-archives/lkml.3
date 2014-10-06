@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaJFOHw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 10:07:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52240 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681AbaJFOHl (ORCPT
+	id S1752786AbaJFOI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 10:08:27 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:59668 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758AbaJFOI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 10:07:41 -0400
-Message-ID: <5432A229.70309@codeaurora.org>
-Date: Mon, 06 Oct 2014 07:07:37 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Heesub Shin <heesub.shin@samsung.com>, Pintu Kumar <pintu.k@samsung.com>,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        john.stultz@linaro.org, rebecca@android.com, ccross@android.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-CC: iqbal.ams@samsung.com, pintu_agarwal@yahoo.com, vishnu.ps@samsung.com
-Subject: Re: [PATCH 1/1] [ion]: system-heap use PAGE_ALLOC_COSTLY_ORDER for
- high order
-References: <1412584263-22531-1-git-send-email-pintu.k@samsung.com> <54326EAF.8060004@samsung.com>
-In-Reply-To: <54326EAF.8060004@samsung.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Mon, 6 Oct 2014 10:08:26 -0400
+Date: Mon, 6 Oct 2014 16:08:16 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 10/16] virtio: add API to enable VQs early
+Message-ID: <20141006160816.68490a49.cornelia.huck@de.ibm.com>
+In-Reply-To: <1412525038-15871-11-git-send-email-mst@redhat.com>
+References: <1412525038-15871-1-git-send-email-mst@redhat.com>
+	<1412525038-15871-11-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100614-5024-0000-0000-0000018D5154
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/6/2014 3:27 AM, Heesub Shin wrote:
-> Hello Kumar,
->
-> On 10/06/2014 05:31 PM, Pintu Kumar wrote:
->> The Android ion_system_heap uses allocation fallback mechanism
->> based on 8,4,0 order pages available in the system.
->> It changes gfp flags based on higher order allocation request.
->> This higher order value is hard-coded as 4, instead of using
->> the system defined higher order value.
->> Thus replacing this hard-coded value with PAGE_ALLOC_COSTLY_ORDER
->> which is defined as 3.
->> This will help mapping the higher order request in system heap with
->> the actual allocation request.
->
-> Quite reasonable.
->
-> Reviewed-by: Heesub Shin <heesub.shin@samsung.com>
->
-> BTW, Anyone knows how the allocation order (8,4 and 0) was decided? I
-> think only Google guys might know the answer.
->
-> regards,
-> heesub
->
+On Sun, 5 Oct 2014 19:07:19 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-My understanding was this was completely unrelated to the costly order
-and was related to the page sizes corresponding to IOMMU page sizes
-(1MB, 64K, 4K). This won't make a difference for the uncached page
-pool case but for the not page pool case, I'm not sure if there would
-be a benefit for trying to get 32K pages with some effort vs. just
-going back to 4K pages.
+> virtio spec requires DRIVER_OK to be set before
+> VQs are used, but some drivers use VQs before probe
+> function returns.
+> Since DRIVER_OK is set after probe, this violates the spec.
 
-Do you have any data/metrics that show a benefit from this patch?
+"Even though transitional devices support this behaviour, we want to
+make it possible for those early callers to become spec compliant."
 
-Thanks,
-Laura
+?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> 
+> Add API for drivers to call before using VQs.
+> 
+> Sets DRIVER_OK internally.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/linux/virtio_config.h | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+> index e8f8f71..6127fc8 100644
+> --- a/include/linux/virtio_config.h
+> +++ b/include/linux/virtio_config.h
+> @@ -109,6 +109,23 @@ struct virtqueue *virtio_find_single_vq(struct virtio_device *vdev,
+>  	return vq;
+>  }
+> 
+> +/**
+> + * virtio_early_enable_vqs - enable vq use in probe function
+> + * @vdev: the device
+> + *
+> + * Driver must call this to use vqs in the probe function.
+> + *
+> + * Note: vqs are enabled automatically after probe returns.
+> + */
+> +static inline
+> +void virtio_early_enable_vqs(struct virtio_device *dev)
+> +{
+> +	unsigned status = dev->config->get_status(dev);
+> +
+> +	BUG_ON(status & VIRTIO_CONFIG_S_DRIVER_OK);
+> +	dev->config->set_status(dev, status | VIRTIO_CONFIG_S_DRIVER_OK);
+> +}
+> +
+
+Maybe virtio_enable_vqs_early() instead?
+
+>  static inline
+>  const char *virtio_bus_name(struct virtio_device *vdev)
+>  {
+
