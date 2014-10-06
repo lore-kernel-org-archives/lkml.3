@@ -1,75 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487AbaJFTUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 15:20:22 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:24801 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782AbaJFTUT convert rfc822-to-8bit (ORCPT
+	id S1752815AbaJFTWz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 15:22:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:37260 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859AbaJFTWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 15:20:19 -0400
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Fabian Frederick <fabf@skynet.be>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ISS StorageDev <iss_storagedev@hp.com>
-Subject: RE: [PATCH 4/7 linux-next] cpqarray: remove deprecated IRQF_DISABLED
-Thread-Topic: [PATCH 4/7 linux-next] cpqarray: remove deprecated
- IRQF_DISABLED
-Thread-Index: AQHP4XtW6NaI8huerUmoksX4F9I6lpwjcQQw
-Date: Mon, 6 Oct 2014 19:19:38 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402958CD82A4@G4W3202.americas.hpqcorp.net>
-References: <1412609755-28627-1-git-send-email-fabf@skynet.be>
- <1412609755-28627-5-git-send-email-fabf@skynet.be>
-In-Reply-To: <1412609755-28627-5-git-send-email-fabf@skynet.be>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.192.236]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 6 Oct 2014 15:22:54 -0400
+Date: Mon, 06 Oct 2014 15:22:51 -0400 (EDT)
+Message-Id: <20141006.152251.1468043820451352291.davem@davemloft.net>
+To: standby24x7@gmail.com
+Cc: herbert@gondor.apana.org.au, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: Remove unnecessary KERN_INFO from testmgr.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1412609874-22311-1-git-send-email-standby24x7@gmail.com>
+References: <1412609874-22311-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 06 Oct 2014 12:22:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Masanari Iida <standby24x7@gmail.com>
+Date: Tue,  7 Oct 2014 00:37:54 +0900
 
-> -----Original Message-----
-> From: Fabian Frederick [mailto:fabf@skynet.be]
-> Sent: Monday, October 06, 2014 10:36 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: Greg Kroah-Hartman; Fabian Frederick; ISS StorageDev
-> Subject: [PATCH 4/7 linux-next] cpqarray: remove deprecated
-> IRQF_DISABLED
+> This patch remove unncessary KERN_INFO from pr_info within testmgr.c
 > 
-> See include/linux/interrupt.h:
-> "This flag is a NOOP and scheduled to be removed"
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  drivers/block/cpqarray.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-> index 2b94403..370721e 100644
-> --- a/drivers/block/cpqarray.c
-> +++ b/drivers/block/cpqarray.c
-> @@ -406,7 +406,7 @@ static int cpqarray_register_ctlr(int i, struct
-> pci_dev *pdev)
->  	}
->  	hba[i]->access.set_intr_mask(hba[i], 0);
->  	if (request_irq(hba[i]->intr, do_ida_intr,
-> -		IRQF_DISABLED|IRQF_SHARED, hba[i]->devname, hba[i]))
-> +		IRQF_SHARED, hba[i]->devname, hba[i]))
->  	{
->  		printk(KERN_ERR "cpqarray: Unable to get irq %d for %s\n",
->  				hba[i]->intr, hba[i]->devname);
-> --
-> 1.9.3
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-Although we're awaiting resolution of MAINTAINERS updates for that
-driver, this change was already made to cciss and hpsa several years
-ago and seems fine here too.
-
-Acked-by: Robert Elliott <elliott@hp.com>
-
+Acked-by: David S. Miller <davem@davemloft.net>
