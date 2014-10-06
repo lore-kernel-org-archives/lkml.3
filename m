@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334AbaJFUmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 16:42:03 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:38557 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780AbaJFUmA (ORCPT
+	id S1752450AbaJFUmm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 16:42:42 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:37173 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116AbaJFUml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 16:42:00 -0400
-Date: Mon, 6 Oct 2014 13:41:55 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: gregkh@linuxfoundation.org, tiwai@suse.de, tj@kernel.org,
-        arjan@linux.intel.com, teg@jklm.no, rmilasan@suse.com, werner@suse.com,
-        oleg@redhat.com, hare@suse.com, bpoirier@suse.de, santosh@chelsio.com,
-        pmladek@suse.cz, dbueso@suse.com, mcgrof@suse.com,
-        linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
- built-in and modules
-Message-ID: <20141006204155.GA37994@dtor-ws>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
- <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
+	Mon, 6 Oct 2014 16:42:41 -0400
+Message-ID: <5432FEB8.401@imgtec.com>
+Date: Mon, 6 Oct 2014 13:42:32 -0700
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Burton <paul.burton@imgtec.com>
+CC: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
+        <david.daney@cavium.com>, <peterz@infradead.org>,
+        <paul.gortmaker@windriver.com>, <davidlohr@hp.com>,
+        <macro@linux-mips.org>, <chenhc@lemote.com>, <zajec5@gmail.com>,
+        <james.hogan@imgtec.com>, <keescook@chromium.org>,
+        <alex@alex-smith.me.uk>, <tglx@linutronix.de>, <blogic@openwrt.org>,
+        <jchandra@broadcom.com>, <qais.yousef@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
+        <markos.chandras@imgtec.com>, <manuel.lauss@gmail.com>,
+        <akpm@linux-foundation.org>, <lars.persson@axis.com>
+Subject: Re: [PATCH 2/3] MIPS: Setup an instruction emulation in VDSO protected
+ page instead of user stack
+References: <20141004030438.28569.85536.stgit@linux-yegoshin> <20141004031730.28569.38511.stgit@linux-yegoshin> <20141006122917.GB4704@pburton-laptop>
+In-Reply-To: <20141006122917.GB4704@pburton-laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+On 10/06/2014 05:29 AM, Paul Burton wrote:
 
-On Fri, Oct 03, 2014 at 02:44:43PM -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> At times we may wish to express the desire to prefer to have
-> a device driver probe asynchronously by default. We cannot
-> simply enable all device drivers to do this without vetting
-> that userspace is prepared for this though given that some
-> old userspace is expected to exist which is not equipped to
-> deal with broad async probe support. This defines a new kernel
-> parameter, bus.enable_kern_async=1, to help address this both to
-> help enable async probe support for built-in drivers and to
-> enable drivers to specify a preference to opt in for async
-> probe support.
-> 
-> If you have a device driver that should use async probe
-> support when possible enable the prefer_async_probe bool.
-> 
-> Folks wishing to test enabling async probe for all built-in
-> drivers can enable bus.__DEBUG__kernel_force_mod_async_probe=1,
-> if you use that though you are on your own.
+>>
+>> First some general questions: is there any reason to need the page used
+>> to be at the same virtual address for each thread? I can't think of one,
+>> and if that's the case then why not simply allocate a series of pages
+>> per-thread via mmap_region or similar, on demand when a thread first
+>> executes an FP branch instruction? That would of course consume some
+>> more virtual address space, but would avoid the hassles of manually
+>> prodding at the TLB, tracking ASIDs & flushing the caches. Perhaps the
+>> shrinker interface could be used to allow freeing those pages if & when
+>> it becomes necessary for long running threads.
+The only reason to have the same virtual address is to keep mmap 
+accounting the same. An original 'VDSO' is presented in mmap for all 
+threads of the same mmap.
 
-Thank you for working on this. However there are still couple of issues
-with the async probe.
+As for another approach, I think it may be too much code to handle it 
+and too much implicit interlinks with common Linux code and GLIBC/bionic.
 
-1. As far as I can see you only handle the case when device is already
-present and you load a driver. In this case we will do either async or
-sync probing, depending on the driver/module settings. However if driver
-has already been loaded/registered and we are adding a new device
-(another module load, for example you load i2c controller module and it
-enumerates its children, or driver signalled deferral during binding)
-the probe will be synchronous regardless of the settings.
+>>
+>> Also VDSO is really a misnomer throughout, as I've pointed out to you
+>> before. I'm aware it's an existing misnomer, but it would be nice if
+>> we could clear that up rather than repeat it...
+>>
+Yes, I agree but that is outside of this patch. I think it has sense to 
+rename the current stuff to something like "Emulation" right before some 
+patch which implement the real VDSO capability on MIPS.
 
-2. I thin kin the current implementation deferred binding process is
-still single-threaded and basically synchronous.
+>> +		if (get_isa16_mode(regs->cp0_epc)) {
+>> +			*(u16 *)&fr->emul = (u16)(ir >> 16);
+>> +			*((u16 *)(&fr->emul) + 1) = (u16)(ir & 0xffff);
+> This microMIPS case doesn't set badinst, as I pointed out internally.
+Thank you, I missed it, may be due to long citation. I will add it.
 
-Both of these issues stem form the fact that you only plugging into
-bus_add_driver(), but you also need to plug into bus_probe_device(). I
-believe I handled these 2 cases properly in the version of patch I sent
-a couple of weeks ago so if you could incorporate that in your work that
-would be great.
+>   I
+> think it would be much cleaner if you were to do something along the
+> lines of:
+>
+I try to keep it as close as an original code for better understanding. 
+Even with it there are questions.
 
-Thanks.
+Your variant may be cleaner but it may be some next style change patch.
 
--- 
-Dmitry
+- Leonid.
+
