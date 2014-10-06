@@ -1,76 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348AbaJFTMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 15:12:34 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51839 "EHLO mail.kernel.org"
+	id S1753390AbaJFTMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 15:12:55 -0400
+Received: from mout.gmx.net ([212.227.15.18]:52843 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011AbaJFTMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 15:12:33 -0400
-Date: Mon, 6 Oct 2014 16:12:27 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: perf & rasd integration plan
-Message-ID: <20141006191227.GD14113@kernel.org>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20141006150741.GB14113@kernel.org>
- <20141006151605.GE4372@pd.tnic>
+	id S1753011AbaJFTMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 15:12:53 -0400
+Message-ID: <5432E921.7040306@gmx.de>
+Date: Mon, 06 Oct 2014 21:10:25 +0200
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006151605.GE4372@pd.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jan Kara <jack@suse.cz>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@parisplace.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 1/1] fallocate: create FAN_MODIFY and IN_MODIFY events
+References: <1412287587-5392-1-git-send-email-xypron.glpk@gmx.de> <1412324370-959-1-git-send-email-xypron.glpk@gmx.de> <20141006141227.GF7526@quack.suse.cz>
+In-Reply-To: <20141006141227.GF7526@quack.suse.cz>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:TjNRaEmnMozMyCzHXkaJUClFs+ExHLdChH6r+0yK2PKNlGSa1xH
+ uxW3WIHxhgiM/gQ4Lm99ndtEmP7Vq9WardOxFVqTfRWpLdxZfRAL/WTEcf/WRPK7qA2bvi6
+ zSUMOCT9SJ3Bdg0IF6lRXxyc4STTepY+wYGGqKwHodhgRw7jlDc+rZjADYx3HsQLYQ8NsKw
+ uIpCIprCXllRB2RrZ/qJQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Oct 06, 2014 at 05:16:06PM +0200, Borislav Petkov escreveu:
-> On Mon, Oct 06, 2014 at 12:07:41PM -0300, Arnaldo Carvalho de Melo wrote:
-> > So, why have you commented out the perf_missing_features fallbacks? Are
-> > they getting in the way somehow, what can we do upstream, i.e. in
-> > tools/perf/util/ so that it gets closer to what you want to have?
-> > 
-> > Ditto for all the other ifdef'ed code, can you elaborate on why each is
-> > needed? That will help in moving what is used by rasd from
-> > tools/perf/util/ to tools/perf/lib/ so that we can eliminate the
-> > duplicity.
-> 
-> Oh, the reason is very simple: so that it builds. We don't need those
-> facilities yet. We will enable them when needed but we wanted to
-> concentrate on rasd first and later clean up stuff as we go.
+On 06.10.2014 16:12, Jan Kara wrote:
+> On Fri 03-10-14 10:19:30, Heinrich Schuchardt wrote:
+>> The fanotify and the inotify API can used to monitor changes of the file
+>> system.
+>>
+>> System call fallocate modifies files. Hence it should trigger the corresponding
+>> fanotify (FAN_MODIFY) and inotify (IN_MODIFY) events.
+>>
+>> This patch adds the missing call to fsnotify_modify.
+>    Well, there are different fallocate() commands and e.g. pure
+> FALLOC_FL_KEEP_SIZE call will not change any data in the file. I'm not sure
+> how much we care but I wanted to point that out...
 
-Right, and it is being a great exercise, thanks for the patience so far
-;-)
+The most interesting case is FALLOC_FL_COLLAPSE_RANGE because this value 
+allows to create arbitrary file content from random data. Hence I think 
+we really need to create FAN_MODIFY in this case.
 
-Looking at those ifdefs we see things that are specific to tools/perf/,
-like perf_evsel having a struct hists embedded... I.e. that is of no
-interest whatsoever (so far) to rasd, and in turn pulls other object
-files.
+As the fallocate(2) man page teaches:
+After a successful call, subsequent writes into the range specified by 
+offset and len are guaranteed not to fail because of lack of disk space.
 
-So I think that right now we need to look at those ifdefs and go on
-making what is in tools/perf/util/ stop using it somehow, so that what
-then gets moved to tools/lib/api/perf/ (I guess this is where it should
-be, opinions?) have that sorted out.
+So calling fallocate(fd, FALLOC_FL_KEEP_SIZE, offset, len) may result in 
+different outcomes of a subsequent write depending on the values of 
+offset and len.
 
-I.e. what goes to tools/lib/api/perf/ is what is common to the needs of
-tools/perf/ and rasd (wherever it may roam).
+Calling fallocate for a region already zeroed will not result in any 
+data change.
 
-Perhaps something like I did for sock/inet_sock/inet_connection_sock
-ages ago... I.e. the tools that want a hists will have a 
+I would like to compare fallocate() with write().
 
-struct hists_evsel {
-	struct perf_evsel evsel;
-	struct hists	  hists;
-};
+When we call write() we always create a FAN_MODIFY event even in the 
+case of overwriting with identical data.
 
-etc.
+So event FAN_MODIFY does not provide any guarantee that data was 
+actually changed.
 
-Experimenting with that, as it is the only thing ifdefed out in rasd's
-copy of evsel.h...
+In analogy to write() I suggest to keep the logic for fallocate() as 
+trivial as possible:
+If fallocate() succeeds, create IN_MODIFY and FAN_MODIFY events.
 
-- Arnaldo
+Best regards
+
+Heinrich Schuchardt
+>
+>> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+>> ---
+>>   fs/open.c | 5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git a/fs/open.c b/fs/open.c
+>> index d6fd3ac..03aa8e5 100644
+>> --- a/fs/open.c
+>> +++ b/fs/open.c
+>> @@ -295,6 +295,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>>
+>>   	sb_start_write(inode->i_sb);
+>>   	ret = file->f_op->fallocate(file, mode, offset, len);
+>> +
+>> +	/* Create inotify and fanotify events. */
+>> +	if (ret == 0)
+>> +		fsnotify_modify(file);
+>> +
+>>   	sb_end_write(inode->i_sb);
+>>   	return ret;
+>>   }
+>> --
+>> 2.1.0
+>>
+
