@@ -1,97 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbaJFNue (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 09:50:34 -0400
-Received: from mga03.intel.com ([134.134.136.65]:32524 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752691AbaJFNua convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752741AbaJFNua (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 6 Oct 2014 09:50:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,664,1406617200"; 
-   d="scan'208";a="584127134"
-From: "Tirdea, Irina" <irina.tirdea@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-CC: "Baluta, Daniel" <daniel.baluta@intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH 4/8] iio: core: Introduce pedometer STEP counter
- modifier
-Thread-Topic: [RFC PATCH 4/8] iio: core: Introduce pedometer STEP counter
- modifier
-Thread-Index: AQHP39IqO8PzZJcz2UyGrX1QEK4nhZwjD6NA
-Date: Mon, 6 Oct 2014 13:50:13 +0000
-Deferred-Delivery: Mon, 6 Oct 2014 13:50:00 +0000
-Message-ID: <1F3AC3675D538145B1661F571FE1805F199AD91D@IRSMSX105.ger.corp.intel.com>
-References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
- <1412257439-15683-5-git-send-email-daniel.baluta@intel.com>
- <542FEDB7.3050302@kernel.org>
-In-Reply-To: <542FEDB7.3050302@kernel.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53412 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaJFNuZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 09:50:25 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH v2 01/16] ACPI: Add support for device specific
+ properties
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-acpi@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Aaron Lu <aaron.lu@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+In-Reply-To: <1410868367-11056-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
+	<1410868367-11056-2-git-send-email-mika.westerberg@linux.intel.com>
+Date: Mon, 06 Oct 2014 14:50:21 +0100
+Message-Id: <20141006135021.0EB04C43FBE@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Jonathan Cameron [mailto:jic23@kernel.org]
-> On 02/10/14 14:43, Daniel Baluta wrote:
-> > From: Irina Tirdea <irina.tirdea@intel.com>
-> >
-> > One of the functionalities of a pedometer is a step counter.
-> > The step counter needs to be enabled and then it will count the steps
-> > in its hardware register. Whenever the applications need to check
-> > the step count, they will read the step counter register.
-> >
-> > To support this functionality we need a steps attribute that
-> > will export the number of steps.
-> >
-> I'm not keen on multiplexing different types of data onto a single activity type.
-> Steps is well enough defined on it's own to have it's own channel type.
+On Tue, 16 Sep 2014 14:52:32 +0300
+, Mika Westerberg <mika.westerberg@linux.intel.com>
+ wrote:
+> Device Tree is used in many embedded systems to describe the system
+> configuration to the OS. It supports attaching properties or name-value
+> pairs to the devices it describe. With these properties one can pass
+> additional information to the drivers that would not be available
+> otherwise.
 > 
-> in_steps_input would be fine by me.  I suppose steps might mean something else
-> though...
+> ACPI is another configuration mechanism (among other things) typically
+> seen, but not limited to, x86 machines. ACPI allows passing arbitrary
+> data from methods but there has not been mechanism equivalent to Device
+> Tree until the introduction of _DSD in the recent publication of the
+> ACPI 5.1 specification.
 > 
+> In order to facilitate ACPI usage in systems where Device Tree is
+> typically used, it would be beneficial to standardize a way to retrieve
+> Device Tree style properties from ACPI devices, which is what we do in
+> this patch.
+> 
+> If a given device described in ACPI namespace wants to export properties it
+> must implement _DSD method (Device Specific Data, introduced with ACPI 5.1)
+> that returns the properties in a package of packages. For example:
+> 
+> 	Name (_DSD, Package () {
+> 		ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+> 		Package () {
+> 			Package () {"name1", <VALUE1>},
+> 			Package () {"name2", <VALUE2>},
+> 			...
+> 		}
+> 	})
+> 
+> The UUID reserved for properties is daffd814-6eba-4d8c-8a91-bc9bbf4aa301
+> and is documented in the ACPI 5.1 companion document called "_DSD
+> Implementation Guide" [1], [2].
+> 
+> We add several helper functions that can be used to extract these
+> properties and convert them to different Linux data types.
+> 
+> The ultimate goal is that we only have one device property API that
+> retrieves the requested properties from Device Tree or from ACPI
+> transparent to the caller.
+> 
+> [1] http://www.uefi.org/sites/default/files/resources/_DSD-implementation-guide-toplevel.htm
+> [2] http://www.uefi.org/sites/default/files/resources/_DSD-device-properties-UUID.pdf
+> 
+> Reviewed-by: Hanjun Guo <hanjun.guo@linaro.org>
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/acpi/Makefile   |   1 +
+>  drivers/acpi/internal.h |   6 +
+>  drivers/acpi/property.c | 364 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/scan.c     |   2 +
+>  include/acpi/acpi_bus.h |   7 +
+>  include/linux/acpi.h    |  40 ++++++
+>  6 files changed, 420 insertions(+)
+>  create mode 100644 drivers/acpi/property.c
+> 
+> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> index 505d4d79fe3e..ba2cafe18fe4 100644
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -46,6 +46,7 @@ acpi-y				+= acpi_pnp.o
+>  acpi-y				+= power.o
+>  acpi-y				+= event.o
+>  acpi-y				+= sysfs.o
+> +acpi-y				+= property.o
+>  acpi-$(CONFIG_X86)		+= acpi_cmos_rtc.o
+>  acpi-$(CONFIG_DEBUG_FS)		+= debugfs.o
+>  acpi-$(CONFIG_ACPI_NUMA)	+= numa.o
+> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> index 4c5cf77e7576..e34290c7af9f 100644
+> --- a/drivers/acpi/internal.h
+> +++ b/drivers/acpi/internal.h
+> @@ -181,4 +181,10 @@ struct platform_device *acpi_create_platform_device(struct acpi_device *adev);
+>  bool acpi_osi_is_win8(void);
+>  #endif
+>  
+> +/*--------------------------------------------------------------------------
+> +				Device properties
+> +  -------------------------------------------------------------------------- */
+> +void acpi_init_properties(struct acpi_device *adev);
+> +void acpi_free_properties(struct acpi_device *adev);
+> +
+>  #endif /* _ACPI_INTERNAL_H_ */
+> diff --git a/drivers/acpi/property.c b/drivers/acpi/property.c
+> new file mode 100644
+> index 000000000000..c4a3e800e82c
+> --- /dev/null
+> +++ b/drivers/acpi/property.c
+> @@ -0,0 +1,364 @@
+> +/*
+> + * ACPI device specific properties support.
+> + *
+> + * Copyright (C) 2014, Intel Corporation
+> + * All rights reserved.
+> + *
+> + * Authors: Mika Westerberg <mika.westerberg@linux.intel.com>
+> + *          Darren Hart <dvhart@linux.intel.com>
+> + *          Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/acpi.h>
+> +#include <linux/device.h>
+> +#include <linux/export.h>
+> +
+> +#include "internal.h"
+> +
+> +/* ACPI _DSD device properties UUID: daffd814-6eba-4d8c-8a91-bc9bbf4aa301 */
+> +static const u8 prp_uuid[16] = {
+> +	0x14, 0xd8, 0xff, 0xda, 0xba, 0x6e, 0x8c, 0x4d,
+> +	0x8a, 0x91, 0xbc, 0x9b, 0xbf, 0x4a, 0xa3, 0x01
+> +};
 
-Hi Jonathan,
+?
 
-Thanks for the review.
+What is the encoding used here? I see the first 4 bytes for "daffd814"
+encoded in little endian (0x14 first), and then the remaining values
+encoded in big-endian for each number. Is this typical for UUID values?
 
-Moving the pedometer part to a new type sounds good to me.
-However, I would prefer to add a new type called pedometer and keep steps as a modifier, generating names like in_ped_steps_input for the attribute and in_ped_steps_instance_en for the event.
-The reason for this is that for supporting Freescale's MMA9553L we will need additional attributes (distance, speed, calories, height, weight) that we can add as modifiers to this pedometer type. To keep things simple, I did not add these additional attributes to the RFC series, but I could do that if you think it would be useful. For this device, the motion events (walking, running, jogging, still) also depend on the height attribute being set, but we intend to deal with this dependency in the driver (using the pedometer's height attribute).
+Otherwise the patch looks okay.
 
-What do you think?
+g.
 
-Thanks,
-Irina
-
-
-> > --- a/drivers/iio/industrialio-core.c
-> > +++ b/drivers/iio/industrialio-core.c
-> > @@ -96,6 +96,7 @@ static const char * const iio_modifier_names[] = {
-> >  	[IIO_MOD_JOGGING] = "jogging",
-> >  	[IIO_MOD_WALKING] = "walking",
-> >  	[IIO_MOD_STILL] = "still",
-> > +	[IIO_MOD_PED_STEPS] = "steps",
-> >  };
-> >
-> >  /* relies on pairs of these shared then separate */
-> > diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-> > index 003638d..ae51780 100644
-> > --- a/include/linux/iio/types.h
-> > +++ b/include/linux/iio/types.h
-> > @@ -65,6 +65,7 @@ enum iio_modifier {
-> >  	IIO_MOD_JOGGING,
-> >  	IIO_MOD_WALKING,
-> >  	IIO_MOD_STILL,
-> > +	IIO_MOD_PED_STEPS,
-> >  };
-> >
-> >  enum iio_event_type {
-> >
