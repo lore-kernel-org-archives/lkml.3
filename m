@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaJGSeQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:34:16 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:12970 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697AbaJGSeP (ORCPT
+	id S1754881AbaJGSmf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:42:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42788 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753242AbaJGSme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:34:15 -0400
-Message-ID: <543431DA.4090809@imgtec.com>
-Date: Tue, 7 Oct 2014 11:32:58 -0700
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 7 Oct 2014 14:42:34 -0400
+Date: Tue, 7 Oct 2014 14:42:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Krzysztof Opasiak <k.opasiak@samsung.com>,
+        "'Robert Baldyga'" <r.baldyga@samsung.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <andrzej.p@samsung.com>
+Subject: Re: [PATCH] usb: gadget: f_fs: add "zombie" mode
+In-Reply-To: <20141007175713.GA16781@saruman>
+Message-ID: <Pine.LNX.4.44L0.1410071429500.1504-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Matthew Fortune <Matthew.Fortune@imgtec.com>
-CC: David Daney <david.s.daney@gmail.com>, Rich Felker <dalias@libc.org>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Daney <ddaney.cavm@gmail.com>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
-In-Reply-To: <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well, I am not a subscriber to mail-list, so I read it the first time 
-and some notes:
+On Tue, 7 Oct 2014, Felipe Balbi wrote:
 
-1)  David's approach would likely work for FPU emulation but unlikely 
-works for MIPS Rel 2/Rel 1/ MIPS I emulation in MIPS R6 architecture. 
-The reason is that the first MIPS R2 instruction (removed from MIPS R6) 
-can be hit long before GLIBC/bionic/etc can determine how to use 
-properly a new system call. And that instruction needs to be emulated. I 
-actually hit this problem with ssh-keygen first and referred to  FPU 
-emulation because I got it later, during my attempt to salvage a situation.
+> > It seems to me that we should imitate what an ordinary USB device would
+> > do.  If part of the firmware crashes, generally you would expect none
+> > of the endpoints associated with that function to work.  Either they
+> > refuse to accept output from the host or they stall everything.  But
+> > endpoints associated with other parts of the firmware might very well
+> > continue to work okay.
+> 
+> dunno, I have never seen a USB device firmware crash and I don't think
+> anybody deliberately does anything to make sure other parts of the
+> device work. If it _does_ work, I'd assume it's really by chance.
 
-2)  The issue of uMIPS ADDIUPC and similar instructions are overblown in 
-my opinion. Never of them are memory-related and their emulation in 
-BD-slot can be easily done in kernel and that actually accelerates an 
-emulation. Look at piece of code which I wrote to accelerate an 
-emulation of some instructions in BD-slot of JR instruction:
+I've seen it happen lots of times, but only on single-function devices.  
+When it somes to multi-function devices, who knows?
 
-         switch (MIPSInst_OPCODE(ir)) {
-         case addiu_op:
-                 if (MIPSInst_RT(ir))
-                         regs->regs[MIPSInst_RT(ir)] =
-(s32)regs->regs[MIPSInst_RS(ir)] +
-                                 (s32)MIPSInst_SIMM(ir);
-                 return(0);
-#ifdef CONFIG_64BIT
-         case daddiu_op:
-                 if (MIPSInst_RT(ir))
-                         regs->regs[MIPSInst_RT(ir)] =
-(s64)regs->regs[MIPSInst_RS(ir)] +
-(s64)MIPSInst_SIMM(ir);
-return(0);
-#endif
+Still, with the single-function devices, firmware crashes generally 
+don't lead to disconnections.  Sometimes they do, but usually they 
+don't.
 
-Five lines per instruction.
+> > Don't buffer requests.  Either allow the internal FIFOs to fill up or
+> > else reject everything.  Any reasonable host will start getting timeout
+> > expirations and will realize that something is wrong.
+> 
+> Right, but if we allow this, I can already see folks abusing to connect
+> to the host early and only when necessary do some trickery to e.g. start
+> adbd (not saying Android will do this, just using it as an easy
+> example).
 
-3)  The signal happened during execution of emulated instruction - 
-signals are under control of kernel and we can easily delay a signal 
-during execution of emulated instruction until return from do_dsemulret. 
-It is not a big deal - nor code, nor performance. Thank you for good point.
+We can still keep the pullup turned off until all the functions are
+ready.  That's a part of normal behavior -- unlike what happens when a
+userspace component crashes or is killed.
 
-4)  The voice for doing any instruction emulation in kernel - it is not 
-a MIPS business model to force customer to put details of all 
-Coprocessor 2 instructions public. We provide an interface and the rest 
-is a customer business. Besides that it is really painful to make a 
-differentiation between Cavium Octeon and some another CPU instructions 
-with the same opcode. On other side, leaving emulation of their 
-instructions to them is not a wise after having some good way doing that 
-multiple years.
+> Sure, we can deactivate and only activate when files are opened but is
+> there any guarantee that when a process receives segfault that we will
+> have, from FFS point of view, any information to know that the thing
+> crashed ? I mean, a userland application can register its own handler
+> for SIGSEGV/SIGKILL, right ? And that handler could very well just call
+> close() on all file descriptors. Then how do we differentiate a normal
+> close() from a "oh-crap-I-died" close() ?
 
-- Leonid.
+We can't, so why worry about it?
+
+If a file handle was closed for normal reasons then userspace probably 
+in the middle of shutting down the gadget anyway.  If not then the 
+user will get what they deserve.
+
+If the file handle was closed for abnormal reasons, we can behave like 
+crashed firmware.  Which means, in the end, doing the same thing as in 
+the normal-reason case -- i.e., do nothing.  In particular, don't 
+disconnect.
+
+If you want to allow for the possibility of orderly shutdown (and maybe 
+even possible restart) of a userspace handler, the function library 
+should first tell the kernel explicitly to disconnect.  Then function 
+components can be changed around completely, and when everything is 
+ready, userspace can tell the kernel to connect again.
+
+Alan Stern
 
