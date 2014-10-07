@@ -1,142 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376AbaJGQCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:02:43 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:35875 "EHLO vps0.lunn.ch"
+	id S1754436AbaJGQEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:04:23 -0400
+Received: from mga14.intel.com ([192.55.52.115]:56218 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753482AbaJGQCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:02:38 -0400
-Date: Tue, 7 Oct 2014 18:02:08 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-mips@linux-mips.org, linux-efi@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        devel@driverdev.osuosl.org, linux-s390@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-c6x-dev@linux-c6x.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-hexagon@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-acpi@vger.kernel.org, xen-devel@lists.xenproject.org,
-        devicetree@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, linux-pm@vger.kernel.org,
-        adi-buildroot-devel@lists.sourceforge.net, linux-m68k@vger.kernel.org,
-        linux-am33-list@redhat.com, linux-tegra@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net, linux-metag@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-parisc@vger.kernel.org,
-        linux-cris-kernel@axis.com, David Woodhouse <dwmw2@infradead.org>,
-        Sebastian Reichel <sre@kernel.org>, linux-alpha@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 23/44] power/reset: qnap-poweroff: Register with kernel
- poweroff handler
-Message-ID: <20141007160208.GD19005@lunn.ch>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-24-git-send-email-linux@roeck-us.net>
+	id S1754078AbaJGQEV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 12:04:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396640624"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: RE: [PATCH V5 14/16] perf, x86: enable LBR callstack when recording
+ callchain
+Thread-Topic: [PATCH V5 14/16] perf, x86: enable LBR callstack when
+ recording callchain
+Thread-Index: AQHPzQDlODabdJWPqUe8OhPIgqI+2ZwP5XUAgBOaQvCAAOYDAIAAjkkA
+Date: Tue, 7 Oct 2014 16:04:11 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016111A4@SHSMSX103.ccr.corp.intel.com>
+References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
+ <1410358153-421-15-git-send-email-kan.liang@intel.com>
+ <20140924142110.GG2805@worktop.programming.kicks-ass.net>
+ <37D7C6CF3E00A74B8858931C1DB2F0770160F9C0@SHSMSX103.ccr.corp.intel.com>
+ <20141007152528.GD5850@twins.programming.kicks-ass.net>
+In-Reply-To: <20141007152528.GD5850@twins.programming.kicks-ass.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412659726-29957-24-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 10:28:25PM -0700, Guenter Roeck wrote:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly. Register with default priority value of 128 to reflect that
-> the original code generates an error if another poweroff handler has
-> already been registered when the driver is loaded.
-> 
-> Cc: Sebastian Reichel <sre@kernel.org>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
 
-Thanks
-	Andrew
+> 
+> On Tue, Oct 07, 2014 at 03:00:43AM +0000, Liang, Kan wrote:
+> >
+> >
+> > >
+> > > On Wed, Sep 10, 2014 at 10:09:11AM -0400, kan.liang@intel.com wrote:
+> > > > From: Kan Liang <kan.liang@intel.com>
+> > > >
+> > > > If a task specific event wants user space callchain but does not
+> > > > want branch stack sampling, enable the LBR call stack facility implicitly.
+> > > > The LBR call stack facility can help perf to get user space
+> > > > callchain in case of there is no frame pointer.
+> > > >
+> > > > Note: this feature only affects how to get user callchain. The
+> > > > kernel callchain is always got by frame pointers.
+> > >
+> > > Yeah, don't like this either. Suppose you have sane userspace (with
+> > > framepointers enabled) then you're now loosing the better option.
+> >
+> > FP is the first option. This patch tries to enable LBR call stack facility implicitly.
+> > Only when FP disabled or failed, we try to use LBR call stack.
+> > Please refer to the previous patch https://lkml.org/lkml/2014/9/10/376
+> 
+> Still makes for an entirely unpredictable situation. That way you never quite
+> know where your data came from.
 
-> ---
->  drivers/power/reset/qnap-poweroff.c | 28 ++++++++++++++--------------
->  1 file changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/power/reset/qnap-poweroff.c b/drivers/power/reset/qnap-poweroff.c
-> index a75db7f..c474980 100644
-> --- a/drivers/power/reset/qnap-poweroff.c
-> +++ b/drivers/power/reset/qnap-poweroff.c
-> @@ -16,7 +16,9 @@
->  
->  #include <linux/kernel.h>
->  #include <linux/module.h>
-> +#include <linux/notifier.h>
->  #include <linux/platform_device.h>
-> +#include <linux/pm.h>
->  #include <linux/serial_reg.h>
->  #include <linux/kallsyms.h>
->  #include <linux/of.h>
-> @@ -55,7 +57,8 @@ static void __iomem *base;
->  static unsigned long tclk;
->  static const struct power_off_cfg *cfg;
->  
-> -static void qnap_power_off(void)
-> +static int qnap_power_off(struct notifier_block *this, unsigned long unused1,
-> +			  void *unused2)
->  {
->  	const unsigned divisor = ((tclk + (8 * cfg->baud)) / (16 * cfg->baud));
->  
-> @@ -72,14 +75,20 @@ static void qnap_power_off(void)
->  
->  	/* send the power-off command to PIC */
->  	writel(cfg->cmd, UART1_REG(TX));
-> +
-> +	return NOTIFY_DONE;
->  }
->  
-> +static struct notifier_block qnap_poweroff_nb = {
-> +	.notifier_call = qnap_power_off,
-> +	.priority = 128,
-> +};
-> +
->  static int qnap_power_off_probe(struct platform_device *pdev)
->  {
->  	struct device_node *np = pdev->dev.of_node;
->  	struct resource *res;
->  	struct clk *clk;
-> -	char symname[KSYM_NAME_LEN];
->  
->  	const struct of_device_id *match =
->  		of_match_node(qnap_power_off_of_match_table, np);
-> @@ -106,22 +115,13 @@ static int qnap_power_off_probe(struct platform_device *pdev)
->  
->  	tclk = clk_get_rate(clk);
->  
-> -	/* Check that nothing else has already setup a handler */
-> -	if (pm_power_off) {
-> -		lookup_symbol_name((ulong)pm_power_off, symname);
-> -		dev_err(&pdev->dev,
-> -			"pm_power_off already claimed %p %s",
-> -			pm_power_off, symname);
-> -		return -EBUSY;
-> -	}
-> -	pm_power_off = qnap_power_off;
-> -
-> -	return 0;
-> +	return register_poweroff_handler(&qnap_poweroff_nb);
->  }
->  
->  static int qnap_power_off_remove(struct platform_device *pdev)
->  {
-> -	pm_power_off = NULL;
-> +	unregister_poweroff_handler(&qnap_poweroff_nb);
-> +
->  	return 0;
->  }
->  
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+But the problem is that we don't know if FP works in advance. We can only
+check during runtime. So we have to keep the LBR running.
+The process is  fixed. The FP will be checked first.
+Only FP failed, LBR data is used. 
+If the user want to know where the data come from, we may implement
+a flag for user perf tool. 
+
+Kan
