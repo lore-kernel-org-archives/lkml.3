@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbaJGSxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:53:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37100 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198AbaJGSxa convert rfc822-to-8bit (ORCPT
+	id S1755166AbaJGSzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:55:41 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:40896 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754939AbaJGSzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:53:30 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 2/2] input: pm8941-pwrkey: Add DT binding documentation
-From: Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1412644321-27683-3-git-send-email-bjorn.andersson@sonymobile.com>
-Date: Tue, 7 Oct 2014 13:53:24 -0500
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        Courtney Cavin <courtney.cavin@sonymobile.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9E29A717-A001-409E-9CAC-28E47B149F0E@codeaurora.org>
-References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com> <1412644321-27683-3-git-send-email-bjorn.andersson@sonymobile.com>
-To: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
-X-Mailer: Apple Mail (2.1878.6)
+	Tue, 7 Oct 2014 14:55:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141007175503.GE31328@mtj.dyndns.org>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
+ <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
+ <20141006201926.GF18303@htj.dyndns.org> <20141006203627.GZ14081@wotan.suse.de>
+ <20141006210118.GG18303@htj.dyndns.org> <20141006231046.GD14081@wotan.suse.de>
+ <20141007173404.GB31328@mtj.dyndns.org> <20141007175010.GH14081@wotan.suse.de>
+ <20141007175503.GE31328@mtj.dyndns.org>
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 7 Oct 2014 11:55:16 -0700
+X-Google-Sender-Auth: V-SkalPCHSOs3_soRpne2a4WHX8
+Message-ID: <CAB=NE6V_1yyYPhzbV_yRzt7fg=_8yF2YYNBz4qH_2TbH0nozcw@mail.gmail.com>
+Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
+ built-in and modules
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Tom Gundersen <teg@jklm.no>, Robert Milasan <rmilasan@suse.com>,
+        werner@suse.com, Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Petr Mladek <pmladek@suse.cz>,
+        dbueso@suse.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 7, 2014 at 10:55 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On Tue, Oct 07, 2014 at 07:50:10PM +0200, Luis R. Rodriguez wrote:
+>> On Tue, Oct 07, 2014 at 01:34:04PM -0400, Tejun Heo wrote:
+>> > But you can create a new workqueue and queue all the async probing
+>> > work items there and flush the workqueue right after
+>> > async_synchronize_full().
+>>
+>> On second thought I would prefer to avoid this, I see this being good
+>> to help with old userspace but other than that I don't see a requirement
+>> for new userspace. Do you?
+>
+> Hmmm... we batch up and do everything parallel, so I'm not sure how
+> much gain we'd be looking at by not waiting for at the end before
+> jumping into the userland.  Also, it's a bit of an orthogonal issue.
+> If we wanna skip such synchornization point before passing control to
+> userland, why are we applying that to this but not
+> async_synchronize_full() which has a far larger impact?  It's weird to
+> synchronize one while not the other, so yeah, if there are actual
+> benefits we can consider it but let's do it separately.
 
-On Oct 6, 2014, at 8:12 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
+OK I'll just kill bus.enable_kern_async=1 to enable built-in async
+probe support *and* also have prefer_async_probe *always* be
+respected, whether modular or not.
 
-> From: Courtney Cavin <courtney.cavin@sonymobile.com>
-> 
-> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
-> .../bindings/input/qcom,pm8941-pwrkey.txt          |   43 ++++++++++++++++++++
-> 1 file changed, 43 insertions(+)
-> create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
-> new file mode 100644
-> index 0000000..4d75e2c
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
-> @@ -0,0 +1,43 @@
-> +Qualcomm PM8941 PMIC Power Key
-> +
-> +PROPERTIES
-> +
-> +- compatible:
-> +	Usage: required
-> +	Value type: <string>
-> +	Definition: must be one of:
-> +		    "qcom,pm8941-pwrkey"
-> +
-> +- reg:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: base address of registers for block
-> +
-> +- interrupts:
-> +	Usage: required
-> +	Value type: <prop-encoded-array>
-> +	Definition: key change interrupt; The format of the specifier is
-> +		    defined by the binding document describing the node's
-> +		    interrupt parent.
-> +
-> +- debounce:
-> +	Usage: optional
-> +	Value type: <u32>
-> +	Definition: time in microseconds that key must be pressed or released
-> +		    for state change interrupt to trigger.
-> +
-> +- bias-pull-up:
-> +	Usage: optional
-> +	Value type: <empty>
-
-boolean, is probably better than <empty> here.
-
-> +	Definition: presence of this property indicates that the KPDPWR_N pin
-> +		    should be configured for pull up.
-> +
-> +EXAMPLE
-> +
-> +	pwrkey@800 {
-> +		compatible = "qcom,pm8941-pwrkey";
-> +		reg = <0x800>;
-> +		interrupts = <0x0 0x8 0 0>;
-> +		debounce = <15625>;
-> +		bias-pull-up;
-> +	};
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
-
+  Luis
