@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515AbaJGLXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:23:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:56190 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846AbaJGLXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:23:47 -0400
-Date: Tue, 7 Oct 2014 13:23:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Matt Fleming <matt@console-pimps.org>
-Subject: Re: perf & rasd integration plan
-Message-ID: <20141007112342.GC30146@pd.tnic>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20141006150741.GB14113@kernel.org>
- <20141006151605.GE4372@pd.tnic>
- <20141006191227.GD14113@kernel.org>
- <20141006195349.GE20739@pd.tnic>
- <20141006212243.GE14113@kernel.org>
+	id S1753499AbaJGLZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:25:51 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:46597 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbaJGLZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 07:25:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141006212243.GE14113@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Tue, 7 Oct 2014 11:25:45 +0000
+Message-ID: <CALtyatH0qPrcsMHCF+8UbtFBJy2MkNUUCJsHjPq_yOGL1-JRvQ@mail.gmail.com>
+Subject: Debian "Administration" cancels systemd-shim to force systemd lock-in
+ upon "users"
+From: Gregory Smith <gregorysmith1974a@gmail.com>
+To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org,
+        debian-devel@lists.debian.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 06:22:43PM -0300, Arnaldo Carvalho de Melo wrote:
-> My preference would be for single object files, but the pressure to have
-> a written in stone library seems to just build up...
+>>You could also work with uselessd, whether on the project itself or work on adapting a distro
+>>to use it.
+>
+>   A few days ago the Debian administration ruled out any use of a systemd "substitute"
+>(cancelling its own systemd-shim project for desktop users) and now requires systemd whole
+>hog.
 
-Yeah, I think if we have an alternative way to easily integrate that
-functionality into external projects, we can avoid the need for a lib.
 
-...
+We knew that would happen. Accommodations are only a temporary
+stratagem with the systemd people. They are out to conquer. They need
+to be stopped, halted.
 
-> After doing a 'make perf-targz-src-pkg'
-> 
-> I.e. no kernel sources involved on the machines where I build test.
-> 
-> IOW, it is untangled from the kernel sources. As tools/lib/api/ should
-> as well.
+There has been no General Resolution amongst debian package maintainers.
+Red Hat has instituted a regulatory capture of the "bug squashing" committee
+within debian (the "Technical Committee") by having current or former (but
+stock holding) employees moonlight in debian and gradually gain membership
+in that comittie.
 
-Ok, that actually sounds like something we should try:
+Once their numbers were sufficient they proceeded to file a bug report on
+the fact that systemd was not standard in debian.
 
-$ make perf-api-src-pkg
+This is illicit abuse of process and they need to be prosecuted.
 
-which would spit a tgz with all the generic stuff perf carries. People
-would simply unpack it in their projects and build it.
-
-That would require somewhat stable function names so that updating is
-relatively painless and if visible functions change, some sort of a
-README file should say what and why.
-
-Sounds like a good alternative to a lib to me...
-
-> Well, the rasd experience is serving to show areas where there is
-> unnecessary entanglement (hists inside perf_event, etc, the ifdefs you
-> put in place).
-
-Yep.
-
-> I'm working to remove the ones that are in rasd.c, aiming to have a
-> tools/lib/api/ tree that can be used to build rasd and tools/perf/.
-> 
-> What I don't want to do is to simply straight more
-> tools/perf/util/evlist.c to tools/lib/api/perf/, some untanglement work
-> is needed.
-
-Yep.
-
-Thanks acme!
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Debian is an unincorporated association. It has bylaws, trade
+practices, and dealings
+by which it was governed. The RedHat associated members of the
+Technical Committee have illegally and in bad faith abused their
+positions in-order to
+realize financial and strategic gain for their employer.
