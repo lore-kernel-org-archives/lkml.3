@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484AbaJGXoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:44:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39509 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755397AbaJGXTp (ORCPT
+	id S932587AbaJGXpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:45:11 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38884 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755397AbaJGXpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>,
-        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 3.16 02/26] ASoC: ssm2602: do not hardcode type to SSM2602
-Date: Tue,  7 Oct 2014 16:19:18 -0700
-Message-Id: <20141007231848.567232739@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
-References: <20141007231848.487609292@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 7 Oct 2014 19:45:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <87siizla5p.fsf@x220.int.ebiederm.org>
+References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
+ <20141007133039.GG7996@ZenIV.linux.org.uk> <20141007133339.GH7996@ZenIV.linux.org.uk>
+ <87r3yjy64e.fsf@x220.int.ebiederm.org> <20141007204627.GI28519@ubuntumail>
+ <87wq8bvbzg.fsf@x220.int.ebiederm.org> <20141007213257.GJ28519@ubuntumail>
+ <87zjd7r1z9.fsf@x220.int.ebiederm.org> <CALCETrVZNDTa3jc2HJ+_9sab+MhdXQ-rgNPHqT8qbDmJGXByBg@mail.gmail.com>
+ <87h9zfpkm3.fsf@x220.int.ebiederm.org> <CALCETrWqD7j8d+0GYZeUMhf5PnZKmV0DGoHu49qo3tGx0TUnhg@mail.gmail.com>
+ <87siizla5p.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 7 Oct 2014 16:44:45 -0700
+Message-ID: <CALCETrV-B=ahQ9mDdZkSQTGD1zmHcFQA0OyQxxwFC9Ei8Vsp4Q@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
+ current root
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrey Vagin <avagin@openvz.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Rob Landley <rob@landley.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 7, 2014 at 4:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Tue, Oct 7, 2014 at 3:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>
+>>>> On Tue, Oct 7, 2014 at 2:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>>>>
+>>>>> I am squinting and looking this way and that but while I can imagine
+>>>>> someone more clever than I can think up some unique property of rootfs
+>>>>> that makes it a little more exploitable than just mounting a ramfs,
+>>>>> but since you have to be root to exploit those properties I think the
+>>>>> game is pretty much lost.
+>>>>
+>>>> Yes.  rootfs might not be empty, it might have totally insane
+>>>> permissions, and it's globally shared, which makes it into a wonderful
+>>>> channel to pass things around that shouldn't be passed around.
+>>>
+>>> But if only root with proc mounted can reach it...  I don't know.
+>>
+>> It doesn't have to be global root.  It could be userns root.
+>>
+>>> There might be a case for setting MNT_LOCKED when we overmount "/"
+>>> as root but I don't yet see it.
+>>>
+>>>> Can non-root do this?  You'd need to be in a userns with a "/" that
+>>>> isn't MNT_LOCKED.  Can this happen on any normal setup?
+>>>>
+>>>> FWIW, I think we should unconditionally MNT_LOCKED the root on userns
+>>>> unshare, even if it's the only mount.
+>>>
+>>> To the best of my knowledge MNT_LOCKED is set uncondintially on userns
+>>> unshare.
+>>
+>> Only if list_empty(&old->mnt_expire), whatever that means, I think.
+>
+> An autofs or nfs automounted mount.  Can those ever become root?
 
-------------------
+Dunno.
 
-From: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
+I thought that this code was what set MNT_LOCKED for things that
+should be locked:
 
-commit fe2a08b3bf1a6e35c00e18843bc19aa1778432c3 upstream.
+    /* Don't allow unprivileged users to reveal what is under a mount */
+    if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
+        mnt->mnt.mnt_flags |= MNT_LOCKED;
 
-The correct type (SSM2602/SSM2603/SSM2604) is passed down
-from the ssm2602_spi_probe()/ssm2602_spi_probe() functions,
-so use that instead of hardcoding it to SSM2602 in
-ssm2602_probe().
+Now I'm confused.  Shouldn't that be checking for submounts?  Is that
+what it's doing?
 
-Fixes: c924dc68f737 ("ASoC: ssm2602: Split SPI and I2C code into different modules")
-Signed-off-by: Stefan Kristiansson <stefan.kristiansson@saunalahti.fi>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Anyway, I think that this should unconditionally set MNT_LOCKED on the
+thing that mounted on rootfs.
 
----
- sound/soc/codecs/ssm2602.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/sound/soc/codecs/ssm2602.c
-+++ b/sound/soc/codecs/ssm2602.c
-@@ -647,7 +647,7 @@ int ssm2602_probe(struct device *dev, en
- 		return -ENOMEM;
- 
- 	dev_set_drvdata(dev, ssm2602);
--	ssm2602->type = SSM2602;
-+	ssm2602->type = type;
- 	ssm2602->regmap = regmap;
- 
- 	return snd_soc_register_codec(dev, &soc_codec_dev_ssm2602,
-
-
+--Andy
