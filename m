@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580AbaJGM1U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:27:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46060 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152AbaJGM1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:27:15 -0400
-Date: Tue, 7 Oct 2014 14:27:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [PATCH] Kbuild: Check for CONFIG_READABLE_ASM when building .s
- targets
-Message-ID: <20141007122707.GD30146@pd.tnic>
-References: <1412523154-25602-1-git-send-email-bp@alien8.de>
- <20141005155816.GB9377@pd.tnic>
- <20141007121356.GA18003@sepie.suse.cz>
+	id S1753630AbaJGM3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:29:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57245 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaJGM3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:29:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141007121356.GA18003@sepie.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [95.23.101.112]
+In-Reply-To: <1412587602-7763-2-git-send-email-pankaj.dubey@samsung.com>
+References: <1412587602-7763-1-git-send-email-pankaj.dubey@samsung.com>
+	<1412587602-7763-2-git-send-email-pankaj.dubey@samsung.com>
+Date: Tue, 7 Oct 2014 14:29:40 +0200
+Message-ID: <CABxcv=n3M0Td5GoqugSgk5P5juZsCFnuV7dD92WQjaQPpfesmQ@mail.gmail.com>
+Subject: Re: [PATCH v9 1/2] ARM: EXYNOS: Add platform driver support for
+ Exynos PMU
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vikas Sajjan <vikas.sajjan@samsung.com>, naushad@samsung.com,
+        thomas.ab@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 02:13:56PM +0200, Michal Marek wrote:
-> This violates the principle of least surprise:
-> 
-> make $file.s
-> as -o $file.o $file.s
-> 
-> should be equivalent to
-> 
-> make $file.o
+Hello Pankaj,
 
-I know but we need to enable -g for .s targets so that we get the .loc
-annotation (i.e., line numbers) in asm which is very helpful.
+On Mon, Oct 6, 2014 at 11:26 AM, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+> This patch modifies Exynos Power Management Unit (PMU) initialization
+> implementation in following way:
+>
+> - Added platform driver support for Exynos PMU IP.
+> - Added platform struct exynos_pmu_data to hold platform specific data.
+> - For each SoC's PMU support now we can add platform data and statically
+>   bind PMU configuration and SoC specific initialization function.
+> - Separate each SoC's PMU initialization function and make it as part of
+>   platform data.
+> - It also removes uses of soc_is_exynosXYZ().
+>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+> ---
+>  arch/arm/mach-exynos/Kconfig |    1 +
+>  arch/arm/mach-exynos/pmu.c   |  171 +++++++++++++++++++++++++++++++-----------
+>  2 files changed, 130 insertions(+), 42 deletions(-)
+>
 
-But the least surprise principle is a valid point. Maybe we should warn
-about it too when building .s targets...?
+Suspend-to-RAM is working on my Exynos5420 Peach Pit Chromebook, so:
 
-Or, maybe I should try to find out whether there's another gcc option
-which adds ".loc" annotations alone...
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 
-> Why not simply check both READABLE_ASM and DEBUG_INFO?  Also, it's more
-> straightforward to print the warning in the top-level Makefile rule than
-> to add a conditional to the generic rule, like this:
-
-The problem here is that we're building a couple of .s targets
-regardless of what the make command contains, like bounds.s and such.
-
-And we want to issue the warning only when we have an .s file as
-an explicit target on the command line. That's why I'm doing that
-asm_target assignment dance and something similar to WARN_ON_ONCE...
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Best regards,
+Javier
