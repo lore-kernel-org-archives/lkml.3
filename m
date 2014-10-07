@@ -1,145 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654AbaJGQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:56:22 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54635 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873AbaJGQ4T (ORCPT
+	id S1754679AbaJGQ4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:56:37 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:61914 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605AbaJGQ4d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:56:19 -0400
+	Tue, 7 Oct 2014 12:56:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141007141913.GC2342@redhat.com>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
-	<1412356087-16115-11-git-send-email-aarcange@redhat.com>
-	<CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
-	<20141006085540.GD2336@work-vm>
-	<20141006164156.GA31075@redhat.com>
-	<CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
-	<20141007141913.GC2342@redhat.com>
-Date: Tue, 7 Oct 2014 12:56:18 -0400
-X-Google-Sender-Auth: tESzA55gbxhCpPTtAwQYfYzEBpw
-Message-ID: <CA+55aFwJP_suQWhgSp1NvYOPGB5QrBYS57LT14n7TWXqCEajdg@mail.gmail.com>
-Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "Dr. David Alan Gilbert" <dgilbert@redhat.com>, qemu-devel@nongnu.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
+In-Reply-To: <1412674438-26160-2-git-send-email-kever.yang@rock-chips.com>
+References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
+	<1412674438-26160-2-git-send-email-kever.yang@rock-chips.com>
+Date: Tue, 7 Oct 2014 09:56:32 -0700
+X-Google-Sender-Auth: U2lcmq0sO-3-BLHskOje21YVTao
+Message-ID: <CAD=FV=VjgO=4j+5=yC+THE2hWM_zSXhyvo22oHHXOjm98LkaAA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] clk: rockchip: add 400MHz and 500MHz for rk3288 clock rate
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 10:19 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+Kever,
+
+On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> This patch add 400MHz and 500MHz to clock rate table for rk3288.
 >
-> I see what you mean. The only cons I see is that we couldn't use then
-> recv(tmp_addr, PAGE_SIZE), remap_anon_pages(faultaddr, tmp_addr,
-> PAGE_SIZE, ..)  and retain the zerocopy behavior. Or how could we?
-> There's no recvfile(userfaultfd, socketfd, PAGE_SIZE).
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+>  drivers/clk/rockchip/clk-rk3288.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+> index d053529..f6ea9c6 100644
+> --- a/drivers/clk/rockchip/clk-rk3288.c
+> +++ b/drivers/clk/rockchip/clk-rk3288.c
+> @@ -86,8 +86,10 @@ struct rockchip_pll_rate_table rk3288_pll_rates[] = {
+>         RK3066_PLL_RATE( 594000000, 2, 198, 4),
+>         RK3066_PLL_RATE( 552000000, 1, 46, 2),
+>         RK3066_PLL_RATE( 504000000, 1, 84, 4),
+> +       RK3066_PLL_RATE( 500000000, 3, 125, 2),
+>         RK3066_PLL_RATE( 456000000, 1, 76, 4),
+>         RK3066_PLL_RATE( 408000000, 1, 68, 4),
+> +       RK3066_PLL_RATE( 400000000, 3, 50, 1),
 
-You're doing completelt faulty math, and you haven't thought it through.
+This violates the constraints in the TRM.  That says:
 
-Your "zero-copy" case is no such thing. Who cares if some packet
-receive is zero-copy, when you need to set up the anonymous page to
-*receive* the zero copy into, which involves page allocation, page
-zeroing, page table setup with VM and page table locking, etc etc.
+Fvco = (Fin/NR)*NF value range requirement: 440MHz – 2200MHz
 
-The thing is, the whole concept of "zero-copy" is pure and utter
-bullshit. Sun made a big deal about the whole concept back in the
-nineties, and IT DOES NOT WORK. It's a scam. Don't buy into it. It's
-crap. It's made-up and not real.
+I believe you end up with 400Mhz, not 440.  Are you aware of this?  Is
+there some reason it's OK to violate the TRM in this case?
 
-Then, once you've allocated and cleared the page, mapped it in, your
-"zero-copy" model involves looking up the page in the page tables
-again (locking etc), then doing that zero-copy to the page. Then, when
-you remap it, you look it up in the page tables AGAIN, with locking,
-move it around, have to clear the old page table entry (which involves
-a locked cmpxchg64), a TLB flush with most likely a cross-CPU IPI -
-since the people who do this are all threaded and want many CPU's, and
-then you insert the page into the new place.
-
-That's *insane*. It's crap. All just to try to avoid one page copy.
-
-Don't do it. remapping games really are complete BS. They never beat
-just copying the data. It's that simple.
-
-> As things stands now, I'm afraid with a write() syscall we couldn't do
-> it zerocopy.
-
-Really, you need to rethink your whole "zerocopy" model. It's broken.
-Nobody sane cares. You've bought into a model that Sun already showed
-doesn't work.
-
-The only time zero-copy works is in random benchmarks that are very
-careful to not touch the data at all at any point, and also try to
-make sure that the benchmark is very much single-threaded so that you
-never have the whole cross-CPU IPI issue for the TLB invalidate. Then,
-and only then, can zero-copy win. And it's just not a realistic
-scenario.
-
-> If it wasn't for the TLB flush of the old page, the remap_anon_pages
-> variant would be more optimal than doing a copy through a write
-> syscall. Is the copy cheaper than a TLB flush? I probably naively
-> assumed the TLB flush was always cheaper.
-
-A local TLB flush is cheap. That's not the problem. The problem is the
-setup of the page, and the clearing of the page, and the cross-CPU TLB
-flush. And the page table locking, etc etc.
-
-So no, I'm not AT ALL worried about a single "invlpg" instruction.
-That's nothing. Local CPU TLB flushes of single pages are basically
-free. But that really isn't where the costs are.
-
-Quite frankly, the *only* time page remapping has ever made sense is
-when it is used for realloc() kind of purposes, where you need to
-remap pages not because of zero-copy, but because you need to change
-the virtual address space layout. And then you make sure it's not a
-common operation, because you're not doing it as a performance win,
-you're doing it because you're changing your virtual layout.
-
-Really. Zerocopy is for benchmarks, and for things like "splice()"
-when you can avoid the page tables *entirely*. But the notion that
-page remapping of user pages is faster than a copy is pure and utter
-garbage. It's simply not true.
-
-So I really think you should aim for a "write()": kind of interface.
-
-With write, you may not get the zero-copy, but on the other hand it
-allows you to re-use the source buffer many times without having to
-allocate new pages and map it in etc. So a "read()+write()" loop (or,
-quite commonly a "generate data computationally from a compressed
-source + write()" loop) is actually much more efficient than the
-zero-copy remapping, because you don't have all the complexities and
-overheads in creating the source page.
-
-It is possible that that could involve "splice()" too, although I
-don't really think the source data tends to be in page-aligned chunks.
-But hey, splice() at least *can* be faster than copying (and then we
-have vmsplice() not because it's magically faster, but because it can
-under certain circumstances be worth it, and it kind of made sense to
-allow the interface, but I really don't think it's used very much or
-very useful).
-
-               Linus
+-Doug
