@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231AbaJGTPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:15:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:61866 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932130AbaJGTPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:15:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,672,1406617200"; 
-   d="scan'208";a="601923713"
-Date: Tue, 7 Oct 2014 22:15:42 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
- functions
-Message-ID: <20141007191542.GA31645@intel.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141007175017.GA10432@obsidianresearch.com>
- <20141007180417.GA29459@intel.com>
- <20141007182756.GA10774@obsidianresearch.com>
+	id S932255AbaJGTQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:16:16 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42821 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932101AbaJGTQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 15:16:14 -0400
+Date: Tue, 7 Oct 2014 15:16:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Krzysztof Opasiak <k.opasiak@samsung.com>,
+        "'Robert Baldyga'" <r.baldyga@samsung.com>,
+        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
+        <andrzej.p@samsung.com>
+Subject: Re: [PATCH] usb: gadget: f_fs: add "zombie" mode
+In-Reply-To: <20141007185706.GC17409@saruman>
+Message-ID: <Pine.LNX.4.44L0.1410071510030.1504-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007182756.GA10774@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 12:27:56PM -0600, Jason Gunthorpe wrote:
-> On Tue, Oct 07, 2014 at 09:04:17PM +0300, Jarkko Sakkinen wrote:
-> 
-> > > Did you test compile all the drivers? One of my git commits on github
-> > > has some hackery to make that possible on x86.
+On Tue, 7 Oct 2014, Felipe Balbi wrote:
+
+> > If the file handle was closed for abnormal reasons, we can behave like 
+> > crashed firmware.  Which means, in the end, doing the same thing as in 
+> > the normal-reason case -- i.e., do nothing.  In particular, don't 
+> > disconnect.
 > > 
-> > Yeah, I compiled all the drivers:
-> > 
-> > $ grep CONFIG_TCG .config
-> > CONFIG_TCG_TPM=m
-> > CONFIG_TCG_TIS=m
-> > CONFIG_TCG_TIS_I2C_ATMEL=m
-> > CONFIG_TCG_TIS_I2C_INFINEON=m
-> > CONFIG_TCG_TIS_I2C_NUVOTON=m
-> > CONFIG_TCG_NSC=m
-> > CONFIG_TCG_ATMEL=m
-> > CONFIG_TCG_INFINEON=m
-> > CONFIG_TCG_ST33_I2C=m
-> > CONFIG_TCG_XEN=m
-> > CONFIG_TCG_CRB=m
+> > If you want to allow for the possibility of orderly shutdown (and maybe 
+> > even possible restart) of a userspace handler, the function library 
+> > should first tell the kernel explicitly to disconnect.  Then function 
+> > components can be changed around completely, and when everything is 
+> > ready, userspace can tell the kernel to connect again.
 > 
-> CONFIG_TCG_IBMVTPM is missing, apply this:
-> 
-> https://github.com/jgunthorpe/linux/commit/74afd69de603783858283f9b337e1694988964f8
+> I still feel iffy about it, but I must say I understand where you're
+> coming from. It's weird to force a disconnect, sure. I guess we could
 
-Oops, how did that go unnoticed. Will do.
+Well, it's not all that weird.  Devices disconnect automatically when
+they receive a firmware update, so that they can reconnect with new
+descriptors.  Much the same thing should happen if the user wants to
+replace one function driver with a different one.
 
-> Jason
+I guess the real idea is to give the user a choice of disconnecting or 
+not.  Don't always force the whole device to disconnect when one of the 
+function drivers goes away.
 
-/Jarkko
+> accept this with a new option (just not 'zombie', perhaps no_disconnect
+> :-) but only if we still have the same "delay pullups until daemon is
+> running" requirement.
+
+Seems reasonable to me.  Or something that can be adjusted while the 
+library is running, as opposed to setting an option once when the 
+library starts.
+
+> /me hides
+
+I'm out of further ideas.  What do the library designers think?
+
+Alan Stern
+
