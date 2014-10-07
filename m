@@ -1,218 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbaJGRac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:30:32 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42083 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754876AbaJGRa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:30:29 -0400
-Date: Tue, 7 Oct 2014 18:30:15 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 patches for 3.18
-Message-ID: <20141007173007.GA1188@e104818-lin.cambridge.arm.com>
+	id S1754717AbaJGReB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:34:01 -0400
+Received: from sauhun.de ([89.238.76.85]:50155 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754170AbaJGRd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:33:59 -0400
+Date: Tue, 7 Oct 2014 19:34:39 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: fix a potential kmemleak of adapter device
+Message-ID: <20141007173439.GE1577@katana>
+References: <52B0F7D0.2020506@cn.fujitsu.com>
+ <20131220173144.GA9997@katana>
+ <52B7961D.2050505@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GxcwvYAGnODwn7V8"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <52B7961D.2050505@cn.fujitsu.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull the arm64 patches below for 3.18. Thanks.
+--GxcwvYAGnODwn7V8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit 2ce7598c9a453e0acd0e07be7be3f5eb39608ebd:
+On Mon, Dec 23, 2013 at 09:47:09AM +0800, Gu Zheng wrote:
+> Hi Wolfram,
+> On 12/21/2013 01:31 AM, Wolfram Sang wrote:
+>=20
+> > On Wed, Dec 18, 2013 at 09:18:08AM +0800, Gu Zheng wrote:
+> >> When running with the latest kernel, we get the following kmemleak mes=
+sage:
+> >> unreferenced object 0xffff8800c2a36100 (size 256):
+> >>   comm "modprobe", pid 629, jiffies 4294676002 (age 1531.115s)
+> >>   hex dump (first 32 bytes):
+> >>     00 00 00 00 ad 4e ad de ff ff ff ff 00 00 00 00  .....N..........
+> >>     ff ff ff ff ff ff ff ff 78 21 85 82 ff ff ff ff  ........x!......
+> >>   backtrace:
+> >>     [<ffffffff815449ce>] kmemleak_alloc+0x73/0x98
+> >>     [<ffffffff8113fa2b>] slab_post_alloc_hook+0x28/0x2a
+> >>     [<ffffffff81142004>] __kmalloc+0x12c/0x158
+> >>     [<ffffffff8134c60b>] kzalloc.constprop.6+0xe/0x10
+> >>     [<ffffffff8134cb71>] device_private_init+0x18/0x66
+> >>     [<ffffffff8134f1e8>] dev_set_drvdata+0x1e/0x34
+> >>     [<ffffffffa01e643e>] i801_probe+0x5d/0x447 [i2c_i801]
+> >>     [<ffffffff812a78be>] local_pci_probe+0x41/0x84
+> >>     [<ffffffff812a7feb>] pci_device_probe+0xdf/0x10c
+> >>     [<ffffffff8134f90d>] driver_probe_device+0x12f/0x2ee
+> >>     [<ffffffff8134fb2b>] __driver_attach+0x5f/0x83
+> >>     [<ffffffff8134de28>] bus_for_each_dev+0x64/0x90
+> >>     [<ffffffff8134f36b>] driver_attach+0x1e/0x20
+> >>     [<ffffffff8134ef34>] bus_add_driver+0xf2/0x1f0
+> >>     [<ffffffff8135013e>] driver_register+0x8c/0xc3
+> >>     [<ffffffff812a7bb4>] __pci_register_driver+0x62/0x67
+> >> According to the backtrace, it seems that we do not release the
+> >> device_private field of adapter device in the fail path of i801_probe
+> >> or the flow of i2c_del_adapter, so add the cleanup step to fix it.
+> >>
+> >> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> >=20
+> > ? Why should we free something we don't have allocated? The fix must be
+> > somewhere else probably...
+>=20
+> We do allocate the device_private in device_private_init() when calling
+> dev_set_drvdata()
 
-  Linux 3.17-rc4 (2014-09-07 16:09:43 -0700)
+dev_set_drvdata only does the following and doesn't call anything:
 
-are available in the git repository at:
+	dev->driver_data =3D data;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux tags/arm64-upstream
+> to set adapter data in probe flow, and the calltrace
+> also shows this. Am I missing something?
 
-for you to fetch changes up to 0a6479b0ffad8dd236915e271faaf2cbb4cac287:
+It should be freed by the driver core in device_release() again. Dunno
+why it does not happen and you are seeing the leak, but the fix is not
+correct.
 
-  arm64: Remove unneeded extern keyword (2014-10-03 14:51:02 +0100)
 
-----------------------------------------------------------------
-arm64 updates for 3.18:
+--GxcwvYAGnODwn7V8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-- eBPF JIT compiler for arm64
-- CPU suspend backend for PSCI (firmware interface) with standard idle
-  states defined in DT (generic idle driver to be merged via a different
-  tree)
-- Support for CONFIG_DEBUG_SET_MODULE_RONX
-- Support for unmapped cpu-release-addr (outside kernel linear mapping)
-- set_arch_dma_coherent_ops() implemented and bus notifiers removed
-- EFI_STUB improvements when base of DRAM is occupied
-- Typos in KGDB macros
-- Clean-up to (partially) allow kernel building with LLVM
-- Other clean-ups (extern keyword, phys_addr_t usage)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-----------------------------------------------------------------
-Ard Biesheuvel (4):
-      arm64: add helper functions to read I-cache attributes
-      arm64: don't flag non-aliasing VIPT I-caches as aliasing
-      arm64/efi: efistub: cover entire static mem footprint in PE/COFF .text
-      arm64/efi: efistub: don't abort if base of DRAM is occupied
+iQIcBAEBAgAGBQJUNCQvAAoJEBQN5MwUoCm2T9oP/1KD9KgltT+wziX+DDAXeU2Q
+mJfbi9rSQTRrkEA5sU2vkm6/1SOsCLPZo9ji7FPTO15tPNsjWd1Oo58MmPDXo6jT
+ugV7W7MxhuRQqH5BBdXo4vVonXdFMbeaQAauucm9An+rOn4f5L8dMKXWo1gTiOg9
+SiyqTh3HBsaczhI3p2hzA412XpMi5/3wMxTkXG+Z7N9FQBjRjsZgqXIyhfgPGA9i
+cuofeXsBT3XciCymCIT32vm6LEeDxwaLYEc+yet3ahc8jTsYncIE2yQTf+fsFXcg
+xVdnZhbiJ5Flmbr4NxZewiLUl3le2zZBPsr8O/hVWX1I5V1ir2okqNEEYCznfeyi
+CL1aD3t0wdszsg8d1/JSIcup/8hzo3Blax7EbUfYaJUYQVIpTgfeYIULHH78fhka
+i6PSv3ynlL6UqNezFM7V2toWWYVa62UdhdPfrNy7TESqRKENsgXCukhS0ZyZIiry
+/FgFGGzXJwJoh7mlS5KZ5k91DSt8YMSbhODlIryMSqQoT9yPI32rCXNauyHDxQzM
+OHoz8KepfYYoFMTofIpPAp96qF7beUPKLQoQblN4hkDkb9Gqq8xsCiQrW9am4r8O
+43t6oIB9RX4/DzJM6qm/RyGKNy24jxwR4CwjBSE1IX4UxljSOxUDqPyRgwmWlOsi
+c29xonqPEoJr89YaayCC
+=7nIH
+-----END PGP SIGNATURE-----
 
-Arun Chandran (1):
-      arm64: convert part of soft_restart() to assembly
-
-Behan Webster (5):
-      arm64: LLVMLinux: Add current_stack_pointer() for arm64
-      arm64: LLVMLinux: Use current_stack_pointer in save_stack_trace_tsk
-      arm64: LLVMLinux: Calculate current_thread_info from current_stack_pointer
-      arm64: LLVMLinux: Use current_stack_pointer in kernel/traps.c
-      arm64: LLVMLinux: Use global stack pointer in return_address()
-
-Catalin Marinas (5):
-      Merge arm64 CPU suspend branch
-      arm64: Correct ftrace calls to aarch64_insn_gen_branch_imm()
-      arm64: Implement set_arch_dma_coherent_ops() to replace bus notifiers
-      Revert "arm64: dmi: Add SMBIOS/DMI support"
-      arm64: Fix typos in KGDB macros
-
-Daniel Borkmann (1):
-      net: bpf: arm64: fix module memory leak when JIT image build fails
-
-Ganapatrao Kulkarni (1):
-      arm64:mm: initialize max_mapnr using function set_max_mapnr
-
-Geoff Levand (1):
-      arm64: Remove unneeded extern keyword
-
-Jon Masters (1):
-      setup: Move unmask of async interrupts after possible earlycon setup
-
-Kyle McMartin (1):
-      aarch64: filter $x from kallsyms
-
-Laura Abbott (3):
-      arm64: Introduce {set,clear}_pte_bit
-      arm64: Add CONFIG_DEBUG_SET_MODULE_RONX support
-      arm64: pageattr: Correctly adjust unaligned start addresses
-
-Lorenzo Pieralisi (4):
-      Documentation: arm: define DT idle states bindings
-      arm64: kernel: refactor the CPU suspend API for retention states
-      arm64: kernel: introduce cpu_init_idle CPU operation
-      arm64: add PSCI CPU_SUSPEND based cpu_suspend support
-
-Mark Brown (1):
-      arm64: insn: Add return statements after BUG_ON()
-
-Mark Charlebois (2):
-      arm64: LLVMLinux: Use global stack register variable for aarch64
-      arm64: LLVMLinux: Fix inline arm64 assembly for use with clang
-
-Mark Rutland (1):
-      arm64: spin-table: handle unmapped cpu-release-addrs
-
-Min-Hua Chen (1):
-      arm64: Use phys_addr_t type for physical address
-
-Robert Richter (1):
-      arm64: defconfig: increase NR_CPUS default to 64
-
-Robin Murphy (1):
-      of: amba: use of_dma_configure for AMBA devices
-
-Sean Paul (1):
-      arm64: Use DMA_ERROR_CODE to denote failed allocation
-
-Uwe Kleine-König (1):
-      ARM64: make of_device_ids const
-
-Will Deacon (1):
-      arm64: debug: don't re-enable debug exceptions on return from el1_dbg
-
-Yi Li (1):
-      arm64: dmi: Add SMBIOS/DMI support
-
-Zi Shen Lim (14):
-      arm64: introduce aarch64_insn_gen_comp_branch_imm()
-      arm64: introduce aarch64_insn_gen_branch_reg()
-      arm64: introduce aarch64_insn_gen_cond_branch_imm()
-      arm64: introduce aarch64_insn_gen_load_store_reg()
-      arm64: introduce aarch64_insn_gen_load_store_pair()
-      arm64: introduce aarch64_insn_gen_add_sub_imm()
-      arm64: introduce aarch64_insn_gen_bitfield()
-      arm64: introduce aarch64_insn_gen_movewide()
-      arm64: introduce aarch64_insn_gen_add_sub_shifted_reg()
-      arm64: introduce aarch64_insn_gen_data1()
-      arm64: introduce aarch64_insn_gen_data2()
-      arm64: introduce aarch64_insn_gen_data3()
-      arm64: introduce aarch64_insn_gen_logical_shifted_reg()
-      arm64: eBPF JIT compiler
-
- Documentation/devicetree/bindings/arm/cpus.txt     |   8 +
- .../devicetree/bindings/arm/idle-states.txt        | 679 +++++++++++++++++++++
- Documentation/devicetree/bindings/arm/psci.txt     |  14 +-
- Documentation/networking/filter.txt                |   6 +-
- arch/arm64/Kconfig                                 |   7 +-
- arch/arm64/Kconfig.debug                           |  11 +
- arch/arm64/Makefile                                |   1 +
- arch/arm64/include/asm/cacheflush.h                |   4 +
- arch/arm64/include/asm/cachetype.h                 |  20 +
- arch/arm64/include/asm/cpu_ops.h                   |   7 +-
- arch/arm64/include/asm/cpuidle.h                   |  13 +
- arch/arm64/include/asm/debug-monitors.h            |  30 +-
- arch/arm64/include/asm/dma-mapping.h               |   7 +
- arch/arm64/include/asm/insn.h                      | 249 ++++++++
- arch/arm64/include/asm/io.h                        |   2 +-
- arch/arm64/include/asm/kgdb.h                      |   2 +-
- arch/arm64/include/asm/percpu.h                    |   4 +-
- arch/arm64/include/asm/pgtable.h                   |  33 +-
- arch/arm64/include/asm/proc-fns.h                  |   2 +
- arch/arm64/include/asm/suspend.h                   |   1 +
- arch/arm64/include/asm/thread_info.h               |   9 +-
- arch/arm64/kernel/Makefile                         |   1 +
- arch/arm64/kernel/cpuidle.c                        |  31 +
- arch/arm64/kernel/cpuinfo.c                        |  28 +-
- arch/arm64/kernel/efi-stub.c                       |  16 +-
- arch/arm64/kernel/entry.S                          |   1 -
- arch/arm64/kernel/ftrace.c                         |  10 +-
- arch/arm64/kernel/head.S                           |   6 +-
- arch/arm64/kernel/insn.c                           | 671 +++++++++++++++++++-
- arch/arm64/kernel/kgdb.c                           |   4 +-
- arch/arm64/kernel/perf_event.c                     |   2 +-
- arch/arm64/kernel/process.c                        |  30 +-
- arch/arm64/kernel/psci.c                           | 104 ++++
- arch/arm64/kernel/return_address.c                 |   3 +-
- arch/arm64/kernel/setup.c                          |  11 +-
- arch/arm64/kernel/sleep.S                          |  47 +-
- arch/arm64/kernel/smp_spin_table.c                 |  22 +-
- arch/arm64/kernel/stacktrace.c                     |   3 +-
- arch/arm64/kernel/suspend.c                        |  48 +-
- arch/arm64/kernel/traps.c                          |   3 +-
- arch/arm64/mm/Makefile                             |   2 +-
- arch/arm64/mm/dma-mapping.c                        |  33 +-
- arch/arm64/mm/init.c                               |   2 +-
- arch/arm64/mm/mmap.c                               |   2 +-
- arch/arm64/mm/mmu.c                                |   2 +-
- arch/arm64/mm/pageattr.c                           |  97 +++
- arch/arm64/mm/proc.S                               |  15 +
- arch/arm64/net/Makefile                            |   4 +
- arch/arm64/net/bpf_jit.h                           | 169 +++++
- arch/arm64/net/bpf_jit_comp.c                      | 679 +++++++++++++++++++++
- drivers/of/platform.c                              |   7 +-
- kernel/module.c                                    |   2 +-
- scripts/kallsyms.c                                 |   2 +-
- scripts/mod/modpost.c                              |   2 +-
- 54 files changed, 2979 insertions(+), 189 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/idle-states.txt
- create mode 100644 arch/arm64/include/asm/cpuidle.h
- create mode 100644 arch/arm64/kernel/cpuidle.c
- create mode 100644 arch/arm64/mm/pageattr.c
- create mode 100644 arch/arm64/net/Makefile
- create mode 100644 arch/arm64/net/bpf_jit.h
- create mode 100644 arch/arm64/net/bpf_jit_comp.c
-
--- 
-Catalin
+--GxcwvYAGnODwn7V8--
