@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaJGNkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:40:18 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51733 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216AbaJGNkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:40:16 -0400
-Date: Tue, 7 Oct 2014 17:40:12 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrey Vagin <avagin@openvz.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH] mnt: don't allow to detach the namespace root
-Message-ID: <20141007134011.GA569@paralelels.com>
-References: <1412683212-28077-1-git-send-email-avagin@openvz.org>
- <20141007132431.GF7996@ZenIV.linux.org.uk>
+	id S1753940AbaJGNk2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:40:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37284 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216AbaJGNk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:40:26 -0400
+Date: Tue, 7 Oct 2014 10:40:21 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141007134021.GH14113@kernel.org>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20141006150741.GB14113@kernel.org>
+ <20141006151605.GE4372@pd.tnic>
+ <20141006191227.GD14113@kernel.org>
+ <20141006195349.GE20739@pd.tnic>
+ <20141006212243.GE14113@kernel.org>
+ <20141007112342.GC30146@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141007132431.GF7996@ZenIV.linux.org.uk>
+In-Reply-To: <20141007112342.GC30146@pd.tnic>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 02:24:36PM +0100, Al Viro wrote:
-> On Tue, Oct 07, 2014 at 04:00:12PM +0400, Andrey Vagin wrote:
-> > This patch fixes a bug, which is triggered by following code:
-> > while (1) {
-> >         if (umount2("/", MNT_DETACH) ||
-> > 	    setns(fd, CLONE_NEWNS))
-> >                 return break;
-> > }
-> 
-> Excuse me, but that makes no sense whatsoever (not to mention that
-> reproducer won't compile - return break; alone is enough to make
-> sure of that).
-> 
-> Could you post the real reproducer?
+Em Tue, Oct 07, 2014 at 01:23:42PM +0200, Borislav Petkov escreveu:
+> On Mon, Oct 06, 2014 at 06:22:43PM -0300, Arnaldo Carvalho de Melo wrote:
+> > My preference would be for single object files, but the pressure to have
+> > a written in stone library seems to just build up...
+ 
+> Yeah, I think if we have an alternative way to easily integrate that
+> functionality into external projects, we can avoid the need for a lib.
+ 
+> ...
+ 
+> > After doing a 'make perf-targz-src-pkg'
 
-#define _GNU_SOURCE
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sched.h>
-#include <unistd.h>
-#include <sys/mount.h>
+> > I.e. no kernel sources involved on the machines where I build test.
 
-int main(int argc, char **argv)
-{
-	int fd;
+> > IOW, it is untangled from the kernel sources. As tools/lib/api/ should
+> > as well.
 
-	fd = open("/proc/self/ns/mnt", O_RDONLY);
-	if (fd < 0)
-		return 1;
-	while (1) {
-		if (umount2("/", MNT_DETACH) ||
-		    setns(fd, CLONE_NEWNS))
-			break;
-	}
+> Ok, that actually sounds like something we should try:
 
-	return 0;
-}
+> $ make perf-api-src-pkg
 
-root@ubuntu:/home/avagin# gcc -Wall nsenter.c -o nsenter
-root@ubuntu:/home/avagin# strace ./nsenter
-execve("./nsenter", ["./nsenter"], [/* 22 vars */]) = 0
-...
-open("/proc/self/ns/mnt", O_RDONLY)     = 3
-umount("/", MNT_DETACH)                 = 0
-setns(3, 131072)                        = 0
-umount("/", MNT_DETACH
+> which would spit a tgz with all the generic stuff perf carries. People
+> would simply unpack it in their projects and build it.
 
+> That would require somewhat stable function names so that updating is
+> relatively painless and if visible functions change, some sort of a
+
+Right, we now should always think that the great advantage of having
+this code and its users in the same repo tree is going away, i.e. we
+will not be able to improve the code by fixing mistakes that require
+changing its users.
+
+So we should export the bare minimum that tools advocate exporting, like
+you guys are doing now by providing the code that shows how you use it.
+
+> README file should say what and why.
+
+Well, at that point we can't do that anymore, we will need instead to
+add new methods while keeping the existing ones in place and with the
+same semantics, at most for something really annoying to maintain we
+will have to add annoying warnings telling that in a year or two
+something will go away, it was deprecated, annoy the maintainer of your
+tool to update their project.
+
+> Sounds like a good alternative to a lib to me...
+
+Yes, should be interesting to experiment with this, at the very least it
+can be considered a step into the direction of a full blown library, if
+we ever feel that it is strictly needed.
+ 
+> > Well, the rasd experience is serving to show areas where there is
+> > unnecessary entanglement (hists inside perf_event, etc, the ifdefs you
+> > put in place).
+ 
+> Yep.
+ 
+> > I'm working to remove the ones that are in rasd.c, aiming to have a
+> > tools/lib/api/ tree that can be used to build rasd and tools/perf/.
+
+> > What I don't want to do is to simply straight more
+
+       s/more/move/g
+
+> > tools/perf/util/evlist.c to tools/lib/api/perf/, some untanglement work
+> > is needed.
+ 
+> Yep.
+
+- Arnaldo
