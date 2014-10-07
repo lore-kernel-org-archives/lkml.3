@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204AbaJGTWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:22:20 -0400
-Received: from mga03.intel.com ([134.134.136.65]:7782 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754846AbaJGTWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:22:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,672,1406617200"; 
-   d="scan'208";a="584942102"
-Date: Tue, 7 Oct 2014 22:22:10 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Peter Huewe <PeterHuewe@gmx.de>,
-        keyrings@linux-nfs.org, jarkko.sakkinnen@linux.intel.com,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
+	id S932247AbaJGTWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:22:30 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59769 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132AbaJGTWT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 15:22:19 -0400
+Date: Tue, 7 Oct 2014 15:21:07 -0400
+From: Rich Felker <dalias@libc.org>
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Matthew Fortune <Matthew.Fortune@imgtec.com>,
+        David Daney <david.s.daney@gmail.com>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        James Morris <james.l.morris@oracle.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit @ LinuxCon
- Europe
-Message-ID: <20141007192210.GB31645@intel.com>
-References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
- <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
- <543428E1.7050702@linux.vnet.ibm.com>
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+Message-ID: <20141007192107.GN23797@brightrain.aerifal.cx>
+References: <54332A64.5020605@caviumnetworks.com>
+ <20141007000514.GD23797@brightrain.aerifal.cx>
+ <543334CE.8060305@caviumnetworks.com>
+ <20141007004915.GF23797@brightrain.aerifal.cx>
+ <54337127.40806@gmail.com>
+ <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
+ <543431DA.4090809@imgtec.com>
+ <CALCETrUQEbb=DotSzsneN7Hano_eC-EoTMko6uKcyZXvEcktkw@mail.gmail.com>
+ <20141007190943.GM23797@brightrain.aerifal.cx>
+ <54343C2B.2080801@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <543428E1.7050702@linux.vnet.ibm.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54343C2B.2080801@imgtec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
-> On 09/23/2014 12:42 PM, Andy Lutomirski wrote:
-> >On Sep 22, 2014 2:07 AM, "Peter Huewe" <PeterHuewe@gmx.de> wrote:
-> >>Hi,
-> >>
-> >>I would like to 'invite' all interested parties in a short TPM minisummit where we can discuss the following hot topics of the TPM subsystem over a beer or two:
-> >>  - State of the TPM Subsystem
-> >>  - De-/Initialization Mess
-> >>  - Devm'ification
-> >>  - Testing
-> >>  - TPM 2.0 Support
-> >>  - Dependencies / interaction with other subsystems (e.g. keyring / IMA)
-> >>  - Status of old 1.1b TPM drivers, deprecation plans
-> >>  - ...
-> >>
-> >I am unlikely to be there, but I have a feature request / food for thought:
-> >
-> >Using a mandatory userspace daemon (e.g. trousers) for TPM access
-> >sucks.  Might it be possible to teach the kernel to handle context
-> >save and restore and let multiple processes open the device at once?
-> >Then a daemon wouldn't be necessary.
-> 
-> Why add the complexity of swapping of authenticated sessions and keys into
-> the kernel if you can handle this in userspace? You need a library that is
-> aware of the number of key slots and slots for sessions in the TPM and swaps
-> them in at out when applications need them. Trousers is such a library that
-> was designed to cope with the limitations of the device and make its
-> functionality available to all applications that want to access it.
+On Tue, Oct 07, 2014 at 12:16:59PM -0700, Leonid Yegoshin wrote:
+> On 10/07/2014 12:09 PM, Rich Felker wrote:
+> >I agree completely here. We should not break things (or, as it
+> >seems, leave them broken) for common usage cases that affect
+> >everyone just to coddle proprietary vendor-specific instructions.
+> >The latter just should not be used in delay slots unless the chip
+> >vendor also promises to provide fpu branch in hardware. Rich
+> And what do you propose - remove a current in-stack emulation and
+> you still think it doesn't break a status-quo?
 
-One justification might be that kernel is also using TPM? TrouSerS can
-not manage session for kernel internal use.
+The in-stack trampoline support could be left but used only for
+emulating instructions the kernel doesn't know. This would make all
+normal binaries immediately usable with non-executable stack, and
+would avoid the only potential source of regressions. Ultimately I
+think the "xol" stuff should be removed, but that could be a long term
+goal.
 
->    Stefan
-
-/Jarkko
+Rich
