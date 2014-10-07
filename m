@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889AbaJGRuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:50:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56541 "EHLO mx2.suse.de"
+	id S1754917AbaJGRua (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:50:30 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:58931 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754367AbaJGRuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:50:16 -0400
-Date: Tue, 7 Oct 2014 19:50:10 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option
-	for built-in and modules
-Message-ID: <20141007175010.GH14081@wotan.suse.de>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com> <20141006201926.GF18303@htj.dyndns.org> <20141006203627.GZ14081@wotan.suse.de> <20141006210118.GG18303@htj.dyndns.org> <20141006231046.GD14081@wotan.suse.de> <20141007173404.GB31328@mtj.dyndns.org>
+	id S1754367AbaJGRu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:50:27 -0400
+Date: Tue, 7 Oct 2014 11:50:17 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
+ functions
+Message-ID: <20141007175017.GA10432@obsidianresearch.com>
+References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141007173404.GB31328@mtj.dyndns.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 01:34:04PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Oct 07, 2014 at 01:10:46AM +0200, Luis R. Rodriguez wrote:
-> > On Mon, Oct 06, 2014 at 05:01:18PM -0400, Tejun Heo wrote:
-> > > For in-kernel stuff, we already have a clear
-> > > synchronization point where we already synchronize all async calls.
-> > > Shouldn't we be flushing these async probes there too?
-> > 
-> > This seems to be addressing if what I meant by prepared, "ready", so let
-> > me address this as I do think its important.
-> > 
-> > By async calls do you mean users of async_schedule()? I see it
-> 
-> Yes.
-> 
-> > also uses system_unbound_wq as well but I do not see anyone calling
-> > flush_workqueue(system_unbound_wq) on the kernel. We do use
-> > async_synchronize_full() on kernel_init() but that just waits.
-> 
-> But you can create a new workqueue and queue all the async probing
-> work items there and flush the workqueue right after
-> async_synchronize_full().
+On Tue, Oct 07, 2014 at 08:01:12PM +0300, Jarkko Sakkinen wrote:
+> Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
+> reserves memory resources and tpm_chip_register() initializes the
+> device driver. This way it is possible to alter struct tpm_chip
+> attributes before passing it to tpm_chip_register().
 
-On second thought I would prefer to avoid this, I see this being good
-to help with old userspace but other than that I don't see a requirement
-for new userspace. Do you?
+This looks broadly reasonable to me
 
-> ...
-> > bus.enable_kern_async=1 would still also serve as a helper for the driver core
-> > to figure out if it should use async probe then on modules if prefer_async_probe
-> > was enabled. Let me know if you figure out a way to avoid it.
-> 
-> Why do we need the choice at all?  It always should, no?
+Please add a note to the commit that this is known to still have
+problems with resource reference counting, but they are less severe
+than what existed before, and this is only an interm step.
 
-I'm OK to live with that, in that case I see no point to bus.enable_kern_async=1
-at all.
+> +/**
+> + * tpm_chip_alloc() - allocate a new struct tpm_chip instance
 
-  Luis
+This is using devm so it should be called 'tpmm_chip_alloc()' for
+clarity
+
+
+I know that was there before, but it sure is racy:
+
+> +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+[..]
+> +	set_bit(chip->dev_num, dev_mask);
+
+Someday it should use IDR.
+
+
+> @@ -896,18 +872,7 @@ void tpm_remove_hardware(struct device *dev)
+>  		return;
+>  	}
+>  
+> -	spin_lock(&driver_lock);
+> -	list_del_rcu(&chip->list);
+> -	spin_unlock(&driver_lock);
+> -	synchronize_rcu();
+> -
+> -	tpm_dev_del_device(chip);
+> -	tpm_sysfs_del_device(chip);
+> -	tpm_remove_ppi(&dev->kobj);
+> -	tpm_bios_log_teardown(chip->bios_dir);
+> -
+> -	/* write it this way to be explicit (chip->dev == dev) */
+> -	put_device(chip->dev);
+> +	tpm_chip_unregister(chip);
+>  }
+>  EXPORT_SYMBOL_GPL(tpm_remove_hardware);
+
+This can move to tpm-chip too, same with tpm_register_hardware
+
+> @@ -714,15 +709,10 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
+>  	struct tpm_chip *chip = tpm_dev.chip;
+>  	release_locality(chip, chip->vendor.locality, 1);
+>  
+> -	/* close file handles */
+> -	tpm_dev_vendor_release(chip);
+> -
+>  	/* remove hardware */
+>  	tpm_remove_hardware(chip->dev);
+
+Wrong ordering here, tpm_remove_hardware should always be first -
+drivers should not tear down internal state before calling it, so
+release_locality should be second.
+
+Noting that since we use devm the kfree will not happen until
+remove returns, so the chip pointer is still valid.
+
+>  	/* reset these pointers, otherwise we oops */
+> -	chip->dev->release = NULL;
+> -	chip->release = NULL;
+>  	tpm_dev.client = NULL;
+
+The comment can go too
+
+Note: tpm_dev should be driver private data, but that is not your
+problem..
+
+Did you test compile all the drivers? One of my git commits on github
+has some hackery to make that possible on x86.
+
+Jason
