@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaJGPev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:34:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53035 "EHLO mx2.suse.de"
+	id S932091AbaJGPfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:35:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53011 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909AbaJGPeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:34:02 -0400
+	id S1753851AbaJGPeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:34:01 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH 5/5] mm, compaction: more focused lru and pcplists draining
-Date: Tue,  7 Oct 2014 17:33:39 +0200
-Message-Id: <1412696019-21761-6-git-send-email-vbabka@suse.cz>
+Subject: [PATCH 1/5] mm, compaction: pass classzone_idx and alloc_flags to watermark checking
+Date: Tue,  7 Oct 2014 17:33:35 +0200
+Message-Id: <1412696019-21761-2-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
 References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
@@ -25,39 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of memory compaction is to create high-order freepages through page
-migration. Page migration however puts pages on the per-cpu lru_add cache,
-which is later flushed to per-cpu pcplists, and only after pcplists are
-drained the pages can actually merge. This can happen due to the per-cpu
-caches becoming full through further freeing, or explicitly.
+Compaction relies on zone watermark checks for decisions such as if it's worth
+to start compacting in compaction_suitable() or whether compaction should stop
+in compact_finished(). The watermark checks take classzone_idx and alloc_flags
+parameters, which are related to the memory allocation request. But from the
+context of compaction they are currently passed as 0, including the direct
+compaction which is invoked to satisfy the allocation request, and could
+therefore know the proper values.
 
-During direct compaction, it is useful to do the draining explicitly so that
-pages merge as soon as possible and compaction can detect success immediately
-and keep the latency impact at minimum. However the current implementation is
-far from ideal. Draining is done only in  __alloc_pages_direct_compact(),
-after all zones were already compacted, and the decisions to continue or stop
-compaction in individual zones was done without the last batch of migrations
-being merged. It is also missing the draining of lru_add cache before the
-pcplists.
+The lack of proper values can lead to mismatch between decisions taken during
+compaction and decisions related to the allocation request. Lack of proper
+classzone_idx value means that lowmem_reserve is not taken into account.
+This has manifested (during recent changes to deferred compaction) when DMA
+zone was used as fallback for preferred Normal zone. compaction_suitable()
+without proper classzone_idx would think that the watermarks are already
+satisfied, but watermark check in get_page_from_freelist() would fail. Because
+of this problem, deferring compaction has extra complexity that can be removed
+in the following patch.
 
-This patch moves the draining for direct compaction into compact_zone(). It
-adds the missing lru_cache draining and uses the newly introduced single zone
-pcplists draining to reduce overhead and avoid impact on unrelated zones.
-Draining is only performed when it can actually lead to merging of a page of
-desired order (passed by cc->order). This means it is only done when migration
-occurred in the previously scanned cc->order aligned block(s) and the
-migration scanner is now pointing to the next cc->order aligned block.
+The issue (not confirmed in practice) with missing alloc_flags is opposite in
+nature. For allocations that include ALLOC_HIGH, ALLOC_HIGHER or ALLOC_CMA in
+alloc_flags (the last includes all MOVABLE allocations on CMA-enabled systems)
+the watermark checking in compaction with 0 passed will be stricter than in
+get_page_from_freelist(). In these cases compaction might be running for a
+longer time than is really needed.
 
-The patch has been tested with stress-highalloc benchmark from mmtests.
-Although overal allocation success rates of the benchmark were not affected,
-the number of detected compaction successes has doubled. This suggests that
-allocations were previously successful due to implicit merging caused by
-background activity, making a later allocation attempt succeed immediately,
-but not attributing the success to compaction. Since stress-highalloc always
-tries to allocate almost the whole memory, it cannot show the improvement in
-its reported success rate metric. However after this patch, compaction should
-detect success and terminate earlier, reducing the direct compaction latencies
-in a real scenario.
+This patch fixes these problems by adding alloc_flags and classzone_idx to
+struct compact_control and related functions involved in direct compaction and
+watermark checking. Where possible, all other callers of compaction_suitable()
+pass proper values where those are known. This is currently limited to
+classzone_idx, which is sometimes known in kswapd context. However, the direct
+reclaim callers should_continue_reclaim() and compaction_ready() do not
+currently know the proper values, so the coordination between reclaim and
+compaction may still not be as accurate as it could. This can be fixed later,
+if it's shown to be an issue.
+
+The effect of this patch should be slightly better high-order allocation
+success rates and/or less compaction overhead, depending on the type of
+allocations and presence of CMA. It allows simplifying deferred compaction
+code in a followup patch.
+
+When testing with stress-highalloc, there was some slight improvement (which
+might be just due to variance) in success rates of non-THP-like allocations.
 
 Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 Cc: Minchan Kim <minchan@kernel.org>
@@ -69,91 +78,229 @@ Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: David Rientjes <rientjes@google.com>
 ---
- mm/compaction.c | 41 ++++++++++++++++++++++++++++++++++++++++-
- mm/page_alloc.c |  4 ----
- 2 files changed, 40 insertions(+), 5 deletions(-)
+ include/linux/compaction.h |  8 ++++++--
+ mm/compaction.c            | 29 +++++++++++++++--------------
+ mm/internal.h              |  2 ++
+ mm/page_alloc.c            |  1 +
+ mm/vmscan.c                | 12 ++++++------
+ 5 files changed, 30 insertions(+), 22 deletions(-)
 
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 60bdf8d..d896765 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -33,10 +33,12 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			enum migrate_mode mode, int *contended,
++			int alloc_flags, int classzone_idx,
+ 			struct zone **candidate_zone);
+ extern void compact_pgdat(pg_data_t *pgdat, int order);
+ extern void reset_isolation_suitable(pg_data_t *pgdat);
+-extern unsigned long compaction_suitable(struct zone *zone, int order);
++extern unsigned long compaction_suitable(struct zone *zone, int order,
++					int alloc_flags, int classzone_idx);
+ 
+ /* Do not skip compaction more than 64 times */
+ #define COMPACT_MAX_DEFER_SHIFT 6
+@@ -103,6 +105,7 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+ 			enum migrate_mode mode, int *contended,
++			int alloc_flags, int classzone_idx,
+ 			struct zone **candidate_zone)
+ {
+ 	return COMPACT_CONTINUE;
+@@ -116,7 +119,8 @@ static inline void reset_isolation_suitable(pg_data_t *pgdat)
+ {
+ }
+ 
+-static inline unsigned long compaction_suitable(struct zone *zone, int order)
++static inline unsigned long compaction_suitable(struct zone *zone, int order,
++					int alloc_flags, int classzone_idx)
+ {
+ 	return COMPACT_SKIPPED;
+ }
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 8fa888d..41b49d7 100644
+index edba18a..dba8891 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -1179,6 +1179,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 	while ((ret = compact_finished(zone, cc, migratetype)) ==
- 						COMPACT_CONTINUE) {
- 		int err;
-+		unsigned long last_migrated_pfn = 0;
+@@ -1069,9 +1069,9 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
  
- 		switch (isolate_migratepages(zone, cc)) {
- 		case ISOLATE_ABORT:
-@@ -1187,7 +1188,12 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 			cc->nr_migratepages = 0;
- 			goto out;
- 		case ISOLATE_NONE:
--			continue;
-+			/*
-+			 * We haven't isolated and migrated anything, but
-+			 * there might still be unflushed migrations from
-+			 * previous cc->order aligned block.
-+			 */
-+			goto check_drain;
- 		case ISOLATE_SUCCESS:
- 			;
- 		}
-@@ -1212,6 +1218,39 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 				goto out;
- 			}
- 		}
-+
-+		/*
-+		 * Record where we have freed pages by migration and not yet
-+		 * flushed them to buddy allocator. Subtract 1, because often
-+		 * we finish a pageblock and migrate_pfn points to the first
-+		 * page* of the next one. In that case we want the drain below
-+		 * to happen immediately.
-+		 */
-+		if (!last_migrated_pfn)
-+			last_migrated_pfn = cc->migrate_pfn - 1;
-+
-+check_drain:
-+		/*
-+		 * Have we moved away from the previous cc->order aligned block
-+		 * where we migrated from? If yes, flush the pages that were
-+		 * freed, so that they can merge and compact_finished() can
-+		 * detect immediately if allocation should succeed.
-+		 */
-+		if (cc->order > 0 && last_migrated_pfn) {
-+			int cpu;
-+			unsigned long current_block_start =
-+				cc->migrate_pfn & ~((1UL << cc->order) - 1);
-+
-+			if (last_migrated_pfn < current_block_start) {
-+				cpu = get_cpu();
-+				lru_add_drain_cpu(cpu);
-+				drain_local_pages(zone);
-+				put_cpu();
-+				/* No more flushing until we migrate again */
-+				last_migrated_pfn = 0;
-+			}
-+		}
-+
- 	}
+ 	/* Compaction run is not finished if the watermark is not met */
+ 	watermark = low_wmark_pages(zone);
+-	watermark += (1 << cc->order);
  
- out:
+-	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
++	if (!zone_watermark_ok(zone, cc->order, watermark, cc->classzone_idx,
++							cc->alloc_flags))
+ 		return COMPACT_CONTINUE;
+ 
+ 	/* Direct compactor: Is a suitable page free? */
+@@ -1097,7 +1097,8 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+  *   COMPACT_PARTIAL  - If the allocation would succeed without compaction
+  *   COMPACT_CONTINUE - If compaction should run now
+  */
+-unsigned long compaction_suitable(struct zone *zone, int order)
++unsigned long compaction_suitable(struct zone *zone, int order,
++					int alloc_flags, int classzone_idx)
+ {
+ 	int fragindex;
+ 	unsigned long watermark;
+@@ -1134,7 +1135,7 @@ unsigned long compaction_suitable(struct zone *zone, int order)
+ 		return COMPACT_SKIPPED;
+ 
+ 	if (fragindex == -1000 && zone_watermark_ok(zone, order, watermark,
+-	    0, 0))
++	    classzone_idx, alloc_flags))
+ 		return COMPACT_PARTIAL;
+ 
+ 	return COMPACT_CONTINUE;
+@@ -1148,7 +1149,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	const int migratetype = gfpflags_to_migratetype(cc->gfp_mask);
+ 	const bool sync = cc->mode != MIGRATE_ASYNC;
+ 
+-	ret = compaction_suitable(zone, cc->order);
++	ret = compaction_suitable(zone, cc->order, cc->alloc_flags,
++							cc->classzone_idx);
+ 	switch (ret) {
+ 	case COMPACT_PARTIAL:
+ 	case COMPACT_SKIPPED:
+@@ -1237,7 +1239,8 @@ out:
+ }
+ 
+ static unsigned long compact_zone_order(struct zone *zone, int order,
+-		gfp_t gfp_mask, enum migrate_mode mode, int *contended)
++		gfp_t gfp_mask, enum migrate_mode mode, int *contended,
++		int alloc_flags, int classzone_idx)
+ {
+ 	unsigned long ret;
+ 	struct compact_control cc = {
+@@ -1247,6 +1250,8 @@ static unsigned long compact_zone_order(struct zone *zone, int order,
+ 		.gfp_mask = gfp_mask,
+ 		.zone = zone,
+ 		.mode = mode,
++		.alloc_flags = alloc_flags,
++		.classzone_idx = classzone_idx,
+ 	};
+ 	INIT_LIST_HEAD(&cc.freepages);
+ 	INIT_LIST_HEAD(&cc.migratepages);
+@@ -1278,6 +1283,7 @@ int sysctl_extfrag_threshold = 500;
+ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+ 			enum migrate_mode mode, int *contended,
++			int alloc_flags, int classzone_idx,
+ 			struct zone **candidate_zone)
+ {
+ 	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+@@ -1286,7 +1292,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	int rc = COMPACT_DEFERRED;
+-	int alloc_flags = 0;
+ 	int all_zones_contended = COMPACT_CONTENDED_LOCK; /* init for &= op */
+ 
+ 	*contended = COMPACT_CONTENDED_NONE;
+@@ -1295,10 +1300,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 	if (!order || !may_enter_fs || !may_perform_io)
+ 		return COMPACT_SKIPPED;
+ 
+-#ifdef CONFIG_CMA
+-	if (gfpflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
+-		alloc_flags |= ALLOC_CMA;
+-#endif
+ 	/* Compact each zone in the list */
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+ 								nodemask) {
+@@ -1309,7 +1310,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			continue;
+ 
+ 		status = compact_zone_order(zone, order, gfp_mask, mode,
+-							&zone_contended);
++				&zone_contended, alloc_flags, classzone_idx);
+ 		rc = max(status, rc);
+ 		/*
+ 		 * It takes at least one zone that wasn't lock contended
+@@ -1318,8 +1319,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 		all_zones_contended &= zone_contended;
+ 
+ 		/* If a normal allocation would succeed, stop compacting */
+-		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
+-				      alloc_flags)) {
++		if (zone_watermark_ok(zone, order, low_wmark_pages(zone),
++					classzone_idx, alloc_flags)) {
+ 			*candidate_zone = zone;
+ 			/*
+ 			 * We think the allocation will succeed in this zone,
+diff --git a/mm/internal.h b/mm/internal.h
+index 8293040..3cc9b0a 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -143,6 +143,8 @@ struct compact_control {
+ 
+ 	int order;			/* order a direct compactor needs */
+ 	const gfp_t gfp_mask;		/* gfp mask of a direct compactor */
++	const int alloc_flags;		/* alloc flags of a direct compactor */
++	const int classzone_idx;	/* zone index of a direct compactor */
+ 	struct zone *zone;
+ 	int contended;			/* Signal need_sched() or lock
+ 					 * contention detected during
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5a4506f..14fac43 100644
+index e758159..8d143a0 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -2357,10 +2357,6 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	 */
- 	count_vm_event(COMPACTSTALL);
+@@ -2339,6 +2339,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	compact_result = try_to_compact_pages(zonelist, order, gfp_mask,
+ 						nodemask, mode,
+ 						contended_compaction,
++						alloc_flags, classzone_idx,
+ 						&last_compact_zone);
+ 	current->flags &= ~PF_MEMALLOC;
  
--	/* Page migration frees to the PCP lists but we want merging */
--	drain_pages(get_cpu());
--	put_cpu();
--
- 	page = get_page_from_freelist(gfp_mask, nodemask,
- 			order, zonelist, high_zoneidx,
- 			alloc_flags & ~ALLOC_NO_WATERMARKS,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index dcb4707..19ba76d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2249,7 +2249,7 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ 		return true;
+ 
+ 	/* If compaction would go ahead or the allocation would succeed, stop */
+-	switch (compaction_suitable(zone, sc->order)) {
++	switch (compaction_suitable(zone, sc->order, 0, 0)) {
+ 	case COMPACT_PARTIAL:
+ 	case COMPACT_CONTINUE:
+ 		return false;
+@@ -2346,7 +2346,7 @@ static inline bool compaction_ready(struct zone *zone, int order)
+ 	 * If compaction is not ready to start and allocation is not likely
+ 	 * to succeed without it, then keep reclaiming.
+ 	 */
+-	if (compaction_suitable(zone, order) == COMPACT_SKIPPED)
++	if (compaction_suitable(zone, order, 0, 0) == COMPACT_SKIPPED)
+ 		return false;
+ 
+ 	return watermark_ok;
+@@ -2824,8 +2824,8 @@ static bool zone_balanced(struct zone *zone, int order,
+ 				    balance_gap, classzone_idx, 0))
+ 		return false;
+ 
+-	if (IS_ENABLED(CONFIG_COMPACTION) && order &&
+-	    compaction_suitable(zone, order) == COMPACT_SKIPPED)
++	if (IS_ENABLED(CONFIG_COMPACTION) && order && compaction_suitable(zone,
++				order, 0, classzone_idx) == COMPACT_SKIPPED)
+ 		return false;
+ 
+ 	return true;
+@@ -2952,8 +2952,8 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	 * from memory. Do not reclaim more than needed for compaction.
+ 	 */
+ 	if (IS_ENABLED(CONFIG_COMPACTION) && sc->order &&
+-			compaction_suitable(zone, sc->order) !=
+-				COMPACT_SKIPPED)
++			compaction_suitable(zone, sc->order, 0, classzone_idx)
++							!= COMPACT_SKIPPED)
+ 		testorder = 0;
+ 
+ 	/*
 -- 
 1.8.4.5
 
