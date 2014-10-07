@@ -1,48 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaJGSwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:52:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56785 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242AbaJGSwF (ORCPT
+	id S1755189AbaJGSxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:53:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37100 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754198AbaJGSxa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:52:05 -0400
-Date: Tue, 7 Oct 2014 20:51:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 04/11] perf: Make perf_cgroup_from_task() global
-Message-ID: <20141007185157.GA4750@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-5-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
+	Tue, 7 Oct 2014 14:53:30 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411567455-31264-5-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH 2/2] input: pm8941-pwrkey: Add DT binding documentation
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <1412644321-27683-3-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Tue, 7 Oct 2014 13:53:24 -0500
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9E29A717-A001-409E-9CAC-28E47B149F0E@codeaurora.org>
+References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com> <1412644321-27683-3-git-send-email-bjorn.andersson@sonymobile.com>
+To: Bjorn Andersson <Bjorn.Andersson@sonymobile.com>
+X-Mailer: Apple Mail (2.1878.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:04:08PM +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> Move perf_cgroup_from_task() from kernel/events to include/ along with
-> the necessary struct definitions, so that it can be used by the PMU
-> code.
-> 
-> The upcoming Intel Cache Monitoring PMU driver assigns monitoring IDs
-> based on a task's association with a cgroup - all tasks in the same
-> cgroup share an ID. We can use perf_cgroup_from_task() to track this
-> association.
 
-Not yet having read the rest of the patches and maybe understanding
-things wrong, that doesn't sound right.
+On Oct 6, 2014, at 8:12 PM, Bjorn Andersson <Bjorn.Andersson@sonymobile.com> wrote:
 
-The RMID should be associated with events, not groups. The event can be
-associated with whatever perf provides {task, cgroup, cpu}.
+> From: Courtney Cavin <courtney.cavin@sonymobile.com>
+> 
+> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+> .../bindings/input/qcom,pm8941-pwrkey.txt          |   43 ++++++++++++++++++++
+> 1 file changed, 43 insertions(+)
+> create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+> new file mode 100644
+> index 0000000..4d75e2c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+> @@ -0,0 +1,43 @@
+> +Qualcomm PM8941 PMIC Power Key
+> +
+> +PROPERTIES
+> +
+> +- compatible:
+> +	Usage: required
+> +	Value type: <string>
+> +	Definition: must be one of:
+> +		    "qcom,pm8941-pwrkey"
+> +
+> +- reg:
+> +	Usage: required
+> +	Value type: <prop-encoded-array>
+> +	Definition: base address of registers for block
+> +
+> +- interrupts:
+> +	Usage: required
+> +	Value type: <prop-encoded-array>
+> +	Definition: key change interrupt; The format of the specifier is
+> +		    defined by the binding document describing the node's
+> +		    interrupt parent.
+> +
+> +- debounce:
+> +	Usage: optional
+> +	Value type: <u32>
+> +	Definition: time in microseconds that key must be pressed or released
+> +		    for state change interrupt to trigger.
+> +
+> +- bias-pull-up:
+> +	Usage: optional
+> +	Value type: <empty>
+
+boolean, is probably better than <empty> here.
+
+> +	Definition: presence of this property indicates that the KPDPWR_N pin
+> +		    should be configured for pull up.
+> +
+> +EXAMPLE
+> +
+> +	pwrkey@800 {
+> +		compatible = "qcom,pm8941-pwrkey";
+> +		reg = <0x800>;
+> +		interrupts = <0x0 0x8 0 0>;
+> +		debounce = <15625>;
+> +		bias-pull-up;
+> +	};
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
+
