@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235AbaJGR6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:58:50 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:38231 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaJGR6s (ORCPT
+	id S1754898AbaJGSBb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:01:31 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:58118 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753764AbaJGSB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:58:48 -0400
+	Tue, 7 Oct 2014 14:01:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <543428E1.7050702@linux.vnet.ibm.com>
-References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
- <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com> <543428E1.7050702@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Oct 2014 10:58:27 -0700
-Message-ID: <CALCETrWoAkYTjetqm1e9zYGvetEhn0WQL5poLWv_saQktcHu7g@mail.gmail.com>
-Subject: Re: [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit @ LinuxCon Europe
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Peter Huewe <PeterHuewe@gmx.de>, keyrings@linux-nfs.org,
-        jarkko.sakkinnen@linux.intel.com,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        James Morris <james.l.morris@oracle.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        trousers-tech@lists.sourceforge.net
+In-Reply-To: <20141007171003.GI5362@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+	<1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
+	<20141003171207.GC2394@localhost>
+	<CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
+	<20141007171003.GI5362@localhost>
+Date: Tue, 7 Oct 2014 21:01:27 +0300
+Message-ID: <CAE1zotLmO=VPkE5RYpr1k0-3N8__7A8pWCEM23hXh6nzEqAjeQ@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 10:54 AM, Stefan Berger
-<stefanb@linux.vnet.ibm.com> wrote:
-> On 09/23/2014 12:42 PM, Andy Lutomirski wrote:
+On Tue, Oct 7, 2014 at 8:10 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Mon, Oct 06, 2014 at 03:17:22PM +0300, Octavian Purdila wrote:
+>> On Fri, Oct 3, 2014 at 8:12 PM, Johan Hovold <johan@kernel.org> wrote:
+>> >
+>> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
+>> > > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+>> > > Master Adapter DLN-2. Details about the device can be found here:
+>> > >
 >>
->> On Sep 22, 2014 2:07 AM, "Peter Huewe" <PeterHuewe@gmx.de> wrote:
->>>
->>> Hi,
->>>
->>> I would like to 'invite' all interested parties in a short TPM minisummit
->>> where we can discuss the following hot topics of the TPM subsystem over a
->>> beer or two:
->>>   - State of the TPM Subsystem
->>>   - De-/Initialization Mess
->>>   - Devm'ification
->>>   - Testing
->>>   - TPM 2.0 Support
->>>   - Dependencies / interaction with other subsystems (e.g. keyring / IMA)
->>>   - Status of old 1.1b TPM drivers, deprecation plans
->>>   - ...
->>>
->> I am unlikely to be there, but I have a feature request / food for
->> thought:
+>> <snip>
 >>
->> Using a mandatory userspace daemon (e.g. trousers) for TPM access
->> sucks.  Might it be possible to teach the kernel to handle context
->> save and restore and let multiple processes open the device at once?
->> Then a daemon wouldn't be necessary.
+>> > > +
+>> > > +             ret = dln2_submit_urb(dln2, dln2->rx_urb[i], GFP_KERNEL);
+>> > > +             if (ret < 0)
+>> > > +                     return ret;
+>> >
+>> > Is it really worth having this helper only to save a couple of lines on
+>> > a dev_err? If you do all resubmissions on completion inline in the
+>> > handler, you only have three places where usb_submit_urb is called.
+>> >
+>>
+>> I moved the completion in the handler as you suggested. I have kept
+>> the helper, would you prefer to remove it?
 >
+> Moved the "completion"? I was suggesting that the URB resubmission
+> should be done inline the URB completion handler.
 >
-> Why add the complexity of swapping of authenticated sessions and keys into
-> the kernel if you can handle this in userspace? You need a library that is
-> aware of the number of key slots and slots for sessions in the TPM and swaps
-> them in at out when applications need them. Trousers is such a library that
-> was designed to cope with the limitations of the device and make its
-> functionality available to all applications that want to access it.
+> [ "Completion" may be a little ambiguous. The URB callback is called an
+> URB completion handler. Not be confused with the completion structures
+> you use to wait for responses. ]
 >
 
-Trousers is a daemon, not a library, and it's really quite scary.
+Sorry, I meant to say resubmission instead of completion.
 
-Admittedly, my information may be a bit out of date, but trousers
-contains way too much code (it has layers in the server!), it has
-parsers and serializers of questionable safety (I found one critical
-bug *by accident* a couple years ago), it listens on a TCP socket
-(this should really be a UNIX socket under /run), it's heavy-weight,
-and it does far more than necessary (all it needs to do is context
-switching).
+> It's fine to keep the helper as long as it's clear that the urb has been
+> "cached" and should not be resubmitted (inline) in the completion
+> handler in that case.
+>
 
-Also, Trousers is quite unfriendly to non-Trousers-using programs
-(e.g. chapsd/trunks).
+Not sure I follow you here. I kept the helper and I call it from the
+completion handler, from free_rx_slot and from dln2_setup_rx_ubs.
 
-If the kernel helped with context switching, then user programs that
-actually want Trousers' functionality could run their own copies.
+>
+>> <snip>
+>>
+>> > > +     id = dln2->usb_dev->bus->busnum << 8 | dln2->usb_dev->devnum;
+>> >
+>> > After giving this some more thought, I think you should just
+>> > use PLATFORM_DEVID_AUTO as id. I have submitted a series to fix the
+>> > other USB MFD drivers and add a convenience helper to register
+>> > hotpluggable MFDs here:
+>> >
+>>
+>> OK, I will use PLATFORM_DEVID_AUTO for now. If your series merges
+>> first and I have to resubmit mine, I will switch to using
+>> mfd_add_hotplug_devices.
+>
+> Lee merged the helper function earlier today.
+>
 
---Andy
+Yep, noticed that, I did a rebase earlier.
