@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaJGRtf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:49:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34513 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754697AbaJGRtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:49:33 -0400
-Date: Tue, 7 Oct 2014 19:42:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Jones <davej@redhat.com>
-cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hrtimer deadlock caused by nohz_full
-In-Reply-To: <20141007173730.GA12147@redhat.com>
-Message-ID: <alpine.DEB.2.11.1410071942100.4292@nanos>
-References: <20140925141425.GA21702@redhat.com> <alpine.DEB.2.10.1409251630210.4604@nanos> <20140925234657.GB14870@lerouge> <20141002182409.GA29934@redhat.com> <20141007153024.GA14119@lerouge> <20141007173730.GA12147@redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754889AbaJGRuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:50:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56541 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754367AbaJGRuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:50:16 -0400
+Date: Tue, 7 Oct 2014 19:50:10 +0200
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
+        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
+        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option
+	for built-in and modules
+Message-ID: <20141007175010.GH14081@wotan.suse.de>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com> <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com> <20141006201926.GF18303@htj.dyndns.org> <20141006203627.GZ14081@wotan.suse.de> <20141006210118.GG18303@htj.dyndns.org> <20141006231046.GD14081@wotan.suse.de> <20141007173404.GB31328@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007173404.GB31328@mtj.dyndns.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Oct 2014, Dave Jones wrote:
-
-> On Tue, Oct 07, 2014 at 05:30:27PM +0200, Frederic Weisbecker wrote:
+On Tue, Oct 07, 2014 at 01:34:04PM -0400, Tejun Heo wrote:
+> Hello,
 > 
->  > >  > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
->  > >  > 
->  > >  > I was about to make the pull request, the branch is acked by peterz.
->  > >  > Would you like to pull it? It's all merge window material.
->  > >  > 
->  > >  > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->  > >  > 	nohz/fixes-v3
->  > > 
->  > > I'm now hitting this with such regularity that it's preventing me from
->  > > tracking down other bugs.  Can we get this merged soon please ?
->  > 
->  > I asked Thomas to pull but he probably missed it. So I did a formal pull request
->  > to Ingo a few days later but he told me that the pull request was made too late
->  > as the merge window was too close. I told him it fixes annoying bugs but that was on IRC
->  > so this probably got lost.
+> On Tue, Oct 07, 2014 at 01:10:46AM +0200, Luis R. Rodriguez wrote:
+> > On Mon, Oct 06, 2014 at 05:01:18PM -0400, Tejun Heo wrote:
+> > > For in-kernel stuff, we already have a clear
+> > > synchronization point where we already synchronize all async calls.
+> > > Shouldn't we be flushing these async probes there too?
+> > 
+> > This seems to be addressing if what I meant by prepared, "ready", so let
+> > me address this as I do think its important.
+> > 
+> > By async calls do you mean users of async_schedule()? I see it
+> 
+> Yes.
+> 
+> > also uses system_unbound_wq as well but I do not see anyone calling
+> > flush_workqueue(system_unbound_wq) on the kernel. We do use
+> > async_synchronize_full() on kernel_init() but that just waits.
+> 
+> But you can create a new workqueue and queue all the async probing
+> work items there and flush the workqueue right after
+> async_synchronize_full().
 
-Aarg. Lemme get this done.
+On second thought I would prefer to avoid this, I see this being good
+to help with old userspace but other than that I don't see a requirement
+for new userspace. Do you?
 
-Thanks,
+> ...
+> > bus.enable_kern_async=1 would still also serve as a helper for the driver core
+> > to figure out if it should use async probe then on modules if prefer_async_probe
+> > was enabled. Let me know if you figure out a way to avoid it.
+> 
+> Why do we need the choice at all?  It always should, no?
 
-	tglx
+I'm OK to live with that, in that case I see no point to bus.enable_kern_async=1
+at all.
+
+  Luis
