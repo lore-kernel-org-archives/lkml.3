@@ -1,105 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbaJGPQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:16:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47006 "EHLO mga11.intel.com"
+	id S1754225AbaJGPRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:17:12 -0400
+Received: from mga14.intel.com ([192.55.52.115]:16505 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176AbaJGPQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:16:24 -0400
+	id S1753122AbaJGPRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:17:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="396614969"
+   d="scan'208";a="396615046"
 From: kan.liang@intel.com
 To: jolsa@redhat.com
 Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org,
         Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 0/4] perf tools: pmu event new style format fix
-Date: Tue,  7 Oct 2014 11:08:48 -0400
-Message-Id: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
+Subject: [PATCH V8 1/4] Revert "perf tools: Default to cpu// for events v5"
+Date: Tue,  7 Oct 2014 11:08:49 -0400
+Message-Id: <1412694532-23391-2-git-send-email-kan.liang@intel.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
+References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kan Liang <kan.liang@intel.com>
 
-There are two types of pmu event stytle formats, "pmu_event_name"
-or "cpu/pmu_event_name/". However, there is a bug on supporting these
-two formats, especially when they mixed with other perf events.
-The patch set intends to fix this issue.
+This reverts commit 50e200f07948 ("perf tools: Default to cpu// for
+events v5")
 
-The patch set has been tested by perf automated test "./perf test parse -v"
-on haswell, ivybridge and Romley platform.
-The patch set also has been tested on haswell by the following script.
-(Note: please make sure that your test system support TSX and
-L1-dcache-loads events. Otherwise, you may want to change the events
-to other pmu events.)
+The fixup cannot handle the case that
+new style format(which without //) mixed with
+other different formats.
 
-[lk@localhost ~]$ cat perf_style_test.sh
-#hardware events + kernel pmu event with different style
-perf stat -x, -e cycles,mem-stores,tx-start sleep 2
-perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
-perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
-perf stat -x, -e instructions,cpu/tx-start/ sleep 2
-perf stat -x, -e '{cycles,tx-start}' sleep 2
-perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
+For example,
+group events with new style format: {mem-stores,mem-loads}
+some hardware event + new style event: cycles,mem-loads
+Cache event + new style event: LLC-loads,mem-loads
+Raw event + new style event:
+cpu/event=0xc8,umask=0x08/,mem-loads
+old style event and new stytle mixture: mem-stores,cpu/mem-loads/
 
-#HW Cache event + kernel pmu event with different style
-perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
-perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
-perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
-perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ tools/perf/util/include/linux/string.h |  1 -
+ tools/perf/util/parse-events.c         | 30 +-----------------------------
+ tools/perf/util/string.c               | 24 ------------------------
+ 3 files changed, 1 insertion(+), 54 deletions(-)
 
-#Raw event + kernel pmu event with different style:
-perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
-perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
-perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
-
-Changes since V1:
-Read kernel PMU events from sysfs at runtime
-
-Changes since V2:
-Use strlcpy to replace strncpy
-
-Changes since V3:
-rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-
-Changes since V4:
-scan kernel pmu events from sysfs only needed
-rename the init/check/clenup functions and related struct.
-allocate each symbol string separatelly
-Use ALLOC_LIST
-
-Changes since V5:
-Using perf_pmu__find to instead of perf_pmu__scan
-Don't scan all the time if the system doesn't support kernel pmu events
-
-Changes since V6:
-Add test case in automated tests suite
-Use strdup and macro to refine the code
-Add sep_dc for PMU event to support PE_MODIFIER_EVENT
-Some minor changes for code style
-
-Changes since V7:
-Add allocation failure check
-
-Kan Liang (4):
-  Revert "perf tools: Default to cpu// for events v5"
-  perf tools: parse the pmu event prefix and suffix
-  perf tools: Add support to new style format of kernel PMU event
-  perf tools: Add test case for pmu event new style format
-
- tools/perf/tests/parse-events.c        |  36 +++++++++
- tools/perf/util/include/linux/string.h |   1 -
- tools/perf/util/parse-events.c         | 133 +++++++++++++++++++++++++++------
- tools/perf/util/parse-events.h         |  14 ++++
- tools/perf/util/parse-events.l         |  30 +++++++-
- tools/perf/util/parse-events.y         |  40 ++++++++++
- tools/perf/util/pmu.c                  |  10 ---
- tools/perf/util/pmu.h                  |  10 +++
- tools/perf/util/string.c               |  24 ------
- 9 files changed, 240 insertions(+), 58 deletions(-)
-
+diff --git a/tools/perf/util/include/linux/string.h b/tools/perf/util/include/linux/string.h
+index 97a8007..6f19c54 100644
+--- a/tools/perf/util/include/linux/string.h
++++ b/tools/perf/util/include/linux/string.h
+@@ -1,4 +1,3 @@
+ #include <string.h>
+ 
+ void *memdup(const void *src, size_t len);
+-int str_append(char **s, int *len, const char *a);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index d76aa30..c5642e6 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -6,7 +6,7 @@
+ #include "parse-options.h"
+ #include "parse-events.h"
+ #include "exec_cmd.h"
+-#include "linux/string.h"
++#include "string.h"
+ #include "symbol.h"
+ #include "cache.h"
+ #include "header.h"
+@@ -863,32 +863,6 @@ int parse_events_name(struct list_head *list, char *name)
+ 	return 0;
+ }
+ 
+-static int parse_events__scanner(const char *str, void *data, int start_token);
+-
+-static int parse_events_fixup(int ret, const char *str, void *data,
+-			      int start_token)
+-{
+-	char *o = strdup(str);
+-	char *s = NULL;
+-	char *t = o;
+-	char *p;
+-	int len = 0;
+-
+-	if (!o)
+-		return ret;
+-	while ((p = strsep(&t, ",")) != NULL) {
+-		if (s)
+-			str_append(&s, &len, ",");
+-		str_append(&s, &len, "cpu/");
+-		str_append(&s, &len, p);
+-		str_append(&s, &len, "/");
+-	}
+-	free(o);
+-	if (!s)
+-		return -ENOMEM;
+-	return parse_events__scanner(s, data, start_token);
+-}
+-
+ static int parse_events__scanner(const char *str, void *data, int start_token)
+ {
+ 	YY_BUFFER_STATE buffer;
+@@ -909,8 +883,6 @@ static int parse_events__scanner(const char *str, void *data, int start_token)
+ 	parse_events__flush_buffer(buffer, scanner);
+ 	parse_events__delete_buffer(buffer, scanner);
+ 	parse_events_lex_destroy(scanner);
+-	if (ret && !strchr(str, '/'))
+-		ret = parse_events_fixup(ret, str, data, start_token);
+ 	return ret;
+ }
+ 
+diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
+index 2553e5b..4b0ff22 100644
+--- a/tools/perf/util/string.c
++++ b/tools/perf/util/string.c
+@@ -387,27 +387,3 @@ void *memdup(const void *src, size_t len)
+ 
+ 	return p;
+ }
+-
+-/**
+- * str_append - reallocate string and append another
+- * @s: pointer to string pointer
+- * @len: pointer to len (initialized)
+- * @a: string to append.
+- */
+-int str_append(char **s, int *len, const char *a)
+-{
+-	int olen = *s ? strlen(*s) : 0;
+-	int nlen = olen + strlen(a) + 1;
+-	if (*len < nlen) {
+-		*len = *len * 2;
+-		if (*len < nlen)
+-			*len = nlen;
+-		*s = realloc(*s, *len);
+-		if (!*s)
+-			return -ENOMEM;
+-		if (olen == 0)
+-			**s = 0;
+-	}
+-	strcat(*s, a);
+-	return 0;
+-}
 -- 
 1.8.3.2
 
