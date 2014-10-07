@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaJGRPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:15:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459AbaJGRPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:15:45 -0400
-Message-ID: <54341F77.6060400@redhat.com>
-Date: Tue, 07 Oct 2014 19:14:31 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrea Arcangeli <aarcange@redhat.com>, qemu-devel@nongnu.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <1412356087-16115-11-git-send-email-aarcange@redhat.com> <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com> <20141006085540.GD2336@work-vm> <20141006164156.GA31075@redhat.com> <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com> <20141007170731.GO2404@work-vm>
-In-Reply-To: <20141007170731.GO2404@work-vm>
-Content-Type: text/plain; charset=windows-1252
+	id S932105AbaJGRQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:16:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46570 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081AbaJGRQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:16:48 -0400
+Date: Tue, 07 Oct 2014 13:16:46 -0400 (EDT)
+Message-Id: <20141007.131646.1417551297088545264.davem@davemloft.net>
+To: sylvain.hitier@gmail.com
+Cc: linux-kernel@vger.kernel.org, nhorman@tuxdriver.com, mroos@linux.ee,
+        netdev@vger.kernel.org, klassert@mathematik.tu-chemnitz.de
+Subject: Re: [PATCH RESEND v3] 3c59x: fix bad split of
+ cpu_to_le32(pci_map_single())
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141007134034.GA8838@erable>
+References: <20141007134034.GA8838@erable>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 07 Oct 2014 10:16:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 07/10/2014 19:07, Dr. David Alan Gilbert ha scritto:
->> > 
->> > So I'd *much* rather have a "write()" style interface (ie _copying_
->> > bytes from user space into a newly allocated page that gets mapped)
->> > than a "remap page" style interface
-> Something like that might work for the postcopy case; it doesn't work
-> for some of the other uses that need to stop a page being changed by the
-> guest, but then need to somehow get a copy of that page internally to QEMU,
-> and perhaps provide it back later.
+From: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+Date: Tue, 7 Oct 2014 13:40:34 +0000
 
-I cannot parse this.  Which uses do you have in mind?  Is it for
-QEMU-specific or is it for other applications of userfaults?
+> From: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+> 
+> In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
+>   # 3c59x: Add dma error checking and recovery
+> the intent is to split out the mapping from the byte-swapping in order to
+> insert a dma_mapping_error() check.
+> 
+> Kinda this semantic patch:
+> 
+>     // See http://coccinelle.lip6.fr/
+>     //
+>     // Beware, grouik-and-dirty!
+>     @@
+>     expression DEV, X, Y, Z;
+>     @@
+>     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+>     +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
+>     +   if (dma_mapping_error(&DEV->dev, addr))
+>     +       /* snip */;
+>     +   cpu_to_le32(addr)
+> 
+> However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
+> 
+>     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
+>     +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
+>     //                    ^^^^^^^^^^^
+>     //                    That mismatches the 3 other changes!
+>     +   if (dma_mapping_error(&DEV->dev, addr))
+>     +       /* snip */;
+>     +   cpu_to_le32(addr)
+> 
+> Let's remove the leftover cpu_to_le32() for coherency.
+> 
+> v2: Better changelog.
+> v3: Add Acked-by
+> 
+> Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
+>   # 3c59x: Add dma error checking and recovery
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+> Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
 
-As long as the page is atomically mapped, I'm not sure what the
-difference from remap_anon_pages are (as far as the destination page is
-concerned).  Are you thinking of having userfaults enabled on the source
-as well?
-
-Paolo
-
-> remap_anon_pages worked for those cases
-> as well; I can't think of another current way of doing it in userspace.
-
+Applied and queued up for -stable, thanks!
