@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbaJGA73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 20:59:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55808 "EHLO mga02.intel.com"
+	id S1752666AbaJGBAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 21:00:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:34569 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751252AbaJGA72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 20:59:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,666,1406617200"; 
-   d="scan'208";a="614211862"
-Message-ID: <54333AEC.6000603@linux.intel.com>
-Date: Tue, 07 Oct 2014 08:59:24 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1752338AbaJGBAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 21:00:01 -0400
+Date: Tue, 7 Oct 2014 02:59:55 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/7 linux-next] HSI: remove deprecated IRQF_DISABLED
+Message-ID: <20141007005955.GA2270@earth.universe>
+References: <1412609755-28627-1-git-send-email-fabf@skynet.be>
+ <1412609755-28627-6-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-CC: David Woodhouse <dwmw2@infradead.org>, jroedel@suse.de
-Subject: Re: [PATCH 2/2] iommu/vt-d: Work around broken RMRR firmware entries
-References: <1412244548-27617-1-git-send-email-joro@8bytes.org> <1412244548-27617-3-git-send-email-joro@8bytes.org>
-In-Reply-To: <1412244548-27617-3-git-send-email-joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="WIyZ46R2i8wDzkSu"
+Content-Disposition: inline
+In-Reply-To: <1412609755-28627-6-git-send-email-fabf@skynet.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 2014/10/2 18:09, Joerg Roedel wrote:
-> From: Joerg Roedel <jroedel@suse.de>
-> 
-> The VT-d specification states that an RMRR entry in the DMAR
-> table needs to specify the full path to the device. This is
-> also how newer Linux kernels implement it.
-> 
-> Unfortunatly older drivers just match for the target device
-> and not the full path to the device, so that BIOS vendors
-> implement that behavior into their BIOSes to make them work
-> with older Linux kernels. But those RMRR entries break on
-> newer Linux kernels.
-> 
-> Work around this issue by adding a fall-back into the RMRR
-> matching code to match those old RMRR entries too.
-> 
-> Signed-off-by: Joerg Roedel <jroedel@suse.de>
-> ---
->  drivers/iommu/dmar.c | 22 +++++++++++++++++++---
->  1 file changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
-> index 6ba28b0..371ff33 100644
-> --- a/drivers/iommu/dmar.c
-> +++ b/drivers/iommu/dmar.c
-> @@ -178,17 +178,33 @@ static bool dmar_match_pci_path(struct dmar_pci_notify_info *info, int bus,
->  	int i;
->  
->  	if (info->bus != bus)
-> -		return false;
-> +		goto fallback;
->  	if (info->level != count)
-> -		return false;
-> +		goto fallback;
->  
->  	for (i = 0; i < count; i++) {
->  		if (path[i].device != info->path[i].device ||
->  		    path[i].function != info->path[i].function)
-> -			return false;
-> +			goto fallback;
->  	}
->  
->  	return true;
-> +
-> +fallback:
-> +
-> +	if (count != 1)
-> +		return false;
-> +
-> +	i = info->level - 1;
-> +	if (bus              == info->path[i].bus &&
-> +	    path[0].device   == info->path[i].device &&
-> +	    path[0].function == info->path[i].function) {
-> +		pr_info(FW_BUG "RMRR entry for device %02x:%02x.%x is broken - applying workaround\n",
-> +			bus, path[0].device, path[0].function);
-> +		return true;
-> +	}
-> +
-> +	return false;
->  }
->  
->  /* Return: > 0 if match found, 0 if no match found, < 0 if error happens */
-> 
-Hi Joerg,
-	Thanks for fixing this:)
-	Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
-Regards!
-Gerry
+--WIyZ46R2i8wDzkSu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, Oct 06, 2014 at 05:35:52PM +0200, Fabian Frederick wrote:
+> See include/linux/interrupt.h:
+> "This flag is a NOOP and scheduled to be removed"
+>=20
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+
+https://git.kernel.org/cgit/linux/kernel/git/sre/linux-hsi.git/commit/?h=3D=
+for-next
+
+-- Sebastian
+
+--WIyZ46R2i8wDzkSu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUMzsLAAoJENju1/PIO/qaPzgP/j2a0EEPGcyrMc1Lj0GKvMoq
+UvK0ge22a27y9KXaG1x5gu3nWZXU+yfNNmnIu2K5NhgmSAD2KTEDMjFyvSZyxtfA
+YTdterS+hzHWj19yfPuCGkhXWN2xJ/Jmu+nRBtAt3ecWEYjEqHw+CvFbz38LsBWQ
+ql7Ey/n+NpEwEM+Kh0smpE3vZEztwhJmngyhUaxB67hDGNmoXUols/fdeuAumg0Z
+kqoTx+K/d9Gm1dSnXtjoskU/IIcyFlcsWEjQVELa+euS9xOSNxDO781ZItwOSAU0
+behApKVLwhZuATf4yo55ENmVWAMAxq2hwzktCBlNtN1J36MOe48X/0Z+nD+Zyogu
+qoIMODKevkCDSVLlVpA9x/3pMdpMy78Nj+py9zfdRYA1mKCrmZXpChrC9QJdNjsR
+8YWkNXJiL6JJh8ii+huoeqgie4q6bu8S3yALLf5U0vTZFdEKlMddl9sm7sHSNVeX
+dEgzf+Wk0tcKkrMA1NvqsCxs2rmc9rsm0zzoLjzDc5wqE5k6VNtNHcig9ur92DH7
+2XSKjtUxsmALfL/fshT0bLySg2JLPvM36WuBOll+WLQPtFV3Jdlq2HgW7/2NV1ww
+0xknP81iQgy3DskcrgSx1QAh+00v39YG18+a3f9YYNwG7fIXCFnL6bIbEd7zn/db
+hCueqXY46wZLAmu1hKnU
+=PP1X
+-----END PGP SIGNATURE-----
+
+--WIyZ46R2i8wDzkSu--
