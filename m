@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633AbaJGXWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:22:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
+	id S932651AbaJGXWw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:22:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932451AbaJGXUW (ORCPT
+	with ESMTP id S932441AbaJGXUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shaohua Li <shli@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>, NeilBrown <neilb@suse.de>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 08/13] md/raid5: disable DISCARD by default due to safety concerns.
-Date: Tue,  7 Oct 2014 16:20:13 -0700
-Message-Id: <20141007231920.169944289@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.10 07/13] media: vb2: fix VBI/poll regression
+Date: Tue,  7 Oct 2014 16:20:12 -0700
+Message-Id: <20141007231920.141575294@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -32,93 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 8e0e99ba64c7ba46133a7c8a3e3f7de01f23bd93 upstream.
+commit 58d75f4b1ce26324b4d809b18f94819843a98731 upstream.
 
-It has come to my attention (thanks Martin) that 'discard_zeroes_data'
-is only a hint.  Some devices in some cases don't do what it
-says on the label.
+The recent conversion of saa7134 to vb2 unconvered a poll() bug that
+broke the teletext applications alevt and mtt. These applications
+expect that calling poll() without having called VIDIOC_STREAMON will
+cause poll() to return POLLERR. That did not happen in vb2.
 
-The use of DISCARD in RAID5 depends on reads from discarded regions
-being predictably zero.  If a write to a previously discarded region
-performs a read-modify-write cycle it assumes that the parity block
-was consistent with the data blocks.  If all were zero, this would
-be the case.  If some are and some aren't this would not be the case.
-This could lead to data corruption after a device failure when
-data needs to be reconstructed from the parity.
+This patch fixes that behavior. It also fixes what should happen when
+poll() is called when STREAMON is called but no buffers have been
+queued. In that case poll() will also return POLLERR, but only for
+capture queues since output queues will always return POLLOUT
+anyway in that situation.
 
-As we cannot trust 'discard_zeroes_data', ignore it by default
-and so disallow DISCARD on all raid4/5/6 arrays.
+This brings the vb2 behavior in line with the old videobuf behavior.
 
-As many devices are trustworthy, and as there are benefits to using
-DISCARD, add a module parameter to over-ride this caution and cause
-DISCARD to work if discard_zeroes_data is set.
-
-If a site want to enable DISCARD on some arrays but not on others they
-should select DISCARD support at the filesystem level, and set the
-raid456 module parameter.
-    raid456.devices_handle_discard_safely=Y
-
-As this is a data-safety issue, I believe this patch is suitable for
--stable.
-DISCARD support for RAID456 was added in 3.7
-
-Cc: Shaohua Li <shli@kernel.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bwh: Backported to 3.10: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/md/raid5.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -60,6 +60,10 @@
- #include "raid0.h"
- #include "bitmap.h"
+---
+ drivers/media/v4l2-core/videobuf2-core.c |   15 +++++++++++++--
+ include/media/videobuf2-core.h           |    4 ++++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -666,6 +666,7 @@ static int __reqbufs(struct vb2_queue *q
+ 	 * to the userspace.
+ 	 */
+ 	req->count = allocated_buffers;
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
  
-+static bool devices_handle_discard_safely = false;
-+module_param(devices_handle_discard_safely, bool, 0644);
-+MODULE_PARM_DESC(devices_handle_discard_safely,
-+		 "Set to Y if all devices in each array reliably return zeroes on reads from discarded regions");
- /*
-  * Stripe cache
+ 	return 0;
+ }
+@@ -714,6 +715,7 @@ static int __create_bufs(struct vb2_queu
+ 		memset(q->plane_sizes, 0, sizeof(q->plane_sizes));
+ 		memset(q->alloc_ctx, 0, sizeof(q->alloc_ctx));
+ 		q->memory = create->memory;
++		q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 	}
+ 
+ 	num_buffers = min(create->count, VIDEO_MAX_FRAME - q->num_buffers);
+@@ -1355,6 +1357,7 @@ int vb2_qbuf(struct vb2_queue *q, struct
+ 	 * dequeued in dqbuf.
+ 	 */
+ 	list_add_tail(&vb->queued_entry, &q->queued_list);
++	q->waiting_for_buffers = false;
+ 	vb->state = VB2_BUF_STATE_QUEUED;
+ 
+ 	/*
+@@ -1724,6 +1727,7 @@ int vb2_streamoff(struct vb2_queue *q, e
+ 	 * and videobuf, effectively returning control over them to userspace.
+ 	 */
+ 	__vb2_queue_cancel(q);
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 
+ 	dprintk(3, "Streamoff successful\n");
+ 	return 0;
+@@ -2009,9 +2013,16 @@ unsigned int vb2_poll(struct vb2_queue *
+ 	}
+ 
+ 	/*
+-	 * There is nothing to wait for if no buffers have already been queued.
++	 * There is nothing to wait for if the queue isn't streaming.
+ 	 */
+-	if (list_empty(&q->queued_list))
++	if (!vb2_is_streaming(q))
++		return res | POLLERR;
++	/*
++	 * For compatibility with vb1: if QBUF hasn't been called yet, then
++	 * return POLLERR as well. This only affects capture queues, output
++	 * queues will always initialize waiting_for_buffers to false.
++	 */
++	if (q->waiting_for_buffers)
+ 		return res | POLLERR;
+ 
+ 	if (list_empty(&q->done_list))
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -318,6 +318,9 @@ struct v4l2_fh;
+  * @done_wq:	waitqueue for processes waiting for buffers ready to be dequeued
+  * @alloc_ctx:	memory type/allocator-specific contexts for each plane
+  * @streaming:	current streaming state
++ * @waiting_for_buffers: used in poll() to check if vb2 is still waiting for
++ *		buffers. Only set for capture queues if qbuf has not yet been
++ *		called since poll() needs to return POLLERR in that situation.
+  * @fileio:	file io emulator internal data, used only if emulator is active
   */
-@@ -5611,7 +5615,7 @@ static int run(struct mddev *mddev)
- 		mddev->queue->limits.discard_granularity = stripe;
- 		/*
- 		 * unaligned part of discard request will be ignored, so can't
--		 * guarantee discard_zerors_data
-+		 * guarantee discard_zeroes_data
- 		 */
- 		mddev->queue->limits.discard_zeroes_data = 0;
+ struct vb2_queue {
+@@ -350,6 +353,7 @@ struct vb2_queue {
+ 	unsigned int			plane_sizes[VIDEO_MAX_PLANES];
  
-@@ -5636,6 +5640,18 @@ static int run(struct mddev *mddev)
- 			    !bdev_get_queue(rdev->bdev)->
- 						limits.discard_zeroes_data)
- 				discard_supported = false;
-+			/* Unfortunately, discard_zeroes_data is not currently
-+			 * a guarantee - just a hint.  So we only allow DISCARD
-+			 * if the sysadmin has confirmed that only safe devices
-+			 * are in use by setting a module parameter.
-+			 */
-+			if (!devices_handle_discard_safely) {
-+				if (discard_supported) {
-+					pr_info("md/raid456: discard support disabled due to uncertainty.\n");
-+					pr_info("Set raid456.devices_handle_discard_safely=Y to override.\n");
-+				}
-+				discard_supported = false;
-+			}
- 		}
+ 	unsigned int			streaming:1;
++	unsigned int			waiting_for_buffers:1;
  
- 		if (discard_supported &&
+ 	struct vb2_fileio_data		*fileio;
+ };
 
 
