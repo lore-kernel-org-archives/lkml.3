@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765AbaJGQ7O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:59:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56258 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405AbaJGQ7L (ORCPT
+	id S1754788AbaJGQ7U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:59:20 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:58132 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754751AbaJGQ7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:59:11 -0400
-Message-ID: <54341BD7.3070207@infradead.org>
-Date: Tue, 07 Oct 2014 09:59:03 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Tue, 7 Oct 2014 12:59:15 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 7 Oct 2014 18:56:22 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
+        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v6 4/4] gpio: add support for the Diolan DLN-2 USB GPIO
+ driver
+Message-ID: <20141007165622.GH5362@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+ <1411661254-5204-5-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, dev@openvswitch.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 7 (openvswitch)
-References: <20141007194454.10502188@canb.auug.org.au>
-In-Reply-To: <20141007194454.10502188@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411661254-5204-5-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/14 01:44, Stephen Rothwell wrote:
-> Hi all,
+On Thu, Sep 25, 2014 at 07:07:34PM +0300, Octavian Purdila wrote:
+> From: Daniel Baluta <daniel.baluta@intel.com>
 > 
-> Changes since 20141003:
+> This patch adds GPIO and IRQ support for the Diolan DLN-2 GPIO module.
 > 
+> Information about the USB protocol interface can be found in the
+> Programmer's Reference Manual [1], see section 2.9 for the GPIO
+> module commands and responses.
+> 
+> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
+> 
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
 
-on i386 or x86_64:
+Looks good. I'll provide my reviewed-by tag to the final submission.
 
-In file included from ../include/net/geneve.h:4:0,
-                 from ../net/openvswitch/flow_netlink.c:45:
-../include/net/udp_tunnel.h: In function 'udp_tunnel_handle_offloads':
-../include/net/udp_tunnel.h:100:2: error: implicit declaration of function 'iptunnel_handle_offloads' [-Werror=implicit-function-declaration]
-  return iptunnel_handle_offloads(skb, udp_csum, type);
-  ^
-../include/net/udp_tunnel.h:100:2: warning: return makes pointer from integer without a cast [enabled by default]
-
-
-
--- 
-~Randy
+Thanks,
+Johan
