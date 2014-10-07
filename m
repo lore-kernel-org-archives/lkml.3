@@ -1,182 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbaJGAAL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 20:00:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64420 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751290AbaJFX7o (ORCPT
+	id S1752750AbaJGAGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 20:06:24 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59700 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaJGAGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:59:44 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bryan Wu <cooloney@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 12/13] leds: leds-gpio: Make use of device property API
-Date: Tue, 07 Oct 2014 02:18:45 +0200
-Message-ID: <1997643.hzLDnYTZoH@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2660541.BycO7TFnA2@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
+	Mon, 6 Oct 2014 20:06:23 -0400
+Date: Mon, 6 Oct 2014 20:05:14 -0400
+From: Rich Felker <dalias@libc.org>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, David Daney <ddaney.cavm@gmail.com>,
+        libc-alpha@sourceware.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+Message-ID: <20141007000514.GD23797@brightrain.aerifal.cx>
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+ <20141006205459.GZ23797@brightrain.aerifal.cx>
+ <5433071B.4050606@caviumnetworks.com>
+ <20141006213101.GA23797@brightrain.aerifal.cx>
+ <54330D79.80102@caviumnetworks.com>
+ <20141006215813.GB23797@brightrain.aerifal.cx>
+ <543327E7.4020608@amacapital.net>
+ <54332A64.5020605@caviumnetworks.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54332A64.5020605@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Mon, Oct 06, 2014 at 04:48:52PM -0700, David Daney wrote:
+> On 10/06/2014 04:38 PM, Andy Lutomirski wrote:
+> >On 10/06/2014 02:58 PM, Rich Felker wrote:
+> >>On Mon, Oct 06, 2014 at 02:45:29PM -0700, David Daney wrote:
+> [...]
+> >>This is a huge ill-designed mess.
+> >
+> >Amen.
+> >
+> >Can the kernel not just emulate the instructions directly?
+> 
+> In theory it could, but since there can be implementation defined
+> instructions, there is no way to achieve full instruction set
+> coverage for all possible machines.
 
-Make use of device property API in this driver so that both OF and ACPI
-based system can use the same driver.
+Is the issue really implementation-defined instructions with delay
+slots? If so it sounds like a made-up issue. They're not going to
+occur in real binaries. Certainly a compiler is not going to generate
+implementation-defined instructions, and if you're writing the asm by
+hand, you just don't put floating point instructions in the delay
+slot.
 
-This change contains material from Max Eliaser and Mika Westerberg.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/leds/leds-gpio.c |   67 +++++++++++++++++++++--------------------------
- 1 file changed, 30 insertions(+), 37 deletions(-)
-
-Index: linux-pm/drivers/leds/leds-gpio.c
-===================================================================
---- linux-pm.orig/drivers/leds/leds-gpio.c
-+++ linux-pm/drivers/leds/leds-gpio.c
-@@ -15,13 +15,11 @@
- #include <linux/gpio.h>
- #include <linux/gpio/consumer.h>
- #include <linux/leds.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
--#include <linux/of_gpio.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
- #include <linux/module.h>
- #include <linux/err.h>
-+#include <linux/property.h>
- 
- struct gpio_led_data {
- 	struct led_classdev cdev;
-@@ -171,40 +169,41 @@ static inline int sizeof_gpio_leds_priv(
- 		(sizeof(struct gpio_led_data) * num_leds);
- }
- 
--/* Code to create from OpenFirmware platform devices */
--#ifdef CONFIG_OF_GPIO
--static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
-+static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
- {
--	struct device_node *np = pdev->dev.of_node, *child;
-+	struct device *dev = &pdev->dev;
- 	struct gpio_leds_priv *priv;
- 	int count, ret;
-+	void *child;
- 
--	/* count LEDs in this device, so we know how much to allocate */
--	count = of_get_available_child_count(np);
-+	count = device_get_child_node_count(dev);
- 	if (!count)
- 		return ERR_PTR(-ENODEV);
- 
--	for_each_available_child_of_node(np, child)
--		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
--			return ERR_PTR(-EPROBE_DEFER);
--
--	priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
--			GFP_KERNEL);
-+	priv = devm_kzalloc(dev, sizeof_gpio_leds_priv(count), GFP_KERNEL);
- 	if (!priv)
- 		return ERR_PTR(-ENOMEM);
- 
--	for_each_available_child_of_node(np, child) {
-+	device_for_each_child_node(dev, child) {
- 		struct gpio_led led = {};
--		enum of_gpio_flags flags;
--		const char *state;
-+		const char *state = NULL;
-+
-+		led.gpiod = devm_get_named_gpiod_from_child(dev, child,
-+							    "gpios", 0);
-+		if (IS_ERR(led.gpiod)) {
-+			device_put_child_node(dev, child);
-+			goto err;
-+		}
- 
--		led.gpio = of_get_gpio_flags(child, 0, &flags);
--		led.active_low = flags & OF_GPIO_ACTIVE_LOW;
--		led.name = of_get_property(child, "label", NULL) ? : child->name;
--		led.default_trigger =
--			of_get_property(child, "linux,default-trigger", NULL);
--		state = of_get_property(child, "default-state", NULL);
--		if (state) {
-+		device_child_property_read_string(dev, child,
-+						  "label", &led.name);
-+		device_child_property_read_string(dev, child,
-+						  "linux,default-trigger",
-+						  &led.default_trigger);
-+
-+		if (!device_child_property_read_string(dev, child,
-+						       "linux,default_state",
-+						       &state)) {
- 			if (!strcmp(state, "keep"))
- 				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
- 			else if (!strcmp(state, "on"))
-@@ -213,13 +212,14 @@ static struct gpio_leds_priv *gpio_leds_
- 				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
- 		}
- 
--		if (of_get_property(child, "retain-state-suspended", NULL))
-+		if (!device_get_child_property(dev, child,
-+					       "retain-state-suspended", NULL))
- 			led.retain_state_suspended = 1;
- 
- 		ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
--				      &pdev->dev, NULL);
-+				      dev, NULL);
- 		if (ret < 0) {
--			of_node_put(child);
-+			device_put_child_node(dev, child);
- 			goto err;
- 		}
- 	}
-@@ -238,13 +238,6 @@ static const struct of_device_id of_gpio
- };
- 
- MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
--#else /* CONFIG_OF_GPIO */
--static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
--{
--	return ERR_PTR(-ENODEV);
--}
--#endif /* CONFIG_OF_GPIO */
--
- 
- static int gpio_led_probe(struct platform_device *pdev)
- {
-@@ -273,7 +266,7 @@ static int gpio_led_probe(struct platfor
- 			}
- 		}
- 	} else {
--		priv = gpio_leds_create_of(pdev);
-+		priv = gpio_leds_create(pdev);
- 		if (IS_ERR(priv))
- 			return PTR_ERR(priv);
- 	}
-@@ -300,7 +293,7 @@ static struct platform_driver gpio_led_d
- 	.driver		= {
- 		.name	= "leds-gpio",
- 		.owner	= THIS_MODULE,
--		.of_match_table = of_match_ptr(of_gpio_leds_match),
-+		.of_match_table = of_gpio_leds_match,
- 	},
- };
- 
-
+Rich
