@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352AbaJGVFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 17:05:09 -0400
-Received: from mailsec111.isp.belgacom.be ([195.238.20.107]:9047 "EHLO
-	mailsec111.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751988AbaJGVFH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 17:05:07 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=Daq5x7peQTZG5JcO7WbcljS9mPiqDMY23hclUajVz3U= c=1 sm=2
- a=IkcTkHD0fZMA:10 a=SaWEO8HGAAAA:8 a=_jlGtV7tAAAA:8
- a=K_8JcFAyXmP5N7ajiE0A:9 a=QEXdDO2ut3YA:10 a=w2ubnULX9RwA:10
- a=L1RTw_NLzc0A:10
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlILAA1VNFTD7hTT/2dsb2JhbABfgw6BK4MEtW0BAQEBAQEGmngCgREWAXuEAwEBAQMBI1YFCwUGFAEDAgIYDgICVwYTEYglDK0/hn+OBhiBLIR0iXEzB4J3gVQFqhqJMINlOy+CSgEBAQ
-Date: Tue, 7 Oct 2014 23:05:05 +0200 (CEST)
-From: Fabian Frederick <fabf@skynet.be>
-Reply-To: Fabian Frederick <fabf@skynet.be>
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, David Miller <davem@davemloft.net>
-Message-ID: <512814057.20732.1412715905370.open-xchange@webmail.nmp.skynet.be>
-In-Reply-To: <1412715283.11600.11.camel@localhost>
-References: <1412712996-4672-1-git-send-email-fabf@skynet.be> <20141007.161832.453892039501955243.davem@davemloft.net> <20141007203344.GA4748@roeck-us.net> <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be> <1412715283.11600.11.camel@localhost>
-Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
+	id S1754579AbaJGVKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 17:10:16 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:37495 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaJGVKN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 17:10:13 -0400
 MIME-Version: 1.0
+In-Reply-To: <3345042.lGjGYUIfnV@phil>
+References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
+	<1854393.Qf7h4x8eso@phil>
+	<CAD=FV=WwXXQ6941WuATBiNqZ0sM3EkSo-EHHoqn3uGmZdNvW5w@mail.gmail.com>
+	<3345042.lGjGYUIfnV@phil>
+Date: Tue, 7 Oct 2014 14:10:12 -0700
+X-Google-Sender-Auth: UBO8ihZRVbOJLihJKiLsYvdsnxA
+Message-ID: <CAD=FV=WnSM1swHG7aEFk0ox11QmhMHM=WX6gD9jzPbXtUqnfTg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ARM: dts: enable init rate for clock
+From: Doug Anderson <dianders@chromium.org>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Priority: 3
-Importance: Medium
-X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On Tue, Oct 7, 2014 at 12:37 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> Am Dienstag, 7. Oktober 2014, 12:20:38 schrieb Doug Anderson:
+>> Heiko,
+>>
+>> On Tue, Oct 7, 2014 at 11:27 AM, Heiko Stübner <heiko@sntech.de> wrote:
+>> > Am Dienstag, 7. Oktober 2014, 10:03:19 schrieb Doug Anderson:
+>> >> Kever,
+>> >>
+>> >> On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com>
+>> >
+>> > wrote:
+>> >> > We need to initialize PLL rate and some of bus clock rate while
+>> >> > kernel init, for there is no other module will do that.
+>> >> >
+>> >> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+>> >> > ---
+>> >> >
+>> >> >  arch/arm/boot/dts/rk3288.dtsi | 10 ++++++++++
+>> >> >  1 file changed, 10 insertions(+)
+>> >> >
+>> >> > diff --git a/arch/arm/boot/dts/rk3288.dtsi
+>> >> > b/arch/arm/boot/dts/rk3288.dtsi
+>> >> > index 874e66d..2f4519b 100644
+>> >> > --- a/arch/arm/boot/dts/rk3288.dtsi
+>> >> > +++ b/arch/arm/boot/dts/rk3288.dtsi
+>> >> > @@ -455,6 +455,16 @@
+>> >> >
+>> >> >                 rockchip,grf = <&grf>;
+>> >> >                 #clock-cells = <1>;
+>> >> >                 #reset-cells = <1>;
+>> >> >
+>> >> > +               assigned-clocks = <&cru PLL_GPLL>, <&cru PLL_CPLL>,
+>> >> > +                                 <&cru PLL_NPLL>, <&cru ACLK_CPU>,
+>> >> > +                                 <&cru HCLK_CPU>, <&cru PCLK_CPU>,
+>> >> > +                                 <&cru ACLK_PERI>, <&cru HCLK_PERI>,
+>> >> > +                                 <&cru PCLK_PERI>;
+>> >> > +               assigned-clock-rates = <594000000>, <400000000>,
+>> >> > +                                      <500000000>, <300000000>,
+>> >>
+>> >> When I boot up, I see that ACLK_CPU was 297000000.  You specified
+>> >> 300000000.  Did you expect to get 300?  If you expected 297, I think
+>> >> you should put 297.  If you expected 300 then we have some debugging
+>> >> to do.  Note: I'm not quite sure how you'd expect to get 300 given
+>> >> that none of the PLLs divide evenly to 300...
+>> >
+>> > I'd think 300 is simply the target value. I.e. take the closest rate <=
+>> > 300
+>> > MHz, same for 150 etc. I somehow like the approach of specifying what the
+>> > rate _should_ ideally be :-) .
+>> >
+>> > Also reduces the amount of thougths necessary (and possible
+>> > head-scratching) when adapting the pll rates to some other constraints
+>> > (child-clocks already have the target rates and cannot drop to some even
+>> > stranger value).
+>> OK, fair enough.  I guess maybe I've overly paranoid and like to make
+>> sure that someone has thought through exactly what various core clocks
+>> should be and made sure that the voltage matched and that clocks were
+>> never out of spec.  ...but if others really like specifying more ideal
+>> values then I'm OK with it.
+>
+> Especially as clocks like ACLK_CPU can select from different plls (cpll and
+> gpll on the rk3288) it would be even more difficult to predict which path the
+> clock selection would take. So it makes sense to specifiy the value we wish for
+> and let the common-clock-framework do its magic to select the best sources.
+>
+>
+>>I will say that I'd really like the PLLs
+>> to be exact, though.  I think those are now...
+>
+> agreed. PLL rates should be exact.
 
-> On 07 October 2014 at 22:54 Hannes Frederic Sowa <hannes@stressinduktion.org>
-> wrote:
->
->
-> On Di, 2014-10-07 at 22:49 +0200, Fabian Frederick wrote:
-> >
-> > > On 07 October 2014 at 22:33 Guenter Roeck <linux@roeck-us.net> wrote:
-> > >
-> > >
-> > > On Tue, Oct 07, 2014 at 04:18:32PM -0400, David Miller wrote:
-> > > > From: Fabian Frederick <fabf@skynet.be>
-> > > > Date: Tue,  7 Oct 2014 22:16:36 +0200
-> > > >
-> > > > > static values are automatically initialized to NULL
-> > > > >
-> > > > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > > >
-> > > > Isn't there some implementation room given to compilers
-> > > > as to the representation of true and false?
-> > >
-> > > Not for true/false.
-> > >
-> > > C99 standard, section 7.16:
-> > >
-> > > ...
-> > > The remaining three macros are suitable for use in #if preprocessing
-> > > directives. They are
-> > >
-> > > true
-> > >
-> > > which expands to the integer constant 1,
-> > >
-> > > false
-> > >
-> > > which expands to the integer constant 0, and
-> > > ...
-> > >
-> > > No idea where the NULL comes into the picture, though.
-> > >
-> > > Guenter
-> >
-> > Maybe comment should have been "static values are automatically initialized
-> > to
-> > 0" then ?
->
-> I think David's concern was whether if 0 == false in all situations. It
-> is pretty clear that static memory is initialized to 0.
->
-> Thanks,
-> Hannes
+OK, fair enough.  Then you can give my:
 
-Of course :) It was an answer to Guenter's explanation.
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
 
-Regards,
-Fabian
->
->
+...of course I'd still like comments addressed for part 1 of this series.  ;)
+
+-Doug
