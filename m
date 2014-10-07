@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482AbaJGPZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:25:34 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56430 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaJGPZd (ORCPT
+	id S1754677AbaJGPZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:25:57 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62926 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275AbaJGPWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:25:33 -0400
-Date: Tue, 7 Oct 2014 17:25:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH V5 14/16] perf, x86: enable LBR callstack when recording
- callchain
-Message-ID: <20141007152528.GD5850@twins.programming.kicks-ass.net>
-References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
- <1410358153-421-15-git-send-email-kan.liang@intel.com>
- <20140924142110.GG2805@worktop.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F0770160F9C0@SHSMSX103.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770160F9C0@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 7 Oct 2014 11:22:46 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/8] clk: Remove unused function __clk_get_prepare_count
+Date: Tue,  7 Oct 2014 17:21:47 +0200
+Message-Id: <1412695334-2608-3-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 03:00:43AM +0000, Liang, Kan wrote:
-> 
-> 
-> >
-> > On Wed, Sep 10, 2014 at 10:09:11AM -0400, kan.liang@intel.com wrote:
-> > > From: Kan Liang <kan.liang@intel.com>
-> > >
-> > > If a task specific event wants user space callchain but does not want
-> > > branch stack sampling, enable the LBR call stack facility implicitly.
-> > > The LBR call stack facility can help perf to get user space callchain
-> > > in case of there is no frame pointer.
-> > >
-> > > Note: this feature only affects how to get user callchain. The kernel
-> > > callchain is always got by frame pointers.
-> >
-> > Yeah, don't like this either. Suppose you have sane userspace (with
-> > framepointers enabled) then you're now loosing the better option.
-> 
-> FP is the first option. This patch tries to enable LBR call stack facility implicitly.
-> Only when FP disabled or failed, we try to use LBR call stack.
-> Please refer to the previous patch https://lkml.org/lkml/2014/9/10/376
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/clk/clk.c            | 5 -----
+ include/linux/clk-provider.h | 1 -
+ 2 files changed, 6 deletions(-)
 
-Still makes for an entirely unpredictable situation. That way you never
-quite know where your data came from.
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index bacc06f..c4b39ce 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -586,11 +586,6 @@ unsigned int __clk_get_enable_count(struct clk *clk)
+ 	return !clk ? 0 : clk->enable_count;
+ }
+ 
+-unsigned int __clk_get_prepare_count(struct clk *clk)
+-{
+-	return !clk ? 0 : clk->prepare_count;
+-}
+-
+ unsigned long __clk_get_rate(struct clk *clk)
+ {
+ 	unsigned long ret;
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 411dd7e..94c491e 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -512,7 +512,6 @@ u8 __clk_get_num_parents(struct clk *clk);
+ struct clk *__clk_get_parent(struct clk *clk);
+ struct clk *clk_get_parent_by_index(struct clk *clk, u8 index);
+ unsigned int __clk_get_enable_count(struct clk *clk);
+-unsigned int __clk_get_prepare_count(struct clk *clk);
+ unsigned long __clk_get_rate(struct clk *clk);
+ unsigned long __clk_get_accuracy(struct clk *clk);
+ unsigned long __clk_get_flags(struct clk *clk);
+-- 
+1.9.3
+
