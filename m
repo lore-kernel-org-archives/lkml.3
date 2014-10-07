@@ -1,1076 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaJGRFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:05:47 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:49285 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaJGRFo (ORCPT
+	id S1754680AbaJGRIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:08:01 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:46371 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaJGRH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:05:44 -0400
+	Tue, 7 Oct 2014 13:07:58 -0400
+Date: Tue, 7 Oct 2014 19:07:48 +0200
+From: Mathias Krause <minipli@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+Message-ID: <20141007170748.GA25767@jig.fritz.box>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+ <1411313216-2641-2-git-send-email-minipli@googlemail.com>
+ <20141003134707.GJ14343@console-pimps.org>
+ <20141007150132.GA7307@nazgul.tnic>
 MIME-Version: 1.0
-In-Reply-To: <1412158843-8115-2-git-send-email-djkurtz@chromium.org>
-References: <1412158843-8115-1-git-send-email-djkurtz@chromium.org>
-	<1412158843-8115-2-git-send-email-djkurtz@chromium.org>
-Date: Tue, 7 Oct 2014 10:05:43 -0700
-X-Google-Sender-Auth: tyWwLTvV6HwwYsIwZtm0oppNexY
-Message-ID: <CANEJEGvvHS6+w6WcfP-ZSNdREeBmFysz-Nfo2RQdFZmSdFedUQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] iommu/rockchip: rk3288 iommu driver
-From: Grant Grundler <grundler@chromium.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Joerg Roedel <joro@8bytes.org>, Heiko Stuebner <heiko@sntech.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Simon Xue <xxm@rock-chips.com>,
-        Grant Grundler <grundler@chromium.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        linux-rockchip@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007150132.GA7307@nazgul.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 3:20 AM, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> The rk3288 has several iommus.  Each iommu belongs to a single master
-> device.  There is one device (ISP) that has two slave iommus, but that
-> case is not yet supported by this driver.
->
-> At subsys init, the iommu driver registers itself as the iommu driver for
-> the platform bus.  The master devices find their slave iommus using the
-> "iommus" field in their devicetree description.  Since each slave iommu
-> belongs to exactly one master, their is no additional data needed at probe
-> to associate a slave with its master.
->
-> An iommu device's power domain, clock and irq are all shared with its
-> master device, and the master device must be careful to attach from the
-> iommu only after powering and clocking it (and leave it powered and
-> clocked before detaching).  Because their is no guarantee what the status
-> of the iommu is at probe, and since the driver does not even know if the
-> device is powered, we delay requesting its irq until the master device
-> attaches, at which point we have a guarantee that the device is powered
-> and clocked and we can reset it and disable its interrupt mask.
->
-> An iommu_domain describes a virtual iova address space.  Each iommu_domain
-> has a corresponding page table that lists the mappings from iova to
-> physical address.
->
-> For the rk3288 iommu, the page table has two levels:
->  The Level 1 "directory_table" has 1024 4-byte dte entries.
->  Each dte points to a level 2 "page_table".
->  Each level 2 page_table has 1024 4-byte pte entries.
->  Each pte points to a 4 KiB page of memory.
->
-> An iommu_domain is created when a dma_iommu_mapping is created via
-> arm_iommu_create_mapping.  Master devices can then attach themselves to
-> this mapping (or attach the mapping to themselves?) by calling
-> arm_iommu_attach_device().  This in turn instructs the iommu driver to
-> write the page table's physical address into the slave iommu's "Directory
-> Table Entry" (DTE) register.
->
-> In fact multiple master devices, each with their own slave iommu device,
-> can all attach to the same mapping.  The iommus for these devices will
-> share the same iommu_domain and therefore point to the same page table.
-> Thus, the iommu domain maintains a list of iommu devices which are
-> attached.  This driver relies on the iommu core to ensure that all devices
-> have detached before destroying a domain.
->
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> Signed-off-by: Simon Xue <xxm@rock-chips.com>
+On Tue, Oct 07, 2014 at 05:01:32PM +0200, Borislav Petkov wrote:
+> On Fri, Oct 03, 2014 at 02:47:07PM +0100, Matt Fleming wrote:
+> > Looks OK to me. Borislav?
+> 
+> It needs more work AFAICT because with it, espfix area gets cut off
+> prematurely:
+> 
 
-Reviewed-by: Grant Grundler <grundler@chromium.org>
+I don't think so. See below...
 
-There are some nits in this version and my "R-b:" applies to what you
-can pull from here:
-    https://chromium-review.googlesource.com/218049
+> ...
+> [    0.134611] ---[ Vmemmap ]---
+> [    0.135003] 0xffffea0000000000-0xffffea0002000000          32M     RW         PSE GLB NX pmd
+> [    0.136743] 0xffffea0002000000-0xffffea0040000000         992M                           pmd
+> [    0.138091] 0xffffea0040000000-0xffffea8000000000         511G                           pud
+> [    0.139611] 0xffffea8000000000-0xffffff0000000000       20992G                           pgd
+> [    0.140610] ---[ ESPfix Area ]---
+> [    0.141003] 0xffffff0000000000-0xffffff8000000000         512G                           pgd
+> [    0.142614] 0xffffff8000000000-0xffffffef00000000         444G                           pud
+> [    0.144088] ---[ EFI Runtime Services ]---
+> [    0.144722] 0xffffffef00000000-0xfffffffec0000000          63G                           pud
+> [    0.146090] 0xfffffffec0000000-0xfffffffefbe00000         958M                           pmd
+> [    0.147613] 0xfffffffefbe00000-0xfffffffefbfe0000        1920K                           pte
+> [    0.149003] 0xfffffffefbfe0000-0xfffffffefc000000         128K     RW                 x  pte
+> [    0.150484] 0xfffffffefc000000-0xfffffffefc065000         404K                           pte
+> [    0.151612] 0xfffffffefc065000-0xfffffffefc200000        1644K     RW                 x  pte
+> [    0.153285] 0xfffffffefc200000-0xfffffffefc400000           2M     RW         PSE     x  pmd
+> [    0.154721] 0xfffffffefc400000-0xfffffffefc5e0000        1920K     RW                 x  pte
+> ...
+> 
+> and I think we want to see something more from the espfix area (this is
+> what we have now):
+> 
+> [    0.138086] ---[ ESPfix Area ]---
+> [    0.138590] 0xffffff0000000000-0xffffff8000000000         512G                           pgd
+> [    0.140099] 0xffffff8000000000-0xfffffffec0000000         507G                           pud
+> [    0.141444] 0xfffffffec0000000-0xfffffffefbe00000         958M                           pmd
+> [    0.142597] 0xfffffffefbe00000-0xfffffffefbfe0000        1920K                           pte
+> [    0.144086] 0xfffffffefbfe0000-0xfffffffefc000000         128K     RW                 x  pte
+> [    0.145545] 0xfffffffefc000000-0xfffffffefc065000         404K                           pte
+> [    0.146597] 0xfffffffefc065000-0xfffffffefc200000        1644K     RW                 x  pte
+> [    0.148346] 0xfffffffefc200000-0xfffffffefc400000           2M     RW         PSE     x  pmd
+> [    0.149776] 0xfffffffefc400000-0xfffffffefc5e0000        1920K     RW                 x  pte
+> [    0.151347] 0xfffffffefc5e0000-0xfffffffefc631000         324K                           pte
+> [    0.152593] 0xfffffffefc631000-0xfffffffefc655000         144K     RW                 x  pte
+> [    0.154143] 0xfffffffefc655000-0xfffffffefc801000        1712K                           pte
+> [    0.155437] 0xfffffffefc801000-0xfffffffefc831000         192K     RW                 x  pte
+> [    0.157004] 0xfffffffefc831000-0xfffffffefc881000         320K                           pte
+> [    0.158088] 0xfffffffefc881000-0xfffffffefca01000        1536K     RW                 x  pte
+> [    0.159712] 0xfffffffefca01000-0xfffffffefcb34000        1228K                           pte
+> [    0.161117] ... 36 entries skipped ...
 
-    git fetch https://chromium.googlesource.com/chromiumos/third_party/kernel
-refs/changes/49/218049/11 && git checkout FETCH_HEAD
+What you can see here are actually the EFI runtime service mappings, not
+the ESP fix area. Check the addresses and compare them. You should find
+similarities ;) And, in fact, the EFI mappings are incomplete in the
+second dump, i.e. the vanilla kernel one, because of the enforced limit
+for the ESP fix area.
 
-I expect djkurtz will post a new version here soon (and include my
-Reviewed-By line please).
+So, in your examples are actually *no* ESP fix area mappings as those
+would be r/o. In fact, I think, the above dumps are the result of a
+CONFIG_EFI_PGT_DUMP enabled kernel that dumps the page table after
+setting up the EFI mappings. There are no ESP fix mappings in this dump
+because those are only set up after the EFI runtime service mappings.
+See the following code in init/main:
 
-cheers,
-grant
+  #ifdef CONFIG_X86
+      if (efi_enabled(EFI_RUNTIME_SERVICES))
+          efi_enter_virtual_mode();
+  #endif
+  #ifdef CONFIG_X86_ESPFIX64
+      /* Should be run before the first non-init thread is created */
+      init_espfix_bsp();
+  #endif
+
+To get a more complete view of the mappings, have a look at the debugfs
+file /sys/kernel/debug/kernel_page_tables.
+
+For v3.17 I get (notice the missing EFI mappings):
+...
+---[ Vmemmap ]---
+0xffffea0000000000-0xffffff0000000000          21T                           pgd
+---[ ESPfix Area ]---
+0xffffff0000000000-0xffffff3b00000000         236G                           pud
+0xffffff3b00000000-0xffffff3b0000e000          56K                           pte
+0xffffff3b0000e000-0xffffff3b0000f000           4K     ro             GLB NX pte
+0xffffff3b0000f000-0xffffff3b0001e000          60K                           pte
+0xffffff3b0001e000-0xffffff3b0001f000           4K     ro             GLB NX pte
+0xffffff3b0001f000-0xffffff3b0002e000          60K                           pte
+0xffffff3b0002e000-0xffffff3b0002f000           4K     ro             GLB NX pte
+0xffffff3b0002f000-0xffffff3b0003e000          60K                           pte
+0xffffff3b0003e000-0xffffff3b0003f000           4K     ro             GLB NX pte
+0xffffff3b0003f000-0xffffff3b0004e000          60K                           pte
+0xffffff3b0004e000-0xffffff3b0004f000           4K     ro             GLB NX pte
+0xffffff3b0004f000-0xffffff3b0005e000          60K                           pte
+0xffffff3b0005e000-0xffffff3b0005f000           4K     ro             GLB NX pte
+0xffffff3b0005f000-0xffffff3b0006e000          60K                           pte
+0xffffff3b0006e000-0xffffff3b0006f000           4K     ro             GLB NX pte
+0xffffff3b0006f000-0xffffff3b0007e000          60K                           pte
+... 131165 entries skipped ... 
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+...
+
+For v3.17 plus this patch I get this:
+...
+---[ Vmemmap ]---
+0xffffea0000000000-0xffffff0000000000          21T                           pgd
+---[ ESPfix Area ]---
+0xffffff0000000000-0xffffff5600000000         344G                           pud
+0xffffff5600000000-0xffffff5600005000          20K                           pte
+0xffffff5600005000-0xffffff5600006000           4K     ro             GLB NX pte
+0xffffff5600006000-0xffffff5600015000          60K                           pte
+0xffffff5600015000-0xffffff5600016000           4K     ro             GLB NX pte
+0xffffff5600016000-0xffffff5600025000          60K                           pte
+0xffffff5600025000-0xffffff5600026000           4K     ro             GLB NX pte
+0xffffff5600026000-0xffffff5600035000          60K                           pte
+0xffffff5600035000-0xffffff5600036000           4K     ro             GLB NX pte
+0xffffff5600036000-0xffffff5600045000          60K                           pte
+0xffffff5600045000-0xffffff5600046000           4K     ro             GLB NX pte
+0xffffff5600046000-0xffffff5600055000          60K                           pte
+0xffffff5600055000-0xffffff5600056000           4K     ro             GLB NX pte
+0xffffff5600056000-0xffffff5600065000          60K                           pte
+0xffffff5600065000-0xffffff5600066000           4K     ro             GLB NX pte
+0xffffff5600066000-0xffffff5600075000          60K                           pte
+... 131059 entries skipped ... 
+---[ EFI Runtime Services ]---
+0xffffffef00000000-0xfffffffec0000000          63G                           pud
+0xfffffffec0000000-0xfffffffef8800000         904M                           pmd
+0xfffffffef8800000-0xfffffffef89d0000        1856K                           pte
+0xfffffffef89d0000-0xfffffffef8a00000         192K     RW                 x  pte
+0xfffffffef8a00000-0xfffffffef8a75000         468K                           pte
+0xfffffffef8a75000-0xfffffffef8c00000        1580K     RW                 x  pte
+0xfffffffef8c00000-0xfffffffef8e00000           2M     RW         PSE     x  pmd
+0xfffffffef8e00000-0xfffffffef8fd0000        1856K     RW                 x  pte
+0xfffffffef8fd0000-0xfffffffef9041000         452K                           pte
+0xfffffffef9041000-0xfffffffef9065000         144K     RW                 x  pte
+0xfffffffef9065000-0xfffffffef9211000        1712K                           pte
+0xfffffffef9211000-0xfffffffef9241000         192K     RW                 x  pte
+0xfffffffef9241000-0xfffffffef9291000         320K                           pte
+0xfffffffef9291000-0xfffffffef9411000        1536K     RW                 x  pte
+0xfffffffef9411000-0xfffffffef9529000        1120K                           pte
+0xfffffffef9529000-0xfffffffef9600000         860K     RW                 x  pte
+0xfffffffef9600000-0xfffffffefa400000          14M     RW         PSE     x  pmd
+0xfffffffefa400000-0xfffffffefa491000         580K     RW                 x  pte
+0xfffffffefa491000-0xfffffffefa528000         604K                           pte
+0xfffffffefa528000-0xfffffffefa529000           4K     RW                 x  pte
+0xfffffffefa529000-0xfffffffefa708000        1916K                           pte
+0xfffffffefa708000-0xfffffffefa728000         128K     RW                 x  pte
+0xfffffffefa728000-0xfffffffefa907000        1916K                           pte
+0xfffffffefa907000-0xfffffffefa908000           4K     RW                 x  pte
+0xfffffffefa908000-0xfffffffefab06000        2040K                           pte
+0xfffffffefab06000-0xfffffffefab07000           4K     RW                 x  pte
+0xfffffffefab07000-0xfffffffefad05000        2040K                           pte
+0xfffffffefad05000-0xfffffffefad06000           4K     RW                 x  pte
+0xfffffffefad06000-0xfffffffefae07000        1028K                           pte
+0xfffffffefae07000-0xfffffffefaf05000        1016K     RW                 x  pte
+0xfffffffefaf05000-0xfffffffefb005000           1M                           pte
+0xfffffffefb005000-0xfffffffefb007000           8K     RW                 x  pte
+0xfffffffefb007000-0xfffffffefb1ea000        1932K                           pte
+0xfffffffefb1ea000-0xfffffffefb205000         108K     RW                 x  pte
+0xfffffffefb205000-0xfffffffefb3e1000        1904K                           pte
+0xfffffffefb3e1000-0xfffffffefb3ea000          36K     RW                 x  pte
+0xfffffffefb3ea000-0xfffffffefb5cf000        1940K                           pte
+0xfffffffefb5cf000-0xfffffffefb600000         196K     RW                 x  pte
+0xfffffffefb600000-0xfffffffefb800000           2M     RW         PSE     x  pmd
+0xfffffffefb800000-0xfffffffefb9e1000        1924K     RW                 x  pte
+0xfffffffefb9e1000-0xfffffffefbb26000        1300K                           pte
+0xfffffffefbb26000-0xfffffffefbbcf000         676K     RW                 x  pte
+0xfffffffefbbcf000-0xfffffffefbc80000         708K                           pte
+0xfffffffefbc80000-0xfffffffefbd26000         664K     RW                 x  pte
+0xfffffffefbd26000-0xfffffffefbe7d000        1372K                           pte
+0xfffffffefbe7d000-0xfffffffefbe80000          12K     RW                 x  pte
+0xfffffffefbe80000-0xfffffffefc05e000        1912K                           pte
+0xfffffffefc05e000-0xfffffffefc07d000         124K     RW                 x  pte
+0xfffffffefc07d000-0xfffffffefc237000        1768K                           pte
+0xfffffffefc237000-0xfffffffefc25e000         156K     RW                 x  pte
+0xfffffffefc25e000-0xfffffffefc434000        1880K                           pte
+0xfffffffefc434000-0xfffffffefc437000          12K     RW                 x  pte
+0xfffffffefc437000-0xfffffffefc62e000        2012K                           pte
+0xfffffffefc62e000-0xfffffffefc634000          24K     RW                 x  pte
+0xfffffffefc634000-0xfffffffefc82c000        2016K                           pte
+0xfffffffefc634000-0xfffffffefc82c000        2016K                           pte
+0xfffffffefc82c000-0xfffffffefc82e000           8K     RW                 x  pte
+0xfffffffefc82e000-0xfffffffefca2a000        2032K                           pte
+0xfffffffefca2a000-0xfffffffefca2c000           8K     RW                 x  pte
+0xfffffffefca2c000-0xfffffffefcc28000        2032K                           pte
+0xfffffffefcc28000-0xfffffffefcc2a000           8K     RW                 x  pte
+0xfffffffefcc2a000-0xfffffffefce15000        1964K                           pte
+0xfffffffefce15000-0xfffffffefce28000          76K     RW                 x  pte
+0xfffffffefce28000-0xfffffffefd012000        1960K                           pte
+0xfffffffefd012000-0xfffffffefd015000          12K     RW                 x  pte
+0xfffffffefd015000-0xfffffffefd20e000        2020K                           pte
+0xfffffffefd20e000-0xfffffffefd212000          16K     RW                 x  pte
+0xfffffffefd212000-0xfffffffefd40d000        2028K                           pte
+0xfffffffefd40d000-0xfffffffefd40e000           4K     RW                 x  pte
+0xfffffffefd40e000-0xfffffffefd5e9000        1900K                           pte
+0xfffffffefd5e9000-0xfffffffefd60d000         144K     RW                 x  pte
+0xfffffffefd60d000-0xfffffffefd7e7000        1896K                           pte
+0xfffffffefd7e7000-0xfffffffefd7e9000           8K     RW                 x  pte
+0xfffffffefd7e9000-0xfffffffefd9e0000        2012K                           pte
+0xfffffffefd9e0000-0xfffffffefd9e7000          28K     RW                 x  pte
+0xfffffffefd9e7000-0xfffffffefdbdf000        2016K                           pte
+0xfffffffefdbdf000-0xfffffffefdbe0000           4K     RW                 x  pte
+0xfffffffefdbe0000-0xfffffffefddce000        1976K                           pte
+0xfffffffefddce000-0xfffffffefdddf000          68K     RW                 x  pte
+0xfffffffefdddf000-0xfffffffefdfcd000        1976K                           pte
+0xfffffffefdfcd000-0xfffffffefdfce000           4K     RW                 x  pte
+0xfffffffefdfce000-0xfffffffefe1af000        1924K                           pte
+0xfffffffefe1af000-0xfffffffefe1cd000         120K     RW                 x  pte
+0xfffffffefe1cd000-0xfffffffefe3ae000        1924K                           pte
+0xfffffffefe3ae000-0xfffffffefe3af000           4K     RW                 x  pte
+0xfffffffefe3af000-0xfffffffefe5a8000        2020K                           pte
+0xfffffffefe5a8000-0xfffffffefe5ae000          24K     RW                 x  pte
+0xfffffffefe5ae000-0xfffffffefe7a5000        2012K                           pte
+0xfffffffefe7a5000-0xfffffffefe7a8000          12K     RW                 x  pte
+0xfffffffefe7a8000-0xfffffffefe96d000        1812K                           pte
+0xfffffffefe96d000-0xfffffffefe9a5000         224K     RW                 x  pte
+0xfffffffefe9a5000-0xfffffffefeb69000        1808K                           pte
+0xfffffffefeb69000-0xfffffffefeb6d000          16K     RW                 x  pte
+0xfffffffefeb6d000-0xfffffffefed65000        2016K                           pte
+0xfffffffefed65000-0xfffffffefed69000          16K     RW                 x  pte
+0xfffffffefed69000-0xfffffffefef5f000        2008K                           pte
+0xfffffffefef5f000-0xfffffffefef65000          24K     RW                 x  pte
+0xfffffffefef65000-0xfffffffeff0dc000        1500K                           pte
+0xfffffffeff0dc000-0xfffffffeff15f000         524K     RW                 x  pte
+0xfffffffeff15f000-0xfffffffeff261000        1032K                           pte
+0xfffffffeff261000-0xfffffffeff2dc000         492K     RW                 x  pte
+0xfffffffeff2dc000-0xfffffffeff45f000        1548K                           pte
+0xfffffffeff45f000-0xfffffffeff460000           4K     RW                 x  pte
+0xfffffffeff460000-0xfffffffeff600000        1664K                           pte
+0xfffffffeff600000-0xfffffffeff620000         128K     RW                 x  pte
+0xfffffffeff620000-0xfffffffeff800000        1920K                           pte
+0xfffffffeff800000-0xffffffff00000000           8M     RW         PSE     x  pmd
+0xffffffff00000000-0xffffffff80000000           2G                           pud
+---[ High Kernel Mapping ]---
+...
+
+The ESP fix area is trimmed, as expected. The EFI runtime service area
+is, beside being rather lengthy, complete. Also, as expected.
+
+> 
+> But yeah, this issue needs to be addressed one way or the other as the
+> espfix dump skips the runtime services.
+> 
+> And frankly, I don't see where we're setting that ->max_lines thing but
+> it sounds like a promising thing to use. :)
+
+It's the third parameter in the address_markers[] array in
+arch/x86/mm/dump_pagetables.c:
+
+  # ifdef CONFIG_X86_ESPFIX64
+    { ESPFIX_BASE_ADDR, "ESPfix Area", 16 },
+  # endif
+
+So, it's 16 entries for the ESP fix area. If it's set to 0, as it is for
+all the other entries, no limitation applies.
 
 
-> ---
->  drivers/iommu/Kconfig          |  11 +
->  drivers/iommu/Makefile         |   1 +
->  drivers/iommu/rockchip-iommu.c | 924 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 936 insertions(+)
->  create mode 100644 drivers/iommu/rockchip-iommu.c
->
-> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-> index dd51122..b80454c 100644
-> --- a/drivers/iommu/Kconfig
-> +++ b/drivers/iommu/Kconfig
-> @@ -152,6 +152,17 @@ config OMAP_IOMMU_DEBUG
->
->           Say N unless you know you need this.
->
-> +config ROCKCHIP_IOMMU
-> +       bool "Rockchip IOMMU Support"
-> +       depends on ARCH_ROCKCHIP
-> +       select IOMMU_API
-> +       help
-> +         Support for IOMMUs found on Rockchip rk32xx SOCs.
-> +         These IOMMUs allow virtualization of the address space used by most
-> +         cores within the multimedia subsystem.
-> +         Say Y here if you are using a Rockchip SoC that includes an IOMMU
-> +         device.
-> +
->  config TEGRA_IOMMU_GART
->         bool "Tegra GART IOMMU Support"
->         depends on ARCH_TEGRA_2x_SOC
-> diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-> index 16edef7..3e47ef3 100644
-> --- a/drivers/iommu/Makefile
-> +++ b/drivers/iommu/Makefile
-> @@ -13,6 +13,7 @@ obj-$(CONFIG_IRQ_REMAP) += intel_irq_remapping.o irq_remapping.o
->  obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
->  obj-$(CONFIG_OMAP_IOMMU) += omap-iommu2.o
->  obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
-> +obj-$(CONFIG_ROCKCHIP_IOMMU) += rockchip-iommu.o
->  obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
->  obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
->  obj-$(CONFIG_EXYNOS_IOMMU) += exynos-iommu.o
-> diff --git a/drivers/iommu/rockchip-iommu.c b/drivers/iommu/rockchip-iommu.c
-> new file mode 100644
-> index 0000000..4116df1
-> --- /dev/null
-> +++ b/drivers/iommu/rockchip-iommu.c
-> @@ -0,0 +1,924 @@
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/pgtable.h>
-> +#include <linux/compiler.h>
-> +#include <linux/delay.h>
-> +#include <linux/device.h>
-> +#include <linux/errno.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/iommu.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/list.h>
-> +#include <linux/mm.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/spinlock.h>
-> +
-> +/** MMU register offsets */
-> +#define RK_MMU_DTE_ADDR                0x00    /* Directory table address */
-> +#define RK_MMU_STATUS          0x04
-> +#define RK_MMU_COMMAND         0x08
-> +#define RK_MMU_PAGE_FAULT_ADDR 0x0C    /* IOVA of last page fault */
-> +#define RK_MMU_ZAP_ONE_LINE    0x10    /* Shootdown one IOTLB entry */
-> +#define RK_MMU_INT_RAWSTAT     0x14    /* IRQ status ignoring mask */
-> +#define RK_MMU_INT_CLEAR       0x18    /* Acknowledge and re-arm irq */
-> +#define RK_MMU_INT_MASK                0x1C    /* IRQ enable */
-> +#define RK_MMU_INT_STATUS      0x20    /* IRQ status after masking */
-> +#define RK_MMU_AUTO_GATING     0x24
-> +
-> +#define DTE_ADDR_DUMMY         0xCAFEBABE
-> +#define FORCE_RESET_TIMEOUT    100     /* ms */
-> +
-> +/* RK_MMU_STATUS fields */
-> +#define RK_MMU_STATUS_PAGING_ENABLED       BIT(0)
-> +#define RK_MMU_STATUS_PAGE_FAULT_ACTIVE    BIT(1)
-> +#define RK_MMU_STATUS_STALL_ACTIVE         BIT(2)
-> +#define RK_MMU_STATUS_IDLE                 BIT(3)
-> +#define RK_MMU_STATUS_REPLAY_BUFFER_EMPTY  BIT(4)
-> +#define RK_MMU_STATUS_PAGE_FAULT_IS_WRITE  BIT(5)
-> +#define RK_MMU_STATUS_STALL_NOT_ACTIVE     BIT(31)
-> +
-> +/* RK_MMU_COMMAND command values */
-> +#define RK_MMU_CMD_ENABLE_PAGING    0  /* Enable memory translation */
-> +#define RK_MMU_CMD_DISABLE_PAGING   1  /* Disable memory translation */
-> +#define RK_MMU_CMD_ENABLE_STALL     2  /* Stall paging to allow other cmds */
-> +#define RK_MMU_CMD_DISABLE_STALL    3  /* Stop stall re-enables paging */
-> +#define RK_MMU_CMD_ZAP_CACHE        4  /* Shoot down entire IOTLB */
-> +#define RK_MMU_CMD_PAGE_FAULT_DONE  5  /* Clear page fault */
-> +#define RK_MMU_CMD_FORCE_RESET      6  /* Reset all registers */
-> +
-> +/* RK_MMU_INT_* register fields */
-> +#define RK_MMU_IRQ_PAGE_FAULT    0x01  /* page fault */
-> +#define RK_MMU_IRQ_BUS_ERROR     0x02  /* bus read error */
-> +#define RK_MMU_IRQ_MASK          (RK_MMU_IRQ_PAGE_FAULT | RK_MMU_IRQ_BUS_ERROR)
-> +
-> +#define NUM_DT_ENTRIES 1024
-> +#define NUM_PT_ENTRIES 1024
-> +
-> +#define SPAGE_ORDER 12
-> +#define SPAGE_SIZE (1 << SPAGE_ORDER)
-> +
-> + /*
-> +  * Support mapping any size that fits in one page table:
-> +  *   4 KiB to 4 MiB
-> +  */
-> +#define RK_IOMMU_PGSIZE_BITMAP 0x007ff000
-> +
-> +#define IOMMU_REG_POLL_COUNT_FAST 1000
-> +
-> +struct rk_iommu_domain {
-> +       struct list_head iommus;
-> +       spinlock_t iommus_lock; /* lock for iommus list */
-> +       u32 *dt; /* page directory table */
-> +       spinlock_t dt_lock; /* lock for modifying page directory table */
-> +};
-> +
-> +struct rk_iommu {
-> +       struct device *dev;
-> +       void __iomem *base;
-> +       int irq;
-> +       struct list_head node; /* entry in rk_iommu_domain.iommus */
-> +       struct iommu_domain *domain; /* domain to which iommu is attached */
-> +};
-> +
-> +static inline void rk_table_flush(u32 *va, unsigned int count)
-> +{
-> +       phys_addr_t pa_start = virt_to_phys(va);
-> +       phys_addr_t pa_end = virt_to_phys(va + count);
-> +       size_t size = pa_end - pa_start;
-> +
-> +       __cpuc_flush_dcache_area(va, size);
-> +       outer_flush_range(pa_start, pa_end);
-> +}
-> +
-> +/**
-> + * Inspired by _wait_for in intel_drv.h
-> + * This is NOT safe for use in interrupt context.
-> + *
-> + * Note that it's important that we check the condition again after having
-> + * timed out, since the timeout could be due to preemption or similar and
-> + * we've never had a chance to check the condition before the timeout.
-> + */
-> +#define rk_wait_for(COND, MS) ({ \
-> +       unsigned long timeout__ = jiffies + msecs_to_jiffies(MS) + 1;   \
-> +       int ret__ = 0;                                                  \
-> +       while (!(COND)) {                                               \
-> +               if (time_after(jiffies, timeout__)) {                   \
-> +                       ret__ = (COND) ? 0 : -ETIMEDOUT;                \
-> +                       break;                                          \
-> +               }                                                       \
-> +               usleep_range(50, 100);                                  \
-> +       }                                                               \
-> +       ret__;                                                          \
-> +})
-> +
-> +/*
-> + * The Rockchip rk3288 iommu uses a 2-level page table.
-> + * The first level is the "Directory Table" (DT).
-> + * The DT consists of 1024 4-byte Directory Table Entries (DTEs), each pointing
-> + * to a "Page Table".
-> + * The second level is the 1024 Page Tables (PT).
-> + * Each PT consists of 1024 4-byte Page Table Entries (PTEs), each pointing to
-> + * a 4 KB page of physical memory.
-> + *
-> + * The DT and each PT fits in a single 4 KB page (4-bytes * 1024 entries).
-> + * Each iommu device has a MMU_DTE_ADDR register that contains the physical
-> + * address of the start of the DT page.
-> + *
-> + * The structure of the page table is as follows:
-> + *
-> + *                   DT
-> + * MMU_DTE_ADDR -> +-----+
-> + *                 |     |
-> + *                 +-----+     PT
-> + *                 | DTE | -> +-----+
-> + *                 +-----+    |     |     Memory
-> + *                 |     |    +-----+     Page
-> + *                 |     |    | PTE | -> +-----+
-> + *                 +-----+    +-----+    |     |
-> + *                            |     |    |     |
-> + *                            |     |    |     |
-> + *                            +-----+    |     |
-> + *                                       |     |
-> + *                                       |     |
-> + *                                       +-----+
-> + */
-> +
-> +/*
-> + * Each DTE has a PT address and a valid bit:
-> + * +---------------------+-----------+-+
-> + * | PT address          | Reserved  |V|
-> + * +---------------------+-----------+-+
-> + *  31:12 - PT address (PTs always starts on a 4 KB boundary)
-> + *  11: 1 - Reserved
-> + *      0 - 1 if PT @ PT address is valid
-> + */
-> +#define RK_DTE_PT_ADDRESS_MASK    0xfffff000
-> +#define RK_DTE_PT_VALID           BIT(0)
-> +
-> +static inline phys_addr_t rk_dte_pt_address(u32 dte)
-> +{
-> +       return (phys_addr_t)dte & RK_DTE_PT_ADDRESS_MASK;
-> +}
-> +
-> +static inline bool rk_dte_is_pt_valid(u32 dte)
-> +{
-> +       return dte & RK_DTE_PT_VALID;
-> +}
-> +
-> +static u32 rk_mk_dte(u32 *pt)
-> +{
-> +       phys_addr_t pt_phys = virt_to_phys(pt);
-> +       return (pt_phys & RK_DTE_PT_ADDRESS_MASK) | RK_DTE_PT_VALID;
-> +}
-> +
-> +/*
-> + * Each PTE has a Page address, some flags and a valid bit:
-> + * +---------------------+---+-------+-+
-> + * | Page address        |Rsv| Flags |V|
-> + * +---------------------+---+-------+-+
-> + *  31:12 - Page address (Pages always start on a 4 KB boundary)
-> + *  11: 9 - Reserved
-> + *   8: 1 - Flags
-> + *      8 - Read allocate - allocate cache space on read misses
-> + *      7 - Read cache - enable cache & prefetch of data
-> + *      6 - Write buffer - enable delaying writes on their way to memory
-> + *      5 - Write allocate - allocate cache space on write misses
-> + *      4 - Write cache - different writes can be merged together
-> + *      3 - Override cache attributes
-> + *          if 1, bits 4-8 control cache attributes
-> + *          if 0, the system bus defaults are used
-> + *      2 - Writable
-> + *      1 - Readable
-> + *      0 - 1 if Page @ Page address is valid
-> + */
-> +#define RK_PTE_PAGE_ADDRESS_MASK  0xfffff000
-> +#define RK_PTE_PAGE_FLAGS_MASK    0x000001fe
-> +#define RK_PTE_PAGE_WRITABLE      BIT(2)
-> +#define RK_PTE_PAGE_READABLE      BIT(1)
-> +#define RK_PTE_PAGE_VALID         BIT(0)
-> +
-> +static inline phys_addr_t rk_pte_page_address(u32 pte)
-> +{
-> +       return (phys_addr_t)pte & RK_PTE_PAGE_ADDRESS_MASK;
-> +}
-> +
-> +static inline bool rk_pte_is_page_valid(u32 pte)
-> +{
-> +       return pte & RK_PTE_PAGE_VALID;
-> +}
-> +
-> +/* TODO: set cache flags per prot IOMMU_CACHE */
-> +static u32 rk_mk_pte(phys_addr_t page, int prot)
-> +{
-> +       u32 flags = 0;
-> +       flags |= (prot & IOMMU_READ) ? RK_PTE_PAGE_READABLE : 0;
-> +       flags |= (prot & IOMMU_WRITE) ? RK_PTE_PAGE_WRITABLE : 0;
-> +       page &= RK_PTE_PAGE_ADDRESS_MASK;
-> +       return page | flags | RK_PTE_PAGE_VALID;
-> +}
-> +
-> +static u32 rk_mk_pte_invalid(u32 pte)
-> +{
-> +       return pte & ~RK_PTE_PAGE_VALID;
-> +}
-> +
-> +/*
-> + * rk3288 iova (IOMMU Virtual Address) format
-> + *  31       22.21       12.11          0
-> + * +-----------+-----------+-------------+
-> + * | DTE index | PTE index | Page offset |
-> + * +-----------+-----------+-------------+
-> + *  31:22 - DTE index   - index of DTE in DT
-> + *  21:12 - PTE index   - index of PTE in PT @ DTE.pt_address
-> + *  11: 0 - Page offset - offset into page @ PTE.page_address
-> + */
-> +#define RK_IOVA_DTE_MASK    0xffc00000
-> +#define RK_IOVA_DTE_SHIFT   22
-> +#define RK_IOVA_PTE_MASK    0x003ff000
-> +#define RK_IOVA_PTE_SHIFT   12
-> +#define RK_IOVA_PAGE_MASK   0x00000fff
-> +#define RK_IOVA_PAGE_SHIFT  0
-> +
-> +static u32 rk_iova_dte_index(dma_addr_t iova)
-> +{
-> +       return (u32)(iova & RK_IOVA_DTE_MASK) >> RK_IOVA_DTE_SHIFT;
-> +}
-> +
-> +static u32 rk_iova_pte_index(dma_addr_t iova)
-> +{
-> +       return (u32)(iova & RK_IOVA_PTE_MASK) >> RK_IOVA_PTE_SHIFT;
-> +}
-> +
-> +static u32 rk_iova_page_offset(dma_addr_t iova)
-> +{
-> +       return (u32)(iova & RK_IOVA_PAGE_MASK) >> RK_IOVA_PAGE_SHIFT;
-> +}
-> +
-> +static u32 rk_iommu_read(struct rk_iommu *iommu, u32 offset)
-> +{
-> +       return readl(iommu->base + offset);
-> +}
-> +
-> +static void rk_iommu_write(struct rk_iommu *iommu, u32 offset, u32 value)
-> +{
-> +       writel(value, iommu->base + offset);
-> +}
-> +
-> +static void rk_iommu_command(struct rk_iommu *iommu, u32 command)
-> +{
-> +       writel(command, iommu->base + RK_MMU_COMMAND);
-> +}
-> +
-> +static void rk_iommu_zap_lines(struct rk_iommu *iommu, dma_addr_t iova,
-> +                              size_t size)
-> +{
-> +       dma_addr_t iova_end = iova + size;
-> +       /*
-> +        * TODO(djkurtz): Figure out when it is more efficient to shootdown the
-> +        * entire iotlb rather than iterate over individual iovas.
-> +        */
-> +       for (; iova < iova_end; iova += SPAGE_SIZE)
-> +               rk_iommu_write(iommu, RK_MMU_ZAP_ONE_LINE, iova);
-> +}
-> +
-> +static bool rk_iommu_is_stall_active(struct rk_iommu *iommu)
-> +{
-> +       return rk_iommu_read(iommu, RK_MMU_STATUS) & RK_MMU_STATUS_STALL_ACTIVE;
-> +}
-> +
-> +static bool rk_iommu_is_paging_enabled(struct rk_iommu *iommu)
-> +{
-> +       return rk_iommu_read(iommu, RK_MMU_STATUS) &
-> +                            RK_MMU_STATUS_PAGING_ENABLED;
-> +}
-> +
-> +static int rk_iommu_enable_stall(struct rk_iommu *iommu)
-> +{
-> +       int ret;
-> +
-> +       if (rk_iommu_is_stall_active(iommu))
-> +               return 0;
-> +
-> +       /* Stall can only be enabled if paging is enabled */
-> +       if (!rk_iommu_is_paging_enabled(iommu))
-> +               return 0;
-> +
-> +       rk_iommu_command(iommu, RK_MMU_CMD_ENABLE_STALL);
-> +
-> +       ret = rk_wait_for(rk_iommu_is_stall_active(iommu), 1);
-> +       if (ret)
-> +               dev_err(iommu->dev, "Enable stall request timed out, status: %#08x\n",
-> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk_iommu_disable_stall(struct rk_iommu *iommu)
-> +{
-> +       int ret;
-> +
-> +       if (!rk_iommu_is_stall_active(iommu))
-> +               return 0;
-> +
-> +       rk_iommu_command(iommu, RK_MMU_CMD_DISABLE_STALL);
-> +
-> +       ret = rk_wait_for(!rk_iommu_is_stall_active(iommu), 1);
-> +       if (ret)
-> +               dev_err(iommu->dev, "Disable stall request timed out, status: %#08x\n",
-> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk_iommu_enable_paging(struct rk_iommu *iommu)
-> +{
-> +       int ret;
-> +
-> +       if (rk_iommu_is_paging_enabled(iommu))
-> +               return 0;
-> +
-> +       rk_iommu_command(iommu, RK_MMU_CMD_ENABLE_PAGING);
-> +
-> +       ret = rk_wait_for(rk_iommu_is_paging_enabled(iommu), 1);
-> +       if (ret)
-> +               dev_err(iommu->dev, "Enable paging request timed out, status: %#08x\n",
-> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk_iommu_disable_paging(struct rk_iommu *iommu)
-> +{
-> +       int ret;
-> +
-> +       if (!rk_iommu_is_paging_enabled(iommu))
-> +               return 0;
-> +
-> +       rk_iommu_command(iommu, RK_MMU_CMD_DISABLE_PAGING);
-> +
-> +       ret = rk_wait_for(!rk_iommu_is_paging_enabled(iommu), 1);
-> +       if (ret)
-> +               dev_err(iommu->dev, "Disable paging request timed out, status: #%08x\n",
-> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
-> +
-> +       return ret;
-> +}
-> +
-> +static int rk_iommu_force_reset(struct rk_iommu *iommu)
-> +{
-> +       int ret;
-> +       u32 dte_addr;
-> +
-> +       /*
-> +        * Check if register DTE_ADDR is working by writing DTE_ADDR_DUMMY
-> +        * and verifying that upper 5 nybbles are read back.
-> +        */
-> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, DTE_ADDR_DUMMY);
-> +
-> +       dte_addr = rk_iommu_read(iommu, RK_MMU_DTE_ADDR);
-> +       if (dte_addr != (DTE_ADDR_DUMMY & RK_DTE_PT_ADDRESS_MASK)) {
-> +               dev_err(iommu->dev, "Error during raw reset. MMU_DTE_ADDR is not functioning\n");
-> +               return -EFAULT;
-> +       }
-> +
-> +       rk_iommu_command(iommu, RK_MMU_CMD_FORCE_RESET);
-> +
-> +       ret = rk_wait_for(rk_iommu_read(iommu, RK_MMU_DTE_ADDR) == 0x00000000,
-> +                         FORCE_RESET_TIMEOUT);
-> +       if (ret)
-> +               dev_err(iommu->dev, "FORCE_RESET command timed out\n");
-> +
-> +       return ret;
-> +}
-> +
-> +static void log_iova(struct rk_iommu *iommu, dma_addr_t iova)
-> +{
-> +       u32 dte_index, pte_index, page_offset;
-> +       u32 mmu_dte_addr;
-> +       phys_addr_t mmu_dte_addr_phys, dte_addr_phys;
-> +       u32 *dte_addr;
-> +       u32 dte;
-> +       phys_addr_t pte_addr_phys = 0;
-> +       u32 *pte_addr = NULL;
-> +       u32 pte = 0;
-> +       phys_addr_t page_addr_phys = 0;
-> +       u32 page_flags = 0;
-> +
-> +       dte_index = rk_iova_dte_index(iova);
-> +       pte_index = rk_iova_pte_index(iova);
-> +       page_offset = rk_iova_page_offset(iova);
-> +
-> +       mmu_dte_addr = rk_iommu_read(iommu, RK_MMU_DTE_ADDR);
-> +       mmu_dte_addr_phys = (phys_addr_t)mmu_dte_addr;
-> +
-> +       dte_addr_phys = mmu_dte_addr_phys + (4 * dte_index);
-> +       dte_addr = phys_to_virt(dte_addr_phys);
-> +       dte = *dte_addr;
-> +
-> +       if (!rk_dte_is_pt_valid(dte))
-> +               goto print_it;
-> +
-> +       pte_addr_phys = rk_dte_pt_address(dte) + (pte_index * 4);
-> +       pte_addr = phys_to_virt(pte_addr_phys);
-> +       pte = *pte_addr;
-> +
-> +       if (!rk_pte_is_page_valid(pte))
-> +               goto print_it;
-> +
-> +       page_addr_phys = rk_pte_page_address(pte) + page_offset;
-> +       page_flags = pte & RK_PTE_PAGE_FLAGS_MASK;
-> +
-> +print_it:
-> +       dev_err(iommu->dev, "iova = %pad: dte_index: 0x%03x pte_index: 0x%03x page_offset: 0x%03x\n",
-> +               &iova, dte_index, pte_index, page_offset);
-> +       dev_err(iommu->dev, "mmu_dte_addr: %pa dte@%pa: %#08x valid: %u pte@%pa: %#08x valid: %u page@%pa flags: %#03x\n",
-> +               &mmu_dte_addr_phys, &dte_addr_phys, dte,
-> +               rk_dte_is_pt_valid(dte), &pte_addr_phys, pte,
-> +               rk_pte_is_page_valid(pte), &page_addr_phys, page_flags);
-> +}
-> +
-> +static irqreturn_t rk_iommu_irq(int irq, void *dev_id)
-> +{
-> +       struct rk_iommu *iommu = dev_id;
-> +       u32 status;
-> +       u32 int_status;
-> +       dma_addr_t iova;
-> +
-> +       int_status = rk_iommu_read(iommu, RK_MMU_INT_STATUS);
-> +       if (int_status == 0)
-> +               return IRQ_NONE;
-> +
-> +       iova = rk_iommu_read(iommu, RK_MMU_PAGE_FAULT_ADDR);
-> +
-> +       if (int_status & RK_MMU_IRQ_PAGE_FAULT) {
-> +               int flags;
-> +
-> +               status = rk_iommu_read(iommu, RK_MMU_STATUS);
-> +               flags = (status & RK_MMU_STATUS_PAGE_FAULT_IS_WRITE) ?
-> +                               IOMMU_FAULT_WRITE : IOMMU_FAULT_READ;
-> +
-> +               dev_err(iommu->dev, "Page fault at %pad of type %s\n",
-> +                       &iova,
-> +                       (flags == IOMMU_FAULT_WRITE) ? "write" : "read");
-> +
-> +               log_iova(iommu, iova);
-> +
-> +               /*
-> +                * Report page fault to any installed handlers.
-> +                * Ignore the return code, though, since we always zap cache
-> +                * and clear the page fault anyway.
-> +                */
-> +               if (iommu->domain)
-> +                       report_iommu_fault(iommu->domain, iommu->dev, iova,
-> +                                          flags);
-> +               else
-> +                       dev_err(iommu->dev, "Page fault while iommu not attached to domain?\n");
-> +
-> +               rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
-> +               rk_iommu_command(iommu, RK_MMU_CMD_PAGE_FAULT_DONE);
-> +       }
-> +
-> +       if (int_status & RK_MMU_IRQ_BUS_ERROR)
-> +               dev_err(iommu->dev, "BUS_ERROR occurred at %pad\n", &iova);
-> +
-> +       if (int_status & ~RK_MMU_IRQ_MASK)
-> +               dev_err(iommu->dev, "unexpected int_status: %#08x\n",
-> +                       int_status);
-> +
-> +       rk_iommu_write(iommu, RK_MMU_INT_CLEAR, int_status);
-> +
-> +       return IRQ_HANDLED;
-> +}
-> +
-> +static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
-> +                                        dma_addr_t iova)
-> +{
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       unsigned long flags;
-> +       phys_addr_t pt_phys, phys = 0;
-> +       u32 dte, pte;
-> +       u32 *page_table;
-> +
-> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
-> +
-> +       dte = rk_domain->dt[rk_iova_dte_index(iova)];
-> +       if (!rk_dte_is_pt_valid(dte))
-> +               goto out;
-> +
-> +       pt_phys = rk_dte_pt_address(dte);
-> +       page_table = (u32 *)phys_to_virt(pt_phys);
-> +       pte = page_table[rk_iova_pte_index(iova)];
-> +       if (!rk_pte_is_page_valid(pte))
-> +               goto out;
-> +
-> +       phys = rk_pte_page_address(pte) + rk_iova_page_offset(iova);
-> +out:
-> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
-> +
-> +       return phys;
-> +}
-> +
-> +static void rk_iommu_zap_iova(struct rk_iommu_domain *rk_domain,
-> +                             dma_addr_t iova, size_t size)
-> +{
-> +       struct list_head *pos;
-> +       unsigned long flags;
-> +
-> +       /* shootdown these iova from all iommus using this domain */
-> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
-> +       list_for_each(pos, &rk_domain->iommus) {
-> +               struct rk_iommu *iommu;
-> +               iommu = list_entry(pos, struct rk_iommu, node);
-> +               rk_iommu_zap_lines(iommu, iova, size);
-> +       }
-> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
-> +}
-> +
-> +static u32 *rk_dte_get_page_table(struct rk_iommu_domain *rk_domain,
-> +                                 dma_addr_t iova)
-> +{
-> +       u32 *page_table, *dte_addr;
-> +       u32 dte;
-> +       phys_addr_t pt_phys;
-> +
-> +       assert_spin_locked(&rk_domain->dt_lock);
-> +
-> +       dte_addr = &rk_domain->dt[rk_iova_dte_index(iova)];
-> +       dte = *dte_addr;
-> +       if (rk_dte_is_pt_valid(dte))
-> +               goto done;
-> +
-> +       page_table = (u32 *)get_zeroed_page(GFP_ATOMIC);
-> +       if (!page_table)
-> +               return ERR_PTR(-ENOMEM);
-> +
-> +       dte = rk_mk_dte(page_table);
-> +       *dte_addr = dte;
-> +
-> +       rk_table_flush(page_table, NUM_PT_ENTRIES);
-> +       rk_table_flush(dte_addr, 1);
-> +
-> +       /*
-> +        * Zap the first iova of newly allocated page table so iommu evicts
-> +        * old cached value of new dte from the iotlb.
-> +        */
-> +       rk_iommu_zap_iova(rk_domain, iova, SPAGE_SIZE);
-> +
-> +done:
-> +       pt_phys = rk_dte_pt_address(dte);
-> +       return (u32 *)phys_to_virt(pt_phys);
-> +}
-> +
-> +static size_t rk_iommu_unmap_iova(struct rk_iommu_domain *rk_domain,
-> +                                 u32 *pte_addr, dma_addr_t iova, size_t size)
-> +{
-> +       unsigned int pte_count;
-> +       unsigned int pte_total = size / SPAGE_SIZE;
-> +
-> +       assert_spin_locked(&rk_domain->dt_lock);
-> +
-> +       for (pte_count = 0; pte_count < pte_total; pte_count++) {
-> +               u32 pte = pte_addr[pte_count];
-> +               if (!rk_pte_is_page_valid(pte))
-> +                       break;
-> +
-> +               pte_addr[pte_count] = rk_mk_pte_invalid(pte);
-> +       }
-> +
-> +       rk_table_flush(pte_addr, pte_count);
-> +
-> +       return pte_count * SPAGE_SIZE;
-> +}
-> +
-> +static int rk_iommu_map_iova(struct rk_iommu_domain *rk_domain, u32 *pte_addr,
-> +                            dma_addr_t iova, phys_addr_t paddr, size_t size,
-> +                            int prot)
-> +{
-> +       unsigned int pte_count;
-> +       unsigned int pte_total = size / SPAGE_SIZE;
-> +       phys_addr_t page_phys;
-> +
-> +       assert_spin_locked(&rk_domain->dt_lock);
-> +
-> +       for (pte_count = 0; pte_count < pte_total; pte_count++) {
-> +               u32 pte = pte_addr[pte_count];
-> +
-> +               if (rk_pte_is_page_valid(pte))
-> +                       goto unwind;
-> +
-> +               pte_addr[pte_count] = rk_mk_pte(paddr, prot);
-> +
-> +               paddr += SPAGE_SIZE;
-> +       }
-> +
-> +       rk_table_flush(pte_addr, pte_count);
-> +
-> +       return 0;
-> +unwind:
-> +       /* Unmap the range of iovas that we just mapped */
-> +       rk_iommu_unmap_iova(rk_domain, pte_addr, iova, pte_count * SPAGE_SIZE);
-> +
-> +       iova += pte_count * SPAGE_SIZE;
-> +       page_phys = rk_pte_page_address(pte_addr[pte_count]);
-> +       pr_err("iova: %pad already mapped to %pa cannot remap to phys: %pa prot:%#x\n",
-> +              &iova, &page_phys, &paddr, prot);
-> +
-> +       return -EADDRINUSE;
-> +}
-> +
-> +static int rk_iommu_map(struct iommu_domain *domain, unsigned long _iova,
-> +                       phys_addr_t paddr, size_t size, int prot)
-> +{
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       unsigned long flags;
-> +       dma_addr_t iova = (dma_addr_t)_iova;
-> +       u32 *page_table, *pte_addr;
-> +       int ret;
-> +
-> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
-> +
-> +       /*
-> +        * We advertise support for iova regions that will fit in one page
-> +        * table (1024 4-KiB pages = 4 MiB).
-> +        * So, size will always be 1024 <= size <= 4194304.
-> +        * iommu core guarantees that both iova and size will be aligned.
-> +        * So, we will only ever be mapping to a single dte->page_table.
-> +        */
-> +       page_table = rk_dte_get_page_table(rk_domain, iova);
-> +       if (IS_ERR(page_table)) {
-> +               spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
-> +               return PTR_ERR(page_table);
-> +       }
-> +
-> +       pte_addr = &page_table[rk_iova_pte_index(iova)];
-> +       ret = rk_iommu_map_iova(rk_domain, pte_addr, iova, paddr, size, prot);
-> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
-> +
-> +       return ret;
-> +}
-> +
-> +static size_t rk_iommu_unmap(struct iommu_domain *domain, unsigned long _iova,
-> +                            size_t size)
-> +{
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       unsigned long flags;
-> +       dma_addr_t iova = (dma_addr_t)_iova;
-> +       phys_addr_t pt_phys;
-> +       u32 dte;
-> +       u32 *pte_addr;
-> +       size_t unmap_size;
-> +
-> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
-> +
-> +       /*
-> +        * We advertise support for iova regions up to the size that will fit
-> +        * in one page table (1024 4-KiB pages = 4 MiB).
-> +        * So, size will always be 1024 <= size <= 4194304.
-> +        * iommu core guarantees that both iova and size will be aligned.
-> +        * So, we will only ever be unmapping from a single dte.
-> +        */
-> +       dte = rk_domain->dt[rk_iova_dte_index(iova)];
-> +       /* Just return 0 if iova is unmapped */
-> +       if (!rk_dte_is_pt_valid(dte)) {
-> +               spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
-> +               return 0;
-> +       }
-> +
-> +       pt_phys = rk_dte_pt_address(dte);
-> +       pte_addr = (u32 *)phys_to_virt(pt_phys) + rk_iova_pte_index(iova);
-> +       unmap_size = rk_iommu_unmap_iova(rk_domain, pte_addr, iova, size);
-> +
-> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
-> +
-> +       /* Shootdown iotlb entries for iova range that was just unmapped */
-> +       rk_iommu_zap_iova(rk_domain, iova, unmap_size);
-> +
-> +       return unmap_size;
-> +}
-> +
-> +static int rk_iommu_attach_device(struct iommu_domain *domain,
-> +                                 struct device *dev)
-> +{
-> +       struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       unsigned long flags;
-> +       int ret;
-> +       phys_addr_t dte_addr;
-> +
-> +       /*
-> +        * Allow 'virtual devices' (e.g., drm) to attach to domain.
-> +        * Such a device has a NULL archdata.iommu.
-> +        */
-> +       if (!iommu)
-> +               return 0;
-> +
-> +       ret = rk_iommu_enable_stall(iommu);
-> +       if (ret)
-> +               return ret;
-> +
-> +       ret = rk_iommu_force_reset(iommu);
-> +       if (ret)
-> +               return ret;
-> +
-> +       iommu->domain = domain;
-> +
-> +       ret = devm_request_irq(dev, iommu->irq, rk_iommu_irq,
-> +                              IRQF_SHARED, dev_name(dev), iommu);
-> +       if (ret)
-> +               return ret;
-> +
-> +       dte_addr = virt_to_phys(rk_domain->dt);
-> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, dte_addr);
-> +       rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
-> +       rk_iommu_write(iommu, RK_MMU_INT_MASK, RK_MMU_IRQ_MASK);
-> +
-> +       ret = rk_iommu_enable_paging(iommu);
-> +       if (ret)
-> +               return ret;
-> +
-> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
-> +       list_add_tail(&iommu->node, &rk_domain->iommus);
-> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
-> +
-> +       dev_info(dev, "Attached to iommu domain\n");
-> +
-> +       rk_iommu_disable_stall(iommu);
-> +
-> +       return 0;
-> +}
-> +
-> +static void rk_iommu_detach_device(struct iommu_domain *domain,
-> +                                  struct device *dev)
-> +{
-> +       struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       unsigned long flags;
-> +
-> +       /* Allow 'virtual devices' (eg drm) to detach from domain */
-> +       if (!iommu)
-> +               return;
-> +
-> +       iommu->domain = NULL;
-> +
-> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
-> +       list_del_init(&iommu->node);
-> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
-> +
-> +       devm_free_irq(dev, iommu->irq, iommu);
-> +
-> +       iommu->domain = NULL;
-> +
-> +       /* Ignore error while disabling, just keep going */
-> +       rk_iommu_enable_stall(iommu);
-> +       rk_iommu_disable_paging(iommu);
-> +       rk_iommu_write(iommu, RK_MMU_INT_MASK, 0);
-> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, 0);
-> +       rk_iommu_disable_stall(iommu);
-> +
-> +       dev_info(dev, "Detached from iommu domain\n");
-> +}
-> +
-> +static int rk_iommu_domain_init(struct iommu_domain *domain)
-> +{
-> +       struct rk_iommu_domain *rk_domain;
-> +
-> +       rk_domain = kzalloc(sizeof(*rk_domain), GFP_KERNEL);
-> +       if (!rk_domain)
-> +               return -ENOMEM;
-> +
-> +       /*
-> +        * rk32xx iommus use a 2 level pagetable.
-> +        * Each level1 (dt) and level2 (pt) table has 1024 4-byte entries.
-> +        * Allocate one 4 KiB page for each table.
-> +        */
-> +       rk_domain->dt = (u32 *)get_zeroed_page(GFP_KERNEL);
-> +       if (!rk_domain->dt)
-> +               goto err_dt;
-> +
-> +       rk_table_flush(rk_domain->dt, NUM_DT_ENTRIES);
-> +
-> +       spin_lock_init(&rk_domain->iommus_lock);
-> +       spin_lock_init(&rk_domain->dt_lock);
-> +       INIT_LIST_HEAD(&rk_domain->iommus);
-> +
-> +       domain->priv = rk_domain;
-> +
-> +       return 0;
-> +err_dt:
-> +       kfree(rk_domain);
-> +       return -ENOMEM;
-> +}
-> +
-> +static void rk_iommu_domain_destroy(struct iommu_domain *domain)
-> +{
-> +       struct rk_iommu_domain *rk_domain = domain->priv;
-> +       int i;
-> +
-> +       WARN_ON(!list_empty(&rk_domain->iommus));
-> +
-> +       for (i = 0; i < NUM_DT_ENTRIES; i++) {
-> +               u32 dte = rk_domain->dt[i];
-> +               if (rk_dte_is_pt_valid(dte)) {
-> +                       phys_addr_t pt_phys = rk_dte_pt_address(dte);
-> +                       u32 *page_table = phys_to_virt(pt_phys);
-> +                       free_page((unsigned long)page_table);
-> +               }
-> +       }
-> +
-> +       free_page((unsigned long)rk_domain->dt);
-> +       kfree(domain->priv);
-> +       domain->priv = NULL;
-> +}
-> +
-> +static const struct iommu_ops rk_iommu_ops = {
-> +       .domain_init = rk_iommu_domain_init,
-> +       .domain_destroy = rk_iommu_domain_destroy,
-> +       .attach_dev = rk_iommu_attach_device,
-> +       .detach_dev = rk_iommu_detach_device,
-> +       .map = rk_iommu_map,
-> +       .unmap = rk_iommu_unmap,
-> +       .iova_to_phys = rk_iommu_iova_to_phys,
-> +       .pgsize_bitmap = RK_IOMMU_PGSIZE_BITMAP,
-> +};
-> +
-> +static int rk_iommu_probe(struct platform_device *pdev)
-> +{
-> +       struct device *dev = &pdev->dev;
-> +       struct rk_iommu *iommu;
-> +       struct resource *res;
-> +
-> +       iommu = devm_kzalloc(dev, sizeof(*iommu), GFP_KERNEL);
-> +       if (!iommu)
-> +               return -ENOMEM;
-> +
-> +       platform_set_drvdata(pdev, iommu);
-> +       iommu->dev = dev;
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       iommu->base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(iommu->base))
-> +               return PTR_ERR(iommu->base);
-> +
-> +       iommu->irq = platform_get_irq(pdev, 0);
-> +       if (iommu->irq < 0) {
-> +               dev_err(dev, "Failed to get IRQ, %d\n", iommu->irq);
-> +               return -ENXIO;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int rk_iommu_remove(struct platform_device *pdev)
-> +{
-> +       return 0;
-> +}
-> +
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id rk_iommu_dt_ids[] = {
-> +       { .compatible = "rockchip,iommu" },
-> +       { /* sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, rk_iommu_dt_ids);
-> +#endif
-> +
-> +static struct platform_driver rk_iommu_driver = {
-> +       .probe = rk_iommu_probe,
-> +       .remove = rk_iommu_remove,
-> +       .driver = {
-> +                  .name = "rk_iommu",
-> +                  .owner = THIS_MODULE,
-> +                  .of_match_table = of_match_ptr(rk_iommu_dt_ids),
-> +       },
-> +};
-> +
-> +static int __init rk_iommu_init(void)
-> +{
-> +       int ret;
-> +
-> +       ret = bus_set_iommu(&platform_bus_type, &rk_iommu_ops);
-> +       if (ret)
-> +               return ret;
-> +
-> +       return platform_driver_register(&rk_iommu_driver);
-> +}
-> +static void __exit rk_iommu_exit(void)
-> +{
-> +       platform_driver_unregister(&rk_iommu_driver);
-> +}
-> +
-> +subsys_initcall(rk_iommu_init);
-> +module_exit(rk_iommu_exit);
-> +
-> +MODULE_DESCRIPTION("IOMMU API for Rockchip");
-> +MODULE_AUTHOR("Simon Xue <xxm@rock-chips.com> and Daniel Kurtz <djkurtz@chromium.org>");
-> +MODULE_ALIAS("platform:rockchip-iommu");
-> +MODULE_LICENSE("GPL v2");
+Thanks,
+Mathias
+
+> 
+> Thanks.
+> 
+> -- 
+> Regards/Gruss,
+>     Boris.
 > --
-> 2.1.0.rc2.206.gedb03e5
->
