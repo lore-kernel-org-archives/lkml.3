@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708AbaJGNhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:37:08 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:34877 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaJGNhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:37:05 -0400
+	id S1753866AbaJGNiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:38:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753496AbaJGNiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:38:22 -0400
+Date: Tue, 7 Oct 2014 15:37:10 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-api@vger.kernel.org,
+        Robert Love <rlove@google.com>, Dave Hansen <dave@sr71.net>,
+        Jan Kara <jack@suse.cz>, Neil Brown <neilb@suse.de>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Andrew Jones <drjones@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Taras Glek <tglek@mozilla.com>,
+        Juan Quintela <quintela@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>, Mel Gorman <mgorman@suse.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Paolo Bonzini <pbonzini@redhat.com>, Keith Packard <keithp@keithp.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Minchan Kim <minchan@kernel.org>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mike Hommey <mh@glandium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Feiner <pfeiner@google.com>
+Subject: Re: [Qemu-devel] [PATCH 10/17] mm: rmap preparation for
+ remap_anon_pages
+Message-ID: <20141007133710.GA2342@redhat.com>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+ <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+ <20141007111026.GD30762@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <20140926032131.GC40523@vmdeb7>
-References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com>
-	<2809308.3y5s7TV5Ip@wuerfel>
-	<D04730D8.A9DB0%dvhart@linux.intel.com>
-	<6744174.JquHLt80n3@wuerfel>
-	<20140926032131.GC40523@vmdeb7>
-Date: Tue, 7 Oct 2014 15:37:04 +0200
-Message-ID: <CACRpkdbehhsDxikCV1bJjBm581MCcu2DRSmiQQXHG09EmjLNBQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device
- properties interface
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Darren Hart <dvhart@infradead.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Len Brown <Len.Brown@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        David Woodhouse <david.woodhouse@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007111026.GD30762@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 5:21 AM, Darren Hart <dvhart@infradead.org> wrote:
-> On Wed, Sep 24, 2014 at 11:12:36AM +0200, Arnd Bergmann wrote:
+Hi Kirill,
 
-> So as Mika has pointed out, LEDs aren't the only ones affected. Several drivers
-> will need to walk through non-device child nodes, and it seems to me that having
-> a firmware-independent mechanism to do so benefits the drivers by both making
-> them smaller and by increasing the reusability of new drivers and drivers
-> updated to use the new API across platforms.
+On Tue, Oct 07, 2014 at 02:10:26PM +0300, Kirill A. Shutemov wrote:
+> On Fri, Oct 03, 2014 at 07:08:00PM +0200, Andrea Arcangeli wrote:
+> > There's one constraint enforced to allow this simplification: the
+> > source pages passed to remap_anon_pages must be mapped only in one
+> > vma, but this is not a limitation when used to handle userland page
+> > faults with MADV_USERFAULT. The source addresses passed to
+> > remap_anon_pages should be set as VM_DONTCOPY with MADV_DONTFORK to
+> > avoid any risk of the mapcount of the pages increasing, if fork runs
+> > in parallel in another thread, before or while remap_anon_pages runs.
+> 
+> Have you considered triggering COW instead of adding limitation on
+> pages' mapcount? The limitation looks artificial from interface POV.
 
-In a recent round of reviews, for the OF case, that led to drivers
-which used device_initcall() without being a module, getting a match
-and handle to the parent device, and then walking over the nodes
-and instantiating child objects (Linux devices usually) in the process.
+I haven't considered it, mostly because I see it as a feature that it
+returns -EBUSY. I prefer to avoid the risk of userland getting a
+successful retval but internally the kernel silently behaving
+non-zerocopy by mistake because some userland bug forgot to set
+MADV_DONTFORK on the src_vma.
 
-It was done as a response to the remark from Rob Herring that
-we were modeling things in the device tree as devices when they
-really weren't, we were just doing it that way because it fits the
-Linux device model and it's easier.
+COW would be not zerocopy so it's not ok. We get sub 1msec latency for
+userfaults through 10gbit and we don't want to risk wasting CPU
+caches.
 
-So we have that case too.
+I however considered allowing to extend the strict behavior (i.e. the
+feature) later in a backwards compatible way. We could provide a
+non-zerocopy beahvior with a RAP_ALLOW_COW flag that would then turn
+the -EBUSY error into a copy.
 
-The question is if it's anything close to generalizable.
+It's also more complex to implement the cow now, so it would make the
+code that really matters, harder to review. So it may be preferable to
+extend this later in a backwards compatible way with a new
+RAP_ALLOW_COW flag.
 
-> Grant, Linus W? Thoughts?
+The current handling the flags is already written in a way that should
+allow backwards compatible extension with RAP_ALLOW_*:
 
-I'm uncertain on the whole subject, I called on the others
-because of that...
+#define RAP_ALLOW_SRC_HOLES (1UL<<0)
 
-For a while I had Andy Schevenko patch the GPIO and
-SFI core too, but it timed out due to no response from Len
-Brown. (Maybe I should just merge that stuff!) Do you (Intel) also
-want to unify the Medfield SFI thing into this or have you
-given up on it?
-
-Yours,
-Linus Walleij
+SYSCALL_DEFINE4(remap_anon_pages,
+		unsigned long, dst_start, unsigned long, src_start,
+		unsigned long, len, unsigned long, flags)
+[..]
+	long err = -EINVAL;
+[..]
+	if (flags & ~RAP_ALLOW_SRC_HOLES)
+		return err;
