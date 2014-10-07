@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaJGRo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:44:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaJGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:44:27 -0400
-Date: Tue, 7 Oct 2014 18:07:32 +0100
-From: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, qemu-devel@nongnu.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
-Message-ID: <20141007170731.GO2404@work-vm>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
- <1412356087-16115-11-git-send-email-aarcange@redhat.com>
- <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
- <20141006085540.GD2336@work-vm>
- <20141006164156.GA31075@redhat.com>
- <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
+	id S1754756AbaJGRop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:44:45 -0400
+Received: from mail-bl2on0108.outbound.protection.outlook.com ([65.55.169.108]:32064
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754563AbaJGRol convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:44:41 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "hare@suse.de" <hare@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 0/2] Drivers: scsi: storvsc: Fix issues with
+ hot-add/remove of LUNs
+Thread-Topic: [PATCH 0/2] Drivers: scsi: storvsc: Fix issues with
+ hot-add/remove of LUNs
+Thread-Index: AQHP2Mc/+A7SUQCDKE6qLSHJTNewEZwk+xFQ
+Date: Tue, 7 Oct 2014 17:44:38 +0000
+Message-ID: <65593e832b5b4da184470799eac9e384@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1408244954-27417-1-git-send-email-kys@microsoft.com>
+ <20140925134726.GA26946@infradead.org>
+In-Reply-To: <20140925134726.GA26946@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [2001:4898:80e0:ee43::3]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0711;
+x-forefront-prvs: 035748864E
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(13464003)(377454003)(51704005)(24454002)(97736003)(15202345003)(120916001)(108616004)(33646002)(21056001)(46102003)(76482002)(80022003)(19580395003)(54356999)(99396003)(86612001)(76176999)(50986999)(101416001)(76576001)(74316001)(15975445006)(87936001)(105586002)(99286002)(31966008)(106116001)(85852003)(2656002)(106356001)(110136001)(95666004)(4396001)(64706001)(107046002)(92566001)(19580405001)(20776003)(77096002)(86362001)(85306004)(122556002)(40100002)(3826002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0711;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Mon, Oct 6, 2014 at 12:41 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Thursday, September 25, 2014 6:47 AM
+> To: KY Srinivasan
+> Cc: hare@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com;
+> jbottomley@parallels.com; linux-scsi@vger.kernel.org
+> Subject: Re: [PATCH 0/2] Drivers: scsi: storvsc: Fix issues with hot-
+> add/remove of LUNs
+> 
+> So can anywayone give me a review for those two patches?
+
+Did you get the reviews?
+
+K. Y
+> 
+> On Sat, Aug 16, 2014 at 08:09:14PM -0700, K. Y. Srinivasan wrote:
+> > This patch-set addresses issues with LUN hot-add and remove. When the
+> > host notifies the guest that a scan is needed, scan the host. Also,
+> > prior to discovering new devices that may have been added, ensure we
+> > handle the LUN remove case first.
 > >
-> > Of course if somebody has better ideas on how to resolve an anonymous
-> > userfault they're welcome.
-> 
-> So I'd *much* rather have a "write()" style interface (ie _copying_
-> bytes from user space into a newly allocated page that gets mapped)
-> than a "remap page" style interface
-
-Something like that might work for the postcopy case; it doesn't work
-for some of the other uses that need to stop a page being changed by the
-guest, but then need to somehow get a copy of that page internally to QEMU,
-and perhaps provide it back later.  remap_anon_pages worked for those cases
-as well; I can't think of another current way of doing it in userspace.
-
-I'm thinking here of systems for making VMs with memory larger than a single
-host; that's something that's not as well thought out.  I've also seen people
-writing emulation that want to trap and emulate some page accesses while
-still having the original data available to the emulator itself.
-
-So yes, OK for now, but the result is less general.
-
-Dave
-
-
-> remapping anonymous pages involves page table games that really aren't
-> necessarily a good idea, and tlb invalidates for the old page etc.
-> Just don't do it.
-> 
->            Linus
---
-Dr. David Alan Gilbert / dgilbert@redhat.com / Manchester, UK
+> > K. Y. Srinivasan (2):
+> >   Drivers: scsi: storvsc: In responce to a scan event, scan the host
+> >   Drivers: scsi: storvsc: Force discovery of LUNs that may have been
+> >     removed.
+> >
+> >  drivers/scsi/storvsc_drv.c |   43 ++++++++++++++++++++++++++++++++-
+> ----------
+> >  1 files changed, 32 insertions(+), 11 deletions(-)
+> >
+> > --
+> > 1.7.4.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-scsi"
+> > in the body of a message to majordomo@vger.kernel.org More
+> majordomo
+> > info at  http://vger.kernel.org/majordomo-info.html
+> ---end quoted text---
