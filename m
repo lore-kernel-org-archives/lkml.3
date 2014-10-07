@@ -1,106 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839AbaJGMdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:33:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47752 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751094AbaJGMdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:33:35 -0400
-Date: Tue, 7 Oct 2014 14:33:34 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: Please backport commit 3812c8c8f39 to stable
-Message-ID: <20141007123334.GC14243@dhcp22.suse.cz>
-References: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
- <20140930081637.GA4456@dhcp22.suse.cz>
- <CAM_iQpXx3ULtPr50ESTZk1+984vSG9-dKegEjawDZ2yJS3CTdw@mail.gmail.com>
- <CAM_iQpVC0Q0G9s-02nSqrmpGWL3G0bHLK41NoRfySAenoJc+uA@mail.gmail.com>
- <20141003153748.GF4816@dhcp22.suse.cz>
- <CAM_iQpVMGiE+gxbnr1x6QrSbDQGHAJGCEGMi9XAQCPbptA8j2A@mail.gmail.com>
+	id S1753720AbaJGMfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:35:46 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52616 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028AbaJGMfo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:35:44 -0400
+Message-ID: <5433DE11.6060305@linux.vnet.ibm.com>
+Date: Tue, 07 Oct 2014 18:05:29 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM_iQpVMGiE+gxbnr1x6QrSbDQGHAJGCEGMi9XAQCPbptA8j2A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sam Bobroff <sam.bobroff@au1.ibm.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, peterz@infradead.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
+        Paul.Clothier@imgtec.com, palves@redhat.com, oleg@redhat.com,
+        dhowells@redhat.com, davej@redhat.com, davem@davemloft.net
+Subject: Re: [PATCH V3 0/3] Add new PowerPC specific ELF core notes
+References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com> <53D0AD2B.4050004@au1.ibm.com>
+In-Reply-To: <53D0AD2B.4050004@au1.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100712-0017-0000-0000-00000186E0BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-10-14 11:16:31, Cong Wang wrote:
-> On Fri, Oct 3, 2014 at 8:37 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Thu 02-10-14 14:04:08, Cong Wang wrote:
-> >> Hello again,
-> >>
-> >> I realized it is a series of patch actually:
-> >>
-> >> 3812c8c8f3953921ef18544110dafc3505c1ac62 mm: memcg: do not trap
-> >> chargers with full callstack on OOM
-> >> fb2a6fc56be66c169f8b80e07ed999ba453a2db2 mm: memcg: rework and
-> >> document OOM waiting and wakeup
-> >> 519e52473ebe9db5cdef44670d5a97f1fd53d721 mm: memcg: enable memcg OOM
-> >> killer only for user faults
-> >> 3a13c4d761b4b979ba8767f42345fed3274991b0 x86: finish user fault error
-> >> path with fatal signal
-> >> 759496ba6407c6994d6a5ce3a5e74937d7816208 arch: mm: pass userspace
-> >> fault flag to generic fault handler
-> >> 871341023c771ad233620b7a1fb3d9c7031c4e5c arch: mm: do not invoke OOM
-> >> killer on kernel fault OOM
-> >> 94bce453c78996cc4373d5da6cfabe07fcc6d9f9 arch: mm: remove obsolete
-> >> init OOM protection
-> >
-> > Yes, that looks like the full series.
-> >
-> >> I am not sure if they have more dependencies.
-> >>
-> >> However, this bug is *fairly* easy to reproduce on 3.10, just using the
-> >> following script:
-> >>
-> >> #!/bin/bash
-> >>
-> >> TEST_DIR=/tmp/cgroup_test
-> >> [ -d $TEST_DIR ] || mkdir -p $TEST_DIR
-> >> mount -t cgroup none $TEST_DIR -o memory
-> >> mkdir $TEST_DIR/test
-> >> echo 512k > $TEST_DIR/test/memory.limit_in_bytes
-> >
-> > This is just insane. You allow only 128 pages to be charged and the
-> > reclaim will have to constantly wait for each page to finish the
-> > writeback.
+On 07/24/2014 12:22 PM, Sam Bobroff wrote:
+>> Outstanding Issues
+>> ==================
+>> (1) Running DSCR register value inside a transaction does not seem to be saved
+>>     at thread.dscr when the process stops for ptrace examination.
 > 
-> This is a test case ONLY used to reproduce this bug, why it has to be
-> sane? :)
->
-> On the other hand, no matter how insane a test case is, as long as it
-> triggers some hung tasks in kernel, it is a kernel bug needs to fix.
+> Since this is fixed by 96d016108640bc2b7fb0ee800737f80923847294, which
+> is already upstream, you might want to rebase and re-test. It should
+> pass and then you can remove the outstanding issues :-)
 
-Well, my point was that an insane setting might produce a lot of
-problems. And as said this problem has been inherent since the day 1.
-So a real world example would be much more preferable. Especially when
-we have this state for years and nobody triggered it.
+Sure will do that.
 
-[...]
-> >> So please consider this seriously. :)
-> >
-> > The bug is there since the memory controller has been introduced. Yet we
-> > only had a single report happening in the real life. So I do not think
-> > this is that urgent. It was definitely not a good design decision that
-> > OOM killer was handled on top of unknown locks which might prevent from
-> > forward progress. No question about that. Do you see the problem in the
-> > real life somewhere because to be honest the test case is pretty much
-> > insane.
 > 
-> I am sorry to confuse you that it is my the above test case which caused
-> this bug. No, we saw this bug in *production* in our data center, it happened
-> on 30+ machines!! :) The above insane test case is ONLY to draw your
-> attention on how serious the bug is, nothing else.
+>>     
+>> Test programs
+> 
+> program
+> 
+> When I posted the patch I mentioned above, I was asked to move the test
+> code into the powerpc kernel selftests so you may want to do this too.
 
-Sure then the issue definitely needs to be fixed.
+Yes, I will add these ptrace related tests as tm/tm-ptrace.c test case.
 
-You have written in other email, that you have a backport. I will help
-you with the review if you post it publicly.
+> 
+> Also, your test program covers everything mine did and more so you might
+> want to remove mine if you do add this to the selftests.
 
--- 
-Michal Hocko
-SUSE Labs
+The new one will be more ptrace specific, so wont remove yours which tests
+the context saved DSCR value.
+
+> 
+>> =============
+>> #include <unistd.h>
+>> #include <stdlib.h>
+>> #include <string.h>
+>> #include <malloc.h>
+>> #include <errno.h>
+>> #include <sys/ptrace.h>
+>> #include <sys/uio.h>
+>> #include <sys/types.h>
+>> #include <sys/signal.h>
+>> #include <sys/user.h>
+> 
+> You should include sys/wait.h for waitpid().
+
+Will do.
+
+> status, i and flags are all unused.
+
+Will remove them.
+
+>> 			else
+>> 				printf("DSCR FAILED\n");
+>>
+>> 			/* TM checkpointed GPR */
+>> 			iov.iov_base = (struct pt_regs *) malloc(sizeof(struct pt_regs));;
+>> 			iov.iov_len = sizeof(struct pt_regs);
+>> 			ret = ptrace(PTRACE_GETREGSET, child, NT_PPC_TM_CGPR, &iov);
+>> 			if (ret == -1) {
+>> 				printf("PTRACE_GETREGSET: NT_PPC_TM_CGPR failed: %s\n", strerror(errno));
+>> 				exit(-1);
+>> 			}
+>>
+>> 			if (iov.iov_len != sizeof(struct pt_regs)) {
+>> 				printf("NT_PPC_TM_CGPR: Length returned is wrong\n");
+>> 				exit(-1);
+>> 			}
+>>
+>> 			pregs1 = iov.iov_base;
+>> 			printf("-------TM checkpointed GPR-----\n");
+>> 			printf("TM CH GPR[1]: %x\n", pregs1->gpr[1]);
+>> 			printf("TM CH GPR[2]: %x\n", pregs1->gpr[2]);
+>> 			printf("TM CH NIP: %x\n", pregs1->nip);
+>> 			printf("TM CH LINK: %x\n", pregs1->link);
+>> 			printf("TM CH CCR: %x\n", pregs1->ccr);
+> 
+> I get a compiler warning for these printfs: they should be "%lx".
+
+Okay.
+
+> 
+>>
+>> 			if (pregs1->gpr[1] == VAL1)
+>> 				printf("GPR[1] PASSED\n");
+>> 			else
+>> 				printf("GPR[1] FAILED\n");
+>>
+>> 			if (pregs1->gpr[2] == VAL2)
+>> 				printf("GPR[2] PASSED\n");
+>> 			else
+>> 				printf("GPR[2] FAILED\n");
+>>
+>> 			/* TM running GPR */
+>> 			ret = ptrace(PTRACE_GETREGS, child, NULL, pregs2);
+>> 			if (ret == -1) {
+>> 				printf("PTRACE_GETREGS fail: %s\n", strerror(errno));
+>> 				exit(-1);
+>> 			}
+>>
+>> 			printf("-------TM running GPR-----\n");
+>> 			printf("TM RN GPR[1]: %x\n", pregs2->gpr[1]);
+>> 			printf("TM RN GPR[2]: %x\n", pregs2->gpr[2]);
+>> 			printf("TM RN NIP: %x\n", pregs2->nip);
+>> 			printf("TM RN LINK: %x\n", pregs2->link);
+>> 			printf("TM RN CCR: %x\n", pregs2->ccr);
+> 
+> Same as above, I get warnings and they should be "%lx".
+
+Okay. Will fix them.
+
