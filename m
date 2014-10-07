@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaJGFaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:30:10 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40551 "EHLO
+	id S1751339AbaJGFaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:30:05 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40462 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585AbaJGF3y (ORCPT
+	with ESMTP id S1753527AbaJGF3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:29:54 -0400
+	Tue, 7 Oct 2014 01:29:46 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
@@ -24,26 +24,28 @@ Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
         linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
         linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 24/44] power/reset: msm-powroff: Register with kernel poweroff handler
-Date: Mon,  6 Oct 2014 22:28:26 -0700
-Message-Id: <1412659726-29957-25-git-send-email-linux@roeck-us.net>
+        Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 20/44] power/reset: restart-poweroff: Register with kernel poweroff handler
+Date: Mon,  6 Oct 2014 22:28:22 -0700
+Message-Id: <1412659726-29957-21-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=2.8
+X-OutGoing-Spam-Status: No, score=0.3
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.54337A51.00C1,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020208.54337A49.00E8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: 
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 304
+X-CTCH-SenderID-TotalMessages: 224
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -63,56 +65,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel poweroff handler instead of setting pm_power_off
-directly. Select proprity 0 since the code does not really poweroff
-the system.
+Register with kernel poweroff handler instead of seting pm_power_off
+directly.  Register as poweroff handler of last resort since the driver
+does not really power off the system but executes a restart.
 
+Cc: Sebastian Reichel <sre@kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/power/reset/msm-poweroff.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/power/reset/restart-poweroff.c | 25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-index 774f9a3..189bcd3 100644
---- a/drivers/power/reset/msm-poweroff.c
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -19,6 +19,7 @@
- #include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/module.h>
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index edd707e..5437697 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -12,35 +12,34 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/init.h>
 +#include <linux/notifier.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_platform.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
  #include <linux/reboot.h>
+-#include <asm/system_misc.h>
  
- #include <asm/system_misc.h>
-@@ -31,12 +32,19 @@ static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
- 	mdelay(10000);
- }
- 
--static void do_msm_poweroff(void)
-+static int do_msm_poweroff(struct notifier_block *this,
-+			   unsigned long unused1, void *unused2)
+-static void restart_poweroff_do_poweroff(void)
++static int restart_poweroff_do_poweroff(struct notifier_block *this,
++					unsigned long unused1, void *unused2)
  {
- 	/* TODO: Add poweroff capability */
- 	do_msm_restart(REBOOT_HARD, NULL);
+ 	reboot_mode = REBOOT_HARD;
+ 	machine_restart(NULL);
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block msm_powroff_nb = {
-+	.notifier_call = do_msm_poweroff,
++static struct notifier_block restart_poweroff_handler = {
++	.notifier_call = restart_poweroff_do_poweroff,
 +};
 +
- static int msm_restart_probe(struct platform_device *pdev)
+ static int restart_poweroff_probe(struct platform_device *pdev)
  {
- 	struct device *dev = &pdev->dev;
-@@ -47,7 +55,8 @@ static int msm_restart_probe(struct platform_device *pdev)
- 	if (IS_ERR(msm_ps_hold))
- 		return PTR_ERR(msm_ps_hold);
+-	/* If a pm_power_off function has already been added, leave it alone */
+-	if (pm_power_off != NULL) {
+-		dev_err(&pdev->dev,
+-			"pm_power_off function already registered");
+-		return -EBUSY;
+-	}
+-
+-	pm_power_off = &restart_poweroff_do_poweroff;
+-	return 0;
++	return register_poweroff_handler(&restart_poweroff_handler);
+ }
  
--	pm_power_off = do_msm_poweroff;
-+	if (register_poweroff_handler(&msm_powroff_nb))
-+		dev_err(&pdev->dev, "Failed to register poweroff handler\n");
- 	arm_pm_restart = do_msm_restart;
+ static int restart_poweroff_remove(struct platform_device *pdev)
+ {
+-	if (pm_power_off == &restart_poweroff_do_poweroff)
+-		pm_power_off = NULL;
++	unregister_poweroff_handler(&restart_poweroff_handler);
+ 
  	return 0;
  }
 -- 
