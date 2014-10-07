@@ -1,134 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737AbaJGXaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:30:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39786 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932236AbaJGXUG (ORCPT
+	id S932534AbaJGXah (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:30:37 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:12598 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755759AbaJGXae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.14 14/37] media: vb2: fix VBI/poll regression
-Date: Tue,  7 Oct 2014 16:19:31 -0700
-Message-Id: <20141007231827.508119233@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
-References: <20141007231827.043235686@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 7 Oct 2014 19:30:34 -0400
+Date: Tue, 7 Oct 2014 16:30:46 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Kiran Padwal <kiran.padwal@smartplayin.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "Cavin, Courtney" <Courtney.Cavin@sonymobile.com>
+Subject: Re: [PATCH 1/2] input: Add Qualcomm PM8941 power key driver
+Message-ID: <20141007233045.GD31125@sonymobile.com>
+References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1412644321-27683-2-git-send-email-bjorn.andersson@sonymobile.com>
+ <5433B843.5060200@smartplayin.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5433B843.5060200@smartplayin.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tue 07 Oct 02:54 PDT 2014, Kiran Padwal wrote:
 
-------------------
+> On Tuesday 07 October 2014 06:42 AM, Bjorn Andersson wrote:
+> > From: Courtney Cavin <courtney.cavin@sonymobile.com>
+> > 
+> > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> > Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> > ---
+> >  drivers/input/misc/Kconfig         |   12 +++
+> >  drivers/input/misc/Makefile        |    1 +
+> >  drivers/input/misc/pm8941-pwrkey.c |  196 ++++++++++++++++++++++++++++++++++++
+> 
+> <snip>
+> 
+> > +
+> > +	platform_set_drvdata(pdev, pwrkey);
+> > +	device_init_wakeup(&pdev->dev, 1);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int pm8941_pwrkey_remove(struct platform_device *pdev)
+> > +{
+> > +	device_init_wakeup(&pdev->dev, 0);
+> 
+> Shouldn't we unregister input device?
+> 
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+It's allocated with devm_input_allocate_device() so I assumed that it goes away
+upon the device being removed. Looking at input_register_device() seems to
+confirm that.
 
-commit 58d75f4b1ce26324b4d809b18f94819843a98731 upstream.
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static const struct of_device_id pm8941_pwr_key_id_table[] = {
+> > +	{ .compatible = "qcom,pm8941-pwrkey" },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, pm8941_pwr_key_id_table);
+> > +
+> > +static struct platform_driver pm8941_pwrkey_driver = {
+> > +	.probe		= pm8941_pwrkey_probe,
+> > +	.remove		= pm8941_pwrkey_remove,
+> > +	.driver		= {
+> > +		.name	= "pm8941-pwrkey",
+> > +		.owner	= THIS_MODULE,
+> 
+> This field can be removed because this driver which use the
+> module_platform_driver api as this is overridden in
+> platform_driver_register.
+> 
 
-The recent conversion of saa7134 to vb2 unconvered a poll() bug that
-broke the teletext applications alevt and mtt. These applications
-expect that calling poll() without having called VIDIOC_STREAMON will
-cause poll() to return POLLERR. That did not happen in vb2.
+Thanks
 
-This patch fixes that behavior. It also fixes what should happen when
-poll() is called when STREAMON is called but no buffers have been
-queued. In that case poll() will also return POLLERR, but only for
-capture queues since output queues will always return POLLOUT
-anyway in that situation.
+> > +		.pm	= &pm8941_pwr_key_pm_ops,
+> > +		.of_match_table = of_match_ptr(pm8941_pwr_key_id_table),
+> > +	},
+> > +};
+> > +module_platform_driver(pm8941_pwrkey_driver);
+> > +
+> > +MODULE_DESCRIPTION("PM8941 Power Key driver");
+> > +MODULE_LICENSE("GPL v2");
+> 
+> May be you can add module author name.
+> 
 
-This brings the vb2 behavior in line with the old videobuf behavior.
+Courtney based this driver on the skeleton from pmic8xxx-pwrkey, so I don't
+think it's right to say that there's any particular author. And you have the
+git log...
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/media/v4l2-core/videobuf2-core.c |   15 +++++++++++++--
- include/media/videobuf2-core.h           |    4 ++++
- 2 files changed, 17 insertions(+), 2 deletions(-)
-
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -745,6 +745,7 @@ static int __reqbufs(struct vb2_queue *q
- 	 * to the userspace.
- 	 */
- 	req->count = allocated_buffers;
-+	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
- 
- 	return 0;
- }
-@@ -793,6 +794,7 @@ static int __create_bufs(struct vb2_queu
- 		memset(q->plane_sizes, 0, sizeof(q->plane_sizes));
- 		memset(q->alloc_ctx, 0, sizeof(q->alloc_ctx));
- 		q->memory = create->memory;
-+		q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
- 	}
- 
- 	num_buffers = min(create->count, VIDEO_MAX_FRAME - q->num_buffers);
-@@ -1447,6 +1449,7 @@ static int vb2_internal_qbuf(struct vb2_
- 	 * dequeued in dqbuf.
- 	 */
- 	list_add_tail(&vb->queued_entry, &q->queued_list);
-+	q->waiting_for_buffers = false;
- 	vb->state = VB2_BUF_STATE_QUEUED;
- 
- 	/*
-@@ -1841,6 +1844,7 @@ static int vb2_internal_streamoff(struct
- 	 * and videobuf, effectively returning control over them to userspace.
- 	 */
- 	__vb2_queue_cancel(q);
-+	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
- 
- 	dprintk(3, "Streamoff successful\n");
- 	return 0;
-@@ -2150,9 +2154,16 @@ unsigned int vb2_poll(struct vb2_queue *
- 	}
- 
- 	/*
--	 * There is nothing to wait for if no buffers have already been queued.
-+	 * There is nothing to wait for if the queue isn't streaming.
- 	 */
--	if (list_empty(&q->queued_list))
-+	if (!vb2_is_streaming(q))
-+		return res | POLLERR;
-+	/*
-+	 * For compatibility with vb1: if QBUF hasn't been called yet, then
-+	 * return POLLERR as well. This only affects capture queues, output
-+	 * queues will always initialize waiting_for_buffers to false.
-+	 */
-+	if (q->waiting_for_buffers)
- 		return res | POLLERR;
- 
- 	if (list_empty(&q->done_list))
---- a/include/media/videobuf2-core.h
-+++ b/include/media/videobuf2-core.h
-@@ -329,6 +329,9 @@ struct v4l2_fh;
-  * @retry_start_streaming: start_streaming() was called, but there were not enough
-  *		buffers queued. If set, then retry calling start_streaming when
-  *		queuing a new buffer.
-+ * @waiting_for_buffers: used in poll() to check if vb2 is still waiting for
-+ *		buffers. Only set for capture queues if qbuf has not yet been
-+ *		called since poll() needs to return POLLERR in that situation.
-  * @fileio:	file io emulator internal data, used only if emulator is active
-  */
- struct vb2_queue {
-@@ -362,6 +365,7 @@ struct vb2_queue {
- 
- 	unsigned int			streaming:1;
- 	unsigned int			retry_start_streaming:1;
-+	unsigned int			waiting_for_buffers:1;
- 
- 	struct vb2_fileio_data		*fileio;
- };
-
-
+Regards,
+Bjorn
