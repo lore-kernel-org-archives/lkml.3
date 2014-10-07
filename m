@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaJGJZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 05:25:25 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:47972 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704AbaJGJZS (ORCPT
+	id S1753434AbaJGJ2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 05:28:45 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:48164 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752830AbaJGJ2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 05:25:18 -0400
-Date: Tue, 7 Oct 2014 10:25:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johan Hovold <johan@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 6/6] mfd: core: fix platform-device id generation
-Message-ID: <20141007092512.GV25331@lee--X1>
-References: <1411728933-13351-1-git-send-email-johan@kernel.org>
- <1411728933-13351-7-git-send-email-johan@kernel.org>
+	Tue, 7 Oct 2014 05:28:43 -0400
+X-IronPort-AV: E=Sophos;i="5.04,668,1406563200"; 
+   d="scan'208";a="36898220"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCHv2] sched: updated comments of CLONE_NEWNS
+Date: Tue, 7 Oct 2014 17:29:07 +0800
+Message-ID: <1412674147-8941-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1411728933-13351-7-git-send-email-johan@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Sep 2014, Johan Hovold wrote:
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+---
+v2: s/group?/group
 
-> Make sure to always honour multi-function devices registered with
-> PLATFORM_DEVID_NONE (-1) or PLATFORM_DEVID_AUTO (-2) as id base. In this
-> case it does not make sense to append the cell id to the mfd-id base and
-> potentially change the requested behaviour.
-> 
-> Specifically this will allow multi-function devices to be registered
-> with PLATFORM_DEVID_AUTO while still having non-zero cell ids.
-> 
-> Signed-off-by: Johan Hovold <johan@kernel.org>
-> ---
->  drivers/mfd/mfd-core.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
+ include/uapi/linux/sched.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Applied for v3.19.
-
-> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-> index 892d343193ad..79f25633d7db 100644
-> --- a/drivers/mfd/mfd-core.c
-> +++ b/drivers/mfd/mfd-core.c
-> @@ -87,9 +87,15 @@ static int mfd_add_device(struct device *parent, int id,
->  	struct platform_device *pdev;
->  	struct device_node *np = NULL;
->  	int ret = -ENOMEM;
-> +	int platform_id;
->  	int r;
->  
-> -	pdev = platform_device_alloc(cell->name, id + cell->id);
-> +	if (id < 0)
-> +		platform_id = id;
-> +	else
-> +		platform_id = id + cell->id;
-> +
-> +	pdev = platform_device_alloc(cell->name, platform_id);
->  	if (!pdev)
->  		goto fail_alloc;
->  
-
+diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
+index 34f9d73..db765b4 100644
+--- a/include/uapi/linux/sched.h
++++ b/include/uapi/linux/sched.h
+@@ -13,7 +13,7 @@
+ #define CLONE_VFORK	0x00004000	/* set if the parent wants the child to wake it up on mm_release */
+ #define CLONE_PARENT	0x00008000	/* set if we want to have the same parent as the cloner */
+ #define CLONE_THREAD	0x00010000	/* Same thread group? */
+-#define CLONE_NEWNS	0x00020000	/* New namespace group? */
++#define CLONE_NEWNS	0x00020000	/* New mount namespace group */
+ #define CLONE_SYSVSEM	0x00040000	/* share system V SEM_UNDO semantics */
+ #define CLONE_SETTLS	0x00080000	/* create a new TLS for the child */
+ #define CLONE_PARENT_SETTID	0x00100000	/* set the TID in the parent */
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
