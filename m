@@ -1,107 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaJGO4H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:56:07 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.144]:10799 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753570AbaJGO4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:56:04 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-4.tower-179.messagelabs.com!1412693757!38314990!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.2; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH 3/8] iio: Add support for DA9150 GPADC
-Thread-Topic: [PATCH 3/8] iio: Add support for DA9150 GPADC
-Thread-Index: AQHP1xygEywc6IiNg0GMK98+C7G0f5wUwoQAgA/5qRA=
-Date: Tue, 7 Oct 2014 14:55:55 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB518D23@SW-EX-MBX01.diasemi.com>
-References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
- <ee4c56931f326d8ee9c1313c44456bce2dec8b8c.1411396719.git.Adam.Thomson.Opensource@diasemi.com>
- <5426964A.3050407@kernel.org>
-In-Reply-To: <5426964A.3050407@kernel.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	id S1753888AbaJGO6m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:58:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22065 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281AbaJGO6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:58:40 -0400
+Date: Tue, 7 Oct 2014 18:02:09 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Marcel Apfelbaum <marcel.a@redhat.com>
+Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, marcel@redhat.com,
+        alex.williamson@redhat.com
+Subject: Re: [PATCH v3] PCI: add kernel parameter to override devid<->driver
+ mapping.
+Message-ID: <20141007150209.GB7876@redhat.com>
+References: <1412693312-2449-1-git-send-email-marcel.a@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412693312-2449-1-git-send-email-marcel.a@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s97EuCjr017270
 
-On September 27, 2014 11:50, Jonathan Cameron wrote:
-
-> On 23/09/14 11:53, Adam Thomson wrote:
-> > This patch adds support for DA9150 Charger & Fuel-Gauge IC GPADC.
-
-> > +
-> > +static inline int da9150_gpadc_gpio_6v_voltage_now(int raw_val)
-> > +{
-> > +	/* Convert to mV */
-> > +	return (6 * ((raw_val * 1000) + 500)) / 1024;
-> These could all be expressed as raw values with offsets
-> and scales (and that would be preferred).
-> E.g. This one has offset 500000 and scale 6000/1024 or even
-> better use IIO_VAL_FRACTIONAL_LOG2 for scale with val1 = 6000
-> and val2 = (log_2 1024) = 10.
+On Tue, Oct 07, 2014 at 05:48:32PM +0300, Marcel Apfelbaum wrote:
+> Scanning a lot of devices during boot requires a lot of time.
+> On other scenarios there is a need to bind a driver to a specific slot.
 > 
+> Binding devices to pci-stub driver does not work,
+> as it will not differentiate between devices of the
+> same type. Using some start scripts is error prone.
+> 
+> The solution leverages driver_override functionality introduced by
+> 
+> 	commit: 782a985d7af26db39e86070d28f987cad21313c0
+> 	Author: Alex Williamson <alex.williamson@redhat.com>
+> 	Date:   Tue May 20 08:53:21 2014 -0600
+> 
+>     	PCI: Introduce new device binding path using pci_dev.driver_override
+> 
+> In order to bind PCI slots to specific drivers use:
+> 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
+> 
+> Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> ---
+> v2 -> v3:
+>  - Corrected subject line
+> v1 -> v2:
+>  - Addressed Michael S. Tsirkin comments
+>    - Removed 32 slots limitation
+>    - Better handling of memory allocation failures
+>      (preferred BUG_ON over error messages)
+>  - Addressed Alex Williamson's comments:
+>    - Modified commit message to show parameter usage more clear.
+>  - I preferred to re-use parse_args instead of manually using
+>    strstr in order to better comply with command line parsing
+>    rules.
+>  - I didn't use any locking when parsing the command line args
+>    (see parse_done usage) assuming that first call will be
+>    early in system boot and no race can occur. Please correct
+>    me if I am wrong.
+> 
+> Notes:
+>  - I have further ideas on top of this patch based on your reviews.
+>    I thought of:
+>    - Use wildcards to specify entire buses/devices, something like:
+>      	driver[0001:02:*.*]=pci-stub
+>    - Use comma to separate several devices:
+>      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+>    - Make domain optional:
+>    	driver[00:03.0]=pci-stub
+> 
+> Comments will be appreciated,
+> Thanks,
+> Marcel
+>  Documentation/kernel-parameters.txt |  4 ++
+>  drivers/pci/bus.c                   | 86 +++++++++++++++++++++++++++++++++++++
+>  drivers/pci/pci.c                   |  2 +
+>  3 files changed, 92 insertions(+)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 5ae8608..c1cbb4c 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2631,6 +2631,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
+>  				only look for one device below a PCIe downstream
+>  				port.
+> +		driver		Provide an override to the devid<->driver mapping
+> +				for a specific slot.
+> +				Bind PCI slot 0001:02:03.4 to pci-stub by:
+> +					driver[0001:02:03.4]=pci-stub
+>  
+>  	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+>  			Management.
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 73aef51..d2c0721 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -230,6 +230,91 @@ EXPORT_SYMBOL(pci_bus_alloc_resource);
+>  
+>  void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+>  
+> +#define DRIVER_OVERRIDE_NAME_LENGTH 64
 
-What you've suggested isn't correct. The problem here is that the offset is
-added first to the raw ADC reading, without factoring the ADC value accordingly
-to match the factor of the offset. If we take the original equation provided for
-this channel of the ADC, the offset is actually 0.5 which should be added to the
-raw ADC value. This doesn't fit into the implementation in the kernel as we
-can't use floating point. If we multiply the offset but not the raw ADC value,
-then add them before applying the scale factor, then the result is wrong at the
-end. Basically you need a scale for the raw ADC value to match the offset scale
-so you can achieve the correct results, which is what my calculation does.
-But that seems impossible with the current raw|offset|scale method.
+Do we know all drivers have shorter names?
 
-> > +	ret = iio_map_array_register(indio_dev, da9150_gpadc_default_maps);
-> > +	if (ret) {
-> > +		dev_err(dev, "Failed to register IIO maps: %d\n", ret);
-> > +		return ret;
-> > +	}
-> I'd suggest doing the devm_request_thread_irq before the iio_map_array
-> stuff.  This is purely to avoid the order during remove not being
-> obviously correct as it isn't the reverse of during probe.
-
-Ok, should still work ok that way so can update.
-
-> > +static int da9150_gpadc_remove(struct platform_device *pdev)
-> > +{
-> > +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-> > +
-> > +	iio_map_array_unregister(indio_dev);
-> Twice in one day.  I'm definitely thinking we should add a
-> devm version of iio_map_array_register...
-
-I assume you mean here that iio_device_unregister() should come first? Will
-update.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +
+> +struct driver_override_entry {
+> +	unsigned int domain;
+> +	unsigned char bus;
+> +	unsigned int devfn;
+> +	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
+> +	struct list_head list;
+> +};
+> +
+> +static LIST_HEAD(driver_override_entries);
+> +
+> +static int pci_device_parse_driver_override(char *param, char *val,
+> +					    const char *unused)
+> +{
+> +	unsigned int domain, bus, dev, fn;
+> +	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
+> +	char format[] = "[%4x:%2x:%2x.%2x]=%%%ds";
+> +	struct driver_override_entry *entry;
+> +	int ret;
+> +
+> +	while (val) {
+> +		char *k = strchr(val, ',');
+> +
+> +		if (k)
+> +			*k++ = 0;
+> +
+> +		if (strncmp(val, "driver", 6)) {
+> +			val = k;
+> +			continue;
+> +		}
+> +
+> +		sprintf(format + 18, "%%%ds", DRIVER_OVERRIDE_NAME_LENGTH);
+> +		ret = sscanf(val + 6, format, &domain, &bus, &dev, &fn,
+> +			     driver_name);
+> +		if (ret != 5) {
+> +			pr_err("PCI: Invalid command line: %s\n", val);
+> +			val = k;
+> +			continue;
+> +		}
+> +
+> +		entry = kzalloc(sizeof(*entry), GFP_KERNEL);
+> +		BUG_ON(!entry);
+> +
+> +		INIT_LIST_HEAD(&entry->list);
+> +		entry->domain = domain;
+> +		entry->bus = bus && 0xff;
+> +		entry->devfn = ((dev & 0x1f) << 3) | (fn & 0x7);
+> +		memcpy(entry->driver_name, driver_name, sizeof(driver_name));
+> +
+> +		list_add_tail(&entry->list, &driver_override_entries);
+> +		val = k;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void pci_device_setup_driver_override(struct pci_dev *dev)
+> +{
+> +	static int parse_done;
+> +	struct driver_override_entry *entry;
+> +
+> +	if (!parse_done) {
+> +		char *cmdline = kstrdup(saved_command_line, GFP_KERNEL);
+> +
+> +		BUG_ON(!cmdline);
+> +
+> +		parse_args("pci", cmdline, NULL,
+> +			   0, 0, 0, &pci_device_parse_driver_override);
+> +		kfree(cmdline);
+> +		parse_done = 1;
+> +	}
+> +
+> +	list_for_each_entry(entry, &driver_override_entries, list) {
+> +		if (pci_domain_nr(dev->bus) != entry->domain ||
+> +		    dev->bus->number != entry->bus ||
+> +		    dev->devfn != entry->devfn)
+> +			continue;
+> +
+> +		dev->driver_override = kstrdup(entry->driver_name, GFP_KERNEL);
+> +		BUG_ON(!dev->driver_override);
+> +		break;
+> +	}
+> +}
+> +
+>  /**
+>   * pci_bus_add_device - start driver for a single device
+>   * @dev: device to add
+> @@ -245,6 +330,7 @@ void pci_bus_add_device(struct pci_dev *dev)
+>  	 * are not assigned yet for some devices.
+>  	 */
+>  	pci_fixup_device(pci_fixup_final, dev);
+> +	pci_device_setup_driver_override(dev);
+>  	pci_create_sysfs_dev_files(dev);
+>  	pci_proc_attach_device(dev);
+>  
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index b7678be..6bd7844 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -4468,6 +4468,8 @@ static int __init pci_setup(char *str)
+>  				pcie_bus_config = PCIE_BUS_PEER2PEER;
+>  			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+>  				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+> +			} else if (!strncmp(str, "driver", 6)) {
+> +				/* lazy evaluation by the pci subsystem */
+>  			} else {
+>  				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+>  						str);
+> -- 
+> 1.8.3.1
