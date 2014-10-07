@@ -1,333 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaJGEcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 00:32:50 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:64242 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaJGEcs (ORCPT
+	id S1752738AbaJGEeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 00:34:23 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:51929 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208AbaJGEeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 00:32:48 -0400
-Message-ID: <54336CED.3040106@gmail.com>
-Date: Mon, 06 Oct 2014 21:32:45 -0700
-From: David Daney <david.s.daney@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: "Kevin D. Kissell" <kevink@paralogos.com>,
-        David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org
-CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <54333B9C.2040302@paralogos.com>
-In-Reply-To: <54333B9C.2040302@paralogos.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 7 Oct 2014 00:34:21 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, dianders@chromium.org,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, Sonny Rao <sonnyrao@chromium.org>,
+        stable@vger.kernel.org
+Subject: [PATCH v3] clocksource: arch_timer: Fix code to use physical timers when requested
+Date: Mon,  6 Oct 2014 21:34:16 -0700
+Message-Id: <1412656456-26663-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2014 06:02 PM, Kevin D. Kissell wrote:
-> On 10/06/2014 01:23 PM, David Daney wrote:
->> From: David Daney <david.daney@cavium.com>
->>
->> In order for MIPS to be able to support a non-executable stack, we
->> need to supply a method to specify a userspace area that can be used
->> for executing emulated branch delay slot instructions.
->>
->> We add a new system call, sys_set_fpuemul_xol_area so that userspace
->> threads that are using the FPU can specify the location of the FPU
->> emulation out of line execution area.
->>
->> Background:
->>
->> MIPS floating point support requires that any instruction that cannot
->> be directly executed by the FPU, be emulated by the kernel. Part of
->> this emulation involves executing non-FPU instructions that fall in
->> the delay slots of FP branch instructions.  Since the beginning of
->> MIPS/Linux time, this has been done by placing the instructions on the
->> userspace thread stack, and executing them there, as the instructions
->> must be executed in the MM context of the thread receiving the
->> emulation.
-> Well, actually it doesn't go back to the beginning of MIPS/Linux time 
-> - I was the b*astard who took the user-mode functional emulator from 
-> Algorithmics and got it to work in the MIPS Linux kernel context, some 
-> time in the early 2000s.  It was all pretty straightforward, except 
-> for the delay-slot-of-an-emulated-FP-conditional-branch problem. As 
-> you note, it may be a load or store (though not a branch), so it needs 
-> to be done in the user's MM context, and the user stack has nice 
-> properties of being intrinsically per-thread and re-entrancy tolerant.
->> Because of this, the de facto MIPS Linux userspace ABI requires that
->> the userspace thread have an executable stack.  It is de facto,
->> because it is not written anywhere that this must be the case, but it
->> is never the less a requirement.
-> IIRC, when I first did the code, we already needed this for signal 
-> trampolines.  I just extended it.  Is it no longer required for signal 
-> support?  If not, how are signal trampolines now done, and could this 
-> not be re-extended to the FP branch delay slot emulation problem?
+This is a bug fix for using physical arch timers when
+the arch_timer_use_virtual boolean is false.  It restores the
+arch_counter_get_cntpct() function after removal in
 
-I moved signal trampolines off the stack quite a few years ago. This is 
-the only thing blocking non-executable stack.
+0d651e4e "clocksource: arch_timer: use virtual counters"
 
-The problem with the FP branch delay slot emulation is that the code 
-that needs to be executed varies.  The signal trampoline code is known 
-at kernel build time.
+We need this on certain ARMv7 systems which are architected like this:
 
->> Problem:
->>
->> How do we get MIPS Linux to use a non-executable stack in the face of
->> the FPU emulation problem?
->>
->> Since userspace desires to change the ABI, put some of the onus on the
->> userspace code.  Any userspace thread desiring a non-executable stack,
->> must allocate a 4-byte aligned area at least 8 bytes long with that
->> has read/write/execute permissions and pass the address of that area
->> to the kernel with the new sys_set_fpuemul_xol_area system call.
->>
->> This is similar to how we require userspace to notify the kernel of
->> the value of the thread local pointer.
-> It's easy for me to criticise, since I'm no longer responsible for 
-> maintenance, but I hope you'll excuse me for commenting that, while 
-> this seems like a small enough and neat enough patch per se,  I find 
-> it disagreeable to break legacy binaries
+* The firmware doesn't know and doesn't care about hypervisor mode and
+  we don't want to add the complexity of hypervisor there.
 
-It doesn't break legacy binaries.  They continue to use a executable 
-stack and the emulation is done there.
+* The firmware isn't involved in SMP bringup or resume.
 
-This only would change new binaries that explicitly asked for a 
-non-executable stack.
+* The ARCH timer come up with an uninitialized offset between the
+  virtual and physical counters.  Each core gets a different random
+  offset.
 
-> and to see a mechanism whose name and implementation is so strictly 
-> tied to the one purpose.  Even if it's only used for the FP delay slot 
-> emulation today, shouldn't it be designed/coded/documented as a sort 
-> of generic trampoline scratchpad?  And shouldn't we try to design 
-> things so that legacy code with FP but no new magic system call "just 
-> works"?  e.g. auto-allocate and initialize the space for a thread the 
-> first time it actually needs to emulate an FP branch?
+* The device boots in "Secure SVC" mode.
 
-The binaries have to be tagged as non-executable stack, this is because 
-GCC can, and does, generate trampolines on the stack as part of its 
-normal code generation strategy.
+* Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+  CNTHCTL.PL1PCTEN (both default to 1 at reset)
 
-That said, there are many problems with both the current code, and my 
-proposal.
+One example of such as system is RK3288 where it is much simpler to
+use the physical counter since there's nobody managing the offset and
+each time a core goes down and comes back up it will get reinitialized
+to some other random value.
 
-The main issue, as mentioned by another commenter, is the problem of 
-signals and nested emulations.
+Fixes: 0d651e4e65e9 ("clocksource: arch_timer: use virtual counters")
+Cc: stable@vger.kernel.org
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Acked-by: Olof Johansson <olof@lixom.net>
+---
+v2: Add fixes tag to commit message, cc stable, copy Doug's
+    description of the systems which need this in commit message.
+v3: Don't change the memory-mapped physical timer/counter code
+---
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++++
+ arch/arm64/include/asm/arch_timer.h  | 10 ++++++++++
+ drivers/clocksource/arm_arch_timer.c | 25 ++++++++++++++++++++++---
+ 3 files changed, 41 insertions(+), 3 deletions(-)
 
-If the emulated instruction raises a synchronous exception that is 
-converted to a signal, what is the EPC in the register state on the 
-stack?  Should it be the original location of the instruction, or the 
-out-of-line location used by emulation?  Are there userspace runtime 
-systems that care about this?
-
-If we are emulating on the stack, a signal stack state could clobber the 
-emulation location.
-
-If the kernel automatically allocated the emulation locations, what 
-would happen if there were a signal that interrupted the emulation, and 
-the signal handler did a longjump to somewhere else?  How would we clean 
-up the now unused emulation memory allocations?
-
->
-> /K.
->>
->> Signed-off-by: David Daney <david.daney@cavium.com>
->> ---
->>
->> First attempt to libc-alpha@ failed due to anti-spam technology,
->> reattempting to a reduced list of recipients.
->>
->> This patch has only been compile tested, and lacks the userspace
->> component.  It is presented as an alternate approch to the recently
->> proposed MIPS non-executable stack patches posted here:
->>
->> http://www.linux-mips.org/archives/linux-mips/2014-10/msg00024.html
->>
->>   arch/mips/include/asm/thread_info.h |  2 ++
->>   arch/mips/include/uapi/asm/unistd.h | 15 +++++++++------
->>   arch/mips/kernel/process.c          |  1 +
->>   arch/mips/kernel/scall32-o32.S      |  1 +
->>   arch/mips/kernel/scall64-64.S       |  1 +
->>   arch/mips/kernel/scall64-n32.S      |  1 +
->>   arch/mips/kernel/scall64-o32.S      |  1 +
->>   arch/mips/kernel/syscall.c          |  8 ++++++++
->>   arch/mips/math-emu/dsemul.c         | 11 +++++++----
->>   9 files changed, 31 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/mips/include/asm/thread_info.h 
->> b/arch/mips/include/asm/thread_info.h
->> index 7de8658..20d47f6 100644
->> --- a/arch/mips/include/asm/thread_info.h
->> +++ b/arch/mips/include/asm/thread_info.h
->> @@ -26,6 +26,7 @@ struct thread_info {
->>       struct exec_domain    *exec_domain;    /* execution domain */
->>       unsigned long        flags;        /* low level flags */
->>       unsigned long        tp_value;    /* thread pointer */
->> +    unsigned long        fpu_emul_xol;    /* FPU emul eXecute Out of 
->> Line VA */
->>       __u32            cpu;        /* current CPU */
->>       int            preempt_count;    /* 0 => preemptable, <0 => BUG */
->>   @@ -46,6 +47,7 @@ struct thread_info {
->>       .task        = &tsk,            \
->>       .exec_domain    = &default_exec_domain, \
->>       .flags        = _TIF_FIXADE,        \
->> +    .fpu_emul_xol    = ~0ul,            \
->>       .cpu        = 0,            \
->>       .preempt_count    = INIT_PREEMPT_COUNT,    \
->>       .addr_limit    = KERNEL_DS,        \
->> diff --git a/arch/mips/include/uapi/asm/unistd.h 
->> b/arch/mips/include/uapi/asm/unistd.h
->> index fdb4923..f1270ee 100644
->> --- a/arch/mips/include/uapi/asm/unistd.h
->> +++ b/arch/mips/include/uapi/asm/unistd.h
->> @@ -375,16 +375,17 @@
->>   #define __NR_seccomp            (__NR_Linux + 352)
->>   #define __NR_getrandom            (__NR_Linux + 353)
->>   #define __NR_memfd_create        (__NR_Linux + 354)
->> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 355)
->>     /*
->>    * Offset of the last Linux o32 flavoured syscall
->>    */
->> -#define __NR_Linux_syscalls        354
->> +#define __NR_Linux_syscalls        355
->>     #endif /* _MIPS_SIM == _MIPS_SIM_ABI32 */
->>     #define __NR_O32_Linux            4000
->> -#define __NR_O32_Linux_syscalls        354
->> +#define __NR_O32_Linux_syscalls        355
->>     #if _MIPS_SIM == _MIPS_SIM_ABI64
->>   @@ -707,16 +708,17 @@
->>   #define __NR_seccomp            (__NR_Linux + 312)
->>   #define __NR_getrandom            (__NR_Linux + 313)
->>   #define __NR_memfd_create        (__NR_Linux + 314)
->> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 315)
->>     /*
->>    * Offset of the last Linux 64-bit flavoured syscall
->>    */
->> -#define __NR_Linux_syscalls        314
->> +#define __NR_Linux_syscalls        315
->>     #endif /* _MIPS_SIM == _MIPS_SIM_ABI64 */
->>     #define __NR_64_Linux            5000
->> -#define __NR_64_Linux_syscalls        314
->> +#define __NR_64_Linux_syscalls        315
->>     #if _MIPS_SIM == _MIPS_SIM_NABI32
->>   @@ -1043,15 +1045,16 @@
->>   #define __NR_seccomp            (__NR_Linux + 316)
->>   #define __NR_getrandom            (__NR_Linux + 317)
->>   #define __NR_memfd_create        (__NR_Linux + 318)
->> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 319)
->>     /*
->>    * Offset of the last N32 flavoured syscall
->>    */
->> -#define __NR_Linux_syscalls        318
->> +#define __NR_Linux_syscalls        319
->>     #endif /* _MIPS_SIM == _MIPS_SIM_NABI32 */
->>     #define __NR_N32_Linux            6000
->> -#define __NR_N32_Linux_syscalls        318
->> +#define __NR_N32_Linux_syscalls        319
->>     #endif /* _UAPI_ASM_UNISTD_H */
->> diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
->> index 636b074..6dde6bb 100644
->> --- a/arch/mips/kernel/process.c
->> +++ b/arch/mips/kernel/process.c
->> @@ -151,6 +151,7 @@ int copy_thread(unsigned long clone_flags, 
->> unsigned long usp,
->>         if (clone_flags & CLONE_SETTLS)
->>           ti->tp_value = regs->regs[7];
->> +    ti->fpu_emul_xol = ~0ul;
->>         return 0;
->>   }
->> diff --git a/arch/mips/kernel/scall32-o32.S 
->> b/arch/mips/kernel/scall32-o32.S
->> index 744cd10..8c19a39 100644
->> --- a/arch/mips/kernel/scall32-o32.S
->> +++ b/arch/mips/kernel/scall32-o32.S
->> @@ -579,3 +579,4 @@ EXPORT(sys_call_table)
->>       PTR    sys_seccomp
->>       PTR    sys_getrandom
->>       PTR    sys_memfd_create
->> +    PTR    sys_set_fpuemul_xol_area    /* 4355 */
->> diff --git a/arch/mips/kernel/scall64-64.S 
->> b/arch/mips/kernel/scall64-64.S
->> index 002b1bc..0b9f72e 100644
->> --- a/arch/mips/kernel/scall64-64.S
->> +++ b/arch/mips/kernel/scall64-64.S
->> @@ -434,4 +434,5 @@ EXPORT(sys_call_table)
->>       PTR    sys_seccomp
->>       PTR    sys_getrandom
->>       PTR    sys_memfd_create
->> +    PTR    sys_set_fpuemul_xol_area    /* 5315 */
->>       .size    sys_call_table,.-sys_call_table
->> diff --git a/arch/mips/kernel/scall64-n32.S 
->> b/arch/mips/kernel/scall64-n32.S
->> index ca6cbbe..48f1760 100644
->> --- a/arch/mips/kernel/scall64-n32.S
->> +++ b/arch/mips/kernel/scall64-n32.S
->> @@ -427,4 +427,5 @@ EXPORT(sysn32_call_table)
->>       PTR    sys_seccomp
->>       PTR    sys_getrandom
->>       PTR    sys_memfd_create
->> +    PTR    sys_set_fpuemul_xol_area
->>       .size    sysn32_call_table,.-sysn32_call_table
->> diff --git a/arch/mips/kernel/scall64-o32.S 
->> b/arch/mips/kernel/scall64-o32.S
->> index 9e10d11..60def68 100644
->> --- a/arch/mips/kernel/scall64-o32.S
->> +++ b/arch/mips/kernel/scall64-o32.S
->> @@ -564,4 +564,5 @@ EXPORT(sys32_call_table)
->>       PTR    sys_seccomp
->>       PTR    sys_getrandom
->>       PTR    sys_memfd_create
->> +    PTR    sys_set_fpuemul_xol_area    /* 4355 */
->>       .size    sys32_call_table,.-sys32_call_table
->> diff --git a/arch/mips/kernel/syscall.c b/arch/mips/kernel/syscall.c
->> index 4a4f9dd..5f9d9e8 100644
->> --- a/arch/mips/kernel/syscall.c
->> +++ b/arch/mips/kernel/syscall.c
->> @@ -96,6 +96,14 @@ SYSCALL_DEFINE1(set_thread_area, unsigned long, addr)
->>       return 0;
->>   }
->>   +SYSCALL_DEFINE1(set_fpuemul_xol_area, unsigned long, addr)
->> +{
->> +    struct thread_info *ti = task_thread_info(current);
->> +
->> +    ti->fpu_emul_xol = addr;
->> +    return 0;
->> +}
->> +
->>   static inline int mips_atomic_set(unsigned long addr, unsigned long 
->> new)
->>   {
->>       unsigned long old, tmp;
->> diff --git a/arch/mips/math-emu/dsemul.c b/arch/mips/math-emu/dsemul.c
->> index 4f514f3..bf4ff61 100644
->> --- a/arch/mips/math-emu/dsemul.c
->> +++ b/arch/mips/math-emu/dsemul.c
->> @@ -34,6 +34,7 @@ struct emuframe {
->>   int mips_dsemul(struct pt_regs *regs, mips_instruction ir, unsigned 
->> long cpc)
->>   {
->>       extern asmlinkage void handle_dsemulret(void);
->> +    struct thread_info *ti = task_thread_info(current);
->>       struct emuframe __user *fr;
->>       int err;
->>   @@ -64,10 +65,12 @@ int mips_dsemul(struct pt_regs *regs, 
->> mips_instruction ir, unsigned long cpc)
->>        * branches, but gives us a cleaner interface to the exception
->>        * handler (single entry point).
->>        */
->> -
->> -    /* Ensure that the two instructions are in the same cache line */
->> -    fr = (struct emuframe __user *)
->> -        ((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
->> +    if (ti->fpu_emul_xol != ~0ul)
->> +        fr = (struct emuframe *)ti->fpu_emul_xol;
->> +    else
->> +        /* Ensure that the two instructions are in the same cache 
->> line */
->> +        fr = (struct emuframe __user *)
->> +            ((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
->>         /* Verify that the stack pointer is not competely insane */
->>       if (unlikely(!access_ok(VERIFY_WRITE, fr, sizeof(struct 
->> emuframe))))
->
->
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index 0704e0c..e72aa4d 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -78,6 +78,15 @@ static inline u32 arch_timer_get_cntfrq(void)
+ 	return val;
+ }
+ 
++static inline u64 arch_counter_get_cntpct(void)
++{
++	u64 cval;
++
++	isb();
++	asm volatile("mrrc p15, 0, %Q0, %R0, c14" : "=r" (cval));
++	return cval;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 9400596..58657c4 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -135,6 +135,16 @@ static inline void arch_timer_evtstrm_enable(int divider)
+ #endif
+ }
+ 
++static inline u64 arch_counter_get_cntpct(void)
++{
++	u64 cval;
++
++	isb();
++	asm volatile("mrs %0, cntpct_el0" : "=r" (cval));
++
++	return cval;
++}
++
+ static inline u64 arch_counter_get_cntvct(void)
+ {
+ 	u64 cval;
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 5163ec1..bd8da15 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -30,6 +30,8 @@
+ #define CNTTIDR		0x08
+ #define CNTTIDR_VIRT(n)	(BIT(1) << ((n) * 4))
+ 
++#define CNTPCT_LO	0x00
++#define CNTPCT_HI	0x04
+ #define CNTVCT_LO	0x08
+ #define CNTVCT_HI	0x0c
+ #define CNTFRQ		0x10
+@@ -386,6 +388,19 @@ static u64 arch_counter_get_cntvct_mem(void)
+ 	return ((u64) vct_hi << 32) | vct_lo;
+ }
+ 
++static u64 arch_counter_get_cntpct_mem(void)
++{
++	u32 pct_lo, pct_hi, tmp_hi;
++
++	do {
++		pct_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
++		pct_lo = readl_relaxed(arch_counter_base + CNTPCT_LO);
++		tmp_hi = readl_relaxed(arch_counter_base + CNTPCT_HI);
++	} while (pct_hi != tmp_hi);
++
++	return ((u64) pct_hi << 32) | pct_lo;
++}
++
+ /*
+  * Default to cp15 based access because arm64 uses this function for
+  * sched_clock() before DT is probed and the cp15 method is guaranteed
+@@ -429,10 +444,14 @@ static void __init arch_counter_register(unsigned type)
+ 	u64 start_count;
+ 
+ 	/* Register the CP15 based counter if we have one */
+-	if (type & ARCH_CP15_TIMER)
+-		arch_timer_read_counter = arch_counter_get_cntvct;
+-	else
++	if (type & ARCH_CP15_TIMER) {
++		if (arch_timer_use_virtual)
++			arch_timer_read_counter = arch_counter_get_cntvct;
++		else
++			arch_timer_read_counter = arch_counter_get_cntpct;
++	} else {
+ 		arch_timer_read_counter = arch_counter_get_cntvct_mem;
++	}
+ 
+ 	start_count = arch_timer_read_counter();
+ 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+-- 
+1.8.3.2
 
