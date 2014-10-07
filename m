@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaJGKxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:53:20 -0400
-Received: from ozlabs.org ([103.22.144.67]:46528 "EHLO ozlabs.org"
+	id S1754044AbaJGKxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:53:18 -0400
+Received: from ozlabs.org ([103.22.144.67]:38176 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395AbaJGKtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:49:31 -0400
+	id S1752825AbaJGKtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 06:49:32 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
@@ -13,9 +13,9 @@ Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v3 03/16] powerpc/cell: Make spu_flush_all_slbs() generic
-Date: Tue,  7 Oct 2014 21:48:09 +1100
-Message-Id: <1412678902-18672-4-git-send-email-mikey@neuling.org>
+Subject: [PATCH v3 04/16] powerpc/msi: Improve IRQ bitmap allocator
+Date: Tue,  7 Oct 2014 21:48:10 +1100
+Message-Id: <1412678902-18672-5-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412678902-18672-1-git-send-email-mikey@neuling.org>
 References: <1412678902-18672-1-git-send-email-mikey@neuling.org>
@@ -25,128 +25,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This moves spu_flush_all_slbs() into a generic call copro_flush_all_slbs().
+Currently msi_bitmap_alloc_hwirqs() will round up any IRQ allocation requests
+to the nearest power of 2. eg. ask for 5 IRQs and you'll get 8. This wastes a
+lot of IRQs which can be a scarce resource.
 
-This will be useful when we add cxl which also needs a similar SLB flush call.
+For cxl we may require multiple IRQs for every context that is attached to the
+accelerator. There may be 1000s of contexts attached, hence we can easily run
+out of IRQs, especially if we are needlessly wasting them.
+
+This changes the msi_bitmap_alloc_hwirqs() to allocate only the required number
+of IRQs, hence avoiding this wastage. It keeps the natural alignment
+requirement though.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/copro.h |  6 ++++++
- arch/powerpc/mm/copro_fault.c    |  9 +++++++++
- arch/powerpc/mm/hash_utils_64.c  | 10 +++-------
- arch/powerpc/mm/slice.c          | 10 +++-------
- 4 files changed, 21 insertions(+), 14 deletions(-)
+ arch/powerpc/sysdev/msi_bitmap.c | 33 ++++++++++++++++++++++-----------
+ 1 file changed, 22 insertions(+), 11 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-index 9badb09..6897431 100644
---- a/arch/powerpc/include/asm/copro.h
-+++ b/arch/powerpc/include/asm/copro.h
-@@ -20,4 +20,10 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+diff --git a/arch/powerpc/sysdev/msi_bitmap.c b/arch/powerpc/sysdev/msi_bitmap.c
+index 2ff6302..56c8b13 100644
+--- a/arch/powerpc/sysdev/msi_bitmap.c
++++ b/arch/powerpc/sysdev/msi_bitmap.c
+@@ -20,32 +20,37 @@ int msi_bitmap_alloc_hwirqs(struct msi_bitmap *bmp, int num)
+ 	int offset, order = get_count_order(num);
  
- int copro_calc_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
- 
+ 	spin_lock_irqsave(&bmp->lock, flags);
+-	/*
+-	 * This is fast, but stricter than we need. We might want to add
+-	 * a fallback routine which does a linear search with no alignment.
+-	 */
+-	offset = bitmap_find_free_region(bmp->bitmap, bmp->irq_count, order);
 +
-+#ifdef CONFIG_PPC_COPRO_BASE
-+void copro_flush_all_slbs(struct mm_struct *mm);
-+#else
-+static inline void copro_flush_all_slbs(struct mm_struct *mm) {}
-+#endif
- #endif /* _ASM_POWERPC_COPRO_H */
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index 367ea01..222ef9b 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -25,6 +25,7 @@
- #include <linux/export.h>
- #include <asm/reg.h>
- #include <asm/copro.h>
-+#include <asm/spu.h>
- 
- /*
-  * This ought to be kept in sync with the powerpc specific do_page_fault
-@@ -136,3 +137,11 @@ int copro_calc_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(copro_calc_slb);
++	offset = bitmap_find_next_zero_area(bmp->bitmap, bmp->irq_count, 0,
++					    num, (1 << order) - 1);
++	if (offset > bmp->irq_count)
++		goto err;
 +
-+void copro_flush_all_slbs(struct mm_struct *mm)
-+{
-+#ifdef CONFIG_SPU_BASE
-+	spu_flush_all_slbs(mm);
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(copro_flush_all_slbs);
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index daee7f4..5c0738d 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -51,7 +51,7 @@
- #include <asm/cacheflush.h>
- #include <asm/cputable.h>
- #include <asm/sections.h>
--#include <asm/spu.h>
-+#include <asm/copro.h>
- #include <asm/udbg.h>
- #include <asm/code-patching.h>
- #include <asm/fadump.h>
-@@ -901,9 +901,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
- 	if (get_slice_psize(mm, addr) == MMU_PAGE_4K)
- 		return;
- 	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
- 	if (get_paca_psize(addr) != MMU_PAGE_4K) {
- 		get_paca()->context = mm->context;
- 		slb_flush_and_rebolt();
-@@ -1141,9 +1139,7 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- 			       "to 4kB pages because of "
- 			       "non-cacheable mapping\n");
- 			psize = mmu_vmalloc_psize = MMU_PAGE_4K;
--#ifdef CONFIG_SPU_BASE
--			spu_flush_all_slbs(mm);
--#endif
-+			copro_flush_all_slbs(mm);
- 		}
- 	}
++	bitmap_set(bmp->bitmap, offset, num);
+ 	spin_unlock_irqrestore(&bmp->lock, flags);
  
-diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-index b0c75cc..a81791c 100644
---- a/arch/powerpc/mm/slice.c
-+++ b/arch/powerpc/mm/slice.c
-@@ -32,7 +32,7 @@
- #include <linux/export.h>
- #include <asm/mman.h>
- #include <asm/mmu.h>
--#include <asm/spu.h>
-+#include <asm/copro.h>
+-	pr_debug("msi_bitmap: allocated 0x%x (2^%d) at offset 0x%x\n",
+-		 num, order, offset);
++	pr_debug("msi_bitmap: allocated 0x%x at offset 0x%x\n", num, offset);
  
- /* some sanity checks */
- #if (PGTABLE_RANGE >> 43) > SLICE_MASK_SIZE
-@@ -232,9 +232,7 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
- 
- 	spin_unlock_irqrestore(&slice_convert_lock, flags);
- 
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
+ 	return offset;
++err:
++	spin_unlock_irqrestore(&bmp->lock, flags);
++	return -ENOMEM;
  }
++EXPORT_SYMBOL(msi_bitmap_alloc_hwirqs);
  
- /*
-@@ -671,9 +669,7 @@ void slice_set_psize(struct mm_struct *mm, unsigned long address,
+ void msi_bitmap_free_hwirqs(struct msi_bitmap *bmp, unsigned int offset,
+ 			    unsigned int num)
+ {
+ 	unsigned long flags;
+-	int order = get_count_order(num);
  
- 	spin_unlock_irqrestore(&slice_convert_lock, flags);
+-	pr_debug("msi_bitmap: freeing 0x%x (2^%d) at offset 0x%x\n",
+-		 num, order, offset);
++	pr_debug("msi_bitmap: freeing 0x%x at offset 0x%x\n",
++		 num, offset);
  
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
+ 	spin_lock_irqsave(&bmp->lock, flags);
+-	bitmap_release_region(bmp->bitmap, offset, order);
++	bitmap_clear(bmp->bitmap, offset, num);
+ 	spin_unlock_irqrestore(&bmp->lock, flags);
  }
++EXPORT_SYMBOL(msi_bitmap_free_hwirqs);
  
- void slice_set_range_psize(struct mm_struct *mm, unsigned long start,
+ void msi_bitmap_reserve_hwirq(struct msi_bitmap *bmp, unsigned int hwirq)
+ {
+@@ -180,6 +185,12 @@ void __init test_basics(void)
+ 	msi_bitmap_free_hwirqs(&bmp, size / 2, 1);
+ 	check(msi_bitmap_alloc_hwirqs(&bmp, 1) == size / 2);
+ 
++	/* Check we get a naturally aligned offset */
++	check(msi_bitmap_alloc_hwirqs(&bmp, 2) % 2 == 0);
++	check(msi_bitmap_alloc_hwirqs(&bmp, 4) % 4 == 0);
++	check(msi_bitmap_alloc_hwirqs(&bmp, 8) % 8 == 0);
++	check(msi_bitmap_alloc_hwirqs(&bmp, 9) % 16 == 0);
++
+ 	msi_bitmap_free(&bmp);
+ 
+ 	/* Clients may check bitmap == NULL for "not-allocated" */
 -- 
 1.9.1
 
