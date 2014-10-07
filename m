@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaJGRPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:15:35 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:40842 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754632AbaJGRPd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:15:33 -0400
-Date: Tue, 7 Oct 2014 13:15:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Krzysztof Opasiak <k.opasiak@samsung.com>,
-        "'Robert Baldyga'" <r.baldyga@samsung.com>,
-        <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
-        <andrzej.p@samsung.com>
-Subject: Re: [PATCH] usb: gadget: f_fs: add "zombie" mode
-In-Reply-To: <20141007165149.GT24720@saruman>
-Message-ID: <Pine.LNX.4.44L0.1410071310550.1504-100000@iolanthe.rowland.org>
+	id S932079AbaJGRPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:15:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41917 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753459AbaJGRPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:15:45 -0400
+Message-ID: <54341F77.6060400@redhat.com>
+Date: Tue, 07 Oct 2014 19:14:31 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, qemu-devel@nongnu.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com> <1412356087-16115-11-git-send-email-aarcange@redhat.com> <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com> <20141006085540.GD2336@work-vm> <20141006164156.GA31075@redhat.com> <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com> <20141007170731.GO2404@work-vm>
+In-Reply-To: <20141007170731.GO2404@work-vm>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Oct 2014, Felipe Balbi wrote:
+Il 07/10/2014 19:07, Dr. David Alan Gilbert ha scritto:
+>> > 
+>> > So I'd *much* rather have a "write()" style interface (ie _copying_
+>> > bytes from user space into a newly allocated page that gets mapped)
+>> > than a "remap page" style interface
+> Something like that might work for the postcopy case; it doesn't work
+> for some of the other uses that need to stop a page being changed by the
+> guest, but then need to somehow get a copy of that page internally to QEMU,
+> and perhaps provide it back later.
 
-> > Please believe me that I totally agree with you, but I also see Robert's
-> > point. Let's take ADB as example. Before ADB has been ported to
-> > FunctionFS it communicated with kernel using dev node provided by ADB
-> > function driver. With that infrastructure death of daemon didn't cause
-> > gadget unbind because kernel driver of that function was just stalling
-> > the endpoints. This allows user to use all other functions of this
-> 
-> I really mixed feelings about that. It's really counter-intuitive to
-> allow a non-working function to be exposed to the host.
+I cannot parse this.  Which uses do you have in mind?  Is it for
+QEMU-specific or is it for other applications of userfaults?
 
-...
+As long as the page is atomically mapped, I'm not sure what the
+difference from remap_anon_pages are (as far as the destination page is
+concerned).  Are you thinking of having userfaults enabled on the source
+as well?
 
-> > Here also I agree. Zombie mode should "mock" the function until first
-> > next enumeration or unbind. It should not be possible to bind gadget
-> > with function in zombie mode to UDC. Zombie mode should "pretend" only
-> > as long as gadget is bound and enumerated.
-> 
-> Not really. We shouldn't even coonect to host until adbd is running.
-> Now, when adbd crashes we fix adbd. If it gets killed due to OOM we
-> can't even say "ok, we'll buffer USB requests until adbd is restarted"
-> because, well, we're running out of memory.
-> 
-> So, OOM we can't fix. Soon enough, another daemon (mtpd, ptpd, whatever)
-> will be killed and another function will be left unusable.
-> 
-> As for adbd/mtpd/ptpd crashes, those need to fixed and kernel should not
-> have to deal with them in any way.
+Paolo
 
-It seems to me that we should imitate what an ordinary USB device would
-do.  If part of the firmware crashes, generally you would expect none
-of the endpoints associated with that function to work.  Either they
-refuse to accept output from the host or they stall everything.  But
-endpoints associated with other parts of the firmware might very well
-continue to work okay.
-
-Don't buffer requests.  Either allow the internal FIFOs to fill up or
-else reject everything.  Any reasonable host will start getting timeout
-expirations and will realize that something is wrong.
-
-Alan Stern
+> remap_anon_pages worked for those cases
+> as well; I can't think of another current way of doing it in userspace.
 
