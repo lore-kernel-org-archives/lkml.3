@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaJGMlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:41:15 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60844 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300AbaJGMlO (ORCPT
+	id S1753395AbaJGMpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:45:33 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:45951 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaJGMpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:41:14 -0400
-From: Arun Chandran <achandran@mvista.com>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org,
-        Arun Chandran <achandran@mvista.com>
-Subject: [PATCH v1] Arm64: ASLR: fix text randomization
-Date: Tue,  7 Oct 2014 18:10:28 +0530
-Message-Id: <1412685628-27178-1-git-send-email-achandran@mvista.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 7 Oct 2014 08:45:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <87d2a5f1m4.fsf@linux.vnet.ibm.com>
+References: <20140930160510.GA15903@redhat.com>
+	<CA+55aFzTEXxxh_4_BwVydw1UgCu-NRF95OrzVhj=cievXFTJTg@mail.gmail.com>
+	<20140930162201.GC15903@redhat.com>
+	<20140930164047.GA18354@redhat.com>
+	<CA+55aFzKgJ41Mp=Ub8Kq_uFDHYzkHo3zhO3MHOJo_O2iExdYmQ@mail.gmail.com>
+	<20140930182059.GA24431@redhat.com>
+	<CA+55aFzfvXHd2LUhQ5OiV1H1Oq2y3PL8hX_Hrv-C907PyDNugA@mail.gmail.com>
+	<alpine.LSU.2.11.1410010031070.1902@eggly.anvils>
+	<CA+55aFyJ09+iv2HX1nfAaDi0-7=L3KxKi11CACbM8K_Coo6kzg@mail.gmail.com>
+	<CA+55aFzHgemAV7igyG=0pmctTaV7cZfO4fdqukhrCc8VXTrZuw@mail.gmail.com>
+	<20141002124537.GL17501@suse.de>
+	<87d2a5f1m4.fsf@linux.vnet.ibm.com>
+Date: Tue, 7 Oct 2014 08:45:31 -0400
+X-Google-Sender-Auth: s0K2dw6G0mEE-pHv0wPyLGhV1Ws
+Message-ID: <CA+55aFyt8euKZv8O-DMY7LE+467a_RQ38YOgF0Xh73+TseM=kQ@mail.gmail.com>
+Subject: Re: pipe/page fault oddness.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Michel Lespinasse <walken@google.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is due to incorrect definition of ELF_ET_DYN_BASE. It
-introduces randomization for text even if user does a "echo 0 >
-/proc/sys/kernel/randomize_va_space"
+On Mon, Oct 6, 2014 at 3:18 PM, Aneesh Kumar K.V
+<aneesh.kumar@linux.vnet.ibm.com> wrote:
+>
+> Are we still looking at these options ? I could look at implementing the
+> first option which will also enable us to free up one pte bit.
 
-Signed-off-by: Arun Chandran <achandran@mvista.com>
----
-This can be tested using the code below
+We definitely are. If you can test my patch (with the small follow-up
+fix), and do the necessary changes for ppc64, that would be good.
 
-#include <stdio.h>
+I looked quickly at the ppc64 side, and it didn't look too painful.
+Using pte_protnone() instead of pte_numa() should remove move lines
+than it adds there too..
 
-int main(int argc, char *argv)
-{
-    printf("main = %p\n", main);
-    return 0;
-}
-
-* compile it possition independently 
-  aarch64-linux-gnu-gcc -fPIE -pie aslr.c -o aslr
-
-* run it on the target
-
-	# ./aslr
-	main = 0x7f87138950
-	# ./aslr
-	main = 0x7f94a10950
-	# ./aslr
-	main = 0x7f94fee950
-	# ./aslr text
-	main = 0x7f8cb72950
-
-	# echo 0 > /proc/sys/kernel/randomize_va_space 
-	# ./aslr text
-	main = 0x5555555950
-	# ./aslr 
-	main = 0x5555555950
-	# ./aslr 
-	main = 0x5555555950
-	# ./aslr 
-	main = 0x5555555950
----
- arch/arm64/Kconfig           |    1 +
- arch/arm64/include/asm/elf.h |    4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index fd4e81a..a2eefc9 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -1,5 +1,6 @@
- config ARM64
- 	def_bool y
-+	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
- 	select ARCH_HAS_SG_CHAIN
- 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
-diff --git a/arch/arm64/include/asm/elf.h b/arch/arm64/include/asm/elf.h
-index 01d3aab..1f65be3 100644
---- a/arch/arm64/include/asm/elf.h
-+++ b/arch/arm64/include/asm/elf.h
-@@ -126,7 +126,7 @@ typedef struct user_fpsimd_state elf_fpregset_t;
-  * that it will "exec", and that there is sufficient room for the brk.
-  */
- extern unsigned long randomize_et_dyn(unsigned long base);
--#define ELF_ET_DYN_BASE	(randomize_et_dyn(2 * TASK_SIZE_64 / 3))
-+#define ELF_ET_DYN_BASE	(2 * TASK_SIZE_64 / 3)
- 
- /*
-  * When the program starts, a1 contains a pointer to a function to be
-@@ -169,7 +169,7 @@ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
- #define COMPAT_ELF_PLATFORM		("v8l")
- #endif
- 
--#define COMPAT_ELF_ET_DYN_BASE		(randomize_et_dyn(2 * TASK_SIZE_32 / 3))
-+#define COMPAT_ELF_ET_DYN_BASE		(2 * TASK_SIZE_32 / 3)
- 
- /* AArch32 registers. */
- #define COMPAT_ELF_NGREG		18
--- 
-1.7.9.5
-
+            Linus
