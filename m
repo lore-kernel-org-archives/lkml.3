@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaJGNXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:23:47 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:47454 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751795AbaJGNXp (ORCPT
+	id S1753958AbaJGNYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:24:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45513 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbaJGNYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:23:45 -0400
-From: Seraphin Bonnaffe <seraphin.bonnaffe@st.com>
-To: <b29396@freescale.com>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <lee.jones@linaro.org>, <maxime.coquelin@st.com>
-Cc: <sameo@linux.intel.com>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <arnd@arndb.de>, <seraphin.bonnaffe@st.com>
-Subject: [RFC PATCH 1/2] mfd: syscon: Document new DT binding "holes"
-Date: Tue, 7 Oct 2014 15:22:27 +0200
-Message-ID: <1412688148-20835-2-git-send-email-seraphin.bonnaffe@st.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412688148-20835-1-git-send-email-seraphin.bonnaffe@st.com>
-References: <54244655.1090801@st.com>
- <1412688148-20835-1-git-send-email-seraphin.bonnaffe@st.com>
+	Tue, 7 Oct 2014 09:24:38 -0400
+Date: Tue, 7 Oct 2014 14:24:36 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] mnt: don't allow to detach the namespace root
+Message-ID: <20141007132431.GF7996@ZenIV.linux.org.uk>
+References: <1412683212-28077-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-07_05:2014-10-07,2014-10-07,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412683212-28077-1-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT bindings to declare holes in syscon register maps.
+On Tue, Oct 07, 2014 at 04:00:12PM +0400, Andrey Vagin wrote:
+> This patch fixes a bug, which is triggered by following code:
+> while (1) {
+>         if (umount2("/", MNT_DETACH) ||
+> 	    setns(fd, CLONE_NEWNS))
+>                 return break;
+> }
 
-Signed-off-by: Seraphin Bonnaffe <seraphin.bonnaffe@st.com>
----
- Documentation/devicetree/bindings/mfd/syscon.txt | 5 +++++
- 1 file changed, 5 insertions(+)
+Excuse me, but that makes no sense whatsoever (not to mention that
+reproducer won't compile - return break; alone is enough to make
+sure of that).
 
-diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-index fe8150b..80ab9ca 100644
---- a/Documentation/devicetree/bindings/mfd/syscon.txt
-+++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-@@ -13,8 +13,13 @@ Required properties:
- - compatible: Should contain "syscon".
- - reg: the register region can be accessed from syscon
- 
-+Optional properties:
-+- holes: Register regions that cannot be accessed within reg range.
-+	 Each hole is described with its offset address, followed by its size.
-+
- Examples:
- gpr: iomuxc-gpr@020e0000 {
- 	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
- 	reg = <0x020e0000 0x38>;
-+	holes = <0x000c 0x8 0x020 0x4>;
- };
--- 
-1.9.1
-
+Could you post the real reproducer?
