@@ -1,48 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaJGRL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:11:58 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:64634 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaJGRL4 (ORCPT
+	id S1754829AbaJGRM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:12:58 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:52721 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaJGRM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:11:56 -0400
+	Tue, 7 Oct 2014 13:12:56 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Tue, 7 Oct 2014 19:10:03 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20141007171003.GI5362@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+ <1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
+ <20141003171207.GC2394@localhost>
+ <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
-References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
-Date: Tue, 7 Oct 2014 10:11:54 -0700
-X-Google-Sender-Auth: vbbxUZzKFTzfaJdjtKf-0Tvgfxw
-Message-ID: <CAD=FV=URpegr4xZ8fVf4AmKYWg2_UtS-nsQibuaXddio3xMNig@mail.gmail.com>
-Subject: Re: [PATCH 0/2] init some clock rate from dts for rk3288
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+On Mon, Oct 06, 2014 at 03:17:22PM +0300, Octavian Purdila wrote:
+> On Fri, Oct 3, 2014 at 8:12 PM, Johan Hovold <johan@kernel.org> wrote:
+> >
+> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
+> > > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
+> > > Master Adapter DLN-2. Details about the device can be found here:
+> > >
+> 
+> <snip>
+> 
+> > > +
+> > > +             ret = dln2_submit_urb(dln2, dln2->rx_urb[i], GFP_KERNEL);
+> > > +             if (ret < 0)
+> > > +                     return ret;
+> >
+> > Is it really worth having this helper only to save a couple of lines on
+> > a dev_err? If you do all resubmissions on completion inline in the
+> > handler, you only have three places where usb_submit_urb is called.
+> >
+> 
+> I moved the completion in the handler as you suggested. I have kept
+> the helper, would you prefer to remove it?
 
-On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch add init rate for PLLs and some bus clock  from dts for rk3288,
-> add two clock rate of 400M and 500M into rate table for we will use it.
+Moved the "completion"? I was suggesting that the URB resubmission
+should be done inline the URB completion handler.
 
-In the cover letter you should probably mention that your series won't
-work properly unless <https://patchwork.kernel.org/patch/5038781/> is
-applied.  When I don't have that patch then "aclk_cpu" doesn't get set
-properly.
+[ "Completion" may be a little ambiguous. The URB callback is called an
+URB completion handler. Not be confused with the completion structures
+you use to wait for responses. ]
+
+It's fine to keep the helper as long as it's clear that the urb has been
+"cached" and should not be resubmitted (inline) in the completion
+handler in that case.
+ 
+> <snip>
+> 
+> > > +     id = dln2->usb_dev->bus->busnum << 8 | dln2->usb_dev->devnum;
+> >
+> > After giving this some more thought, I think you should just
+> > use PLATFORM_DEVID_AUTO as id. I have submitted a series to fix the
+> > other USB MFD drivers and add a convenience helper to register
+> > hotpluggable MFDs here:
+> >
+> 
+> OK, I will use PLATFORM_DEVID_AUTO for now. If your series merges
+> first and I have to resubmit mine, I will switch to using
+> mfd_add_hotplug_devices.
+
+Lee merged the helper function earlier today.
+
+Johan
