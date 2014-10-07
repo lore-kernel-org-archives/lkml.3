@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140AbaJGRyy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:54:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39063 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657AbaJGRyu (ORCPT
+	id S932163AbaJGRzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:55:15 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49685 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755081AbaJGRzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:54:50 -0400
-Date: Tue, 7 Oct 2014 18:54:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Marcel Ziswiler <marcel@ziswiler.com>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        stefan@agner.ch, Fabio Estevam <festevam@gmail.com>
-Message-ID: <20141007175402.GT4609@sirena.org.uk>
-References: <cover.1412381377.git.marcel@ziswiler.com>
- <74ea4fe20e653d2da555c8d7dd1478746bccd529.1412381377.git.marcel@ziswiler.com>
+	Tue, 7 Oct 2014 13:55:09 -0400
+Date: Tue, 7 Oct 2014 13:55:03 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
+        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
+        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
+        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
+        dbueso@suse.com, linux-kernel@vger.kernel.org,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
+ built-in and modules
+Message-ID: <20141007175503.GE31328@mtj.dyndns.org>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
+ <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
+ <20141006201926.GF18303@htj.dyndns.org>
+ <20141006203627.GZ14081@wotan.suse.de>
+ <20141006210118.GG18303@htj.dyndns.org>
+ <20141006231046.GD14081@wotan.suse.de>
+ <20141007173404.GB31328@mtj.dyndns.org>
+ <20141007175010.GH14081@wotan.suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Z1gw0Ba8VHj8Ap4r"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <74ea4fe20e653d2da555c8d7dd1478746bccd529.1412381377.git.marcel@ziswiler.com>
-X-Cookie: Everything you know is wrong!
+In-Reply-To: <20141007175010.GH14081@wotan.suse.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/3] ASoC: tegra: add tegra sgtl5000 machine driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---Z1gw0Ba8VHj8Ap4r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 07, 2014 at 07:50:10PM +0200, Luis R. Rodriguez wrote:
+> On Tue, Oct 07, 2014 at 01:34:04PM -0400, Tejun Heo wrote:
+> > But you can create a new workqueue and queue all the async probing
+> > work items there and flush the workqueue right after
+> > async_synchronize_full().
+> 
+> On second thought I would prefer to avoid this, I see this being good
+> to help with old userspace but other than that I don't see a requirement
+> for new userspace. Do you?
 
-On Sat, Oct 04, 2014 at 02:15:43AM +0200, Marcel Ziswiler wrote:
-> This binding and driver describe/support playback to headphones, and
-> capture from line-in and microphone.
->=20
-> This driver is useful for the Toradex Apalis T30 and Colibri T30 modules.
->=20
-> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Changes in v3:
-> - Revert to not using simple-audio-card being incompatible with tegra.
-> - Rebased to for-next.
+Hmmm... we batch up and do everything parallel, so I'm not sure how
+much gain we'd be looking at by not waiting for at the end before
+jumping into the userland.  Also, it's a bit of an orthogonal issue.
+If we wanna skip such synchornization point before passing control to
+userland, why are we applying that to this but not
+async_synchronize_full() which has a far larger impact?  It's weird to
+synchronize one while not the other, so yeah, if there are actual
+benefits we can consider it but let's do it separately.
 
-I can't help but think that't there's still room for a Tegra simple card
-here, there doesn't seem to be anything particularly CODEC specific
-about the driver here - it *could* use simple-card were it not for the
-CPU side.  This also seems like a specific example of the same problem
-we see with supporting DPCM in simple-card, we need a way for CPUs to
-be able to say that they need some general setup that covers the CPU
-internal configuration.
+Thanks.
 
---Z1gw0Ba8VHj8Ap4r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUNCi5AAoJECTWi3JdVIfQEAQH/i4sms+iNsBEGLCrkZmdPBR+
-NdQBJrohsOUj0V4xeOOspSVUlM3PeR2PDEh7QxNInRnFRmi8+r8cqmgX49AOhFr5
-vk3s+aIJY+vjhpctHG3uzwKvJC/4pdem+oV1qdgjSTs1EmZIMpiilRzavx/Etugu
-ZYfVxeC7xNVsaYnBhIVSC+7mF4vDRaf+cPpfAGls7VkkuEw4X8eFs5hwKLMctY+r
-RBxeiqQ6Qh7++Esj6nJE4Z9wFpxePhKnN4hfjcoka21U6oSfBaQkdp8VVEExEY8E
-ms9B4g+ErcvtPJVoBnLaWXTcO9eXc5Dr49PmqDyvaUn5Q5tFcIEsvGqjBre63vg=
-=ZNY2
------END PGP SIGNATURE-----
-
---Z1gw0Ba8VHj8Ap4r--
+-- 
+tejun
