@@ -1,201 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaJGQ0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:26:54 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:44059 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754565AbaJGQYs (ORCPT
+	id S1754741AbaJGQ11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:27:27 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:41156 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121AbaJGQ1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:24:48 -0400
+	Tue, 7 Oct 2014 12:27:25 -0400
 From: mathieu.poirier@linaro.org
-To: linux@arm.linux.org.uk, gregkh@linuxfoundation.org
-Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
-        jonas.svennebring@avagotech.com, james.king@linaro.org,
-        kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
-        robbelibobban@gmail.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+To: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         mathieu.poirier@linaro.org
-Subject: [PATCH RESEND v7 06/11] coresight-replicator: add CoreSight Replicator driver
-Date: Tue,  7 Oct 2014 10:24:19 -0600
-Message-Id: <1412699064-17376-7-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH RESEND v7] coresight: bindings for coresight drivers
+Date: Tue,  7 Oct 2014 10:27:16 -0600
+Message-Id: <1412699236-18089-1-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412699064-17376-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1412699064-17376-1-git-send-email-mathieu.poirier@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratik Patel <pratikp@codeaurora.org>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-This driver manages non-configurable CoreSight Replicator that
-takes a single input trace data stream and replicates it to
-produce two identical trace data output streams. Replicators
-are typically used to route single interleaved trace data
-stream to two or more sinks.
+Coresight IP blocks allow for the support of HW assisted tracing
+on ARM SoCs.  Bindings for the currently available blocks are
+presented herein.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- drivers/coresight/Makefile               |   3 +-
- drivers/coresight/coresight-replicator.c | 138 +++++++++++++++++++++++++++++++
- 2 files changed, 140 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/coresight-replicator.c
+ .../devicetree/bindings/arm/coresight.txt          | 203 +++++++++++++++++++++
+ 1 file changed, 203 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/coresight.txt
 
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
-index 26a07e1..3a32c06 100644
---- a/drivers/coresight/Makefile
-+++ b/drivers/coresight/Makefile
-@@ -4,4 +4,5 @@
- obj-$(CONFIG_CORESIGHT) += coresight.o
- obj-$(CONFIG_OF) += of_coresight.o
- obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
--					   coresight-etb10.o coresight-funnel.o
-+					   coresight-etb10.o coresight-funnel.o \
-+					   coresight-replicator.o
-diff --git a/drivers/coresight/coresight-replicator.c b/drivers/coresight/coresight-replicator.c
+diff --git a/Documentation/devicetree/bindings/arm/coresight.txt b/Documentation/devicetree/bindings/arm/coresight.txt
 new file mode 100644
-index 0000000..c879039
+index 0000000..96dd947
 --- /dev/null
-+++ b/drivers/coresight/coresight-replicator.c
-@@ -0,0 +1,138 @@
-+/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++++ b/Documentation/devicetree/bindings/arm/coresight.txt
+@@ -0,0 +1,203 @@
++* CoreSight Components:
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/coresight.h>
++CoreSight components are compliant with the ARM CoreSight architecture
++specification and can be connected in various topologies to suit a particular
++SoCs tracing needs. These trace components can generally be classified as sinks,
++links and sources. Trace data produced by one or more sources flows through the
++intermediate links connecting the source to the currently selected sink. Each
++CoreSight component device should use these properties to describe its hardware
++characteristcs.
 +
-+#include "coresight-priv.h"
++* Required properties for all components *except* non-configurable replicators:
 +
-+/**
-+ * struct replicator_drvdata - specifics associated to a replicator component
-+ * @dev:	the device entity associated with this component
-+ * @csdev:	component vitals needed by the framework
-+ */
-+struct replicator_drvdata {
-+	struct device		*dev;
-+	struct coresight_device	*csdev;
-+};
++	* compatible: These have to be supplemented with "arm,primecell" as
++	  drivers are using the AMBA bus interface.  Possible values include:
++		- "arm,coresight-etb10", "arm,primecell";
++		- "arm,coresight-tpiu", "arm,primecell";
++		- "arm,coresight-tmc", "arm,primecell";
++		- "arm,coresight-funnel", "arm,primecell";
++		- "arm,coresight-etm3x", "arm,primecell";
 +
-+static int replicator_enable(struct coresight_device *csdev, int inport,
-+			     int outport)
-+{
-+	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	* reg: physical base address and length of the register
++	  set(s) of the component.
 +
-+	dev_info(drvdata->dev, "REPLICATOR enabled\n");
-+	return 0;
-+}
++	* clocks: the clock associated to this component.
 +
-+static void replicator_disable(struct coresight_device *csdev, int inport,
-+			       int outport)
-+{
-+	struct replicator_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	* clock-names: the name of the clock as referenced by the code.
++	  Since we are using the AMBA framework, the name should be
++	  "apb_pclk".
 +
-+	dev_info(drvdata->dev, "REPLICATOR disabled\n");
-+}
++	* port or ports: The representation of the component's port
++	  layout using the generic DT graph presentation found in
++	  "bindings/graph.txt".
 +
-+static const struct coresight_ops_link replicator_link_ops = {
-+	.enable		= replicator_enable,
-+	.disable	= replicator_disable,
-+};
++* Required properties for devices that don't show up on the AMBA bus, such as
++  non-configurable replicators:
 +
-+static const struct coresight_ops replicator_cs_ops = {
-+	.link_ops	= &replicator_link_ops,
-+};
++	* compatible: Currently supported value is (note the absence of the
++	  AMBA markee):
++		- "arm,coresight-replicator"
 +
-+static int replicator_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct coresight_platform_data *pdata = NULL;
-+	struct replicator_drvdata *drvdata;
-+	struct coresight_desc *desc;
-+	struct device_node *np = pdev->dev.of_node;
++	* id: a unique number that will identify this replicator.
 +
-+	if (np) {
-+		pdata = of_get_coresight_platform_data(dev, np);
-+		if (IS_ERR(pdata))
-+			return PTR_ERR(pdata);
-+		pdev->dev.platform_data = pdata;
-+	}
++	* port or ports: same as above.
 +
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
++* Optional properties for ETM/PTMs:
 +
-+	drvdata->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, drvdata);
++	* arm,cp14: must be present if the system accesses ETM/PTM management registers
++	  via co-processor 14.
 +
-+	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
-+		return -ENOMEM;
++	* cpu: the cpu phandle this ETM/PTM is affined to. When omitted the source is
++	  considered to belong to CPU0.
 +
-+	desc->type = CORESIGHT_DEV_TYPE_LINK;
-+	desc->subtype.sink_subtype = CORESIGHT_DEV_SUBTYPE_LINK_SPLIT;
-+	desc->ops = &replicator_cs_ops;
-+	desc->pdata = pdev->dev.platform_data;
-+	desc->dev = &pdev->dev;
-+	drvdata->csdev = coresight_register(desc);
-+	if (IS_ERR(drvdata->csdev))
-+		return PTR_ERR(drvdata->csdev);
++* Optional property for TMC:
 +
-+	dev_info(dev, "REPLICATOR initialized\n");
-+	return 0;
-+}
++	* arm,buffer-size: size of contiguous buffer space for TMC ETR
++	 (embedded trace router)
 +
-+static int replicator_remove(struct platform_device *pdev)
-+{
-+	struct replicator_drvdata *drvdata = platform_get_drvdata(pdev);
 +
-+	coresight_unregister(drvdata->csdev);
-+	return 0;
-+}
++Example:
 +
-+static struct of_device_id replicator_match[] = {
-+	{.compatible = "arm,coresight-replicator"},
-+	{}
-+};
++1. Sinks
++	etb@0,20010000 {
++		compatible = "arm,coresight-etb10", "arm,primecell";
++		reg = <0 0x20010000 0 0x1000>;
 +
-+static struct platform_driver replicator_driver = {
-+	.probe          = replicator_probe,
-+	.remove         = replicator_remove,
-+	.driver         = {
-+		.name   = "coresight-replicator",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = replicator_match,
-+	},
-+};
++		coresight-default-sink;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			etb_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port0>;
++			};
++		};
++	};
 +
-+static int __init replicator_init(void)
-+{
-+	return platform_driver_register(&replicator_driver);
-+}
-+module_init(replicator_init);
++	tpiu@0,20030000 {
++		compatible = "arm,coresight-tpiu", "arm,primecell";
++		reg = <0 0x20030000 0 0x1000>;
 +
-+static void __exit replicator_exit(void)
-+{
-+	platform_driver_unregister(&replicator_driver);
-+}
-+module_exit(replicator_exit);
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			tpiu_in_port: endpoint@0 {
++				slave-mode;
++				remote-endpoint = <&replicator_out_port1>;
++			};
++		};
++	};
 +
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("CoreSight Replicator driver");
++2. Links
++	replicator {
++		/* non-configurable replicators don't show up on the
++		 * AMBA bus.  As such no need to add "arm,primecell".
++		 */
++		compatible = "arm,coresight-replicator";
++		/* this will show up in debugfs as "0.replicator" */
++		id = <0>;
++
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* replicator output ports */
++			port@0 {
++				reg = <0>;
++				replicator_out_port0: endpoint {
++					remote-endpoint = <&etb_in_port>;
++				};
++			};
++
++			port@1 {
++				reg = <1>;
++				replicator_out_port1: endpoint {
++					remote-endpoint = <&tpiu_in_port>;
++				};
++			};
++
++			/* replicator input port */
++			port@2 {
++				reg = <0>;
++				replicator_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&funnel_out_port0>;
++				};
++			};
++		};
++	};
++
++	funnel@0,20040000 {
++		compatible = "arm,coresight-funnel", "arm,primecell";
++		reg = <0 0x20040000 0 0x1000>;
++
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			/* funnel output port */
++			port@0 {
++				reg = <0>;
++				funnel_out_port0: endpoint {
++					remote-endpoint = <&replicator_in_port0>;
++				};
++			};
++
++			/* funnel input ports */
++			port@1 {
++				reg = <0>;
++				funnel_in_port0: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm0_out_port>;
++				};
++			};
++
++			port@2 {
++				reg = <1>;
++				funnel_in_port1: endpoint {
++					slave-mode;
++					remote-endpoint = <&ptm1_out_port>;
++				};
++			};
++
++			port@3 {
++				reg = <2>;
++				funnel_in_port2: endpoint {
++					slave-mode;
++					remote-endpoint = <&etm0_out_port>;
++				};
++			};
++
++		};
++	};
++
++3. Sources
++	ptm@0,2201c000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201c000 0 0x1000>;
++
++		cpu = <&cpu0>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm0_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port0>;
++			};
++		};
++	};
++
++	ptm@0,2201d000 {
++		compatible = "arm,coresight-etm3x", "arm,primecell";
++		reg = <0 0x2201d000 0 0x1000>;
++
++		cpu = <&cpu1>;
++		clocks = <&oscclk6a>;
++		clock-names = "apb_pclk";
++		port {
++			ptm1_out_port: endpoint {
++				remote-endpoint = <&funnel_in_port1>;
++			};
++		};
++	};
 -- 
 1.9.1
 
