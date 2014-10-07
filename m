@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932700AbaJGXXt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:23:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
+	id S1755642AbaJGXYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:24:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430AbaJGXUV (ORCPT
+	with ESMTP id S932422AbaJGXUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Waiman Long <Waiman.Long@hp.com>,
         "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 06/13] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
-Date: Tue,  7 Oct 2014 16:20:11 -0700
-Message-Id: <20141007231920.113570911@linuxfoundation.org>
+Subject: [PATCH 3.10 05/13] mm, thp: move invariant bug check out of loop in __split_huge_page_map
+Date: Tue,  7 Oct 2014 16:20:10 -0700
+Message-Id: <20141007231920.083937057@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -30,61 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Waiman Long <Waiman.Long@hp.com>
 
-commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
+commit f8303c2582b889351e261ff18c4d8eb197a77db2 upstream.
 
-This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
-NUMA type from the pmd to the pte"). If a huge page is being split due
-a protection change and the tail will be in a PROT_NONE vma then NUMA
-hinting PTEs are temporarily created in the protected VMA.
+In __split_huge_page_map(), the check for page_mapcount(page) is
+invariant within the for loop.  Because of the fact that the macro is
+implemented using atomic_read(), the redundant check cannot be optimized
+away by the compiler leading to unnecessary read to the page structure.
 
- VM_RW|VM_PROTNONE
-|-----------------|
-      ^
-      split here
+This patch moves the invariant bug check out of the loop so that it will
+be done only once.  On a 3.16-rc1 based kernel, the execution time of a
+microbenchmark that broke up 1000 transparent huge pages using munmap()
+had an execution time of 38,245us and 38,548us with and without the
+patch respectively.  The performance gain is about 1%.
 
-In the specific case above, it should get fixed up by change_pte_range()
-but there is a window of opportunity for weirdness to happen. Similarly,
-if a huge page is shrunk and split during a protection update but before
-pmd_numa is cleared then a pte_numa can be left behind.
-
-Instead of adding complexity trying to deal with the case, this patch
-will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
-will not be triggered which is marginal in comparison to the complexity
-in dealing with the corner cases during THP split.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Scott J Norton <scott.norton@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
-@@ -1740,14 +1740,17 @@ static int __split_huge_page_map(struct
+@@ -1733,6 +1733,8 @@ static int __split_huge_page_map(struct
+ 	if (pmd) {
+ 		pgtable = pgtable_trans_huge_withdraw(mm);
+ 		pmd_populate(mm, &_pmd, pgtable);
++		if (pmd_write(*pmd))
++			BUG_ON(page_mapcount(page) != 1);
+ 
+ 		haddr = address;
  		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
- 			pte_t *pte, entry;
- 			BUG_ON(PageCompound(page+i));
-+			/*
-+			 * Note that pmd_numa is not transferred deliberately
-+			 * to avoid any possibility that pte_numa leaks to
-+			 * a PROT_NONE VMA by accident.
-+			 */
- 			entry = mk_pte(page + i, vma->vm_page_prot);
+@@ -1742,8 +1744,6 @@ static int __split_huge_page_map(struct
  			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
  			if (!pmd_write(*pmd))
  				entry = pte_wrprotect(entry);
+-			else
+-				BUG_ON(page_mapcount(page) != 1);
  			if (!pmd_young(*pmd))
  				entry = pte_mkold(entry);
--			if (pmd_numa(*pmd))
--				entry = pte_mknuma(entry);
- 			pte = pte_offset_map(&_pmd, haddr);
- 			BUG_ON(!pte_none(*pte));
- 			set_pte_at(mm, haddr, pte, entry);
+ 			if (pmd_numa(*pmd))
 
 
