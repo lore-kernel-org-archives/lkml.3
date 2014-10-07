@@ -1,120 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaJGMue (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:50:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43727 "EHLO mx1.redhat.com"
+	id S1753903AbaJGMvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:51:17 -0400
+Received: from mx.vmgattei.com ([77.223.18.35]:60093 "EHLO mx.vmgattei.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753400AbaJGMu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:50:29 -0400
-Date: Tue, 7 Oct 2014 15:53:55 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, stable@vger.kernel.org,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH v2 01/15] virtio_pci: fix virtio spec compliance on
- restore
-Message-ID: <20141007125355.GA5974@redhat.com>
-References: <1412608214-31944-1-git-send-email-mst@redhat.com>
- <1412608214-31944-2-git-send-email-mst@redhat.com>
+	id S1752028AbaJGMvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:51:16 -0400
+Message-ID: <5433E1AB.7070204@sirius-es.it>
+Date: Tue, 07 Oct 2014 14:50:51 +0200
+From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412608214-31944-2-git-send-email-mst@redhat.com>
+To: chris@printf.net, ulf.hansson@linaro.org
+CC: shc_work@mail.ru, s.hauer@pengutronix.de, peter.griffin@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org, agust@denx.de,
+        gsi@denx.de, sbabic@denx.de
+Subject: Re: [PATCH 0/2] mxcmmc driver fixes
+References: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
+In-Reply-To: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 06:10:40PM +0300, Michael S. Tsirkin wrote:
-> On restore, virtio pci does the following:
-> + set features
-> + init vqs etc - device can be used at this point!
-> + set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
-> 
-> This is in violation of the virtio spec, which
-> requires the following order:
-> - ACKNOWLEDGE
-> - DRIVER
-> - init vqs
-> - DRIVER_OK
-> 
-> This behaviour will break with hypervisors that assume spec compliant
-> behaviour.  It seems like a good idea to have this patch applied to
-> stable branches to reduce the support butden for the hypervisors.
+Does anyone have any comments?
 
-Tested suspend to ram with virtio net and blk.
 
-> 
-> Cc: stable@vger.kernel.org
-> Cc: Amit Shah <amit.shah@redhat.com>
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/virtio/virtio_pci.c | 36 ++++++++++++++++++++++++++++++++----
->  1 file changed, 32 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index 3d1463c..0f2db51 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -789,6 +789,7 @@ static int virtio_pci_restore(struct device *dev)
->  	struct pci_dev *pci_dev = to_pci_dev(dev);
->  	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
->  	struct virtio_driver *drv;
-> +	unsigned status = 0;
->  	int ret;
->  
->  	drv = container_of(vp_dev->vdev.dev.driver,
-> @@ -799,14 +800,41 @@ static int virtio_pci_restore(struct device *dev)
->  		return ret;
->  
->  	pci_set_master(pci_dev);
-> +	/* We always start by resetting the device, in case a previous
-> +	 * driver messed it up. */
-> +	vp_reset(&vp_dev->vdev);
-> +
-> +	/* Acknowledge that we've seen the device. */
-> +	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-> +	vp_set_status(&vp_dev->vdev, status);
-> +
-> +	/* Maybe driver failed before freeze.
-> +	 * Restore the failed status, for debugging. */
-> +	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-> +	vp_set_status(&vp_dev->vdev, status);
-> +
-> +	if (!drv)
-> +		return 0;
-> +
-> +	/* We have a driver! */
-> +	status |= VIRTIO_CONFIG_S_DRIVER;
-> +	vp_set_status(&vp_dev->vdev, status);
-> +
->  	vp_finalize_features(&vp_dev->vdev);
->  
-> -	if (drv && drv->restore)
-> -		ret = drv->restore(&vp_dev->vdev);
-> +	if (!drv->restore)
-> +		return 0;
+On 30/09/2014 16:59, Matteo Facchinetti wrote:
+> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+>
+> Hi,
+>
+> this patchset contains fixes for the mxcmmc driver.
+>
+> *Patch 1:
+> fix a rare race condition that breaks a data trasfer when mxcmmc
+> driver use dma.
+> To reproduce this error, use mmc as rootfs and start at boot time
+> a realtime Xenomai application.
+> The realtime it's not directly related but entropy produced by
+> ipipe scheduler highlights the problem.
+> When this event occurs, the mxcmmc watchdog expires,
+> this cause a read error and application doesn't run.
+>
+> *Patch 2:
+> fix the default value for available voltages into mxcmci_probe
+>
+> Applied to mainline Linux-3.17.0-rc6-next on arch mpc512x.
+> Tested on mpc5125twr evaluation board
+>
+> Applied to custom Linux-3.9.4 on arch mpc512x
+> Tested on a mpc5125 custom board.
+>
+> Regards,
+> Matteo Facchinetti
+> Sirius Electronic Systems
+>
+>
+> Matteo Facchinetti (2):
+>    mmc: mxcmmc: fix race condition when dma finish a data transfer
+>    mmc: mxcmmc: fix the default value for available voltages into
+>      mxcmci_probe
+>
+>   drivers/mmc/host/mxcmmc.c | 27 ++++++++++-----------------
+>   1 file changed, 10 insertions(+), 17 deletions(-)
+>
 
-As Amit points out, this is a bug: for a driver without restore
-callback we should still set DRIVER_OK.
-Will post v3.
-
-> +
-> +	ret = drv->restore(&vp_dev->vdev);
-> +	if (ret) {
-> +		status |= VIRTIO_CONFIG_S_FAILED;
-> +		vp_set_status(&vp_dev->vdev, status);
-> +		return ret;
-> +	}
->  
->  	/* Finally, tell the device we're all set */
-> -	if (!ret)
-> -		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-> +	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-> +	vp_set_status(&vp_dev->vdev, status);
->  
->  	return ret;
->  }
-> -- 
-> MST
-> 
