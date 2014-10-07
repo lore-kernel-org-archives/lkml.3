@@ -1,121 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859AbaJGSXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:23:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46077 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857AbaJGSXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:23:49 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
-        pmoore@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
-        keescook@chromium.org
-Subject: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
-Date: Tue,  7 Oct 2014 14:23:19 -0400
-Message-Id: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+	id S932108AbaJGS0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:26:04 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35131 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857AbaJGS0C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:26:02 -0400
+Message-ID: <54343038.2060007@codeaurora.org>
+Date: Tue, 07 Oct 2014 11:26:00 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-5-git-send-email-sboyd@codeaurora.org> <542EE5FE.9080806@codeaurora.org> <54342287.7020005@linaro.org>
+In-Reply-To: <54342287.7020005@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Log the event when a client attempts to connect to the netlink audit multicast
-socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
-group.  Log the disconnect too.
+On 10/07/2014 10:27 AM, Srinivas Kandagatla wrote:
+> Hi Stephen,
+>
+> Just noticed this regression while testing the patch on Arndale board.
+>
+> https://bugs.linaro.org/show_bug.cgi?id=740
 
-Sample output:
-time->Tue Oct  7 14:15:19 2014
-type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1 pid=3552 comm="audit-multicast" exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0 op=connect res=1
+If you return value it works correctly right?
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
-For some reason unbind isn't being called on disconnect.  I suspect missing
-plumbing in netlink.  Investigation needed...
-
- include/uapi/linux/audit.h |    1 +
- kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 45 insertions(+), 2 deletions(-)
-
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 4d100c8..7fa6e8f 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -110,6 +110,7 @@
- #define AUDIT_SECCOMP		1326	/* Secure Computing event */
- #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
- #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
-+#define AUDIT_EVENT_LISTENER	1348	/* task joined multicast read socket */
- 
- #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
- #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 53bb39b..74c81a7 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
- 	mutex_unlock(&audit_cmd_mutex);
- }
- 
-+static void audit_log_bind(int group, char *op, int err)
-+{
-+	struct audit_buffer *ab;
-+	char comm[sizeof(current->comm)];
-+	struct mm_struct *mm = current->mm;
-+
-+	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
-+	if (!ab)
-+		return;
-+
-+	audit_log_format(ab, "auid=%d",
-+			from_kuid(&init_user_ns, audit_get_loginuid(current)));
-+	audit_log_format(ab, " uid=%d",
-+			 from_kuid(&init_user_ns, current_uid()));
-+	audit_log_format(ab, " gid=%d",
-+			 from_kgid(&init_user_ns, current_gid()));
-+	audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
-+	audit_log_format(ab, " pid=%d", task_pid_nr(current));
-+	audit_log_format(ab, " comm=");
-+	audit_log_untrustedstring(ab, get_task_comm(comm, current));
-+	if (mm) {
-+		down_read(&mm->mmap_sem);
-+		if (mm->exe_file)
-+			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
-+		up_read(&mm->mmap_sem);
-+	} else 
-+		audit_log_format(ab, " exe=(null)");
-+	audit_log_task_context(ab); /* subj= */
-+	audit_log_format(ab, " group=%d", group);
-+	audit_log_format(ab, " op=%s", op);
-+	audit_log_format(ab, " res=%d", !err);
-+	audit_log_end(ab);
-+}
-+
- /* Run custom bind function on netlink socket group connect or bind requests. */
- static int audit_bind(int group)
- {
-+	int err = 0;
-+
- 	if (!capable(CAP_AUDIT_READ))
--		return -EPERM;
-+		err = -EPERM;
-+	audit_log_bind(group, "connect", err);
-+	return err;
-+}
- 
--	return 0;
-+static void audit_unbind(int group)
-+{
-+	audit_log_bind(group, "disconnect", 0);
- }
- 
- static int __net_init audit_net_init(struct net *net)
-@@ -1124,6 +1165,7 @@ static int __net_init audit_net_init(struct net *net)
- 		.bind	= audit_bind,
- 		.flags	= NL_CFG_F_NONROOT_RECV,
- 		.groups	= AUDIT_NLGRP_MAX,
-+		.unbind	= audit_unbind,
- 	};
- 
- 	struct audit_net *aunet = net_generic(net, audit_net_id);
 -- 
-1.7.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
