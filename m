@@ -1,133 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650AbaJGJOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 05:14:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53051 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241AbaJGJOt (ORCPT
+	id S1753688AbaJGJPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 05:15:39 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:47593 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753457AbaJGJPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 05:14:49 -0400
-Date: Tue, 7 Oct 2014 11:14:41 +0200
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Krzysztof =?utf-8?Q?Koz=C5=82owski?= <k.kozlowski@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, kernel@pengutronix.de,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] regulator: Remove unnecessary ena_gpio
- initializations
-Message-ID: <20141007091441.GE5042@pengutronix.de>
-References: <1412626635-7404-1-git-send-email-mpa@pengutronix.de>
- <1412626635-7404-6-git-send-email-mpa@pengutronix.de>
- <5433A9CD.8090007@samsung.com>
+	Tue, 7 Oct 2014 05:15:36 -0400
+Date: Tue, 7 Oct 2014 10:15:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jaewon Kim <jaewon02.kim@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH RESEND v5 1/3] mfd: max77693: Initialize haptic register
+ map
+Message-ID: <20141007091531.GN25331@lee--X1>
+References: <1412145838-7563-1-git-send-email-jaewon02.kim@samsung.com>
+ <1412145838-7563-2-git-send-email-jaewon02.kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5433A9CD.8090007@samsung.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:12:56 up 27 days,  2:00, 91 users,  load average: 0.38, 0.32,
- 0.25
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412145838-7563-2-git-send-email-jaewon02.kim@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 01 Oct 2014, Jaewon Kim wrote:
 
---48TaNjbzBVislYPb
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This patch add regmap_haptic initialization to use haptic register map
+> in haptic device driver.
+> 
+> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/max77693.c |   21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
 
-On Tue, Oct 07, 2014 at 10:52:29AM +0200, Krzysztof Koz=C5=82owski wrote:
-> On 06.10.2014 22:17, Markus Pargmann wrote:
-> >It is not necessary to setup config.ena_gpio with -EINVAL or similar.
-> >This patch removes these unnecessary initializations.
-> >
-> >Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-> >---
-> >  drivers/regulator/pfuze100-regulator.c | 1 -
-> >  drivers/regulator/s5m8767.c            | 2 --
-> >  2 files changed, 3 deletions(-)
-> >
-> >diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/=
-pfuze100-regulator.c
-> >index c879dff597ee..d7455ee309bf 100644
-> >--- a/drivers/regulator/pfuze100-regulator.c
-> >+++ b/drivers/regulator/pfuze100-regulator.c
-> >@@ -509,7 +509,6 @@ static int pfuze100_regulator_probe(struct i2c_clien=
-t *client,
-> >  		config.init_data =3D init_data;
-> >  		config.driver_data =3D pfuze_chip;
-> >  		config.of_node =3D match_of_node(i);
-> >-		config.ena_gpio =3D -EINVAL;
-> >
-> >  		pfuze_chip->regulators[i] =3D
-> >  			devm_regulator_register(&client->dev, desc, &config);
-> >diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-> >index d258e6613831..2c7817f12516 100644
-> >--- a/drivers/regulator/s5m8767.c
-> >+++ b/drivers/regulator/s5m8767.c
-> >@@ -949,8 +949,6 @@ static int s5m8767_pmic_probe(struct platform_device=
- *pdev)
-> >  		config.driver_data =3D s5m8767;
-> >  		config.regmap =3D iodev->regmap_pmic;
-> >  		config.of_node =3D pdata->regulators[i].reg_node;
-> >-		config.ena_gpio =3D -EINVAL;
-> >-		config.ena_gpio_flags =3D 0;
-> >  		if (gpio_is_valid(pdata->regulators[i].ext_control_gpio))
-> >  			s5m8767_regulator_config_ext_control(s5m8767,
-> >  					&pdata->regulators[i], &config);
->=20
-> This would bring back problem with carried over ena_gpio (commit
-> f4fbb3ce342bc1 "regulator: s5m8767: Fix carried over ena_gpio
-> assignment").
->=20
-> The "config" is re-used in loop for next regulators. This means that
-> the "config.ena_gpio" has to be set here to prevent using the same
-> value for next regulator.
->=20
-> I think these lines shouldn't be removed.
+Applied, thanks.
 
-Yes right, thanks.
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 249c139..fbfed56 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -144,6 +144,12 @@ static const struct regmap_irq_chip max77693_muic_irq_chip = {
+>  	.num_irqs		= ARRAY_SIZE(max77693_muic_irqs),
+>  };
+>  
+> +static const struct regmap_config max77693_regmap_haptic_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +	.max_register = MAX77693_HAPTIC_REG_END,
+> +};
+> +
+>  static int max77693_i2c_probe(struct i2c_client *i2c,
+>  			      const struct i2c_device_id *id)
+>  {
+> @@ -193,6 +199,15 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  	}
+>  	i2c_set_clientdata(max77693->haptic, max77693);
+>  
+> +	max77693->regmap_haptic = devm_regmap_init_i2c(max77693->haptic,
+> +					&max77693_regmap_haptic_config);
+> +	if (IS_ERR(max77693->regmap_haptic)) {
+> +		ret = PTR_ERR(max77693->regmap_haptic);
+> +		dev_err(max77693->dev,
+> +			"failed to initialize haptic register map: %d\n", ret);
+> +		goto err_regmap;
+> +	}
+> +
+>  	/*
+>  	 * Initialize register map for MUIC device because use regmap-muic
+>  	 * instance of MUIC device when irq of max77693 is initialized
+> @@ -204,7 +219,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  		ret = PTR_ERR(max77693->regmap_muic);
+>  		dev_err(max77693->dev,
+>  			"failed to allocate register map: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -214,7 +229,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  				&max77693->irq_data_led);
+>  	if (ret) {
+>  		dev_err(max77693->dev, "failed to add irq chip: %d\n", ret);
+> -		goto err_regmap_muic;
+> +		goto err_regmap;
+>  	}
+>  
+>  	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
+> @@ -265,7 +280,7 @@ err_irq_charger:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_topsys);
+>  err_irq_topsys:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_led);
+> -err_regmap_muic:
+> +err_regmap:
+>  	i2c_unregister_device(max77693->haptic);
+>  err_i2c_haptic:
+>  	i2c_unregister_device(max77693->muic);
 
-Best regards,
-
-Markus
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---48TaNjbzBVislYPb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUM68BAAoJEEpcgKtcEGQQml0QALB50ymWF6UR+7fbAtpKseg/
-DxSZonhKr5Gq6Jpmow9+XQKLXwrPb6yEStTzczI9AYgD71BlWVn/JgkakqVxzAw4
-NRAlHVQjPLavtAkXrOEic3sPpbq+UThlBPI/zO77Cim1KoG4UVhltakSW0jWTrsG
-2H6DMss58qSAvfJ7Z4nnjxMh7LEMCWIMu8K35g7QYDE6d15ZVqAJJq1kgTpCJMG7
-4pcPe2QwQQFGjkEhw21hfEMXkbLk2qbKy+eM2M21sXT/AeA65cyDYxR9Z2r6pnRE
-0CiaOrSCCjTdzI5TLzv9q3fPSsUIBP8WkOms2xRF87Vo9VsErriZtNIs51CHY+Tj
-lsRHX19XUBWhrdjvuFrMtezOqZEndRkvgWrql+rY0H+Pg+R5SLzXUb5j68t4zbgz
-9B1NORQgk6Cfx/IiSWQWD503hd3wx8juLNcgslD6/jip8Uy7VrxUV0FFhon5fVmT
-JO02sl3q9sUQE9ov7uN2Wk68pfNTxi3fShnLI4m6Mi7boSLlIiPyF2koKG/78WOk
-WCTg5Hq0QT6qMKUUWs4HVlLzGABBusKVj0OIgKZ2d97ZDQkrfeDDiXhUzEuegQXX
-cfHKQMfPOL9OjIrIIRSYH9CQlkhs9Ly2hNp2KFw+L2SPl6MchiPZA+n76RUiT96M
-PKorN6cSAJxT4hyStnum
-=e4m+
------END PGP SIGNATURE-----
-
---48TaNjbzBVislYPb--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
