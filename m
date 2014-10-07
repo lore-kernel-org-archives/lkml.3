@@ -1,136 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579AbaJGL2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:28:16 -0400
-Received: from smtp97.ord1c.emailsrvr.com ([108.166.43.97]:52236 "EHLO
-	smtp97.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753152AbaJGL2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:28:13 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH] Input: opencores-kbd: Switch to using managed resources
-Date: Tue,  7 Oct 2014 17:01:41 +0530
-Message-Id: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753634AbaJGLas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:30:48 -0400
+Received: from mta-out1.inet.fi ([62.71.2.197]:48185 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216AbaJGLap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 07:30:45 -0400
+Date: Tue, 7 Oct 2014 14:30:02 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+Cc: Robert Love <rlove@google.com>, Dave Hansen <dave@sr71.net>,
+        Jan Kara <jack@suse.cz>, kvm@vger.kernel.org,
+        Neil Brown <neilb@suse.de>, Stefan Hajnoczi <stefanha@gmail.com>,
+        qemu-devel@nongnu.org, linux-mm@kvack.org,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Taras Glek <tglek@mozilla.com>,
+        Juan Quintela <quintela@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>, Mel Gorman <mgorman@suse.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Andrew Jones <drjones@redhat.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Paolo Bonzini <pbonzini@redhat.com>, Keith Packard <keithp@keithp.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Minchan Kim <minchan@kernel.org>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mike Hommey <mh@glandium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Feiner <pfeiner@google.com>
+Subject: Re: [Qemu-devel] [PATCH 08/17] mm: madvise MADV_USERFAULT
+Message-ID: <20141007113002.GE30762@node.dhcp.inet.fi>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+ <1412356087-16115-9-git-send-email-aarcange@redhat.com>
+ <20141007103645.GB30762@node.dhcp.inet.fi>
+ <20141007104603.GI2404@work-vm>
+ <20141007105245.GC30762@node.dhcp.inet.fi>
+ <20141007110102.GJ2404@work-vm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007110102.GJ2404@work-vm>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change switch to managed resources to simplifies error handling
-and module unloading and does away with platform_driver remove function.
+On Tue, Oct 07, 2014 at 12:01:02PM +0100, Dr. David Alan Gilbert wrote:
+> * Kirill A. Shutemov (kirill@shutemov.name) wrote:
+> > On Tue, Oct 07, 2014 at 11:46:04AM +0100, Dr. David Alan Gilbert wrote:
+> > > * Kirill A. Shutemov (kirill@shutemov.name) wrote:
+> > > > On Fri, Oct 03, 2014 at 07:07:58PM +0200, Andrea Arcangeli wrote:
+> > > > > MADV_USERFAULT is a new madvise flag that will set VM_USERFAULT in the
+> > > > > vma flags. Whenever VM_USERFAULT is set in an anonymous vma, if
+> > > > > userland touches a still unmapped virtual address, a sigbus signal is
+> > > > > sent instead of allocating a new page. The sigbus signal handler will
+> > > > > then resolve the page fault in userland by calling the
+> > > > > remap_anon_pages syscall.
+> > > > 
+> > > > Hm. I wounder if this functionality really fits madvise(2) interface: as
+> > > > far as I understand it, it provides a way to give a *hint* to kernel which
+> > > > may or may not trigger an action from kernel side. I don't think an
+> > > > application will behaive reasonably if kernel ignore the *advise* and will
+> > > > not send SIGBUS, but allocate memory.
+> > > 
+> > > Aren't DONTNEED and DONTDUMP  similar cases of madvise operations that are
+> > > expected to do what they say ?
+> > 
+> > No. If kernel would ignore MADV_DONTNEED or MADV_DONTDUMP it will not
+> > affect correctness, just behaviour will be suboptimal: more than needed
+> > memory used or wasted space in coredump.
+> 
+> That's not how the manpage reads for DONTNEED; it calls it out as a special
+> case near the top, and explicitly says what will happen if you read the
+> area marked as DONTNEED.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/input/keyboard/opencores-kbd.c |   54 ++++++++------------------------
- 1 file changed, 13 insertions(+), 41 deletions(-)
+Your are right. MADV_DONTNEED doesn't fit the interface too. That's bad
+and we can't fix it. But it's not a reason to make this mistake again.
 
-diff --git a/drivers/input/keyboard/opencores-kbd.c b/drivers/input/keyboard/opencores-kbd.c
-index 7b9b441..ecacb87 100644
---- a/drivers/input/keyboard/opencores-kbd.c
-+++ b/drivers/input/keyboard/opencores-kbd.c
-@@ -56,27 +56,27 @@ static int opencores_kbd_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	opencores_kbd = kzalloc(sizeof(*opencores_kbd), GFP_KERNEL);
--	input = input_allocate_device();
-+	opencores_kbd = devm_kzalloc(&pdev->dev, sizeof(*opencores_kbd),
-+				     GFP_KERNEL);
-+	input = devm_input_allocate_device(&pdev->dev);
- 	if (!opencores_kbd || !input) {
- 		dev_err(&pdev->dev, "failed to allocate device structures\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+		return -ENOMEM;
- 	}
- 
- 	opencores_kbd->addr_res = res;
--	res = request_mem_region(res->start, resource_size(res), pdev->name);
-+	res = devm_request_mem_region(&pdev->dev, res->start,
-+				      resource_size(res), pdev->name);
- 	if (!res) {
- 		dev_err(&pdev->dev, "failed to request I/O memory\n");
--		error = -EBUSY;
--		goto err_free_mem;
-+		return -EBUSY;
- 	}
- 
--	opencores_kbd->addr = ioremap(res->start, resource_size(res));
-+	opencores_kbd->addr = devm_ioremap(&pdev->dev, res->start,
-+					   resource_size(res));
- 	if (!opencores_kbd->addr) {
- 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
--		error = -ENXIO;
--		goto err_rel_mem;
-+		return -ENXIO;
- 	}
- 
- 	opencores_kbd->input = input;
-@@ -109,54 +109,26 @@ static int opencores_kbd_probe(struct platform_device *pdev)
- 	}
- 	__clear_bit(KEY_RESERVED, input->keybit);
- 
--	error = request_irq(irq, &opencores_kbd_isr,
-+	error = devm_request_irq(&pdev->dev, irq, &opencores_kbd_isr,
- 			    IRQF_TRIGGER_RISING, pdev->name, opencores_kbd);
- 	if (error) {
- 		dev_err(&pdev->dev, "unable to claim irq %d\n", irq);
--		goto err_unmap_mem;
-+		return error;
- 	}
- 
- 	error = input_register_device(input);
- 	if (error) {
- 		dev_err(&pdev->dev, "unable to register input device\n");
--		goto err_free_irq;
-+		return error;
- 	}
- 
- 	platform_set_drvdata(pdev, opencores_kbd);
- 
- 	return 0;
--
-- err_free_irq:
--	free_irq(irq, opencores_kbd);
-- err_unmap_mem:
--	iounmap(opencores_kbd->addr);
-- err_rel_mem:
--	release_mem_region(res->start, resource_size(res));
-- err_free_mem:
--	input_free_device(input);
--	kfree(opencores_kbd);
--
--	return error;
--}
--
--static int opencores_kbd_remove(struct platform_device *pdev)
--{
--	struct opencores_kbd *opencores_kbd = platform_get_drvdata(pdev);
--
--	free_irq(opencores_kbd->irq, opencores_kbd);
--
--	iounmap(opencores_kbd->addr);
--	release_mem_region(opencores_kbd->addr_res->start,
--		resource_size(opencores_kbd->addr_res));
--	input_unregister_device(opencores_kbd->input);
--	kfree(opencores_kbd);
--
--	return 0;
- }
- 
- static struct platform_driver opencores_kbd_device_driver = {
- 	.probe    = opencores_kbd_probe,
--	.remove   = opencores_kbd_remove,
- 	.driver   = {
- 		.name = "opencores-kbd",
- 	},
+Read the next sentence: "The kernel is free to ignore the advice."
+
+Note, POSIX_MADV_DONTNEED has totally different semantics.
+
+> It looks like there are openssl patches that use DONTDUMP to explicitly
+> make sure keys etc don't land in cores.
+
+That's nice to have. But openssl works on systems without the interface,
+meaning it's not essential for functionality.
+
 -- 
-1.7.9.5
-
+ Kirill A. Shutemov
