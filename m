@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaJGOoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:44:13 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:37258 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904AbaJGOoK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:44:10 -0400
-Message-ID: <5433FC36.30806@kernel.dk>
-Date: Tue, 07 Oct 2014 08:44:06 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754195AbaJGOog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:44:36 -0400
+Received: from mail-by2on0062.outbound.protection.outlook.com ([207.46.100.62]:57279
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753256AbaJGOoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:44:34 -0400
+Date: Tue, 7 Oct 2014 09:38:10 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Mark Brown <broonie@kernel.org>
+CC: <linux@roeck-us.net>, <jdelvare@suse.de>, <lm-sensors@lm-sensors.org>,
+        <lgirdwood@gmail.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 3/4] pmbus: add regulator support
+In-Reply-To: <20141003142746.GA24441@sirena.org.uk>
+Message-ID: <alpine.DEB.2.02.1410070937540.9610@atx-linux-37>
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com> <1412275071-6417-4-git-send-email-atull@opensource.altera.com> <20141003142746.GA24441@sirena.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Bart Van Assche <bvanassche@acm.org>
-CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
-        Ming Lei <ming.lei@canonical.com>, Sagi Grimberg <sagig@mellanox.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blk-mq: Avoid that I/O hangs in bt_get()
-References: <54328A97.3030201@acm.org> <5432D414.4060408@kernel.dk> <5432E524.90407@kernel.dk> <5433A85E.2070207@acm.org>
-In-Reply-To: <5433A85E.2070207@acm.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY2PR04CA052.namprd04.prod.outlook.com (10.141.249.170) To
+ BL2PR03MB307.namprd03.prod.outlook.com (10.141.68.21)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB307;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 035748864E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(41574002)(24454002)(199003)(85852003)(87976001)(102836001)(86152002)(69596002)(66066001)(85306004)(50986999)(86362001)(53416004)(54356999)(76176999)(19580395003)(19580405001)(83506001)(92566001)(92726001)(47776003)(81156004)(106356001)(105586002)(31966008)(97736003)(50466002)(120916001)(99396003)(23726002)(77096002)(42186005)(110136001)(101416001)(20776003)(4396001)(46102003)(107046002)(46406003)(122386002)(21056001)(64706001)(80022003)(95666004)(33716001)(76482002)(40100002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 02:46 AM, Bart Van Assche wrote:
-> On 10/06/14 20:53, Jens Axboe wrote:
->> On 10/06/2014 11:40 AM, Jens Axboe wrote:
->>> I've been able to reproduce this this morning, and your patch does seem
->>> to fix it. The inc/add logic is making my head spin a bit. And we now
->>> end up banging a lot more on the waitqueue lock through
->>> prepare_to_wait(), so there's a substantial performance regression to go
->>> with the change.
->>>
->>> I'll fiddle with this a bit and see if we can't retain existing
->>> performance properties under tag contention, while still fixing the hang.
->>
->> So I think your patch fixes the issue because it just keeps decrementing
->> the wait counts, hence waking up a lot more than it should. This is also
->> why I see a huge increase in wait queue spinlock time.
->>
->> Does this work for you? I think the issue is plainly that we end up
->> setting the batch counts too high. But tell me more about the number of
->> queues, the depth (total or per queue?), and the fio job you are running.
-> 
-> Hello Jens,
-> 
-> Thanks for looking into this. I can't reproduce the I/O lockup after 
-> having reverted my patch and after having applied your patch. In the 
-> test I ran fio was started with the following command-line options:
->  
-> fio --bs=512 --ioengine=libaio --rw=randread --buffered=0 --numjobs=12 
-> --iodepth=128 --iodepth_batch=64 --iodepth_batch_complete=64 --thread 
-> --norandommap --loops=2147483648 --runtime=3600 --group_reporting 
-> --gtod_reduce=1 --name=/dev/sdo --filename=/dev/sdo --invalidate=1
-> 
-> This job was run on a system with 12 CPU threads and against a SCSI 
-> initiator driver for which the number of hardware contexts had been set 
-> to 6. Queue depth per hardware queue was set to 127:
-> $ cat /sys/class/scsi_host/host10/can_queue
-> 127
-> 
-> This is what fio reports about the average queue depth:
-> 
-> IOdepths: 1=0.0%, 2=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, >=64=100.0%
->   submit: 0=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=100.0%, >=64=0.0%
-> complete: 0=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=100.0%, >=64=0.0%
+On Fri, 3 Oct 2014, Mark Brown wrote:
 
-Great, so that makes sense to me. I'll get the patch applied and marked
-for stable. I'll mark it as fixes commit 4bb659b156996.
-
+> On Thu, Oct 02, 2014 at 01:37:50PM -0500, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Add support for simple on/off control of each channel.
+> > 
+> > To add regulator support, the pmbus part driver needs to add
+> > regulator_desc information and number of regulators to its
+> > pmbus_driver_info struct.
 > 
-> While we are at it, how about the patch below ? That patch shouldn't
-> change any functionality but should make bt_clear_tag() slightly easier
-> to read.
+> Reviewed-by: Mark Brown <broonie@kernel.org>
+>
 
-Agree, that looks cleaner and is more readable.
+Thanks!
 
--- 
-Jens Axboe
-
+Alan
