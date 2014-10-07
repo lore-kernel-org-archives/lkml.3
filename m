@@ -1,119 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaJGXcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:32:04 -0400
-Received: from roy.gaast.net ([80.101.33.21]:33740 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932445AbaJGXcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:32:00 -0400
-X-Greylist: delayed 713 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Oct 2014 19:32:00 EDT
-Message-ID: <54347520.3050109@gaast.net>
-Date: Wed, 08 Oct 2014 00:20:00 +0100
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S932943AbaJGXcY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:32:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167AbaJGXUC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 19:20:02 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dan Streetman <ddstreet@ieee.org>, Mel Gorman <mgorman@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Shaohua Li <shli@fusionio.com>,
+        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Weijie Yang <weijieut@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Bob Liu <bob.liu@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 18/37] lib/plist: add helper functions
+Date: Tue,  7 Oct 2014 16:19:35 -0700
+Message-Id: <20141007231827.624161537@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
+References: <20141007231827.043235686@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-To: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org
-Subject: Machine crashes right *after* ~successful resume
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Rafael, including you on this since 
-http://linuxconcloudopenna2013.sched.org/event/d708f47d07cd44b9669610778c024708#.VDRzTDS_EUF 
-mentions you as the maintainer for Linux + power management. I hope this 
-is still accurate.
+------------------
 
-Since Linux 3.12 (Debian version 3.12.9-1~bpo70+1) and all the way up to 
-3.16 (Debian version 3.16.3-2), I'm having suspend-resume issues on my 
-machine (Intel Z68, i7-3770K) that are somewhat less obvious.
+From: Dan Streetman <ddstreet@ieee.org>
 
-After every boot, I get two successful suspend+resume cycles, but after 
-the third suspend, it won't resume successfully. On the VGA console I've 
-never had anything useful logged, luckily over the serial console I've 
-had more luck. I seem to get as far as:
+commit fd16618e12a05df79a3439d72d5ffdac5d34f3da upstream.
 
-[  153.787678] PM: resume of devices complete after 3797.737 msecs
-[  153.787775] PM: resume devices took 3.796 seconds
-[  154.238612] Restarting tasks ... done.
+Add PLIST_HEAD() to plist.h, equivalent to LIST_HEAD() from list.h, to
+define and initialize a struct plist_head.
 
-And indeed, while testing I was running a "ping -i0.01" to a host on my 
-network, and it managed to get a few packets out. Timing already seems 
-quite off though:
+Add plist_for_each_continue() and plist_for_each_entry_continue(),
+equivalent to list_for_each_continue() and list_for_each_entry_continue(),
+to iterate over a plist continuing after the current position.
 
-22:11:49.515489 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
-id 3074, seq 894, length 64
-22:11:49.982265 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
-id 3074, seq 895, length 64
-22:11:50.986779 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
-id 3074, seq 896, length 64
+Add plist_prev() and plist_next(), equivalent to (struct list_head*)->prev
+and ->next, implemented by list_prev_entry() and list_next_entry(), to
+access the prev/next struct plist_node entry.  These are needed because
+unlike struct list_head, direct access of the prev/next struct plist_node
+isn't possible; the list must be navigated via the contained struct
+list_head.  e.g.  instead of accessing the prev by list_prev_entry(node,
+node_list) it can be accessed by plist_prev(node).
 
-Note the gaps that are 0.4-1.0s instead of the 0.01s they should've 
-been. To me these pings going *out* sound like userland's definitely 
-waking up for a while, or at least some processes are. Also, for several 
-seconds even during earlier stages of the resume, the machine is already 
-responding to echo requests.
+Signed-off-by: Dan Streetman <ddstreet@ieee.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Shaohua Li <shli@fusionio.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dan Streetman <ddstreet@ieee.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Weijie Yang <weijieut@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Bob Liu <bob.liu@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Sadly after this message to my serial console and these few ICMP 
-packets, the machine locks up quite hard, to the point that SysRq 
-doesn't respond anymore. :-(
+---
+ include/linux/plist.h |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
-This is happening for a while already and makes suspend+resume mostly 
-useless on my machine. What other debugging info can I provide to help 
-with getting this fixed?
+--- a/include/linux/plist.h
++++ b/include/linux/plist.h
+@@ -98,6 +98,13 @@ struct plist_node {
+ }
+ 
+ /**
++ * PLIST_HEAD - declare and init plist_head
++ * @head:	name for struct plist_head variable
++ */
++#define PLIST_HEAD(head) \
++	struct plist_head head = PLIST_HEAD_INIT(head)
++
++/**
+  * PLIST_NODE_INIT - static struct plist_node initializer
+  * @node:	struct plist_node variable name
+  * @__prio:	initial node priority
+@@ -143,6 +150,16 @@ extern void plist_del(struct plist_node
+ 	 list_for_each_entry(pos, &(head)->node_list, node_list)
+ 
+ /**
++ * plist_for_each_continue - continue iteration over the plist
++ * @pos:	the type * to use as a loop cursor
++ * @head:	the head for your list
++ *
++ * Continue to iterate over plist, continuing after the current position.
++ */
++#define plist_for_each_continue(pos, head)	\
++	 list_for_each_entry_continue(pos, &(head)->node_list, node_list)
++
++/**
+  * plist_for_each_safe - iterate safely over a plist of given type
+  * @pos:	the type * to use as a loop counter
+  * @n:	another type * to use as temporary storage
+@@ -163,6 +180,18 @@ extern void plist_del(struct plist_node
+ 	 list_for_each_entry(pos, &(head)->node_list, mem.node_list)
+ 
+ /**
++ * plist_for_each_entry_continue - continue iteration over list of given type
++ * @pos:	the type * to use as a loop cursor
++ * @head:	the head for your list
++ * @m:		the name of the list_struct within the struct
++ *
++ * Continue to iterate over list of given type, continuing after
++ * the current position.
++ */
++#define plist_for_each_entry_continue(pos, head, m)	\
++	list_for_each_entry_continue(pos, &(head)->node_list, m.node_list)
++
++/**
+  * plist_for_each_entry_safe - iterate safely over list of given type
+  * @pos:	the type * to use as a loop counter
+  * @n:		another type * to use as temporary storage
+@@ -229,6 +258,20 @@ static inline int plist_node_empty(const
+ #endif
+ 
+ /**
++ * plist_next - get the next entry in list
++ * @pos:	the type * to cursor
++ */
++#define plist_next(pos) \
++	list_next_entry(pos, node_list)
++
++/**
++ * plist_prev - get the prev entry in list
++ * @pos:	the type * to cursor
++ */
++#define plist_prev(pos) \
++	list_prev_entry(pos, node_list)
++
++/**
+  * plist_first - return the first node (and thus, highest priority)
+  * @head:	the &struct plist_head pointer
+  *
 
-I've found out about pm_trace, which always points at the same line (and 
-no device):
 
-/var/log/syslog.1:Oct 10 16:43:58 ruby kernel: [    0.780503]   Magic 
-number: 0:52:740
-/var/log/syslog.1:Oct 10 16:43:58 ruby kernel: [    0.780599]   hash 
-matches /tmp/linux-3.16.3/drivers/base/power/main.c:812
-
-In my source tree that line is:
-
-         TRACE_RESUME(error);
-
-Right at the end of device_resume(), under the Complete: label. Note 
-that I might have to redo this though, as I now realise I had only 
-recompiled my *kernel* with the PM_TRACE_RTC flag set, not all my 
-modules, which I assume is not enough. (I'm thinking of filing a Debian 
-bug requesting this flag to be enabled by default..) However since the 
-kernel seems to declare the resume as complete I'm not sure whether 
-pm_trace is still of any use?
-
-With kernels 3.10 and older I have no such problems, I can 
-suspend+resume as often as I want.
-
-I've already tried to skip the NVidia + VMware modules at boot time (as 
-you can see from the logs they're not loaded at any point), but it 
-didn't help. I could try omitting more modules.
-
-I'm attaching a full dmesg of boot + a few suspend+resume cycles in 3.10 
-and 3.16, and a dump of the serial console showing the last resume cycle 
-(which I couldn't get from dmesg of course).
-
-You might notice the message about s2ram segfaulting which I've looked 
-at, that seems to be VBE-related code, but this problem occurs even when 
-I just echo ram to /sys/power/state directly without using s2ram, so I 
-assume it's not related.
-
-Sorry for the long message. I'd love some ideas for troubleshooting an 
-issue like this.
-
-"Attachments" in http://roy.gaast.net/~wilmer/.lkml/ since I just 
-realised >200KB of attachments might not be appreciated. :-)
-
-
-Cheers,
-
-Wilmer van der Gaast.
-
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
