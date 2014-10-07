@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbaJGMWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:22:23 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:28323 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJGMWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:22:22 -0400
-Message-ID: <5433DAFA.4010008@imgtec.com>
-Date: Tue, 7 Oct 2014 13:22:18 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1753536AbaJGMXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:23:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47660 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752016AbaJGMXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:23:36 -0400
+Date: Tue, 7 Oct 2014 14:23:36 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: Please backport commit 3812c8c8f39 to stable
+Message-ID: <20141007122336.GB14243@dhcp22.suse.cz>
+References: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
+ <20140930081637.GA4456@dhcp22.suse.cz>
+ <CAM_iQpXx3ULtPr50ESTZk1+984vSG9-dKegEjawDZ2yJS3CTdw@mail.gmail.com>
+ <20141003151334.GE4816@dhcp22.suse.cz>
+ <CAM_iQpW4t_jKSCbS5J1N15FFChd=-UK3QOXrjjst64Rqe5KBTw@mail.gmail.com>
 MIME-Version: 1.0
-To: David Daney <david.s.daney@gmail.com>,
-        "Kevin D. Kissell" <kevink@paralogos.com>,
-        David Daney <ddaney.cavm@gmail.com>, <libc-alpha@sourceware.org>,
-        Leonid <Leonid.Yegoshin@imgtec.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <54333B9C.2040302@paralogos.com> <54336CED.3040106@gmail.com> <5433D429.3020804@imgtec.com>
-In-Reply-To: <5433D429.3020804@imgtec.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM_iQpW4t_jKSCbS5J1N15FFChd=-UK3QOXrjjst64Rqe5KBTw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/14 12:53, James Hogan wrote:
-> On 07/10/14 05:32, David Daney wrote:
->> If the kernel automatically allocated the emulation locations, what
->> would happen if there were a signal that interrupted the emulation, and
->> the signal handler did a longjump to somewhere else?  How would we clean
->> up the now unused emulation memory allocations?
+On Fri 03-10-14 11:03:30, Cong Wang wrote:
+> On Fri, Oct 3, 2014 at 8:13 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >
+> > That commit fixes an OOM deadlock. Not a soft lockup. Do you have the
+> > OOM killer report from the log? This would tell us that the killed task
+> > was indeed sleeping on the lock which is hold by the charger which
+> > triggered the OOM. I am little bit surprised that I do not see any OOM
+> > related functions on the stacks (maybe the code is inlined...).
 > 
-> AFAICT, Leonid's implementation also has this problem, and that has a
-> separate stack of emuframes per thread managed completely by the kernel.
 > 
-> Essentially the kernel doesn't manage the stack, userland does, and
-> userland can choose to skip over sigframes and emuframes with siglongjmp
-> without telling the kernel.
-> 
-> Userland can even switch between contexts (which includes stack) with
-> setcontext (coroutines etc) which breaks the assumption in Leonid's
-> patches that emuframes will be completed in reverse order to them being
-> started, again demonstrating that it is essentially userland that
-> manages the stack.
-> 
-> I think any attempt by the kernel to keep track of user stacks (e.g. by
-> storing a stack pointer along with the emuframe so that unused emuframes
-> can be discarded later when stack pointer goes high again) will be
-> foiled by setcontext.
-> 
-> Hmm, I can't see a way forward that doesn't involve invasive userland
-> handling & ABI changes other than giving up with non-executable stacks
-> or limiting permitted instructions in delay slots to those Linux knows
-> how to emulate directly.
+> Oh, did you see __mem_cgroup_try_charge() calls
+> schedule_timeout_uninterruptible() in stack trace? Yes, they are inlined
+> and I don't see any other possibilities for calling it.
 
-Would it work for a signal encountered during branch delay slot
-emulation (maybe where the PC is pointing at that magic location the
-kernel uses for emulation) to be treated as a return from emulation, but
-leaving the user PC pointing to the original branch (with Cause.BD=1 I
-suppose) prior to handling the signal, so that no more than one emuframe
-is needed by each thread at a time?
+Yes the only place we call schedule_timeout_uninterruptible from is
+mem_cgroup_handle_oom. And it happens only for a task which hasn't been
+killed by OOM killer.
 
-Cheers
-James
+> > It would be better to know what exactly is going on before backporting
+> > this change because it is quite large.
+> >
+> 
+> I thought the stack trace I showed is obvious. :) I am very happy
+> to investigate if you see any other path calling
+> schedule_timeout_uninterruptible()
+> in __mem_cgroup_try_charge().
+
+I was expecting an oom report which kills a task which is sleeping on a
+lock which is held on the way up to the charge function. Your report
+mentioned a task waiting for i_mutex for too long. It is true that the
+charging path is holding an i_mutex as well so it might be the same
+situation handled by the said patch. But it is not 100% clear this is
+the case without an OOM report which would point to the waiting task.
+The memcg might be trashing on the hard limit and reclaim might take a
+long time.
+
+-- 
+Michal Hocko
+SUSE Labs
