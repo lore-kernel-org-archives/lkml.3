@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaJGNcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:32:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:36971 "EHLO mail.kernel.org"
+	id S1753942AbaJGNd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:33:27 -0400
+Received: from sym2.noone.org ([178.63.92.236]:57080 "EHLO sym2.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817AbaJGNcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:32:43 -0400
-Date: Tue, 7 Oct 2014 10:32:36 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
-Message-ID: <20141007133236.GG14113@kernel.org>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20141006212606.GF14113@kernel.org>
- <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
+	id S1753894AbaJGNd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:33:26 -0400
+Date: Tue, 7 Oct 2014 15:33:22 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: opencores-kbd: Switch to using managed resources
+Message-ID: <20141007133322.GL3279@distanz.ch>
+References: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 07, 2014 at 10:45:14AM +0200, Jean Pihet escreveu:
-> > --- a/src/rasd.c
-> > -       evlist__for_each(evlist, c) {
-> > -               /* On all online cpus by default, system wide tracing */
-> > -               if (perf_evsel__open(c, evlist->cpus, NULL) < 0)
-> > -                       err("opening tracepoint, are you root?");
-> > -       }
-> > -       perf_evlist__set_id_pos(evlist);
-> > +       /* On all online cpus by default, system wide tracing */
-> > +       if (perf_evlist__open(evlist) < 0)
-> > +               err("opening tracepoint, are you root?");
- 
-> That way the system wide tracing does not work. perf_evlist__open uses
-> a non-NULL thread mapping and so it only traces the events generated
-> by the daemon itself.
- 
-> perf top uses a similar approach but uses a lot of code in machine.c
-> (machine__synthesize_threads) and util/event.c
-> (perf_event__synthesize_threads) to synthesize the threads etc., which
-> we want to avoid in the minimalistic approach of rasd.
-
-Humm, I will look into making it support this usecase, the point of
-evsel/evlist is to try to abstract away as much as possible, leaving
-just a few methods to be used by tools.
-
-I think the default for perf_evlist__open() should be the most useful
-for the majority of tools, which I thought would serve rasd well. It is
-not the case, so I'll into how the tools that currently use
-perf_evlist__open() behave and try to get a sane default in place.
-
-Hopefully we will completely remove the need to set up any thread or cpu
-map, as what you want is syswide tracing, right?
-
-- Arnaldo
- 
-> Maybe I missed something about the system wide tracing, any suggestion
-> is welcome.
+On 2014-10-07 at 13:31:41 +0200, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
+> This change switch to managed resources to simplifies error handling
+> and module unloading and does away with platform_driver remove function.
 > 
-> Thanks for looking!
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+>  drivers/input/keyboard/opencores-kbd.c |   54 ++++++++------------------------
+>  1 file changed, 13 insertions(+), 41 deletions(-)
 > 
-> Jean
-> 
-> >
-> >         /* mmap buffers */
-> >         if (perf_evlist__mmap(evlist, 4 /* opts->mmap_pages */, false) < 0)
-> > --
-> > 1.9.3
-> >
+> diff --git a/drivers/input/keyboard/opencores-kbd.c b/drivers/input/keyboard/opencores-kbd.c
+> index 7b9b441..ecacb87 100644
+> --- a/drivers/input/keyboard/opencores-kbd.c
+> +++ b/drivers/input/keyboard/opencores-kbd.c
+> @@ -56,27 +56,27 @@ static int opencores_kbd_probe(struct platform_device *pdev)
+>  		return -EINVAL;
+>  	}
+>  
+> -	opencores_kbd = kzalloc(sizeof(*opencores_kbd), GFP_KERNEL);
+> -	input = input_allocate_device();
+> +	opencores_kbd = devm_kzalloc(&pdev->dev, sizeof(*opencores_kbd),
+> +				     GFP_KERNEL);
+> +	input = devm_input_allocate_device(&pdev->dev);
+>  	if (!opencores_kbd || !input) {
+>  		dev_err(&pdev->dev, "failed to allocate device structures\n");
+> -		error = -ENOMEM;
+> -		goto err_free_mem;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	opencores_kbd->addr_res = res;
+> -	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> +	res = devm_request_mem_region(&pdev->dev, res->start,
+> +				      resource_size(res), pdev->name);
+>  	if (!res) {
+>  		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> -		error = -EBUSY;
+> -		goto err_free_mem;
+> +		return -EBUSY;
+>  	}
+>  
+> -	opencores_kbd->addr = ioremap(res->start, resource_size(res));
+> +	opencores_kbd->addr = devm_ioremap(&pdev->dev, res->start,
+> +					   resource_size(res));
+
+You could use devm_ioremap_resource() here and get rid of the call to
+devm_request_mem_region() and the check for !res above, i.e. something
+like:
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	[...]
+	opencores_kbd->addr = devm_ioremap_resource(&pdev->dev, res);
+	if (!opencores_kbd->addr) {
+		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+		return -ENXIO;
+	}
+
+>  	if (!opencores_kbd->addr) {
+>  		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> -		error = -ENXIO;
+> -		goto err_rel_mem;
+> +		return -ENXIO;
+>  	}
+>  
+>  	opencores_kbd->input = input;
+> @@ -109,54 +109,26 @@ static int opencores_kbd_probe(struct platform_device *pdev)
+>  	}
+>  	__clear_bit(KEY_RESERVED, input->keybit);
+>  
+> -	error = request_irq(irq, &opencores_kbd_isr,
+> +	error = devm_request_irq(&pdev->dev, irq, &opencores_kbd_isr,
+>  			    IRQF_TRIGGER_RISING, pdev->name, opencores_kbd);
+
+The second line should be aligned to the opening parenthesis:
+
+	error = devm_request_irq(&pdev->dev, irq, &opencores_kbd_isr,
+				 IRQF_TRIGGER_RISING, pdev->name, opencores_kbd);
