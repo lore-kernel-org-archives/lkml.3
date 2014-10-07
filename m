@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaJGMBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:01:38 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:25365 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaJGMBe (ORCPT
+	id S1753908AbaJGMBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:01:44 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:11372 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857AbaJGMBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:01:34 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-28-5433d61cd9ee
+	Tue, 7 Oct 2014 08:01:36 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-cc-5433d61dfe20
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -19,72 +19,104 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 3/4] drm/exynos/dsi: remove redundant encoder field
-Date: Tue, 07 Oct 2014 14:01:10 +0200
-Message-id: <1412683271-15835-4-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 4/4] drm/exynos/dsi: stop using display->ctx pointer
+Date: Tue, 07 Oct 2014 14:01:11 +0200
+Message-id: <1412683271-15835-5-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
 References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDJMWRmVeSWpSXmKPExsVy+t/xK7oy14xDDF5c5rO4te4cq8WVr+/Z
-	LCbdn8Bi8eLeRRaL3gVX2SzONr1ht7i8aw6bxYzz+5gs1h65y24xY/JLNgcuj/vdx5k8+ras
-	YvT4vEkugDmKyyYlNSezLLVI3y6BK+PRiy7Ggn28FZ/65rI3MO7g7mLk5JAQMJGY9nAiI4Qt
-	JnHh3nq2LkYuDiGBpYwSz76uZ4Rw+pgktn09BlbFJqAp8XfzTTYQW0RAWWLVvnZ2kCJmgR3M
-	EkcvHWUCSQgLOEtsOPueBcRmEVCV2HJtMyuIzQsU33VpNgvEOjmJk8cmg8U5BVwk5m14BTZU
-	CKhm8umtTBMYeRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAmxLzsYFx+zOsQowMGo
-	xMO7wdA4RIg1say4MvcQowQHs5II7+mLQCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mru8Ys/uf
-	TVcxc9NOuNvj/mHx4Zmdq4onsfnZrq+PmfovWPimpPqv6ctz7HfYXrgpsUUmqbt867XXCbpX
-	go0ZTVdI+nmdXLlZ1nRXo5X+InvF9bt41m21Pno3dtaGC1OCjm2yq1E2Op2cu6i4eabWxM/r
-	DJh2qTW47/q4XeT050DjUt2KPd+OKbEUZyQaajEXFScCAFMZVyAPAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t/xK7qy14xDDFpPKFrcWneO1eLK1/ds
+	FpPuT2CxeHHvIotF74KrbBZnm96wW1zeNYfNYsb5fUwWa4/cZbeYMfklmwOXx/3u40wefVtW
+	MXp83iQXwBzFZZOSmpNZllqkb5fAlXH3wSzWghniFV+X5DcwbhHuYuTkkBAwkdj17RUbhC0m
+	ceHeejBbSGApo0TTB1cIu49J4svxahCbTUBT4u/mm2A1IgLKEqv2tbN3MXJxMAvsYJY4euko
+	E0hCWMBFYteMVcwgNouAqsSax/fAGngFnCV2rbnDDLFMTuLkscmsIDYnUP28Da+gFjtLTD69
+	lWkCI+8CRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCHB9XUH49JjVocYBTgYlXh4V2gZ
+	hwixJpYVV+YeYpTgYFYS4T19ESjEm5JYWZValB9fVJqTWnyIkYmDU6qBMXVyzQujvYlyRi+3
+	xXeGfNqXend5dvGpJE4X+/exBquj3WZOyDbiC7E5/z5/j/wRQd+ghnu7zxlZzC3N/MO15mxD
+	9YEitnffe+47egh82SrNenCW7W6H9Fd8wmfqdDJYrn2fdFLYpSN17Yljn4MvmaeIb16oxSnJ
+	J7w2QNfgckGOyz/JuX4lSizFGYmGWsxFxYkAQ4obagwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch removes redundant encoder field from private DSI context.
+The patch replaces accesses to display->ctx pointer by container_of
+construct. It will allow to remove ctx field in the future.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 39ec450..634904a 100644
+index 634904a..abdc3d1 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -271,7 +271,6 @@ struct exynos_dsi {
- 	struct exynos_drm_display display;
- 	struct mipi_dsi_host dsi_host;
- 	struct drm_connector connector;
--	struct drm_encoder *encoder;
- 	struct device_node *panel_node;
- 	struct drm_panel *panel;
- 	struct device *dev;
-@@ -1105,7 +1104,7 @@ static irqreturn_t exynos_dsi_irq(int irq, void *dev_id)
- static irqreturn_t exynos_dsi_te_irq_handler(int irq, void *dev_id)
+@@ -304,6 +304,11 @@ struct exynos_dsi {
+ #define host_to_dsi(host) container_of(host, struct exynos_dsi, dsi_host)
+ #define connector_to_dsi(c) container_of(c, struct exynos_dsi, connector)
+ 
++static inline struct exynos_dsi *display_to_dsi(struct exynos_drm_display *d)
++{
++	return container_of(d, struct exynos_dsi, display);
++}
++
+ static struct exynos_dsi_driver_data exynos3_dsi_driver_data = {
+ 	.plltmr_reg = 0x50,
+ 	.has_freqband = 1,
+@@ -1397,7 +1402,7 @@ static void exynos_dsi_disable(struct exynos_dsi *dsi)
+ 
+ static void exynos_dsi_dpms(struct exynos_drm_display *display, int mode)
  {
- 	struct exynos_dsi *dsi = (struct exynos_dsi *)dev_id;
--	struct drm_encoder *encoder = dsi->encoder;
-+	struct drm_encoder *encoder = dsi->display.encoder;
+-	struct exynos_dsi *dsi = display->ctx;
++	struct exynos_dsi *dsi = display_to_dsi(display);
  
- 	if (dsi->state & DSIM_STATE_ENABLED)
- 		exynos_drm_crtc_te_handler(encoder->crtc);
-@@ -1475,7 +1474,7 @@ exynos_dsi_best_encoder(struct drm_connector *connector)
+ 	if (dsi->panel) {
+ 		switch (mode) {
+@@ -1486,7 +1491,7 @@ static struct drm_connector_helper_funcs exynos_dsi_connector_helper_funcs = {
+ static int exynos_dsi_create_connector(struct exynos_drm_display *display,
+ 				       struct drm_encoder *encoder)
  {
- 	struct exynos_dsi *dsi = connector_to_dsi(connector);
- 
--	return dsi->encoder;
-+	return dsi->display.encoder;
- }
- 
- static struct drm_connector_helper_funcs exynos_dsi_connector_helper_funcs = {
-@@ -1491,8 +1490,6 @@ static int exynos_dsi_create_connector(struct exynos_drm_display *display,
+-	struct exynos_dsi *dsi = display->ctx;
++	struct exynos_dsi *dsi = display_to_dsi(display);
  	struct drm_connector *connector = &dsi->connector;
  	int ret;
  
--	dsi->encoder = encoder;
--
- 	connector->polled = DRM_CONNECTOR_POLL_HPD;
+@@ -1510,7 +1515,7 @@ static int exynos_dsi_create_connector(struct exynos_drm_display *display,
+ static void exynos_dsi_mode_set(struct exynos_drm_display *display,
+ 			 struct drm_display_mode *mode)
+ {
+-	struct exynos_dsi *dsi = display->ctx;
++	struct exynos_dsi *dsi = display_to_dsi(display);
+ 	struct videomode *vm = &dsi->vm;
  
- 	ret = drm_connector_init(encoder->dev, connector,
+ 	vm->hactive = mode->hdisplay;
+@@ -1635,7 +1640,7 @@ static int exynos_dsi_bind(struct device *dev, struct device *master,
+ 				void *data)
+ {
+ 	struct exynos_drm_display *display = dev_get_drvdata(dev);
+-	struct exynos_dsi *dsi = display->ctx;
++	struct exynos_dsi *dsi = display_to_dsi(display);
+ 	struct drm_device *drm_dev = data;
+ 	int ret;
+ 
+@@ -1653,7 +1658,7 @@ static void exynos_dsi_unbind(struct device *dev, struct device *master,
+ 				void *data)
+ {
+ 	struct exynos_drm_display *display = dev_get_drvdata(dev);
+-	struct exynos_dsi *dsi = display->ctx;
++	struct exynos_dsi *dsi = display_to_dsi(display);
+ 
+ 	exynos_dsi_dpms(display, DRM_MODE_DPMS_OFF);
+ 
+@@ -1755,8 +1760,6 @@ static int exynos_dsi_probe(struct platform_device *pdev)
+ 		goto err_del_component;
+ 	}
+ 
+-	dsi->display.ctx = dsi;
+-
+ 	platform_set_drvdata(pdev, &dsi->display);
+ 
+ 	ret = component_add(dev, &exynos_dsi_component_ops);
 -- 
 1.9.1
 
