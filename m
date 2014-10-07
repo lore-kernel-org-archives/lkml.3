@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753534AbaJGJM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 05:12:26 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:55902 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbaJGJMW (ORCPT
+	id S1753569AbaJGJNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 05:13:08 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:64700 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaJGJNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 05:12:22 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-ab-5433ae7492eb
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pebolle@tiscali.nl, jg1.han@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH v3] usb: Remove references to non-existent PLAT_S5P symbol
-Date: Tue, 07 Oct 2014 11:12:07 +0200
-Message-id: <1412673127-11479-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t9jQd2SdcYhBstPC1k0L17PZnF54SVW
-	i8u75rBZzDi/j8li0bJWZotFt84wWxx+087qwO6xf+4ado++LasYPTZuf8Lk8XmTXABLFJdN
-	SmpOZllqkb5dAlfGjHudTAXvuCounvvL1sD4jqOLkZNDQsBE4vezVlYIW0ziwr31bF2MXBxC
-	AtMZJX6c/wiWEBLoYJJYetQFxGYTMJToPdrHCGKLCMhJPLn9hxmkgVlgB6PEys7ZLCAJYQEv
-	icsHWsCKWARUJf6uOs4OYvMKuEm0vDkCVMMBtE1BYs4kmwmM3AsYGVYxiqYWJBcUJ6XnGukV
-	J+YWl+al6yXn525iBIfGM+kdjKsaLA4xCnAwKvHwrtAyDhFiTSwrrsw9xCjBwawkwntwFVCI
-	NyWxsiq1KD++qDQntfgQozQHi5I478FW60AhgfTEktTs1NSC1CKYLBMHp1QD48RI9tuNpyfP
-	DWCfGO/nJFd925m1JulW16sVE4P8+r9ZyF3Z3NQgmvaS8S5nubN0RcrPB6ukebXKrntyW57y
-	WGfHNn/lP5u/P75ev5fyOspUcDO/U/KLX7O3rYqfy8zI9+e50oLNh8LORqvVPpcpq/nd4BEq
-	UM7wWJJ9olZNa9DbdTv3XeNSV2Ipzkg01GIuKk4EADIB+ZIJAgAA
+	Tue, 7 Oct 2014 05:13:05 -0400
+Date: Tue, 7 Oct 2014 10:12:59 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: rtsx: Fix build warnings for !PM
+Message-ID: <20141007091259.GL25331@lee--X1>
+References: <1412234717-4699-1-git-send-email-thierry.reding@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412234717-4699-1-git-send-email-thierry.reding@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-("ARM: SAMSUNG: Remove remaining legacy code"). There are still
-some references left, fix that by replacing them with ARCH_S5PV210.
+On Thu, 02 Oct 2014, Thierry Reding wrote:
 
-Fixes: d78c16ccde96 ("ARM: SAMSUNG: Remove remaining legacy code")
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-Cc: <stable@vger.kernel.org>	[3.17+]
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
-Changes since v2:
- - updated the commit description.
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> rtsx_pci_power_off() is called only from rtsx_pci_suspend(), which isn't
+> built when PM is disabled.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  drivers/mfd/rtsx_pcr.c | 2 ++
+>  1 file changed, 2 insertions(+)
 
- drivers/usb/host/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Applied to fixes.
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index 82800a7..6f1d48e 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -220,7 +220,7 @@ config USB_EHCI_SH
+> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+> index f2643c221d34..30f7ca89a0e6 100644
+> --- a/drivers/mfd/rtsx_pcr.c
+> +++ b/drivers/mfd/rtsx_pcr.c
+> @@ -947,6 +947,7 @@ static void rtsx_pci_idle_work(struct work_struct *work)
+>  	mutex_unlock(&pcr->pcr_mutex);
+>  }
+>  
+> +#ifdef CONFIG_PM
+>  static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
+>  {
+>  	if (pcr->ops->turn_off_led)
+> @@ -961,6 +962,7 @@ static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
+>  	if (pcr->ops->force_power_down)
+>  		pcr->ops->force_power_down(pcr, pm_state);
+>  }
+> +#endif
+>  
+>  static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+>  {
 
- config USB_EHCI_EXYNOS
-        tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
--       depends on PLAT_S5P || ARCH_EXYNOS
-+       depends on ARCH_S5PV210 || ARCH_EXYNOS
-        help
- 	Enable support for the Samsung Exynos SOC's on-chip EHCI controller.
-
-@@ -527,7 +527,7 @@ config USB_OHCI_SH
-
- config USB_OHCI_EXYNOS
- 	tristate "OHCI support for Samsung S5P/EXYNOS SoC Series"
--	depends on PLAT_S5P || ARCH_EXYNOS
-+	depends on ARCH_S5PV210 || ARCH_EXYNOS
- 	help
- 	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
-
---
-1.7.9.5
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
