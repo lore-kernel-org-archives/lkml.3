@@ -1,35 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865AbaJGUSf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:18:35 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48298 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaJGUSe (ORCPT
+	id S1752458AbaJGUUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:20:32 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:38526 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705AbaJGUUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:18:34 -0400
-Date: Tue, 07 Oct 2014 16:18:32 -0400 (EDT)
-Message-Id: <20141007.161832.453892039501955243.davem@davemloft.net>
-To: fabf@skynet.be
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1412712996-4672-1-git-send-email-fabf@skynet.be>
-References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 07 Oct 2014 13:18:33 -0700 (PDT)
+	Tue, 7 Oct 2014 16:20:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av8NAEVKNFRXQB1d/2dsb2JhbABfgw6BK7hrCwUBc5ppgRIXAXuEYCOBGjeIQgGzP48ShiCKJB2ENQWdQoEtg0SRF4NlOy+CSgEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] net: rfkill: kernel-doc warning fixes
+Date: Tue,  7 Oct 2014 22:20:23 +0200
+Message-Id: <1412713224-5017-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabian Frederick <fabf@skynet.be>
-Date: Tue,  7 Oct 2014 22:16:36 +0200
+s/state/blocked
 
-> static values are automatically initialized to NULL
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/rfkill/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Isn't there some implementation room given to compilers
-as to the representation of true and false?
+diff --git a/net/rfkill/core.c b/net/rfkill/core.c
+index b3b16c0..fa7cd79 100644
+--- a/net/rfkill/core.c
++++ b/net/rfkill/core.c
+@@ -329,7 +329,7 @@ static atomic_t rfkill_input_disabled = ATOMIC_INIT(0);
+ /**
+  * __rfkill_switch_all - Toggle state of all switches of given type
+  * @type: type of interfaces to be affected
+- * @state: the new state
++ * @blocked: the new state
+  *
+  * This function sets the state of all switches of given type,
+  * unless a specific switch is claimed by userspace (in which case,
+@@ -353,7 +353,7 @@ static void __rfkill_switch_all(const enum rfkill_type type, bool blocked)
+ /**
+  * rfkill_switch_all - Toggle state of all switches of given type
+  * @type: type of interfaces to be affected
+- * @state: the new state
++ * @blocked: the new state
+  *
+  * Acquires rfkill_global_mutex and calls __rfkill_switch_all(@type, @state).
+  * Please refer to __rfkill_switch_all() for details.
+-- 
+1.9.3
+
