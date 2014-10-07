@@ -1,194 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaJGNLl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:11:41 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:41116 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbaJGNLj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:11:39 -0400
-Message-ID: <5433E6AF.5080105@arm.com>
-Date: Tue, 07 Oct 2014 14:12:15 +0100
-From: Juri Lelli <juri.lelli@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753689AbaJGNML (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:12:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752028AbaJGNMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:12:09 -0400
+Date: Tue, 7 Oct 2014 09:11:19 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hbabu@us.ibm.com, kexec@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kexec: Remove unnecessary KERN_ERR from kexec.c
+Message-ID: <20141007131119.GA27464@redhat.com>
+References: <1412654098-31847-1-git-send-email-standby24x7@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
-        "raistlin@linux.it" <raistlin@linux.it>,
-        "michael@amarulasolutions.com" <michael@amarulasolutions.com>,
-        "fchecconi@gmail.com" <fchecconi@gmail.com>,
-        "daniel.wagner@bmw-carit.de" <daniel.wagner@bmw-carit.de>,
-        "vincent@legout.info" <vincent@legout.info>,
-        "luca.abeni@unitn.it" <luca.abeni@unitn.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched/deadline: fix bandwidth check/update when migrating
- tasks between exclusive cpusets
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-3-git-send-email-juri.lelli@arm.com> <20140919212547.GG2832@worktop.localdomain> <5433AB8A.7050908@arm.com> <20141007123109.GG19379@twins.programming.kicks-ass.net>
-In-Reply-To: <20141007123109.GG19379@twins.programming.kicks-ass.net>
-X-OriginalArrivalTime: 07 Oct 2014 13:11:35.0543 (UTC) FILETIME=[38BFB870:01CFE230]
-X-MC-Unique: 114100714113610301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412654098-31847-1-git-send-email-standby24x7@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 07/10/14 13:31, Peter Zijlstra wrote:
-> On Tue, Oct 07, 2014 at 09:59:54AM +0100, Juri Lelli wrote:
->> Hi Peter,
->>
->> On 19/09/14 22:25, Peter Zijlstra wrote:
->>> On Fri, Sep 19, 2014 at 10:22:40AM +0100, Juri Lelli wrote:
->>>> Exclusive cpusets are the only way users can restrict SCHED_DEADLINE tasks
->>>> affinity (performing what is commonly called clustered scheduling).
->>>> Unfortunately, such thing is currently broken for two reasons:
->>>>
->>>>  - No check is performed when the user tries to attach a task to
->>>>    an exlusive cpuset (recall that exclusive cpusets have an
->>>>    associated maximum allowed bandwidth).
->>>>
->>>>  - Bandwidths of source and destination cpusets are not correctly
->>>>    updated after a task is migrated between them.
->>>>
->>>> This patch fixes both things at once, as they are opposite faces
->>>> of the same coin.
->>>>
->>>> The check is performed in cpuset_can_attach(), as there aren't any
->>>> points of failure after that function. The updated is split in two
->>>> halves. We first reserve bandwidth in the destination cpuset, after
->>>> we pass the check in cpuset_can_attach(). And we then release
->>>> bandwidth from the source cpuset when the task's affinity is
->>>> actually changed. Even if there can be time windows when sched_setattr()
->>>> may erroneously fail in the source cpuset, we are fine with it, as
->>>> we can't perfom an atomic update of both cpusets at once.
->>>
->>> The thing I cannot find is if we correctly deal with updates to the
->>> cpuset. Say we first setup 2 (exclusive) sets A:cpu0 B:cpu1-3. Then
->>> assign tasks and then update the cpu masks like: B:cpu2,3, A:cpu1,2.
->>>
->>
->> So, what follows should address the problem you describe.
->>
->> Assuming you intended that we try to update masks as A:cpu0,3 and
->> B:cpu1,2, with what below we are able to check that removing cpu3
->> from B doesn't break guarantees. After that cpu3 can be put in A.
->>
->> Does it make any sense?
+On Tue, Oct 07, 2014 at 12:54:58PM +0900, Masanari Iida wrote:
+> This patch remove unnecessary KERN_ERR from pr_err() within kexec.c.
 > 
-> Yeah, I think that about covers is. Could you write a changelog with it?
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+
+[cc akpm]
+
+Thanks for the fix. 
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
+> ---
+>  kernel/kexec.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-
-Sure. Didn't write it in the first instance because I though to squash it
-in 2/3. But it is actually fixing a different issue, so please find it
-below. 
-
-> The reason I hadn't applied your patch #2 yet is because I thought it
-> triggered the splat reported in this thread. But later emails seem to
-> suggest this is a separate/pre-existing issue?
-> 
-
-Right. I think that is a separate (PI related) issue. But we could also
-wait for that to be nailed down and then apply all the fixes at once.
-As you think is better.
-
-Thanks,
-
-- Juri
-
->From af75e5f56c9eafacfddad79485149e2e2cb889b9 Mon Sep 17 00:00:00 2001
-From: Juri Lelli <juri.lelli@arm.com>
-Date: Tue, 7 Oct 2014 09:52:11 +0100
-Subject: [PATCH] sched/deadline: ensure that updates to exclusive cpusets
- don't break AC
-
-How we deal with updates to exclusive cpusets is currently broken.
-As an example, suppose we have an exclusive cpuset composed of
-two cpus: A[cpu0,cpu1]. We can assign SCHED_DEADLINE task to it
-up to the allowed bandwidth. If we want now to modify cpusetA's
-cpumask, we have to check that removing a cpu's amount of
-bandwidth doesn't break AC guarantees. This thing isn't checked
-in the current code.
-
-This patch fixes the problem above, denying an update if the
-new cpumask won't have enough bandwidth for SCHED_DEADLINE tasks
-that are currently active.
-
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
----
- include/linux/sched.h |  2 ++
- kernel/cpuset.c       | 10 ++++++++++
- kernel/sched/core.c   | 19 +++++++++++++++++++
- 3 files changed, 31 insertions(+)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 163295f..24696d3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2041,6 +2041,8 @@ static inline void tsk_restore_flags(struct task_struct *task,
- 	task->flags |= orig_flags & flags;
- }
- 
-+extern int cpuset_cpumask_can_shrink(const struct cpumask *cur,
-+				     const struct cpumask *trial);
- extern int task_can_attach(struct task_struct *p,
- 			   const struct cpumask *cs_cpus_allowed);
- #ifdef CONFIG_SMP
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4a7ebde..f96b47f 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -506,6 +506,16 @@ static int validate_change(struct cpuset *cur, struct cpuset *trial)
- 			goto out;
- 	}
- 
-+	/*
-+	 * We can't shrink if we won't have enough room for SCHED_DEADLINE
-+	 * tasks.
-+	 */
-+	ret = -EBUSY;
-+	if (is_cpu_exclusive(cur) &&
-+	    !cpuset_cpumask_can_shrink(cur->cpus_allowed,
-+				       trial->cpus_allowed))
-+		goto out;
-+
- 	ret = 0;
- out:
- 	rcu_read_unlock();
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 092143d..b4bd8fa 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4587,6 +4587,25 @@ void init_idle(struct task_struct *idle, int cpu)
- #endif
- }
- 
-+int cpuset_cpumask_can_shrink(const struct cpumask *cur,
-+			      const struct cpumask *trial)
-+{
-+	int ret = 1, trial_cpus;
-+	struct dl_bw *cur_dl_b;
-+	unsigned long flags;
-+
-+	cur_dl_b = dl_bw_of(cpumask_any(cur));
-+	trial_cpus = cpumask_weight(trial);
-+
-+	raw_spin_lock_irqsave(&cur_dl_b->lock, flags);
-+	if (cur_dl_b->bw != -1 &&
-+	    cur_dl_b->bw * trial_cpus < cur_dl_b->total_bw)
-+		ret = 0;
-+	raw_spin_unlock_irqrestore(&cur_dl_b->lock, flags);
-+
-+	return ret;
-+}
-+
- int task_can_attach(struct task_struct *p,
- 		    const struct cpumask *cs_cpus_allowed)
- {
--- 
-2.1.0
-
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index 2abf9f6..9a8a01a 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -600,7 +600,7 @@ kimage_file_alloc_init(struct kimage **rimage, int kernel_fd,
+>  	if (!kexec_on_panic) {
+>  		image->swap_page = kimage_alloc_control_pages(image, 0);
+>  		if (!image->swap_page) {
+> -			pr_err(KERN_ERR "Could not allocate swap buffer\n");
+> +			pr_err("Could not allocate swap buffer\n");
+>  			goto out_free_control_pages;
+>  		}
+>  	}
+> -- 
+> 2.1.1.273.g97b8860
