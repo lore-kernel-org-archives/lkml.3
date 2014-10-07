@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaJGQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:58:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60018 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242AbaJGQ6q (ORCPT
+	id S1754765AbaJGQ7O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:59:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56258 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405AbaJGQ7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:58:46 -0400
-Date: Tue, 7 Oct 2014 17:58:35 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Rob Landley <rob@landley.net>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "lguest@lists.ozlabs.org" <lguest@lists.ozlabs.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linux-am33-list@redhat.com" <linux-am33-list@redhat.com>,
-        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-hexagon@vger.kernel.org" <linux-hexagon@vger.kernel.org>,
-        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
-        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>
-Subject: Re: [PATCH 05/44] mfd: as3722: Drop reference to pm_power_off from
- devicetree bindings
-Message-ID: <20141007165835.GE27216@leverpostej>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-6-git-send-email-linux@roeck-us.net>
- <543412F7.8040909@landley.net>
+	Tue, 7 Oct 2014 12:59:11 -0400
+Message-ID: <54341BD7.3070207@infradead.org>
+Date: Tue, 07 Oct 2014 09:59:03 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543412F7.8040909@landley.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, dev@openvswitch.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 7 (openvswitch)
+References: <20141007194454.10502188@canb.auug.org.au>
+In-Reply-To: <20141007194454.10502188@canb.auug.org.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 05:21:11PM +0100, Rob Landley wrote:
-> On 10/07/14 00:28, Guenter Roeck wrote:
-> > Devicetree bindings are supposed to be operating system independent
-> > and should thus not describe how a specific functionality is implemented
-> > in Linux.
+On 10/07/14 01:44, Stephen Rothwell wrote:
+> Hi all,
 > 
-> So your argument is that linux/Documentation/devicetree/bindings should
-> not be specific to Linux. Merely hosted in the Linux kernel source
-> repository.
+> Changes since 20141003:
+> 
 
-Precisely. If nothing else as a general guideline this keeps us honest,
-and prevents us from embedding arbitrary implementation details into
-bidnings that cause pain later when we want to change things at either
-end.
+on i386 or x86_64:
 
-There are already otehr users of these bindings, so we can't really
-claim they're strictly Linux-specific anyhow.
+In file included from ../include/net/geneve.h:4:0,
+                 from ../net/openvswitch/flow_netlink.c:45:
+../include/net/udp_tunnel.h: In function 'udp_tunnel_handle_offloads':
+../include/net/udp_tunnel.h:100:2: error: implicit declaration of function 'iptunnel_handle_offloads' [-Werror=implicit-function-declaration]
+  return iptunnel_handle_offloads(skb, udp_csum, type);
+  ^
+../include/net/udp_tunnel.h:100:2: warning: return makes pointer from integer without a cast [enabled by default]
 
-> Well that's certainly a point of view.
 
-As far as I am aware, it's the point of view shared by the device tree
-maintainers, and it's been that way for a while.
 
-I don't really follow your concern. For one thing were this followed
-more strictly this file wouldn't need patching at all to correct for
-this Linux-internal rework...
-
-Thanks,
-Mark.
+-- 
+~Randy
