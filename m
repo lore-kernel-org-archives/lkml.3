@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932573AbaJGXa5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:30:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39740 "EHLO
+	id S932203AbaJGXUD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227AbaJGXUF (ORCPT
+	with ESMTP id S932112AbaJGXT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:05 -0400
+	Tue, 7 Oct 2014 19:19:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 13/37] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
-Date: Tue,  7 Oct 2014 16:19:30 -0700
-Message-Id: <20141007231827.479339491@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.14 09/37] ring-buffer: Fix infinite spin in reading buffer
+Date: Tue,  7 Oct 2014 16:19:26 -0700
+Message-Id: <20141007231827.351210350@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
 References: <20141007231827.043235686@linuxfoundation.org>
@@ -30,61 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
+commit 24607f114fd14f2f37e3e0cb3d47bce96e81e848 upstream.
 
-This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
-NUMA type from the pmd to the pte"). If a huge page is being split due
-a protection change and the tail will be in a PROT_NONE vma then NUMA
-hinting PTEs are temporarily created in the protected VMA.
+Commit 651e22f2701b "ring-buffer: Always reset iterator to reader page"
+fixed one bug but in the process caused another one. The reset is to
+update the header page, but that fix also changed the way the cached
+reads were updated. The cache reads are used to test if an iterator
+needs to be updated or not.
 
- VM_RW|VM_PROTNONE
-|-----------------|
-      ^
-      split here
+A ring buffer iterator, when created, disables writes to the ring buffer
+but does not stop other readers or consuming reads from happening.
+Although all readers are synchronized via a lock, they are only
+synchronized when in the ring buffer functions. Those functions may
+be called by any number of readers. The iterator continues down when
+its not interrupted by a consuming reader. If a consuming read
+occurs, the iterator starts from the beginning of the buffer.
 
-In the specific case above, it should get fixed up by change_pte_range()
-but there is a window of opportunity for weirdness to happen. Similarly,
-if a huge page is shrunk and split during a protection update but before
-pmd_numa is cleared then a pte_numa can be left behind.
+The way the iterator sees that a consuming read has happened since
+its last read is by checking the reader "cache". The cache holds the
+last counts of the read and the reader page itself.
 
-Instead of adding complexity trying to deal with the case, this patch
-will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
-will not be triggered which is marginal in comparison to the complexity
-in dealing with the corner cases during THP split.
+Commit 651e22f2701b changed what was saved by the cache_read when
+the rb_iter_reset() occurred, making the iterator never match the cache.
+Then if the iterator calls rb_iter_reset(), it will go into an
+infinite loop by checking if the cache doesn't match, doing the reset
+and retrying, just to see that the cache still doesn't match! Which
+should never happen as the reset is suppose to set the cache to the
+current value and there's locks that keep a consuming reader from
+having access to the data.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 651e22f2701b "ring-buffer: Always reset iterator to reader page"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1826,14 +1826,17 @@ static int __split_huge_page_map(struct
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
- 			pte_t *pte, entry;
- 			BUG_ON(PageCompound(page+i));
-+			/*
-+			 * Note that pmd_numa is not transferred deliberately
-+			 * to avoid any possibility that pte_numa leaks to
-+			 * a PROT_NONE VMA by accident.
-+			 */
- 			entry = mk_pte(page + i, vma->vm_page_prot);
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
- 				entry = pte_wrprotect(entry);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
--			if (pmd_numa(*pmd))
--				entry = pte_mknuma(entry);
- 			pte = pte_offset_map(&_pmd, haddr);
- 			BUG_ON(!pte_none(*pte));
- 			set_pte_at(mm, haddr, pte, entry);
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -3372,7 +3372,7 @@ static void rb_iter_reset(struct ring_bu
+ 	iter->head = cpu_buffer->reader_page->read;
+ 
+ 	iter->cache_reader_page = iter->head_page;
+-	iter->cache_read = iter->head;
++	iter->cache_read = cpu_buffer->read;
+ 
+ 	if (iter->head)
+ 		iter->read_stamp = cpu_buffer->read_stamp;
 
 
