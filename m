@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569AbaJGXTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:19:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
+	id S1756053AbaJGXkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:40:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39576 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755509AbaJGXTq (ORCPT
+	with ESMTP id S1755560AbaJGXTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:46 -0400
+	Tue, 7 Oct 2014 19:19:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Subject: [PATCH 3.16 15/26] init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
-Date: Tue,  7 Oct 2014 16:19:31 -0700
-Message-Id: <20141007231848.942186325@linuxfoundation.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 05/26] mm: memcontrol: do not iterate uninitialized memcgs
+Date: Tue,  7 Oct 2014 16:19:21 -0700
+Message-Id: <20141007231848.652284739@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -29,41 +32,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Triplett <josh@joshtriplett.org>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 62b4d2041117f35ab2409c9f5c4b8d3dc8e59d0f upstream.
+commit 2f7dd7a4100ad4affcb141605bef178ab98ccb18 upstream.
 
-commit 03b8c7b623c80af264c4c8d6111e5c6289933666 ("futex: Allow
-architectures to skip futex_atomic_cmpxchg_inatomic() test") added the
-HAVE_FUTEX_CMPXCHG symbol right below FUTEX.  This placed it right in
-the middle of the options for the EXPERT menu.  However,
-HAVE_FUTEX_CMPXCHG does not depend on EXPERT or FUTEX, so Kconfig stops
-placing items in the EXPERT menu, and displays the remaining several
-EXPERT items (starting with EPOLL) directly in the General Setup menu.
+The cgroup iterators yield css objects that have not yet gone through
+css_online(), but they are not complete memcgs at this point and so the
+memcg iterators should not return them.  Commit d8ad30559715 ("mm/memcg:
+iteration skip memcgs not yet fully initialized") set out to implement
+exactly this, but it uses CSS_ONLINE, a cgroup-internal flag that does
+not meet the ordering requirements for memcg, and so the iterator may
+skip over initialized groups, or return partially initialized memcgs.
 
-Since both users of HAVE_FUTEX_CMPXCHG only select it "if FUTEX", make
-HAVE_FUTEX_CMPXCHG itself depend on FUTEX.  With this change, the
-subsequent items display as part of the EXPERT menu again; the EMBEDDED
-menu now appears as the next top-level item in the General Setup menu,
-which makes General Setup much shorter and more usable.
+The cgroup core can not reasonably provide a clear answer on whether the
+object around the css has been fully initialized, as that depends on
+controller-specific locking and lifetime rules.  Thus, introduce a
+memcg-specific flag that is set after the memcg has been initialized in
+css_online(), and read before mem_cgroup_iter() callers access the memcg
+members.
 
-Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- init/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ mm/memcontrol.c |   36 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 31 insertions(+), 5 deletions(-)
 
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1432,6 +1432,7 @@ config FUTEX
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -292,6 +292,9 @@ struct mem_cgroup {
+ 	/* vmpressure notifications */
+ 	struct vmpressure vmpressure;
  
- config HAVE_FUTEX_CMPXCHG
- 	bool
-+	depends on FUTEX
- 	help
- 	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
- 	  is implemented and always working. This removes a couple of runtime
++	/* css_online() has been completed */
++	int initialized;
++
+ 	/*
+ 	 * the counter to account for mem+swap usage.
+ 	 */
+@@ -1106,10 +1109,21 @@ skip_node:
+ 	 * skipping css reference should be safe.
+ 	 */
+ 	if (next_css) {
+-		if ((next_css == &root->css) ||
+-		    ((next_css->flags & CSS_ONLINE) &&
+-		     css_tryget_online(next_css)))
+-			return mem_cgroup_from_css(next_css);
++		struct mem_cgroup *memcg = mem_cgroup_from_css(next_css);
++
++		if (next_css == &root->css)
++			return memcg;
++
++		if (css_tryget_online(next_css)) {
++			/*
++			 * Make sure the memcg is initialized:
++			 * mem_cgroup_css_online() orders the the
++			 * initialization against setting the flag.
++			 */
++			if (smp_load_acquire(&memcg->initialized))
++				return memcg;
++			css_put(next_css);
++		}
+ 
+ 		prev_css = next_css;
+ 		goto skip_node;
+@@ -6277,6 +6291,7 @@ mem_cgroup_css_online(struct cgroup_subs
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup *parent = mem_cgroup_from_css(css->parent);
++	int ret;
+ 
+ 	if (css->id > MEM_CGROUP_ID_MAX)
+ 		return -ENOSPC;
+@@ -6313,7 +6328,18 @@ mem_cgroup_css_online(struct cgroup_subs
+ 	}
+ 	mutex_unlock(&memcg_create_mutex);
+ 
+-	return memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	ret = memcg_init_kmem(memcg, &memory_cgrp_subsys);
++	if (ret)
++		return ret;
++
++	/*
++	 * Make sure the memcg is initialized: mem_cgroup_iter()
++	 * orders reading memcg->initialized against its callers
++	 * reading the memcg members.
++	 */
++	smp_store_release(&memcg->initialized, 1);
++
++	return 0;
+ }
+ 
+ /*
 
 
