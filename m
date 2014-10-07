@@ -1,136 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaJGFgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:36:19 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41053 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaJGFai (ORCPT
+	id S1754059AbaJGFg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:36:57 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:45115 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037AbaJGFgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:30:38 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, lguest@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-alpha@vger.kernel.org,
-        linux-am33-list@redhat.com, linux-cris-kernel@axis.com,
-        linux-efi@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-m32r-ja@ml.linux-m32r.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 41/44] x86: pmc_atom: Register poweroff handler with kernel poweroff handler
-Date: Mon,  6 Oct 2014 22:28:43 -0700
-Message-Id: <1412659726-29957-42-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=0.3
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.54337A7D.00D4,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 720
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 7 Oct 2014 01:36:55 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s975aqLY001094, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] r8152: use mutex for hw settings
+Date: Tue, 7 Oct 2014 13:36:30 +0800
+Message-ID: <1394712342-15778-58-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel poweroff handler instead of setting pm_power_off
-directly. Register with a low priority value of 64 to reflect that
-the original code only sets pm_power_off if it was not already set.
+Use mutex to avoid that the serial hw settings would be interrupted
+by other settings. Although there is no problem now, it makes the
+driver more safe.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- arch/x86/kernel/pmc_atom.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/net/usb/r8152.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 67 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0c424a6..79331a2 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -20,6 +20,8 @@
- #include <linux/pci.h>
- #include <linux/device.h>
- #include <linux/debugfs.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/seq_file.h>
- #include <linux/io.h>
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 6532620..4f99c43 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -26,7 +26,7 @@
+ #include <linux/mdio.h>
  
-@@ -92,7 +94,8 @@ static inline void pmc_reg_write(struct pmc_dev *pmc, int reg_offset, u32 val)
- 	writel(val, pmc->regmap + reg_offset);
+ /* Version Information */
+-#define DRIVER_VERSION "v1.06.1 (2014/10/01)"
++#define DRIVER_VERSION "v1.07.0 (2014/10/07)"
+ #define DRIVER_AUTHOR "Realtek linux nic maintainers <nic_swsd@realtek.com>"
+ #define DRIVER_DESC "Realtek RTL8152/RTL8153 Based USB Ethernet Adapters"
+ #define MODULENAME "r8152"
+@@ -566,6 +566,7 @@ struct r8152 {
+ 	spinlock_t rx_lock, tx_lock;
+ 	struct delayed_work schedule;
+ 	struct mii_if_info mii;
++	struct mutex control;	/* use for hw setting */
+ 
+ 	struct rtl_ops {
+ 		void (*init)(struct r8152 *);
+@@ -984,12 +985,16 @@ static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
+ 	if (!is_valid_ether_addr(addr->sa_data))
+ 		return -EADDRNOTAVAIL;
+ 
++	mutex_lock(&tp->control);
++
+ 	memcpy(netdev->dev_addr, addr->sa_data, netdev->addr_len);
+ 
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_CONFIG);
+ 	pla_ocp_write(tp, PLA_IDR, BYTE_EN_SIX_BYTES, 8, addr->sa_data);
+ 	ocp_write_byte(tp, MCU_TYPE_PLA, PLA_CRWECR, CRWECR_NORAML);
+ 
++	mutex_unlock(&tp->control);
++
+ 	return 0;
  }
  
--static void pmc_power_off(void)
-+static int pmc_power_off(struct notifier_block *this, unsigned long unused1,
-+			 void *unused2)
- {
- 	u16	pm1_cnt_port;
- 	u32	pm1_cnt_value;
-@@ -107,8 +110,15 @@ static void pmc_power_off(void)
- 	pm1_cnt_value |= SLEEP_ENABLE;
+@@ -2139,6 +2144,8 @@ static int rtl8152_set_features(struct net_device *dev,
+ 	netdev_features_t changed = features ^ dev->features;
+ 	struct r8152 *tp = netdev_priv(dev);
  
- 	outl(pm1_cnt_value, pm1_cnt_port);
++	mutex_lock(&tp->control);
 +
-+	return NOTIFY_DONE;
+ 	if (changed & NETIF_F_HW_VLAN_CTAG_RX) {
+ 		if (features & NETIF_F_HW_VLAN_CTAG_RX)
+ 			rtl_rx_vlan_en(tp, true);
+@@ -2146,6 +2153,8 @@ static int rtl8152_set_features(struct net_device *dev,
+ 			rtl_rx_vlan_en(tp, false);
+ 	}
+ 
++	mutex_unlock(&tp->control);
++
+ 	return 0;
  }
  
-+static struct notifier_block pmc_poweroff_nb = {
-+	.notifier_call = pmc_power_off,
-+	.priority = 64,
-+};
-+
- static void pmc_hw_reg_setup(struct pmc_dev *pmc)
- {
- 	/*
-@@ -247,8 +257,12 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- 	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
+@@ -2844,6 +2853,11 @@ static void rtl_work_func_t(struct work_struct *work)
+ 	if (test_bit(RTL8152_UNPLUG, &tp->flags))
+ 		goto out1;
  
- 	/* Install power off function */
--	if (acpi_base_addr != 0 && pm_power_off == NULL)
--		pm_power_off = pmc_power_off;
-+	if (acpi_base_addr != 0) {
-+		ret = register_poweroff_handler(&pmc_poweroff_nb);
-+		if (ret)
-+			dev_err(&pdev->dev,
-+				"Failed to install poweroff handler\n");
++	if (!mutex_trylock(&tp->control)) {
++		schedule_delayed_work(&tp->schedule, 0);
++		goto out1;
 +	}
++
+ 	if (test_bit(RTL8152_LINK_CHG, &tp->flags))
+ 		set_carrier(tp);
  
- 	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
- 	pmc->base_addr &= PMC_BASE_ADDR_MASK;
+@@ -2859,6 +2873,8 @@ static void rtl_work_func_t(struct work_struct *work)
+ 	if (test_bit(PHY_RESET, &tp->flags))
+ 		rtl_phy_reset(tp);
+ 
++	mutex_unlock(&tp->control);
++
+ out1:
+ 	usb_autopm_put_interface(tp->intf);
+ }
+@@ -2878,6 +2894,8 @@ static int rtl8152_open(struct net_device *netdev)
+ 		goto out;
+ 	}
+ 
++	mutex_lock(&tp->control);
++
+ 	/* The WORK_ENABLE may be set when autoresume occurs */
+ 	if (test_bit(WORK_ENABLE, &tp->flags)) {
+ 		clear_bit(WORK_ENABLE, &tp->flags);
+@@ -2906,6 +2924,8 @@ static int rtl8152_open(struct net_device *netdev)
+ 		free_all_mem(tp);
+ 	}
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ 
+ out:
+@@ -2926,6 +2946,8 @@ static int rtl8152_close(struct net_device *netdev)
+ 	if (res < 0) {
+ 		rtl_drop_queued_tx(tp);
+ 	} else {
++		mutex_lock(&tp->control);
++
+ 		/* The autosuspend may have been enabled and wouldn't
+ 		 * be disable when autoresume occurs, because the
+ 		 * netif_running() would be false.
+@@ -2938,6 +2960,9 @@ static int rtl8152_close(struct net_device *netdev)
+ 		tasklet_disable(&tp->tl);
+ 		tp->rtl_ops.down(tp);
+ 		tasklet_enable(&tp->tl);
++
++		mutex_unlock(&tp->control);
++
+ 		usb_autopm_put_interface(tp->intf);
+ 	}
+ 
+@@ -3162,6 +3187,8 @@ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+ 	struct r8152 *tp = usb_get_intfdata(intf);
+ 
++	mutex_lock(&tp->control);
++
+ 	if (PMSG_IS_AUTO(message))
+ 		set_bit(SELECTIVE_SUSPEND, &tp->flags);
+ 	else
+@@ -3181,6 +3208,8 @@ static int rtl8152_suspend(struct usb_interface *intf, pm_message_t message)
+ 		tasklet_enable(&tp->tl);
+ 	}
+ 
++	mutex_unlock(&tp->control);
++
+ 	return 0;
+ }
+ 
+@@ -3188,6 +3217,8 @@ static int rtl8152_resume(struct usb_interface *intf)
+ {
+ 	struct r8152 *tp = usb_get_intfdata(intf);
+ 
++	mutex_lock(&tp->control);
++
+ 	if (!test_bit(SELECTIVE_SUSPEND, &tp->flags)) {
+ 		tp->rtl_ops.init(tp);
+ 		netif_device_attach(tp->netdev);
+@@ -3213,6 +3244,8 @@ static int rtl8152_resume(struct usb_interface *intf)
+ 		usb_submit_urb(tp->intr_urb, GFP_KERNEL);
+ 	}
+ 
++	mutex_unlock(&tp->control);
++
+ 	return 0;
+ }
+ 
+@@ -3223,9 +3256,13 @@ static void rtl8152_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+ 	if (usb_autopm_get_interface(tp->intf) < 0)
+ 		return;
+ 
++	mutex_lock(&tp->control);
++
+ 	wol->supported = WAKE_ANY;
+ 	wol->wolopts = __rtl_get_wol(tp);
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ }
+ 
+@@ -3238,9 +3275,13 @@ static int rtl8152_set_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+ 	if (ret < 0)
+ 		goto out_set_wol;
+ 
++	mutex_lock(&tp->control);
++
+ 	__rtl_set_wol(tp, wol->wolopts);
+ 	tp->saved_wolopts = wol->wolopts & WAKE_ANY;
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ 
+ out_set_wol:
+@@ -3275,11 +3316,18 @@ static
+ int rtl8152_get_settings(struct net_device *netdev, struct ethtool_cmd *cmd)
+ {
+ 	struct r8152 *tp = netdev_priv(netdev);
++	int ret;
+ 
+ 	if (!tp->mii.mdio_read)
+ 		return -EOPNOTSUPP;
+ 
+-	return mii_ethtool_gset(&tp->mii, cmd);
++	mutex_lock(&tp->control);
++
++	ret = mii_ethtool_gset(&tp->mii, cmd);
++
++	mutex_unlock(&tp->control);
++
++	return ret;
+ }
+ 
+ static int rtl8152_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+@@ -3291,8 +3339,12 @@ static int rtl8152_set_settings(struct net_device *dev, struct ethtool_cmd *cmd)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	mutex_lock(&tp->control);
++
+ 	ret = rtl8152_set_speed(tp, cmd->autoneg, cmd->speed, cmd->duplex);
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ 
+ out:
+@@ -3452,8 +3504,12 @@ rtl_ethtool_get_eee(struct net_device *net, struct ethtool_eee *edata)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	mutex_lock(&tp->control);
++
+ 	ret = tp->rtl_ops.eee_get(tp, edata);
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ 
+ out:
+@@ -3470,10 +3526,14 @@ rtl_ethtool_set_eee(struct net_device *net, struct ethtool_eee *edata)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	mutex_lock(&tp->control);
++
+ 	ret = tp->rtl_ops.eee_set(tp, edata);
+ 	if (!ret)
+ 		ret = mii_nway_restart(&tp->mii);
+ 
++	mutex_unlock(&tp->control);
++
+ 	usb_autopm_put_interface(tp->intf);
+ 
+ out:
+@@ -3515,7 +3575,9 @@ static int rtl8152_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+ 		break;
+ 
+ 	case SIOCGMIIREG:
++		mutex_lock(&tp->control);
+ 		data->val_out = r8152_mdio_read(tp, data->reg_num);
++		mutex_unlock(&tp->control);
+ 		break;
+ 
+ 	case SIOCSMIIREG:
+@@ -3523,7 +3585,9 @@ static int rtl8152_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+ 			res = -EPERM;
+ 			break;
+ 		}
++		mutex_lock(&tp->control);
+ 		r8152_mdio_write(tp, data->reg_num, data->val_in);
++		mutex_unlock(&tp->control);
+ 		break;
+ 
+ 	default:
+@@ -3716,6 +3780,7 @@ static int rtl8152_probe(struct usb_interface *intf,
+ 		goto out;
+ 
+ 	tasklet_init(&tp->tl, bottom_half, (unsigned long)tp);
++	mutex_init(&tp->control);
+ 	INIT_DELAYED_WORK(&tp->schedule, rtl_work_func_t);
+ 
+ 	netdev->netdev_ops = &rtl8152_netdev_ops;
 -- 
-1.9.1
+1.9.3
 
