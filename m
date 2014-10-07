@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaJGKke (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:40:34 -0400
-Received: from mga03.intel.com ([134.134.136.65]:20330 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752825AbaJGKk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:40:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,669,1406617200"; 
-   d="scan'208";a="482491629"
-Date: Tue, 7 Oct 2014 13:40:21 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 11/13] gpio: Support for unified device properties
- interface
-Message-ID: <20141007104021.GN1583@lahna.fi.intel.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan>
- <2052507.JjE2hdgEYc@vostro.rjw.lan>
- <CAAVeFuJwONbZ30jk6B1jPDdUUMSkh7Va4BZFt08+w60yoO=NBw@mail.gmail.com>
+	id S1753420AbaJGKpJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:45:09 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:43601 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825AbaJGKpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 06:45:05 -0400
+Date: Tue, 7 Oct 2014 11:44:47 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Andreas Mohr <andi@lisas.de>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] Workable vintage driver support mechanism? (Re:
+ [PATCH v3] ES938 support for ES18xx driver)
+Message-ID: <20141007114447.35379ef7@alan.etchedpixels.co.uk>
+In-Reply-To: <5432F060.5060307@ladisch.de>
+References: <1412027079-15876-1-git-send-email-linux@rainbow-software.org>
+	<s5h7g0dzgd5.wl-tiwai@suse.de>
+	<201410061555.19007.linux@rainbow-software.org>
+	<s5ha959xp53.wl-tiwai@suse.de>
+	<20141006184150.GA2465@rhlx01.hs-esslingen.de>
+	<5432F060.5060307@ladisch.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuJwONbZ30jk6B1jPDdUUMSkh7Va4BZFt08+w60yoO=NBw@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 07:22:13PM +0900, Alexandre Courbot wrote:
-> On Tue, Oct 7, 2014 at 9:18 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >
-> > Some drivers need to deal with only firmware representation of its
-> > GPIOs. An example would be a GPIO button array driver where each button
-> > is described as a separate firmware node in device tree. Typically these
-> > child nodes do not have physical representation in the Linux device
-> > model.
-> >
-> > In order to help device drivers to handle such firmware child nodes we
-> > add dev[m]_get_named_gpiod_from_child() that takes a child firmware
-> > node pointer as its second argument (the first one is the parent device
-> > itself), finds the GPIO using whatever is the underlying firmware
-> > method, and requests the GPIO properly.
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> ...
-> 
-> > +/* Child properties interface */
-> > +struct gpio_desc *dev_get_named_gpiod_from_child(struct device *dev, void *child,
-> > +                                                const char *propname, int index);
-> > +struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev, void *child,
-> > +                                                 const char *propname, int index);
-> 
-> I see the reason for these functions and am not opposed to them.
-> However, I wonder if we could not replace propname by a con_id that
-> would be resolved to one of con_id-gpio for DT and whatever naming
-> convention ACPI is using?
+On Mon, 06 Oct 2014 21:41:20 +0200
+Clemens Ladisch <clemens@ladisch.de> wrote:
 
-The code in gpio-leds.c and gpio_keys_polled.c refers to "gpios" as the
-property name. If we can change that somehow to work with con_id-gpio
-instead without breaking things, then why not.
+> Andreas Mohr wrote:
+> > I think I have an idea which might be useful to accept:
+> > for every piece of sufficiently "vintage" submission,
+> > people would be tasked with offering (or somehow ensuring)
+> > a sufficiently closely time-related cleanup in other places.
+> 
+> The problem that such a new driver imposes is not a one-time reduction
+> in overall kernel quality, but the ongoing maintenance effort.
 
-> This would prevent users to name GPIOs outside of the conventions
-> defined in the bindings and be generally safer. Is there a particular
-> reason (used by some old code?) for the current direct property
-> access? If not, maybe we could call a slightly-modified of_find_gpio()
-> to resolve the GPIO property for DT, and the equivalent function for
-> ACPI?
+Vintage is not IMHO a useful test. We have plenty of vintage hardware
+with active hands-on maintainers which causes no problem, and plenty of
+modern drivers with basically no maintainer that causes endless problems.
 
-Only reason I can think of is support for the existing properties that
-are used directly. Drivers using gpiod_get() and friends do not need
-dev_get_named_gpiod_from_child() anyway.
+I think there is much merit in the Debian approach - if it's not got a
+maintainer, and nobody is willing to take it on, throw it out. If it's
+got a maintainer leave it in.
+
+Economics will resolve the rest of the problem reasonably efficiently. If
+someone cares enough about using it then they'll figure out how to keep
+it maintained.
+
+Alan
