@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692AbaJGX3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:29:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39686 "EHLO
+	id S1755737AbaJGXaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:30:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932241AbaJGXUG (ORCPT
+	with ESMTP id S932236AbaJGXUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 26/37] mm/compaction: check pageblock suitability once per pageblock
-Date: Tue,  7 Oct 2014 16:19:43 -0700
-Message-Id: <20141007231827.863076734@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 14/37] media: vb2: fix VBI/poll regression
+Date: Tue,  7 Oct 2014 16:19:31 -0700
+Message-Id: <20141007231827.508119233@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
 References: <20141007231827.043235686@linuxfoundation.org>
@@ -31,99 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit c122b2087ab94192f2b937e47b563a9c4e688ece upstream.
+commit 58d75f4b1ce26324b4d809b18f94819843a98731 upstream.
 
-isolation_suitable() and migrate_async_suitable() is used to be sure
-that this pageblock range is fine to be migragted.  It isn't needed to
-call it on every page.  Current code do well if not suitable, but, don't
-do well when suitable.
+The recent conversion of saa7134 to vb2 unconvered a poll() bug that
+broke the teletext applications alevt and mtt. These applications
+expect that calling poll() without having called VIDIOC_STREAMON will
+cause poll() to return POLLERR. That did not happen in vb2.
 
-1) It re-checks isolation_suitable() on each page of a pageblock that was
-   already estabilished as suitable.
-2) It re-checks migrate_async_suitable() on each page of a pageblock that
-   was not entered through the next_pageblock: label, because
-   last_pageblock_nr is not otherwise updated.
+This patch fixes that behavior. It also fixes what should happen when
+poll() is called when STREAMON is called but no buffers have been
+queued. In that case poll() will also return POLLERR, but only for
+capture queues since output queues will always return POLLOUT
+anyway in that situation.
 
-This patch fixes situation by 1) calling isolation_suitable() only once
-per pageblock and 2) always updating last_pageblock_nr to the pageblock
-that was just checked.
+This brings the vb2 behavior in line with the old videobuf behavior.
 
-Additionally, move PageBuddy() check after pageblock unit check, since
-pageblock check is the first thing we should do and makes things more
-simple.
-
-[vbabka@suse.cz: rephrase commit description]
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |   34 +++++++++++++++++++---------------
- 1 file changed, 19 insertions(+), 15 deletions(-)
+ drivers/media/v4l2-core/videobuf2-core.c |   15 +++++++++++++--
+ include/media/videobuf2-core.h           |    4 ++++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -526,8 +526,25 @@ isolate_migratepages_range(struct zone *
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -745,6 +745,7 @@ static int __reqbufs(struct vb2_queue *q
+ 	 * to the userspace.
+ 	 */
+ 	req->count = allocated_buffers;
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
  
- 		/* If isolation recently failed, do not retry */
- 		pageblock_nr = low_pfn >> pageblock_order;
--		if (!isolation_suitable(cc, page))
--			goto next_pageblock;
-+		if (last_pageblock_nr != pageblock_nr) {
-+			int mt;
-+
-+			last_pageblock_nr = pageblock_nr;
-+			if (!isolation_suitable(cc, page))
-+				goto next_pageblock;
-+
-+			/*
-+			 * For async migration, also only scan in MOVABLE
-+			 * blocks. Async migration is optimistic to see if
-+			 * the minimum amount of work satisfies the allocation
-+			 */
-+			mt = get_pageblock_migratetype(page);
-+			if (!cc->sync && !migrate_async_suitable(mt)) {
-+				cc->finished_update_migrate = true;
-+				skipped_async_unsuitable = true;
-+				goto next_pageblock;
-+			}
-+		}
- 
- 		/*
- 		 * Skip if free. page_order cannot be used without zone->lock
-@@ -537,18 +554,6 @@ isolate_migratepages_range(struct zone *
- 			continue;
- 
- 		/*
--		 * For async migration, also only scan in MOVABLE blocks. Async
--		 * migration is optimistic to see if the minimum amount of work
--		 * satisfies the allocation
--		 */
--		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
--		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
--			cc->finished_update_migrate = true;
--			skipped_async_unsuitable = true;
--			goto next_pageblock;
--		}
--
--		/*
- 		 * Check may be lockless but that's ok as we recheck later.
- 		 * It's possible to migrate LRU pages and balloon pages
- 		 * Skip any other type of page
-@@ -639,7 +644,6 @@ check_compact_cluster:
- 
- next_pageblock:
- 		low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
--		last_pageblock_nr = pageblock_nr;
+ 	return 0;
+ }
+@@ -793,6 +794,7 @@ static int __create_bufs(struct vb2_queu
+ 		memset(q->plane_sizes, 0, sizeof(q->plane_sizes));
+ 		memset(q->alloc_ctx, 0, sizeof(q->alloc_ctx));
+ 		q->memory = create->memory;
++		q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
  	}
  
- 	acct_isolated(zone, locked, cc);
+ 	num_buffers = min(create->count, VIDEO_MAX_FRAME - q->num_buffers);
+@@ -1447,6 +1449,7 @@ static int vb2_internal_qbuf(struct vb2_
+ 	 * dequeued in dqbuf.
+ 	 */
+ 	list_add_tail(&vb->queued_entry, &q->queued_list);
++	q->waiting_for_buffers = false;
+ 	vb->state = VB2_BUF_STATE_QUEUED;
+ 
+ 	/*
+@@ -1841,6 +1844,7 @@ static int vb2_internal_streamoff(struct
+ 	 * and videobuf, effectively returning control over them to userspace.
+ 	 */
+ 	__vb2_queue_cancel(q);
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 
+ 	dprintk(3, "Streamoff successful\n");
+ 	return 0;
+@@ -2150,9 +2154,16 @@ unsigned int vb2_poll(struct vb2_queue *
+ 	}
+ 
+ 	/*
+-	 * There is nothing to wait for if no buffers have already been queued.
++	 * There is nothing to wait for if the queue isn't streaming.
+ 	 */
+-	if (list_empty(&q->queued_list))
++	if (!vb2_is_streaming(q))
++		return res | POLLERR;
++	/*
++	 * For compatibility with vb1: if QBUF hasn't been called yet, then
++	 * return POLLERR as well. This only affects capture queues, output
++	 * queues will always initialize waiting_for_buffers to false.
++	 */
++	if (q->waiting_for_buffers)
+ 		return res | POLLERR;
+ 
+ 	if (list_empty(&q->done_list))
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -329,6 +329,9 @@ struct v4l2_fh;
+  * @retry_start_streaming: start_streaming() was called, but there were not enough
+  *		buffers queued. If set, then retry calling start_streaming when
+  *		queuing a new buffer.
++ * @waiting_for_buffers: used in poll() to check if vb2 is still waiting for
++ *		buffers. Only set for capture queues if qbuf has not yet been
++ *		called since poll() needs to return POLLERR in that situation.
+  * @fileio:	file io emulator internal data, used only if emulator is active
+  */
+ struct vb2_queue {
+@@ -362,6 +365,7 @@ struct vb2_queue {
+ 
+ 	unsigned int			streaming:1;
+ 	unsigned int			retry_start_streaming:1;
++	unsigned int			waiting_for_buffers:1;
+ 
+ 	struct vb2_fileio_data		*fileio;
+ };
 
 
