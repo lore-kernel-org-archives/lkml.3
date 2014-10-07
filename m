@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaJGRiO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:38:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4840 "EHLO mx1.redhat.com"
+	id S1754295AbaJGRo3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:44:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41626 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459AbaJGRiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:38:13 -0400
-Date: Tue, 7 Oct 2014 13:37:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hrtimer deadlock caused by nohz_full
-Message-ID: <20141007173730.GA12147@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20140925141425.GA21702@redhat.com>
- <alpine.DEB.2.10.1409251630210.4604@nanos>
- <20140925234657.GB14870@lerouge>
- <20141002182409.GA29934@redhat.com>
- <20141007153024.GA14119@lerouge>
+	id S1751056AbaJGRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:44:27 -0400
+Date: Tue, 7 Oct 2014 18:07:32 +0100
+From: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, qemu-devel@nongnu.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
+Message-ID: <20141007170731.GO2404@work-vm>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+ <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+ <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
+ <20141006085540.GD2336@work-vm>
+ <20141006164156.GA31075@redhat.com>
+ <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141007153024.GA14119@lerouge>
+In-Reply-To: <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 05:30:27PM +0200, Frederic Weisbecker wrote:
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Mon, Oct 6, 2014 at 12:41 PM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> >
+> > Of course if somebody has better ideas on how to resolve an anonymous
+> > userfault they're welcome.
+> 
+> So I'd *much* rather have a "write()" style interface (ie _copying_
+> bytes from user space into a newly allocated page that gets mapped)
+> than a "remap page" style interface
 
- > >  > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
- > >  > 
- > >  > I was about to make the pull request, the branch is acked by peterz.
- > >  > Would you like to pull it? It's all merge window material.
- > >  > 
- > >  > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
- > >  > 	nohz/fixes-v3
- > > 
- > > I'm now hitting this with such regularity that it's preventing me from
- > > tracking down other bugs.  Can we get this merged soon please ?
- > 
- > I asked Thomas to pull but he probably missed it. So I did a formal pull request
- > to Ingo a few days later but he told me that the pull request was made too late
- > as the merge window was too close. I told him it fixes annoying bugs but that was on IRC
- > so this probably got lost.
- > 
- > It will probably be delayed to 3.18
- > Sorry I don't have much control myself on merging patches upstream.
+Something like that might work for the postcopy case; it doesn't work
+for some of the other uses that need to stop a page being changed by the
+guest, but then need to somehow get a copy of that page internally to QEMU,
+and perhaps provide it back later.  remap_anon_pages worked for those cases
+as well; I can't think of another current way of doing it in userspace.
 
-I got fed up of hitting it this morning and pull this into 3.17, and got
-a bunch of rejects, as that tree is against rc5.  Is there an updated
-patchset somewhere else?
+I'm thinking here of systems for making VMs with memory larger than a single
+host; that's something that's not as well thought out.  I've also seen people
+writing emulation that want to trap and emulate some page accesses while
+still having the original data available to the emulator itself.
 
-	Dave
+So yes, OK for now, but the result is less general.
 
+Dave
+
+
+> remapping anonymous pages involves page table games that really aren't
+> necessarily a good idea, and tlb invalidates for the old page etc.
+> Just don't do it.
+> 
+>            Linus
+--
+Dr. David Alan Gilbert / dgilbert@redhat.com / Manchester, UK
