@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156AbaJGOhX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:37:23 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36978 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987AbaJGOg2 (ORCPT
+	id S1754138AbaJGOhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:37:21 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:38644 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921AbaJGOhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:36:28 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, linux@roeck-us.net
-Subject: [PATCH 2/4] ARM: multi_v7_defconfig: Enable support for ST's LPC Watchdog
-Date: Tue,  7 Oct 2014 15:36:10 +0100
-Message-Id: <1412692572-14031-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412692572-14031-1-git-send-email-lee.jones@linaro.org>
-References: <1412692572-14031-1-git-send-email-lee.jones@linaro.org>
+	Tue, 7 Oct 2014 10:37:18 -0400
+Message-ID: <5433FA93.8000607@gmail.com>
+Date: Tue, 07 Oct 2014 16:37:07 +0200
+From: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH 001/002] staging: gs_fpgaboot: Fix "Possible unnecessary KERN_INFO"
+ checkpatch.pl warning
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Fix "Possible unnecessary KERN_INFO" checkpatch.pl warning
+
+Signed-off-by: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+
 ---
- arch/arm/configs/multi_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/gs_fpgaboot/gs_fpgaboot.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 5fb95fb..034aeab 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -238,6 +238,7 @@ CONFIG_ST_THERMAL_SYSCFG=y
- CONFIG_ST_THERMAL_MEMMAP=y
- CONFIG_WATCHDOG=y
- CONFIG_ORION_WATCHDOG=y
-+CONFIG_ST_WATCHDOG=y
- CONFIG_SUNXI_WATCHDOG=y
- CONFIG_MFD_AS3722=y
- CONFIG_MFD_BCM590XX=y
+diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+index 6aa9d7c..6129164 100644
+--- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
++++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+@@ -58,7 +58,7 @@ static void datadump(char *msg, void *m, int n)
+ 
+ 	for (i = 0; i < n; i++) {
+ 		if ((i&0xf) == 0)
+-			pr_info(KERN_INFO "\n  0x%4x: ", i);
++			pr_info("\n  0x%4x: ", i);
+ 
+ 		pr_info("%02X ", c[i]);
+ 	}
 -- 
-1.9.1
-
+2.1.2
