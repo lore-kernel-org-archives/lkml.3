@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240AbaJGS73 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:59:29 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:39706 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755040AbaJGS70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:59:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <5434352A.6080403@linux.vnet.ibm.com>
-References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
- <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
- <543428E1.7050702@linux.vnet.ibm.com> <20141007180209.GD10432@obsidianresearch.com>
- <5434352A.6080403@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Oct 2014 11:59:04 -0700
-Message-ID: <CALCETrVVSd_pTBP3ghn=oroNqrxPYRev-xcQ+KnF8kcZZiwB7A@mail.gmail.com>
-Subject: Re: [tpmdd-devel] [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit @
- LinuxCon Europe
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Peter Huewe <PeterHuewe@gmx.de>, keyrings@linux-nfs.org,
-        jarkko.sakkinnen@linux.intel.com,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        James Morris <james.l.morris@oracle.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        trousers-tech@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	id S932113AbaJGTDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:03:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27612 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494AbaJGTDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 15:03:19 -0400
+Message-ID: <1412708594.3333.94.camel@localhost>
+Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
+ multicast log socket
+From: Eric Paris <eparis@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
+        pmoore@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
+        keescook@chromium.org
+Date: Tue, 07 Oct 2014 15:03:14 -0400
+In-Reply-To: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 11:47 AM, Stefan Berger
-<stefanb@linux.vnet.ibm.com> wrote:
-> On 10/07/2014 02:02 PM, Jason Gunthorpe wrote:
->>
->> On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
->>
->>> Why add the complexity of swapping of authenticated sessions and keys
->>> into the kernel if you can handle this in userspace? You need a library
->>> that is aware of the number of key slots and slots for sessions in the
->>> TPM and swaps them in at out when applications need them. Trousers is
->>> such a library that was designed to cope with the limitations of the
->>> device and make its functionality available to all applications that
->>> want to access it.
->>
->> How does trousers work with the kernel when the kernel is also using
->> TPM key slots for IMA/keyring/whatever?
->
->
-> IIRC it only uses a single key slot and swaps all keys in and out of that
-> one. If the kernel was to fill up all key (and sessions) slots, TSS would
-> probably not work anymore.
->
-> Another argument for the TSS is that you also wouldn't want applications to
-> swap out each others keys and sessions and leave them out or assume that
-> they would always cleanup if they do not currently need them.
+On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
+> Log the event when a client attempts to connect to the netlink audit multicast
+> socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
+> group.  Log the disconnect too.
+> 
+> Sample output:
+> time->Tue Oct  7 14:15:19 2014
+> type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1 pid=3552 comm="audit-multicast" exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0 op=connect res=1
+> 
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+> For some reason unbind isn't being called on disconnect.  I suspect missing
+> plumbing in netlink.  Investigation needed...
+> 
+>  include/uapi/linux/audit.h |    1 +
+>  kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++-
+>  2 files changed, 45 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> index 4d100c8..7fa6e8f 100644
+> --- a/include/uapi/linux/audit.h
+> +++ b/include/uapi/linux/audit.h
+> @@ -110,6 +110,7 @@
+>  #define AUDIT_SECCOMP		1326	/* Secure Computing event */
+>  #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
+>  #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
+> +#define AUDIT_EVENT_LISTENER	1348	/* task joined multicast read socket */
+>  
+>  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+>  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 53bb39b..74c81a7 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
+>  	mutex_unlock(&audit_cmd_mutex);
+>  }
+>  
+> +static void audit_log_bind(int group, char *op, int err)
+> +{
+> +	struct audit_buffer *ab;
+> +	char comm[sizeof(current->comm)];
+> +	struct mm_struct *mm = current->mm;
+> +
+> +	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
+> +	if (!ab)
+> +		return;
+> +
+> +	audit_log_format(ab, "auid=%d",
+> +			from_kuid(&init_user_ns, audit_get_loginuid(current)));
+> +	audit_log_format(ab, " uid=%d",
+> +			 from_kuid(&init_user_ns, current_uid()));
+> +	audit_log_format(ab, " gid=%d",
+> +			 from_kgid(&init_user_ns, current_gid()));
+> +	audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
+> +	audit_log_format(ab, " pid=%d", task_pid_nr(current));
+> +	audit_log_format(ab, " comm=");
+> +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
+> +	if (mm) {
+> +		down_read(&mm->mmap_sem);
+> +		if (mm->exe_file)
+> +			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
+> +		up_read(&mm->mmap_sem);
+> +	} else 
+> +		audit_log_format(ab, " exe=(null)");
+> +	audit_log_task_context(ab); /* subj= */
 
-That argument seems backwards.  If you're worried about applications
-(or trousers itself!) failing to clean up, then shouldn't the kernel
-driver clean up orphaned key slots itself?
+super crazy yuck.  audit_log_task_info() ??
 
-Also, what protects the kernel from having slot 0 get stomped on or,
-worse, inappropriately used by a misbehaving or malicious user
-program?  Is the authorization session mechanism really secure against
-intentional abuse by users of the same machine?
+> +	audit_log_format(ab, " group=%d", group);
 
---Andy
+group seems like too easily confused a name.
+
+> +	audit_log_format(ab, " op=%s", op);
+> +	audit_log_format(ab, " res=%d", !err);
+> +	audit_log_end(ab);
+> +}
+> +
+>  /* Run custom bind function on netlink socket group connect or bind requests. */
+>  static int audit_bind(int group)
+>  {
+> +	int err = 0;
+> +
+>  	if (!capable(CAP_AUDIT_READ))
+> -		return -EPERM;
+> +		err = -EPERM;
+> +	audit_log_bind(group, "connect", err);
+> +	return err;
+> +}
+>  
+> -	return 0;
+> +static void audit_unbind(int group)
+> +{
+> +	audit_log_bind(group, "disconnect", 0);
+>  }
+>  
+>  static int __net_init audit_net_init(struct net *net)
+> @@ -1124,6 +1165,7 @@ static int __net_init audit_net_init(struct net *net)
+>  		.bind	= audit_bind,
+>  		.flags	= NL_CFG_F_NONROOT_RECV,
+>  		.groups	= AUDIT_NLGRP_MAX,
+> +		.unbind	= audit_unbind,
+>  	};
+>  
+>  	struct audit_net *aunet = net_generic(net, audit_net_id);
+
+
