@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932976AbaJGXc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:32:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39668 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122AbaJGXUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932151AbaJGXUA (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 7 Oct 2014 19:20:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39595 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122AbaJGXT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 19:19:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 16/37] mm: exclude memoryless nodes from zone_reclaim
-Date: Tue,  7 Oct 2014 16:19:33 -0700
-Message-Id: <20141007231827.565961673@linuxfoundation.org>
+        Shaohua Li <shli@kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>, NeilBrown <neilb@suse.de>
+Subject: [PATCH 3.14 05/37] md/raid5: disable DISCARD by default due to safety concerns.
+Date: Tue,  7 Oct 2014 16:19:22 -0700
+Message-Id: <20141007231827.230400159@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
 References: <20141007231827.043235686@linuxfoundation.org>
@@ -32,72 +31,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit 70ef57e6c22c3323dce179b7d0d433c479266612 upstream.
+commit 8e0e99ba64c7ba46133a7c8a3e3f7de01f23bd93 upstream.
 
-We had a report about strange OOM killer strikes on a PPC machine
-although there was a lot of swap free and a tons of anonymous memory
-which could be swapped out.  In the end it turned out that the OOM was a
-side effect of zone reclaim which wasn't unmapping and swapping out and
-so the system was pushed to the OOM.  Although this sounds like a bug
-somewhere in the kswapd vs.  zone reclaim vs.  direct reclaim
-interaction numactl on the said hardware suggests that the zone reclaim
-should not have been set in the first place:
+It has come to my attention (thanks Martin) that 'discard_zeroes_data'
+is only a hint.  Some devices in some cases don't do what it
+says on the label.
 
-  node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-  node 0 size: 0 MB
-  node 0 free: 0 MB
-  node 2 cpus:
-  node 2 size: 7168 MB
-  node 2 free: 6019 MB
-  node distances:
-  node   0   2
-  0:  10  40
-  2:  40  10
+The use of DISCARD in RAID5 depends on reads from discarded regions
+being predictably zero.  If a write to a previously discarded region
+performs a read-modify-write cycle it assumes that the parity block
+was consistent with the data blocks.  If all were zero, this would
+be the case.  If some are and some aren't this would not be the case.
+This could lead to data corruption after a device failure when
+data needs to be reconstructed from the parity.
 
-So all the CPUs are associated with Node0 which doesn't have any memory
-while Node2 contains all the available memory.  Node distances cause an
-automatic zone_reclaim_mode enabling.
+As we cannot trust 'discard_zeroes_data', ignore it by default
+and so disallow DISCARD on all raid4/5/6 arrays.
 
-Zone reclaim is intended to keep the allocations local but this doesn't
-make any sense on the memoryless nodes.  So let's exclude such nodes for
-init_zone_allows_reclaim which evaluates zone reclaim behavior and
-suitable reclaim_nodes.
+As many devices are trustworthy, and as there are benefits to using
+DISCARD, add a module parameter to over-ride this caution and cause
+DISCARD to work if discard_zeroes_data is set.
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Tested-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+If a site want to enable DISCARD on some arrays but not on others they
+should select DISCARD support at the filesystem level, and set the
+raid456 module parameter.
+    raid456.devices_handle_discard_safely=Y
+
+As this is a data-safety issue, I believe this patch is suitable for
+-stable.
+DISCARD support for RAID456 was added in 3.7
+
+Cc: Shaohua Li <shli@kernel.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Cc: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page_alloc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1869,7 +1869,7 @@ static void __paginginit init_zone_allow
- {
- 	int i;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -64,6 +64,10 @@
+ #define cpu_to_group(cpu) cpu_to_node(cpu)
+ #define ANY_GROUP NUMA_NO_NODE
  
--	for_each_online_node(i)
-+	for_each_node_state(i, N_MEMORY)
- 		if (node_distance(nid, i) <= RECLAIM_DISTANCE)
- 			node_set(i, NODE_DATA(nid)->reclaim_nodes);
- 		else
-@@ -4933,7 +4933,8 @@ void __paginginit free_area_init_node(in
++static bool devices_handle_discard_safely = false;
++module_param(devices_handle_discard_safely, bool, 0644);
++MODULE_PARM_DESC(devices_handle_discard_safely,
++		 "Set to Y if all devices in each array reliably return zeroes on reads from discarded regions");
+ static struct workqueue_struct *raid5_wq;
+ /*
+  * Stripe cache
+@@ -6117,7 +6121,7 @@ static int run(struct mddev *mddev)
+ 		mddev->queue->limits.discard_granularity = stripe;
+ 		/*
+ 		 * unaligned part of discard request will be ignored, so can't
+-		 * guarantee discard_zerors_data
++		 * guarantee discard_zeroes_data
+ 		 */
+ 		mddev->queue->limits.discard_zeroes_data = 0;
  
- 	pgdat->node_id = nid;
- 	pgdat->node_start_pfn = node_start_pfn;
--	init_zone_allows_reclaim(nid);
-+	if (node_state(nid, N_MEMORY))
-+		init_zone_allows_reclaim(nid);
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- 	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- #endif
+@@ -6142,6 +6146,18 @@ static int run(struct mddev *mddev)
+ 			    !bdev_get_queue(rdev->bdev)->
+ 						limits.discard_zeroes_data)
+ 				discard_supported = false;
++			/* Unfortunately, discard_zeroes_data is not currently
++			 * a guarantee - just a hint.  So we only allow DISCARD
++			 * if the sysadmin has confirmed that only safe devices
++			 * are in use by setting a module parameter.
++			 */
++			if (!devices_handle_discard_safely) {
++				if (discard_supported) {
++					pr_info("md/raid456: discard support disabled due to uncertainty.\n");
++					pr_info("Set raid456.devices_handle_discard_safely=Y to override.\n");
++				}
++				discard_supported = false;
++			}
+ 		}
+ 
+ 		if (discard_supported &&
 
 
