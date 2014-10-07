@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589AbaJGXTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:19:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39510 "EHLO
+	id S1755897AbaJGXiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:38:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521AbaJGXTr (ORCPT
+	with ESMTP id S1755521AbaJGXTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:47 -0400
+	Tue, 7 Oct 2014 19:19:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH 3.16 17/26] uas: Only complain about missing sg if all other checks succeed
-Date: Tue,  7 Oct 2014 16:19:33 -0700
-Message-Id: <20141007231848.998176269@linuxfoundation.org>
+        Waiman Long <Waiman.Long@hp.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 23/26] mm, thp: move invariant bug check out of loop in __split_huge_page_map
+Date: Tue,  7 Oct 2014 16:19:39 -0700
+Message-Id: <20141007231849.168289729@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -28,70 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Waiman Long <Waiman.Long@hp.com>
 
-commit cc4deafc86f75f4e716b37fb4ea3572eb1e49e50 upstream.
+commit f8303c2582b889351e261ff18c4d8eb197a77db2 upstream.
 
-Don't complain about controllers without sg support if there are other
-reasons why uas cannot be used anyways.
+In __split_huge_page_map(), the check for page_mapcount(page) is
+invariant within the for loop.  Because of the fact that the macro is
+implemented using atomic_read(), the redundant check cannot be optimized
+away by the compiler leading to unnecessary read to the page structure.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+This patch moves the invariant bug check out of the loop so that it will
+be done only once.  On a 3.16-rc1 based kernel, the execution time of a
+microbenchmark that broke up 1000 transparent huge pages using munmap()
+had an execution time of 38,245us and 38,548us with and without the
+patch respectively.  The performance gain is about 1%.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Scott J Norton <scott.norton@hp.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/uas-detect.h |   28 ++++++++++------------------
- 1 file changed, 10 insertions(+), 18 deletions(-)
+ mm/huge_memory.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/storage/uas-detect.h
-+++ b/drivers/usb/storage/uas-detect.h
-@@ -9,32 +9,15 @@ static int uas_is_interface(struct usb_h
- 		intf->desc.bInterfaceProtocol == USB_PR_UAS);
- }
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1775,6 +1775,8 @@ static int __split_huge_page_map(struct
+ 	if (pmd) {
+ 		pgtable = pgtable_trans_huge_withdraw(mm, pmd);
+ 		pmd_populate(mm, &_pmd, pgtable);
++		if (pmd_write(*pmd))
++			BUG_ON(page_mapcount(page) != 1);
  
--static int uas_isnt_supported(struct usb_device *udev)
--{
--	struct usb_hcd *hcd = bus_to_hcd(udev->bus);
--
--	dev_warn(&udev->dev, "The driver for the USB controller %s does not "
--			"support scatter-gather which is\n",
--			hcd->driver->description);
--	dev_warn(&udev->dev, "required by the UAS driver. Please try an"
--			"alternative USB controller if you wish to use UAS.\n");
--	return -ENODEV;
--}
--
- static int uas_find_uas_alt_setting(struct usb_interface *intf)
- {
- 	int i;
--	struct usb_device *udev = interface_to_usbdev(intf);
--	int sg_supported = udev->bus->sg_tablesize != 0;
- 
- 	for (i = 0; i < intf->num_altsetting; i++) {
- 		struct usb_host_interface *alt = &intf->altsetting[i];
- 
--		if (uas_is_interface(alt)) {
--			if (!sg_supported)
--				return uas_isnt_supported(udev);
-+		if (uas_is_interface(alt))
- 			return alt->desc.bAlternateSetting;
--		}
- 	}
- 
- 	return -ENODEV;
-@@ -92,5 +75,14 @@ static int uas_use_uas_driver(struct usb
- 	if (r < 0)
- 		return 0;
- 
-+	if (udev->bus->sg_tablesize == 0) {
-+		dev_warn(&udev->dev,
-+			"The driver for the USB controller %s does not support scatter-gather which is\n",
-+			hcd->driver->description);
-+		dev_warn(&udev->dev,
-+			"required by the UAS driver. Please try an other USB controller if you wish to use UAS.\n");
-+		return 0;
-+	}
-+
- 	return 1;
- }
+ 		haddr = address;
+ 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+@@ -1784,8 +1786,6 @@ static int __split_huge_page_map(struct
+ 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+ 			if (!pmd_write(*pmd))
+ 				entry = pte_wrprotect(entry);
+-			else
+-				BUG_ON(page_mapcount(page) != 1);
+ 			if (!pmd_young(*pmd))
+ 				entry = pte_mkold(entry);
+ 			if (pmd_numa(*pmd))
 
 
