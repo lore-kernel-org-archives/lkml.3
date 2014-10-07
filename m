@@ -1,50 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824AbaJGD5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 23:57:55 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:53411 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaJGD5y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 23:57:54 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        linux-mips@linux-mips.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] MIPS: rtlx: Remove unnecessary KERN_DEBUG in rtlx.c
-Date: Tue,  7 Oct 2014 12:57:45 +0900
-Message-Id: <1412654265-31983-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.1.273.g97b8860
+	id S1752528AbaJGER3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 00:17:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64460 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751223AbaJGER0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 00:17:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,667,1406617200"; 
+   d="scan'208";a="482423643"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DEVICE TREE <devicetree@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Carlo Caione <carlo@caione.org>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>,
+        Philippe Reynes <tremyfr@yahoo.fr>,
+        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Todd Brandt <todd.e.brandt@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v7 0/2] Initial support for XPowers AXP288 PMIC
+Date: Mon,  6 Oct 2014 21:17:13 -0700
+Message-Id: <1412655435-31284-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove unnecessary KERNL_DEBUG in pr_debug() within rtlx.c.
+X-Powers AXP288 is a customized PMIC found on some Intel Baytrail-CR platforms.
+It comes with sub-functions such as USB charging, fuel gauge, ADC, and many LDO
+and BUCK channels.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/mips/kernel/rtlx.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+By extending the existing AXP20x driver, this patchset adds basic support
+for AXP288 PMIC with ADC as one MFD cell device driver.
 
-diff --git a/arch/mips/kernel/rtlx.c b/arch/mips/kernel/rtlx.c
-index 31b1b76..c5c4fd5 100644
---- a/arch/mips/kernel/rtlx.c
-+++ b/arch/mips/kernel/rtlx.c
-@@ -94,12 +94,12 @@ int rtlx_open(int index, int can_sleep)
- 	int ret = 0;
- 
- 	if (index >= RTLX_CHANNELS) {
--		pr_debug(KERN_DEBUG "rtlx_open index out of range\n");
-+		pr_debug("rtlx_open index out of range\n");
- 		return -ENOSYS;
- 	}
- 
- 	if (atomic_inc_return(&channel_wqs[index].in_open) > 1) {
--		pr_debug(KERN_DEBUG "rtlx_open channel %d already opened\n", index);
-+		pr_debug("rtlx_open channel %d already opened\n", index);
- 		ret = -EBUSY;
- 		goto out_fail;
- 	}
+Currently, the PMIC driver in this patchset does not support platform data
+enumeration. But when ACPI _DSD and unified device properties become available,
+cell devices with platform data will be added.
+
+This patch does not use intel_soc_pmic core for i2c and regmap handling in that
+axp288 shares similar programming interface with other X-Power PMICs supported in
+axp20x.c. Therefore, extending axp20x.c to include axp288 makes more sense.
+
+Changes
+ v7:	- fix iio datasheet name
+
+ v6:	- change axp20x_match_device() flow to give more specific error
+ 	  messages.
+	- remove unnecessary cast
+
+ v5:	- excluded iio documentation patch, already applied to iio.git
+ 	- restructured axp288_adc read_raw code to make it more readable
+	- renamed adc_enable to adc_set_state and add comment about why adc
+	  has to be always on and there is no disable function.
+	- axp20x use const as needed for regmap structures
+
+ v4:	- removed rename patch, use Kconfig description to list supported devices
+ 	- misc clean up in ADC code, use regmap_bulk_read and improve error
+	  handling, etc.
+	- remove IIO ADC scale, treat raw data as processed since the unit is
+	  already in IIO expected milliamps.
+
+ v3:	- put all file rename changes in 1/5
+ 	- add iio documentation for in_current_raw/scale
+	- removed global variables in axp2xx
+	- removed pm callbacks from GPADC
+	- removed ACPI opregion cell device
+	- added scales to ADC current and voltage
+	- removed ADC thermal sensor from sysfs, kernel internal use only
+
+ v2:
+	- use format -M for 1/4
+	- minor tweak based on Maxime's review
+
+
+Jacob Pan (2):
+  mfd/axp20x: extend axp20x to support axp288 pmic
+  iio/adc: add support for axp288 adc
+
+ drivers/iio/adc/Kconfig      |   8 +
+ drivers/iio/adc/Makefile     |   1 +
+ drivers/iio/adc/axp288_adc.c | 254 ++++++++++++++++++++++++++++++
+ drivers/mfd/Kconfig          |   3 +-
+ drivers/mfd/axp20x.c         | 361 ++++++++++++++++++++++++++++++++++++-------
+ include/linux/mfd/axp20x.h   |  59 +++++++
+ 6 files changed, 630 insertions(+), 56 deletions(-)
+ create mode 100644 drivers/iio/adc/axp288_adc.c
+
 -- 
-2.1.1.273.g97b8860
+1.9.1
 
