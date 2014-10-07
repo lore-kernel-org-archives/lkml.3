@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159AbaJGTbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:31:48 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:65257 "EHLO
+	id S1755008AbaJGTbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:31:47 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58131 "EHLO
 	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932407AbaJGT3e (ORCPT
+	with ESMTP id S932408AbaJGT3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:29:34 -0400
+	Tue, 7 Oct 2014 15:29:35 -0400
 From: Nicolin Chen <nicoleotsuka@gmail.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         galak@codeaurora.org
-Subject: [PATCH 1/8] ASoC: fsl_esai: Add indentation for binding doc to increase readability
-Date: Tue,  7 Oct 2014 12:29:04 -0700
-Message-Id: <4695fdade8e76d91b7647471590bc96d970d15a9.1412708790.git.nicoleotsuka@gmail.com>
+Subject: [PATCH 2/8] ASoC: fsl_spdif: Add indentation for binding doc to increase readability
+Date: Tue,  7 Oct 2014 12:29:05 -0700
+Message-Id: <b2f1493f287141c01f6db5aae23e084730c02b49.1412708790.git.nicoleotsuka@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1412708790.git.nicoleotsuka@gmail.com>
 References: <cover.1412708790.git.nicoleotsuka@gmail.com>
@@ -30,21 +30,19 @@ without changing any contents.
 
 Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
 ---
- .../devicetree/bindings/sound/fsl,esai.txt         | 44 +++++++++++-----------
- 1 file changed, 23 insertions(+), 21 deletions(-)
+ .../devicetree/bindings/sound/fsl,spdif.txt        | 37 +++++++++++-----------
+ 1 file changed, 18 insertions(+), 19 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/fsl,esai.txt b/Documentation/devicetree/bindings/sound/fsl,esai.txt
-index 52f5b6b..d3b6b5f 100644
---- a/Documentation/devicetree/bindings/sound/fsl,esai.txt
-+++ b/Documentation/devicetree/bindings/sound/fsl,esai.txt
-@@ -7,37 +7,39 @@ other DSPs. It has up to six transmitters and four receivers.
+diff --git a/Documentation/devicetree/bindings/sound/fsl,spdif.txt b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
+index 3e9e82c8..b5ee32e 100644
+--- a/Documentation/devicetree/bindings/sound/fsl,spdif.txt
++++ b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
+@@ -6,32 +6,31 @@ a fibre cable.
  
  Required properties:
  
--  - compatible : Compatible list, must contain "fsl,imx35-esai" or
--		 "fsl,vf610-esai"
-+  - compatible		: Compatible list, must contain "fsl,imx35-esai" or
-+			  "fsl,vf610-esai"
+-  - compatible : Compatible list, must contain "fsl,imx35-spdif".
++  - compatible		: Compatible list, must contain "fsl,imx35-spdif".
  
 -  - reg : Offset and length of the register set for the device.
 +  - reg			: Offset and length of the register set for the device.
@@ -60,39 +58,31 @@ index 52f5b6b..d3b6b5f 100644
 -  - dma-names : Two dmas have to be defined, "tx" and "rx".
 +  - dma-names		: Two dmas have to be defined, "tx" and "rx".
  
--  - clocks: Contains an entry for each entry in clock-names.
+-  - clocks : Contains an entry for each entry in clock-names.
 +  - clocks		: Contains an entry for each entry in clock-names.
  
 -  - clock-names : Includes the following entries:
--	"core"		The core clock used to access registers
--	"extal"		The esai baud clock for esai controller used to derive
--			HCK, SCK and FS.
--	"fsys"		The system clock derived from ahb clock used to derive
--			HCK, SCK and FS.
+-	"core"		The core clock of spdif controller
+-	"rxtx<0-7>"	Clock source list for tx and rx clock.
+-			This clock list should be identical to
+-			the source list connecting to the spdif
+-			clock mux in "SPDIF Transceiver Clock
+-			Diagram" of SoC reference manual. It
+-			can also be referred to TxClk_Source
+-			bit of register SPDIF_STC.
 +  - clock-names		: Includes the following entries:
-+	"core"		  The core clock used to access registers
-+	"extal"		  The esai baud clock for esai controller used to
-+			  derive HCK, SCK and FS.
-+	"fsys"		  The system clock derived from ahb clock used to
-+			  derive HCK, SCK and FS.
++	"core"		  The core clock of spdif controller.
++	"rxtx<0-7>"	  Clock source list for tx and rx clock.
++			  This clock list should be identical to the source
++			  list connecting to the spdif clock mux in "SPDIF
++			  Transceiver Clock Diagram" of SoC reference manual.
++			  It can also be referred to TxClk_Source bit of
++			  register SPDIF_STC.
  
--  - fsl,fifo-depth: The number of elements in the transmit and receive FIFOs.
--    This number is the maximum allowed value for TFCR[TFWM] or RFCR[RFWM].
-+  - fsl,fifo-depth	: The number of elements in the transmit and receive
-+			  FIFOs. This number is the maximum allowed value for
-+			  TFCR[TFWM] or RFCR[RFWM].
- 
-   - fsl,esai-synchronous: This is a boolean property. If present, indicating
--    that ESAI would work in the synchronous mode, which means all the settings
--    for Receiving would be duplicated from Transmition related registers.
-+			  that ESAI would work in the synchronous mode, which
-+			  means all the settings for Receiving would be
-+			  duplicated from Transmition related registers.
- 
--  - big-endian : If this property is absent, the native endian mode will
--    be in use as default, or the big endian mode will be in use for all the
--    device registers.
-+  - big-endian		: If this property is absent, the native endian mode
+-   - big-endian : If this property is absent, the native endian mode will
+-   be in use as default, or the big endian mode will be in use for all the
+-   device registers.
++   - big-endian		: If this property is absent, the native endian mode
 +			  will be in use as default, or the big endian mode
 +			  will be in use for all the device registers.
  
