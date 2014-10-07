@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002AbaJGGpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 02:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654AbaJGGpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 02:45:49 -0400
-Date: Tue, 7 Oct 2014 09:49:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 08/16] virtio_net: drop config_enable
-Message-ID: <20141007064915.GA2424@redhat.com>
-References: <1412525038-15871-1-git-send-email-mst@redhat.com>
- <1412525038-15871-9-git-send-email-mst@redhat.com>
- <20141006.150238.2180269239953265506.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006.150238.2180269239953265506.davem@davemloft.net>
+	id S1752854AbaJGHBw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 03:01:52 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:50723 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751214AbaJGHBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 03:01:48 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org
+Subject: [PATCH v2] gpio: cs5535: Switch to using managed resources with devm_
+Date: Tue,  7 Oct 2014 12:35:16 +0530
+Message-Id: <1412665516-3796-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 03:02:38PM -0400, David Miller wrote:
-> From: "Michael S. Tsirkin" <mst@redhat.com>
-> Date: Sun, 5 Oct 2014 19:07:13 +0300
-> 
-> > Now that virtio core ensures config changes don't arrive during probing,
-> > drop config_enable flag in virtio net.
-> > On removal, flush is now sufficient to guarantee that no change work is
-> > queued.
-> > 
-> > This help simplify the driver, and will allow setting DRIVER_OK earlier
-> > without losing config change notifications.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> It's hard for people on the networking side to review these changes
-> since you haven't CC:'d them on any of the postings necessary to
-> understand the context of the net/ and drivers/net/ changes.
-> 
-> Please at a minimum CC: everyone on your header [PATCH 0/N] posting
-> so we know at least at a high level what is going on, and why.
-> 
-> Thanks.
+This change switches to devm_request_region to request region
+and hence simplifies the module unload and does away with
+release_region in remove function.
 
-It's a bit tricky for large patchsets - if I add everyone to 0/N
-then vger isn't happy with Cc list that is too large.
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-gpio@vger.kernel.org
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+---
 
-What is your advice here? Cc just mailing lists on 0/N?
+Changes since v1:
 
-FWIW this patchset is inteded for the virtio tree.
+Change commit subject to reflect cs5535.
 
+ drivers/gpio/gpio-cs5535.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpio/gpio-cs5535.c b/drivers/gpio/gpio-cs5535.c
+index 668127f..71484ee 100644
+--- a/drivers/gpio/gpio-cs5535.c
++++ b/drivers/gpio/gpio-cs5535.c
+@@ -322,7 +322,8 @@ static int cs5535_gpio_probe(struct platform_device *pdev)
+ 		goto done;
+ 	}
+ 
+-	if (!request_region(res->start, resource_size(res), pdev->name)) {
++	if (!devm_request_region(&pdev->dev, res->start, resource_size(res),
++				 pdev->name)) {
+ 		dev_err(&pdev->dev, "can't request region\n");
+ 		goto done;
+ 	}
+@@ -348,24 +349,18 @@ static int cs5535_gpio_probe(struct platform_device *pdev)
+ 	/* finally, register with the generic GPIO API */
+ 	err = gpiochip_add(&cs5535_gpio_chip.chip);
+ 	if (err)
+-		goto release_region;
++		goto done;
+ 
+ 	return 0;
+ 
+-release_region:
+-	release_region(res->start, resource_size(res));
+ done:
+ 	return err;
+ }
+ 
+ static int cs5535_gpio_remove(struct platform_device *pdev)
+ {
+-	struct resource *r;
+-
+ 	gpiochip_remove(&cs5535_gpio_chip.chip);
+ 
+-	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
+-	release_region(r->start, resource_size(r));
+ 	return 0;
+ }
+ 
 -- 
-MST
+1.7.9.5
+
