@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaJGP3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:29:18 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:44146 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422AbaJGP3Q (ORCPT
+	id S1754142AbaJGPab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:30:31 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:56983 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165AbaJGPaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:29:16 -0400
+	Tue, 7 Oct 2014 11:30:30 -0400
+Date: Tue, 7 Oct 2014 17:30:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hrtimer deadlock caused by nohz_full
+Message-ID: <20141007153024.GA14119@lerouge>
+References: <20140925141425.GA21702@redhat.com>
+ <alpine.DEB.2.10.1409251630210.4604@nanos>
+ <20140925234657.GB14870@lerouge>
+ <20141002182409.GA29934@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20141003231515.GM10233@codeaurora.org>
-References: <1412255097-15928-1-git-send-email-tomeu.vizoso@collabora.com>
- <1412255097-15928-2-git-send-email-tomeu.vizoso@collabora.com> <20141003231515.GM10233@codeaurora.org>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Tue, 7 Oct 2014 17:28:55 +0200
-X-Google-Sender-Auth: oQ0UcyJxAMlL9HrwTA-XZKu1c-M
-Message-ID: <CAAObsKD6=xRqR9m8dNATUAuiky-HZW4LHJtnG1BbpO8dsBBJPg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: Make clk API return per-user struct clk instances
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002182409.GA29934@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 October 2014 01:15, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 10/02, Tomeu Vizoso wrote:
->> +
->>  #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->
-> These ifdefs look useless.
->
->>  struct clk *of_clk_get_by_clkspec(struct of_phandle_args *clkspec);
->>  struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec);
->>  void of_clk_lock(void);
->>  void of_clk_unlock(void);
->>  #endif
->> +
->> +#if defined(CONFIG_COMMON_CLK)
->
-> So we shouldn't need this one either.
+On Thu, Oct 02, 2014 at 02:24:09PM -0400, Dave Jones wrote:
+> On Fri, Sep 26, 2014 at 01:46:59AM +0200, Frederic Weisbecker wrote:
+> 
+>  > > >  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
+>  > > >  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
+>  > > >  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
+>  > > >  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
+>  > > >  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
+>  > > >  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
+>  > > >  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
+>  > > >  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
+>  > > >  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
+>  > > >  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
+>  > > >  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
+>  > > >  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
+>  > > >  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
+>  > > >  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
+>  > > >  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
+>  > > >  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
+>  > > 
+>  > > hrtimer_interrupt
+>  > >   tick_sched_timer
+>  > >     tick_sched_handle
+>  > >       update_process_times
+>  > >         irq_work_run
+>  > > 	  irq_work_run_list
+>  > > 	    nohz_full_kick_work_func
+>  > > 	      __tick_nohz_full_check
+>  > > 	        tick_nohz_restart
+>  > >                   hrtimer_cancel
+>  > > 
+>  > > And that hrtimer_cancel is:
+>  > > 
+>  > > static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
+>  > > {
+>  > > 	hrtimer_cancel(&ts->sched_timer);
+>  > > 
+>  > > Now, that's really bad because we are in the timer callback of
+>  > > ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
+>  > > callback to complete.
+>  > > 
+>  > > Frederic !?!?
+>  > 
+>  > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
+>  > 
+>  > I was about to make the pull request, the branch is acked by peterz.
+>  > Would you like to pull it? It's all merge window material.
+>  > 
+>  > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+>  > 	nohz/fixes-v3
+> 
+> I'm now hitting this with such regularity that it's preventing me from
+> tracking down other bugs.  Can we get this merged soon please ?
 
-Actually, i had to put it back so clkdev.c builds on
-!CONFIG_COMMON_CLK. Do you have another idea on how to deal with this?
+I asked Thomas to pull but he probably missed it. So I did a formal pull request
+to Ingo a few days later but he told me that the pull request was made too late
+as the merge window was too close. I told him it fixes annoying bugs but that was on IRC
+so this probably got lost.
 
-Sorry, but I forgot to CC you on v2 (just sent):
-https://lkml.org/lkml/2014/10/7/430
-
-Thanks,
-
-Tomeu
+It will probably be delayed to 3.18
+Sorry I don't have much control myself on merging patches upstream.
