@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaJGILC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 04:11:02 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60298 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753186AbaJGIKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 04:10:45 -0400
-Message-ID: <1412669443.18874.16.camel@x220>
-Subject: Re: [PATCH v2 1/2] kconfig: fix bad syntactic transformation in
- expr.c
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Martin Walch <walch.martin@web.de>
-Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 07 Oct 2014 10:10:43 +0200
-In-Reply-To: <1411405999-20212-2-git-send-email-walch.martin@web.de>
-References: <3491939.FtiyjGE4Of@tacticalops>
-	 <1411405999-20212-1-git-send-email-walch.martin@web.de>
-	 <1411405999-20212-2-git-send-email-walch.martin@web.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Oct 2014 08:10:43.0876 (UTC) FILETIME=[311DEE40:01CFE206]
-X-RcptDomain: vger.kernel.org
+	id S1753424AbaJGILz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 04:11:55 -0400
+Received: from mga14.intel.com ([192.55.52.115]:1928 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753254AbaJGIK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 04:10:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,668,1406617200"; 
+   d="scan'208";a="601633918"
+Date: Tue, 7 Oct 2014 13:08:20 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, subhransu.s.prusty@intel.com,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.jf.intel.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 11/27] mfd: ab8500-gpadc: use
+ pm_runtime_last_busy_and_autosuspend helper
+Message-ID: <20141007073820.GS1638@intel.com>
+References: <1411575342-31048-1-git-send-email-vinod.koul@intel.com>
+ <1411575342-31048-12-git-send-email-vinod.koul@intel.com>
+ <20141006214047.GI18035@lee--X1>
+ <20141007072125.GL18035@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141007072125.GL18035@lee--X1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-09-22 at 19:13 +0200, Martin Walch wrote:
-> expr_eliminate_dups2() in scripts/kconfig/expr.c applies two bad
-> inference rules:
+On Tue, Oct 07, 2014 at 08:21:25AM +0100, Lee Jones wrote:
+> On Mon, 06 Oct 2014, Lee Jones wrote:
 > 
-> (FOO || BAR) && (!FOO && !BAR) -> n
-> (FOO && BAR) || (!FOO || !BAR) -> y
+> > On Wed, 24 Sep 2014, Vinod Koul wrote:
+> > 
+> > > Use the new pm_runtime_last_busy_and_autosuspend helper instead of open
+> > > coding the same code
+> > > 
+> > > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> > > ---
+> > >  drivers/mfd/ab8500-gpadc.c |    6 ++----
+> > >  1 files changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > Applied with Linus' Ack.
 > 
-> They would be correct in propositional logic, but this is a three-valued
-> logic, and here it is wrong in that it changes semantics. It becomes
-> immediately visible when substituting FOO and BAR with m.
+> Okay, I just had to search online for the other patches (as you left
+> me off PATCH 00/27).  It appears this approach has gone down like a
+> lead balloon.  For this reason I'm pulling these patches from my v3.19
+> branch.
+I was about to reply to you to revert.
+I need to fix the script I used to do CC on 0th patch, looks like few
+people were left off while collecting the names. Sorry about that
 
-Well, not to me. When I apply the rules under "Menu dependencies" in
-Documentation/kbuild/kconfig-language.txt, in embarrassingly small
-steps, I get:
-    (m || m) && (!m && !m) ->
-    (1 || 1) && ((2 - 1) && (2 - 1)) ->
-    (1 || 1) && (1 && 1) ->
-    max(1, 1) && min(1, 1) ->
-    1 && 1 ->
-    min(1, 1) ->
-    1 -> m
+-- 
+~Vinod
 
-and
-    (m && m) || (!m || !m) ->
-    (1 && 1) || ((2 - 1) || (2 - 1)) ->
-    (1 && 1) || (1 || 1) ->
-    min(1, 1) || max(1, 1) ->
-    1 || 1 ->
-    max(1, 1) ->
-    1 -> m
-
-Did I do that right? Anyway, perhaps you'd like to add a line or two how
-these two expressions actually evaluate when FOO and BAR are m.
-
-> Fix it by removing expr_eliminate_dups2() and the functions that have no use
-> anywhere else: expr_extract_eq_and(), expr_extract_eq_or(),
-> and expr_extract_eq() from scripts/kconfig/expr.[ch]
 > 
-> Currently the bug is not triggered in mainline, so this patch does not modify
-> the configuration space there.
+> > > diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
+> > > index 36000f9..46bea3a 100644
+> > > --- a/drivers/mfd/ab8500-gpadc.c
+> > > +++ b/drivers/mfd/ab8500-gpadc.c
+> > > @@ -571,8 +571,7 @@ int ab8500_gpadc_double_read_raw(struct ab8500_gpadc *gpadc, u8 channel,
+> > >  	}
+> > >  
+> > >  	/* Disable VTVout LDO this is required for GPADC */
+> > > -	pm_runtime_mark_last_busy(gpadc->dev);
+> > > -	pm_runtime_put_autosuspend(gpadc->dev);
+> > > +	pm_runtime_last_busy_and_autosuspend(gpadc->dev);
+> > >  
+> > >  	mutex_unlock(&gpadc->ab8500_gpadc_lock);
+> > >  
+> > > @@ -910,8 +909,7 @@ static int ab8500_gpadc_resume(struct device *dev)
+> > >  	if (ret)
+> > >  		dev_err(dev, "Failed to enable vtvout LDO: %d\n", ret);
+> > >  
+> > > -	pm_runtime_mark_last_busy(gpadc->dev);
+> > > -	pm_runtime_put_autosuspend(gpadc->dev);
+> > > +	pm_runtime_last_busy_and_autosuspend(gpadc->dev);
+> > >  
+> > >  	mutex_unlock(&gpadc->ab8500_gpadc_lock);
+> > >  	return ret;
+> > 
 > 
-> As a side effect, this reduces code size in expr.c by roughly 10% and slightly
-> improves startup time for all configuration frontends.
-> 
-> Signed-off-by: Martin Walch <walch.martin@web.de>
+> -- 
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
 
-Does Yann still care about Kconfig? Yann has been rather quiet for a
-while now.
-
-
-Paul Bolle
-
+-- 
