@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752435AbaJFX7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 19:59:46 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:58316 "HELO
+	id S1752761AbaJGAAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 20:00:14 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62426 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751131AbaJFX7o (ORCPT
+	with SMTP id S1752430AbaJFX7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 19:59:44 -0400
+	Mon, 6 Oct 2014 19:59:47 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
         Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 13/13] input: gpio_keys_polled - Make use of device property API
-Date: Tue, 07 Oct 2014 02:19:20 +0200
-Message-ID: <1419257.qDvBAKDkoZ@vostro.rjw.lan>
+Subject: [PATCH 09/12] input: gpio_keys_polled - Add support for GPIO descriptors
+Date: Tue, 07 Oct 2014 02:16:47 +0200
+Message-ID: <1740633.d3tSWZ2Q0u@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
 In-Reply-To: <2660541.BycO7TFnA2@vostro.rjw.lan>
 References: <2660541.BycO7TFnA2@vostro.rjw.lan>
@@ -34,158 +34,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Aaron Lu <aaron.lu@intel.com>
 
-Make use of device property API in this driver so that both OF based
-system and ACPI based system can use this driver.
+GPIO descriptors are the preferred way over legacy GPIO numbers
+nowadays. Convert the driver to use GPIO descriptors internally but
+still allow passing legacy GPIO numbers from platform data to support
+existing platforms.
 
 Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/input/keyboard/gpio_keys_polled.c |   81 +++++++++++-------------------
- 1 file changed, 31 insertions(+), 50 deletions(-)
+ drivers/input/keyboard/gpio_keys_polled.c | 39 +++++++++++++++++++++----------
+ include/linux/gpio_keys.h                 |  3 +++
+ 2 files changed, 30 insertions(+), 12 deletions(-)
 
-Index: linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-===================================================================
---- linux-pm.orig/drivers/input/keyboard/gpio_keys_polled.c
-+++ linux-pm/drivers/input/keyboard/gpio_keys_polled.c
-@@ -25,9 +25,7 @@
+diff --git a/drivers/input/keyboard/gpio_keys_polled.c b/drivers/input/keyboard/gpio_keys_polled.c
+index 432d363..b7a514c 100644
+--- a/drivers/input/keyboard/gpio_keys_polled.c
++++ b/drivers/input/keyboard/gpio_keys_polled.c
+@@ -23,6 +23,7 @@
+ #include <linux/ioport.h>
+ #include <linux/platform_device.h>
  #include <linux/gpio.h>
- #include <linux/gpio/consumer.h>
++#include <linux/gpio/consumer.h>
  #include <linux/gpio_keys.h>
--#include <linux/of.h>
--#include <linux/of_platform.h>
--#include <linux/of_gpio.h>
-+#include <linux/property.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+@@ -51,15 +52,14 @@ static void gpio_keys_polled_check_state(struct input_dev *input,
+ 	int state;
  
- #define DRV_NAME	"gpio-keys-polled"
+ 	if (bdata->can_sleep)
+-		state = !!gpio_get_value_cansleep(button->gpio);
++		state = !!gpiod_get_value_cansleep(button->gpiod);
+ 	else
+-		state = !!gpio_get_value(button->gpio);
++		state = !!gpiod_get_value(button->gpiod);
  
-@@ -102,21 +100,15 @@ static void gpio_keys_polled_close(struc
- 		pdata->disable(bdev->dev);
- }
+ 	if (state != bdata->last_state) {
+ 		unsigned int type = button->type ?: EV_KEY;
  
--#ifdef CONFIG_OF
- static struct gpio_keys_platform_data *gpio_keys_polled_get_devtree_pdata(struct device *dev)
- {
--	struct device_node *node, *pp;
- 	struct gpio_keys_platform_data *pdata;
- 	struct gpio_keys_button *button;
-+	void *child;
- 	int error;
- 	int nbuttons;
--	int i;
--
--	node = dev->of_node;
--	if (!node)
--		return NULL;
+-		input_event(input, type, button->code,
+-			    !!(state ^ button->active_low));
++		input_event(input, type, button->code, state);
+ 		input_sync(input);
+ 		bdata->count = 0;
+ 		bdata->last_state = state;
+@@ -259,7 +259,6 @@ static int gpio_keys_polled_probe(struct platform_device *pdev)
+ 	for (i = 0; i < pdata->nbuttons; i++) {
+ 		struct gpio_keys_button *button = &pdata->buttons[i];
+ 		struct gpio_keys_button_data *bdata = &bdev->data[i];
+-		unsigned int gpio = button->gpio;
+ 		unsigned int type = button->type ?: EV_KEY;
  
--	nbuttons = of_get_child_count(node);
-+	nbuttons = device_get_child_node_count(dev);
- 	if (nbuttons == 0)
- 		return NULL;
- 
-@@ -126,52 +118,50 @@ static struct gpio_keys_platform_data *g
- 		return ERR_PTR(-ENOMEM);
- 
- 	pdata->buttons = (struct gpio_keys_button *)(pdata + 1);
--	pdata->nbuttons = nbuttons;
- 
--	pdata->rep = !!of_get_property(node, "autorepeat", NULL);
--	of_property_read_u32(node, "poll-interval", &pdata->poll_interval);
-+	pdata->rep = !device_get_property(dev, "autorepeat", NULL);
-+	device_property_read_u32(dev, "poll-interval", &pdata->poll_interval);
- 
--	i = 0;
--	for_each_child_of_node(node, pp) {
--		int gpio;
--		enum of_gpio_flags flags;
--
--		if (!of_find_property(pp, "gpios", NULL)) {
--			pdata->nbuttons--;
--			dev_warn(dev, "Found button without gpios\n");
--			continue;
--		}
-+	device_for_each_child_node(dev, child) {
-+		struct gpio_desc *desc;
- 
--		gpio = of_get_gpio_flags(pp, 0, &flags);
--		if (gpio < 0) {
--			error = gpio;
-+		desc = devm_get_named_gpiod_from_child(dev, child, "gpios", 0);
-+		if (IS_ERR(desc)) {
-+			error = PTR_ERR(desc);
- 			if (error != -EPROBE_DEFER)
- 				dev_err(dev,
- 					"Failed to get gpio flags, error: %d\n",
- 					error);
-+			device_put_child_node(dev, child);
- 			return ERR_PTR(error);
+ 		if (button->wakeup) {
+@@ -267,15 +266,31 @@ static int gpio_keys_polled_probe(struct platform_device *pdev)
+ 			return -EINVAL;
  		}
  
--		button = &pdata->buttons[i++];
--
--		button->gpio = gpio;
--		button->active_low = flags & OF_GPIO_ACTIVE_LOW;
-+		button = &pdata->buttons[pdata->nbuttons++];
-+		button->gpiod = desc;
- 
--		if (of_property_read_u32(pp, "linux,code", &button->code)) {
--			dev_err(dev, "Button without keycode: 0x%x\n",
--				button->gpio);
-+		if (device_child_property_read_u32(dev, child, "linux,code",
-+						   &button->code)) {
-+			dev_err(dev, "Button without keycode: %d\n",
-+				pdata->nbuttons - 1);
-+			device_put_child_node(dev, child);
- 			return ERR_PTR(-EINVAL);
- 		}
- 
--		button->desc = of_get_property(pp, "label", NULL);
-+		device_child_property_read_string(dev, child, "label",
-+						  &button->desc);
- 
--		if (of_property_read_u32(pp, "linux,input-type", &button->type))
-+		if (device_child_property_read_u32(dev, child,
-+						   "linux,input-type",
-+						   &button->type))
- 			button->type = EV_KEY;
- 
--		button->wakeup = !!of_get_property(pp, "gpio-key,wakeup", NULL);
--
--		if (of_property_read_u32(pp, "debounce-interval",
--					 &button->debounce_interval))
-+		button->wakeup = !device_get_child_property(dev, child,
-+							    "gpio-key,wakeup",
-+							    NULL);
+-		error = devm_gpio_request_one(&pdev->dev, gpio, GPIOF_IN,
+-					      button->desc ? : DRV_NAME);
+-		if (error) {
+-			dev_err(dev, "unable to claim gpio %u, err=%d\n",
+-				gpio, error);
+-			return error;
++		/*
++		 * Legacy GPIO number so request the GPIO here and
++		 * convert it to descriptor.
++		 */
++		if (!button->gpiod && gpio_is_valid(button->gpio)) {
++			unsigned flags = 0;
 +
-+		if (device_child_property_read_u32(dev, child,
-+						   "debounce-interval",
-+						   &button->debounce_interval))
- 			button->debounce_interval = 5;
- 	}
++			if (button->active_low)
++				flags |= GPIOF_ACTIVE_LOW;
++
++			error = devm_gpio_request_one(&pdev->dev, button->gpio,
++					flags, button->desc ? : DRV_NAME);
++			if (error) {
++				dev_err(dev, "unable to claim gpio %u, err=%d\n",
++					button->gpio, error);
++				return error;
++			}
++
++			button->gpiod = gpio_to_desc(button->gpio);
+ 		}
  
-@@ -187,15 +177,6 @@ static const struct of_device_id gpio_ke
- };
- MODULE_DEVICE_TABLE(of, gpio_keys_polled_of_match);
+-		bdata->can_sleep = gpio_cansleep(gpio);
++		if (IS_ERR(button->gpiod))
++			return PTR_ERR(button->gpiod);
++
++		bdata->can_sleep = gpiod_cansleep(button->gpiod);
+ 		bdata->last_state = -1;
+ 		bdata->threshold = DIV_ROUND_UP(button->debounce_interval,
+ 						pdata->poll_interval);
+diff --git a/include/linux/gpio_keys.h b/include/linux/gpio_keys.h
+index 8b62246..ee2d8c6 100644
+--- a/include/linux/gpio_keys.h
++++ b/include/linux/gpio_keys.h
+@@ -2,6 +2,7 @@
+ #define _GPIO_KEYS_H
  
--#else
--
--static inline struct gpio_keys_platform_data *
--gpio_keys_polled_get_devtree_pdata(struct device *dev)
--{
--	return NULL;
--}
--#endif
--
- static int gpio_keys_polled_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -323,7 +304,7 @@ static struct platform_driver gpio_keys_
- 	.driver	= {
- 		.name	= DRV_NAME,
- 		.owner	= THIS_MODULE,
--		.of_match_table = of_match_ptr(gpio_keys_polled_of_match),
-+		.of_match_table = gpio_keys_polled_of_match,
- 	},
+ struct device;
++struct gpio_desc;
+ 
+ /**
+  * struct gpio_keys_button - configuration parameters
+@@ -17,6 +18,7 @@ struct device;
+  *			disable button via sysfs
+  * @value:		axis value for %EV_ABS
+  * @irq:		Irq number in case of interrupt keys
++ * @gpiod:		GPIO descriptor
+  */
+ struct gpio_keys_button {
+ 	unsigned int code;
+@@ -29,6 +31,7 @@ struct gpio_keys_button {
+ 	bool can_disable;
+ 	int value;
+ 	unsigned int irq;
++	struct gpio_desc *gpiod;
  };
- module_platform_driver(gpio_keys_polled_driver);
+ 
+ /**
+-- 
+1.9.3
+
 
