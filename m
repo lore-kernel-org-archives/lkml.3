@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105AbaJGRQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:16:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46570 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932081AbaJGRQs (ORCPT
+	id S1754797AbaJGRRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:17:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:59327 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaJGRRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:16:48 -0400
-Date: Tue, 07 Oct 2014 13:16:46 -0400 (EDT)
-Message-Id: <20141007.131646.1417551297088545264.davem@davemloft.net>
-To: sylvain.hitier@gmail.com
-Cc: linux-kernel@vger.kernel.org, nhorman@tuxdriver.com, mroos@linux.ee,
-        netdev@vger.kernel.org, klassert@mathematik.tu-chemnitz.de
-Subject: Re: [PATCH RESEND v3] 3c59x: fix bad split of
- cpu_to_le32(pci_map_single())
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20141007134034.GA8838@erable>
-References: <20141007134034.GA8838@erable>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 07 Oct 2014 10:16:48 -0700 (PDT)
+	Tue, 7 Oct 2014 13:17:04 -0400
+Date: Tue, 7 Oct 2014 10:17:03 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Jeff Layton <jlayton@primarydata.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH v2 02/17] security: make security_file_set_fowner,
+ f_setown and __f_setown void return
+Message-ID: <20141007171703.GA30274@infradead.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+ <1409834323-7171-3-git-send-email-jlayton@primarydata.com>
+ <CACE9dm-gEfVnHvESfewAPx1vDSdpUW+za=H_zpA8hJd55AR=tA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACE9dm-gEfVnHvESfewAPx1vDSdpUW+za=H_zpA8hJd55AR=tA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-Date: Tue, 7 Oct 2014 13:40:34 +0000
+On Tue, Oct 07, 2014 at 08:11:42PM +0300, Dmitry Kasatkin wrote:
+> If file_set_fowner op is now type of "void", how you can actually
+> return the value?
+> I think compiler must give error. How could you compile it?
 
-> From: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
-> 
-> In commit 6f2b6a3005b2c34c39f207a87667564f64f2f91a,
->   # 3c59x: Add dma error checking and recovery
-> the intent is to split out the mapping from the byte-swapping in order to
-> insert a dma_mapping_error() check.
-> 
-> Kinda this semantic patch:
-> 
->     // See http://coccinelle.lip6.fr/
->     //
->     // Beware, grouik-and-dirty!
->     @@
->     expression DEV, X, Y, Z;
->     @@
->     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
->     +   dma_addr_t addr = pci_map_single(DEV, X, Y, Z);
->     +   if (dma_mapping_error(&DEV->dev, addr))
->     +       /* snip */;
->     +   cpu_to_le32(addr)
-> 
-> However, the #else part (of the #if DO_ZEROCOPY test) is changed this way:
-> 
->     -   cpu_to_le32(pci_map_single(DEV, X, Y, Z))
->     +   dma_addr_t addr = cpu_to_le32(pci_map_single(DEV, X, Y, Z));
->     //                    ^^^^^^^^^^^
->     //                    That mismatches the 3 other changes!
->     +   if (dma_mapping_error(&DEV->dev, addr))
->     +       /* snip */;
->     +   cpu_to_le32(addr)
-> 
-> Let's remove the leftover cpu_to_le32() for coherency.
-> 
-> v2: Better changelog.
-> v3: Add Acked-by
-> 
-> Fixes: 6f2b6a3005b2c34c39f207a87667564f64f2f91a
->   # 3c59x: Add dma error checking and recovery
-> Acked-by: Neil Horman <nhorman@tuxdriver.com>
-> Signed-off-by: Sylvain "ythier" Hitier <sylvain.hitier@gmail.com>
+Returning void values is a GNU extension.  I've seen it in a few
+places in the kernel.  Although in general I'd prefer it we'd remove
+it (and have the compiler warn about it).
 
-Applied and queued up for -stable, thanks!
