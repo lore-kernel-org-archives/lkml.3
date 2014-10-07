@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866AbaJGNiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:38:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496AbaJGNiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:38:22 -0400
-Date: Tue, 7 Oct 2014 15:37:10 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-api@vger.kernel.org,
-        Robert Love <rlove@google.com>, Dave Hansen <dave@sr71.net>,
-        Jan Kara <jack@suse.cz>, Neil Brown <neilb@suse.de>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Andrew Jones <drjones@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>, Taras Glek <tglek@mozilla.com>,
-        Juan Quintela <quintela@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>, Mel Gorman <mgorman@suse.de>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Paolo Bonzini <pbonzini@redhat.com>, Keith Packard <keithp@keithp.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Minchan Kim <minchan@kernel.org>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mike Hommey <mh@glandium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Feiner <pfeiner@google.com>
-Subject: Re: [Qemu-devel] [PATCH 10/17] mm: rmap preparation for
- remap_anon_pages
-Message-ID: <20141007133710.GA2342@redhat.com>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
- <1412356087-16115-11-git-send-email-aarcange@redhat.com>
- <20141007111026.GD30762@node.dhcp.inet.fi>
+	id S1753887AbaJGNkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:40:18 -0400
+Received: from relay.parallels.com ([195.214.232.42]:51733 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216AbaJGNkQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:40:16 -0400
+Date: Tue, 7 Oct 2014 17:40:12 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Andrey Vagin <avagin@openvz.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] mnt: don't allow to detach the namespace root
+Message-ID: <20141007134011.GA569@paralelels.com>
+References: <1412683212-28077-1-git-send-email-avagin@openvz.org>
+ <20141007132431.GF7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-In-Reply-To: <20141007111026.GD30762@node.dhcp.inet.fi>
+In-Reply-To: <20141007132431.GF7996@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
-
-On Tue, Oct 07, 2014 at 02:10:26PM +0300, Kirill A. Shutemov wrote:
-> On Fri, Oct 03, 2014 at 07:08:00PM +0200, Andrea Arcangeli wrote:
-> > There's one constraint enforced to allow this simplification: the
-> > source pages passed to remap_anon_pages must be mapped only in one
-> > vma, but this is not a limitation when used to handle userland page
-> > faults with MADV_USERFAULT. The source addresses passed to
-> > remap_anon_pages should be set as VM_DONTCOPY with MADV_DONTFORK to
-> > avoid any risk of the mapcount of the pages increasing, if fork runs
-> > in parallel in another thread, before or while remap_anon_pages runs.
+On Tue, Oct 07, 2014 at 02:24:36PM +0100, Al Viro wrote:
+> On Tue, Oct 07, 2014 at 04:00:12PM +0400, Andrey Vagin wrote:
+> > This patch fixes a bug, which is triggered by following code:
+> > while (1) {
+> >         if (umount2("/", MNT_DETACH) ||
+> > 	    setns(fd, CLONE_NEWNS))
+> >                 return break;
+> > }
 > 
-> Have you considered triggering COW instead of adding limitation on
-> pages' mapcount? The limitation looks artificial from interface POV.
+> Excuse me, but that makes no sense whatsoever (not to mention that
+> reproducer won't compile - return break; alone is enough to make
+> sure of that).
+> 
+> Could you post the real reproducer?
 
-I haven't considered it, mostly because I see it as a feature that it
-returns -EBUSY. I prefer to avoid the risk of userland getting a
-successful retval but internally the kernel silently behaving
-non-zerocopy by mistake because some userland bug forgot to set
-MADV_DONTFORK on the src_vma.
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sched.h>
+#include <unistd.h>
+#include <sys/mount.h>
 
-COW would be not zerocopy so it's not ok. We get sub 1msec latency for
-userfaults through 10gbit and we don't want to risk wasting CPU
-caches.
+int main(int argc, char **argv)
+{
+	int fd;
 
-I however considered allowing to extend the strict behavior (i.e. the
-feature) later in a backwards compatible way. We could provide a
-non-zerocopy beahvior with a RAP_ALLOW_COW flag that would then turn
-the -EBUSY error into a copy.
+	fd = open("/proc/self/ns/mnt", O_RDONLY);
+	if (fd < 0)
+		return 1;
+	while (1) {
+		if (umount2("/", MNT_DETACH) ||
+		    setns(fd, CLONE_NEWNS))
+			break;
+	}
 
-It's also more complex to implement the cow now, so it would make the
-code that really matters, harder to review. So it may be preferable to
-extend this later in a backwards compatible way with a new
-RAP_ALLOW_COW flag.
+	return 0;
+}
 
-The current handling the flags is already written in a way that should
-allow backwards compatible extension with RAP_ALLOW_*:
+root@ubuntu:/home/avagin# gcc -Wall nsenter.c -o nsenter
+root@ubuntu:/home/avagin# strace ./nsenter
+execve("./nsenter", ["./nsenter"], [/* 22 vars */]) = 0
+...
+open("/proc/self/ns/mnt", O_RDONLY)     = 3
+umount("/", MNT_DETACH)                 = 0
+setns(3, 131072)                        = 0
+umount("/", MNT_DETACH
 
-#define RAP_ALLOW_SRC_HOLES (1UL<<0)
-
-SYSCALL_DEFINE4(remap_anon_pages,
-		unsigned long, dst_start, unsigned long, src_start,
-		unsigned long, len, unsigned long, flags)
-[..]
-	long err = -EINVAL;
-[..]
-	if (flags & ~RAP_ALLOW_SRC_HOLES)
-		return err;
