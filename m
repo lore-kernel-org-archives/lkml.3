@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605AbaJGMPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:15:11 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36500 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaJGMPI (ORCPT
+	id S1753816AbaJGMPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:15:18 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:39273 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334AbaJGMPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:15:08 -0400
+	Tue, 7 Oct 2014 08:15:12 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
@@ -16,91 +16,178 @@ Cc: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
         linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
         dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v7 0/7] sched: consolidation of cpu_capacity
-Date: Tue,  7 Oct 2014 14:13:30 +0200
-Message-Id: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v7 2/7] sched: move cfs task on a CPU with higher capacity
+Date: Tue,  7 Oct 2014 14:13:32 +0200
+Message-Id: <1412684017-16595-3-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During load balance, the scheduler evaluates the number of tasks that a group
-of CPUs can handle. The current method assumes that tasks have a fix load of
-SCHED_LOAD_SCALE and CPUs have a default capacity of SCHED_CAPACITY_SCALE.
-This assumption generates wrong decision by creating ghost cores or by
-removing real ones when the original capacity of CPUs is different from the
-default SCHED_CAPACITY_SCALE. We don't try anymore to evaluate the number of
-available cores based on the group_capacity but instead we evaluate the usage
-of a group and compare it with its capacity.
+If the CPU is used for handling lot of IRQs, trig a load balance to check if
+it's worth moving its tasks on another CPU that has more capacity.
 
-This patchset mainly replaces the old capacity method by a new one and has kept
-the policy almost unchanged whereas we could certainly take advantage of this
-new statistic in several other places of the load balance.
+As a sidenote, this will note generate more spurious ilb because we already
+trig an ilb if there is more than 1 busy cpu. If this cpu is the only one that
+has a task, we will trig the ilb once for migrating the task.
 
-The utilization_avg_contrib is based on the current implementation of the
-load avg tracking. I also have a version of the utilization_avg_contrib that
-is based on the new implementation proposal [1] but haven't provide the patches
-and results as [1] is still under review. I can provide change above [1] to
-change how utilization_avg_contrib is computed and adapt to new mecanism.
+The nohz_kick_needed function has been cleaned up a bit while adding the new
+test
 
-Change since V6
- - add group usage tracking
- - fix some commits' messages
- - minor fix like comments and argument order
+env.src_cpu and env.src_rq must be set unconditionnaly because they are used
+in need_active_balance which is called even if busiest->nr_running equals 1
 
-Change since V5
- - remove patches that have been merged since v5 : patches 01, 02, 03, 04, 05, 07
- - update commit log and add more details on the purpose of the patches
- - fix/remove useless code with the rebase on patchset [2]
- - remove capacity_orig in sched_group_capacity as it is not used
- - move code in the right patch
- - add some helper function to factorize code
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c | 70 ++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 50 insertions(+), 20 deletions(-)
 
-Change since V4
- - rebase to manage conflicts with changes in selection of busiest group [4]
-
-Change since V3:
- - add usage_avg_contrib statistic which sums the running time of tasks on a rq
- - use usage_avg_contrib instead of runnable_avg_sum for cpu_utilization
- - fix replacement power by capacity
- - update some comments
-
-Change since V2:
- - rebase on top of capacity renaming
- - fix wake_affine statistic update
- - rework nohz_kick_needed
- - optimize the active migration of a task from CPU with reduced capacity
- - rename group_activity by group_utilization and remove unused total_utilization
- - repair SD_PREFER_SIBLING and use it for SMT level
- - reorder patchset to gather patches with same topics
-
-Change since V1:
- - add 3 fixes
- - correct some commit messages
- - replace capacity computation by activity
- - take into account current cpu capacity
-
-[1] https://lkml.org/lkml/2014/7/18/110
-[2] https://lkml.org/lkml/2014/7/25/589
-
-Morten Rasmussen (1):
-  sched: Track group sched_entity usage contributions
-
-Vincent Guittot (6):
-  sched: add per rq cpu_capacity_orig
-  sched: move cfs task on a CPU with higher capacity
-  sched: add utilization_avg_contrib
-  sched: get CPU's usage statistic
-  sched: replace capacity_factor by usage
-  sched: add SD_PREFER_SIBLING for SMT level
-
- include/linux/sched.h |  21 +++-
- kernel/sched/core.c   |  15 +--
- kernel/sched/debug.c  |  12 ++-
- kernel/sched/fair.c   | 283 ++++++++++++++++++++++++++++++--------------------
- kernel/sched/sched.h  |  11 +-
- 5 files changed, 209 insertions(+), 133 deletions(-)
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c3674da..9075dee 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5896,6 +5896,18 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+ }
+ 
+ /*
++ * Check whether the capacity of the rq has been noticeably reduced by side
++ * activity. The imbalance_pct is used for the threshold.
++ * Return true is the capacity is reduced
++ */
++static inline int
++check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
++{
++	return ((rq->cpu_capacity * sd->imbalance_pct) <
++				(rq->cpu_capacity_orig * 100));
++}
++
++/*
+  * Group imbalance indicates (and tries to solve) the problem where balancing
+  * groups is inadequate due to tsk_cpus_allowed() constraints.
+  *
+@@ -6567,6 +6579,14 @@ static int need_active_balance(struct lb_env *env)
+ 		 */
+ 		if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
+ 			return 1;
++
++		/*
++		 * The src_cpu's capacity is reduced because of other
++		 * sched_class or IRQs, we trig an active balance to move the
++		 * task
++		 */
++		if (check_cpu_capacity(env->src_rq, sd))
++			return 1;
+ 	}
+ 
+ 	return unlikely(sd->nr_balance_failed > sd->cache_nice_tries+2);
+@@ -6668,6 +6688,9 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 
+ 	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
+ 
++	env.src_cpu = busiest->cpu;
++	env.src_rq = busiest;
++
+ 	ld_moved = 0;
+ 	if (busiest->nr_running > 1) {
+ 		/*
+@@ -6677,8 +6700,6 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 		 * correctly treated as an imbalance.
+ 		 */
+ 		env.flags |= LBF_ALL_PINNED;
+-		env.src_cpu   = busiest->cpu;
+-		env.src_rq    = busiest;
+ 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+ 
+ more_balance:
+@@ -7378,10 +7399,12 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
+ 
+ /*
+  * Current heuristic for kicking the idle load balancer in the presence
+- * of an idle cpu is the system.
++ * of an idle cpu in the system.
+  *   - This rq has more than one task.
+- *   - At any scheduler domain level, this cpu's scheduler group has multiple
+- *     busy cpu's exceeding the group's capacity.
++ *   - This rq has at least one CFS task and the capacity of the CPU is
++ *     significantly reduced because of RT tasks or IRQs.
++ *   - At parent of LLC scheduler domain level, this cpu's scheduler group has
++ *     multiple busy cpu.
+  *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
+  *     domain span are idle.
+  */
+@@ -7391,9 +7414,10 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	struct sched_domain *sd;
+ 	struct sched_group_capacity *sgc;
+ 	int nr_busy, cpu = rq->cpu;
++	bool kick = false;
+ 
+ 	if (unlikely(rq->idle_balance))
+-		return 0;
++		return false;
+ 
+        /*
+ 	* We may be recently in ticked or tickless idle mode. At the first
+@@ -7407,38 +7431,44 @@ static inline int nohz_kick_needed(struct rq *rq)
+ 	 * balancing.
+ 	 */
+ 	if (likely(!atomic_read(&nohz.nr_cpus)))
+-		return 0;
++		return false;
+ 
+ 	if (time_before(now, nohz.next_balance))
+-		return 0;
++		return false;
+ 
+ 	if (rq->nr_running >= 2)
+-		goto need_kick;
++		return true;
+ 
+ 	rcu_read_lock();
+ 	sd = rcu_dereference(per_cpu(sd_busy, cpu));
+-
+ 	if (sd) {
+ 		sgc = sd->groups->sgc;
+ 		nr_busy = atomic_read(&sgc->nr_busy_cpus);
+ 
+-		if (nr_busy > 1)
+-			goto need_kick_unlock;
++		if (nr_busy > 1) {
++			kick = true;
++			goto unlock;
++		}
++
+ 	}
+ 
+-	sd = rcu_dereference(per_cpu(sd_asym, cpu));
++	sd = rcu_dereference(rq->sd);
++	if (sd) {
++		if ((rq->cfs.h_nr_running >= 1) &&
++				check_cpu_capacity(rq, sd)) {
++			kick = true;
++			goto unlock;
++		}
++	}
+ 
++	sd = rcu_dereference(per_cpu(sd_asym, cpu));
+ 	if (sd && (cpumask_first_and(nohz.idle_cpus_mask,
+ 				  sched_domain_span(sd)) < cpu))
+-		goto need_kick_unlock;
+-
+-	rcu_read_unlock();
+-	return 0;
++		kick = true;
+ 
+-need_kick_unlock:
++unlock:
+ 	rcu_read_unlock();
+-need_kick:
+-	return 1;
++	return kick;
+ }
+ #else
+ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle) { }
 -- 
 1.9.1
 
