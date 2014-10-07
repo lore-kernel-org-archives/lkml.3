@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088AbaJGXkg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:40:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
+	id S1756073AbaJGXke (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:40:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754508AbaJGXTt (ORCPT
+	with ESMTP id S1755551AbaJGXTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:19:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shaohua Li <shli@kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>,
-        Heinz Mauelshagen <heinzm@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: [PATCH 3.16 12/26] md/raid5: disable DISCARD by default due to safety concerns.
-Date: Tue,  7 Oct 2014 16:19:28 -0700
-Message-Id: <20141007231848.857000879@linuxfoundation.org>
+        ming.yao@intel.com, Chris Wilson <chris@chris-wilson.co.uk>,
+        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.16 13/26] drm/i915: Flush the PTEs after updating them before suspend
+Date: Tue,  7 Oct 2014 16:19:29 -0700
+Message-Id: <20141007231848.885187578@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -31,92 +32,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 8e0e99ba64c7ba46133a7c8a3e3f7de01f23bd93 upstream.
+commit 91e56499304f3d612053a9cf17f350868182c7d8 upstream.
 
-It has come to my attention (thanks Martin) that 'discard_zeroes_data'
-is only a hint.  Some devices in some cases don't do what it
-says on the label.
+As we use WC updates of the PTE, we are responsible for notifying the
+hardware when to flush its TLBs. Do so after we zap all the PTEs before
+suspend (and the BIOS tries to read our GTT).
 
-The use of DISCARD in RAID5 depends on reads from discarded regions
-being predictably zero.  If a write to a previously discarded region
-performs a read-modify-write cycle it assumes that the parity block
-was consistent with the data blocks.  If all were zero, this would
-be the case.  If some are and some aren't this would not be the case.
-This could lead to data corruption after a device failure when
-data needs to be reconstructed from the parity.
+Fixes a regression from
 
-As we cannot trust 'discard_zeroes_data', ignore it by default
-and so disallow DISCARD on all raid4/5/6 arrays.
+commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
+Author: Ben Widawsky <benjamin.widawsky@intel.com>
+Date:   Wed Oct 16 09:21:30 2013 -0700
 
-As many devices are trustworthy, and as there are benefits to using
-DISCARD, add a module parameter to over-ride this caution and cause
-DISCARD to work if discard_zeroes_data is set.
+    drm/i915: Disable GGTT PTEs on GEN6+ suspend
 
-If a site want to enable DISCARD on some arrays but not on others they
-should select DISCARD support at the filesystem level, and set the
-raid456 module parameter.
-    raid456.devices_handle_discard_safely=Y
+that survived and continue to cause harm even after
 
-As this is a data-safety issue, I believe this patch is suitable for
--stable.
-DISCARD support for RAID456 was added in 3.7
+commit e568af1c626031925465a5caaab7cca1303d55c7
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Mar 26 20:08:20 2014 +0100
 
-Cc: Shaohua Li <shli@kernel.org>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Mike Snitzer <snitzer@redhat.com>
-Cc: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
-Signed-off-by: NeilBrown <neilb@suse.de>
+    drm/i915: Undo gtt scratch pte unmapping again
+
+v2: Trivial rebase.
+v3: Fixes requires pointer dances.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82340
+Tested-by: ming.yao@intel.com
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Cc: Todd Previte <tprevite@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid5.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem_gtt.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -64,6 +64,10 @@
- #define cpu_to_group(cpu) cpu_to_node(cpu)
- #define ANY_GROUP NUMA_NO_NODE
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@ -1297,6 +1297,16 @@ void i915_check_and_clear_faults(struct
+ 	POSTING_READ(RING_FAULT_REG(&dev_priv->ring[RCS]));
+ }
  
-+static bool devices_handle_discard_safely = false;
-+module_param(devices_handle_discard_safely, bool, 0644);
-+MODULE_PARM_DESC(devices_handle_discard_safely,
-+		 "Set to Y if all devices in each array reliably return zeroes on reads from discarded regions");
- static struct workqueue_struct *raid5_wq;
- /*
-  * Stripe cache
-@@ -6208,7 +6212,7 @@ static int run(struct mddev *mddev)
- 		mddev->queue->limits.discard_granularity = stripe;
- 		/*
- 		 * unaligned part of discard request will be ignored, so can't
--		 * guarantee discard_zerors_data
-+		 * guarantee discard_zeroes_data
- 		 */
- 		mddev->queue->limits.discard_zeroes_data = 0;
++static void i915_ggtt_flush(struct drm_i915_private *dev_priv)
++{
++	if (INTEL_INFO(dev_priv->dev)->gen < 6) {
++		intel_gtt_chipset_flush();
++	} else {
++		I915_WRITE(GFX_FLSH_CNTL_GEN6, GFX_FLSH_CNTL_EN);
++		POSTING_READ(GFX_FLSH_CNTL_GEN6);
++	}
++}
++
+ void i915_gem_suspend_gtt_mappings(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -1313,6 +1323,8 @@ void i915_gem_suspend_gtt_mappings(struc
+ 				       dev_priv->gtt.base.start,
+ 				       dev_priv->gtt.base.total,
+ 				       true);
++
++	i915_ggtt_flush(dev_priv);
+ }
  
-@@ -6233,6 +6237,18 @@ static int run(struct mddev *mddev)
- 			    !bdev_get_queue(rdev->bdev)->
- 						limits.discard_zeroes_data)
- 				discard_supported = false;
-+			/* Unfortunately, discard_zeroes_data is not currently
-+			 * a guarantee - just a hint.  So we only allow DISCARD
-+			 * if the sysadmin has confirmed that only safe devices
-+			 * are in use by setting a module parameter.
-+			 */
-+			if (!devices_handle_discard_safely) {
-+				if (discard_supported) {
-+					pr_info("md/raid456: discard support disabled due to uncertainty.\n");
-+					pr_info("Set raid456.devices_handle_discard_safely=Y to override.\n");
-+				}
-+				discard_supported = false;
-+			}
- 		}
+ void i915_gem_restore_gtt_mappings(struct drm_device *dev)
+@@ -1365,7 +1377,7 @@ void i915_gem_restore_gtt_mappings(struc
+ 		gen6_write_pdes(container_of(vm, struct i915_hw_ppgtt, base));
+ 	}
  
- 		if (discard_supported &&
+-	i915_gem_chipset_flush(dev);
++	i915_ggtt_flush(dev_priv);
+ }
+ 
+ int i915_gem_gtt_prepare_object(struct drm_i915_gem_object *obj)
 
 
