@@ -1,180 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230AbaJGU2k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:28:40 -0400
-Received: from mail-bn1bon0069.outbound.protection.outlook.com ([157.56.111.69]:1664
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753381AbaJGU2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:28:38 -0400
-Date: Tue, 7 Oct 2014 13:28:32 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>
-Subject: Re: [PATCH RESEND] gpio: lib-sysfs: Add 'wakeup' attribute
-References: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1754920AbaJGUbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:31:01 -0400
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:53276 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbaJGUa7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 16:30:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21000.005
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <f931db7ac1184254ba87b8abdba2a13a@BN1BFFO11FD013.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51694002)(199003)(164054003)(51704005)(24454002)(53754006)(377424004)(85306004)(108616004)(50466002)(80022003)(46102003)(23676002)(33646002)(107046002)(76482002)(31966008)(74316001)(85202003)(120916001)(106466001)(99396003)(54356999)(86362001)(95666004)(85852003)(87936001)(76176999)(47776003)(85182001)(19580405001)(20776003)(44976005)(4396001)(77096002)(53416004)(19580395003)(83506001)(102836001)(92566001)(104016003)(50986999)(64706001)(15975445006)(21056001)(6806004)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB061;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB061;
-X-Forefront-PRVS: 035748864E
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-OriginatorOrg: xilinx.com
+In-Reply-To: <CACRpkdbi4iDwAF674vm+yogv0ocXV+Pv6tq06i5YSgsJMv_PAg@mail.gmail.com>
+References: <1411514246-6163-1-git-send-email-dianders@chromium.org>
+	<CACRpkdbQ_21BcaK9T8aTHoDdXQpb-6KKZwcJzJJdBK0ztcG=ww@mail.gmail.com>
+	<CAD=FV=Xq5XtskHW8B2QcpSSh3apK9a+eBCg07cfPL3tFqXntWA@mail.gmail.com>
+	<CACRpkdbi4iDwAF674vm+yogv0ocXV+Pv6tq06i5YSgsJMv_PAg@mail.gmail.com>
+Date: Tue, 7 Oct 2014 13:30:58 -0700
+X-Google-Sender-Auth: iTO6ntFTVwj6fFzgOZQDRqsPNjU
+Message-ID: <CAD=FV=W=TE5o22NuhdaXr_H2Xg56hr0UcErM8BFt=Rh1JwxTuw@mail.gmail.com>
+Subject: Re: [RFC PATCH] pwm: Add the concept of an "active" pinctrl
+From: Doug Anderson <dianders@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Linus,
 
-just wanted to check on the status of this patch?
+On Tue, Oct 7, 2014 at 6:15 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Sep 25, 2014 at 10:26 PM, Doug Anderson <dianders@chromium.org> wrote:
+>> On Thu, Sep 25, 2014 at 12:31 AM, Linus Walleij
+>> <linus.walleij@linaro.org> wrote:
+>>> On Wed, Sep 24, 2014 at 1:17 AM, Doug Anderson <dianders@chromium.org> wrote:
+>
+>>> The device core will handle three states for you: "default", "sleep", "idle".
+>>
+>> Except it will handle only one state unless "CONFIG_PM" is defined,
+>> right?  In other words "sleep" and "idle" totally don't exist in the
+>> "!CONFIG_PM" case.
+>
+> Yes. Because the intent of these settings is usually to save power.
+> So by disabling the PM config, you can test if the system works
+> without PM. Even hairy stuff like power-related pin control. It has
+> this nice orthogonal debug feature to it...
+>
+>> Normally it should be considered "safe" (though high power)
+>> to disable CONFIG_PM, right?
+>
+> Yeah. If your usecase makes it unsafe to have just "default",
+> you should not rely on these state names but invent new ones.
 
-	Thanks,
-	Sören
+I thought about it a bit more and I decided that a new state made the
+most sense.  I put another RFC up there at
+<https://patchwork.kernel.org/patch/5049041/>.  Feel free to have a
+look at it.
 
-On Thu, 2014-09-04 at 10:58AM -0700, Soren Brinkmann wrote:
-> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-> marking/unmarking a GPIO as wake IRQ.
-> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-> is associated with that GPIO and the irqchip implements set_wake().
-> Writing 'enabled' to that file will enable wake for that GPIO, while
-> writing 'disabled' will disable wake.
-> Reading that file will return either 'disabled' or 'enabled' depening on
-> the currently set flag for the GPIO's IRQ.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
-> Hi all,
-> 
-> I originally submitted this patch with a few fixes for Zynq's GPIO driver
-> (https://lkml.org/lkml/2014/8/29/391). Since this change is not just
-> Zynq-related and has broader impact, Linus asked me to post this again, separate
-> from the Zynq series.
-> 
-> Let me just quote myself from the original submission:
-> "I'm still not fully convinced that the gpio_keys are the best
-> replacement for the sysfs interface when it comes to inputs. For that
-> reason and to have a way to do some quick wake testing, I'd like to
-> propose adding the ability to control wake through the sysfs interface
-> (patch 3)."
-> 
-> 	Thanks,
-> 	Sören
-> 
->  drivers/gpio/gpiolib-sysfs.c | 75 ++++++++++++++++++++++++++++++++++++++++----
->  1 file changed, 69 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-> index 5f2150b619a7..aaf021eaaff5 100644
-> --- a/drivers/gpio/gpiolib-sysfs.c
-> +++ b/drivers/gpio/gpiolib-sysfs.c
-> @@ -286,6 +286,56 @@ found:
->  
->  static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
->  
-> +static ssize_t gpio_wakeup_show(struct device *dev,
-> +		struct device_attribute *attr, char *buf)
-> +{
-> +	ssize_t			status;
-> +	const struct gpio_desc	*desc = dev_get_drvdata(dev);
-> +	int			irq = gpiod_to_irq(desc);
-> +	struct irq_desc		*irq_desc = irq_to_desc(irq);
-> +
-> +	mutex_lock(&sysfs_lock);
-> +
-> +	if (irqd_is_wakeup_set(&irq_desc->irq_data))
-> +		status = sprintf(buf, "enabled\n");
-> +	else
-> +		status = sprintf(buf, "disabled\n");
-> +
-> +	mutex_unlock(&sysfs_lock);
-> +
-> +	return status;
-> +}
-> +
-> +static ssize_t gpio_wakeup_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t size)
-> +{
-> +	int			ret;
-> +	unsigned int		on;
-> +	struct gpio_desc	*desc = dev_get_drvdata(dev);
-> +	int			irq = gpiod_to_irq(desc);
-> +
-> +	mutex_lock(&sysfs_lock);
-> +
-> +	if (sysfs_streq("enabled", buf))
-> +		on = true;
-> +	else if (sysfs_streq("disabled", buf))
-> +		on = false;
-> +	else
-> +		return -EINVAL;
-> +
-> +	ret = irq_set_irq_wake(irq, on);
-> +
-> +	mutex_unlock(&sysfs_lock);
-> +
-> +	if (ret)
-> +		pr_warn("%s: failed to %s wake\n", __func__,
-> +				on ? "enable" : "disable");
-> +
-> +	return size;
-> +}
-> +
-> +static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
-> +
->  static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
->  				int value)
->  {
-> @@ -526,7 +576,7 @@ static struct class gpio_class = {
->  int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->  {
->  	unsigned long		flags;
-> -	int			status;
-> +	int			status, irq;
->  	const char		*ioname = NULL;
->  	struct device		*dev;
->  	int			offset;
-> @@ -582,11 +632,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
->  			goto fail_unregister_device;
->  	}
->  
-> -	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
-> -				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
-> -		status = device_create_file(dev, &dev_attr_edge);
-> -		if (status)
-> -			goto fail_unregister_device;
-> +	irq = gpiod_to_irq(desc);
-> +	if (irq >= 0) {
-> +		struct irq_desc *irq_desc = irq_to_desc(irq);
-> +		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
-> +
-> +		if (direction_may_change ||
-> +				!test_bit(FLAG_IS_OUT, &desc->flags)) {
-> +			status = device_create_file(dev, &dev_attr_edge);
-> +			if (status)
-> +				goto fail_unregister_device;
-> +		}
-> +
-> +		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
-> +				irqchip->irq_set_wake) {
-> +			status = device_create_file(dev, &dev_attr_wakeup);
-> +			if (status)
-> +				goto fail_unregister_device;
-> +		}
->  	}
->  
->  	set_bit(FLAG_EXPORT, &desc->flags);
-> -- 
-> 2.1.0.1.g27b9230
-> 
+-Doug
