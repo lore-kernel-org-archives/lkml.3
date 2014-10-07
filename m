@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471AbaJGXUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39881 "EHLO
+	id S932596AbaJGXUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411AbaJGXUU (ORCPT
+	with ESMTP id S932411AbaJGXU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:20 -0400
+	Tue, 7 Oct 2014 19:20:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Chuck Ebbert <cebbert.lkml@gmail.com>
-Subject: [PATCH 3.10 01/13] udf: Avoid infinite loop when processing indirect ICBs
-Date: Tue,  7 Oct 2014 16:20:06 -0700
-Message-Id: <20141007231919.969237988@linuxfoundation.org>
+        Assaf Azulay <assaf.azulay@intel.com>,
+        David Spinadel <david.spinadel@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 11/13] nl80211: clear skb cb before passing to netlink
+Date: Tue,  7 Oct 2014 16:20:16 -0700
+Message-Id: <20141007231920.257970489@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -28,91 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
+commit bd8c78e78d5011d8111bc2533ee73b13a3bd6c42 upstream.
 
-We did not implement any bound on number of indirect ICBs we follow when
-loading inode. Thus corrupted medium could cause kernel to go into an
-infinite loop, possibly causing a stack overflow.
+In testmode and vendor command reply/event SKBs we use the
+skb cb data to store nl80211 parameters between allocation
+and sending. This causes the code for CONFIG_NETLINK_MMAP
+to get confused, because it takes ownership of the skb cb
+data when the SKB is handed off to netlink, and it doesn't
+explicitly clear it.
 
-Fix the possible stack overflow by removing recursion from
-__udf_read_inode() and limit number of indirect ICBs we follow to avoid
-infinite loops.
+Clear the skb cb explicitly when we're done and before it
+gets passed to netlink to avoid this issue.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+Reported-by: Assaf Azulay <assaf.azulay@intel.com>
+Reported-by: David Spinadel <david.spinadel@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/inode.c |   35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
+ net/wireless/nl80211.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1270,13 +1270,22 @@ update_time:
- 	return 0;
- }
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -6568,6 +6568,9 @@ int cfg80211_testmode_reply(struct sk_bu
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
  
-+/*
-+ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
-+ * arbitrary - just that we hopefully don't limit any real use of rewritten
-+ * inode on write-once media but avoid looping for too long on corrupted media.
-+ */
-+#define UDF_MAX_ICB_NESTING 1024
++	/* clear CB data for netlink core to own from now on */
++	memset(skb->cb, 0, sizeof(skb->cb));
 +
- static void __udf_read_inode(struct inode *inode)
- {
- 	struct buffer_head *bh = NULL;
- 	struct fileEntry *fe;
- 	uint16_t ident;
- 	struct udf_inode_info *iinfo = UDF_I(inode);
-+	unsigned int indirections = 0;
+ 	if (WARN_ON(!rdev->testmode_info)) {
+ 		kfree_skb(skb);
+ 		return -EINVAL;
+@@ -6594,6 +6597,9 @@ void cfg80211_testmode_event(struct sk_b
+ 	void *hdr = ((void **)skb->cb)[1];
+ 	struct nlattr *data = ((void **)skb->cb)[2];
  
-+reread:
- 	/*
- 	 * Set defaults, but the inode is still incomplete!
- 	 * Note: get_new_inode() sets the following on a new inode:
-@@ -1313,28 +1322,26 @@ static void __udf_read_inode(struct inod
- 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
- 					&ident);
- 		if (ident == TAG_IDENT_IE && ibh) {
--			struct buffer_head *nbh = NULL;
- 			struct kernel_lb_addr loc;
- 			struct indirectEntry *ie;
- 
- 			ie = (struct indirectEntry *)ibh->b_data;
- 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
- 
--			if (ie->indirectICB.extLength &&
--				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
--							&ident))) {
--				if (ident == TAG_IDENT_FE ||
--					ident == TAG_IDENT_EFE) {
--					memcpy(&iinfo->i_location,
--						&loc,
--						sizeof(struct kernel_lb_addr));
--					brelse(bh);
--					brelse(ibh);
--					brelse(nbh);
--					__udf_read_inode(inode);
-+			if (ie->indirectICB.extLength) {
-+				brelse(bh);
-+				brelse(ibh);
-+				memcpy(&iinfo->i_location, &loc,
-+				       sizeof(struct kernel_lb_addr));
-+				if (++indirections > UDF_MAX_ICB_NESTING) {
-+					udf_err(inode->i_sb,
-+						"too many ICBs in ICB hierarchy"
-+						" (max %d supported)\n",
-+						UDF_MAX_ICB_NESTING);
-+					make_bad_inode(inode);
- 					return;
- 				}
--				brelse(nbh);
-+				goto reread;
- 			}
- 		}
- 		brelse(ibh);
++	/* clear CB data for netlink core to own from now on */
++	memset(skb->cb, 0, sizeof(skb->cb));
++
+ 	nla_nest_end(skb, data);
+ 	genlmsg_end(skb, hdr);
+ 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
 
 
