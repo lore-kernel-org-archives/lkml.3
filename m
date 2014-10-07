@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727AbaJGXYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:24:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
+	id S932711AbaJGXYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:24:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220AbaJGXUU (ORCPT
+	with ESMTP id S932419AbaJGXUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Sylvain ythier Hitier <sylvain.hitier@gmail.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 02/13] perf: fix perf bug in fork()
-Date: Tue,  7 Oct 2014 16:20:07 -0700
-Message-Id: <20141007231919.997655907@linuxfoundation.org>
+        Josh Triplett <josh@joshtriplett.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCH 3.10 03/13] init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
+Date: Tue,  7 Oct 2014 16:20:08 -0700
+Message-Id: <20141007231920.026354102@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -33,65 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Josh Triplett <josh@joshtriplett.org>
 
-commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
+commit 62b4d2041117f35ab2409c9f5c4b8d3dc8e59d0f upstream.
 
-Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
-calling perf_event_free_task() when failing sched_fork() we will not yet
-have done the memset() on ->perf_event_ctxp[] and will therefore try and
-'free' the inherited contexts, which are still in use by the parent
-process.  This is bad..
+commit 03b8c7b623c80af264c4c8d6111e5c6289933666 ("futex: Allow
+architectures to skip futex_atomic_cmpxchg_inatomic() test") added the
+HAVE_FUTEX_CMPXCHG symbol right below FUTEX.  This placed it right in
+the middle of the options for the EXPERT menu.  However,
+HAVE_FUTEX_CMPXCHG does not depend on EXPERT or FUTEX, so Kconfig stops
+placing items in the EXPERT menu, and displays the remaining several
+EXPERT items (starting with EPOLL) directly in the General Setup menu.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Since both users of HAVE_FUTEX_CMPXCHG only select it "if FUTEX", make
+HAVE_FUTEX_CMPXCHG itself depend on FUTEX.  With this change, the
+subsequent items display as part of the EXPERT menu again; the EMBEDDED
+menu now appears as the next top-level item in the General Setup menu,
+which makes General Setup much shorter and more usable.
+
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    4 +++-
- kernel/fork.c        |    5 +++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ init/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7482,8 +7482,10 @@ int perf_event_init_task(struct task_str
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1367,6 +1367,7 @@ config FUTEX
  
- 	for_each_task_context_nr(ctxn) {
- 		ret = perf_event_init_context(child, ctxn);
--		if (ret)
-+		if (ret) {
-+			perf_event_free_task(child);
- 			return ret;
-+		}
- 	}
- 
- 	return 0;
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1324,7 +1324,7 @@ static struct task_struct *copy_process(
- 		goto bad_fork_cleanup_policy;
- 	retval = audit_alloc(p);
- 	if (retval)
--		goto bad_fork_cleanup_policy;
-+		goto bad_fork_cleanup_perf;
- 	/* copy all the process information */
- 	retval = copy_semundo(clone_flags, p);
- 	if (retval)
-@@ -1522,8 +1522,9 @@ bad_fork_cleanup_semundo:
- 	exit_sem(p);
- bad_fork_cleanup_audit:
- 	audit_free(p);
--bad_fork_cleanup_policy:
-+bad_fork_cleanup_perf:
- 	perf_event_free_task(p);
-+bad_fork_cleanup_policy:
- #ifdef CONFIG_NUMA
- 	mpol_put(p->mempolicy);
- bad_fork_cleanup_cgroup:
+ config HAVE_FUTEX_CMPXCHG
+ 	bool
++	depends on FUTEX
+ 	help
+ 	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
+ 	  is implemented and always working. This removes a couple of runtime
 
 
