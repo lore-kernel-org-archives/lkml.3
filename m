@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaJGOYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:24:35 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:49856 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753478AbaJGOYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:24:33 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: =?utf-8?B?J0xvdGhhciBXYcOfbWFubic=?= <LW@KARO-electronics.de>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Topic: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Index: AQHP4jE2m8o16PSYfUeOu2GPn2nYPZwkoTOQ///8YQCAABF2YA==
-Date: Tue, 7 Oct 2014 14:23:02 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C60B1@AcuExch.aculab.com>
-References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
-	<063D6719AE5E284EB5DD2968C1650D6D174C6025@AcuExch.aculab.com>
- <20141007161702.7cd1e800@ipc1.ka-ro>
-In-Reply-To: <20141007161702.7cd1e800@ipc1.ka-ro>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1754048AbaJGOZZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:25:25 -0400
+Received: from mail-bl2on0076.outbound.protection.outlook.com ([65.55.169.76]:40480
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752904AbaJGOZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:25:24 -0400
+Date: Tue, 7 Oct 2014 09:19:00 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Pavel Machek <pavel@denx.de>
+CC: <dinguyen@opensource.altera.com>, <linux@arm.linux.org.uk>,
+        <yvanderv@opensource.altera.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <delicious.quinoa@gmail.com>
+Subject: Re: [PATCH v2 1/2] socfpga: hotplug: put cpu1 in wfi
+In-Reply-To: <20141007111052.GA6904@amd>
+Message-ID: <alpine.DEB.2.02.1410070918000.9610@atx-linux-37>
+References: <1412192304-1209-1-git-send-email-atull@opensource.altera.com> <1412192304-1209-2-git-send-email-atull@opensource.altera.com> <20141007111052.GA6904@amd>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR08CA0051.namprd08.prod.outlook.com (10.141.200.31) To
+ BY2PR03MB314.namprd03.prod.outlook.com (10.141.139.19)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB314;
+X-Forefront-PRVS: 035748864E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(377424004)(24454002)(189002)(105586002)(106356001)(21056001)(92566001)(33716001)(81156004)(86362001)(102836001)(23726002)(122386002)(87976001)(85852003)(107046002)(92726001)(97736003)(4396001)(101416001)(40100002)(50466002)(80022003)(86152002)(46102003)(42186005)(120916001)(15975445006)(20776003)(54356999)(83506001)(76176999)(85306004)(15202345003)(50986999)(47776003)(69596002)(64706001)(110136001)(53416004)(99396003)(46406003)(76482002)(77096002)(66066001)(95666004)(31966008)(19580395003)(19580405001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB314;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s97EOdnn017076
 
-From: Lothar
-> David Laight wrote:
-> > From: Lothar WaÃŸmann
-> > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-> > > introduced a regression for i.MX28. The swap_buffer() function doing
-> > > the endian conversion of the received data on i.MX28 may access memory
-> > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-> > > does not copy those bytes, so that the last bytes of a packet may be
-> > > filled with invalid data after swapping.
-> > > This will likely lead to checksum errors on received packets.
-> > > E.g. when trying to mount an NFS rootfs:
-> > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-> > >
-> > > Do the byte swapping and copying to the new skb in one go if
-> > > necessary.
-> >
-> > ISTM that if you need to do the 'swap' you should copy the data regardless
-> > of the length.
-> >
-> The swap function has to look at at most 3 bytes beyond the actual
-> packet length. That is what the original swap_buffer() function does and
-> what the new function swap_buffer2(), that does the endian swapping
-> while copying to the new buffer, also does.
+On Tue, 7 Oct 2014, Pavel Machek wrote:
 
-I understood the bug.
+> On Wed 2014-10-01 14:38:23, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Use WFI when putting CPU1 to sleep.  Don't hold CPU1 in reset
+> > since that results in increased power consumption.
+> > 
+> > Reset CPU1 briefly during CPU1 bootup.
+> > 
+> > This has been tested for hotplug and suspend/resume and results
+> > in no increased power consumption.
+> > 
+> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> 
+> It is nice to Cc people who commented ont the patch before.
 
-The point I was making is that if you have to do a read-write of the received
-data (to byteswap it) then you might as well always copy it into a new skb that
-is just big enough for the actual receive frame.
+HI Pavel,
 
-	David
+OK, adding you and others who commented.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+> >  	if (cpu1start_addr) {
+> > +		/* This will put CPU #1 into reset. */
+> > +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
+> > +			     rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
+> > +
+> 
+> I thought conclusion was to use writel (not __raw variant) here?
+
+Yes it was.  Fixed in v3, soon.
+
+Alan
+
+> 
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
