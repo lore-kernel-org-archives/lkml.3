@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaJGFsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:48:05 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40246 "EHLO
+	id S1753267AbaJGF3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:29:16 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40171 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331AbaJGF3Y (ORCPT
+	with ESMTP id S1752961AbaJGF3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:29:24 -0400
+	Tue, 7 Oct 2014 01:29:10 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
@@ -24,27 +24,27 @@ Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
         linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
         linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 11/44] mfd: retu: Register with kernel poweroff handler
-Date: Mon,  6 Oct 2014 22:28:13 -0700
-Message-Id: <1412659726-29957-12-git-send-email-linux@roeck-us.net>
+        Guenter Roeck <linux@roeck-us.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH 06/44] gpio-poweroff: Drop reference to pm_power_off from devicetree bindings
+Date: Mon,  6 Oct 2014 22:28:08 -0700
+Message-Id: <1412659726-29957-7-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=2.8
+X-OutGoing-Spam-Status: No, score=0.3
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54337A34.000E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020203.54337A26.0073,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: 
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 60
+X-CTCH-SenderID-TotalMessages: 17
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -64,105 +64,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel poweroff handler instead of setting pm_power_off
-directly. Register with a low priority value of 64 to reflect that
-the original code only sets pm_power_off if it was not already set.
+pm_power_off is an implementation detail. Replace it with a more generic
+description of the driver's functionality.
 
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/mfd/retu-mfd.c | 33 +++++++++++++++++++--------------
- 1 file changed, 19 insertions(+), 14 deletions(-)
+ Documentation/devicetree/bindings/gpio/gpio-poweroff.txt | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/retu-mfd.c b/drivers/mfd/retu-mfd.c
-index 663f8a3..64b60fa 100644
---- a/drivers/mfd/retu-mfd.c
-+++ b/drivers/mfd/retu-mfd.c
-@@ -22,6 +22,8 @@
- #include <linux/slab.h>
- #include <linux/mutex.h>
- #include <linux/module.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/retu.h>
-@@ -43,6 +45,7 @@ struct retu_dev {
- 	struct device			*dev;
- 	struct mutex			mutex;
- 	struct regmap_irq_chip_data	*irq_data;
-+	struct notifier_block		poweroff_nb;
- };
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
+index d4eab92..c95a1a6 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
+@@ -2,12 +2,12 @@ Driver a GPIO line that can be used to turn the power off.
  
- static struct resource retu_pwrbutton_res[] = {
-@@ -81,9 +84,6 @@ static struct regmap_irq_chip retu_irq_chip = {
- 	.ack_base	= RETU_REG_IDR,
- };
+ The driver supports both level triggered and edge triggered power off.
+ At driver load time, the driver will request the given gpio line and
+-install a pm_power_off handler. If the optional properties 'input' is
+-not found, the GPIO line will be driven in the inactive
++install a handler to power off the system. If the optional properties
++'input' is not found, the GPIO line will be driven in the inactive
+ state. Otherwise its configured as an input.
  
--/* Retu device registered for the power off. */
--static struct retu_dev *retu_pm_power_off;
--
- static struct resource tahvo_usb_res[] = {
- 	{
- 		.name	= "tahvo-usb",
-@@ -165,12 +165,14 @@ int retu_write(struct retu_dev *rdev, u8 reg, u16 data)
- }
- EXPORT_SYMBOL_GPL(retu_write);
+-When the pm_power_off is called, the gpio is configured as an output,
+-and drive active, so triggering a level triggered power off
++When the the poweroff handler is called, the gpio is configured as an
++output, and drive active, so triggering a level triggered power off
+ condition. This will also cause an inactive->active edge condition, so
+ triggering positive edge triggered power off. After a delay of 100ms,
+ the GPIO is set to inactive, thus causing an active->inactive edge,
+@@ -24,7 +24,7 @@ Required properties:
  
--static void retu_power_off(void)
-+static int retu_power_off(struct notifier_block *this, unsigned long unused1,
-+			  void *unused2)
- {
--	struct retu_dev *rdev = retu_pm_power_off;
-+	struct retu_dev *rdev = container_of(this, struct retu_dev,
-+					     poweroff_nb);
- 	int reg;
- 
--	mutex_lock(&retu_pm_power_off->mutex);
-+	mutex_lock(&rdev->mutex);
- 
- 	/* Ignore power button state */
- 	regmap_read(rdev->regmap, RETU_REG_CC1, &reg);
-@@ -183,7 +185,9 @@ static void retu_power_off(void)
- 	for (;;)
- 		cpu_relax();
- 
--	mutex_unlock(&retu_pm_power_off->mutex);
-+	mutex_unlock(&rdev->mutex);
-+
-+	return NOTIFY_DONE;
- }
- 
- static int retu_regmap_read(void *context, const void *reg, size_t reg_size,
-@@ -279,9 +283,13 @@ static int retu_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 		return ret;
- 	}
- 
--	if (i2c->addr == 1 && !pm_power_off) {
--		retu_pm_power_off = rdev;
--		pm_power_off	  = retu_power_off;
-+	if (i2c->addr == 1) {
-+		rdev->poweroff_nb.notifier_call = retu_power_off;
-+		rdev->poweroff_nb.priority = 64;
-+		ret = register_poweroff_handler(&rdev->poweroff_nb);
-+		if (ret)
-+			dev_err(rdev->dev,
-+				"Failed to register poweroff handler\n");
- 	}
- 
- 	return 0;
-@@ -291,10 +299,7 @@ static int retu_remove(struct i2c_client *i2c)
- {
- 	struct retu_dev *rdev = i2c_get_clientdata(i2c);
- 
--	if (retu_pm_power_off == rdev) {
--		pm_power_off	  = NULL;
--		retu_pm_power_off = NULL;
--	}
-+	unregister_poweroff_handler(&rdev->poweroff_nb);
- 	mfd_remove_devices(rdev->dev);
- 	regmap_del_irq_chip(i2c->irq, rdev->irq_data);
+ Optional properties:
+ - input : Initially configure the GPIO line as an input. Only reconfigure
+-  it to an output when the pm_power_off function is called. If this optional
++  it to an output when the poweroff handler is called. If this optional
+   property is not specified, the GPIO is initialized as an output in its
+   inactive state.
  
 -- 
 1.9.1
