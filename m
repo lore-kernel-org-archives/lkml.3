@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaJGQ7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:59:20 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:58132 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751AbaJGQ7P (ORCPT
+	id S1754593AbaJGQ7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:59:41 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:42360 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaJGQ7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:59:15 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 7 Oct 2014 18:56:22 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v6 4/4] gpio: add support for the Diolan DLN-2 USB GPIO
- driver
-Message-ID: <20141007165622.GH5362@localhost>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
- <1411661254-5204-5-git-send-email-octavian.purdila@intel.com>
+	Tue, 7 Oct 2014 12:59:34 -0400
+Message-ID: <54341BF1.9020001@gmail.com>
+Date: Tue, 07 Oct 2014 09:59:29 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411661254-5204-5-git-send-email-octavian.purdila@intel.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Guenter Roeck <linux@roeck-us.net>, Rob Landley <rob@landley.net>
+CC: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
+        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
+        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        openipmi-developer@lists.sourceforge.net,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 05/44] mfd: as3722: Drop reference to pm_power_off from
+ devicetree bindings
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-6-git-send-email-linux@roeck-us.net> <543412F7.8040909@landley.net> <20141007163131.GE28835@roeck-us.net>
+In-Reply-To: <20141007163131.GE28835@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 07:07:34PM +0300, Octavian Purdila wrote:
-> From: Daniel Baluta <daniel.baluta@intel.com>
-> 
-> This patch adds GPIO and IRQ support for the Diolan DLN-2 GPIO module.
-> 
-> Information about the USB protocol interface can be found in the
-> Programmer's Reference Manual [1], see section 2.9 for the GPIO
-> module commands and responses.
-> 
-> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
-> 
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-> ---
+On 10/07/2014 09:31 AM, Guenter Roeck wrote:
+> On Tue, Oct 07, 2014 at 11:21:11AM -0500, Rob Landley wrote:
+>> On 10/07/14 00:28, Guenter Roeck wrote:
+>>> Devicetree bindings are supposed to be operating system independent
+>>> and should thus not describe how a specific functionality is implemented
+>>> in Linux.
+>>
+>> So your argument is that linux/Documentation/devicetree/bindings should
+>> not be specific to Linux. Merely hosted in the Linux kernel source
+>> repository.
+>>
+>> Well that's certainly a point of view.
+>>
+> Not specifically my argument, really, and nothing new either. But, yes, I do
+> think that devicetree bindings descriptions should not include implementation
+> details, especially since those may change over time (as is the case here).
+>
 
-Looks good. I'll provide my reviewed-by tag to the final submission.
+I fully agree.
 
-Thanks,
-Johan
+Many device trees come from outside the kernel (i.e. they are supplied 
+by the system boot environment).  Obviously these device trees cannot be 
+changed at the whim of kernel developers, *and* it is perfectly 
+reasonable to think that software other than the Linux kernel will run 
+on this type of system too.
+
+So yes, it is really true, device trees are not a Linux kernel private 
+implementation detail, they are really an external ABI that, although 
+documented in the kernel source tree, cannot be changed in incompatible 
+ways as time progresses.
+
+David Daney
+
+
+
