@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaJGOEb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:04:31 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:65290 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937AbaJGOE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:04:28 -0400
+	id S1754042AbaJGOEk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:04:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34562 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236AbaJGOEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:04:38 -0400
+Date: Tue, 7 Oct 2014 16:04:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
+Message-ID: <20141007140433.GG30146@pd.tnic>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20141006212606.GF14113@kernel.org>
+ <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
+ <20141007133236.GG14113@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20140925191722.GA2481@sysresccd>
-References: <20140923215226.GA29000@sysresccd>
-	<20140925191722.GA2481@sysresccd>
-Date: Tue, 7 Oct 2014 16:04:27 +0200
-Message-ID: <CACRpkdYL-AQPDOZNrmeOeKbb+DvXBHB+hz37M+v_qKwzPzkApA@mail.gmail.com>
-Subject: Re: GPIO registration for external Ethernet PHY oscillator enable/disable
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Michael Welling <mwelling@emacinc.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141007133236.GG14113@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 9:17 PM, Michael Welling <mwelling@emacinc.com> wrote:
+On Tue, Oct 07, 2014 at 10:32:36AM -0300, Arnaldo Carvalho de Melo wrote:
+> Hopefully we will completely remove the need to set up any thread or cpu
+> map, as what you want is syswide tracing, right?
 
-> How do I register a GPIO for use in the PHY suspend and resume code?
-> Can it be handled outside of the PHY driver?
+Yeah, I was questioning the need to open at least one thread even for
+system-wide tracing.
 
-Nominally these days you should get a named GPIO using the
-GPIO descriptor abstraction, putting a named GPIO reference in the
-device tree node for the PHY, which should work fine
-if you're using device tree for this system.
-Documentation/gpio/consumer.txt
+See, source libraries are the new great thing for collaborative
+development - f*ck "cloud"!
 
-> If so how do ensure the appropriate suspend and resume sequencing?
+:-D
 
-AFAICT there is no good answer to this kind of questions. I guess
-my best answer would be something like what has been said for
-DRM drivers: handle all the sequence-sensitive hardware in one big
-composite driver and handle sequencing in the driver.
+-- 
+Regards/Gruss,
+    Boris.
 
-> For reference, we are using a Micrel KSZ8081 PHY connected to a
-> AT91SAMA5D35 processor.
-
-I don't know how AT91 is progressing on the device tree side or if
-it's strictly required to boot these days. If it is, you should be able
-to proceed as indicated.
-
-> Addendum:
-> I ran into another situation where a GPIO enabled oscillator was used.
-> The oscillator in this case drives the master clock for a audio codec.
-> In the old days (before device tree), I could initialize the GPIO in the
-> platform board file. Now with device tree I can setup the pin multipler
-> but the initial state of the GPIO I am not sure how to set.
-
-A driver needs to do this. Like a drivers/clk driver in this case I
-guess?
-
-> Is there a way to directly change the state of a GPIO pin from a
-> devicetree entry?
-
-I have suggested mechanisms like GPIO hogs to replace the need
-for very basic drivers that would just take a GPIO during init,
-set it and never do anything with it.
-
-Like the gpiochip node should have some hog entries:
-
-gpio-hog-high = <0>, <1>, <2>...;
-gpio-hog-low = <...>;
-
-Then they would be taken away from other consumers and not
-possible to use for anything.
-
-This has so far not been implemented though.
-
-Yours,
-Linus Walleij
+Sent from a fat crate under my desk. Formatting is fine.
+--
