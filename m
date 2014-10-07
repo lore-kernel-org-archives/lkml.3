@@ -1,152 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754248AbaJGOr5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:47:57 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33950 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882AbaJGOrz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:47:55 -0400
-Date: Tue, 7 Oct 2014 15:47:50 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Message-ID: <20141007144750.GB30590@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
- <3256560.C0cZnIlnAv@wuerfel>
- <20141007120659.GA30590@e102568-lin.cambridge.arm.com>
- <3659934.boXsmm8jcn@wuerfel>
-MIME-Version: 1.0
-In-Reply-To: <3659934.boXsmm8jcn@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 07 Oct 2014 14:47:51.0725 (UTC) FILETIME=[AB9F25D0:01CFE23D]
-X-MC-Unique: 114100715475303701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754030AbaJGOth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:49:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998AbaJGOtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:49:36 -0400
+From: Marcel Apfelbaum <marcel.a@redhat.com>
+To: linux-pci@vger.kernel.org, bhelgaas@google.com
+Cc: linux-kernel@vger.kernel.org, marcel@redhat.com, mst@redhat.com,
+        alex.williamson@redhat.com
+Subject: [PATCH v3] PCI: add kernel parameter to override devid<->driver mapping.
+Date: Tue,  7 Oct 2014 17:48:32 +0300
+Message-Id: <1412693312-2449-1-git-send-email-marcel.a@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 02:52:27PM +0100, Arnd Bergmann wrote:
-> On Tuesday 07 October 2014 13:06:59 Lorenzo Pieralisi wrote:
-> > On Wed, Oct 01, 2014 at 10:38:45AM +0100, Arnd Bergmann wrote:
-> > 
-> > [...]
-> > 
-> > > pci_mmap_page_range could either get generalized some more in an attempt
-> > > to have a __weak default implementation that works on ARM, or it could
-> > > be changed to lose the dependency on pci_sys_data instead. In either
-> > > case, the change would involve using the generic pci_host_bridge_window
-> > > list.
-> > 
-> > On ARM pci_mmap_page_range requires pci_sys_data to retrieve its
-> > mem_offset parameter. I had a look, and I do not understand *why*
-> > it is required in that function, so I am asking. That function
-> > is basically used to map PCI resources to userspace, IIUC, through
-> > /proc or /sysfs file mappings. As far as I understand those mappings
-> > expect VMA pgoff to be the CPU address when files representing resources
-> > are mmapped from /proc and 0 when mmapped from /sys (I mean from
-> > userspace, then VMA pgoff should be updated by the kernel to map the
-> > resource).
-> 
-> Applying the mem_offset is certainly the more intuitive way, since
-> that lets you read the PCI BAR values from a device and access the
-> device with the appropriate offsets.
+Scanning a lot of devices during boot requires a lot of time.
+On other scenarios there is a need to bind a driver to a specific slot.
 
-Ok, but I am referring to this snippet (drivers/pci/pci-sysfs.c):
+Binding devices to pci-stub driver does not work,
+as it will not differentiate between devices of the
+same type. Using some start scripts is error prone.
 
-/* pci_mmap_page_range() expects the same kind of entry as coming
- * from /proc/bus/pci/ which is a "user visible" value. If this is
- * different from the resource itself, arch will do necessary fixup.
- */
-pci_resource_to_user(pdev, i, res, &start, &end);
+The solution leverages driver_override functionality introduced by
 
---> Here start represents a CPU physical address, if pci_resource_to_user()
-    does not fix it up, correct ?
+	commit: 782a985d7af26db39e86070d28f987cad21313c0
+	Author: Alex Williamson <alex.williamson@redhat.com>
+	Date:   Tue May 20 08:53:21 2014 -0600
 
-vma->vm_pgoff += start >> PAGE_SHIFT;
+    	PCI: Introduce new device binding path using pci_dev.driver_override
 
-[...]
+In order to bind PCI slots to specific drivers use:
+	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
 
-return pci_mmap_page_range(...);
+Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+---
+v2 -> v3:
+ - Corrected subject line
+v1 -> v2:
+ - Addressed Michael S. Tsirkin comments
+   - Removed 32 slots limitation
+   - Better handling of memory allocation failures
+     (preferred BUG_ON over error messages)
+ - Addressed Alex Williamson's comments:
+   - Modified commit message to show parameter usage more clear.
+ - I preferred to re-use parse_args instead of manually using
+   strstr in order to better comply with command line parsing
+   rules.
+ - I didn't use any locking when parsing the command line args
+   (see parse_done usage) assuming that first call will be
+   early in system boot and no race can occur. Please correct
+   me if I am wrong.
 
-pci_mmap_page_range() applies (mem_offset >> PAGE_SHIFT) to pgoff in the
-ARM implemention.
+Notes:
+ - I have further ideas on top of this patch based on your reviews.
+   I thought of:
+   - Use wildcards to specify entire buses/devices, something like:
+     	driver[0001:02:*.*]=pci-stub
+   - Use comma to separate several devices:
+     	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+   - Make domain optional:
+   	driver[00:03.0]=pci-stub
 
-Is not there a mismatch here on platforms where mem_offset != 0 ?
+Comments will be appreciated,
+Thanks,
+Marcel
+ Documentation/kernel-parameters.txt |  4 ++
+ drivers/pci/bus.c                   | 86 +++++++++++++++++++++++++++++++++++++
+ drivers/pci/pci.c                   |  2 +
+ 3 files changed, 92 insertions(+)
 
-> > Question is: why pci_mmap_page_range() should apply an additional
-> > shift to the VMA pgoff based on pci_sys_data.mem_offset, which represents
-> > the offset from cpu->bus offset. I do not understand that. PowerPC
-> > does not seem to apply that fix-up (in PowerPC __pci_mmap_make_offset there
-> > is commented out code which prevents the pci_mem_offset shift to be
-> > applied). I think it all boils down to what the userspace interface is
-> > expecting when the memory areas are mmapped, if anyone has comments on
-> > this that is appreciated.
-> 
-> The important part is certainly that whatever transformation is done
-> by pci_resource_to_user() gets undone by __pci_mmap_make_offset().
-
-Exactly, it does not seem to be the case above, that's why I asked.
-
-> In case of PowerPC and Microblaze, the mem_offset handling is commented
-> out in both, to work around X11 trying to use the same values on
-> /dev/mem. However, they do have the respective fixup for io_offset.
-> 
-> sparc applies the offset in both places for both io_offset and mem_offset.
-> xtensa applies only io_offset in __pci_mmap_make_offset but neither
->   in pci_resource_to_user. This probably works because the mem_offset is
->   always zero there.
-> mips applies a different fixup (for 36-bit addressing), but not the
->   mem_offset.
-> 
-> Every other architecture applies no offset here, neither in __pci_mmap_make_offset/pci_mmap_page_range nor in pci_resource_to_user
-> 
-> The only hint I could find for how the ARM version came to be is
-> from the historic kernel tree git log for linux-2.5.42, which added
-> the current code as
-> 
->     2002/10/13 11:05:47+01:00 rmk
->     [ARM] Update pcibios_enable_device, supply pci_mmap_page_range()
->     Update pcibios_enable_device to only enable requested resources,
->     mainly for IDE.  Supply a pci_mmap_page_range() function to allow
->     user space to mmap PCI regions.
-> 
-> At that point, only two platforms had a nonzero mem_offset:
-> footbridge/dc21285 and integrator/pci_v3. Both were using VGA,
-> and presumably used this to make X work. (rmk might remember
-> details).
-
-I think that, as I mentioned, it boils down to what the userspace
-interface (proc/sys and they seem to differ) is supposed to be passed
-from userspace processes upon mmap.
-
-> The code at the time matched what powerpc and sparc did, but then
-> both implemented pci_resource_to_user() in order for libpciaccess
-> to work correctly (bcea1db16b for sparc, 463ce0e103f for powerpc),
-> and later powerpc changed it again to not apply the offset in
-> pci_resource_to_user or pci_mmap_page_range in 396a1a5832ae.
-
-I will keep investigating, thank you for your help, any further comments
-appreciated.
-
-Lorenzo
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 5ae8608..c1cbb4c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2631,6 +2631,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
+ 				only look for one device below a PCIe downstream
+ 				port.
++		driver		Provide an override to the devid<->driver mapping
++				for a specific slot.
++				Bind PCI slot 0001:02:03.4 to pci-stub by:
++					driver[0001:02:03.4]=pci-stub
+ 
+ 	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+ 			Management.
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 73aef51..d2c0721 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -230,6 +230,91 @@ EXPORT_SYMBOL(pci_bus_alloc_resource);
+ 
+ void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+ 
++#define DRIVER_OVERRIDE_NAME_LENGTH 64
++
++struct driver_override_entry {
++	unsigned int domain;
++	unsigned char bus;
++	unsigned int devfn;
++	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
++	struct list_head list;
++};
++
++static LIST_HEAD(driver_override_entries);
++
++static int pci_device_parse_driver_override(char *param, char *val,
++					    const char *unused)
++{
++	unsigned int domain, bus, dev, fn;
++	char driver_name[DRIVER_OVERRIDE_NAME_LENGTH];
++	char format[] = "[%4x:%2x:%2x.%2x]=%%%ds";
++	struct driver_override_entry *entry;
++	int ret;
++
++	while (val) {
++		char *k = strchr(val, ',');
++
++		if (k)
++			*k++ = 0;
++
++		if (strncmp(val, "driver", 6)) {
++			val = k;
++			continue;
++		}
++
++		sprintf(format + 18, "%%%ds", DRIVER_OVERRIDE_NAME_LENGTH);
++		ret = sscanf(val + 6, format, &domain, &bus, &dev, &fn,
++			     driver_name);
++		if (ret != 5) {
++			pr_err("PCI: Invalid command line: %s\n", val);
++			val = k;
++			continue;
++		}
++
++		entry = kzalloc(sizeof(*entry), GFP_KERNEL);
++		BUG_ON(!entry);
++
++		INIT_LIST_HEAD(&entry->list);
++		entry->domain = domain;
++		entry->bus = bus && 0xff;
++		entry->devfn = ((dev & 0x1f) << 3) | (fn & 0x7);
++		memcpy(entry->driver_name, driver_name, sizeof(driver_name));
++
++		list_add_tail(&entry->list, &driver_override_entries);
++		val = k;
++	}
++
++	return 0;
++}
++
++static void pci_device_setup_driver_override(struct pci_dev *dev)
++{
++	static int parse_done;
++	struct driver_override_entry *entry;
++
++	if (!parse_done) {
++		char *cmdline = kstrdup(saved_command_line, GFP_KERNEL);
++
++		BUG_ON(!cmdline);
++
++		parse_args("pci", cmdline, NULL,
++			   0, 0, 0, &pci_device_parse_driver_override);
++		kfree(cmdline);
++		parse_done = 1;
++	}
++
++	list_for_each_entry(entry, &driver_override_entries, list) {
++		if (pci_domain_nr(dev->bus) != entry->domain ||
++		    dev->bus->number != entry->bus ||
++		    dev->devfn != entry->devfn)
++			continue;
++
++		dev->driver_override = kstrdup(entry->driver_name, GFP_KERNEL);
++		BUG_ON(!dev->driver_override);
++		break;
++	}
++}
++
+ /**
+  * pci_bus_add_device - start driver for a single device
+  * @dev: device to add
+@@ -245,6 +330,7 @@ void pci_bus_add_device(struct pci_dev *dev)
+ 	 * are not assigned yet for some devices.
+ 	 */
+ 	pci_fixup_device(pci_fixup_final, dev);
++	pci_device_setup_driver_override(dev);
+ 	pci_create_sysfs_dev_files(dev);
+ 	pci_proc_attach_device(dev);
+ 
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index b7678be..6bd7844 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -4468,6 +4468,8 @@ static int __init pci_setup(char *str)
+ 				pcie_bus_config = PCIE_BUS_PEER2PEER;
+ 			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+ 				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
++			} else if (!strncmp(str, "driver", 6)) {
++				/* lazy evaluation by the pci subsystem */
+ 			} else {
+ 				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+ 						str);
+-- 
+1.8.3.1
 
