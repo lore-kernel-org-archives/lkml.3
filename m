@@ -1,106 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680AbaJGXXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:23:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61970 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932653AbaJGXXC (ORCPT
+	id S932700AbaJGXXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:23:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430AbaJGXUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:23:02 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
-        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 44/44] kernel: Remove pm_power_off
-Date: Wed, 08 Oct 2014 01:43:07 +0200
-Message-ID: <1469166.g4FqVc5SJX@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412659726-29957-45-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-45-git-send-email-linux@roeck-us.net>
+	Tue, 7 Oct 2014 19:20:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 06/13] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
+Date: Tue,  7 Oct 2014 16:20:11 -0700
+Message-Id: <20141007231920.113570911@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
+References: <20141007231919.924479934@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 06, 2014 10:28:46 PM Guenter Roeck wrote:
-> No users of pm_power_off are left, so it is safe to remove the function.
-> 
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Len Brown <len.brown@intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-ACK
+------------------
 
-> ---
->  include/linux/pm.h              |  1 -
->  kernel/power/poweroff_handler.c | 10 +---------
->  2 files changed, 1 insertion(+), 10 deletions(-)
-> 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index 45271b5..fce7645 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -31,7 +31,6 @@
->  /*
->   * Callbacks for platform drivers to implement.
->   */
-> -extern void (*pm_power_off)(void);
->  extern void (*pm_power_off_prepare)(void);
->  
->  /*
-> diff --git a/kernel/power/poweroff_handler.c b/kernel/power/poweroff_handler.c
-> index 96f59ef..01a3a39 100644
-> --- a/kernel/power/poweroff_handler.c
-> +++ b/kernel/power/poweroff_handler.c
-> @@ -20,12 +20,6 @@
->  #include <linux/types.h>
->  
->  /*
-> - * If set, calling this function will power off the system immediately.
-> - */
-> -void (*pm_power_off)(void);
-> -EXPORT_SYMBOL(pm_power_off);
-> -
-> -/*
->   *	Notifier list for kernel code which wants to be called
->   *	to power off the system.
->   */
-> @@ -163,8 +157,6 @@ int register_poweroff_handler_simple(void (*handler)(void), int priority)
->   */
->  void do_kernel_poweroff(void)
->  {
-> -	if (pm_power_off)
-> -		pm_power_off();
->  	atomic_notifier_call_chain(&poweroff_handler_list, 0, NULL);
->  }
->  
-> @@ -175,6 +167,6 @@ void do_kernel_poweroff(void)
->   */
->  bool have_kernel_poweroff(void)
->  {
-> -	return pm_power_off != NULL || poweroff_handler_list.head != NULL;
-> +	return poweroff_handler_list.head != NULL;
->  }
->  EXPORT_SYMBOL(have_kernel_poweroff);
-> 
+From: Mel Gorman <mgorman@suse.de>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
+
+This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
+NUMA type from the pmd to the pte"). If a huge page is being split due
+a protection change and the tail will be in a PROT_NONE vma then NUMA
+hinting PTEs are temporarily created in the protected VMA.
+
+ VM_RW|VM_PROTNONE
+|-----------------|
+      ^
+      split here
+
+In the specific case above, it should get fixed up by change_pte_range()
+but there is a window of opportunity for weirdness to happen. Similarly,
+if a huge page is shrunk and split during a protection update but before
+pmd_numa is cleared then a pte_numa can be left behind.
+
+Instead of adding complexity trying to deal with the case, this patch
+will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
+will not be triggered which is marginal in comparison to the complexity
+in dealing with the corner cases during THP split.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ mm/huge_memory.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1740,14 +1740,17 @@ static int __split_huge_page_map(struct
+ 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+ 			pte_t *pte, entry;
+ 			BUG_ON(PageCompound(page+i));
++			/*
++			 * Note that pmd_numa is not transferred deliberately
++			 * to avoid any possibility that pte_numa leaks to
++			 * a PROT_NONE VMA by accident.
++			 */
+ 			entry = mk_pte(page + i, vma->vm_page_prot);
+ 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+ 			if (!pmd_write(*pmd))
+ 				entry = pte_wrprotect(entry);
+ 			if (!pmd_young(*pmd))
+ 				entry = pte_mkold(entry);
+-			if (pmd_numa(*pmd))
+-				entry = pte_mknuma(entry);
+ 			pte = pte_offset_map(&_pmd, haddr);
+ 			BUG_ON(!pte_none(*pte));
+ 			set_pte_at(mm, haddr, pte, entry);
+
+
