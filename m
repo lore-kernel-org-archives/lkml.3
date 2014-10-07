@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbaJGWTg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 18:19:36 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:60872 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaJGWTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 18:19:34 -0400
+	id S1754817AbaJGW3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 18:29:05 -0400
+Received: from mga02.intel.com ([134.134.136.20]:15148 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaJGW3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 18:29:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,673,1406617200"; 
+   d="scan'208";a="585026249"
+Date: Wed, 8 Oct 2014 01:28:14 +0300
+From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
+ functions
+Message-ID: <20141007222814.GA7262@intel.com>
+References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <20141007175017.GA10432@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <87zjd7r1z9.fsf@x220.int.ebiederm.org>
-References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
- <20141007133039.GG7996@ZenIV.linux.org.uk> <20141007133339.GH7996@ZenIV.linux.org.uk>
- <87r3yjy64e.fsf@x220.int.ebiederm.org> <20141007204627.GI28519@ubuntumail>
- <87wq8bvbzg.fsf@x220.int.ebiederm.org> <20141007213257.GJ28519@ubuntumail> <87zjd7r1z9.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Oct 2014 15:19:12 -0700
-Message-ID: <CALCETrVZNDTa3jc2HJ+_9sab+MhdXQ-rgNPHqT8qbDmJGXByBg@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
- current root
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrey Vagin <avagin@openvz.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Rob Landley <rob@landley.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007175017.GA10432@obsidianresearch.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 2:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->
-> I am squinting and looking this way and that but while I can imagine
-> someone more clever than I can think up some unique property of rootfs
-> that makes it a little more exploitable than just mounting a ramfs,
-> but since you have to be root to exploit those properties I think the
-> game is pretty much lost.
+On Tue, Oct 07, 2014 at 11:50:17AM -0600, Jason Gunthorpe wrote:
+> On Tue, Oct 07, 2014 at 08:01:12PM +0300, Jarkko Sakkinen wrote:
+> > Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
+> > reserves memory resources and tpm_chip_register() initializes the
+> > device driver. This way it is possible to alter struct tpm_chip
+> > attributes before passing it to tpm_chip_register().
+> 
+> This looks broadly reasonable to me
+> 
+> Please add a note to the commit that this is known to still have
+> problems with resource reference counting, but they are less severe
+> than what existed before, and this is only an interm step.
+> 
+> > +/**
+> > + * tpm_chip_alloc() - allocate a new struct tpm_chip instance
+> 
+> This is using devm so it should be called 'tpmm_chip_alloc()' for
+> clarity
+> 
+> 
+> I know that was there before, but it sure is racy:
+> 
+> > +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
+> [..]
+> > +	set_bit(chip->dev_num, dev_mask);
+> 
+> Someday it should use IDR.
+> 
+> 
+> > @@ -896,18 +872,7 @@ void tpm_remove_hardware(struct device *dev)
+> >  		return;
+> >  	}
+> >  
+> > -	spin_lock(&driver_lock);
+> > -	list_del_rcu(&chip->list);
+> > -	spin_unlock(&driver_lock);
+> > -	synchronize_rcu();
+> > -
+> > -	tpm_dev_del_device(chip);
+> > -	tpm_sysfs_del_device(chip);
+> > -	tpm_remove_ppi(&dev->kobj);
+> > -	tpm_bios_log_teardown(chip->bios_dir);
+> > -
+> > -	/* write it this way to be explicit (chip->dev == dev) */
+> > -	put_device(chip->dev);
+> > +	tpm_chip_unregister(chip);
+> >  }
+> >  EXPORT_SYMBOL_GPL(tpm_remove_hardware);
+> 
+> This can move to tpm-chip too, same with tpm_register_hardware
+> 
+> > @@ -714,15 +709,10 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
+> >  	struct tpm_chip *chip = tpm_dev.chip;
+> >  	release_locality(chip, chip->vendor.locality, 1);
+> >  
+> > -	/* close file handles */
+> > -	tpm_dev_vendor_release(chip);
+> > -
+> >  	/* remove hardware */
+> >  	tpm_remove_hardware(chip->dev);
+> 
+> Wrong ordering here, tpm_remove_hardware should always be first -
+> drivers should not tear down internal state before calling it, so
+> release_locality should be second.
+> 
+> Noting that since we use devm the kfree will not happen until
+> remove returns, so the chip pointer is still valid.
 
-Yes.  rootfs might not be empty, it might have totally insane
-permissions, and it's globally shared, which makes it into a wonderful
-channel to pass things around that shouldn't be passed around.
+Should I fix this ordering? I was thinking to focus putting proper
+patterns in place only in tpm_tis and tpm_crb because they are the
+that I'm able to test easily and then they can work as guideline for
+other drivers.
 
-Can non-root do this?  You'd need to be in a userns with a "/" that
-isn't MNT_LOCKED.  Can this happen on any normal setup?
+> >  	/* reset these pointers, otherwise we oops */
+> > -	chip->dev->release = NULL;
+> > -	chip->release = NULL;
+> >  	tpm_dev.client = NULL;
+> 
+> The comment can go too
+> 
+> Note: tpm_dev should be driver private data, but that is not your
+> problem..
+> 
+> Did you test compile all the drivers? One of my git commits on github
+> has some hackery to make that possible on x86.
+> 
+> Jason
 
-FWIW, I think we should unconditionally MNT_LOCKED the root on userns
-unshare, even if it's the only mount.
-
-
->
->>> >> So it is only root (and not root in a container) who can get to the
->>> >> exposed rootfs.
->>> >>
->>> >> I have a vague memory someone actually had a real use in miminal systems
->>> >> for being able to get back to the rootfs and being able to use rootfs as
->>> >> the rootfs.  There was even a patch at that time that Andrew Morton was
->>> >> carrying for a time to allow unmounting root and get at rootfs, and to
->>> >> prevent the oops on rootfs unmount in some way.
->>> >>
->>> >> So not only do I not think it is a bug to get back too rootfs, I think
->>> >> it is a feature that some people have expressed at least half-way sane
->>> >> uses for.
->>> >
->>> > They can still do that if they want, using chroot :)
->>>
->>> It would take fchdir or fchroot and a directory file descriptor open on
->>> rootfs.  Frequently there is no appropriate directory file descriptor.
->>
->> ?  you can always escape if you're simply chrooted.  waterbuffalo :)
->
-> filesystem type rootfs.
->
-> Eric
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-api" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+/Jarkko
