@@ -1,104 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaJGFrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:47:42 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50930 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381AbaJGFrV (ORCPT
+	id S1753939AbaJGFsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:48:05 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40246 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331AbaJGF3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:47:21 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, jolsa@redhat.com, acme@redhat.com,
-        peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com
-Subject: Re: [PATCH v2] perf tools: fix off-by-one error in maps
-References: <20141006083532.GA4850@quad>
-Date: Tue, 07 Oct 2014 14:47:19 +0900
-In-Reply-To: <20141006083532.GA4850@quad> (Stephane Eranian's message of "Mon,
-	6 Oct 2014 10:35:32 +0200")
-Message-ID: <8761fwh1nc.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 7 Oct 2014 01:29:24 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        devicetree@vger.kernel.org, lguest@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-am33-list@redhat.com, linux-cris-kernel@axis.com,
+        linux-efi@vger.kernel.org, linux-hexagon@vger.kernel.org,
+        linux-m32r-ja@ml.linux-m32r.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org,
+        openipmi-developer@lists.sourceforge.net,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 11/44] mfd: retu: Register with kernel poweroff handler
+Date: Mon,  6 Oct 2014 22:28:13 -0700
+Message-Id: <1412659726-29957-12-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=2.8
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.54337A34.000E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 60
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephane,
+Register with kernel poweroff handler instead of setting pm_power_off
+directly. Register with a low priority value of 64 to reflect that
+the original code only sets pm_power_off if it was not already set.
 
-On Mon, 6 Oct 2014 10:35:32 +0200, Stephane Eranian wrote:
-> This patch fixes off-by-one errors in the management of maps.
-> A map is defined by start address and length as implemented by map__new():
->
-> map__init(map, type, start, start + len, pgoff, dso);
->
-> map->start = addr;
-> map->end = end;
->
-> Consequently, the actual address range is ]start; end[
-> map->end is the first byte outside the range. This patch
-> fixes two bugs where upper bound checking was off-by-one.
->
-> In V2, we fix map_groups__fixup_overlappings() some more
-> where map->start was off-by-one as reported by Jiri.
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/mfd/retu-mfd.c | 33 +++++++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 14 deletions(-)
 
-It seems we also need to fix maps__find():
+diff --git a/drivers/mfd/retu-mfd.c b/drivers/mfd/retu-mfd.c
+index 663f8a3..64b60fa 100644
+--- a/drivers/mfd/retu-mfd.c
++++ b/drivers/mfd/retu-mfd.c
+@@ -22,6 +22,8 @@
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+ #include <linux/module.h>
++#include <linux/notifier.h>
++#include <linux/pm.h>
+ #include <linux/regmap.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/retu.h>
+@@ -43,6 +45,7 @@ struct retu_dev {
+ 	struct device			*dev;
+ 	struct mutex			mutex;
+ 	struct regmap_irq_chip_data	*irq_data;
++	struct notifier_block		poweroff_nb;
+ };
+ 
+ static struct resource retu_pwrbutton_res[] = {
+@@ -81,9 +84,6 @@ static struct regmap_irq_chip retu_irq_chip = {
+ 	.ack_base	= RETU_REG_IDR,
+ };
+ 
+-/* Retu device registered for the power off. */
+-static struct retu_dev *retu_pm_power_off;
+-
+ static struct resource tahvo_usb_res[] = {
+ 	{
+ 		.name	= "tahvo-usb",
+@@ -165,12 +165,14 @@ int retu_write(struct retu_dev *rdev, u8 reg, u16 data)
+ }
+ EXPORT_SYMBOL_GPL(retu_write);
+ 
+-static void retu_power_off(void)
++static int retu_power_off(struct notifier_block *this, unsigned long unused1,
++			  void *unused2)
+ {
+-	struct retu_dev *rdev = retu_pm_power_off;
++	struct retu_dev *rdev = container_of(this, struct retu_dev,
++					     poweroff_nb);
+ 	int reg;
+ 
+-	mutex_lock(&retu_pm_power_off->mutex);
++	mutex_lock(&rdev->mutex);
+ 
+ 	/* Ignore power button state */
+ 	regmap_read(rdev->regmap, RETU_REG_CC1, &reg);
+@@ -183,7 +185,9 @@ static void retu_power_off(void)
+ 	for (;;)
+ 		cpu_relax();
+ 
+-	mutex_unlock(&retu_pm_power_off->mutex);
++	mutex_unlock(&rdev->mutex);
++
++	return NOTIFY_DONE;
+ }
+ 
+ static int retu_regmap_read(void *context, const void *reg, size_t reg_size,
+@@ -279,9 +283,13 @@ static int retu_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ 		return ret;
+ 	}
+ 
+-	if (i2c->addr == 1 && !pm_power_off) {
+-		retu_pm_power_off = rdev;
+-		pm_power_off	  = retu_power_off;
++	if (i2c->addr == 1) {
++		rdev->poweroff_nb.notifier_call = retu_power_off;
++		rdev->poweroff_nb.priority = 64;
++		ret = register_poweroff_handler(&rdev->poweroff_nb);
++		if (ret)
++			dev_err(rdev->dev,
++				"Failed to register poweroff handler\n");
+ 	}
+ 
+ 	return 0;
+@@ -291,10 +299,7 @@ static int retu_remove(struct i2c_client *i2c)
+ {
+ 	struct retu_dev *rdev = i2c_get_clientdata(i2c);
+ 
+-	if (retu_pm_power_off == rdev) {
+-		pm_power_off	  = NULL;
+-		retu_pm_power_off = NULL;
+-	}
++	unregister_poweroff_handler(&rdev->poweroff_nb);
+ 	mfd_remove_devices(rdev->dev);
+ 	regmap_del_irq_chip(i2c->irq, rdev->irq_data);
+ 
+-- 
+1.9.1
 
-
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index b7090596ac50..107a8c90785b 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -752,7 +752,7 @@ struct map *maps__find(struct rb_root *maps, u64 ip)
-                m = rb_entry(parent, struct map, rb_node);
-                if (ip < m->start)
-                        p = &(*p)->rb_left;
--               else if (ip > m->end)
-+               else if (ip >= m->end)
-                        p = &(*p)->rb_right;
-                else
-                        return m;
-
-Thanks,
-Namhyung
-
-
->
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-> ---
->  tools/perf/util/map.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index b709059..186418b 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -556,7 +556,7 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
->  
->  int map_groups__find_ams(struct addr_map_symbol *ams, symbol_filter_t filter)
->  {
-> -	if (ams->addr < ams->map->start || ams->addr > ams->map->end) {
-> +	if (ams->addr < ams->map->start || ams->addr >= ams->map->end) {
->  		if (ams->map->groups == NULL)
->  			return -1;
->  		ams->map = map_groups__find(ams->map->groups, ams->map->type,
-> @@ -664,7 +664,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
->  				goto move_map;
->  			}
->  
-> -			before->end = map->start - 1;
-> +			before->end = map->start;
->  			map_groups__insert(mg, before);
->  			if (verbose >= 2)
->  				map__fprintf(before, fp);
-> @@ -678,7 +678,7 @@ int map_groups__fixup_overlappings(struct map_groups *mg, struct map *map,
->  				goto move_map;
->  			}
->  
-> -			after->start = map->end + 1;
-> +			after->start = map->end;
->  			map_groups__insert(mg, after);
->  			if (verbose >= 2)
->  				map__fprintf(after, fp);
