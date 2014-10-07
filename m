@@ -1,136 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaJGKLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:11:55 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:61048 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaJGKLw (ORCPT
+	id S1753276AbaJGKS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:18:59 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8218 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751447AbaJGKS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:11:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAL_JsqJ+TCfeHF=Rzec0=-hM6Y_vbijQBvyyvL58E67WMYTxEg@mail.gmail.com>
-References: <1412585954-21172-1-git-send-email-grant.likely@linaro.org> <CAL_JsqJ+TCfeHF=Rzec0=-hM6Y_vbijQBvyyvL58E67WMYTxEg@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Tue, 7 Oct 2014 11:11:31 +0100
-X-Google-Sender-Auth: _TrS7P6jfiWMGKHnmUpTZ0C5uBc
-Message-ID: <CACxGe6ss1y=ee66SVMxFC_Dq0Wi3bx9WRamwkWxCDk8E6QtugA@mail.gmail.com>
-Subject: Re: [PATCH] of: Eliminate of_allnodes list
-To: Rob Herring <robh@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Gaurav Minocha <gaurav.minocha.os@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 7 Oct 2014 06:18:56 -0400
+X-AuditID: cbfee68f-f791c6d000004834-7b-5433be0effcd
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <5433BE0D.6000306@samsung.com>
+Date: Tue, 07 Oct 2014 19:18:53 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
+ Thunderbird/11.0.1
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power: charger-manager: Avoid recursive thermal get_temp
+ call
+References: <1412611212-24803-1-git-send-email-k.kozlowski@samsung.com>
+ <54334E00.9030403@samsung.com> <1412665994.11780.3.camel@AMDC1943>
+In-reply-to: <1412665994.11780.3.camel@AMDC1943>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkSJdvn3GIQdtvLYuDWzUtrn95zmox
+	6cl7ZouJKyczW7x+YWhxedccNovPvUcYLW43rmCzOL27xIHTY0L/J0aPnbPusntsXqHlsWlV
+	J5tH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZdxev5Sl4JBmxeYZa5gaGJuUuhg5OSQETCR+
+	vn3GBGGLSVy4t56ti5GLQ0hgKaNE98KrLDBFJzc9YIdITGeUaJp8jQ0kwSsgKPFj8j2wImYB
+	dYlJ8xYxQ9giEpMP/ICytSWWLXzNDNH8mlHiyM3TrBDNWhKzVh1iBLFZBFQlNrWtABvEJiAn
+	8bbpG1hcVCBM4uqE42BxEQFDiYO7tzOBDGIW2MQkse7lHLCEsECIxO6Zl6A29DBKvJt5CCzB
+	KWAgMe3aXEaQhITAI3aJpp57UOsEJL5NBiniAErISmw6wAzxp6TEwRU3WCYwis9C8t0sJN/N
+	QvLdLCTfLWBkWcUomlqQXFCclF5krFecmFtcmpeul5yfu4kRGMOn/z3r38F494D1IUYBDkYl
+	Ht4VWsYhQqyJZcWVuYcYTYEumsgsJZqcD0wUeSXxhsZmRhamJqbGRuaWZkrivAulfgYLCaQn
+	lqRmp6YWpBbFF5XmpBYfYmTi4JRqYFwtu1FX+2H4vdOPYqZsdV88+aXnQxsh3ajJXRNUj3ML
+	v53yVM/J6MYMi80yHqe+LZZ4t+X474LJTm/e1P2Ok9+v15th/VPl1Y85OdVlWze6Vjkxfz+c
+	wbXsdvLr7PJtNur+9w9vy+GLeiLT8/IVw2elyqNmYlp91+I4RK53Z/zI4jmhprTQ6bMSS3FG
+	oqEWc1FxIgDJEZu53AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t9jQV2+fcYhBheXKFsc3Kppcf3Lc1aL
+	SU/eM1tMXDmZ2eL1C0OLy7vmsFl87j3CaHG7cQWbxendJQ6cHhP6PzF67Jx1l91j8wotj02r
+	Otk8+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB+gkJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWNGx/dJ
+	7AVdmhVzF/SxNzCeUuxi5OSQEDCROLnpATuELSZx4d56ti5GLg4hgemMEk2Tr7GBJHgFBCV+
+	TL7H0sXIwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxkljtw8zQpRryUxa9UhRhCbRUBVYlPbChYQ
+	m01ATuJt0zewuKhAmMTVCcfB4iIChhIHd29nAhnELLCJSWLdyzlgCWGBEIndMy9BbehhlHg3
+	8xBYglPAQGLatbmMExgFZiE5cBbCgbOQHLiAkXkVo2hqQXJBcVJ6rpFecWJucWleul5yfu4m
+	RnC0P5PewbiqweIQowAHoxIP7wot4xAh1sSy4srcQ4wSHMxKIry+O4FCvCmJlVWpRfnxRaU5
+	qcWHGE2B3pvILCWanA9MRHkl8YbGJmZGlkbmhhZGxuZK4rwHW60DhQTSE0tSs1NTC1KLYPqY
+	ODilGhg3rv591O279N2ln6f3nFFTyTj75cL7I/2JmxdzJM2aGbCrw9jjtdWUhkAFfoVT83Z3
+	lPkdyvXOstMqXub+eKfcJ9tsxdgLEpzL2tcoLtjP/W5VVdRe8+wTspxfvu+NPL0neId4qs/m
+	KyFqzzj4dCx0wha3Cfop3V7ZsTeLh8/Zjf8cQ9G0fcuVWIozEg21mIuKEwHsh8thDAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 6, 2014 at 2:56 PM, Rob Herring <robh@kernel.org> wrote:
-> On Mon, Oct 6, 2014 at 3:59 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> The device tree structure is composed of two lists; the 'allnodes' list
->> which is a singly linked list containing every node in the tree, and the
->> child->parent structure where each parent node has a singly linked list
->> of children. All of the data in the allnodes list can be easily
->> reproduced with the parent-child lists, so of_allnodes is actually
->> unnecessary. Remove it entirely which saves a bit of memory and
->> simplifies the data structure quite a lot.
->>
->> Signed-off-by: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <robh@kernel.org>
->> Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
->> ---
->>
->> This applies against my current devicetree/next branch on git.secretlab.ca/git/linux
->>
->> I'm not going to try and merge this in v3.18. It's too risky a patch and
->> I only just wrote it. I'll try to get it in for v3.19.
->
-> Looks good. A few minor things below.
->
-> [...]
->
->> diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
->> index 9e21e4fc9599..8f43ab8fd2d6 100644
->> --- a/drivers/mfd/vexpress-sysreg.c
->> +++ b/drivers/mfd/vexpress-sysreg.c
->> @@ -223,7 +223,7 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
->>         vexpress_config_set_master(vexpress_sysreg_get_master());
->>
->>         /* Confirm board type against DT property, if available */
->> -       if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
->> +       if (of_property_read_u32(of_root, "arm,hbi", &dt_hbi) == 0) {
->
-> Given this and selftests are the only users in the whole tree, perhaps
-> this should just use of_find_node_by_path("/") rather than expose this
-> global.
+On 2014년 10월 07일 16:13, Krzysztof Kozlowski wrote:
 
-I'll look at doing that with a separate patch. The
-of_have_populated_dt() static inline in of.h uses it, so it needs to
-be exported with the current code. I'd need to create an exported
-version of that function to unexport of_root.
+> 
+> On wto, 2014-10-07 at 11:20 +0900, jonghwa3.lee@samsung.com wrote:
+>> Hi,
+>> On 2014년 10월 07일 01:00, Krzysztof Kozlowski wrote:
+>>
+>>> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
+>>> as a thermal zone if any of these conditions match:
+>>> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
+>>> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
+>>>    the fuel gauge temperature property).
+>>>
+>>> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
+>>> is not set) the charger manager forwards its get_temp calls to fuel
+>>> gauge thermal zone.
+>>>
+>>> This leads to reporting by lockdep a false positive deadlock for thermal
+>>> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
+>>> false positive because these are different mutexes: one for charger
+>>> manager thermal zone and second for fuel gauge thermal zone.
+>>>
+>>
+>>
+>> Yes, this happens because power_supply_subsystem automatically creates
+>> thermal_zone when POWER_SUPPLY_PROP_TEMP is available at the time of
+>> power_supply registering. And as you point out, it makes duplicate thermal_zone
+>> when some power_supply references other power_supply's. I hope it would become
+>> to be a selectable option or change the manner of charger-manager itself (if the
+>> charger-manager is only one who references other power_supply's temperature
+>> sensing ability).
+>>
+>> Anyway, the code looks fine to me.
+>>
+>> Acked-by : Jonghwa Lee <jonghwa3.lee@samsung.com>
+> 
+> Thank you for looking at patch. However later I started to wonder
+> whether my fix is sufficient. For the case when fuel gauge is used as
+> source of temperature it is. But for the case when external sensor is
+> used it is not - still there will be recursive call and false positive
+> from lockdep.
+> 
+> Also minor fix is needed in my patch - s/IS_ENABLED/config_enabled/.
+> 
+> I can send a v2 fixing this but first question - what about second
+> recursive issue (when external sensor is used instead of fuel gauge)?
+> 
 
->
->>                 u32 id = vexpress_get_procid(VEXPRESS_SITE_MASTER);
->>                 u32 hbi = (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
->>
->> diff --git a/drivers/of/base.c b/drivers/of/base.c
->> index 2305dc0382bc..b86beff7b167 100644
->> --- a/drivers/of/base.c
->> +++ b/drivers/of/base.c
->> @@ -32,8 +32,8 @@
->>
->>  LIST_HEAD(aliases_lookup);
->>
->> -struct device_node *of_allnodes;
->> -EXPORT_SYMBOL(of_allnodes);
->> +struct device_node *of_root;
->> +EXPORT_SYMBOL(of_root);
->>  struct device_node *of_chosen;
->>  struct device_node *of_aliases;
->>  struct device_node *of_stdout;
->> @@ -48,7 +48,7 @@ struct kset *of_kset;
->>   */
->>  DEFINE_MUTEX(of_mutex);
->>
->> -/* use when traversing tree through the allnext, child, sibling,
->> +/* use when traversing tree through the child, sibling,
->>   * or parent members of struct device_node.
->>   */
->>  DEFINE_RAW_SPINLOCK(devtree_lock);
->> @@ -204,7 +204,7 @@ static int __init of_init(void)
->>         mutex_unlock(&of_mutex);
->>
->>         /* Symlink in /proc as required by userspace ABI */
->> -       if (of_allnodes)
->> +       if (of_root)
->>                 proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
->>
->>         return 0;
->> @@ -245,6 +245,23 @@ struct property *of_find_property(const struct device_node *np,
->>  }
->>  EXPORT_SYMBOL(of_find_property);
->>
->> +struct device_node *__of_find_all_nodes(struct device_node *prev)
->> +{
->> +       struct device_node *np;
->> +       if (!prev)
->> +               np = of_root;
->> +       else if (prev->child) {
->> +               np = prev->child;
->> +       } else {
->
-> Your braces are inconsistent.
 
-Fixed.
+Yes, you're right, it still had problem for external temperature sensor case.
+How about we change the core not to make duplicate thermal zone if it already
+existed. It's not the common case, but it looks worthy.
 
->> @@ -180,12 +172,12 @@ static void __init of_selftest_check_tree_linkage(void)
->>         struct device_node *np;
->>         int allnode_count = 0, child_count;
+like as below,
+
+static int psy_register_thermal(struct power_supply *psy)
+{
+...
++	if (psy->tzd)
++		return 0;
+...
+
+We also needs some modification at charger-manager driver, however we can avoid
+recursive call problem with this way :)
+
+Thanks,
+Jonghwa
+
+> Best regards,
+> Krzysztof
+> 
+> 
 >>
->> -       if (!of_allnodes)
->> +       if (!of_root)
->
-> This could be !of_have_populated_dt() instead.
+>> Thanks,
+>> Jonghwa.
+>>
+>>> Get rid of false lockdep alert and recursive call by accessing fuel gauge
+>>> temperature through power supply property instead of thermal zone API.
+>>>
+>>
+>>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>>> ---
+>>>  drivers/power/charger-manager.c       | 21 +++++++++++----------
+>>>  include/linux/power/charger-manager.h |  2 --
+>>>  2 files changed, 11 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+>>> index c1ed3c99c059..871fb91429c8 100644
+>>> --- a/drivers/power/charger-manager.c
+>>> +++ b/drivers/power/charger-manager.c
+>>> @@ -559,16 +559,18 @@ static int cm_get_battery_temperature(struct charger_manager *cm,
+>>>  	if (!cm->desc->measure_battery_temp)
+>>>  		return -ENODEV;
+>>>  
+>>> -#ifdef CONFIG_THERMAL
+>>> -	ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
+>>> -	if (!ret)
+>>> -		/* Calibrate temperature unit */
+>>> -		*temp /= 100;
+>>> -#else
+>>> -	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
+>>> +	if (IS_ENABLED(CONFIG_THERMAL) && cm->tzd_batt) {
+>>> +		ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
+>>> +		if (!ret)
+>>> +			/* Calibrate temperature unit */
+>>> +			*temp /= 100;
+>>> +	} else {
+>>> +		/* No external thermometer or no CONFIG_THERMAL */
+>>> +		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
+>>>  				POWER_SUPPLY_PROP_TEMP,
+>>>  				(union power_supply_propval *)temp);
+>>> -#endif
+>>> +	}
+>>> +
+>>>  	return ret;
+>>>  }
+>>>  
+>>> @@ -1501,9 +1503,8 @@ static int cm_init_thermal_data(struct charger_manager *cm)
+>>>  		cm->charger_psy.num_properties++;
+>>>  		cm->desc->measure_battery_temp = true;
+>>>  	}
+>>> -#ifdef CONFIG_THERMAL
+>>> -	cm->tzd_batt = cm->fuel_gauge->tzd;
+>>>  
+>>> +#ifdef CONFIG_THERMAL
+>>>  	if (ret && desc->thermal_zone) {
+>>>  		cm->tzd_batt =
+>>>  			thermal_zone_get_zone_by_name(desc->thermal_zone);
+>>> diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+>>> index 07e7945a1ff2..743ed6d472c6 100644
+>>> --- a/include/linux/power/charger-manager.h
+>>> +++ b/include/linux/power/charger-manager.h
+>>> @@ -256,9 +256,7 @@ struct charger_manager {
+>>>  	struct power_supply *fuel_gauge;
+>>>  	struct power_supply **charger_stat;
+>>>  
+>>> -#ifdef CONFIG_THERMAL
+>>>  	struct thermal_zone_device *tzd_batt;
+>>> -#endif
+>>>  	bool charger_enabled;
+>>>  
+>>>  	unsigned long fullbatt_vchk_jiffies_at;
+>>
+> 
+> 
 
-For internal dt code, I don't mind referencing of_root directly.
 
-Thanks for the review.
