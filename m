@@ -1,119 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaJGMuL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:50:11 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:30880 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaJGMuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:50:09 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7f776d000003e54-86-5433e17eff85
-Content-transfer-encoding: 8BIT
-Message-id: <1412686205.15309.1.camel@AMDC1943>
-Subject: Re: [PATCH] power: charger-manager: Avoid recursive thermal get_temp
- call
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: jonghwa3.lee@samsung.com
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 07 Oct 2014 14:50:05 +0200
-In-reply-to: <5433BE0D.6000306@samsung.com>
-References: <1412611212-24803-1-git-send-email-k.kozlowski@samsung.com>
- <54334E00.9030403@samsung.com> <1412665994.11780.3.camel@AMDC1943>
- <5433BE0D.6000306@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t/xK7p1D41DDFomSVoc3Kppcf3Lc1aL
-	SU/eM1tMXDmZ2aLz7BNmi8u75rBZfO49wmhxu3EFm8Xp3SUOnB4T+j8xeuycdZfdY/MKLY9N
-	qzrZPPq2rGL0+LxJLoAtissmJTUnsyy1SN8ugStjdY9LwTvxiquLeRsYO4W7GDk5JARMJE79
-	7GaCsMUkLtxbz9bFyMUhJLCUUWLpxg1gCV4BQYkfk++xdDFycDALyEscuZQNEmYWUJeYNG8R
-	M0T9Z0aJ5TfOMILU8AroS2y8ZANSIywQIrF75iVmEJtNwFhi8/IlbCC2iICMxMqrP5lAepkF
-	NjFJrHs5hwUkwSKgKnF78ySwBk4BbYljP56yQyxYyygx5+RGdpAFEgLKEo39bhMYBWYhOW8W
-	wnmzkJy3gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZI2H/dwbj0mNUhRgEORiUe3hVa
-	xiFCrIllxZW5hxglOJiVRHhPXwQK8aYkVlalFuXHF5XmpBYfYmTi4JRqYDxY8GvZ0bStMyN6
-	X1tuq9v8lct+0/td+Q7TVQR/bdS9utgnQX9fqFpBE5fyhfbSBfe7zyq2xq+dLloUy/Hkb1XL
-	DNMWRYmWA6tPym1RXu2gv+CgItPm5uvTV7PmZ9Wujfk+94bN42/KfMvPen67d+TmIx+7vW+n
-	7ZtmlZGotFKgXX1PjN7BY+eUWIozEg21mIuKEwHM9QgmWQIAAA==
+	id S1753886AbaJGMue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:50:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753400AbaJGMu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:50:29 -0400
+Date: Tue, 7 Oct 2014 15:53:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, stable@vger.kernel.org,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH v2 01/15] virtio_pci: fix virtio spec compliance on
+ restore
+Message-ID: <20141007125355.GA5974@redhat.com>
+References: <1412608214-31944-1-git-send-email-mst@redhat.com>
+ <1412608214-31944-2-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412608214-31944-2-git-send-email-mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-10-07 at 19:18 +0900, jonghwa3.lee@samsung.com wrote:
-> On 2014년 10월 07일 16:13, Krzysztof Kozlowski wrote:
+On Mon, Oct 06, 2014 at 06:10:40PM +0300, Michael S. Tsirkin wrote:
+> On restore, virtio pci does the following:
+> + set features
+> + init vqs etc - device can be used at this point!
+> + set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 > 
-> > 
-> > On wto, 2014-10-07 at 11:20 +0900, jonghwa3.lee@samsung.com wrote:
-> >> Hi,
-> >> On 2014년 10월 07일 01:00, Krzysztof Kozlowski wrote:
-> >>
-> >>> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
-> >>> as a thermal zone if any of these conditions match:
-> >>> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
-> >>> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
-> >>>    the fuel gauge temperature property).
-> >>>
-> >>> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
-> >>> is not set) the charger manager forwards its get_temp calls to fuel
-> >>> gauge thermal zone.
-> >>>
-> >>> This leads to reporting by lockdep a false positive deadlock for thermal
-> >>> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
-> >>> false positive because these are different mutexes: one for charger
-> >>> manager thermal zone and second for fuel gauge thermal zone.
-> >>>
-> >>
-> >>
-> >> Yes, this happens because power_supply_subsystem automatically creates
-> >> thermal_zone when POWER_SUPPLY_PROP_TEMP is available at the time of
-> >> power_supply registering. And as you point out, it makes duplicate thermal_zone
-> >> when some power_supply references other power_supply's. I hope it would become
-> >> to be a selectable option or change the manner of charger-manager itself (if the
-> >> charger-manager is only one who references other power_supply's temperature
-> >> sensing ability).
-> >>
-> >> Anyway, the code looks fine to me.
-> >>
-> >> Acked-by : Jonghwa Lee <jonghwa3.lee@samsung.com>
-> > 
-> > Thank you for looking at patch. However later I started to wonder
-> > whether my fix is sufficient. For the case when fuel gauge is used as
-> > source of temperature it is. But for the case when external sensor is
-> > used it is not - still there will be recursive call and false positive
-> > from lockdep.
-> > 
-> > Also minor fix is needed in my patch - s/IS_ENABLED/config_enabled/.
-> > 
-> > I can send a v2 fixing this but first question - what about second
-> > recursive issue (when external sensor is used instead of fuel gauge)?
-> > 
+> This is in violation of the virtio spec, which
+> requires the following order:
+> - ACKNOWLEDGE
+> - DRIVER
+> - init vqs
+> - DRIVER_OK
 > 
+> This behaviour will break with hypervisors that assume spec compliant
+> behaviour.  It seems like a good idea to have this patch applied to
+> stable branches to reduce the support butden for the hypervisors.
+
+Tested suspend to ram with virtio net and blk.
+
 > 
-> Yes, you're right, it still had problem for external temperature sensor case.
-> How about we change the core not to make duplicate thermal zone if it already
-> existed. It's not the common case, but it looks worthy.
+> Cc: stable@vger.kernel.org
+> Cc: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/virtio/virtio_pci.c | 36 ++++++++++++++++++++++++++++++++----
+>  1 file changed, 32 insertions(+), 4 deletions(-)
 > 
-> like as below,
-> 
-> static int psy_register_thermal(struct power_supply *psy)
-> {
-> ...
-> +	if (psy->tzd)
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index 3d1463c..0f2db51 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -789,6 +789,7 @@ static int virtio_pci_restore(struct device *dev)
+>  	struct pci_dev *pci_dev = to_pci_dev(dev);
+>  	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
+>  	struct virtio_driver *drv;
+> +	unsigned status = 0;
+>  	int ret;
+>  
+>  	drv = container_of(vp_dev->vdev.dev.driver,
+> @@ -799,14 +800,41 @@ static int virtio_pci_restore(struct device *dev)
+>  		return ret;
+>  
+>  	pci_set_master(pci_dev);
+> +	/* We always start by resetting the device, in case a previous
+> +	 * driver messed it up. */
+> +	vp_reset(&vp_dev->vdev);
+> +
+> +	/* Acknowledge that we've seen the device. */
+> +	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
+> +	vp_set_status(&vp_dev->vdev, status);
+> +
+> +	/* Maybe driver failed before freeze.
+> +	 * Restore the failed status, for debugging. */
+> +	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
+> +	vp_set_status(&vp_dev->vdev, status);
+> +
+> +	if (!drv)
 > +		return 0;
-> ...
+> +
+> +	/* We have a driver! */
+> +	status |= VIRTIO_CONFIG_S_DRIVER;
+> +	vp_set_status(&vp_dev->vdev, status);
+> +
+>  	vp_finalize_features(&vp_dev->vdev);
+>  
+> -	if (drv && drv->restore)
+> -		ret = drv->restore(&vp_dev->vdev);
+> +	if (!drv->restore)
+> +		return 0;
+
+As Amit points out, this is a bug: for a driver without restore
+callback we should still set DRIVER_OK.
+Will post v3.
+
+> +
+> +	ret = drv->restore(&vp_dev->vdev);
+> +	if (ret) {
+> +		status |= VIRTIO_CONFIG_S_FAILED;
+> +		vp_set_status(&vp_dev->vdev, status);
+> +		return ret;
+> +	}
+>  
+>  	/* Finally, tell the device we're all set */
+> -	if (!ret)
+> -		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
+> +	status |= VIRTIO_CONFIG_S_DRIVER_OK;
+> +	vp_set_status(&vp_dev->vdev, status);
+>  
+>  	return ret;
+>  }
+> -- 
+> MST
 > 
-> We also needs some modification at charger-manager driver, however we can avoid
-> recursive call problem with this way :)
-
-Yes, that would remove recursive call but this would also remove thermal
-zone for charger manager's power supply. Does anyone (user space?)
-depend and use charger managers thermal zone?
-
-Best regards,
-Krzysztof
-
