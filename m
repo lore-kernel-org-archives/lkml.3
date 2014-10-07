@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790AbaJGJTu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 05:19:50 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:39905 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519AbaJGJTk (ORCPT
+	id S1753624AbaJGJVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 05:21:36 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:55529 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753216AbaJGJVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 05:19:40 -0400
+	Tue, 7 Oct 2014 05:21:32 -0400
+Date: Tue, 7 Oct 2014 10:21:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Johan Hovold <johan@kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 1/6] mfd: viperboard: fix platform-device id collision
+Message-ID: <20141007092126.GQ25331@lee--X1>
+References: <1411728933-13351-1-git-send-email-johan@kernel.org>
+ <1411728933-13351-2-git-send-email-johan@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1412659726-29957-36-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-	<1412659726-29957-36-git-send-email-linux@roeck-us.net>
-Date: Tue, 7 Oct 2014 11:19:36 +0200
-X-Google-Sender-Auth: H8CqPrWYHuzCKE6AZjzih_WrqS4
-Message-ID: <CAMuHMdVZmsjK9FdK0T6mWwrnNc=Xc97B7ynm+QbWUMBCnvQB_g@mail.gmail.com>
-Subject: Re: [PATCH 35/44] m68k: Register with kernel poweroff handler
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        driverdevel <devel@driverdev.osuosl.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lguest@lists.ozlabs.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        alpha <linux-alpha@vger.kernel.org>,
-        "moderated list:PANASONIC MN10300..." <linux-am33-list@redhat.com>,
-        Cris <linux-cris-kernel@axis.com>, linux-efi@vger.kernel.org,
-        "open list:QUALCOMM HEXAGON..." <linux-hexagon@vger.kernel.org>,
-        linux-m32r-ja@ml.linux-m32r.org,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        linux-s390 <linux-s390@vger.kernel.org>, linux-tegra@vger.kernel.org,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        openipmi-developer@lists.sourceforge.net,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-c6x-dev@linux-c6x.org,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        "open list:METAG ARCHITECTURE" <linux-metag@vger.kernel.org>,
-        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        Parisc List <linux-parisc@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        xen-devel@lists.xenproject.org, Joshua Thompson <funaho@jurai.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1411728933-13351-2-git-send-email-johan@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 7:28 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly.
->
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Joshua Thompson <funaho@jurai.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+On Fri, 26 Sep 2014, Johan Hovold wrote:
 
-As someone already mentioned, having #defines instead of hardcoded
-numbers for the priorities would be nice.
+> Allow more than one viperboard to be connected by registering with
+> PLATFORM_DEVID_AUTO instead of PLATFORM_DEVID_NONE.
+> 
+> The subdevices are currently registered with PLATFORM_DEVID_NONE, which
+> will cause a name collision on the platform bus when a second viperboard
+> is plugged in:
 
-Apart from that:
+Applied to fixes.
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-> +       register_poweroff_handler_simple(nf_poweroff, 128);
-
-> +       register_poweroff_handler_simple(mac_poweroff, 128);
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
