@@ -1,241 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859AbaJGXgJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:36:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39576 "EHLO
+	id S1755843AbaJGXgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:36:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39568 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755597AbaJGXTz (ORCPT
+	with ESMTP id S1755602AbaJGXTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:19:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Paul Turner <pjt@google.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Aaron Jacobs <jacobsa@google.com>,
-        Andrew Hunter <ahh@google.com>, John Stultz <john.stultz@linaro.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.16 26/26] jiffies: Fix timeval conversion to jiffies
-Date: Tue,  7 Oct 2014 16:19:42 -0700
-Message-Id: <20141007231849.265808421@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.14 00/37] 3.14.21-stable review
+Date: Tue,  7 Oct 2014 16:19:17 -0700
+Message-Id: <20141007231827.043235686@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
-References: <20141007231848.487609292@linuxfoundation.org>
 User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.14.21 release.
+There are 37 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Oct  9 23:18:16 UTC 2014.
+Anything received after that time might be too late.
 
-From: Andrew Hunter <ahh@google.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.21-rc1.gz
+and the diffstat can be found below.
 
-commit d78c9300c51d6ceed9f6d078d4e9366f259de28c upstream.
+thanks,
 
-timeval_to_jiffies tried to round a timeval up to an integral number
-of jiffies, but the logic for doing so was incorrect: intervals
-corresponding to exactly N jiffies would become N+1. This manifested
-itself particularly repeatedly stopping/starting an itimer:
+greg k-h
 
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
+-------------
+Pseudo-Shortlog of commits:
 
-would add a full tick to val, _even if it was exactly representable in
-terms of jiffies_ (say, the result of a previous rounding.)  Doing
-this repeatedly would cause unbounded growth in val.  So fix the math.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.14.21-rc1
 
-Here's what was wrong with the conversion: we essentially computed
-(eliding seconds)
+Linus Torvalds <torvalds@linux-foundation.org>
+    mm: don't pointlessly use BUG_ON() for sanity check
 
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
+Davidlohr Bueso <davidlohr@hp.com>
+    mm: per-thread vma caching
 
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
+Christoph Lameter <cl@linux.com>
+    vmscan: reclaim_clean_pages_from_list() must use mod_zone_page_state()
 
-jiffies = (usec * x) >> USEC_JIFFIE_SC
+Vladimir Davydov <vdavydov@parallels.com>
+    mm: vmscan: shrink_slab: rename max_pass -> freeable
 
-and rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value; that is, instead of dividing by (1 usec/ 1 jiffie), we
-effectively divided by (1 usec/1 jiffie)-epsilon (rounding
-down). This would normally be fine, but we want to round timeouts up,
-and we did so by adding 2^USEC_JIFFIE_SC - 1 before the shift; this
-would be fine if our division was exact, but dividing this by the
-slightly smaller factor was equivalent to adding just _over_ 1 to the
-final result (instead of just _under_ 1, as desired.)
+Vladimir Davydov <vdavydov@parallels.com>
+    mm: vmscan: respect NUMA policy mask when shrinking slab on direct reclaim
 
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC.
+Jens Axboe <axboe@fb.com>
+    mm/filemap.c: avoid always dirtying mapping->flags on O_DIRECT
 
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
+Mel Gorman <mgorman@suse.de>
+    mm: optimize put_mems_allowed() usage
 
-Tested: the following program:
+Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+    mm/readahead.c: fix readahead failure for memoryless NUMA nodes and limit readahead pages
 
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
-  }
-    return 0;
-}
+David Rientjes <rientjes@google.com>
+    mm, compaction: ignore pageblock skip when manually invoking compaction
+
+David Rientjes <rientjes@google.com>
+    mm, compaction: determine isolation mode only once
+
+Joonsoo Kim <iamjoonsoo.kim@lge.com>
+    mm/compaction: clean-up code on success of ballon isolation
+
+Joonsoo Kim <iamjoonsoo.kim@lge.com>
+    mm/compaction: check pageblock suitability once per pageblock
+
+Joonsoo Kim <iamjoonsoo.kim@lge.com>
+    mm/compaction: change the timing to check to drop the spinlock
+
+Lars Ellenberg <lars.ellenberg@linbit.com>
+    drbd: fix regression 'out of mem, failed to invoke fence-peer helper'
+
+Joonsoo Kim <iamjoonsoo.kim@lge.com>
+    mm/compaction: do not call suitable_migration_target() on every page
+
+Joonsoo Kim <iamjoonsoo.kim@lge.com>
+    mm/compaction: disallow high-order page for migration target
+
+David Rientjes <rientjes@google.com>
+    mm, compaction: avoid isolating pinned pages
+
+Dan Streetman <ddstreet@ieee.org>
+    swap: change swap_list_head to plist, add swap_avail_head
+
+Dan Streetman <ddstreet@ieee.org>
+    lib/plist: add plist_requeue
+
+Dan Streetman <ddstreet@ieee.org>
+    lib/plist: add helper functions
+
+Dan Streetman <ddstreet@ieee.org>
+    swap: change swap_info singly-linked list to list_head
+
+Michal Hocko <mhocko@suse.cz>
+    mm: exclude memoryless nodes from zone_reclaim
+
+Andrew Hunter <ahh@google.com>
+    jiffies: Fix timeval conversion to jiffies
+
+Hans Verkuil <hans.verkuil@cisco.com>
+    media: vb2: fix VBI/poll regression
+
+Mel Gorman <mgorman@suse.de>
+    mm: numa: Do not mark PTEs pte_numa when splitting huge pages
+
+Waiman Long <Waiman.Long@hp.com>
+    mm, thp: move invariant bug check out of loop in __split_huge_page_map
+
+Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+    hugetlb: ensure hugepage access is denied if hugepages are not supported
+
+Pavel Shilovsky <pshilovsky@samba.org>
+    CIFS: Fix SMB2 readdir error handling
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    ring-buffer: Fix infinite spin in reading buffer
+
+Josh Triplett <josh@joshtriplett.org>
+    init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
+
+Steve French <smfrench@gmail.com>
+    Fix problem recognizing symlinks
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Flush the PTEs after updating them before suspend
+
+NeilBrown <neilb@suse.de>
+    md/raid5: disable 'DISCARD' by default due to safety concerns.
+
+Arnd Bergmann <arnd@arndb.de>
+    cpufreq: integrator: fix integrator_cpufreq_remove return type
+
+Mel Gorman <mgorman@suse.de>
+    mm: migrate: Close race between migration completion and mprotect
+
+Peter Zijlstra <peterz@infradead.org>
+    perf: fix perf bug in fork()
+
+Jan Kara <jack@suse.cz>
+    udf: Avoid infinite loop when processing indirect ICBs
 
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Signed-off-by: Andrew Hunter <ahh@google.com>
-[jstultz: Tweaked to apply to 3.17-rc]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[bwh: Backported to 3.16: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
 
----
- include/linux/jiffies.h |   12 ----------
- kernel/time.c           |   54 ++++++++++++++++++++++++++----------------------
- 2 files changed, 30 insertions(+), 36 deletions(-)
+Diffstat:
 
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -258,23 +258,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
- 
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
- {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
- 
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespe
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
- 
- }
-+
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
-+
- EXPORT_SYMBOL(timespec_to_jiffies);
- 
- void
-@@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long
- }
- EXPORT_SYMBOL(jiffies_to_timespec);
- 
--/* Same for "timeval"
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-+ *
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-  *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
- 
+ Makefile                                 |   4 +-
+ arch/unicore32/include/asm/mmu_context.h |   4 +-
+ drivers/block/drbd/drbd_nl.c             |   6 +
+ drivers/cpufreq/integrator-cpufreq.c     |   4 +-
+ drivers/gpu/drm/i915/i915_gem_gtt.c      |  14 +-
+ drivers/md/raid5.c                       |  18 ++-
+ drivers/media/v4l2-core/videobuf2-core.c |  15 ++-
+ fs/cifs/cifsglob.h                       |   2 +
+ fs/cifs/file.c                           |   2 +-
+ fs/cifs/readdir.c                        |   2 +-
+ fs/cifs/smb1ops.c                        |   9 +-
+ fs/cifs/smb2maperror.c                   |   4 +-
+ fs/cifs/smb2ops.c                        |   9 ++
+ fs/cifs/smb2pdu.c                        |   9 +-
+ fs/exec.c                                |   5 +-
+ fs/hugetlbfs/inode.c                     |   5 +
+ fs/proc/task_mmu.c                       |   3 +-
+ fs/udf/inode.c                           |  35 +++--
+ include/linux/cpuset.h                   |  27 ++--
+ include/linux/hugetlb.h                  |  10 ++
+ include/linux/jiffies.h                  |  12 --
+ include/linux/mm_types.h                 |   4 +-
+ include/linux/plist.h                    |  45 +++++++
+ include/linux/sched.h                    |   7 +
+ include/linux/swap.h                     |   8 +-
+ include/linux/swapfile.h                 |   2 +-
+ include/linux/vmacache.h                 |  38 ++++++
+ include/media/videobuf2-core.h           |   4 +
+ init/Kconfig                             |   1 +
+ kernel/cpuset.c                          |   2 +-
+ kernel/debug/debug_core.c                |  14 +-
+ kernel/events/core.c                     |   4 +-
+ kernel/fork.c                            |  12 +-
+ kernel/time.c                            |  54 ++++----
+ kernel/trace/ring_buffer.c               |   2 +-
+ lib/plist.c                              |  52 +++++++
+ mm/Makefile                              |   2 +-
+ mm/compaction.c                          |  94 +++++++------
+ mm/filemap.c                             |  10 +-
+ mm/frontswap.c                           |  13 +-
+ mm/huge_memory.c                         |  11 +-
+ mm/hugetlb.c                             |  17 ++-
+ mm/mempolicy.c                           |  12 +-
+ mm/migrate.c                             |   5 +-
+ mm/mmap.c                                |  55 ++++----
+ mm/nommu.c                               |  24 ++--
+ mm/page_alloc.c                          |  13 +-
+ mm/readahead.c                           |   4 +-
+ mm/slab.c                                |   4 +-
+ mm/slub.c                                |  16 +--
+ mm/swapfile.c                            | 224 ++++++++++++++++---------------
+ mm/vmacache.c                            | 114 ++++++++++++++++
+ mm/vmscan.c                              |  32 ++---
+ 53 files changed, 750 insertions(+), 348 deletions(-)
 
 
