@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560AbaJGC3E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 22:29:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36995 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071AbaJGC3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 22:29:03 -0400
-Date: Mon, 6 Oct 2014 21:28:51 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <mina86@mina86.com>,
-        <andrzej.p@samsung.com>, <k.opasiak@samsung.com>
-Subject: Re: [PATCH] usb: gadget: f_fs: add "zombie" mode
-Message-ID: <20141007022851.GA13956@saruman>
-Reply-To: <balbi@ti.com>
-References: <1412594714-535-1-git-send-email-r.baldyga@samsung.com>
+	id S1752742AbaJGC34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 22:29:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54648 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaJGC3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 22:29:54 -0400
+Date: Mon, 6 Oct 2014 19:28:55 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v4 00/13] Add ACPI _DSD and unified device properties
+ support
+Message-ID: <20141007022855.GA14466@kroah.com>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412594714-535-1-git-send-email-r.baldyga@samsung.com>
+In-Reply-To: <2660541.BycO7TFnA2@vostro.rjw.lan>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---envbJBWh7q8WU6mo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 07, 2014 at 02:10:56AM +0200, Rafael J. Wysocki wrote:
+> Hi Everyone,
+> 
+> This is version 4 of the unified device properties interface patchset.
+> 
+> The original cover letter from Mika is here:
+> 
+> http://marc.info/?l=devicetree&m=141087052200600&w=4
+> 
+> My cover letter for version 3 is here:
+> 
+> http://marc.info/?l=linux-acpi&m=141212903816560&w=4
+> 
+> One major change from the previous iteration is that now we will
+> use the "compatible" property to match drivers to devices having
+> "PRP0001" as their _HID, so for example the at25 driver doesn't
+> have to add the extra ACPI match table as part of the conversion
+> to the unified interface (patch [05/13] in this series).
+> 
+> The second major change is that I've split the driver core patch
+> in two, where the first one ([02/13]) does not contain any stuff
+> related to iterating over the child nodes of a given device.
+> Accordingly, the whole patch series has been rearranged so that
+> the relatively non-controversial patches [01-09/13], most of which
+> have been ACKed already, go first and then goes the second driver
+> core patch ([10/13]) and the other patches related to it.
+> 
+> In patches [10-13/13] I used the Arnd's suggestion to implement
+> device_for_each_child_node() as a macro which makes the changes
+> in patches [12-13/13] look more straightforward among other things.
+> 
+> I've retained the Greg's ACKs on patches [02/13] and [10/13], because
+> the first of them is things ACKed by Greg only and the change in the
+> second one is just an implementation detail in my opinion (Greg, please
+> let me know if that's inappropriate).
 
-Hi,
+No objection from me, looks good.
 
-On Mon, Oct 06, 2014 at 01:25:14PM +0200, Robert Baldyga wrote:
-> Since we can compose gadgets from many functions, there is the problem
-> related to gadget breakage while FunctionFS daemon being closed. In some
-> cases it's strongly desired to keep gadget alive for a while, despite
-> FunctionFS files are closed, to allow another functions to complete
-> some presumably critical operations.
->=20
-> For this purpose this patch introduces "zombie" mode. It can be enabled
-> by setting mount option "zombie=3D1", and results with defering function
-> closure to the moment of reopening ep0 file or filesystem umount.
->=20
-> When ffs->state =3D=3D FFS_ZOMBIE:
-> - function is still binded and visible to host,
-> - setup requests are automatically stalled,
-> - all another transfers are refused,
-> - opening ep0 causes function close, and then FunctionFS is ready for
->   descriptors and string write,
-> - umount of functionfs cause function close.
->=20
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-
-Can you further explain how do you trigger this ? Do I understand
-correctly that you composed a gadget using configfs and that gadget has
-functionfs + another gadget ?
-
-Then what do you need to do the trigger the issue, and what really _is_
-the issue ? Is gadget disconnecting from host too early ? Do you see a
-crash ? Memory leak ? Any logs available ? Any steps to reproduce ?
-
-Quite frankly, I don't really like this "zombie" mode. <joke> I know
-there's a "The Walking Dead" hype right now, but this is too much.
-</joke>
-
-Anyway, please giver me further details of how to get this done.
-
---=20
-balbi
-
---envbJBWh7q8WU6mo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUM0/jAAoJEIaOsuA1yqREg/UP/R+WGJvEAtSrLQjwvGxgkdFH
-5GO10i18X2TxRNByX3Dm9Z9ROsQDMgjeyyouTI/Syi4A3pPg5wCmmYZ228JaitVD
-7DwzMtErx6REPumFV85bnhvLrLtMTzbSNf9EVvxK4xl96i/F+PQxfCMr4+i+Ou0K
-Eqkmb1j2xx6Gx404naVg1uBmAnYQaQ9RKvLIk+baPTsDK8R4vB2242NFFLgiduWZ
-hrT+IjQM0d7icAvQw1SvJjyoPivzWa+NYjUW8HgpTif+lk04DEYejPw0pBssbN8r
-7NsK0bvf4DzwzH6KoIw/MkW8BdA+IIut6cXgBJVFpOcYnb+3H7cOc7zPRmjg9j02
-Kgejc2vVhpnu7j2j23aSBY2IS9wPEr3Lm31ahN9w78FTn/OFDOsR5ad5UWA465Jz
-PTwF+IJrRgLo9V2bfEwXM9oZIlpoPc49Cizav1CilhQ9IrDn0cUrkjoFPeOqcFoO
-1y+5zh01aAhS2zr0QtpqfuSJx2U/1+wKo0uLUfZ3gZlcjJYm6PrcdFgknwikAvPI
-wwiokivGxb7SEH+nACADo6h9SdIyXdRyI9q0yuaMC3GfpgLNU+4+ShJglxGDFiod
-EhpVyUNu3KJ4bT8F0KyGwR1wigHMVy5SFu4SWdodg+lxwLH+DfndfZg3O4HCiG5r
-VaNoninC04df4/DrCk2G
-=W4CH
------END PGP SIGNATURE-----
-
---envbJBWh7q8WU6mo--
+greg k-h
