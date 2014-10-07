@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934AbaJGXhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:37:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39526 "EHLO
+	id S1755917AbaJGXhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:37:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591AbaJGXTy (ORCPT
+	with ESMTP id S1755579AbaJGXTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:19:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 24/26] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
-Date: Tue,  7 Oct 2014 16:19:40 -0700
-Message-Id: <20141007231849.196977088@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.16 25/26] media: vb2: fix VBI/poll regression
+Date: Tue,  7 Oct 2014 16:19:41 -0700
+Message-Id: <20141007231849.225482465@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -30,61 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
+commit 58d75f4b1ce26324b4d809b18f94819843a98731 upstream.
 
-This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
-NUMA type from the pmd to the pte"). If a huge page is being split due
-a protection change and the tail will be in a PROT_NONE vma then NUMA
-hinting PTEs are temporarily created in the protected VMA.
+The recent conversion of saa7134 to vb2 unconvered a poll() bug that
+broke the teletext applications alevt and mtt. These applications
+expect that calling poll() without having called VIDIOC_STREAMON will
+cause poll() to return POLLERR. That did not happen in vb2.
 
- VM_RW|VM_PROTNONE
-|-----------------|
-      ^
-      split here
+This patch fixes that behavior. It also fixes what should happen when
+poll() is called when STREAMON is called but no buffers have been
+queued. In that case poll() will also return POLLERR, but only for
+capture queues since output queues will always return POLLOUT
+anyway in that situation.
 
-In the specific case above, it should get fixed up by change_pte_range()
-but there is a window of opportunity for weirdness to happen. Similarly,
-if a huge page is shrunk and split during a protection update but before
-pmd_numa is cleared then a pte_numa can be left behind.
+This brings the vb2 behavior in line with the old videobuf behavior.
 
-Instead of adding complexity trying to deal with the case, this patch
-will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
-will not be triggered which is marginal in comparison to the complexity
-in dealing with the corner cases during THP split.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/media/v4l2-core/videobuf2-core.c |   15 +++++++++++++--
+ include/media/videobuf2-core.h           |    4 ++++
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1782,14 +1782,17 @@ static int __split_huge_page_map(struct
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
- 			pte_t *pte, entry;
- 			BUG_ON(PageCompound(page+i));
-+			/*
-+			 * Note that pmd_numa is not transferred deliberately
-+			 * to avoid any possibility that pte_numa leaks to
-+			 * a PROT_NONE VMA by accident.
-+			 */
- 			entry = mk_pte(page + i, vma->vm_page_prot);
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
- 				entry = pte_wrprotect(entry);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
--			if (pmd_numa(*pmd))
--				entry = pte_mknuma(entry);
- 			pte = pte_offset_map(&_pmd, haddr);
- 			BUG_ON(!pte_none(*pte));
- 			set_pte_at(mm, haddr, pte, entry);
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -967,6 +967,7 @@ static int __reqbufs(struct vb2_queue *q
+ 	 * to the userspace.
+ 	 */
+ 	req->count = allocated_buffers;
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 
+ 	return 0;
+ }
+@@ -1014,6 +1015,7 @@ static int __create_bufs(struct vb2_queu
+ 		memset(q->plane_sizes, 0, sizeof(q->plane_sizes));
+ 		memset(q->alloc_ctx, 0, sizeof(q->alloc_ctx));
+ 		q->memory = create->memory;
++		q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 	}
+ 
+ 	num_buffers = min(create->count, VIDEO_MAX_FRAME - q->num_buffers);
+@@ -1812,6 +1814,7 @@ static int vb2_internal_qbuf(struct vb2_
+ 	 */
+ 	list_add_tail(&vb->queued_entry, &q->queued_list);
+ 	q->queued_count++;
++	q->waiting_for_buffers = false;
+ 	vb->state = VB2_BUF_STATE_QUEUED;
+ 	if (V4L2_TYPE_IS_OUTPUT(q->type)) {
+ 		/*
+@@ -2244,6 +2247,7 @@ static int vb2_internal_streamoff(struct
+ 	 * their normal dequeued state.
+ 	 */
+ 	__vb2_queue_cancel(q);
++	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 
+ 	dprintk(3, "successful\n");
+ 	return 0;
+@@ -2562,9 +2566,16 @@ unsigned int vb2_poll(struct vb2_queue *
+ 	}
+ 
+ 	/*
+-	 * There is nothing to wait for if no buffers have already been queued.
++	 * There is nothing to wait for if the queue isn't streaming.
+ 	 */
+-	if (list_empty(&q->queued_list))
++	if (!vb2_is_streaming(q))
++		return res | POLLERR;
++	/*
++	 * For compatibility with vb1: if QBUF hasn't been called yet, then
++	 * return POLLERR as well. This only affects capture queues, output
++	 * queues will always initialize waiting_for_buffers to false.
++	 */
++	if (q->waiting_for_buffers)
+ 		return res | POLLERR;
+ 
+ 	if (list_empty(&q->done_list))
+--- a/include/media/videobuf2-core.h
++++ b/include/media/videobuf2-core.h
+@@ -375,6 +375,9 @@ struct v4l2_fh;
+  * @streaming:	current streaming state
+  * @start_streaming_called: start_streaming() was called successfully and we
+  *		started streaming.
++ * @waiting_for_buffers: used in poll() to check if vb2 is still waiting for
++ *		buffers. Only set for capture queues if qbuf has not yet been
++ *		called since poll() needs to return POLLERR in that situation.
+  * @fileio:	file io emulator internal data, used only if emulator is active
+  * @threadio:	thread io internal data, used only if thread is active
+  */
+@@ -411,6 +414,7 @@ struct vb2_queue {
+ 
+ 	unsigned int			streaming:1;
+ 	unsigned int			start_streaming_called:1;
++	unsigned int			waiting_for_buffers:1;
+ 
+ 	struct vb2_fileio_data		*fileio;
+ 	struct vb2_threadio_data	*threadio;
 
 
