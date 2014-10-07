@@ -1,218 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755162AbaJGU2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:28:32 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:35246 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504AbaJGU2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:28:31 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: thierry.reding@gmail.com, Mark Brown <broonie@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] drivers/pinctrl: Add the concept of an "init" state
-Date: Tue,  7 Oct 2014 13:28:15 -0700
-Message-Id: <1412713696-13343-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	id S1755230AbaJGU2k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:28:40 -0400
+Received: from mail-bn1bon0069.outbound.protection.outlook.com ([157.56.111.69]:1664
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753381AbaJGU2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 16:28:38 -0400
+Date: Tue, 7 Oct 2014 13:28:32 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>
+Subject: Re: [PATCH RESEND] gpio: lib-sysfs: Add 'wakeup' attribute
+References: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1409853506-26279-1-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21000.005
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <f931db7ac1184254ba87b8abdba2a13a@BN1BFFO11FD013.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(51694002)(199003)(164054003)(51704005)(24454002)(53754006)(377424004)(85306004)(108616004)(50466002)(80022003)(46102003)(23676002)(33646002)(107046002)(76482002)(31966008)(74316001)(85202003)(120916001)(106466001)(99396003)(54356999)(86362001)(95666004)(85852003)(87936001)(76176999)(47776003)(85182001)(19580405001)(20776003)(44976005)(4396001)(77096002)(53416004)(19580395003)(83506001)(102836001)(92566001)(104016003)(50986999)(64706001)(15975445006)(21056001)(6806004)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB061;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB061;
+X-Forefront-PRVS: 035748864E
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For pinctrl the "default" state is applied to pins before the driver's
-probe function is called.  This is normally a sensible thing to do,
-but in some cases can cause problems.  That's because the pins will
-change state before the driver is given a chance to program how those
-pins should behave.
+Hi Linus,
 
-As an example you might have a regulator that is controlled by a PWM
-(output high = high voltage, output low = low voltage).  The firmware
-might leave this pin as driven high.  If we allow the driver core to
-reconfigure this pin as a PWM pin before the PWM's probe function runs
-then you might end up running at too low of a voltage while we probe.
+just wanted to check on the status of this patch?
 
-Let's introudce a new "init" state.  If this is defined we'll set
-pinctrl to this state before probe and then "default" after probe
-(unless the driver explicitly changed states already).
+	Thanks,
+	Sören
 
-An alternative idea that was thought of was to use the pre-existing
-"sleep" or "idle" states and add a boolean property that we should
-start in that mode.  This was not done because the "init" state is
-needed for correctness and those other states are only present (and
-only transitioned in to and out of) when (optional) power management
-is enabled.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-See <https://patchwork.kernel.org/patch/4960731/> for some extra
-context here.  
-
-Note that this patch has only been very lightly tested since it turns
-out that I probably don't need this functionality urgently. The PWM
-regulator example cited in the commit message was the original
-motivation but it turns out that the newest firmware actually leaves
-the PWM configured and enabled (and that is part of the contract
-between the firmware and the kernel on this system).  I'm still
-posting it because it seems like it could be useful to someone.
-
- drivers/base/dd.c                     |  2 ++
- drivers/base/pinctrl.c                | 15 +++++++++++++--
- drivers/pinctrl/core.c                | 28 ++++++++++++++++++++++++++++
- include/linux/pinctrl/consumer.h      |  6 ++++++
- include/linux/pinctrl/devinfo.h       |  4 ++++
- include/linux/pinctrl/pinctrl-state.h |  8 ++++++++
- 6 files changed, 61 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index cdc779c..e2a15b2 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -308,6 +308,8 @@ static int really_probe(struct device *dev, struct device_driver *drv)
- 			goto probe_failed;
- 	}
- 
-+	pinctrl_init_done(dev);
-+
- 	driver_bound(dev);
- 	ret = 1;
- 	pr_debug("bus: '%s': %s: bound device %s to driver %s\n",
-diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
-index 5fb74b4..0762975 100644
---- a/drivers/base/pinctrl.c
-+++ b/drivers/base/pinctrl.c
-@@ -42,9 +42,20 @@ int pinctrl_bind_pins(struct device *dev)
- 		goto cleanup_get;
- 	}
- 
--	ret = pinctrl_select_state(dev->pins->p, dev->pins->default_state);
-+	dev->pins->init_state = pinctrl_lookup_state(dev->pins->p,
-+					PINCTRL_STATE_INIT);
-+	if (IS_ERR(dev->pins->init_state)) {
-+		/* Not supplying this state is perfectly legal */
-+		dev_dbg(dev, "no init pinctrl state\n");
-+
-+		ret = pinctrl_select_state(dev->pins->p,
-+					   dev->pins->default_state);
-+	} else {
-+		ret = pinctrl_select_state(dev->pins->p, dev->pins->init_state);
-+	}
-+
- 	if (ret) {
--		dev_dbg(dev, "failed to activate default pinctrl state\n");
-+		dev_dbg(dev, "failed to activate initial pinctrl state\n");
- 		goto cleanup_get;
- 	}
- 
-diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-index e4f6551..d9c39e2 100644
---- a/drivers/pinctrl/core.c
-+++ b/drivers/pinctrl/core.c
-@@ -1240,6 +1240,34 @@ int pinctrl_force_default(struct pinctrl_dev *pctldev)
- }
- EXPORT_SYMBOL_GPL(pinctrl_force_default);
- 
-+/**
-+ * pinctrl_init_done() - tell pinctrl probe is done
-+ * @dev: device to that's done probing
-+ */
-+int pinctrl_init_done(struct device *dev)
-+{
-+	struct dev_pin_info *pins = dev->pins;
-+	int ret;
-+
-+	if (!pins)
-+		return 0;
-+
-+	if (IS_ERR(pins->init_state))
-+		return 0; /* No such state */
-+
-+	if (pins->p->state != pins->init_state)
-+		return 0; /* Not at init anyway */
-+
-+	if (IS_ERR(pins->default_state))
-+		return 0; /* No default state */
-+
-+	ret = pinctrl_select_state(pins->p, pins->default_state);
-+	if (ret)
-+		dev_err(dev, "failed to activate default pinctrl state\n");
-+
-+	return ret;
-+}
-+
- #ifdef CONFIG_PM
- 
- /**
-diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
-index 18eccef..b3bf5785 100644
---- a/include/linux/pinctrl/consumer.h
-+++ b/include/linux/pinctrl/consumer.h
-@@ -39,6 +39,7 @@ extern int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *s);
- 
- extern struct pinctrl * __must_check devm_pinctrl_get(struct device *dev);
- extern void devm_pinctrl_put(struct pinctrl *p);
-+extern int pinctrl_init_done(struct device *dev);
- 
- #ifdef CONFIG_PM
- extern int pinctrl_pm_select_default_state(struct device *dev);
-@@ -111,6 +112,11 @@ static inline void devm_pinctrl_put(struct pinctrl *p)
- {
- }
- 
-+static inline int pinctrl_init_done(struct device *dev)
-+{
-+	return 0;
-+}
-+
- static inline int pinctrl_pm_select_default_state(struct device *dev)
- {
- 	return 0;
-diff --git a/include/linux/pinctrl/devinfo.h b/include/linux/pinctrl/devinfo.h
-index 281cb91..200c9d1 100644
---- a/include/linux/pinctrl/devinfo.h
-+++ b/include/linux/pinctrl/devinfo.h
-@@ -24,10 +24,14 @@
-  * struct dev_pin_info - pin state container for devices
-  * @p: pinctrl handle for the containing device
-  * @default_state: the default state for the handle, if found
-+ * @init_state: the state at probe time, if found
-+ * @sleep_state: the state at suspend time, if found
-+ * @idle_state: the state at idle (runtime suspend) time, if found
-  */
- struct dev_pin_info {
- 	struct pinctrl *p;
- 	struct pinctrl_state *default_state;
-+	struct pinctrl_state *init_state;
- #ifdef CONFIG_PM
- 	struct pinctrl_state *sleep_state;
- 	struct pinctrl_state *idle_state;
-diff --git a/include/linux/pinctrl/pinctrl-state.h b/include/linux/pinctrl/pinctrl-state.h
-index b5919f8..2307351 100644
---- a/include/linux/pinctrl/pinctrl-state.h
-+++ b/include/linux/pinctrl/pinctrl-state.h
-@@ -9,6 +9,13 @@
-  *	hogs to configure muxing and pins at boot, and also as a state
-  *	to go into when returning from sleep and idle in
-  *	.pm_runtime_resume() or ordinary .resume() for example.
-+ * @PINCTRL_STATE_INIT: normally the pinctrl will be set to "default"
-+ *	before the driver's probe() function is called.  There are some
-+ *	drivers where that is not appropriate becausing doing so would
-+ *	glitch the pins.  In those cases you can add an "init" pinctrl
-+ *	which is the state of the pins before drive probe.  After probe
-+ *	if the pins are still in "init" state they'll be moved to
-+ *	"default".
-  * @PINCTRL_STATE_IDLE: the state the pinctrl handle shall be put into
-  *	when the pins are idle. This is a state where the system is relaxed
-  *	but not fully sleeping - some power may be on but clocks gated for
-@@ -20,5 +27,6 @@
-  *	ordinary .suspend() function.
-  */
- #define PINCTRL_STATE_DEFAULT "default"
-+#define PINCTRL_STATE_INIT "init"
- #define PINCTRL_STATE_IDLE "idle"
- #define PINCTRL_STATE_SLEEP "sleep"
--- 
-2.1.0.rc2.206.gedb03e5
-
+On Thu, 2014-09-04 at 10:58AM -0700, Soren Brinkmann wrote:
+> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+> marking/unmarking a GPIO as wake IRQ.
+> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+> is associated with that GPIO and the irqchip implements set_wake().
+> Writing 'enabled' to that file will enable wake for that GPIO, while
+> writing 'disabled' will disable wake.
+> Reading that file will return either 'disabled' or 'enabled' depening on
+> the currently set flag for the GPIO's IRQ.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> Hi all,
+> 
+> I originally submitted this patch with a few fixes for Zynq's GPIO driver
+> (https://lkml.org/lkml/2014/8/29/391). Since this change is not just
+> Zynq-related and has broader impact, Linus asked me to post this again, separate
+> from the Zynq series.
+> 
+> Let me just quote myself from the original submission:
+> "I'm still not fully convinced that the gpio_keys are the best
+> replacement for the sysfs interface when it comes to inputs. For that
+> reason and to have a way to do some quick wake testing, I'd like to
+> propose adding the ability to control wake through the sysfs interface
+> (patch 3)."
+> 
+> 	Thanks,
+> 	Sören
+> 
+>  drivers/gpio/gpiolib-sysfs.c | 75 ++++++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 69 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+> index 5f2150b619a7..aaf021eaaff5 100644
+> --- a/drivers/gpio/gpiolib-sysfs.c
+> +++ b/drivers/gpio/gpiolib-sysfs.c
+> @@ -286,6 +286,56 @@ found:
+>  
+>  static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
+>  
+> +static ssize_t gpio_wakeup_show(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	ssize_t			status;
+> +	const struct gpio_desc	*desc = dev_get_drvdata(dev);
+> +	int			irq = gpiod_to_irq(desc);
+> +	struct irq_desc		*irq_desc = irq_to_desc(irq);
+> +
+> +	mutex_lock(&sysfs_lock);
+> +
+> +	if (irqd_is_wakeup_set(&irq_desc->irq_data))
+> +		status = sprintf(buf, "enabled\n");
+> +	else
+> +		status = sprintf(buf, "disabled\n");
+> +
+> +	mutex_unlock(&sysfs_lock);
+> +
+> +	return status;
+> +}
+> +
+> +static ssize_t gpio_wakeup_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t size)
+> +{
+> +	int			ret;
+> +	unsigned int		on;
+> +	struct gpio_desc	*desc = dev_get_drvdata(dev);
+> +	int			irq = gpiod_to_irq(desc);
+> +
+> +	mutex_lock(&sysfs_lock);
+> +
+> +	if (sysfs_streq("enabled", buf))
+> +		on = true;
+> +	else if (sysfs_streq("disabled", buf))
+> +		on = false;
+> +	else
+> +		return -EINVAL;
+> +
+> +	ret = irq_set_irq_wake(irq, on);
+> +
+> +	mutex_unlock(&sysfs_lock);
+> +
+> +	if (ret)
+> +		pr_warn("%s: failed to %s wake\n", __func__,
+> +				on ? "enable" : "disable");
+> +
+> +	return size;
+> +}
+> +
+> +static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
+> +
+>  static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
+>  				int value)
+>  {
+> @@ -526,7 +576,7 @@ static struct class gpio_class = {
+>  int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>  {
+>  	unsigned long		flags;
+> -	int			status;
+> +	int			status, irq;
+>  	const char		*ioname = NULL;
+>  	struct device		*dev;
+>  	int			offset;
+> @@ -582,11 +632,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+>  			goto fail_unregister_device;
+>  	}
+>  
+> -	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
+> -				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+> -		status = device_create_file(dev, &dev_attr_edge);
+> -		if (status)
+> -			goto fail_unregister_device;
+> +	irq = gpiod_to_irq(desc);
+> +	if (irq >= 0) {
+> +		struct irq_desc *irq_desc = irq_to_desc(irq);
+> +		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
+> +
+> +		if (direction_may_change ||
+> +				!test_bit(FLAG_IS_OUT, &desc->flags)) {
+> +			status = device_create_file(dev, &dev_attr_edge);
+> +			if (status)
+> +				goto fail_unregister_device;
+> +		}
+> +
+> +		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
+> +				irqchip->irq_set_wake) {
+> +			status = device_create_file(dev, &dev_attr_wakeup);
+> +			if (status)
+> +				goto fail_unregister_device;
+> +		}
+>  	}
+>  
+>  	set_bit(FLAG_EXPORT, &desc->flags);
+> -- 
+> 2.1.0.1.g27b9230
+> 
