@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaJGFop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:44:45 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40428 "EHLO
+	id S1753415AbaJGF3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:29:36 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40261 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497AbaJGF3m (ORCPT
+	with ESMTP id S1753374AbaJGF30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:29:42 -0400
+	Tue, 7 Oct 2014 01:29:26 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
@@ -24,10 +24,12 @@ Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
         linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
         linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>, Corey Minyard <minyard@acm.org>
-Subject: [PATCH 19/44] ipmi: Register with kernel poweroff handler
-Date: Mon,  6 Oct 2014 22:28:21 -0700
-Message-Id: <1412659726-29957-20-git-send-email-linux@roeck-us.net>
+        Guenter Roeck <linux@roeck-us.net>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH 12/44] mfd: ab8500-sysctrl: Register with kernel poweroff handler
+Date: Mon,  6 Oct 2014 22:28:14 -0700
+Message-Id: <1412659726-29957-13-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
@@ -37,13 +39,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54337A45.00BE,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020203.54337A36.0038,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: 
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 187
+X-CTCH-SenderID-TotalMessages: 72
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -64,108 +66,100 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel poweroff handler instead of setting pm_power_off
-directly. Register with a high priority value of 192 to reflect that
-the original code overwrites pm_power_off unconditionally.
+directly. Register with a low priority value of 64 to reflect that
+the original code only sets pm_power_off if it was not already set.
 
-Register poweroff handler after the ipmi system is ready, and unregister
-it prior to cleanup. This avoids having to check for the ready variable
-in the poweroff callback.
-
-Cc: Corey Minyard <minyard@acm.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/char/ipmi/ipmi_poweroff.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ drivers/mfd/ab8500-sysctrl.c | 26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_poweroff.c b/drivers/char/ipmi/ipmi_poweroff.c
-index 9f2e3be..a942a41 100644
---- a/drivers/char/ipmi/ipmi_poweroff.c
-+++ b/drivers/char/ipmi/ipmi_poweroff.c
-@@ -36,6 +36,7 @@
- #include <linux/proc_fs.h>
- #include <linux/string.h>
- #include <linux/completion.h>
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+index 8e0dae5..677438f 100644
+--- a/drivers/mfd/ab8500-sysctrl.c
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/err.h>
+ #include <linux/module.h>
 +#include <linux/notifier.h>
+ #include <linux/platform_device.h>
  #include <linux/pm.h>
- #include <linux/kdev_t.h>
- #include <linux/ipmi.h>
-@@ -63,9 +64,6 @@ static ipmi_user_t ipmi_user;
- static int ipmi_ifnum;
- static void (*specific_poweroff_func)(ipmi_user_t user);
+ #include <linux/reboot.h>
+@@ -23,7 +24,8 @@
  
--/* Holds the old poweroff function so we can restore it on removal. */
--static void (*old_poweroff_func)(void);
--
- static int set_param_ifnum(const char *val, struct kernel_param *kp)
+ static struct device *sysctrl_dev;
+ 
+-static void ab8500_power_off(void)
++static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
++			    void *unused2)
  {
- 	int rv = param_set_int(val, kp);
-@@ -544,15 +542,20 @@ static struct poweroff_function poweroff_functions[] = {
+ 	sigset_t old;
+ 	sigset_t all;
+@@ -34,11 +36,6 @@ static void ab8500_power_off(void)
+ 	struct power_supply *psy;
+ 	int ret;
  
- 
- /* Called on a powerdown request. */
--static void ipmi_poweroff_function(void)
-+static int ipmi_poweroff_function(struct notifier_block *this,
-+				  unsigned long unused1, void *unused2)
- {
--	if (!ready)
+-	if (sysctrl_dev == NULL) {
+-		pr_err("%s: sysctrl not initialized\n", __func__);
 -		return;
+-	}
 -
- 	/* Use run-to-completion mode, since interrupts may be off. */
- 	specific_poweroff_func(ipmi_user);
+ 	/*
+ 	 * If we have a charger connected and we're powering off,
+ 	 * reboot into charge-only mode.
+@@ -83,8 +80,15 @@ shutdown:
+ 					 AB8500_STW4500CTRL1_SWRESET4500N);
+ 		(void)sigprocmask(SIG_SETMASK, &old, NULL);
+ 	}
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block ipmi_poweroff_nb = {
-+	.notifier_call = ipmi_poweroff_function,
-+	.priority = 192,
++static struct notifier_block ab8500_poweroff_nb = {
++	.notifier_call = ab8500_power_off,
++	.priority = 64,
 +};
 +
- /* Wait for an IPMI interface to be installed, the first one installed
-    will be grabbed by this code and used to perform the powerdown. */
- static void ipmi_po_new_smi(int if_num, struct device *device)
-@@ -631,9 +634,12 @@ static void ipmi_po_new_smi(int if_num, struct device *device)
- 	printk(KERN_INFO PFX "Found a %s style poweroff function\n",
- 	       poweroff_functions[i].platform_type);
- 	specific_poweroff_func = poweroff_functions[i].poweroff_func;
--	old_poweroff_func = pm_power_off;
--	pm_power_off = ipmi_poweroff_function;
-+
- 	ready = 1;
-+
-+	rv = register_poweroff_handler(&ipmi_poweroff_nb);
-+	if (rv)
-+		pr_err(PFX "failed to register poweroff handler\n");
+ /*
+  * Use the AB WD to reset the platform. It will perform a hard
+  * reset instead of a soft reset. Write the reset reason to
+@@ -185,6 +189,7 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
+ 	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
+ 	struct ab8500_platform_data *plat;
+ 	struct ab8500_sysctrl_platform_data *pdata;
++	int err;
+ 
+ 	plat = dev_get_platdata(pdev->dev.parent);
+ 
+@@ -193,8 +198,9 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
+ 
+ 	sysctrl_dev = &pdev->dev;
+ 
+-	if (!pm_power_off)
+-		pm_power_off = ab8500_power_off;
++	err = register_poweroff_handler(&ab8500_poweroff_nb);
++	if (err)
++		dev_err(&pdev->dev, "Failed to register poweroff handler\n");
+ 
+ 	pdata = plat->sysctrl;
+ 	if (pdata) {
+@@ -226,11 +232,9 @@ static int ab8500_sysctrl_probe(struct platform_device *pdev)
+ 
+ static int ab8500_sysctrl_remove(struct platform_device *pdev)
+ {
++	unregister_poweroff_handler(&ab8500_poweroff_nb);
+ 	sysctrl_dev = NULL;
+ 
+-	if (pm_power_off == ab8500_power_off)
+-		pm_power_off = NULL;
+-
+ 	return 0;
  }
  
- static void ipmi_po_smi_gone(int if_num)
-@@ -644,9 +650,10 @@ static void ipmi_po_smi_gone(int if_num)
- 	if (ipmi_ifnum != if_num)
- 		return;
- 
-+	unregister_poweroff_handler(&ipmi_poweroff_nb);
-+
- 	ready = 0;
- 	ipmi_destroy_user(ipmi_user);
--	pm_power_off = old_poweroff_func;
- }
- 
- static struct ipmi_smi_watcher smi_watcher = {
-@@ -732,12 +739,13 @@ static void __exit ipmi_poweroff_cleanup(void)
- 
- 	ipmi_smi_watcher_unregister(&smi_watcher);
- 
-+	unregister_poweroff_handler(&ipmi_poweroff_nb);
-+
- 	if (ready) {
- 		rv = ipmi_destroy_user(ipmi_user);
- 		if (rv)
- 			printk(KERN_ERR PFX "could not cleanup the IPMI"
- 			       " user: 0x%x\n", rv);
--		pm_power_off = old_poweroff_func;
- 	}
- }
- module_exit(ipmi_poweroff_cleanup);
 -- 
 1.9.1
 
