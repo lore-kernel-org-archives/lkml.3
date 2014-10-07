@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaJGMXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:23:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47660 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016AbaJGMXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:23:36 -0400
-Date: Tue, 7 Oct 2014 14:23:36 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: Please backport commit 3812c8c8f39 to stable
-Message-ID: <20141007122336.GB14243@dhcp22.suse.cz>
-References: <CAM_iQpVf3ga5vVbhKmXySvK9ibh9bGgnGHFBOFtmag9=uh8D=A@mail.gmail.com>
- <20140930081637.GA4456@dhcp22.suse.cz>
- <CAM_iQpXx3ULtPr50ESTZk1+984vSG9-dKegEjawDZ2yJS3CTdw@mail.gmail.com>
- <20141003151334.GE4816@dhcp22.suse.cz>
- <CAM_iQpW4t_jKSCbS5J1N15FFChd=-UK3QOXrjjst64Rqe5KBTw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM_iQpW4t_jKSCbS5J1N15FFChd=-UK3QOXrjjst64Rqe5KBTw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753254AbaJGM1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:27:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:29462 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaJGM1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:27:05 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-b0-5433dc16fab2
+Message-id: <5433DC15.5000000@samsung.com>
+Date: Tue, 07 Oct 2014 14:27:01 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        "open list:DRM DRIVERS FOR E..." <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>, drake@endlessm.com,
+        daniel@ffwll.ch, m.szyprowski@samsung.com
+Subject: Re: [PATCH] drm/exynos: init vblank with real number of crtcs
+References: <1411131440-15395-1-git-send-email-a.hajda@samsung.com>
+In-reply-to: <1411131440-15395-1-git-send-email-a.hajda@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xK7pid4xDDDattbLoPXeSyeL/tonM
+	Fo/mP2a2uPL1PZvFpPsTWCxe3LvIYtG74CqbxdmmN+wWl3fNYbOYcX4fk8XaI3fZLWZMfsnm
+	wOOx6HuWx95vC1g8tn97wOpxv/s4k0ffllWMHp83yQWwRXHZpKTmZJalFunbJXBl/Dv/ka3g
+	v2DF2sZTjA2M1/m6GDk5JARMJO5NuMICYYtJXLi3nq2LkYtDSGApo8TCa3tZIJxPjBJtzX1g
+	VbwCWhLbGteD2SwCqhLHHl5iBLHZBDQl/m6+yQZiiwpESJy8u4cdol5Q4sfke2D1IgLKEqv2
+	tYPFmQVOMUvcaFMBsYUF3CSmPH7BDGILCThLfP67E8zmFHCRWDrzFtB8DqB6PYn7F7UgWuUl
+	Nq95yzyBUWAWkg2zEKpmIalawMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkOr7uYFx6
+	zOoQowAHoxIP7wot4xAh1sSy4srcQ4wSHMxKIrynLwKFeFMSK6tSi/Lji0pzUosPMTJxcEo1
+	MK77weBsYvvVX5ih4b20s4/vw0O5//u7O+TT7e2VzCbGtf7csZm9s/+NR9/bQ9rB7BZ7uM3S
+	bD0YGEUsOWZma0etZrkmZLb10qaAHLeXWtzHRa1XhizIb3b0VLon9sbd54q/sv+TWXc6v2XO
+	mXD8+dkLjd3zvu7Qu2/5iY85rEvE3KhkWoGjEktxRqKhFnNRcSIA2QMKpGwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 03-10-14 11:03:30, Cong Wang wrote:
-> On Fri, Oct 3, 2014 at 8:13 AM, Michal Hocko <mhocko@suse.cz> wrote:
-> >
-> > That commit fixes an OOM deadlock. Not a soft lockup. Do you have the
-> > OOM killer report from the log? This would tell us that the killed task
-> > was indeed sleeping on the lock which is hold by the charger which
-> > triggered the OOM. I am little bit surprised that I do not see any OOM
-> > related functions on the stacks (maybe the code is inlined...).
+Hi Inki,
+
+Gently ping.
+
+Andrzej
+
+
+On 09/19/2014 02:57 PM, Andrzej Hajda wrote:
+> Initialization of vblank with MAX_CRTC caused attempts
+> to disabling vblanks for non-existing crtcs in case
+> drm used fewer crtcs. The patch fixes it.
 > 
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> ---
+>  drivers/gpu/drm/exynos/exynos_drm_drv.c | 18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
 > 
-> Oh, did you see __mem_cgroup_try_charge() calls
-> schedule_timeout_uninterruptible() in stack trace? Yes, they are inlined
-> and I don't see any other possibilities for calling it.
-
-Yes the only place we call schedule_timeout_uninterruptible from is
-mem_cgroup_handle_oom. And it happens only for a task which hasn't been
-killed by OOM killer.
-
-> > It would be better to know what exactly is going on before backporting
-> > this change because it is quite large.
-> >
+> diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> index 9b00e4e..dc4affd 100644
+> --- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> +++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
+> @@ -94,10 +94,6 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+>  	/* init kms poll for handling hpd */
+>  	drm_kms_helper_poll_init(dev);
+>  
+> -	ret = drm_vblank_init(dev, MAX_CRTC);
+> -	if (ret)
+> -		goto err_mode_config_cleanup;
+> -
+>  	/* setup possible_clones. */
+>  	exynos_drm_encoder_setup(dev);
+>  
+> @@ -106,22 +102,26 @@ static int exynos_drm_load(struct drm_device *dev, unsigned long flags)
+>  	/* Try to bind all sub drivers. */
+>  	ret = component_bind_all(dev->dev, dev);
+>  	if (ret)
+> -		goto err_cleanup_vblank;
+> +		goto err_mode_config_cleanup;
+> +
+> +	ret = drm_vblank_init(dev, dev->mode_config.num_crtc);
+> +	if (ret)
+> +		goto err_unbind_all;
+>  
+>  	/* Probe non kms sub drivers and virtual display driver. */
+>  	ret = exynos_drm_device_subdrv_probe(dev);
+>  	if (ret)
+> -		goto err_unbind_all;
+> +		goto err_cleanup_vblank;
+>  
+>  	/* force connectors detection */
+>  	drm_helper_hpd_irq_event(dev);
+>  
+>  	return 0;
+>  
+> -err_unbind_all:
+> -	component_unbind_all(dev->dev, dev);
+>  err_cleanup_vblank:
+>  	drm_vblank_cleanup(dev);
+> +err_unbind_all:
+> +	component_unbind_all(dev->dev, dev);
+>  err_mode_config_cleanup:
+>  	drm_mode_config_cleanup(dev);
+>  	drm_release_iommu_mapping(dev);
+> @@ -138,8 +138,8 @@ static int exynos_drm_unload(struct drm_device *dev)
+>  	exynos_drm_fbdev_fini(dev);
+>  	drm_kms_helper_poll_fini(dev);
+>  
+> -	component_unbind_all(dev->dev, dev);
+>  	drm_vblank_cleanup(dev);
+> +	component_unbind_all(dev->dev, dev);
+>  	drm_mode_config_cleanup(dev);
+>  	drm_release_iommu_mapping(dev);
+>  
 > 
-> I thought the stack trace I showed is obvious. :) I am very happy
-> to investigate if you see any other path calling
-> schedule_timeout_uninterruptible()
-> in __mem_cgroup_try_charge().
 
-I was expecting an oom report which kills a task which is sleeping on a
-lock which is held on the way up to the charge function. Your report
-mentioned a task waiting for i_mutex for too long. It is true that the
-charging path is holding an i_mutex as well so it might be the same
-situation handled by the said patch. But it is not 100% clear this is
-the case without an OOM report which would point to the waiting task.
-The memcg might be trashing on the hard limit and reclaim might take a
-long time.
-
--- 
-Michal Hocko
-SUSE Labs
