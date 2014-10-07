@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086AbaJGOLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:11:39 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38140 "EHLO comal.ext.ti.com"
+	id S1753911AbaJGONV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:13:21 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39168 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055AbaJGOLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:11:36 -0400
-Date: Tue, 7 Oct 2014 09:11:18 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-CC: <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>, <kgene.kim@samsung.com>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 1/4] dwc3: exynos: Add support for SCLK present on
- Exynos7
-Message-ID: <20141007141118.GD24720@saruman>
-Reply-To: <balbi@ti.com>
-References: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com>
- <1412677176-3850-2-git-send-email-gautam.vivek@samsung.com>
+	id S1753305AbaJGONU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:13:20 -0400
+Date: Tue, 7 Oct 2014 11:13:15 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jean Pihet <jean.pihet@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141007141315.GJ14113@kernel.org>
+References: <20141006150741.GB14113@kernel.org>
+ <20141006151605.GE4372@pd.tnic>
+ <20141006191227.GD14113@kernel.org>
+ <20141006195349.GE20739@pd.tnic>
+ <20141006212243.GE14113@kernel.org>
+ <20141007112342.GC30146@pd.tnic>
+ <20141007134021.GH14113@kernel.org>
+ <20141007134912.GE30146@pd.tnic>
+ <20141007135531.GI14113@kernel.org>
+ <20141007140229.GF30146@pd.tnic>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZARJHfwaSJQLOEUz"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412677176-3850-2-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <20141007140229.GF30146@pd.tnic>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---ZARJHfwaSJQLOEUz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Em Tue, Oct 07, 2014 at 04:02:29PM +0200, Borislav Petkov escreveu:
+> On Tue, Oct 07, 2014 at 10:55:31AM -0300, Arnaldo Carvalho de Melo wrote:
+> > So you say that if we change a method, say, perf_evlist__open() to
+> > accept a new argument, or change the type of one of its arguments,
+> > with a good reason, it is acceptable and with just a change in the
+> > README explaining why the build fails, which helps in finding how to fix
+> > it in a particular project using these "source libraries" then it would
+> > be ok?
+ 
+> Right, exactly.
+ 
+> Updating the perf bits used in another project will require a
+> recompilation anyway so adjusting stuff here and there should not be of
+> issue.
+ 
+> > That would be fine with me.
+ 
+> Yeah.
+ 
+> > We should take care to make sure that the build _fails_ in such cases,
+> > i.e.avoid changing the semantic of the Nth argument but keeping its
+> > type kind of changes.
+ 
+> Yep.
+ 
+> > At some point there will be no more reasons to change things, and that
+> > will be noticed by how long since the last change was made to a
+> > particular class, at that point we may well think about making library
+> > type promises.
+ 
+> I was about to say the same thing - once the code doesn't change anymore
+> and gets even boring, doing the library promise is probably pretty easy.
 
-On Tue, Oct 07, 2014 at 03:49:33PM +0530, Vivek Gautam wrote:
-> Exynos7 also has a separate special gate clock going to the IP
-> apart from the usual AHB clock. So add support for the same.
->=20
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Ok, at some point we need to make sure this gets into tools/lib/api/README.
+ 
+> See, no need for you to get over to LCE: we're practically done :-)
 
-I'll take this one once -rc1 is tagged. The others have no direct
-dependency on this so I'll leave them to Kishon.
+Nah, there is much more than this at LCE, I'm sure, I'll try again next
+time.
+ 
+> We'll run the proposal in jolsa's timeslot again and make sure to poke
+> holes in it. But it looks good from where I'm standing.
 
---=20
-balbi
+Thanks!
+ 
+> Btw, did we just solve the compatibility problem of libraries by
+> delivering source libraries first!?!
 
---ZARJHfwaSJQLOEUz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+For me one of the points of having tools/ is to try and make kernel
+developers try to do userspace muck, dirtying the hands trying to use
+the same discipline used in the kernel proper, using code as unchanged
+as possible from the kernel proper, etc.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+If we now are moving to share code in a way that keeps what is nice in
+having code and its users in the same repo, like the kernel guys have
+with subsystems and its drivers while allowing to do it in different
+repos, that is a good thing indeed.
+ 
+> Haha.
 
-iQIcBAEBAgAGBQJUM/SGAAoJEIaOsuA1yqREvX4P/RVgtnSXBdISraqbxtUS55Fs
-A2s4SsiKJu7YOyMUhjvAaxD6yyXUBrlHwVPJ+fCgjRxBByiVoUim0rJ3I0Z+vVeS
-F+WqnwZJB9QdhhsDiZreNmikQ7toD6n1Va2PGop6Djd/VkJP4l5MuN/KDKMtbtAt
-RNQE463LlIS7h+OVtXLAUbRQCITjwq0VRxdMnQfnYpps73Cquyw89kfgl/fB1F94
-fdupFPVKJM153ExAQXWeKejuF2q0bdGyIg8QVDpGfMWV0Sf2AUqKWGtXqznBMrKp
-92ptlX5YSPYKH2/854wJhOSMDyw/0SjojMLqo4qxld3+FEAHll3wiZHsOX++vJvY
-Bw7ZgrlxdJpYdbOJaHn4D6tdjznGewWHcybjtLkEWNIdctKKRyKlvyxmUQS5d+ae
-J1k5QjPZ5oiBD/FJkXpQSovtDgEaI5A054ZDjn8mmh6BlWM2PT8mM9zJCxRPdIB/
-2mHKmMIWxIu7CDxCMc1UL/y0Pv+ScdS/RtwCYfScv2jaHJejt/2qnOWTFggQ/nzU
-qKmoKf+t+qimJ8xq06eQ4HyOa6QW3e0NJTOsFr9r4JGDN/ZBuWhb2szSFgTBPzqy
-1UAj0TUG0VrRC4aOoP00emix7Eo5obf8FLUbiDHYQgfQlBmqAF1RGrObj2z/3nrK
-5GUjOskMAp9cos8jSkkI
-=bVzM
------END PGP SIGNATURE-----
+While having fun even! Good deal.
 
---ZARJHfwaSJQLOEUz--
+- Arnaldo
