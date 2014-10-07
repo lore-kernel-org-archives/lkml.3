@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaJGK6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:58:51 -0400
+	id S1753609AbaJGK6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:58:55 -0400
 Received: from mailout1.samsung.com ([203.254.224.24]:14259 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaJGK6r (ORCPT
+	with ESMTP id S1753446AbaJGK6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:58:47 -0400
-X-AuditID: cbfee68f-f791c6d000004834-c3-5433c765407f
+	Tue, 7 Oct 2014 06:58:51 -0400
+X-AuditID: cbfee68f-f791c6d000004834-cf-5433c76770f2
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
         dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
         jenny.tc@intel.com, Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [RFC PATCH 0/3] power: Generic interface to get battery specification.
-Date: Tue, 07 Oct 2014 19:58:35 +0900
-Message-id: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH 2/3] power: core: Add variables related temperature to
+ power_supply_info.
+Date: Tue, 07 Oct 2014 19:58:37 +0900
+Message-id: <1412679518-21499-3-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsWyRsSkQDf1uHGIwdpJphYHt2paTHryntli
+In-reply-to: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkSDf9uHGIwY7FchYHt2paTHryntli
 	4srJzBZrv/awW3SefcJscXnXHDaLz71HGC3unjrKZnF6d4kDp8eE/k+MHjtn3WX32LxCy2Px
-	npdMHptWdbJ59G1ZxeixYvV3do/Pm+QCOKK4bFJSczLLUov07RK4Mo4d/ctc8JqnouPeDeYG
-	xiecXYycHBICJhIn+yewQNhiEhfurWfrYuTiEBJYyihx8tkGJpii2wcfMkMkpjNK/Hp+AMpp
-	Y5KYtOsDM0gVm4COxP99N9lBbBEBBYnNvc9YQWxmge2MEnM/JYPYwgL+EguurwWq5+BgEVCV
-	WHs2ACTMK+Ah8fLMZEaQsARQ65xJNiDjJQQWsUvsfDuZDaSGRUBA4tvkQywQNbISmw4wQ9wm
-	KXFwxQ2WCYyCCxgZVjGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmIEBvjpf8/6dzDePWB9iFGA
-	g1GJh3eFlnGIEGtiWXFl7iFGU6ANE5mlRJPzgXGUVxJvaGxmZGFqYmpsZG5ppiTOu1DqZ7CQ
-	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGxub1PNpCV7z9NnmYfwhgPyV7YoN+umyyQ/xx89C3
-	pZtY29u33dK7ON3ihlL5TlOfyD8aXvut1H6qteVdyngrVNiwSHASn5biguM/StomuN9M0c19
-	7xN0TOl6t7HmRZMVH6TWBkzeXVC+5o7phi2J1e7Hlkvt4VA+8WvqjWvCizn2pB9mXvlNWIml
-	OCPRUIu5qDgRAP/6PERrAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jQd3U48YhBv9e6Voc3KppMenJe2aL
-	iSsnM1us/drDbtF59gmzxeVdc9gsPvceYbS4e+oom8Xp3SUOnB4T+j8xeuycdZfdY/MKLY/F
-	e14yeWxa1cnm0bdlFaPHitXf2T0+b5IL4IhqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
-	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
-	j5EBGkhYw5hx7Ohf5oLXPBUd924wNzA+4exi5OSQEDCRuH3wITOELSZx4d56ti5GLg4hgemM
-	Er+eH2CGcNqYJCbt+gBWxSagI/F/3012EFtEQEFic+8zVhCbWWA7o8TcT8kgtrCAv8SC62uB
-	6jk4WARUJdaeDQAJ8wp4SLw8M5kRJCwB1Dpnks0ERu4FjAyrGEVTC5ILipPSc430ihNzi0vz
-	0vWS83M3MYLj55n0DsZVDRaHGAU4GJV4eFdoGYcIsSaWFVfmHmKU4GBWEuG1PgYU4k1JrKxK
-	LcqPLyrNSS0+xGgKtHsis5Rocj4wtvNK4g2NTcyMLI3MDS2MjM2VxHkPtloHCgmkJ5akZqem
-	FqQWwfQxcXBKNTCu6rdjyo7ZLp69996/v1ZP2w6eObg7e/UcxS4xuc47VSWyJ18eWCSmYXZR
-	QSB0xUsRl3W5W9wj9x0XUkytE67leWOT8O991xc5v9c+t74JnGc1fPAiaJfcPPvX+XJ/H1zd
-	Pr2ub8m8Zu1tLvV6yTfntl6rCWYwnXVe95vhlKdHuo8Ibd+e9OqfEktxRqKhFnNRcSIAdyiT
-	SrUCAAA=
+	npdMHptWdbJ59G1ZxeixYvV3do/Pm+QCOKK4bFJSczLLUov07RK4Mi692c5cMJO14sCODcwN
+	jOtZuhg5OSQETCQeNNxnhLDFJC7cW8/WxcjFISSwlFHi9JqzTF2MHGBF629aQ8SnM0p0zz8L
+	1iwk0MYkcfGgMYjNJqAj8X/fTXYQW0RAQWJz7zNWEJtZYDujxNxPySC2sEC0ROu8dUwgNouA
+	qsS76c3MIDavgIdEz5GnrBC7FCTmTLIBCXMKeEo03m6HWuUhsejBW1aQGyQE9rFLnH/ezwgx
+	R0Di2+RDLBC9shKbDjBD/CIpcXDFDZYJjMILGBlWMYqmFiQXFCelFxnrFSfmFpfmpesl5+du
+	YgTGw+l/z/p3MN49YH2IUYCDUYmHd4WWcYgQa2JZcWXuIUZToA0TmaVEk/OBUZdXEm9obGZk
+	YWpiamxkbmmmJM67UOpnsJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbG6EtbHzCfMrHKW+WX
+	2lt5eaOa/vWs5Xmfmy5VLpi/1/Tdw66OGrP2YIuS7ZOfsymLBt2ZNTk10Kyw6HLR+2+8aX+n
+	Xtl2T7tei+XcBK8OlyBHma3TT+3xy37Vc0XjumlP7Zzn7V+u5n9ym+xn5H9Wp+fW18db9794
+	d8KI0e+W8d2Zr1Uf+K6brMRSnJFoqMVcVJwIANJQDAuCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd3048YhBht6xS0ObtW0mPTkPbPF
+	xJWTmS3Wfu1ht+g8+4TZ4vKuOWwWn3uPMFrcPXWUzeL07hIHTo8J/Z8YPXbOusvusXmFlsfi
+	PS+ZPDat6mTz6NuyitFjxerv7B6fN8kFcEQ1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
+	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
+	x8gADSSsYcy49GY7c8FM1ooDOzYwNzCuZ+li5OCQEDCRWH/TuouRE8gUk7hwbz1bFyMXh5DA
+	dEaJ7vlnWUASQgJtTBIXDxqD2GwCOhL/991kB7FFBBQkNvc+YwWxmQW2M0rM/ZQMYgsLREu0
+	zlvHBGKzCKhKvJvezAxi8wp4SPQcecoKsVdBYs4kG5Awp4CnROPtdqhVHhKLHrxlncDIu4CR
+	YRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcLQ9k97BuKrB4hCjAAejEg/vCi3jECHWxLLi
+	ytxDjBIczEoivNbHgEK8KYmVValF+fFFpTmpxYcYTYGOmsgsJZqcD0wEeSXxhsYmZkaWRuaG
+	FkbG5krivAdbrQOFBNITS1KzU1MLUotg+pg4OKUaGJdwnyjdIhRqlbbrVFOC2aF9a6X7pnlb
+	N3vnLLJYpLNccNqpOec/9jS3MP9UmpM978C6l9JdVuxv8nwezX5SdNp7b0LDE6XkuLxznyJk
+	r0xb92nJYg97UYXDXkcf6B0N0GO2WB/7lFe/JaVpwoHcPzGzf3194Onz7uPLY789WGfFKMw/
+	ama6qkWJpTgj0VCLuag4EQBr1HOZzAIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,36 +52,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches contains supporting generic interface to get battery specification
-and of-based battery driver which use the interface.
+To represent thermal limitation of power_supply, it adds 'temperature_max,
+temperature_min' to power_supply_info structure.
 
-Up to now, power supply subsystem assumes that battery's charartric data is
-static and also often left as fuelgauge's role. However, fuelgauge driver or
-any power_supply driver can be worked with different battery with different
-implementation and battery also can be changed even in runtime.
-If so, it needs to notify its change to all related power_supply drivers not
-let them notice all with private way. Thus, it tries to introduce generic
-interface for management of the battery specification.
+Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
+---
+ include/linux/power_supply.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
-In addition to, for the smart battery, this'll help to abstract battery
-interface which can be varied with different batteries. (SDQ, MIPI BIF..)
-
-Jonghwa Lee (3):
-  power: core: Add generic interface to get battery specification.
-  power: core: Add variables related temperature to power_supply_info.
-  power: of_battery: Initial support for of-based battery specification
-    driver.
-
- .../bindings/power_supply/of_battery.txt           |   34 +++++++
- drivers/power/Kconfig                              |    7 ++
- drivers/power/Makefile                             |    1 +
- drivers/power/of_battery.c                         |  100 ++++++++++++++++++++
- drivers/power/power_supply_core.c                  |   91 ++++++++++++++++++
- include/linux/power_supply.h                       |    9 ++
- 6 files changed, 242 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/of_battery.txt
- create mode 100644 drivers/power/of_battery.c
-
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 99306aa..0c8588c 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -241,6 +241,8 @@ struct power_supply_info {
+ 	int charge_empty_design;
+ 	int energy_full_design;
+ 	int energy_empty_design;
++	int temperature_max;
++	int temperature_min;
+ 	int use_for_apm;
+ };
+ 
 -- 
 1.7.9.5
 
