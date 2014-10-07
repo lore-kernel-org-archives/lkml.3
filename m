@@ -1,353 +1,575 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753991AbaJGMQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:16:46 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:60163 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaJGMPO (ORCPT
+	id S1754003AbaJGMQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:16:58 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:43541 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966AbaJGMQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:15:14 -0400
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
-        kamalesh@linux.vnet.ibm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org
-Cc: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v7 3/7] sched: add utilization_avg_contrib
-Date: Tue,  7 Oct 2014 14:13:33 +0200
-Message-Id: <1412684017-16595-4-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
-References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+	Tue, 7 Oct 2014 08:16:51 -0400
+Message-ID: <5433D9AF.8020508@atmel.com>
+Date: Tue, 7 Oct 2014 14:16:47 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <dmaengine@vger.kernel.org>, "Russell King" <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= <antoine@free-electrons.com>,
+        "Thomas Petazzoni" <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        "Gregory Clement" <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation
+ for the dma controller API
+References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com> <1411746035-15882-2-git-send-email-maxime.ripard@free-electrons.com> <7725507.nuHj4C7OxF@avalon>
+In-Reply-To: <7725507.nuHj4C7OxF@avalon>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new statistics which reflect the average time a task is running on the CPU
-and the sum of these running time of the tasks on a runqueue. The latter is
-named utilization_avg_contrib.
+Hi Maxime,
 
-This patch is based on the usage metric that was proposed in the 1st
-versions of the per-entity load tracking patchset by Paul Turner
-<pjt@google.com> but that has be removed afterward. This version differs
-from the original one in the sense that it's not linked to task_group.
+First of all, thanks a lot for this needed documentation.
 
-The rq's utilization_avg_contrib will be used to check if a rq is overloaded
-or not instead of trying to compute how many task a group of CPUs can handle
+I do my little comments on top of Laurent's ones.
 
-Rename runnable_avg_period into avg_period as it is now used with both
-runnable_avg_sum and running_avg_sum
 
-Add some descriptions of the variables to explain their differences
+On 06/10/2014 14:09, Laurent Pinchart :
+> Hi Maxime,
+> 
+> Thank you for working on this. Please see below for a couple of comments in 
+> addition to Randy's proof-reading.
+> 
+> On Friday 26 September 2014 17:40:35 Maxime Ripard wrote:
+>> The dmaengine is neither trivial nor properly documented at the moment,
+>> which means a lot of trial and error development, which is not that good
+>> for such a central piece of the system.
+>>
+>> Attempt at making such a documentation.
+>>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> ---
+>>  Documentation/dmaengine/provider.txt | 358 ++++++++++++++++++++++++++++++++
+>>  1 file changed, 358 insertions(+)
+>>  create mode 100644 Documentation/dmaengine/provider.txt
+>>
+>> diff --git a/Documentation/dmaengine/provider.txt
+>> b/Documentation/dmaengine/provider.txt new file mode 100644
+>> index 000000000000..ba407e706cde
+>> --- /dev/null
+>> +++ b/Documentation/dmaengine/provider.txt
+>> @@ -0,0 +1,358 @@
+>> +DMAengine controller documentation
+>> +==================================
+>> +
+>> +Hardware Introduction
+>> ++++++++++++++++++++++
+>> +
+>> +Most of the Slave DMA controllers have the same general principles of
+>> +operations.
+>> +
+>> +They have a given number of channels to use for the DMA transfers, and
+>> +a given number of requests lines.
+>> +
+>> +Requests and channels are pretty much orthogonal. Channels can be used
+>> +to serve several to any requests. To simplify, channels are the
+>> +entities that will be doing the copy, and requests what endpoints are
+>> +involved.
+>> +
+>> +The request lines actually correspond to physical lines going from the
+>> +DMA-elligible devices to the controller itself. Whenever the device
+>> +will want to start a transfer, it will assert a DMA request (DRQ) by
+>> +asserting that request line.
+>> +
+>> +A very simple DMA controller would only take into account a single
+>> +parameter: the transfer size. At each clock cycle, it would transfer a
+>> +byte of data from one buffer to another, until the transfer size has
+>> +been reached.
+>> +
+>> +That wouldn't work well in the real world, since slave devices might
+>> +require to have to retrieve various number of bits from memory at a
+>> +time. For example, we probably want to transfer 32 bits at a time when
+>> +doing a simple memory copy operation, but our audio device will
+>> +require to have 16 or 24 bits written to its FIFO. This is why most if
+>> +not all of the DMA controllers can adjust this, using a parameter
+>> +called the width.
+> 
+> DMA engines can have buses larger than 32 bits, I would thus phrase that as 
+> follows.
+> 
+> "That wouldn't work well in the real world, since slave devices might require 
+> a specific number of bits to be transfered in a single cycle. For example, we 
+> may want to transfer as much data as the physical bus allows to maximize 
+> performances when doing a simple memory copy operation, but our audio device 
+> could have a narrower FIFO that requires data to be written exactly 16 or 24 
+> bits at a time. This is why most if not all of the DMA controllers can adjust 
+> this, using a parameter called the transfer width."
+> 
+>> +Moreover, some DMA controllers, whenever the RAM is involved, can
+> 
+> s/the RAM is involved/RAM is used as a source or destination/ ?
+> 
+>> +group the reads or writes in memory into a buffer, so instead of
+>> +having a lot of small memory accesses, which is not really efficient,
+>> +you'll get several bigger transfers. This is done using a parameter
+>> +called the burst size, that defines how many single reads/writes it's
+>> +allowed to do in a single clock cycle.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- include/linux/sched.h | 21 +++++++++++++---
- kernel/sched/debug.c  |  9 ++++---
- kernel/sched/fair.c   | 70 +++++++++++++++++++++++++++++++++++++++------------
- kernel/sched/sched.h  |  8 +++++-
- 4 files changed, 84 insertions(+), 24 deletions(-)
+Yes, here "single" word is used for different concepts and can have
+several meanings. We usually make the difference between "single"
+accesses and "burst" accesses.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 18f5262..f6662b6 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1071,15 +1071,28 @@ struct load_weight {
- };
- 
- struct sched_avg {
-+	u64 last_runnable_update;
-+	s64 decay_count;
-+	/*
-+	 * utilization_avg_contrib describes the amount of time that a
-+	 * sched_entity is running on a CPU. It is based on running_avg_sum
-+	 * and is scaled in the range [0..SCHED_LOAD_SCALE].
-+	 * load_avg_contrib described the the amount of time that a
-+	 * sched_entity is runnable on a rq. It is based on both
-+	 * runnable_avg_sum and the weight of the task.
-+	 */
-+	unsigned long load_avg_contrib, utilization_avg_contrib;
- 	/*
- 	 * These sums represent an infinite geometric series and so are bound
- 	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
- 	 * choices of y < 1-2^(-32)*1024.
-+	 * running_avg_sum reflects the time that the sched_entity is
-+	 * effectively running on the CPU.
-+	 * runnable_avg_sum represents the amount of time a sched_entity is on
-+	 * a runqueue which includes the running time that is monitored by
-+	 * running_avg_sum.
- 	 */
--	u32 runnable_avg_sum, runnable_avg_period;
--	u64 last_runnable_update;
--	s64 decay_count;
--	unsigned long load_avg_contrib;
-+	u32 runnable_avg_sum, avg_period, running_avg_sum;
- };
- 
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index ce33780..e0fbc0f 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -71,7 +71,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
- 	if (!se) {
- 		struct sched_avg *avg = &cpu_rq(cpu)->avg;
- 		P(avg->runnable_avg_sum);
--		P(avg->runnable_avg_period);
-+		P(avg->avg_period);
- 		return;
- 	}
- 
-@@ -94,7 +94,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
- 	P(se->load.weight);
- #ifdef CONFIG_SMP
- 	P(se->avg.runnable_avg_sum);
--	P(se->avg.runnable_avg_period);
-+	P(se->avg.avg_period);
- 	P(se->avg.load_avg_contrib);
- 	P(se->avg.decay_count);
- #endif
-@@ -214,6 +214,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
- 			cfs_rq->runnable_load_avg);
- 	SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
- 			cfs_rq->blocked_load_avg);
-+	SEQ_printf(m, "  .%-30s: %ld\n", "utilization_load_avg",
-+			cfs_rq->utilization_load_avg);
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_contrib",
- 			cfs_rq->tg_load_contrib);
-@@ -628,7 +630,8 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
- 	P(se.load.weight);
- #ifdef CONFIG_SMP
- 	P(se.avg.runnable_avg_sum);
--	P(se.avg.runnable_avg_period);
-+	P(se.avg.running_avg_sum);
-+	P(se.avg.avg_period);
- 	P(se.avg.load_avg_contrib);
- 	P(se.avg.decay_count);
- #endif
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9075dee..d6de526 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -678,8 +678,8 @@ void init_task_runnable_average(struct task_struct *p)
- 
- 	p->se.avg.decay_count = 0;
- 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
--	p->se.avg.runnable_avg_sum = slice;
--	p->se.avg.runnable_avg_period = slice;
-+	p->se.avg.runnable_avg_sum = p->se.avg.running_avg_sum = slice;
-+	p->se.avg.avg_period = slice;
- 	__update_task_entity_contrib(&p->se);
- }
- #else
-@@ -1548,7 +1548,7 @@ static u64 numa_get_avg_runtime(struct task_struct *p, u64 *period)
- 		*period = now - p->last_task_numa_placement;
- 	} else {
- 		delta = p->se.avg.runnable_avg_sum;
--		*period = p->se.avg.runnable_avg_period;
-+		*period = p->se.avg.avg_period;
- 	}
- 
- 	p->last_sum_exec_runtime = runtime;
-@@ -2294,7 +2294,8 @@ static u32 __compute_runnable_contrib(u64 n)
-  */
- static __always_inline int __update_entity_runnable_avg(u64 now,
- 							struct sched_avg *sa,
--							int runnable)
-+							int runnable,
-+							int running)
- {
- 	u64 delta, periods;
- 	u32 runnable_contrib;
-@@ -2320,7 +2321,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 	sa->last_runnable_update = now;
- 
- 	/* delta_w is the amount already accumulated against our next period */
--	delta_w = sa->runnable_avg_period % 1024;
-+	delta_w = sa->avg_period % 1024;
- 	if (delta + delta_w >= 1024) {
- 		/* period roll-over */
- 		decayed = 1;
-@@ -2333,7 +2334,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 		delta_w = 1024 - delta_w;
- 		if (runnable)
- 			sa->runnable_avg_sum += delta_w;
--		sa->runnable_avg_period += delta_w;
-+		if (running)
-+			sa->running_avg_sum += delta_w;
-+		sa->avg_period += delta_w;
- 
- 		delta -= delta_w;
- 
-@@ -2343,20 +2346,26 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- 
- 		sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
- 						  periods + 1);
--		sa->runnable_avg_period = decay_load(sa->runnable_avg_period,
-+		sa->running_avg_sum = decay_load(sa->running_avg_sum,
-+						  periods + 1);
-+		sa->avg_period = decay_load(sa->avg_period,
- 						     periods + 1);
- 
- 		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
- 		runnable_contrib = __compute_runnable_contrib(periods);
- 		if (runnable)
- 			sa->runnable_avg_sum += runnable_contrib;
--		sa->runnable_avg_period += runnable_contrib;
-+		if (running)
-+			sa->running_avg_sum += runnable_contrib;
-+		sa->avg_period += runnable_contrib;
- 	}
- 
- 	/* Remainder of delta accrued against u_0` */
- 	if (runnable)
- 		sa->runnable_avg_sum += delta;
--	sa->runnable_avg_period += delta;
-+	if (running)
-+		sa->running_avg_sum += delta;
-+	sa->avg_period += delta;
- 
- 	return decayed;
- }
-@@ -2408,7 +2417,7 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
- 
- 	/* The fraction of a cpu used by this cfs_rq */
- 	contrib = div_u64((u64)sa->runnable_avg_sum << NICE_0_SHIFT,
--			  sa->runnable_avg_period + 1);
-+			  sa->avg_period + 1);
- 	contrib -= cfs_rq->tg_runnable_contrib;
- 
- 	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
-@@ -2461,7 +2470,8 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
--	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
-+	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable,
-+			runnable);
- 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
- }
- #else /* CONFIG_FAIR_GROUP_SCHED */
-@@ -2479,7 +2489,7 @@ static inline void __update_task_entity_contrib(struct sched_entity *se)
- 
- 	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
- 	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
--	contrib /= (se->avg.runnable_avg_period + 1);
-+	contrib /= (se->avg.avg_period + 1);
- 	se->avg.load_avg_contrib = scale_load(contrib);
- }
- 
-@@ -2498,6 +2508,27 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
- 	return se->avg.load_avg_contrib - old_contrib;
- }
- 
-+
-+static inline void __update_task_entity_utilization(struct sched_entity *se)
-+{
-+	u32 contrib;
-+
-+	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
-+	contrib = se->avg.running_avg_sum * scale_load_down(SCHED_LOAD_SCALE);
-+	contrib /= (se->avg.avg_period + 1);
-+	se->avg.utilization_avg_contrib = scale_load(contrib);
-+}
-+
-+static long __update_entity_utilization_avg_contrib(struct sched_entity *se)
-+{
-+	long old_contrib = se->avg.utilization_avg_contrib;
-+
-+	if (entity_is_task(se))
-+		__update_task_entity_utilization(se);
-+
-+	return se->avg.utilization_avg_contrib - old_contrib;
-+}
-+
- static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
- 						 long load_contrib)
- {
-@@ -2514,7 +2545,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
- 					  int update_cfs_rq)
- {
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
--	long contrib_delta;
-+	long contrib_delta, utilization_delta;
- 	u64 now;
- 
- 	/*
-@@ -2526,18 +2557,22 @@ static inline void update_entity_load_avg(struct sched_entity *se,
- 	else
- 		now = cfs_rq_clock_task(group_cfs_rq(se));
- 
--	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
-+	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq,
-+					cfs_rq->curr == se))
- 		return;
- 
- 	contrib_delta = __update_entity_load_avg_contrib(se);
-+	utilization_delta = __update_entity_utilization_avg_contrib(se);
- 
- 	if (!update_cfs_rq)
- 		return;
- 
--	if (se->on_rq)
-+	if (se->on_rq) {
- 		cfs_rq->runnable_load_avg += contrib_delta;
--	else
-+		cfs_rq->utilization_load_avg += utilization_delta;
-+	} else {
- 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
-+	}
- }
- 
- /*
-@@ -2612,6 +2647,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	}
- 
- 	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
-+	cfs_rq->utilization_load_avg += se->avg.utilization_avg_contrib;
- 	/* we force update consideration on load-balancer moves */
- 	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
- }
-@@ -2630,6 +2666,7 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	update_cfs_rq_blocked_load(cfs_rq, !sleep);
- 
- 	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
-+	cfs_rq->utilization_load_avg -= se->avg.utilization_avg_contrib;
- 	if (sleep) {
- 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
- 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-@@ -2967,6 +3004,7 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 		 */
- 		update_stats_wait_end(cfs_rq, se);
- 		__dequeue_entity(cfs_rq, se);
-+		update_entity_load_avg(se, 1);
- 	}
- 
- 	update_stats_curr_start(cfs_rq, se);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 12483d8..35eca7d 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -343,8 +343,14 @@ struct cfs_rq {
- 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
- 	 * This allows for the description of both thread and group usage (in
- 	 * the FAIR_GROUP_SCHED case).
-+	 * runnable_load_avg is the sum of the load_avg_contrib of the
-+	 * sched_entities on the rq.
-+	 * blocked_load_avg is similar to runnable_load_avg except that its
-+	 * the blocked sched_entities on the rq.
-+	 * utilization_load_avg is the sum of the average running time of the
-+	 * sched_entities on the rq.
- 	 */
--	unsigned long runnable_load_avg, blocked_load_avg;
-+	unsigned long runnable_load_avg, blocked_load_avg, utilization_load_avg;
- 	atomic64_t decay_counter;
- 	u64 last_decay;
- 	atomic_long_t removed_load;
+> The burst size defines "how many read or write operations can be queued to 
+> buffers before being flushed to memory". Several clock cycles will still most 
+> likely be needed, the performance improvements here come from the fact that 
+> the accesses can be performed in bursts.
+> 
+>> +Our theorical DMA controller would then only be able to do transfers
+>> +that involve a single contiguous block of data. However, some of the
+>> +transfers we usually have are not, and want to copy data from
+>> +non-contiguous buffers to a contiguous buffer, which is called
+>> +scatter-gather.
+>> +
+>> +DMAEngine, at least for mem2dev transfers, require support for
+>> +scatter-gather. So we're left with two cases here: either we have a
+>> +quite simple DMA controller that doesn't support it, and we'll have to
+>> +implement it in software, or we have a more advanced DMA controller,
+>> +that implements in hardware scatter-gather.
+>> +
+>> +The latter are usually programmed using a collection of chunks to
+>> +transfer, and whenever the transfer is started, the controller will go
+>> +over that collection, doing whatever we programmed there.
+>> +
+>> +This collection is usually either a table or a linked list. You will
+>> +then push either the address of the table and its number of elements,
+>> +or the first item of the list to one channel of the DMA controller,
+>> +and whenever a DRQ will be asserted, it will go through the collection
+>> +to know where to fetch the data from.
+>> +
+>> +Either way, the format of this collection is completely dependent of
+>> +your hardware. Each DMA controller will require a different structure,
+>> +but all of them will require, for every chunk, at least the source and
+>> +destination addresses, wether it should increment these addresses or
+>> +not and the three parameters we saw earlier: the burst size, the bus
+>> +width and the transfer size.
+> 
+> I would talk about "transfer width" here, as the transfer width can be smaller 
+> than the bus width (I've even seen a strange case of a transfer width larger 
+> than the physical bus width).
+> 
+>> +The one last thing is that usually, slave devices won't issue DRQ by
+>> +default, and you have to enable this in your slave device driver first
+>> +whenever you're willing to use DMA.
+>> +
+>> +These were just the general memory-to-memory (also called mem2mem) or
+>> +memory-to-device (mem2dev) transfers. Other kind of transfers might be
+>> +offered by your DMA controller, and are probably already supported by
+>> +dmaengine.
+
+I don't understand this part as you were talking about mem2dev and slave
+devices just above. I would just remove this last paragraph...
+
+>> +
+>> +DMA Support in Linux
+>> +++++++++++++++++++++
+>> +
+>> +Historically, DMA controller driver have been implemented using the
+> 
+> s/driver/drivers/
+> 
+>> +async TX API, to offload operations such as memory copy, XOR,
+>> +cryptography, etc, basically any memory to memory operation.
+>> +
+>> +Over the time, the need for memory to device transfers arose, and
+>> +dmaengine was extended. Nowadays, the async TX API is written as a
+>> +layer on top of dmaengine, and act as a client. Still, dmaengine
+>> +accomodates that API in some cases, and made some design choices to
+>> +ensure that it stayed compatible.
+>> +
+>> +For more information on the Async TX API, please look the relevant
+>> +documentation file in Documentation/crypto/async-tx-api.txt.
+>> +
+>> +DMAEngine Registration
+>> +++++++++++++++++++++++
+>> +
+>> +struct dma_device Initialization
+>> +--------------------------------
+>> +
+>> +Just like any other kernel framework, the whole DMAEngine registration
+>> +relies on the driver filling a structure and registering against the
+>> +framework. In our case, that structure is dma_device.
+>> +
+>> +The first thing you need to do in your driver is to allocate this
+>> +structure. Any of the usual memory allocator will do, but you'll also
+>> +need to initialize a few fields in there:
+>> +
+>> +  * chancnt:	should be the number of channels your driver is exposing
+>> +		to the system.
+>> +		This doesn't have to be the number of physical
+>> +		channels: some DMA controllers also expose virtual
+>> +		channels to the system to overcome the case where you
+>> +		have more consumers than physical channels available.
+> 
+> If I'm not mistaken the dma_async_register_device() function sets chancnt 
+> internally.
+> 
+>> +  * channels:	should be initialized as a list using the
+>> +		INIT_LIST_HEAD macro for example
+> 
+> More than that, drivers must fill that list before calling 
+> dma_async_register_device().
+> 
+>> +  * dev: 	should hold the pointer to the struct device associated
+>> +		to your current driver instance.
+>> +
+>> +Supported transaction types
+>> +---------------------------
+>> +The next thing you need is to actually set which transaction type your
+> 
+> You can drop the "actually".
+> 
+> s/type/types/
+> 
+>> +device (and driver) supports.
+>> +
+>> +Our dma_device structure has a field called caps_mask that holds the
+> 
+> s/caps_mask/cap_mask/
+> 
+>> +various types of transaction supported, and you need to modify this
+>> +mask using the dma_cap_set function, with various flags depending on
+>> +transaction types you support as an argument.
+>> +
+>> +All those capabilities are defined in the dma_transaction_type enum,
+>> +in include/linux/dmaengine.h
+>> +
+>> +Currently, the types available are:
+>> +  * DMA_MEMCPY
+>> +    - The device is able to do memory to memory copies
+>> +
+>> +  * DMA_XOR
+>> +    - The device is able to perform XOR operations on memory areas
+>> +    - Particularly useful to accelerate XOR intensive tasks, such as
+> 
+> s/- Particularly useful/  Used to/ ?
+> 
+>> +      RAID5
+>> +
+>> +  * DMA_XOR_VAL
+>> +    - The device is able to perform parity check using the XOR
+>> +      algorithm against a memory buffer.
+>> +
+>> +  * DMA_PQ
+>> +    - The device is able to perform RAID6 P+Q computations, P being a
+>> +      simple XOR, and Q being a Reed-Solomon algorithm.
+>> +
+>> +  * DMA_PQ_VAL
+>> +    - The device is able to perform parity check using RAID6 P+Q
+>> +      algorithm against a memory buffer.
+>> +
+>> +  * DMA_INTERRUPT
+>> +    /* TODO: Is it that the device has one interrupt per channel? */
+> 
+> If I'm not mistaken DMA_INTERRUPT means the device supports the 
+> device_prep_dma_interrupt() operation, which prepares a dummy transfer that 
+> will not transfer any data but will generate an interrupt, calling the 
+> complete callback.
+> 
+>> +
+>> +  * DMA_SG
+>> +    - The device supports memory to memory scatter-gather
+>> +      transfers.
+>> +    - Even though a plain memcpy can look like a particular case of a
+>> +      scatter-gather transfer, with a single chunk to transfer, it's a
+>> +      distinct transaction type in the mem2mem transfers case
+>> +
+>> +  * DMA_PRIVATE
+>> +    - The devices only supports slave transfers, and as such isn't
+>> +      avaible for async transfers.
+>> +
+>> +  * DMA_ASYNC_TX
+>> +    - Must not be set by the device, and will be set by the framework
+>> +      if needed
+>> +    - /* TODO: What is it about? */
+>> +
+>> +  * DMA_SLAVE
+>> +    - The device can handle device to memory transfers, including
+>> +      scatter-gather transfers.
+>> +    - While in the mem2mem case we were having two distinct types to
+>> +      deal with a single chunk to copy or a collection of them, here,
+>> +      we just have a single transaction type that is supposed to
+>> +      handle both.
+
+For transferring an unique buffer, simply build a collection with only
+one element.
+
+>> +
+>> +  * DMA_CYCLIC
+>> +    - The device can handle cyclic transfers.
+>> +    - A cyclic transfer is a transfer where the chunk collection will
+>> +      loop over itself, with the last item pointing to the first. It's
+>> +      usually used for audio transfers, where you want to operate on a
+>> +      single big buffer that you will fill with your audio data.
+> 
+> The buffer doesn't have to be big, I would s/big buffer/ring buffer/.
+> 
+>> +
+>> +  * DMA_INTERLEAVE
+>> +    - The device supports interleaved transfer. Those transfers
+>> +      usually involve an interleaved set of data, with chunks a few
+>> +      bytes wide, where a scatter-gather transfer would be quite
+>> +      inefficient.
+
+Well, I don't know if it is related to efficiency. It is more another
+pattern for the transfer which is described by a "template": struct
+dma_interleaved_template.
+This mode is extremely flexible and due to its use of a different
+scatter-gather for source and destination can implement any memory
+organization. Think about 2D objects on a screen or picture-in-picture
+mode with consecutive addresses, holes, edges and frames boundaries.
+
+
+> This is typically used to transfer 2D content such as uncompressed video.
+> 
+>> +These various types will also affect how the source and destination
+>> +addresses change over time, as DMA_SLAVE transfers will usually have
+>> +one of the addresses that will increment, while the other will not,
+>> +DMA_CYCLIC will have one address that will loop, while the other, will
+> 
+> s/the other,/the other/
+> 
+>> +not change, etc.
+
+This is a little bit vague in my opinion. And usually, it is pretty
+implementation specific.
+
+
+>> +Device operations
+>> +-----------------
+>> +
+>> +Our dma_device structure also requires a few function pointers in
+>> +order to implement the actual logic, now that we described what
+>> +operations we were able to perform.
+>> +
+>> +The functions that we have to fill in there, and hence have to
+>> +implement, obviously depend on the transaction types you reported as
+>> +supported.
+>> +
+>> +   * device_alloc_chan_resources
+>> +   * device_free_chan_resources
+>> +     - These functions will be called whenever a driver will call
+>> +       dma_request_channel or dma_release_channel for the first/last
+>> +       time on the channel associated to that driver.
+>> +     - They are in charge of allocating/freeing all the needed
+>> +       resources in order for that channel to be useful for your
+>> +       driver.
+>> +     - These functions can sleep.
+>> +
+>> +   * device_prep_dma_*
+>> +     - These functions are matching the capabilities you registered
+>> +       previously.
+>> +     - These functions all take the buffer or the scatterlist relevant
+>> +       for the transfer being prepared, and should create a hardware
+>> +       descriptor or a list of descriptors from it
+>> +     - These functions can be called from an interrupt context
+>> +     - Any allocation you might do should be using the GFP_NOWAIT
+>> +       flag, in order not to potentially sleep, but without depleting
+>> +       the emergency pool either.
+> 
+> You could add "Drivers should try to preallocate the data structures they 
+> require to prepare a transfer."
+> 
+>> +
+>> +     - It should return a unique instance of the
+>> +       dma_async_tx_descriptor structure, that further represents this
+>> +       particular transfer.
+>> +
+>> +     - This structure can be allocated using the function
+>> +       dma_async_tx_descriptor_init.
+> 
+> That function only initializes the tx descriptor, it doesn't allocate it.
+
+Beware, it can be confusing when mixing "descriptors" and "hardware
+descriptors". The ones used by the DMA controller itself to describe the
+chunks of data (hardware descriptors) and the ones that would represent
+them in the driver (tx descriptors). However, it's true that both must
+be prepared by this set of functions.
+
+
+>> +     - You'll also need to set two fields in this structure:
+>> +       + flags:
+>> +		TODO: Can it be modified by the driver itself, or
+>> +		should it be always the flags passed in the arguments
+>> +
+>> +       + tx_submit:	A pointer to a function you have to implement,
+>> +			that is supposed to push the current descriptor
+>> +			to a pending queue, waiting for issue_pending to
+>> +			be called.
+
+The question remains: why wait when all the information is already
+prepared and available for the DMA controller to start the job?
+Actually, we don't wait in at_hdmac, just to be more efficient, but I
+known that we kind of break this "requirement"... But sorry, it is
+another discussion which should be lead elsewhere.
+
+
+>> +
+>> +   * device_issue_pending
+>> +     - Takes the first descriptor in the pending queue, and starts the
+>> +       transfer. Whenever that transfer is done, it should move to the
+>> +       next transaction in the list.
+>> +     - It should call the registered callback if any each time a
+>> +       transaction is done.
+
+Can you clarify this?
+
+
+>> +     - This function can be called in an interrupt context
+>> +
+>> +   * device_tx_status
+>> +     - Should report the bytes left to go over on the given channel
+
+The first aim of this function is to poll for transaction completion, if
+I recall well. It reports also if there was an error during the transfer.
+
+Moreover, I think it is not the number of "bytes" left, but the number
+of bytes using a granularity as described in enum
+dma_residue_granularity. All this depending on the capability of the
+controller to report such a value.
+
+
+>> +     - Should also only concern about the given descriptor, not the
+>> +       currently active one.
+> 
+> I have to guess what you mean here :-)
+> 
+>> +     - The tx_state argument might be NULL
+>> +     - Should use dma_set_residue to report it
+>> +     - In the case of a cyclic transfer, it should only take into
+>> +       account the current period.
+>> +     - This function can be called in an interrupt context.
+>> +
+>> +   * device_control
+>> +     - Used by client drivers to control and configure the channel it
+>> +       has a handle on.
+>> +     - Called with a command and an argument
+>> +       + The command is one of the values listed by the enum
+>> +         dma_ctrl_cmd. To this date, the valid commands are:
+> 
+> s/To this date, the/The/
+> 
+>> +         + DMA_RESUME
+>> +           + Restarts a transfer on the channel
+>> +           + This command should operate synchronously on the channel,
+>> +             resuming right away the work of the given channel
+>> +         + DMA_PAUSE
+>> +           + Pauses a transfer on the channel
+>> +           + This command should operate synchronously on the channel,
+>> +             pausing right away the work of the given channel
+> 
+> I think you should list DMA_PAUSE first, and then explain that DMA_RESUME 
+> resumes operation of a paused channel.
+> 
+>> +         + DMA_TERMINATE_ALL
+>> +           + Aborts all the pending and ongoing transfers on the
+>> +             channel
+>> +           + This command should operate synchronously on the channel,
+>> +             terminating right away all the channels
+
+Is it a strong requirement to "terminate right away" all the transfers
+on the channel? Must the ongoing transfer be stopped of can it ends its
+current chunk?
+
+
+>> +         + DMA_SLAVE_CONFIG
+>> +           + Reconfigures the channel with passed configuration
+>> +           + This command should NOT perform synchronously, or on any
+>> +             currently queued transfers, but only on subsequent ones
+>> +           + In this case, the function will receive a
+>> +             dma_slave_config structure pointer as an argument, that
+>> +             will detail which configuration to use.
+>> +           + Even though that structure contains a direction field,
+>> +             this field is deprecated in favor of the direction
+>> +             argument given to the prep_* functions
+>> +         + FSLDMA_EXTERNAL_START
+>> +           + TODO: Why does that even exist?
+>> +       + The argument is an opaque unsigned long. This actually is a
+>> +         pointer to a struct dma_slave_config that should be used only
+>> +         in the DMA_SLAVE_CONFIG.
+>> +
+>> +  * device_slave_caps
+>> +    - Called through the framework by client drivers in order to have
+>> +      an idea of what are the properties of the channel allocated to
+>> +      them.
+>> +    - Such properties are the buswidth, available directions, etc.
+>> +    - Required for every generic layer doing DMA transfers, such as
+>> +      ASoC.
+>> +
+>> +Misc notes (stuff that should be documented, but don't really know
+>> +where to put them)
+>> +------------------------------------------------------------------
+>> +  * dma_run_dependencies
+>> +    - Should be called at the end of an async TX transfer, and can be
+>> +      ignored ine the slave transfers case.
+> 
+> s/ine/in/
+> 
+>> +    - Makes sure that dependent operations are run before marking it
+>> +      as complete.
+>> +
+>> +  * dma_cookie_t
+>> +    - it's a DMA transaction ID, that will increment over time.
+>> +    - Not really relevant anymore since the introduction of virt-dma
+>> +      that abstracts it away.
+>> +
+>> +  * DMA_CTRL_ACK
+>> +    - Undocumented feature
+>> +    - No one really has an idea of what's it's about, beside being
+>> +      related to reusing the DMA descriptors or having additional
+>> +      transactions added to it in the async-tx API
+>> +    - Useless in the case of the slave API
+>> +
+>> +General Design Notes
+>> +--------------------
+>> +
+>> +Most of the DMAEngine drivers you'll see all are based on a similar
+>> +design that handles the end of transfer interrupts in the handler, but
+>> +defer most work to a tasklet, including the start of a new transfer
+>> +whenever the previous transfer ended.
+>> +
+>> +This is a rather inefficient design though, because the inter-transfer
+>> +latency will be not only the interrupt latency, but also the
+>> +scheduling latency of the tasklet, which will leave the channel idle
+>> +in between, which will slow down the global transfer rate.
+>> +
+>> +You should avoid this kind of pratice, and instead of electing a new
+>> +transfer in your tasklet, move that part to the interrupt handler in
+>> +order to have a shorter idle window (that we can't really avoid
+>> +anyway).
+>> +
+>> +Glossary
+>> +--------
+>> +
+>> +Burst:		Usually a few contiguous bytes that will be transfered
+>> +		at once by the DMA controller
+> 
+> A number of consecutive read or write operations that can be queued to buffers 
+> before being flushed to memory.
+> 
+>> +Chunk:		A contiguous collection of bursts
+>> +Transfer:	A collection of chunks (be it contiguous or not)
+> 
+
+
 -- 
-1.9.1
-
+Nicolas Ferre
