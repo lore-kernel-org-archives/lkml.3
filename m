@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbaJGQ5P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:57:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999AbaJGQ5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:57:12 -0400
-Date: Tue, 7 Oct 2014 12:56:57 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] mm/hugetlb: fix getting refcount 0 page in
- hugetlb_fault()
-Message-ID: <20141007165657.GB24093@nhori.bos.redhat.com>
-References: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1410820799-27278-4-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.LSU.2.11.1409292132370.4640@eggly.anvils>
+	id S1754724AbaJGQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:58:54 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60018 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753242AbaJGQ6q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 12:58:46 -0400
+Date: Tue, 7 Oct 2014 17:58:35 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Rob Landley <rob@landley.net>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "lguest@lists.ozlabs.org" <lguest@lists.ozlabs.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linux-am33-list@redhat.com" <linux-am33-list@redhat.com>,
+        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-hexagon@vger.kernel.org" <linux-hexagon@vger.kernel.org>,
+        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>
+Subject: Re: [PATCH 05/44] mfd: as3722: Drop reference to pm_power_off from
+ devicetree bindings
+Message-ID: <20141007165835.GE27216@leverpostej>
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+ <1412659726-29957-6-git-send-email-linux@roeck-us.net>
+ <543412F7.8040909@landley.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1409292132370.4640@eggly.anvils>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <543412F7.8040909@landley.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 09:52:24PM -0700, Hugh Dickins wrote:
-> On Mon, 15 Sep 2014, Naoya Horiguchi wrote:
-> > When running the test which causes the race as shown in the previous patch,
-> > we can hit the BUG "get_page() on refcount 0 page" in hugetlb_fault().
+On Tue, Oct 07, 2014 at 05:21:11PM +0100, Rob Landley wrote:
+> On 10/07/14 00:28, Guenter Roeck wrote:
+> > Devicetree bindings are supposed to be operating system independent
+> > and should thus not describe how a specific functionality is implemented
+> > in Linux.
 > 
-> Two minor comments...
-> 
-> > @@ -3192,22 +3208,19 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> > 	 * Note that locking order is always pagecache_page -> page,
-> >  	 * so no worry about deadlock.
-> 
-> That sentence of comment is stale and should be deleted,
-> now that you're only doing a trylock_page(page) here.
+> So your argument is that linux/Documentation/devicetree/bindings should
+> not be specific to Linux. Merely hosted in the Linux kernel source
+> repository.
 
-OK, I'll delete it.
+Precisely. If nothing else as a general guideline this keeps us honest,
+and prevents us from embedding arbitrary implementation details into
+bidnings that cause pain later when we want to change things at either
+end.
 
-> >  out_mutex:
-> >  	mutex_unlock(&htlb_fault_mutex_table[hash]);
-> > +	if (need_wait_lock)
-> > +		wait_on_page_locked(page);
-> >  	return ret;
-> >  }
-> 
-> It will be hard to trigger any problem from this (I guess it would
-> need memory hotremove), but you ought really to hold a reference to
-> page while doing a wait_on_page_locked(page).
+There are already otehr users of these bindings, so we can't really
+claim they're strictly Linux-specific anyhow.
 
-I'll do that.
+> Well that's certainly a point of view.
+
+As far as I am aware, it's the point of view shared by the device tree
+maintainers, and it's been that way for a while.
+
+I don't really follow your concern. For one thing were this followed
+more strictly this file wouldn't need patching at all to correct for
+this Linux-internal rework...
 
 Thanks,
-Naoya Horiguchi
+Mark.
