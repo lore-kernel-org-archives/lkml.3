@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683AbaJGXYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:24:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
+	id S932743AbaJGXZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:25:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39877 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932420AbaJGXUV (ORCPT
+	with ESMTP id S932401AbaJGXUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:21 -0400
+	Tue, 7 Oct 2014 19:20:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 04/13] ring-buffer: Fix infinite spin in reading buffer
-Date: Tue,  7 Oct 2014 16:20:09 -0700
-Message-Id: <20141007231920.054578946@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/13] 3.10.57-stable review
+Date: Tue,  7 Oct 2014 16:20:05 -0700
+Message-Id: <20141007231919.924479934@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
-References: <20141007231919.924479934@linuxfoundation.org>
 User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.57 release.
+There are 13 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Thu Oct  9 23:19:13 UTC 2014.
+Anything received after that time might be too late.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.57-rc1.gz
+and the diffstat can be found below.
 
-commit 24607f114fd14f2f37e3e0cb3d47bce96e81e848 upstream.
+thanks,
 
-Commit 651e22f2701b "ring-buffer: Always reset iterator to reader page"
-fixed one bug but in the process caused another one. The reset is to
-update the header page, but that fix also changed the way the cached
-reads were updated. The cache reads are used to test if an iterator
-needs to be updated or not.
+greg k-h
 
-A ring buffer iterator, when created, disables writes to the ring buffer
-but does not stop other readers or consuming reads from happening.
-Although all readers are synchronized via a lock, they are only
-synchronized when in the ring buffer functions. Those functions may
-be called by any number of readers. The iterator continues down when
-its not interrupted by a consuming reader. If a consuming read
-occurs, the iterator starts from the beginning of the buffer.
+-------------
+Pseudo-Shortlog of commits:
 
-The way the iterator sees that a consuming read has happened since
-its last read is by checking the reader "cache". The cache holds the
-last counts of the read and the reader page itself.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.57-rc1
 
-Commit 651e22f2701b changed what was saved by the cache_read when
-the rb_iter_reset() occurred, making the iterator never match the cache.
-Then if the iterator calls rb_iter_reset(), it will go into an
-infinite loop by checking if the cache doesn't match, doing the reset
-and retrying, just to see that the cache still doesn't match! Which
-should never happen as the reset is suppose to set the cache to the
-current value and there's locks that keep a consuming reader from
-having access to the data.
+Stratos Karafotis <stratosk@semaphore.gr>
+    cpufreq: ondemand: Change the calculation of target frequency
 
-Fixes: 651e22f2701b "ring-buffer: Always reset iterator to reader page"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Andreas Schwab <schwab@linux-m68k.org>
+    cpufreq: Fix wrong time unit conversion
 
----
- kernel/trace/ring_buffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Johannes Berg <johannes.berg@intel.com>
+    nl80211: clear skb cb before passing to netlink
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3371,7 +3371,7 @@ static void rb_iter_reset(struct ring_bu
- 	iter->head = cpu_buffer->reader_page->read;
- 
- 	iter->cache_reader_page = iter->head_page;
--	iter->cache_read = iter->head;
-+	iter->cache_read = cpu_buffer->read;
- 
- 	if (iter->head)
- 		iter->read_stamp = cpu_buffer->read_stamp;
+Lars Ellenberg <lars.ellenberg@linbit.com>
+    drbd: fix regression 'out of mem, failed to invoke fence-peer helper'
+
+Andrew Hunter <ahh@google.com>
+    jiffies: Fix timeval conversion to jiffies
+
+NeilBrown <neilb@suse.de>
+    md/raid5: disable 'DISCARD' by default due to safety concerns.
+
+Hans Verkuil <hans.verkuil@cisco.com>
+    media: vb2: fix VBI/poll regression
+
+Mel Gorman <mgorman@suse.de>
+    mm: numa: Do not mark PTEs pte_numa when splitting huge pages
+
+Waiman Long <Waiman.Long@hp.com>
+    mm, thp: move invariant bug check out of loop in __split_huge_page_map
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    ring-buffer: Fix infinite spin in reading buffer
+
+Josh Triplett <josh@joshtriplett.org>
+    init/Kconfig: Fix HAVE_FUTEX_CMPXCHG to not break up the EXPERT menu
+
+Peter Zijlstra <peterz@infradead.org>
+    perf: fix perf bug in fork()
+
+Jan Kara <jack@suse.cz>
+    udf: Avoid infinite loop when processing indirect ICBs
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                 |  4 +--
+ drivers/block/drbd/drbd_nl.c             |  6 ++++
+ drivers/cpufreq/cpufreq_governor.c       | 10 +-----
+ drivers/cpufreq/cpufreq_governor.h       |  1 -
+ drivers/cpufreq/cpufreq_ondemand.c       | 39 +++++------------------
+ drivers/cpufreq/cpufreq_stats.c          |  2 +-
+ drivers/md/raid5.c                       | 18 ++++++++++-
+ drivers/media/v4l2-core/videobuf2-core.c | 15 +++++++--
+ fs/udf/inode.c                           | 35 ++++++++++++---------
+ include/linux/jiffies.h                  | 12 -------
+ include/media/videobuf2-core.h           |  4 +++
+ init/Kconfig                             |  1 +
+ kernel/events/core.c                     |  4 ++-
+ kernel/fork.c                            |  5 +--
+ kernel/time.c                            | 54 ++++++++++++++++++--------------
+ kernel/trace/ring_buffer.c               |  2 +-
+ mm/huge_memory.c                         | 11 ++++---
+ net/wireless/nl80211.c                   |  6 ++++
+ 18 files changed, 123 insertions(+), 106 deletions(-)
 
 
