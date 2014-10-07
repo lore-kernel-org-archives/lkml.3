@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816AbaJGGdW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 02:33:22 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32702 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaJGGdV (ORCPT
+	id S1752883AbaJGGhk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 02:37:40 -0400
+Received: from mail-ig0-f201.google.com ([209.85.213.201]:60317 "EHLO
+	mail-ig0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaJGGhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 02:33:21 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-2c-5433892ef61e
-Message-id: <5433892C.80109@samsung.com>
-Date: Tue, 07 Oct 2014 08:33:16 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com, andrzej.p@samsung.com,
-        k.opasiak@samsung.com
-Subject: Re: [PATCH] usb: gadget: f_fs: add "zombie" mode
-References: <1412594714-535-1-git-send-email-r.baldyga@samsung.com>
- <20141007022851.GA13956@saruman>
-In-reply-to: <20141007022851.GA13956@saruman>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xy7p6ncYhBvc+iljMetnOYnHwfr1F
-	8+L1bBa3J05js7i8aw6bxaJlrcwWC463sDqwe+yfu4bdY92fV0wefVtWMXocv7GdyePzJrkA
-	1igum5TUnMyy1CJ9uwSujPetdxgLbktUzFh2gKmB8YNwFyMnh4SAicTWrXuZIWwxiQv31rN1
-	MXJxCAksZZTofrqPBcL5yCjxddEZsCpeAQ2JdSdmsoPYLAKqEhN6FoPF2QR0JLZ8n8AIYosK
-	REicvLuHHaJeUOLH5HssILaIgIDE+heX2EGGMgvMYZS4s+4HWLOwgKXEvEVzgWwOoG1pEvd3
-	K4GEOQV0JTrm/mMFCTML6Encv6gFEmYWkJfYvOYt8wRGgVlINsxCqJqFpGoBI/MqRtHU0uSC
-	4qT0XEO94sTc4tK8dL3k/NxNjJAA/7KDcfExq0OMAhyMSjy8GwyNQ4RYE8uKK3MPMUpwMCuJ
-	8G6pAArxpiRWVqUW5ccXleakFh9iZOLglGpgnCibPmHVYSfnrOOM2Vw5gpEZIZfLed1mqrBE
-	ah7Z4f3d+hzfDKFlL08bxlUET10rvWuyl4BX7on+r2onC630j6+4LG4YxbaktmRBZssry8um
-	bO+ru/qcA+vvWfwrm1lzY3Xth7kcjr+6uqSehhUz3NjybumtOxVi7hnPWt598Mr4O/P2iYha
-	JZbijERDLeai4kQAUjvKrE4CAAA=
+	Tue, 7 Oct 2014 02:37:38 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <marc.zyngier@arm.com>, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Nathan Lynch <Nathan_Lynch@mentor.com>, robh+dt@kernel.org,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: [PATCH v3] clocksource: arch_timer: Allow the device tree to specify uninitialized CNTVOFF
+Date: Mon,  6 Oct 2014 23:37:32 -0700
+Message-Id: <1412663852-32681-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 04:28 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Oct 06, 2014 at 01:25:14PM +0200, Robert Baldyga wrote:
->> Since we can compose gadgets from many functions, there is the problem
->> related to gadget breakage while FunctionFS daemon being closed. In some
->> cases it's strongly desired to keep gadget alive for a while, despite
->> FunctionFS files are closed, to allow another functions to complete
->> some presumably critical operations.
->>
->> For this purpose this patch introduces "zombie" mode. It can be enabled
->> by setting mount option "zombie=1", and results with defering function
->> closure to the moment of reopening ep0 file or filesystem umount.
->>
->> When ffs->state == FFS_ZOMBIE:
->> - function is still binded and visible to host,
->> - setup requests are automatically stalled,
->> - all another transfers are refused,
->> - opening ep0 causes function close, and then FunctionFS is ready for
->>   descriptors and string write,
->> - umount of functionfs cause function close.
->>
->> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> 
-> Can you further explain how do you trigger this ? Do I understand
-> correctly that you composed a gadget using configfs and that gadget has
-> functionfs + another gadget ?
-> 
+From: Doug Anderson <dianders@chromium.org>
 
-Yes, I compose configfs gadget from functionfs + another gadget, and
-when functionfs daemon closes ep files, entire gadget get disconnected
-from host. FFS function is userspace code so there is no way to know
-when it will close files (it doesn't matter what is the reason of this
-situation, it can be daemon logic, program breakage, process kill or any
-other). So when we have another function in gadget which, for example,
-sends some amount of data, does some software update or implements some
-real-time functionality, we may want to keep the gadget connected
-despite FFS function is no longer functional. We can't just remove one
-of functions from gadget since it has been enumerated, so the only way
-we can do that is to make broken FFS function "zombie". It will be still
-visible to host but it will no longer implement it's functionality.
+Some 32-bit (ARMv7) systems are architected like this:
 
-> Then what do you need to do the trigger the issue, and what really _is_
-> the issue ? Is gadget disconnecting from host too early ? Do you see a
-> crash ? Memory leak ? Any logs available ? Any steps to reproduce ?
-> 
+* The firmware doesn't know and doesn't care about hypervisor mode and
+  we don't want to add the complexity of hypervisor there.
 
-You simply compose gadget from, for example, ethernet and functionfs.
-You try to send some huge file through ftp, and in meantime FFS function
-breaks. If FFS hasn't enabled "zombie" mode, entire gadget will be
-disconnected and data transmission will fail. If "zombie" mode is
-enabled, then FFS function after daemon breakage will become "zombie"
-and will be nonfunctional, but ethernet gadget will be still active and
-data transfer will be completed.
+* The firmware isn't involved in SMP bringup or resume.
 
-> Quite frankly, I don't really like this "zombie" mode. <joke> I know
-> there's a "The Walking Dead" hype right now, but this is too much.
-> </joke>
->
+* The ARCH timer come up with an uninitialized offset (CNTVOFF)
+  between the virtual and physical counters.  Each core gets a
+  different random offset.
 
-I see, but after all I couldn't find more descriptive name for this feature.
+* The device boots in "Secure SVC" mode.
 
-> Anyway, please giver me further details of how to get this done.
-> 
+* Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+  CNTHCTL.PL1PCTEN (both default to 1 at reset)
 
-Best regards,
-Robert Baldyga
+On systems like the above, it doesn't make sense to use the virtual
+counter.  There's nobody managing the offset and each time a core goes
+down and comes back up it will get reinitialized to some other random
+value.
+
+This adds an optional property which can inform the kernel of this
+situation, and firmware is free to remove the property if it is going
+to initialize the CNTVOFF registers when each CPU comes out of reset.
+
+Currently, the best course of action in this case is to use the
+physical timer, which is why it is important that CNTHCTL hasn't been
+changed from its reset value and it's a reasonable assumption given
+that the firmware has never entered HYP mode.
+
+Note that it's been said that ARM64 (ARMv8) systems the firmware and
+kernel really can't be architected as described above.  That means
+using the physical timer like this really only makes sense for ARMv7
+systems.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+---
+Changes in v2:
+- Add "#ifdef CONFIG_ARM" as per Will Deacon
+
+Changes in v3:
+- change property name to arm,cntvoff-not-fw-configured and specify
+  that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
+  of 1 as per Mark Rutland
+---
+ Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
+ drivers/clocksource/arm_arch_timer.c                 | 9 +++++++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+index 37b2caf..67837c9 100644
+--- a/Documentation/devicetree/bindings/arm/arch_timer.txt
++++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+@@ -22,6 +22,14 @@ to deliver its interrupts via SPIs.
+ - always-on : a boolean property. If present, the timer is powered through an
+   always-on power domain, therefore it never loses context.
+ 
++** Optional properties:
++
++- arm,cntvoff-not-fw-configured : Firmware does not initialize
++  CNTVOFF, which may reset to arbitrary and different values on each
++  CPU.  CNTHCTL.PL1PC(T)EN must both be 1, which is the reset value
++  specificed by the architecture.   Only supported for ARM (not ARM64).
++
++
+ Example:
+ 
+ 	timer {
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index bd8da15..234d7b9 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -668,6 +668,15 @@ static void __init arch_timer_init(struct device_node *np)
+ 		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+ 	arch_timer_detect_rate(NULL, np);
+ 
++#ifdef CONFIG_ARM
++	/*
++	 * If we cannot rely on firmware initializing the CNTVOFF then
++	 * we should use the physical timers instead.
++	 */
++	if (of_property_read_bool(np, "arm,cntvoff-not-fw-configured"))
++		arch_timer_use_virtual = false;
++#endif
++
+ 	/*
+ 	 * If HYP mode is available, we know that the physical timer
+ 	 * has been configured to be accessible from PL1. Use it, so
+-- 
+1.8.3.2
+
