@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514AbaJGIqi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 04:46:38 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:57074 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaJGIqd (ORCPT
+	id S1753354AbaJGIuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 04:50:52 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:46381 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753049AbaJGIuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 04:46:33 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-3c-5433a8667472
-Message-id: <5433A863.1040206@samsung.com>
-Date: Tue, 07 Oct 2014 10:46:27 +0200
-From: =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@kernel.org>
-Cc: kernel@pengutronix.de, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] regulator: Set ena_gpio_valid in regulator drivers
-References: <1412626635-7404-1-git-send-email-mpa@pengutronix.de>
- <1412626635-7404-3-git-send-email-mpa@pengutronix.de>
-In-reply-to: <1412626635-7404-3-git-send-email-mpa@pengutronix.de>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xy7ppK4xDDBb9UrOY+vAJm8XrF4YW
-	q6buZLH4dqWDyWLT42usFpd3zWGzOHW7l92B3WPnrLvsHptWdbJ5bF5S79H/18Cjb8sqRo/P
-	m+QC2KK4bFJSczLLUov07RK4Mu5MeM1U8Ia74vC6LsYGxnucXYwcHBICJhLfj0h2MXICmWIS
-	F+6tZ+ti5OIQEljKKPFi9hEmkISQwGdGiYWPVEFsXgEtiaYT81lBbBYBVYlN+24wgthsAh4S
-	0773MIPYogIREifv7mGHqBeU+DH5HguILSLgKbFu3V1WkAXMAi2MEjf3HwZbICzgLfHt/kZ2
-	iGWVEovevwNr4BRwkrg4/QobiM0sYCbxqGUdM4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsY
-	RVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQgL9yw7GxcesDjEKcDAq8fBuMDQOEWJNLCuuzD3E
-	KMHBrCTCu6UCKMSbklhZlVqUH19UmpNafIiRiYNTqoExYX/v/ZiPNdwH9ZqeaZ04K7mmr7ix
-	/PGNBdn+vEEOjnNlU9uNNY+rna739Te7I60Rqzwj2OPgOje1LQv/VRzuYrt8ieVO1KODygXr
-	NK/MSMp3K7jsdv/3Y9v7PXwHmj7mWh2Y92qd3CzJBpGS2Y2Xi6/Mk7vA5ee3fa+T3G7J5/ms
-	/5JbmGKUWIozEg21mIuKEwEcoke1UgIAAA==
+	Tue, 7 Oct 2014 04:50:51 -0400
+X-IronPort-AV: E=Sophos;i="5.04,668,1406563200"; 
+   d="scan'208";a="36896659"
+From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+CC: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] sched: updated comments of CLONE_NEWNS
+Thread-Topic: [PATCH] sched: updated comments of CLONE_NEWNS
+Thread-Index: AQHP4XGl/babsTp0b0KIguFTyFnADZwkTQzQ
+Date: Tue, 7 Oct 2014 08:50:52 +0000
+Message-ID: <5871495633F38949900D2BF2DC04883E5DC9BC@G08CNEXMBPEKD02.g08.fujitsu.local>
+References: <1412587493-10547-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+ <20141006142713.GA26187@ubuntumail>
+In-Reply-To: <20141006142713.GA26187@ubuntumail>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.226.240]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s978oviv014841
 
-On 06.10.2014 22:17, Markus Pargmann wrote:
-> This patch sets the new field ena_gpio_valid for all drivers which set a
-> valid ena_gpio.
->
-> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-> ---
 
-(... looking only on s2m/s5m drivers)
 
-> diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-> index b16c53a8272f..4d78477b9f57 100644
-> --- a/drivers/regulator/s2mps11.c
-> +++ b/drivers/regulator/s2mps11.c
-> @@ -986,6 +986,7 @@ common_reg:
->   			config.of_node = rdata[i].of_node;
->   		}
->   		config.ena_gpio = s2mps11->ext_control_gpio[i];
-> +		config.ena_gpio_valid = true;
+> -----Original Message-----
+> From: Serge Hallyn [mailto:serge.hallyn@ubuntu.com]
+> Sent: Monday, October 06, 2014 10:27 PM
+> To: Chen, Hanxiao/≥¬ Íœœˆ
+> Cc: Ingo Molnar; Peter Zijlstra; David Howells;
+> containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] sched: updated comments of CLONE_NEWNS
+> 
+> Quoting Chen Hanxiao (chenhanxiao@cn.fujitsu.com):
+> > Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+> 
+> Yeah that'll be helpful to anyone new to these parts.  But, why the question mark,
+> should you drop that too?  Either way
 
-This way you'll mark all regulators as GPIO enabled. This is won't 
-produce an error (ena_gpio is initialized to -EINVAL by default) but I 
-think it is misuse of the idea "ena_gpio_valid".
+Yes, we should drop that question mark.
+I'll send a v2 patch soon.
 
-Instead maybe:
-+		if (gpio_is_valid(s2mps11->ext_control_gpio[i]))
-+			config.ena_gpio_valid = true;
-?
+Thanks,
+- Chen
 
->
->   		regulator = devm_regulator_register(&pdev->dev,
->   						&regulators[i], &config);
-> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-> index 0ab5cbeeb797..d258e6613831 100644
-> --- a/drivers/regulator/s5m8767.c
-> +++ b/drivers/regulator/s5m8767.c
-> @@ -466,6 +466,7 @@ static void s5m8767_regulator_config_ext_control(struct s5m8767_info *s5m8767,
->   	}
->
->   	config->ena_gpio = rdata->ext_control_gpio;
-> +	config->ena_gpio_valid = true;
->   	config->ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
->   }
+> 
+> Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+> 
 
-This looks fine.
-
-Best regards,
-Krzysztof
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
