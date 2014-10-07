@@ -1,136 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072AbaJGSE0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:04:26 -0400
-Received: from mga14.intel.com ([192.55.52.115]:65081 "EHLO mga14.intel.com"
+	id S1755097AbaJGSGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:06:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56834 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176AbaJGSEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:04:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,672,1406617200"; 
-   d="scan'208";a="482590984"
-Date: Tue, 7 Oct 2014 21:04:17 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
- functions
-Message-ID: <20141007180417.GA29459@intel.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141007175017.GA10432@obsidianresearch.com>
+	id S1753764AbaJGSGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:06:03 -0400
+Date: Tue, 7 Oct 2014 20:05:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@parisplace.org>,
+        John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 1/1] fallocate: create FAN_MODIFY and IN_MODIFY events
+Message-ID: <20141007180559.GC30038@quack.suse.cz>
+References: <1412287587-5392-1-git-send-email-xypron.glpk@gmx.de>
+ <1412324370-959-1-git-send-email-xypron.glpk@gmx.de>
+ <20141006141227.GF7526@quack.suse.cz>
+ <5432E921.7040306@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141007175017.GA10432@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5432E921.7040306@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon 06-10-14 21:10:25, Heinrich Schuchardt wrote:
+> On 06.10.2014 16:12, Jan Kara wrote:
+> >On Fri 03-10-14 10:19:30, Heinrich Schuchardt wrote:
+> >>The fanotify and the inotify API can used to monitor changes of the file
+> >>system.
+> >>
+> >>System call fallocate modifies files. Hence it should trigger the corresponding
+> >>fanotify (FAN_MODIFY) and inotify (IN_MODIFY) events.
+> >>
+> >>This patch adds the missing call to fsnotify_modify.
+> >   Well, there are different fallocate() commands and e.g. pure
+> >FALLOC_FL_KEEP_SIZE call will not change any data in the file. I'm not sure
+> >how much we care but I wanted to point that out...
+> 
+> The most interesting case is FALLOC_FL_COLLAPSE_RANGE because this
+> value allows to create arbitrary file content from random data.
+> Hence I think we really need to create FAN_MODIFY in this case.
+> 
+> As the fallocate(2) man page teaches:
+> After a successful call, subsequent writes into the range specified
+> by offset and len are guaranteed not to fail because of lack of disk
+> space.
+> 
+> So calling fallocate(fd, FALLOC_FL_KEEP_SIZE, offset, len) may
+> result in different outcomes of a subsequent write depending on the
+> values of offset and len.
+> 
+> Calling fallocate for a region already zeroed will not result in any
+> data change.
+> 
+> I would like to compare fallocate() with write().
+> 
+> When we call write() we always create a FAN_MODIFY event even in the
+> case of overwriting with identical data.
+> 
+> So event FAN_MODIFY does not provide any guarantee that data was
+> actually changed.
+> 
+> In analogy to write() I suggest to keep the logic for fallocate() as
+> trivial as possible:
+> If fallocate() succeeds, create IN_MODIFY and FAN_MODIFY events.
+  OK, makes sense. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-And thanks for the feedback. Change requests look very reasonable.
-
-On Tue, Oct 07, 2014 at 11:50:17AM -0600, Jason Gunthorpe wrote:
-> On Tue, Oct 07, 2014 at 08:01:12PM +0300, Jarkko Sakkinen wrote:
-> > Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
-> > reserves memory resources and tpm_chip_register() initializes the
-> > device driver. This way it is possible to alter struct tpm_chip
-> > attributes before passing it to tpm_chip_register().
+								Honza
+> >>Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> >>---
+> >>  fs/open.c | 5 +++++
+> >>  1 file changed, 5 insertions(+)
+> >>
+> >>diff --git a/fs/open.c b/fs/open.c
+> >>index d6fd3ac..03aa8e5 100644
+> >>--- a/fs/open.c
+> >>+++ b/fs/open.c
+> >>@@ -295,6 +295,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+> >>
+> >>  	sb_start_write(inode->i_sb);
+> >>  	ret = file->f_op->fallocate(file, mode, offset, len);
+> >>+
+> >>+	/* Create inotify and fanotify events. */
+> >>+	if (ret == 0)
+> >>+		fsnotify_modify(file);
+> >>+
+> >>  	sb_end_write(inode->i_sb);
+> >>  	return ret;
+> >>  }
+> >>--
+> >>2.1.0
+> >>
 > 
-> This looks broadly reasonable to me
-> 
-> Please add a note to the commit that this is known to still have
-> problems with resource reference counting, but they are less severe
-> than what existed before, and this is only an interm step.
-> 
-> > +/**
-> > + * tpm_chip_alloc() - allocate a new struct tpm_chip instance
-> 
-> This is using devm so it should be called 'tpmm_chip_alloc()' for
-> clarity
-> 
-> 
-> I know that was there before, but it sure is racy:
-> 
-> > +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
-> [..]
-> > +	set_bit(chip->dev_num, dev_mask);
-> 
-> Someday it should use IDR.
-> 
-> 
-> > @@ -896,18 +872,7 @@ void tpm_remove_hardware(struct device *dev)
-> >  		return;
-> >  	}
-> >  
-> > -	spin_lock(&driver_lock);
-> > -	list_del_rcu(&chip->list);
-> > -	spin_unlock(&driver_lock);
-> > -	synchronize_rcu();
-> > -
-> > -	tpm_dev_del_device(chip);
-> > -	tpm_sysfs_del_device(chip);
-> > -	tpm_remove_ppi(&dev->kobj);
-> > -	tpm_bios_log_teardown(chip->bios_dir);
-> > -
-> > -	/* write it this way to be explicit (chip->dev == dev) */
-> > -	put_device(chip->dev);
-> > +	tpm_chip_unregister(chip);
-> >  }
-> >  EXPORT_SYMBOL_GPL(tpm_remove_hardware);
-> 
-> This can move to tpm-chip too, same with tpm_register_hardware
-> 
-> > @@ -714,15 +709,10 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
-> >  	struct tpm_chip *chip = tpm_dev.chip;
-> >  	release_locality(chip, chip->vendor.locality, 1);
-> >  
-> > -	/* close file handles */
-> > -	tpm_dev_vendor_release(chip);
-> > -
-> >  	/* remove hardware */
-> >  	tpm_remove_hardware(chip->dev);
-> 
-> Wrong ordering here, tpm_remove_hardware should always be first -
-> drivers should not tear down internal state before calling it, so
-> release_locality should be second.
-> 
-> Noting that since we use devm the kfree will not happen until
-> remove returns, so the chip pointer is still valid.
-> 
-> >  	/* reset these pointers, otherwise we oops */
-> > -	chip->dev->release = NULL;
-> > -	chip->release = NULL;
-> >  	tpm_dev.client = NULL;
-> 
-> The comment can go too
-> 
-> Note: tpm_dev should be driver private data, but that is not your
-> problem..
-> 
-> Did you test compile all the drivers? One of my git commits on github
-> has some hackery to make that possible on x86.
-
-Yeah, I compiled all the drivers:
-
-$ grep CONFIG_TCG .config
-CONFIG_TCG_TPM=m
-CONFIG_TCG_TIS=m
-CONFIG_TCG_TIS_I2C_ATMEL=m
-CONFIG_TCG_TIS_I2C_INFINEON=m
-CONFIG_TCG_TIS_I2C_NUVOTON=m
-CONFIG_TCG_NSC=m
-CONFIG_TCG_ATMEL=m
-CONFIG_TCG_INFINEON=m
-CONFIG_TCG_ST33_I2C=m
-CONFIG_TCG_XEN=m
-CONFIG_TCG_CRB=m
-
-> Jason
-
-/Jarkko
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
