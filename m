@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917AbaJGXhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:37:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
+	id S1755589AbaJGXTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:19:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755579AbaJGXTy (ORCPT
+	with ESMTP id S1755521AbaJGXTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:54 -0400
+	Tue, 7 Oct 2014 19:19:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.16 25/26] media: vb2: fix VBI/poll regression
-Date: Tue,  7 Oct 2014 16:19:41 -0700
-Message-Id: <20141007231849.225482465@linuxfoundation.org>
+        Hans de Goede <hdegoede@redhat.com>
+Subject: [PATCH 3.16 17/26] uas: Only complain about missing sg if all other checks succeed
+Date: Tue,  7 Oct 2014 16:19:33 -0700
+Message-Id: <20141007231848.998176269@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -30,105 +28,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 58d75f4b1ce26324b4d809b18f94819843a98731 upstream.
+commit cc4deafc86f75f4e716b37fb4ea3572eb1e49e50 upstream.
 
-The recent conversion of saa7134 to vb2 unconvered a poll() bug that
-broke the teletext applications alevt and mtt. These applications
-expect that calling poll() without having called VIDIOC_STREAMON will
-cause poll() to return POLLERR. That did not happen in vb2.
+Don't complain about controllers without sg support if there are other
+reasons why uas cannot be used anyways.
 
-This patch fixes that behavior. It also fixes what should happen when
-poll() is called when STREAMON is called but no buffers have been
-queued. In that case poll() will also return POLLERR, but only for
-capture queues since output queues will always return POLLOUT
-anyway in that situation.
-
-This brings the vb2 behavior in line with the old videobuf behavior.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/v4l2-core/videobuf2-core.c |   15 +++++++++++++--
- include/media/videobuf2-core.h           |    4 ++++
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ drivers/usb/storage/uas-detect.h |   28 ++++++++++------------------
+ 1 file changed, 10 insertions(+), 18 deletions(-)
 
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -967,6 +967,7 @@ static int __reqbufs(struct vb2_queue *q
- 	 * to the userspace.
- 	 */
- 	req->count = allocated_buffers;
-+	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
- 
- 	return 0;
+--- a/drivers/usb/storage/uas-detect.h
++++ b/drivers/usb/storage/uas-detect.h
+@@ -9,32 +9,15 @@ static int uas_is_interface(struct usb_h
+ 		intf->desc.bInterfaceProtocol == USB_PR_UAS);
  }
-@@ -1014,6 +1015,7 @@ static int __create_bufs(struct vb2_queu
- 		memset(q->plane_sizes, 0, sizeof(q->plane_sizes));
- 		memset(q->alloc_ctx, 0, sizeof(q->alloc_ctx));
- 		q->memory = create->memory;
-+		q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 
+-static int uas_isnt_supported(struct usb_device *udev)
+-{
+-	struct usb_hcd *hcd = bus_to_hcd(udev->bus);
+-
+-	dev_warn(&udev->dev, "The driver for the USB controller %s does not "
+-			"support scatter-gather which is\n",
+-			hcd->driver->description);
+-	dev_warn(&udev->dev, "required by the UAS driver. Please try an"
+-			"alternative USB controller if you wish to use UAS.\n");
+-	return -ENODEV;
+-}
+-
+ static int uas_find_uas_alt_setting(struct usb_interface *intf)
+ {
+ 	int i;
+-	struct usb_device *udev = interface_to_usbdev(intf);
+-	int sg_supported = udev->bus->sg_tablesize != 0;
+ 
+ 	for (i = 0; i < intf->num_altsetting; i++) {
+ 		struct usb_host_interface *alt = &intf->altsetting[i];
+ 
+-		if (uas_is_interface(alt)) {
+-			if (!sg_supported)
+-				return uas_isnt_supported(udev);
++		if (uas_is_interface(alt))
+ 			return alt->desc.bAlternateSetting;
+-		}
  	}
  
- 	num_buffers = min(create->count, VIDEO_MAX_FRAME - q->num_buffers);
-@@ -1812,6 +1814,7 @@ static int vb2_internal_qbuf(struct vb2_
- 	 */
- 	list_add_tail(&vb->queued_entry, &q->queued_list);
- 	q->queued_count++;
-+	q->waiting_for_buffers = false;
- 	vb->state = VB2_BUF_STATE_QUEUED;
- 	if (V4L2_TYPE_IS_OUTPUT(q->type)) {
- 		/*
-@@ -2244,6 +2247,7 @@ static int vb2_internal_streamoff(struct
- 	 * their normal dequeued state.
- 	 */
- 	__vb2_queue_cancel(q);
-+	q->waiting_for_buffers = !V4L2_TYPE_IS_OUTPUT(q->type);
+ 	return -ENODEV;
+@@ -92,5 +75,14 @@ static int uas_use_uas_driver(struct usb
+ 	if (r < 0)
+ 		return 0;
  
- 	dprintk(3, "successful\n");
- 	return 0;
-@@ -2562,9 +2566,16 @@ unsigned int vb2_poll(struct vb2_queue *
- 	}
- 
- 	/*
--	 * There is nothing to wait for if no buffers have already been queued.
-+	 * There is nothing to wait for if the queue isn't streaming.
- 	 */
--	if (list_empty(&q->queued_list))
-+	if (!vb2_is_streaming(q))
-+		return res | POLLERR;
-+	/*
-+	 * For compatibility with vb1: if QBUF hasn't been called yet, then
-+	 * return POLLERR as well. This only affects capture queues, output
-+	 * queues will always initialize waiting_for_buffers to false.
-+	 */
-+	if (q->waiting_for_buffers)
- 		return res | POLLERR;
- 
- 	if (list_empty(&q->done_list))
---- a/include/media/videobuf2-core.h
-+++ b/include/media/videobuf2-core.h
-@@ -375,6 +375,9 @@ struct v4l2_fh;
-  * @streaming:	current streaming state
-  * @start_streaming_called: start_streaming() was called successfully and we
-  *		started streaming.
-+ * @waiting_for_buffers: used in poll() to check if vb2 is still waiting for
-+ *		buffers. Only set for capture queues if qbuf has not yet been
-+ *		called since poll() needs to return POLLERR in that situation.
-  * @fileio:	file io emulator internal data, used only if emulator is active
-  * @threadio:	thread io internal data, used only if thread is active
-  */
-@@ -411,6 +414,7 @@ struct vb2_queue {
- 
- 	unsigned int			streaming:1;
- 	unsigned int			start_streaming_called:1;
-+	unsigned int			waiting_for_buffers:1;
- 
- 	struct vb2_fileio_data		*fileio;
- 	struct vb2_threadio_data	*threadio;
++	if (udev->bus->sg_tablesize == 0) {
++		dev_warn(&udev->dev,
++			"The driver for the USB controller %s does not support scatter-gather which is\n",
++			hcd->driver->description);
++		dev_warn(&udev->dev,
++			"required by the UAS driver. Please try an other USB controller if you wish to use UAS.\n");
++		return 0;
++	}
++
+ 	return 1;
+ }
 
 
