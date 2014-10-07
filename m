@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaJGOX4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:23:56 -0400
-Received: from mail-by2on0066.outbound.protection.outlook.com ([207.46.100.66]:53920
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752846AbaJGOXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:23:55 -0400
-Date: Tue, 7 Oct 2014 09:17:34 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Pavel Machek <pavel@denx.de>
-CC: <dinguyen@opensource.altera.com>, <linux@arm.linux.org.uk>,
-        <yvanderv@opensource.altera.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <delicious.quinoa@gmail.com>
-Subject: Re: [PATCH v2 2/2] socfpga: support suspend to ram
-In-Reply-To: <20141007111715.GB6904@amd>
-Message-ID: <alpine.DEB.2.02.1410070916590.9610@atx-linux-37>
-References: <1412192304-1209-1-git-send-email-atull@opensource.altera.com> <1412192304-1209-3-git-send-email-atull@opensource.altera.com> <20141007111715.GB6904@amd>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754033AbaJGOYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:24:35 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:49856 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753478AbaJGOYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:24:33 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: =?utf-8?B?J0xvdGhhciBXYcOfbWFubic=?= <LW@KARO-electronics.de>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Thread-Topic: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Thread-Index: AQHP4jE2m8o16PSYfUeOu2GPn2nYPZwkoTOQ///8YQCAABF2YA==
+Date: Tue, 7 Oct 2014 14:23:02 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C60B1@AcuExch.aculab.com>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+	<063D6719AE5E284EB5DD2968C1650D6D174C6025@AcuExch.aculab.com>
+ <20141007161702.7cd1e800@ipc1.ka-ro>
+In-Reply-To: <20141007161702.7cd1e800@ipc1.ka-ro>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR02CA0036.namprd02.prod.outlook.com (10.141.56.36) To
- BL2PR03MB307.namprd03.prod.outlook.com (10.141.68.21)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB307;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 035748864E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(24454002)(164054003)(189002)(77096002)(99396003)(23726002)(47776003)(81156004)(106356001)(120916001)(31966008)(105586002)(97736003)(50466002)(15202345003)(21056001)(107046002)(122386002)(46406003)(95666004)(40100002)(33716001)(76482002)(80022003)(64706001)(110136001)(42186005)(46102003)(4396001)(101416001)(20776003)(66066001)(15975445006)(85306004)(85852003)(87976001)(86152002)(102836001)(69596002)(92726001)(83506001)(92566001)(19580405001)(53416004)(50986999)(86362001)(19580395003)(76176999)(54356999);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s97EOdnn017076
 
-On Tue, 7 Oct 2014, Pavel Machek wrote:
+From: Lothar
+> David Laight wrote:
+> > From: Lothar Wa√ümann
+> > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> > > introduced a regression for i.MX28. The swap_buffer() function doing
+> > > the endian conversion of the received data on i.MX28 may access memory
+> > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> > > does not copy those bytes, so that the last bytes of a packet may be
+> > > filled with invalid data after swapping.
+> > > This will likely lead to checksum errors on received packets.
+> > > E.g. when trying to mount an NFS rootfs:
+> > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+> > >
+> > > Do the byte swapping and copying to the new skb in one go if
+> > > necessary.
+> >
+> > ISTM that if you need to do the 'swap' you should copy the data regardless
+> > of the length.
+> >
+> The swap function has to look at at most 3 bytes beyond the actual
+> packet length. That is what the original swap_buffer() function does and
+> what the new function swap_buffer2(), that does the endian swapping
+> while copying to the new buffer, also does.
 
-> Hi!
-> 
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Add code that requests that the sdr controller go into
-> > self-refresh mode.  This code is run from ocram.
-> > 
-> > This patch assumes that u-boot has already configured sdr:
-> >   sdr.ctrlcfg.lowpwreq.selfrfshmask = 3
-> >   sdr.ctrlcfg.lowpwrtiming.clkdisablecycles = 8
-> >   sdr.ctrlcfg.dramtiming4.selfrfshexit = 512
-> > 
-> > How to suspend to ram:
-> >  $ echo enabled > \
-> > /sys/devices/soc/ffc02000.serial0/tty/ttyS0/power/wakeup
-> > 
-> >  $ echo -n mem > /sys/power/state
-> > 
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> 
-> > +static int __init socfpga_pm_init(void)
-> > +{
-> > +	if (socfpga_setup_ocram_self_refresh())
-> > +		return -EFAULT;
-> 
-> It would be nice to propagate the error result here.
+I understood the bug.
 
-Hi Pavel,
+The point I was making is that if you have to do a read-write of the received
+data (to byteswap it) then you might as well always copy it into a new skb that
+is just big enough for the actual receive frame.
 
-Yes, good catch.
+	David
 
-Thanks,
-Alan
-
-> 
-> Best regards,
-> 									Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
