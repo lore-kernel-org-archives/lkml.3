@@ -1,122 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaJGBi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 21:38:58 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59722 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaJGBi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 21:38:57 -0400
-Date: Mon, 6 Oct 2014 21:38:47 -0400
-From: Rich Felker <dalias@libc.org>
-To: "Kevin D. Kissell" <kevink@paralogos.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-Message-ID: <20141007013847.GG23797@brightrain.aerifal.cx>
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
- <54333B9C.2040302@paralogos.com>
+	id S1752701AbaJGBjf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 21:39:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:58455 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213AbaJGBje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 6 Oct 2014 21:39:34 -0400
+Date: Tue, 7 Oct 2014 12:39:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: linux-next: manual merge of the kbuild tree with the arm-soc tree
+Message-ID: <20141007123926.0e14810b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54333B9C.2040302@paralogos.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/+W4x89nc9=D05=apSN6n0y+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 06:02:20PM -0700, Kevin D. Kissell wrote:
-> On 10/06/2014 01:23 PM, David Daney wrote:
-> >From: David Daney <david.daney@cavium.com>
-> >
-> >In order for MIPS to be able to support a non-executable stack, we
-> >need to supply a method to specify a userspace area that can be used
-> >for executing emulated branch delay slot instructions.
-> >
-> >We add a new system call, sys_set_fpuemul_xol_area so that userspace
-> >threads that are using the FPU can specify the location of the FPU
-> >emulation out of line execution area.
-> >
-> >Background:
-> >
-> >MIPS floating point support requires that any instruction that cannot
-> >be directly executed by the FPU, be emulated by the kernel.  Part of
-> >this emulation involves executing non-FPU instructions that fall in
-> >the delay slots of FP branch instructions.  Since the beginning of
-> >MIPS/Linux time, this has been done by placing the instructions on the
-> >userspace thread stack, and executing them there, as the instructions
-> >must be executed in the MM context of the thread receiving the
-> >emulation.
-> Well, actually it doesn't go back to the beginning of MIPS/Linux
-> time - I was the b*astard who took the user-mode functional emulator
-> from Algorithmics and got it to work in the MIPS Linux kernel
-> context, some time in the early 2000s.  It was all pretty
-> straightforward, except for the
-> delay-slot-of-an-emulated-FP-conditional-branch problem. As you
-> note, it may be a load or store (though not a branch), so it needs
-> to be done in the user's MM context, and the user stack has nice
-> properties of being intrinsically per-thread and re-entrancy
-> tolerant.
+--Sig_/+W4x89nc9=D05=apSN6n0y+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-If the space of possible instructions that need to run in the user's
-MM context is sufficiently small, perhaps we could emulate the rest in
-kernelspace and have a fixed code mapping exposed to userspace
-containing each possible MM-context-dependent instruction combination.
+Hi Michal,
 
-As an alternative, the kernel could expose emulator code to run in
-userspace as part of the vdso or other magic kernel-provided pages,
-and this code would be capable of emulating arbitrary instructions,
-which would of course take place in the user MM context.
+Today's linux-next merge of the kbuild tree got a conflict in
+arch/arm/mach-at91/Makefile between commit 91a55d4f6900 ("ARM: at91:
+introduce OLD_IRQ_AT91 Kconfig option") from the arm-soc tree and
+commit ac84eb47cc19 ("kbuild: remove unnecessary variable
+initializaions") from the kbuild tree.
 
-This does not solve the problem for hardware with custom instructions,
-but I still believe it's totally reasonable to say that the ABI does
-not allow putting custom instructions in delay slots for coprocessor
-branches.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-> >Because of this, the de facto MIPS Linux userspace ABI requires that
-> >the userspace thread have an executable stack.  It is de facto,
-> >because it is not written anywhere that this must be the case, but it
-> >is never the less a requirement.
-> IIRC, when I first did the code, we already needed this for signal
-> trampolines.  I just extended it.  Is it no longer required for
-> signal support?  If not, how are signal trampolines now done, and
-> could this not be re-extended to the FP branch delay slot emulation
-> problem?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signal trampolines were nonsense to begin with. The code needed is
-fixed, not variable per-signal-instance, so it can be provided by libc
-or by the kernel in the vdso page or similar.
+diff --cc arch/arm/mach-at91/Makefile
+index ac99d87ffefe,75033839fc08..000000000000
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@@ -2,13 -2,12 +2,10 @@@
+  # Makefile for the linux kernel.
+  #
+ =20
+ -obj-y		:=3D irq.o gpio.o setup.o sysirq_mask.o
+ +obj-y		:=3D gpio.o setup.o sysirq_mask.o
+- obj-m		:=3D
+- obj-n		:=3D
+- obj-		:=3D
+ =20
+ +obj-$(CONFIG_OLD_IRQ_AT91)	+=3D irq.o
+  obj-$(CONFIG_OLD_CLK_AT91)	+=3D clock.o
+ -obj-$(CONFIG_AT91_SAM9_ALT_RESET) +=3D at91sam9_alt_reset.o
+ -obj-$(CONFIG_AT91_SAM9G45_RESET) +=3D at91sam9g45_reset.o
+ -obj-$(CONFIG_AT91_SAM9_TIME)	+=3D at91sam926x_time.o
+  obj-$(CONFIG_SOC_AT91SAM9)	+=3D sam9_smc.o
+ =20
+  # CPU-specific support
 
-> >Problem:
-> >
-> >How do we get MIPS Linux to use a non-executable stack in the face of
-> >the FPU emulation problem?
-> >
-> >Since userspace desires to change the ABI, put some of the onus on the
-> >userspace code.  Any userspace thread desiring a non-executable stack,
-> >must allocate a 4-byte aligned area at least 8 bytes long with that
-> >has read/write/execute permissions and pass the address of that area
-> >to the kernel with the new sys_set_fpuemul_xol_area system call.
-> >
-> >This is similar to how we require userspace to notify the kernel of
-> >the value of the thread local pointer.
-> It's easy for me to criticise, since I'm no longer responsible for
-> maintenance, but I hope you'll excuse me for commenting that, while
-> this seems like a small enough and neat enough patch per se,  I find
-> it disagreeable to break legacy binaries and to see a mechanism
-> whose name and implementation is so strictly tied to the one
-> purpose.  Even if it's only used for the FP delay slot emulation
-> today, shouldn't it be designed/coded/documented as a sort of
-> generic trampoline scratchpad?  And shouldn't we try to design
-> things so that legacy code with FP but no new magic system call
-> "just works"?  e.g. auto-allocate and initialize the space for a
-> thread the first time it actually needs to emulate an FP branch?
+--Sig_/+W4x89nc9=D05=apSN6n0y+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-"First time it actually needs to emulate" does not work, since it may
-be impossible to allocate at that time, and then there's no way the
-program can proceed. The allocation must be done at a time when you
-can report failure, which means at the time of execve (for the main
-thread) and clone (for other threads).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Rich
+iQIcBAEBCAAGBQJUM0RSAAoJEMDTa8Ir7ZwVYxkP/1MFmY9NknTqf2Tlcq4wkpbp
+YWgnWQN3Nq//1/hxiVvIuHIlNUJS308TEd3KI6lV7pls8cIWIny732EGZBYbJCxd
+A56KtkOSKA2lOqqIrmqWTbOh1RMkUFmi34Gj98XSt0HzL6HUPBEthc9BT/UfJ5PF
+hCyV8VuXERYlSUsfDyjZGY5nSphgP5uoX40ChWA9zYfpZEQe6TunlkzbXDBL5ozk
+ky5d4IGacHMSTpWw+kDOZRxVbWx+dfrn8U9mI7egQSDhWmzaoe5250R8g0jTOOVZ
+EkRjwauvBRbkeG7qA/NFIiGDB2fQnu9YDOWb1LxDjDoDUp27ESUCkdKpP+IV6qWx
+g0z2/l22v4zPXm5OcOak8SMnTybk+ZJpJmvVseKOKzO1GI6Z+ZZKKhk7AKIEajTq
+gH9DAw/q1xcsUxU8EmMmpYUJWmYrUcaVL5NynDhti32ObUMriNfha1dRiK+43tLr
+kheBGIurvdNukF4nXf5WHF4hqYnFimtG+oFtA/QkG7zeN5g+6Bv9W4QEu5LzAOOF
+lUd6a9j+GgdiTpKK3u1FjuU4/ipYl5TOtTzyjWOFtxbKluK1FzbiUiCA+jp1EQkp
+z/sQuMnLITfYrezB7TKI+kIKgRgu4M0Ih/OEHxWgA9w2r0NI6xr2fAg6nn06Zvd7
+Hjhwxs2hw4foLYq60lHF
+=CYoF
+-----END PGP SIGNATURE-----
+
+--Sig_/+W4x89nc9=D05=apSN6n0y+--
