@@ -1,120 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbaJGNTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:19:51 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:49859 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaJGNTt (ORCPT
+	id S1753801AbaJGNU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:20:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:43204 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752376AbaJGNUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:19:49 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] net: fec: fix regression on i.MX28 introduced by rx_copybreak support
-Date: Tue,  7 Oct 2014 15:19:37 +0200
-Message-Id: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 7 Oct 2014 09:20:54 -0400
+Message-ID: <5433E8B3.6040708@monom.org>
+Date: Tue, 07 Oct 2014 15:20:51 +0200
+From: Daniel Wagner <wagi@monom.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Juri Lelli <juri.lelli@arm.com>,
+        Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+CC: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] sched: Do not try to replenish from a non deadline tasks
+References: <1411565056-15577-1-git-send-email-daniel.wagner@bmw-carit.de> <5433B5B9.70006@arm.com> <5433D654.2020108@monom.org> <5433D84F.3040003@monom.org>
+In-Reply-To: <5433D84F.3040003@monom.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-introduced a regression for i.MX28. The swap_buffer() function doing
-the endian conversion of the received data on i.MX28 may access memory
-beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-does not copy those bytes, so that the last bytes of a packet may be
-filled with invalid data after swapping.
-This will likely lead to checksum errors on received packets.
-E.g. when trying to mount an NFS rootfs:
-UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+On 10/07/2014 02:10 PM, Daniel Wagner wrote:
+> [   36.689416] pthread_-1555    0d..5 18486408us : sched_stat_sleep: comm=pthread_test pid=1554 delay=143975 [ns]
+> [   36.689416] pthread_-1555    0d..5 18486408us : sched_wakeup: comm=pthread_test pid=1554 prio=120 success=1 target_cpu=000
+> [   36.689416] pthread_-1555    0d..4 18486420us : sched_pi_setprio: comm=pthread_test pid=1555 oldprio=-1 newprio=-1
+> [   36.689416] pthread_-1555    0d..4 18486421us : sched_dequeue_dl_entity: comm=pthread_test pid=1555 flags=0
+> [   36.689416] pthread_-1555    0d..4 18486421us : sched_enqueue_dl_entity: comm=pthread_test pid=1555 pi_comm=pthread_test pi_pid=1555 flags=8
+> [   36.689416] pthread_-1555    0d..4 18486421us : sched_dequeue_dl_entity: comm=pthread_test pid=1555 flags=0
+> [   36.689416] pthread_-1555    0d..4 18486422us : sched_enqueue_dl_entity: comm=pthread_test pid=1555 pi_comm=pthread_test pi_pid=1555 flags=0
+> [   36.689416] pthread_-1555    0d.H4 18486539us : sched_enqueue_dl_entity: comm=pthread_test pid=1555 pi_comm=pthread_test pi_pid=1555 flags=8
 
-Do the byte swapping and copying to the new skb in one go if
-necessary.
-
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 87975b5..eaaebad 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
- 	return bufaddr;
- }
- 
-+static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-+{
-+	int i;
-+	unsigned int *src = src_buf;
-+	unsigned int *dst = dst_buf;
-+
-+	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
-+		*dst = cpu_to_be32(*src);
-+
-+	return dst_buf;
-+}
-+
- static void fec_dump(struct net_device *ndev)
- {
- 	struct fec_enet_private *fep = netdev_priv(ndev);
-@@ -1348,7 +1360,7 @@ fec_enet_new_rxbdp(struct net_device *ndev, struct bufdesc *bdp, struct sk_buff
- }
- 
- static bool fec_enet_copybreak(struct net_device *ndev, struct sk_buff **skb,
--			       struct bufdesc *bdp, u32 length)
-+			       struct bufdesc *bdp, u32 length, int swap)
- {
- 	struct  fec_enet_private *fep = netdev_priv(ndev);
- 	struct sk_buff *new_skb;
-@@ -1363,7 +1375,10 @@ static bool fec_enet_copybreak(struct net_device *ndev, struct sk_buff **skb,
- 	dma_sync_single_for_cpu(&fep->pdev->dev, bdp->cbd_bufaddr,
- 				FEC_ENET_RX_FRSIZE - fep->rx_align,
- 				DMA_FROM_DEVICE);
--	memcpy(new_skb->data, (*skb)->data, length);
-+	if (!swap)
-+		memcpy(new_skb->data, (*skb)->data, length);
-+	else
-+		swap_buffer2(new_skb->data, (*skb)->data, length);
- 	*skb = new_skb;
- 
- 	return true;
-@@ -1393,6 +1408,7 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 	u16	vlan_tag;
- 	int	index = 0;
- 	bool	is_copybreak;
-+	bool need_swap = id_entry->driver_data & FEC_QUIRK_SWAP_FRAME;
- 
- #ifdef CONFIG_M532x
- 	flush_cache_all();
-@@ -1456,7 +1472,8 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 		 * include that when passing upstream as it messes up
- 		 * bridging applications.
- 		 */
--		is_copybreak = fec_enet_copybreak(ndev, &skb, bdp, pkt_len - 4);
-+		is_copybreak = fec_enet_copybreak(ndev, &skb, bdp, pkt_len - 4,
-+						  need_swap);
- 		if (!is_copybreak) {
- 			skb_new = netdev_alloc_skb(ndev, FEC_ENET_RX_FRSIZE);
- 			if (unlikely(!skb_new)) {
-@@ -1471,7 +1488,7 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 		prefetch(skb->data - NET_IP_ALIGN);
- 		skb_put(skb, pkt_len - 4);
- 		data = skb->data;
--		if (id_entry->driver_data & FEC_QUIRK_SWAP_FRAME)
-+		if (!is_copybreak && need_swap)
- 			swap_buffer(data, pkt_len);
- 
- 		/* Extract the enhanced buffer descriptor */
--- 
-1.7.10.4
-
+I noticed that the last two lines are different. Maybe that is yet
+another path into enqueue_task_dl().
