@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbaJGMBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:01:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:27958 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753256AbaJGMB2 (ORCPT
+	id S1753883AbaJGMBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:01:38 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:25365 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753256AbaJGMBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:01:28 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-af-5433d6161030
+	Tue, 7 Oct 2014 08:01:34 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-28-5433d61cd9ee
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -19,51 +19,72 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 0/4] drm/exynos/dsi: remove global display variable
-Date: Tue, 07 Oct 2014 14:01:07 +0200
-Message-id: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 3/4] drm/exynos/dsi: remove redundant encoder field
+Date: Tue, 07 Oct 2014 14:01:10 +0200
+Message-id: <1412683271-15835-4-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xK7pi14xDDG7cZbe4te4cq8WVr+/Z
-	LCbdn8Bi8eLeRRaL3gVX2SzONr1ht7i8aw6bxYzz+5gs1h4BKp4x+SWbA5fH/e7jTB59W1Yx
-	enzeJBfAHMVlk5Kak1mWWqRvl8CV8bq/h6ngLXvFxIWnmRoY97J1MXJySAiYSFx5uJwFwhaT
-	uHBvPVCci0NIYCmjRNe256wQTh+TRNP0k6wgVWwCmhJ/N98E6xYRUJZYta+dHaSIWWAHs8TR
-	S0eZQBLCAs4Sz9e/YgaxWQRUJa6fOQJm8wLF1169wQqxTk7i5LHJrBMYuRcwMqxiFE0tTS4o
-	TkrPNdIrTswtLs1L10vOz93ECAmZrzsYlx6zOsQowMGoxMO7Qss4RIg1say4MvcQowQHs5II
-	7+mLQCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mq2WyVQoi/fM3H2eTNI9+vjV5bbbV+gzBybNZ
-	N96VXFfgrL2w+8MuYc7bU/7qZj0oOfopVf2n2KadFRNjHqWdO/cgzU57ffKmyuUcs38KiL3O
-	PneRKdppQ6WsiuSdUs3Ft6S6hR1DM6fZWT949+h905agDYmKj0y6n/554DJzY6rMlcfTnvHx
-	KbEUZyQaajEXFScCAGahcsH3AQAA
+In-reply-to: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
+References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDJMWRmVeSWpSXmKPExsVy+t/xK7oy14xDDF5c5rO4te4cq8WVr+/Z
+	LCbdn8Bi8eLeRRaL3gVX2SzONr1ht7i8aw6bxYzz+5gs1h65y24xY/JLNgcuj/vdx5k8+ras
+	YvT4vEkugDmKyyYlNSezLLVI3y6BK+PRiy7Ggn28FZ/65rI3MO7g7mLk5JAQMJGY9nAiI4Qt
+	JnHh3nq2LkYuDiGBpYwSz76uZ4Rw+pgktn09BlbFJqAp8XfzTTYQW0RAWWLVvnZ2kCJmgR3M
+	EkcvHWUCSQgLOEtsOPueBcRmEVCV2HJtMyuIzQsU33VpNgvEOjmJk8cmg8U5BVwk5m14BTZU
+	CKhm8umtTBMYeRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAmxLzsYFx+zOsQowMGo
+	xMO7wdA4RIg1say4MvcQowQHs5II7+mLQCHelMTKqtSi/Pii0pzU4kOMTBycUg2Mru8Ys/uf
+	TVcxc9NOuNvj/mHx4Zmdq4onsfnZrq+PmfovWPimpPqv6ctz7HfYXrgpsUUmqbt867XXCbpX
+	go0ZTVdI+nmdXLlZ1nRXo5X+InvF9bt41m21Pno3dtaGC1OCjm2yq1E2Op2cu6i4eabWxM/r
+	DJh2qTW47/q4XeT050DjUt2KPd+OKbEUZyQaajEXFScCAFMZVyAPAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Inki,
+The patch removes redundant encoder field from private DSI context.
 
-Many Exynos DRM drivers uses global variables to represent associated devices
-in Exynos DRM internal framework. It is quite confusing, it adds data duplication
-and finally it does not allow to handle more than one device in system.
-It seems better to embed such structures in private context of the device.
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+---
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-The patchset is based on exynos_drm_next plus my patch [1]:
-'drm/exynos: remove explicit encoder/connector de-initialization'.
-
-If the patchset is OK for you I can prepare similar patches for other Exynos DRM components.
-
-[1]: https://lkml.org/lkml/2014/9/22/148
-
-Regards
-Andrzej
-
-
-Andrzej Hajda (4):
-  drm/exynos/dsi: remove global variable exynos_dsi_display
-  drm/exynos/dsi: simplify device pointer evaluation
-  drm/exynos/dsi: remove redundant encoder field
-  drm/exynos/dsi: stop using display->ctx pointer
-
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 96 ++++++++++++++++-----------------
- 1 file changed, 47 insertions(+), 49 deletions(-)
-
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+index 39ec450..634904a 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+@@ -271,7 +271,6 @@ struct exynos_dsi {
+ 	struct exynos_drm_display display;
+ 	struct mipi_dsi_host dsi_host;
+ 	struct drm_connector connector;
+-	struct drm_encoder *encoder;
+ 	struct device_node *panel_node;
+ 	struct drm_panel *panel;
+ 	struct device *dev;
+@@ -1105,7 +1104,7 @@ static irqreturn_t exynos_dsi_irq(int irq, void *dev_id)
+ static irqreturn_t exynos_dsi_te_irq_handler(int irq, void *dev_id)
+ {
+ 	struct exynos_dsi *dsi = (struct exynos_dsi *)dev_id;
+-	struct drm_encoder *encoder = dsi->encoder;
++	struct drm_encoder *encoder = dsi->display.encoder;
+ 
+ 	if (dsi->state & DSIM_STATE_ENABLED)
+ 		exynos_drm_crtc_te_handler(encoder->crtc);
+@@ -1475,7 +1474,7 @@ exynos_dsi_best_encoder(struct drm_connector *connector)
+ {
+ 	struct exynos_dsi *dsi = connector_to_dsi(connector);
+ 
+-	return dsi->encoder;
++	return dsi->display.encoder;
+ }
+ 
+ static struct drm_connector_helper_funcs exynos_dsi_connector_helper_funcs = {
+@@ -1491,8 +1490,6 @@ static int exynos_dsi_create_connector(struct exynos_drm_display *display,
+ 	struct drm_connector *connector = &dsi->connector;
+ 	int ret;
+ 
+-	dsi->encoder = encoder;
+-
+ 	connector->polled = DRM_CONNECTOR_POLL_HPD;
+ 
+ 	ret = drm_connector_init(encoder->dev, connector,
 -- 
 1.9.1
 
