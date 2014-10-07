@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528AbaJGTbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:31:00 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:39825 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453AbaJGT3n (ORCPT
+	id S932447AbaJGT3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:29:40 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:43889 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932421AbaJGT3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:29:43 -0400
+	Tue, 7 Oct 2014 15:29:37 -0400
 From: Nicolin Chen <nicoleotsuka@gmail.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         galak@codeaurora.org
-Subject: [PATCH 5/8] ASoC: imx-audmux: Add indentation for binding doc to increase readability
-Date: Tue,  7 Oct 2014 12:29:08 -0700
-Message-Id: <dd4daca4f9ffc8d6995105a89c29ae0a59d54217.1412708790.git.nicoleotsuka@gmail.com>
+Subject: [PATCH 3/8] ASoC: fsl_sai: Add indentation for binding doc to increase readability
+Date: Tue,  7 Oct 2014 12:29:06 -0700
+Message-Id: <50d58e1906b2e3e8b9f5fded5758c69f5ca39bbc.1412708790.git.nicoleotsuka@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1412708790.git.nicoleotsuka@gmail.com>
 References: <cover.1412708790.git.nicoleotsuka@gmail.com>
@@ -30,46 +30,87 @@ extra blank lines and indentations.
 
 Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
 ---
- .../devicetree/bindings/sound/imx-audmux.txt       | 22 ++++++++++++++--------
- 1 file changed, 14 insertions(+), 8 deletions(-)
+ .../devicetree/bindings/sound/fsl-sai.txt          | 66 ++++++++++++++--------
+ 1 file changed, 41 insertions(+), 25 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/imx-audmux.txt b/Documentation/devicetree/bindings/sound/imx-audmux.txt
-index f88a00e..b30a737 100644
---- a/Documentation/devicetree/bindings/sound/imx-audmux.txt
-+++ b/Documentation/devicetree/bindings/sound/imx-audmux.txt
-@@ -1,18 +1,24 @@
- Freescale Digital Audio Mux (AUDMUX) device
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+index 4956b14..044e5d7 100644
+--- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -5,32 +5,48 @@ which provides a synchronous audio interface that supports fullduplex
+ serial interfaces with frame synchronization such as I2S, AC97, TDM, and
+ codec/DSP interfaces.
  
+-
  Required properties:
--- compatible : "fsl,imx21-audmux" for AUDMUX version firstly used on i.MX21,
--  or "fsl,imx31-audmux" for the version firstly used on i.MX31.
--- reg : Should contain AUDMUX registers location and length
+-- compatible: Compatible list, contains "fsl,vf610-sai" or "fsl,imx6sx-sai".
+-- reg: Offset and length of the register set for the device.
+-- clocks: Must contain an entry for each entry in clock-names.
+-- clock-names : Must include the "bus" for register access and "mclk1" "mclk2"
+-  "mclk3" for bit clock and frame clock providing.
+-- dmas : Generic dma devicetree binding as described in
+-  Documentation/devicetree/bindings/dma/dma.txt.
+-- dma-names : Two dmas have to be defined, "tx" and "rx".
+-- pinctrl-names: Must contain a "default" entry.
+-- pinctrl-NNN: One property must exist for each entry in pinctrl-names.
+-  See ../pinctrl/pinctrl-bindings.txt for details of the property values.
+-- big-endian: Boolean property, required if all the FTM_PWM registers
+-  are big-endian rather than little-endian.
+-- lsb-first: Configures whether the LSB or the MSB is transmitted first for
+-  the fifo data. If this property is absent, the MSB is transmitted first as
+-  default, or the LSB is transmitted first.
+-- fsl,sai-synchronous-rx: This is a boolean property. If present, indicating
+-  that SAI will work in the synchronous mode (sync Tx with Rx) which means
+-  both the transimitter and receiver will send and receive data by following
+-  receiver's bit clocks and frame sync clocks.
+-- fsl,sai-asynchronous: This is a boolean property. If present, indicating
+-  that SAI will work in the asynchronous mode, which means both transimitter
+-  and receiver will send and receive data by following their own bit clocks
+-  and frame sync clocks separately.
 +
-+  - compatible		: "fsl,imx21-audmux" for AUDMUX version firstly used
-+			  on i.MX21, or "fsl,imx31-audmux" for the version
-+			  firstly used on i.MX31.
++  - compatible		: Compatible list, contains "fsl,vf610-sai" or
++			  "fsl,imx6sx-sai".
 +
-+  - reg			: Should contain AUDMUX registers location and length.
- 
- An initial configuration can be setup using child nodes.
- 
- Required properties of optional child nodes:
--- fsl,audmux-port : Integer of the audmux port that is configured by this
--  child node.
--- fsl,port-config : List of configuration options for the specific port. For
--  imx31-audmux and above, it is a list of tuples <ptcr pdcr>. For
--  imx21-audmux it is a list of pcr values.
++  - reg			: Offset and length of the register set for the device.
 +
-+  - fsl,audmux-port	: Integer of the audmux port that is configured by this
-+			  child node.
++  - clocks		: Must contain an entry for each entry in clock-names.
 +
-+  - fsl,port-config	: List of configuration options for the specific port.
-+			  For imx31-audmux and above, it is a list of tuples
-+			  <ptcr pdcr>. For imx21-audmux it is a list of pcr
-+			  values.
++  - clock-names		: Must include the "bus" for register access and
++			  "mclk1", "mclk2", "mclk3" for bit clock and frame
++			  clock providing.
++  - dmas		: Generic dma devicetree binding as described in
++			  Documentation/devicetree/bindings/dma/dma.txt.
++
++  - dma-names		: Two dmas have to be defined, "tx" and "rx".
++
++  - pinctrl-names	: Must contain a "default" entry.
++
++  - pinctrl-NNN		: One property must exist for each entry in
++			  pinctrl-names. See ../pinctrl/pinctrl-bindings.txt
++			  for details of the property values.
++
++  - big-endian		: Boolean property, required if all the FTM_PWM
++			  registers are big-endian rather than little-endian.
++
++  - lsb-first		: Configures whether the LSB or the MSB is transmitted
++			  first for the fifo data. If this property is absent,
++			  the MSB is transmitted first as default, or the LSB
++			  is transmitted first.
++
++  - fsl,sai-synchronous-rx: This is a boolean property. If present, indicating
++			  that SAI will work in the synchronous mode (sync Tx
++			  with Rx) which means both the transimitter and the
++			  receiver will send and receive data by following
++			  receiver's bit clocks and frame sync clocks.
++
++  - fsl,sai-asynchronous: This is a boolean property. If present, indicating
++			  that SAI will work in the asynchronous mode, which
++			  means both transimitter and receiver will send and
++			  receive data by following their own bit clocks and
++			  frame sync clocks separately.
  
- Example:
- 
+ Note:
+ - If both fsl,sai-asynchronous and fsl,sai-synchronous-rx are absent, the
 -- 
 1.9.1
 
