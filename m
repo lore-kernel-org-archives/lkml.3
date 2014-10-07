@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358AbaJGUyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:54:53 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57427 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755328AbaJGUyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:54:51 -0400
-X-Sasl-enc: 8RDiPcyazdUo8v9dReBG6UHT0Ckfar6lbv7Uya9M3J9V 1412715290
-Message-ID: <1412715283.11600.11.camel@localhost>
-Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Guenter Roeck <linux@roeck-us.net>, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 07 Oct 2014 22:54:43 +0200
-In-Reply-To: <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
-References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
-	 <20141007.161832.453892039501955243.davem@davemloft.net>
-	 <20141007203344.GA4748@roeck-us.net>
-	 <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755371AbaJGU4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:56:07 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:43261 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213AbaJGU4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 16:56:05 -0400
+Date: Tue, 7 Oct 2014 23:56:02 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.17
+In-Reply-To: <alpine.LRH.2.11.1410072337230.7472@adalberg.ut.ee>
+Message-ID: <alpine.LRH.2.11.1410072345330.7472@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410072337230.7472@adalberg.ut.ee>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 2014-10-07 at 22:49 +0200, Fabian Frederick wrote:
+On Tue, 7 Oct 2014, Meelis Roos wrote:
+
+> > Anyway, back to 3.17. Nothing major happened during the last week, as
+> > you can see from the appended shortlog. Mostly drivers (i915, nouveau,
+> > ethernet, scsi, sound) and some networking fixes.  With some misc
+> > noise all over.
+> > 
+> > Go out and test,
 > 
-> > On 07 October 2014 at 22:33 Guenter Roeck <linux@roeck-us.net> wrote:
-> >
-> >
-> > On Tue, Oct 07, 2014 at 04:18:32PM -0400, David Miller wrote:
-> > > From: Fabian Frederick <fabf@skynet.be>
-> > > Date: Tue,  7 Oct 2014 22:16:36 +0200
-> > >
-> > > > static values are automatically initialized to NULL
-> > > >
-> > > > Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> > >
-> > > Isn't there some implementation room given to compilers
-> > > as to the representation of true and false?
-> >
-> > Not for true/false.
-> >
-> > C99 standard, section 7.16:
-> >
-> > ...
-> > The remaining three macros are suitable for use in #if preprocessing
-> > directives. They are
-> >
-> > true
-> >
-> > which expands to the integer constant 1,
-> >
-> > false
-> >
-> > which expands to the integer constant 0, and
-> > ...
-> >
-> > No idea where the NULL comes into the picture, though.
-> >
-> > Guenter
-> 
-> Maybe comment should have been "static values are automatically initialized to
-> 0" then ?
+> Unfortunately my computer still livelocks with watchdog timeouts. The
+> previous reports are here: https://lkml.org/lkml/2014/9/28/40 and
+> https://lkml.org/lkml/2014/9/30/217 and this time the dmesg is like that 
+> (config is also below):
 
-I think David's concern was whether if 0 == false in all situations. It
-is pretty clear that static memory is initialized to 0.
+And the other machine mentioned in the original thread at 
+https://lkml.org/lkml/2014/9/28/148 is also still hanging - today a hard 
+hang after half a day dekstop workload with nothing in the logs but 918 
+bytes of zeros between last log record and next startup message 
+(probably just ext4 artifact).
 
-Thanks,
-Hannes
-
-
+-- 
+Meelis Roos (mroos@linux.ee)
