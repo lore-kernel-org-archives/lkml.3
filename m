@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaJGOnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:43:53 -0400
-Received: from mail-bn1on0068.outbound.protection.outlook.com ([157.56.110.68]:44672
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752904AbaJGOnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:43:52 -0400
-Date: Tue, 7 Oct 2014 16:27:44 +0200
-From: Robert Richter <robert.richter@caviumnetworks.com>
-To: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <liviu.dudau@arm.com>
-CC: <linux-arm-kernel@lists.infradead.org>, Robert Richter <rric@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, <devicetree@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Sunil Goutham <sgoutham@cavium.com>
-Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree
- bindings
-Message-ID: <20141007142744.GE31556@rric.localhost>
-References: <1411573068-12952-1-git-send-email-rric@kernel.org>
- <1411573068-12952-4-git-send-email-rric@kernel.org>
- <3082935.e3X4GsVUDn@wuerfel>
+	id S1754061AbaJGOoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:44:13 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:37258 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904AbaJGOoK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:44:10 -0400
+Message-ID: <5433FC36.30806@kernel.dk>
+Date: Tue, 07 Oct 2014 08:44:06 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <3082935.e3X4GsVUDn@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [92.224.195.77]
-X-ClientProxiedBy: AMSPR04CA0049.eurprd04.prod.outlook.com (10.242.87.167) To
- SN2PR0701MB816.namprd07.prod.outlook.com (25.160.16.15)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:SN2PR0701MB816;
-X-Forefront-PRVS: 035748864E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6069001)(6009001)(189002)(199003)(24454002)(42186005)(47776003)(97756001)(85852003)(83506001)(120916001)(4396001)(50986999)(23726002)(40100002)(31966008)(80022003)(76506005)(54356999)(76176999)(87976001)(46102003)(64706001)(20776003)(77096002)(66066001)(101416001)(86362001)(50466002)(46406003)(92566001)(105586002)(102836001)(106356001)(33656002)(95666004)(92726001)(76482002)(99396003)(107046002)(85306004)(97736003)(122386002)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR0701MB816;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+To: Bart Van Assche <bvanassche@acm.org>
+CC: Christoph Hellwig <hch@lst.de>, Robert Elliott <Elliott@hp.com>,
+        Ming Lei <ming.lei@canonical.com>, Sagi Grimberg <sagig@mellanox.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] blk-mq: Avoid that I/O hangs in bt_get()
+References: <54328A97.3030201@acm.org> <5432D414.4060408@kernel.dk> <5432E524.90407@kernel.dk> <5433A85E.2070207@acm.org>
+In-Reply-To: <5433A85E.2070207@acm.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.09.14 18:06:04, Arnd Bergmann wrote:
-> > +               compatible = "cavium,thunder-pcie";
-> > +               device_type = "pci";
-> > +               msi-parent = <&its>;
-> > +               bus-range = <0 255>;
-> > +               #size-cells = <2>;
-> > +               #address-cells = <3>;
-> > +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
-> > +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
-> > +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
-> > +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
-> > +        };
+On 10/07/2014 02:46 AM, Bart Van Assche wrote:
+> On 10/06/14 20:53, Jens Axboe wrote:
+>> On 10/06/2014 11:40 AM, Jens Axboe wrote:
+>>> I've been able to reproduce this this morning, and your patch does seem
+>>> to fix it. The inc/add logic is making my head spin a bit. And we now
+>>> end up banging a lot more on the waitqueue lock through
+>>> prepare_to_wait(), so there's a substantial performance regression to go
+>>> with the change.
+>>>
+>>> I'll fiddle with this a bit and see if we can't retain existing
+>>> performance properties under tag contention, while still fixing the hang.
+>>
+>> So I think your patch fixes the issue because it just keeps decrementing
+>> the wait counts, hence waking up a lot more than it should. This is also
+>> why I see a huge increase in wait queue spinlock time.
+>>
+>> Does this work for you? I think the issue is plainly that we end up
+>> setting the batch counts too high. But tell me more about the number of
+>> queues, the depth (total or per queue?), and the fio job you are running.
 > 
-> If you claim the entire 0-255 bus range, I think you should also
-> specify a domain, otherwise it's not predictable which domain you
-> get.
+> Hello Jens,
+> 
+> Thanks for looking into this. I can't reproduce the I/O lockup after 
+> having reverted my patch and after having applied your patch. In the 
+> test I ran fio was started with the following command-line options:
+>  
+> fio --bs=512 --ioengine=libaio --rw=randread --buffered=0 --numjobs=12 
+> --iodepth=128 --iodepth_batch=64 --iodepth_batch_complete=64 --thread 
+> --norandommap --loops=2147483648 --runtime=3600 --group_reporting 
+> --gtod_reduce=1 --name=/dev/sdo --filename=/dev/sdo --invalidate=1
+> 
+> This job was run on a system with 12 CPU threads and against a SCSI 
+> initiator driver for which the number of hardware contexts had been set 
+> to 6. Queue depth per hardware queue was set to 127:
+> $ cat /sys/class/scsi_host/host10/can_queue
+> 127
+> 
+> This is what fio reports about the average queue depth:
+> 
+> IOdepths: 1=0.0%, 2=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, >=64=100.0%
+>   submit: 0=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=100.0%, >=64=0.0%
+> complete: 0=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=100.0%, >=64=0.0%
 
-Liviu's code assigns a unique id to the domain if missing, see
-of_pci_get_domain_nr(). So I don't think we need to add a "pci-domain"
-property here.
+Great, so that makes sense to me. I'll get the patch applied and marked
+for stable. I'll mark it as fixes commit 4bb659b156996.
 
-Liviu's DT implementation that assigns a unique number differs a bit
-from ACPI which states: "If _SEG [aka domain number] does not exist,
-OSPM assumes that all PCI bus segments are in PCI Segment Group 0."
+> 
+> While we are at it, how about the patch below ? That patch shouldn't
+> change any functionality but should make bt_clear_tag() slightly easier
+> to read.
 
-Maybe of_pci_get_domain_nr() should be similar to ACPI. If there are
-multiple root bridges, the "pci-domain" property could be forced
-instead.
+Agree, that looks cleaner and is more readable.
 
--Robert
+-- 
+Jens Axboe
+
