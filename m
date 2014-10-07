@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaJGPxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:53:33 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:33326 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbaJGPxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:53:31 -0400
-Message-ID: <54340C70.9070505@gmail.com>
-Date: Tue, 07 Oct 2014 17:53:20 +0200
-From: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754493AbaJGPyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:54:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753984AbaJGPyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:54:07 -0400
+Date: Tue, 7 Oct 2014 17:52:47 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Dr. David Alan Gilbert" <dgilbert@redhat.com>, qemu-devel@nongnu.org,
+        KVM list <kvm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Dave Hansen <dave@sr71.net>, Paolo Bonzini <pbonzini@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
+        Juan Quintela <quintela@redhat.com>
+Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
+Message-ID: <20141007155247.GD2342@redhat.com>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+ <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+ <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
+ <20141006085540.GD2336@work-vm>
+ <20141006164156.GA31075@redhat.com>
+ <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
+ <20141007141913.GC2342@redhat.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH v3 1/2] staging: gs_fpgaboot: Use print_hex_dump_bytes instead
- of pr_info
-References: <5433FA93.8000607@gmail.com> <5433FB18.9000009@gmail.com>	 <54340568.7090700@gmail.com> <1412695842.2916.49.camel@joe-AO725>
-In-Reply-To: <1412695842.2916.49.camel@joe-AO725>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007141913.GC2342@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+On Tue, Oct 07, 2014 at 04:19:13PM +0200, Andrea Arcangeli wrote:
+> mremap like interface, or file+commands protocol interface. I tend to
+> like mremap more, that's why I opted for a remap_anon_pages syscall
+> kept orthogonal to the userfaultfd functionality (remap_anon_pages
+> could be also used standalone as an accelerated mremap in some
+> circumstances) but nothing prevents to just embed the same mechanism
 
-Use print_hex_dump_bytes instead of pr_info
+Sorry for the self followup, but something else comes to mind to
+elaborate this further.
 
-Signed-off-by: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
-Reviewed-by: Insop Song <insop.song@gainspeed.com>
+In term of interfaces, the most efficient I could think of to minimize
+the enter/exit kernel, would be to append the "source address" of the
+data received from the network transport, to the userfaultfd_write()
+command (by appending 8 bytes to the wakeup command). Said that,
+mixing the mechanism to be notified about userfaults with the
+mechanism to resolve an userfault to me looks a complication. I kind
+of liked to keep the userfaultfd protocol is very simple and doing
+just its thing. The userfaultfd doesn't need to know how the userfault
+was resolved, even mremap would work theoretically (until we run out
+of vmas). I thought it was simpler to keep it that way. However if we
+want to resolve the fault with a "write()" syscall this may be the
+most efficient way to do it, as we're already doing a write() into the
+pseudofd to wakeup the page fault that contains the destination
+address, I just need to append the source address to the wakeup command.
 
----
- drivers/staging/gs_fpgaboot/gs_fpgaboot.c | 25 ++-----------------------
- 1 file changed, 2 insertions(+), 23 deletions(-)
+I probably grossly overestimated the benefits of resolving the
+userfault with a zerocopy page move, sorry. So if we entirely drop the
+zerocopy behavior and the TLB flush of the old page like you
+suggested, the way to keep the userfaultfd mechanism decoupled from
+the userfault resolution mechanism would be to implement an
+atomic-copy syscall. That would work for SIGBUS userfaults too without
+requiring a pseudofd then. It would be enough then to call
+mcopy_atomic(userfault_addr,tmp_addr,len) with the only constraints
+that len must be a multiple of PAGE_SIZE. Of course mcopy_atomic
+wouldn't page fault or call GUP into the destination address (it can't
+otherwise the in-flight partial copy would be visible to the process,
+breaking the atomicity of the copy), but it would fill in the
+pte/trans_huge_pmd with the same strict behavior that remap_anon_pages
+currently has (in turn it would by design bypass the VM_USERFAULT
+check and be ideal for resolving userfaults).
 
-diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-index 6aa9d7c..9764a9a 100644
---- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-+++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
-@@ -46,27 +46,6 @@ static char	*file = "xlinx_fpga_firmware.bit";
- module_param(file, charp, S_IRUGO);
- MODULE_PARM_DESC(file, "Xilinx FPGA firmware file.");
- 
--#ifdef DEBUG_FPGA
--static void datadump(char *msg, void *m, int n)
--{
--	int i;
--	unsigned char *c;
--
--	pr_info("=== %s ===\n", msg);
--
--	c = m;
--
--	for (i = 0; i < n; i++) {
--		if ((i&0xf) == 0)
--			pr_info(KERN_INFO "\n  0x%4x: ", i);
--
--		pr_info("%02X ", c[i]);
--	}
--
--	pr_info("\n");
--}
--#endif /* DEBUG_FPGA */
--
- static void read_bitstream(char *bitdata, char *buf, int *offset, int rdsize)
- {
- 	memcpy(buf, bitdata + *offset, rdsize);
-@@ -220,9 +199,9 @@ static int gs_download_image(struct fpgaimage *fimage, enum wbus bus_bytes)
- 	size = fimage->lendata;
- 
- #ifdef DEBUG_FPGA
--	datadump("bitfile sample", bitdata, 0x100);
-+	print_hex_dump_bytes("bitfile sample: ", DUMP_PREFIX_OFFSET,
-+			     bitdata, 0x100);
- #endif /* DEBUG_FPGA */
--
- 	if (!xl_supported_prog_bus_width(bus_bytes)) {
- 		pr_err("unsupported program bus width %d\n",
- 				bus_bytes);
--- 
-2.1.2
+mcopy_atomic could then be also extended to tmpfs and it would work
+without requiring the source page to be a tmpfs page too without
+having to convert page types on the fly.
 
+If I add mcopy_atomic, the patch in subject (10/17) can be dropped of
+course so it'd be even less intrusive than the current
+remap_anon_pages and it would require zero TLB flush during its
+runtime (it would just require an atomic copy).
+
+So should I try to embed a mcopy_atomic inside userfault_write or can
+I expose it to userland as a standalone new syscall? Or should I do
+something different? Comments?
+
+Thanks,
+Andrea
