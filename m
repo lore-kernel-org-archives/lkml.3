@@ -1,100 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618AbaJGMhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:37:07 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:64093 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752016AbaJGMhF (ORCPT
+	id S1753317AbaJGMlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:41:15 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60844 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaJGMlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:37:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH6sp9O=Hb3uGk3=5Gc+bb+AAZVZu=xHqNnUBHPG8BJUn==ZzQ@mail.gmail.com>
-References: <1411564278-17207-1-git-send-email-frans.klaver@xsens.com>
-	<1411564278-17207-2-git-send-email-frans.klaver@xsens.com>
-	<20140924131655.GG5729@leverpostej>
-	<20140924142222.GC22872@ci00147.xsens-tech.local>
-	<20140924143848.GH5729@leverpostej>
-	<20140924151448.GD22872@ci00147.xsens-tech.local>
-	<20140924153431.GJ5729@leverpostej>
-	<20140924185933.GA2221@gmail.com>
-	<20140925092715.GA3524@leverpostej>
-	<CAH6sp9O=Hb3uGk3=5Gc+bb+AAZVZu=xHqNnUBHPG8BJUn==ZzQ@mail.gmail.com>
-Date: Tue, 7 Oct 2014 14:37:03 +0200
-Message-ID: <CAH6sp9O+EnmvSHtXBSKuHT-hQJx3xE1SQxb1kzdYs37Yv+71CA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] sbs-battery: add forced instantiation from device tree
-From: Frans Klaver <fransklaver@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "olof@lixom.net" <olof@lixom.net>,
-        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 7 Oct 2014 08:41:14 -0400
+From: Arun Chandran <achandran@mvista.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: Mark Rutland <mark.rutland@arm.com>, linux-kernel@vger.kernel.org,
+        Arun Chandran <achandran@mvista.com>
+Subject: [PATCH v1] Arm64: ASLR: fix text randomization
+Date: Tue,  7 Oct 2014 18:10:28 +0530
+Message-Id: <1412685628-27178-1-git-send-email-achandran@mvista.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olof, Anton,
+This is due to incorrect definition of ELF_ET_DYN_BASE. It
+introduces randomization for text even if user does a "echo 0 >
+/proc/sys/kernel/randomize_va_space"
 
-Care to pitch in?
+Signed-off-by: Arun Chandran <achandran@mvista.com>
+---
+This can be tested using the code below
 
-Thanks,
-Frans
+#include <stdio.h>
 
-On Thu, Sep 25, 2014 at 11:32 AM, Frans Klaver <fransklaver@gmail.com> wrote:
-> On Thu, Sep 25, 2014 at 11:27 AM, Mark Rutland <mark.rutland@arm.com> wrote:
->> On Wed, Sep 24, 2014 at 07:59:34PM +0100, Frans Klaver wrote:
->>> On Wed, Sep 24, 2014 at 04:34:32PM +0100, Mark Rutland wrote:
->>> > On Wed, Sep 24, 2014 at 04:14:48PM +0100, Frans Klaver wrote:
->>> > > On Wed, Sep 24, 2014 at 03:38:49PM +0100, Mark Rutland wrote:
->>> > > > On Wed, Sep 24, 2014 at 03:22:22PM +0100, Frans Klaver wrote:
->>> > > > You mention that there's a GPIO that can be used to detect the battery
->>> > > > presence. Why can't the driver always probe and then on check for the
->>> > > > presence of the battery dynamically using that GPIO? That should cover
->>> > > > both cases.
->>> > >
->>> > > I would say that this was the case before [1] was done. The GPIO is
->>> > > optional and if not configured, the presence or absence of the battery
->>> > > is detected by checking a status register much like probe() currently
->>> > > does. It seems all cases were covered before that patch. If you worry
->>> > > about speed, you should use the GPIO. I wonder if we might be able to
->>> > > revert [1] without doing much harm.
->>> >
->>> > But reverting that would re-introduce the lag on some systems, no? Given
->>> > the wording of the original commit I would guess that the GPIO wasn't
->>> > available. Perhaps Olof or Anton can enlighten us?
->>>
->>> It probably would yes. The battery_detect gpio was last touched in 2011, the
->>> probe check was added somewhere in 2012.
->>
->> We can't revert it unless we know doing so won't reintroduce the
->> problem. From the above it sounds like we can't revert it.
->>
->>> We could keep it as a compile option.
->>
->> Perhaps.
->>
->>> > In the cases where a GPIO is available, I think we should be able to be
->>> > less pessimistic. Is a GPIO available in your case?
->>>
->>> We don't have the battery_detect pin available. Incidentally, a bit of
->>> lag reading out the battery is not a problem for us.
->>
->> So now we're back at sqaure one. The hardware is likely identical in the
->> your case and the care-about-lag case. Whether or not you care about lag
->> is a property of the user rather than the HW, so I don't think that
->> belongs in the dt.
->>
->> It would be interesting to know what the lag was adversely affecting.
->> Perhaps there's another way around this.
->
-> Exactly. I can imagine this really being a problem if the i2c bus
-> already has a lot of priority traffic.
->
-> Frans
+int main(int argc, char *argv)
+{
+    printf("main = %p\n", main);
+    return 0;
+}
+
+* compile it possition independently 
+  aarch64-linux-gnu-gcc -fPIE -pie aslr.c -o aslr
+
+* run it on the target
+
+	# ./aslr
+	main = 0x7f87138950
+	# ./aslr
+	main = 0x7f94a10950
+	# ./aslr
+	main = 0x7f94fee950
+	# ./aslr text
+	main = 0x7f8cb72950
+
+	# echo 0 > /proc/sys/kernel/randomize_va_space 
+	# ./aslr text
+	main = 0x5555555950
+	# ./aslr 
+	main = 0x5555555950
+	# ./aslr 
+	main = 0x5555555950
+	# ./aslr 
+	main = 0x5555555950
+---
+ arch/arm64/Kconfig           |    1 +
+ arch/arm64/include/asm/elf.h |    4 ++--
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index fd4e81a..a2eefc9 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -1,5 +1,6 @@
+ config ARM64
+ 	def_bool y
++	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+ 	select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+ 	select ARCH_HAS_SG_CHAIN
+ 	select ARCH_HAS_TICK_BROADCAST if GENERIC_CLOCKEVENTS_BROADCAST
+diff --git a/arch/arm64/include/asm/elf.h b/arch/arm64/include/asm/elf.h
+index 01d3aab..1f65be3 100644
+--- a/arch/arm64/include/asm/elf.h
++++ b/arch/arm64/include/asm/elf.h
+@@ -126,7 +126,7 @@ typedef struct user_fpsimd_state elf_fpregset_t;
+  * that it will "exec", and that there is sufficient room for the brk.
+  */
+ extern unsigned long randomize_et_dyn(unsigned long base);
+-#define ELF_ET_DYN_BASE	(randomize_et_dyn(2 * TASK_SIZE_64 / 3))
++#define ELF_ET_DYN_BASE	(2 * TASK_SIZE_64 / 3)
+ 
+ /*
+  * When the program starts, a1 contains a pointer to a function to be
+@@ -169,7 +169,7 @@ extern unsigned long arch_randomize_brk(struct mm_struct *mm);
+ #define COMPAT_ELF_PLATFORM		("v8l")
+ #endif
+ 
+-#define COMPAT_ELF_ET_DYN_BASE		(randomize_et_dyn(2 * TASK_SIZE_32 / 3))
++#define COMPAT_ELF_ET_DYN_BASE		(2 * TASK_SIZE_32 / 3)
+ 
+ /* AArch32 registers. */
+ #define COMPAT_ELF_NGREG		18
+-- 
+1.7.9.5
+
