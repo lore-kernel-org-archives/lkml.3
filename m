@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaJGOg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:36:29 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59356 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970AbaJGOg0 (ORCPT
+	id S1754094AbaJGOgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:36:36 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:59842 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970AbaJGOgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:36:26 -0400
+	Tue, 7 Oct 2014 10:36:31 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
         linux-watchdog@vger.kernel.org, linux@roeck-us.net,
-        David Paris <david.paris@st.com>
-Subject: [PATCH 1/4] ARM: STi: DT: STiH407: Add Device Tree node for LPC Watchdog
-Date: Tue,  7 Oct 2014 15:36:09 +0100
-Message-Id: <1412692572-14031-2-git-send-email-lee.jones@linaro.org>
+        devicetree@vger.kernel.org, David Paris <david.paris@st.com>
+Subject: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for ST's LPC Watchdog driver
+Date: Tue,  7 Oct 2014 15:36:11 +0100
+Message-Id: <1412692572-14031-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412692572-14031-1-git-send-email-lee.jones@linaro.org>
 References: <1412692572-14031-1-git-send-email-lee.jones@linaro.org>
@@ -22,32 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Cc: devicetree@vger.kernel.org
 Signed-off-by: David Paris <david.paris@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/stih407.dtsi | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 30 ++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
 
-diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
-index f539627a..303df6c 100644
---- a/arch/arm/boot/dts/stih407.dtsi
-+++ b/arch/arm/boot/dts/stih407.dtsi
-@@ -259,5 +259,15 @@
- 
- 			status = "disabled";
- 		};
+diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+new file mode 100644
+index 0000000..520ce90
+--- /dev/null
++++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+@@ -0,0 +1,30 @@
++STMicroelectronics LPC Watchdog
++===============================
 +
-+		watchdog@0x8787000 {
-+			compatible = "st,stih407-watchdog";
-+			reg = <0x8787000 0x1000>, <0x204 0x4>;
-+			reg-names = "base", "syscfg-en";
-+			clock-names = "st_wdog";
-+			clocks = <&clk_s_d3_flexgen CLK_LPC_0>;
-+			timeout-sec = <600>;
-+			st,syscfg = <&syscfg_core>;
-+		};
- 	};
- };
++Required properties
++
++- compatible 	: Must be one of:
++			"st,stih407-watchdog"
++			"st,stih416-watchdog"
++			"st,stih415-watchdog"
++			"st,stid127-watchdog"
++- reg		: LPC registers base address + range
++- reg-names	: Register map "base" and "syscfg-en" are compulsory. "type" is
++		  platform dependent and not required for the STiH407
++- clock-names 	: Should be "lpc_wdt"
++- clocks	: Clock used by LPC device
++- timeout-sec	: Watchdog timeout in seconds
++- st,syscfg	: Syscfg node used to configure CPU reset type and mask
++- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
++
++Example:
++	watchdog@fde05000 {
++		compatible	= "st,stih416-lpc-watchdog";
++		reg		= <0xfde05000 0x1000> <0x204 0x4>;
++		reg-names	= "base", "syscfg-en"
++		clock-names	= "lpc_wdt";
++		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
++		timeout-sec	= <600>;
++		st,syscfg	= <&syscfg_core>;
++		st,warm_reset;
++	};
 -- 
 1.9.1
 
