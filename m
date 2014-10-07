@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596AbaJGXUo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39920 "EHLO
+	id S932579AbaJGXUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39926 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411AbaJGXU1 (ORCPT
+	with ESMTP id S932476AbaJGXU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:27 -0400
+	Tue, 7 Oct 2014 19:20:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Assaf Azulay <assaf.azulay@intel.com>,
-        David Spinadel <david.spinadel@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 11/13] nl80211: clear skb cb before passing to netlink
-Date: Tue,  7 Oct 2014 16:20:16 -0700
-Message-Id: <20141007231920.257970489@linuxfoundation.org>
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 12/13] cpufreq: Fix wrong time unit conversion
+Date: Tue,  7 Oct 2014 16:20:17 -0700
+Message-Id: <20141007231920.286397153@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -30,50 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit bd8c78e78d5011d8111bc2533ee73b13a3bd6c42 upstream.
+commit a857c0b9e24e39fe5be82451b65377795f9538d8 upstream.
 
-In testmode and vendor command reply/event SKBs we use the
-skb cb data to store nl80211 parameters between allocation
-and sending. This causes the code for CONFIG_NETLINK_MMAP
-to get confused, because it takes ownership of the skb cb
-data when the SKB is handed off to netlink, and it doesn't
-explicitly clear it.
+The time spent by a CPU under a given frequency is stored in jiffies unit
+in the cpu var cpufreq_stats_table->time_in_state[i], i being the index of
+the frequency.
 
-Clear the skb cb explicitly when we're done and before it
-gets passed to netlink to avoid this issue.
+This is what is displayed in the following file on the right column:
 
-Reported-by: Assaf Azulay <assaf.azulay@intel.com>
-Reported-by: David Spinadel <david.spinadel@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+     cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+     2301000 19835820
+     2300000 3172
+     [...]
+
+Now cpufreq converts this jiffies unit delta to clock_t before returning it
+to the user as in the above file. And that conversion is achieved using the API
+cputime64_to_clock_t().
+
+Although it accidentally works on traditional tick based cputime accounting, where
+cputime_t maps directly to jiffies, it doesn't work with other types of cputime
+accounting such as CONFIG_VIRT_CPU_ACCOUNTING_* where cputime_t can map to nsecs
+or any granularity preffered by the architecture.
+
+For example we get a buggy zero delta on full dyntick configurations:
+
+     cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
+     2301000 0
+     2300000 0
+     [...]
+
+Fix this with using the proper jiffies_64_t to clock_t conversion.
+
+Reported-and-tested-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/wireless/nl80211.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/cpufreq/cpufreq_stats.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -6568,6 +6568,9 @@ int cfg80211_testmode_reply(struct sk_bu
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
-+
- 	if (WARN_ON(!rdev->testmode_info)) {
- 		kfree_skb(skb);
- 		return -EINVAL;
-@@ -6594,6 +6597,9 @@ void cfg80211_testmode_event(struct sk_b
- 	void *hdr = ((void **)skb->cb)[1];
- 	struct nlattr *data = ((void **)skb->cb)[2];
- 
-+	/* clear CB data for netlink core to own from now on */
-+	memset(skb->cb, 0, sizeof(skb->cb));
-+
- 	nla_nest_end(skb, data);
- 	genlmsg_end(skb, hdr);
- 	genlmsg_multicast_netns(wiphy_net(&rdev->wiphy), skb, 0,
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -81,7 +81,7 @@ static ssize_t show_time_in_state(struct
+ 	for (i = 0; i < stat->state_num; i++) {
+ 		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
+ 			(unsigned long long)
+-			cputime64_to_clock_t(stat->time_in_state[i]));
++			jiffies_64_to_clock_t(stat->time_in_state[i]));
+ 	}
+ 	return len;
+ }
 
 
