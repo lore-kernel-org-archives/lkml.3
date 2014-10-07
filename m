@@ -1,191 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649AbaJGMNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:13:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:46757 "EHLO relay.sw.ru"
+	id S1753793AbaJGMOC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:14:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47392 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751266AbaJGMNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:13:50 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Rob Landley <rob@landley.net>, Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH] [RFC] mnt: add ability to clone mntns starting with the current root
-Date: Tue,  7 Oct 2014 16:12:57 +0400
-Message-Id: <1412683977-29543-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.3
+	id S1753678AbaJGMN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:13:59 -0400
+Date: Tue, 7 Oct 2014 14:13:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, X86 ML <x86@kernel.org>
+Subject: Re: [PATCH] Kbuild: Check for CONFIG_READABLE_ASM when building .s
+ targets
+Message-ID: <20141007121356.GA18003@sepie.suse.cz>
+References: <1412523154-25602-1-git-send-email-bp@alien8.de>
+ <20141005155816.GB9377@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141005155816.GB9377@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Vagin <avagin@gmail.com>
+On 2014-10-05 17:58, Borislav Petkov wrote:
+> On Sun, Oct 05, 2014 at 05:32:34PM +0200, Borislav Petkov wrote:
+>> From: Borislav Petkov <bp@suse.de>
+>>
+>> We do need to look at the asm output of c files for various reasons. In
+>> order to do so, we do make <path-to-filename>.s.
+>>
+>> However, it can happen that the Kconfig option which enables the
+>> creation of readable asm CONFIG_READABLE_ASM is disabled. What is more,
+>> we want this option enabled because it indirectly enables the issue of
+>> line numbers in the asm done by gcc's switch -g.
+> 
+> Not really: so this is enabled by CONFIG_DEBUG_INFO and there are two
+> options: we make CONFIG_READABLE_ASM depend on it which makes people
+> answer a couple more questions or we simply add it to the command
+> building the .s file.
+> 
+> I say we do the second thing:
+> 
+> --
+> From: Borislav Petkov <bp@suse.de>
+> Subject: [PATCH -v1.1] Kbuild: Check for CONFIG_READABLE_ASM when building .s targets
+> 
+> We do need to look at the asm output of c files for various reasons. In
+> order to do so, we do make <path-to-filename>.s.
+> 
+> However, it can happen that the Kconfig option which enables the
+> creation of readable asm CONFIG_READABLE_ASM is disabled.
+> 
+> So issue a warning that the asm output might not be optimally readable
+> if that option is disabled.
+> 
+> Additionally, add the -g switch to the .s build command so that gcc
+> issues line numbers too.
 
-Currently when we create a new container with a separate root,
-we need to clone the current mount namespace with all mounts and then
-clean up it by using pivot_root(). A big part of mountpoints are cloned
-only to be umounted.
+This violates the principle of least surprise:
 
-Another problem is that rootfs can't be hidden from a container, because
-rootfs can't be moved or umounted.
+make $file.s
+as -o $file.o $file.s
 
-Here is an example how to get access to rootfs:
-fd = open("/proc/self/ns/mnt", O_RDONLY)
-umount2("/", MNT_DETACH);
-setns(fd, CLONE_NEWNS)
+should be equivalent to
 
-rootfs may contain data, which should not be avaliable in CT-s.
+make $file.o
 
-I suggest to add ability to create a mount namespace with specified
-mount points. A current task root can be used as a root for the new
-mount namespace.
+Why not simply check both READABLE_ASM and DEBUG_INFO?  Also, it's more
+straightforward to print the warning in the top-level Makefile rule than
+to add a conditional to the generic rule, like this:
 
-With this patch you can call chroot(ct->rootfs) and
-unshare(UNSHARE_NEWNS2) to get a clean mount namespace.
-
-UNSHARE_NEWNS2 can be used only with the unshare() syscall. The clone()
-syscall doesn't have unused flags.
-
-Here is an example how it looks like:
-$ cat ../../unshare.c
-
-int main(int argc, char **argv)
-{
-	if (unshare(UNSHARE_NEWNS2))
-		return 1;
-
-	execl("/bin/bash", "/bin/bash", NULL);
-	return 1;
-}
-$ mount --bind test/ubuntu/ test/ubuntu/
-$ cd test/ubuntu/
-$ chroot .
-$ ./unshare2
-$ mount -t proc proc proc
-$ cat /proc/self/mountinfo
-55 55 252:1 /home/avagin/test/ubuntu / rw,relatime - ext4 /dev/disk/by-uuid/d672b85f-533c-4868-9609-ca80be52d3c6 rw,errors=remount-ro,data=ordered
-56 55 0:3 / /proc rw,relatime - proc proc rw
-
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Rob Landley <rob@landley.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/namespace.c             | 16 ++++++++++++++--
- include/uapi/linux/sched.h |  8 ++++++++
- kernel/fork.c              | 11 ++++++++---
- kernel/nsproxy.c           |  2 +-
- 4 files changed, 31 insertions(+), 6 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 730c50e..f50a848 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2569,12 +2569,24 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
+diff --git a/Makefile b/Makefile
+index 106f300..2b4f62f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1505,6 +1505,9 @@ else
+ endif
  
- 	BUG_ON(!ns);
- 
--	if (likely(!(flags & CLONE_NEWNS))) {
-+	if (likely(!(flags & (CLONE_NEWNS | UNSHARE_NEWNS2)))) {
- 		get_mnt_ns(ns);
- 		return ns;
- 	}
- 
--	old = ns->root;
-+	if (flags & CLONE_NEWNS)
-+		old = ns->root;
-+	else { /* UNSHARE_NEWNS2 */
-+		struct path root;
-+
-+		get_fs_root(current->fs, &root);
-+		if (root.mnt->mnt_root != root.dentry) {
-+			path_put(&root);
-+			return ERR_PTR(-EINVAL); /* not a mountpoint */
-+		}
-+		old = real_mount(root.mnt);
-+		path_put(&root);
-+	}
- 
- 	new_ns = alloc_mnt_ns(user_ns);
- 	if (IS_ERR(new_ns))
-diff --git a/include/uapi/linux/sched.h b/include/uapi/linux/sched.h
-index 34f9d73..8092e50 100644
---- a/include/uapi/linux/sched.h
-+++ b/include/uapi/linux/sched.h
-@@ -31,6 +31,14 @@
- #define CLONE_IO		0x80000000	/* Clone io context */
- 
- /*
-+ * Following flags can be used only with unshare(), because
-+ * they are intersected with CSIGNAL
-+ */
-+#define UNSHARE_NEWNS2		0x00000001	/* Clone mnt namespace starting with the current task root. */
-+
-+#define UNSHARE_FLAGS		(UNSHARE_NEWNS2)
-+
-+/*
-  * Scheduling policies
-  */
- #define SCHED_NORMAL		0
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 0cf9cdb..52f1fc0 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1381,7 +1381,12 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	retval = copy_mm(clone_flags, p);
- 	if (retval)
- 		goto bad_fork_cleanup_signal;
--	retval = copy_namespaces(clone_flags, p);
-+
-+	/*
-+	 * CSIGNAL and UNSHARE_FLAGS are intersected, but
-+	 * UNSHARE_FLAGS can't be used with clone().
-+	 */
-+	retval = copy_namespaces(clone_flags & ~UNSHARE_FLAGS, p);
- 	if (retval)
- 		goto bad_fork_cleanup_mm;
- 	retval = copy_io(clone_flags, p);
-@@ -1790,7 +1795,7 @@ static int check_unshare_flags(unsigned long unshare_flags)
- 	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
- 				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
- 				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
--				CLONE_NEWUSER|CLONE_NEWPID))
-+				CLONE_NEWUSER|CLONE_NEWPID|UNSHARE_FLAGS))
- 		return -EINVAL;
- 	/*
- 	 * Not implemented, but pretend it works if there is nothing to
-@@ -1880,7 +1885,7 @@ SYSCALL_DEFINE1(unshare, unsigned long, unshare_flags)
- 	/*
- 	 * If unsharing namespace, must also unshare filesystem information.
- 	 */
--	if (unshare_flags & CLONE_NEWNS)
-+	if (unshare_flags & (CLONE_NEWNS | UNSHARE_NEWNS2))
- 		unshare_flags |= CLONE_FS;
- 
- 	err = check_unshare_flags(unshare_flags);
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index ef42d0a..a29e836 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -180,7 +180,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
- 	int err = 0;
- 
- 	if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
--			       CLONE_NEWNET | CLONE_NEWPID)))
-+			       CLONE_NEWNET | CLONE_NEWPID | UNSHARE_FLAGS)))
- 		return 0;
- 
- 	user_ns = new_cred ? new_cred->user_ns : current_user_ns();
--- 
-1.9.3
+ %.s: %.c prepare scripts FORCE
++ifeq ($(CONFIG_READABLE_ASM)$(CONFIG_DEBUG_INFO),)
++       $(warning Enable CONFIG_READABLE_ASM and CONFIG_DEBUG_INFO more helpful asm)
++endif
+        $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ %.i: %.c prepare scripts FORCE
+        $(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
 
+I wonder if the whole check shouldn't be wrapped in an ifdef
+CONFIG_DEBUG_KERNEL.
+
+Michal
