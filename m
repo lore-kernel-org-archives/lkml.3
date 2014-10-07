@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316AbaJGT15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:27:57 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:41943 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075AbaJGT1z (ORCPT
+	id S932346AbaJGT2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:28:10 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:47780 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932075AbaJGT2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:27:55 -0400
-Message-ID: <54343EB4.30708@imgtec.com>
-Date: Tue, 7 Oct 2014 12:27:48 -0700
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 7 Oct 2014 15:28:04 -0400
 MIME-Version: 1.0
-To: Rich Felker <dalias@libc.org>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Matthew Fortune <Matthew.Fortune@imgtec.com>,
-        David Daney <david.s.daney@gmail.com>,
-        "David Daney" <ddaney@caviumnetworks.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-References: <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org> <543431DA.4090809@imgtec.com> <CALCETrUQEbb=DotSzsneN7Hano_eC-EoTMko6uKcyZXvEcktkw@mail.gmail.com> <20141007190943.GM23797@brightrain.aerifal.cx> <54343C2B.2080801@imgtec.com> <20141007192107.GN23797@brightrain.aerifal.cx>
-In-Reply-To: <20141007192107.GN23797@brightrain.aerifal.cx>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+Date: Tue, 7 Oct 2014 21:28:02 +0200
+Message-ID: <CAFLt3pjkXgz9H9p=u-NATyf4C+8ybJ3fwLc=GXEjaabBZ8NF5g@mail.gmail.com>
+Subject: High latency while CPU is under full load
+From: Grozdan <neutrino8@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 12:21 PM, Rich Felker wrote:
-> The in-stack trampoline support could be left but used only for 
-> emulating instructions the kernel doesn't know. This would make all 
-> normal binaries immediately usable with non-executable stack, and 
-> would avoid the only potential source of regressions. Ultimately I 
-> think the "xol" stuff should be removed, but that could be a long term 
-> goal. 
-Thank you, it is exactly what I am doing in patch series named "[PATCH 
-0/3] MIPS executable stack protection".
-I just setup a special stack for that.
+Hi,
+
+Basically, my problem is this:
+
+I'm doing a lot of audio/video encoding on an AMD FX8350. The encoder
+process always runs at nice 10. Even so, my whole system feels very
+sluggish. Switching between different app windows and/or virtual
+desktops takes up usually 3-5 seconds giving the impression that there
+is not enough processing power. Browsing the web is also severely
+impacted.
+
+I had to tune CFS in order to be (much) more responsive during an
+encoding session. This has worked out pretty well thus far, but it is
+my opinion that the user should *not* need to fiddle with buttons to
+make his system respond fluently even under high load. The below is
+what I had to do in order to get a snappy system during such load
+
+kernel.sched_nr_migrate = 64
+kernel.sched_latency_ns = 65000000
+kernel.sched_wakeup_granularity_ns = 100000
+kernel.sched_min_granularity_ns = 100000
+kernel.sched_migration_cost_ns = 7000000
+
+I have tried 3 different kernels, including one compiled myself, but
+the results are the same
+Kernels I tried were: 3.11.10, 3.12 and 3.16.4 (self-compiled)
+
+My system specs are as follows
+
+CPU: AMD FX-8350 @ 4GHz
+RAM: 16GB DDR1333
+GPU: NVIDIA GTX 560 with NV blob driver
+HDD: Seagate Constellation ES.3 128MB cache
+Desktop: KDE 4.11
+
+-- 
+Yours truly
