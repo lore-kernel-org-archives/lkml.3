@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbaJGXUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39707 "EHLO
+	id S932414AbaJGXUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217AbaJGXUE (ORCPT
+	with ESMTP id S932220AbaJGXUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 22/37] mm/compaction: disallow high-order page for migration target
-Date: Tue,  7 Oct 2014 16:19:39 -0700
-Message-Id: <20141007231827.743024604@linuxfoundation.org>
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 24/37] drbd: fix regression out of mem, failed to invoke fence-peer helper
+Date: Tue,  7 Oct 2014 16:19:41 -0700
+Message-Id: <20141007231827.805724214@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
 References: <20141007231827.043235686@linuxfoundation.org>
@@ -31,58 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-commit 7d348b9ea64db0a315d777ce7d4b06697f946503 upstream.
+commit bbc1c5e8ad6dfebf9d13b8a4ccdf66c92913eac9 upstream.
 
-Purpose of compaction is to get a high order page.  Currently, if we
-find high-order page while searching migration target page, we break it
-to order-0 pages and use them as migration target.  It is contrary to
-purpose of compaction, so disallow high-order page to be used for
-migration target.
+Since linux kernel 3.13, kthread_run() internally uses
+wait_for_completion_killable().  We sometimes may use kthread_run()
+while we still have a signal pending, which we used to kick our threads
+out of potentially blocking network functions, causing kthread_run() to
+mistake that as a new fatal signal and fail.
 
-Additionally, clean-up logic in suitable_migration_target() to simplify
-the code.  There is no functional changes from this clean-up.
+Fix: flush_signals() before kthread_run().
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/compaction.c |   15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ drivers/block/drbd/drbd_nl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -217,21 +217,12 @@ static inline bool compact_trylock_irqsa
- /* Returns true if the page is within a block suitable for migration to */
- static bool suitable_migration_target(struct page *page)
- {
--	int migratetype = get_pageblock_migratetype(page);
--
--	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
--	if (migratetype == MIGRATE_RESERVE)
--		return false;
--
--	if (is_migrate_isolate(migratetype))
--		return false;
--
--	/* If the page is a large free page, then allow migration */
-+	/* If the page is a large free page, then disallow migration */
- 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
--		return true;
-+		return false;
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -525,6 +525,12 @@ void conn_try_outdate_peer_async(struct
+ 	struct task_struct *opa;
  
- 	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
--	if (migrate_async_suitable(migratetype))
-+	if (migrate_async_suitable(get_pageblock_migratetype(page)))
- 		return true;
- 
- 	/* Otherwise skip the block */
+ 	kref_get(&tconn->kref);
++	/* We may just have force_sig()'ed this thread
++	 * to get it out of some blocking network function.
++	 * Clear signals; otherwise kthread_run(), which internally uses
++	 * wait_on_completion_killable(), will mistake our pending signal
++	 * for a new fatal signal and fail. */
++	flush_signals(current);
+ 	opa = kthread_run(_try_outdate_peer_async, tconn, "drbd_async_h");
+ 	if (IS_ERR(opa)) {
+ 		conn_err(tconn, "out of mem, failed to invoke fence-peer helper\n");
 
 
