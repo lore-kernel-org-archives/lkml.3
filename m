@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156AbaJGXmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:42:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
+	id S1755519AbaJGXTq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:19:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526AbaJGXTr (ORCPT
+	with ESMTP id S1754508AbaJGXTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:47 -0400
+	Tue, 7 Oct 2014 19:19:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.16 07/26] i2c: qup: Fix order of runtime pm initialization
-Date: Tue,  7 Oct 2014 16:19:23 -0700
-Message-Id: <20141007231848.708806716@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Chuck Ebbert <cebbert.lkml@gmail.com>
+Subject: [PATCH 3.16 01/26] udf: Avoid infinite loop when processing indirect ICBs
+Date: Tue,  7 Oct 2014 16:19:17 -0700
+Message-Id: <20141007231848.531941472@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -30,50 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Gross <agross@codeaurora.org>
+From: Jan Kara <jack@suse.cz>
 
-commit 86b59bbfae2a895aa26b3d15f31b1a705dbfede1 upstream.
+commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
 
-The runtime pm calls need to be done before populating the children via the
-i2c_add_adapter call.  If this is not done, a child can run into issues trying
-to do i2c read/writes due to the pm_runtime_sync failing.
+We did not implement any bound on number of indirect ICBs we follow when
+loading inode. Thus corrupted medium could cause kernel to go into an
+infinite loop, possibly causing a stack overflow.
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Fix the possible stack overflow by removing recursion from
+__udf_read_inode() and limit number of indirect ICBs we follow to avoid
+infinite loops.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-qup.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ fs/udf/inode.c |   35 +++++++++++++++++++++--------------
+ 1 file changed, 21 insertions(+), 14 deletions(-)
 
---- a/drivers/i2c/busses/i2c-qup.c
-+++ b/drivers/i2c/busses/i2c-qup.c
-@@ -670,16 +670,20 @@ static int qup_i2c_probe(struct platform
- 	qup->adap.dev.of_node = pdev->dev.of_node;
- 	strlcpy(qup->adap.name, "QUP I2C adapter", sizeof(qup->adap.name));
- 
--	ret = i2c_add_adapter(&qup->adap);
--	if (ret)
--		goto fail;
--
- 	pm_runtime_set_autosuspend_delay(qup->dev, MSEC_PER_SEC);
- 	pm_runtime_use_autosuspend(qup->dev);
- 	pm_runtime_set_active(qup->dev);
- 	pm_runtime_enable(qup->dev);
-+
-+	ret = i2c_add_adapter(&qup->adap);
-+	if (ret)
-+		goto fail_runtime;
-+
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1271,13 +1271,22 @@ update_time:
  	return 0;
+ }
  
-+fail_runtime:
-+	pm_runtime_disable(qup->dev);
-+	pm_runtime_set_suspended(qup->dev);
- fail:
- 	qup_i2c_disable_clocks(qup);
- 	return ret;
++/*
++ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
++ * arbitrary - just that we hopefully don't limit any real use of rewritten
++ * inode on write-once media but avoid looping for too long on corrupted media.
++ */
++#define UDF_MAX_ICB_NESTING 1024
++
+ static void __udf_read_inode(struct inode *inode)
+ {
+ 	struct buffer_head *bh = NULL;
+ 	struct fileEntry *fe;
+ 	uint16_t ident;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
++	unsigned int indirections = 0;
+ 
++reread:
+ 	/*
+ 	 * Set defaults, but the inode is still incomplete!
+ 	 * Note: get_new_inode() sets the following on a new inode:
+@@ -1314,28 +1323,26 @@ static void __udf_read_inode(struct inod
+ 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
+ 					&ident);
+ 		if (ident == TAG_IDENT_IE && ibh) {
+-			struct buffer_head *nbh = NULL;
+ 			struct kernel_lb_addr loc;
+ 			struct indirectEntry *ie;
+ 
+ 			ie = (struct indirectEntry *)ibh->b_data;
+ 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
+ 
+-			if (ie->indirectICB.extLength &&
+-				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
+-							&ident))) {
+-				if (ident == TAG_IDENT_FE ||
+-					ident == TAG_IDENT_EFE) {
+-					memcpy(&iinfo->i_location,
+-						&loc,
+-						sizeof(struct kernel_lb_addr));
+-					brelse(bh);
+-					brelse(ibh);
+-					brelse(nbh);
+-					__udf_read_inode(inode);
++			if (ie->indirectICB.extLength) {
++				brelse(bh);
++				brelse(ibh);
++				memcpy(&iinfo->i_location, &loc,
++				       sizeof(struct kernel_lb_addr));
++				if (++indirections > UDF_MAX_ICB_NESTING) {
++					udf_err(inode->i_sb,
++						"too many ICBs in ICB hierarchy"
++						" (max %d supported)\n",
++						UDF_MAX_ICB_NESTING);
++					make_bad_inode(inode);
+ 					return;
+ 				}
+-				brelse(nbh);
++				goto reread;
+ 			}
+ 		}
+ 		brelse(ibh);
 
 
