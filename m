@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbaJGXUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39724 "EHLO
+	id S932633AbaJGXWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:22:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308AbaJGXUK (ORCPT
+	with ESMTP id S932451AbaJGXUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:10 -0400
+	Tue, 7 Oct 2014 19:20:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3.14 34/37] mm: vmscan: shrink_slab: rename max_pass -> freeable
-Date: Tue,  7 Oct 2014 16:19:51 -0700
-Message-Id: <20141007231828.100214595@linuxfoundation.org>
+        Shaohua Li <shli@kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Mike Snitzer <snitzer@redhat.com>,
+        Heinz Mauelshagen <heinzm@redhat.com>, NeilBrown <neilb@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH 3.10 08/13] md/raid5: disable DISCARD by default due to safety concerns.
+Date: Tue,  7 Oct 2014 16:20:13 -0700
+Message-Id: <20141007231920.169944289@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
-References: <20141007231827.043235686@linuxfoundation.org>
+In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
+References: <20141007231919.924479934@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -28,115 +28,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vladimir Davydov <vdavydov@parallels.com>
+From: NeilBrown <neilb@suse.de>
 
-commit d5bc5fd3fcb7b8dfb431694a8c8052466504c10c upstream.
+commit 8e0e99ba64c7ba46133a7c8a3e3f7de01f23bd93 upstream.
 
-The name `max_pass' is misleading, because this variable actually keeps
-the estimate number of freeable objects, not the maximal number of
-objects we can scan in this pass, which can be twice that.  Rename it to
-reflect its actual meaning.
+It has come to my attention (thanks Martin) that 'discard_zeroes_data'
+is only a hint.  Some devices in some cases don't do what it
+says on the label.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+The use of DISCARD in RAID5 depends on reads from discarded regions
+being predictably zero.  If a write to a previously discarded region
+performs a read-modify-write cycle it assumes that the parity block
+was consistent with the data blocks.  If all were zero, this would
+be the case.  If some are and some aren't this would not be the case.
+This could lead to data corruption after a device failure when
+data needs to be reconstructed from the parity.
+
+As we cannot trust 'discard_zeroes_data', ignore it by default
+and so disallow DISCARD on all raid4/5/6 arrays.
+
+As many devices are trustworthy, and as there are benefits to using
+DISCARD, add a module parameter to over-ride this caution and cause
+DISCARD to work if discard_zeroes_data is set.
+
+If a site want to enable DISCARD on some arrays but not on others they
+should select DISCARD support at the filesystem level, and set the
+raid456 module parameter.
+    raid456.devices_handle_discard_safely=Y
+
+As this is a data-safety issue, I believe this patch is suitable for
+-stable.
+DISCARD support for RAID456 was added in 3.7
+
+Cc: Shaohua Li <shli@kernel.org>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Cc: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Fixes: 620125f2bf8ff0c4969b79653b54d7bcc9d40637
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bwh: Backported to 3.10: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/vmscan.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/md/raid5.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -224,15 +224,15 @@ shrink_slab_node(struct shrink_control *
- 	unsigned long freed = 0;
- 	unsigned long long delta;
- 	long total_scan;
--	long max_pass;
-+	long freeable;
- 	long nr;
- 	long new_nr;
- 	int nid = shrinkctl->nid;
- 	long batch_size = shrinker->batch ? shrinker->batch
- 					  : SHRINK_BATCH;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -60,6 +60,10 @@
+ #include "raid0.h"
+ #include "bitmap.h"
  
--	max_pass = shrinker->count_objects(shrinker, shrinkctl);
--	if (max_pass == 0)
-+	freeable = shrinker->count_objects(shrinker, shrinkctl);
-+	if (freeable == 0)
- 		return 0;
++static bool devices_handle_discard_safely = false;
++module_param(devices_handle_discard_safely, bool, 0644);
++MODULE_PARM_DESC(devices_handle_discard_safely,
++		 "Set to Y if all devices in each array reliably return zeroes on reads from discarded regions");
+ /*
+  * Stripe cache
+  */
+@@ -5611,7 +5615,7 @@ static int run(struct mddev *mddev)
+ 		mddev->queue->limits.discard_granularity = stripe;
+ 		/*
+ 		 * unaligned part of discard request will be ignored, so can't
+-		 * guarantee discard_zerors_data
++		 * guarantee discard_zeroes_data
+ 		 */
+ 		mddev->queue->limits.discard_zeroes_data = 0;
  
- 	/*
-@@ -244,14 +244,14 @@ shrink_slab_node(struct shrink_control *
+@@ -5636,6 +5640,18 @@ static int run(struct mddev *mddev)
+ 			    !bdev_get_queue(rdev->bdev)->
+ 						limits.discard_zeroes_data)
+ 				discard_supported = false;
++			/* Unfortunately, discard_zeroes_data is not currently
++			 * a guarantee - just a hint.  So we only allow DISCARD
++			 * if the sysadmin has confirmed that only safe devices
++			 * are in use by setting a module parameter.
++			 */
++			if (!devices_handle_discard_safely) {
++				if (discard_supported) {
++					pr_info("md/raid456: discard support disabled due to uncertainty.\n");
++					pr_info("Set raid456.devices_handle_discard_safely=Y to override.\n");
++				}
++				discard_supported = false;
++			}
+ 		}
  
- 	total_scan = nr;
- 	delta = (4 * nr_pages_scanned) / shrinker->seeks;
--	delta *= max_pass;
-+	delta *= freeable;
- 	do_div(delta, lru_pages + 1);
- 	total_scan += delta;
- 	if (total_scan < 0) {
- 		printk(KERN_ERR
- 		"shrink_slab: %pF negative objects to delete nr=%ld\n",
- 		       shrinker->scan_objects, total_scan);
--		total_scan = max_pass;
-+		total_scan = freeable;
- 	}
- 
- 	/*
-@@ -260,26 +260,26 @@ shrink_slab_node(struct shrink_control *
- 	 * shrinkers to return -1 all the time. This results in a large
- 	 * nr being built up so when a shrink that can do some work
- 	 * comes along it empties the entire cache due to nr >>>
--	 * max_pass.  This is bad for sustaining a working set in
-+	 * freeable. This is bad for sustaining a working set in
- 	 * memory.
- 	 *
- 	 * Hence only allow the shrinker to scan the entire cache when
- 	 * a large delta change is calculated directly.
- 	 */
--	if (delta < max_pass / 4)
--		total_scan = min(total_scan, max_pass / 2);
-+	if (delta < freeable / 4)
-+		total_scan = min(total_scan, freeable / 2);
- 
- 	/*
- 	 * Avoid risking looping forever due to too large nr value:
- 	 * never try to free more than twice the estimate number of
- 	 * freeable entries.
- 	 */
--	if (total_scan > max_pass * 2)
--		total_scan = max_pass * 2;
-+	if (total_scan > freeable * 2)
-+		total_scan = freeable * 2;
- 
- 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
- 				nr_pages_scanned, lru_pages,
--				max_pass, delta, total_scan);
-+				freeable, delta, total_scan);
- 
- 	/*
- 	 * Normally, we should not scan less than batch_size objects in one
-@@ -292,12 +292,12 @@ shrink_slab_node(struct shrink_control *
- 	 *
- 	 * We detect the "tight on memory" situations by looking at the total
- 	 * number of objects we want to scan (total_scan). If it is greater
--	 * than the total number of objects on slab (max_pass), we must be
-+	 * than the total number of objects on slab (freeable), we must be
- 	 * scanning at high prio and therefore should try to reclaim as much as
- 	 * possible.
- 	 */
- 	while (total_scan >= batch_size ||
--	       total_scan >= max_pass) {
-+	       total_scan >= freeable) {
- 		unsigned long ret;
- 		unsigned long nr_to_scan = min(batch_size, total_scan);
- 
+ 		if (discard_supported &&
 
 
