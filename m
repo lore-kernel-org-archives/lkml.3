@@ -1,86 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932904AbaJGXbc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:31:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39724 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225AbaJGXUF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 12/37] mm, thp: move invariant bug check out of loop in __split_huge_page_map
-Date: Tue,  7 Oct 2014 16:19:29 -0700
-Message-Id: <20141007231827.450492560@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
-References: <20141007231827.043235686@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S932933AbaJGXcE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:32:04 -0400
+Received: from roy.gaast.net ([80.101.33.21]:33740 "EHLO mail.gaast.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932445AbaJGXcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 19:32:00 -0400
+X-Greylist: delayed 713 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Oct 2014 19:32:00 EDT
+Message-ID: <54347520.3050109@gaast.net>
+Date: Wed, 08 Oct 2014 00:20:00 +0100
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: rafael.j.wysocki@intel.com, linux-kernel@vger.kernel.org
+Subject: Machine crashes right *after* ~successful resume
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+Rafael, including you on this since 
+http://linuxconcloudopenna2013.sched.org/event/d708f47d07cd44b9669610778c024708#.VDRzTDS_EUF 
+mentions you as the maintainer for Linux + power management. I hope this 
+is still accurate.
 
-From: Waiman Long <Waiman.Long@hp.com>
+Since Linux 3.12 (Debian version 3.12.9-1~bpo70+1) and all the way up to 
+3.16 (Debian version 3.16.3-2), I'm having suspend-resume issues on my 
+machine (Intel Z68, i7-3770K) that are somewhat less obvious.
 
-commit f8303c2582b889351e261ff18c4d8eb197a77db2 upstream.
+After every boot, I get two successful suspend+resume cycles, but after 
+the third suspend, it won't resume successfully. On the VGA console I've 
+never had anything useful logged, luckily over the serial console I've 
+had more luck. I seem to get as far as:
 
-In __split_huge_page_map(), the check for page_mapcount(page) is
-invariant within the for loop.  Because of the fact that the macro is
-implemented using atomic_read(), the redundant check cannot be optimized
-away by the compiler leading to unnecessary read to the page structure.
+[  153.787678] PM: resume of devices complete after 3797.737 msecs
+[  153.787775] PM: resume devices took 3.796 seconds
+[  154.238612] Restarting tasks ... done.
 
-This patch moves the invariant bug check out of the loop so that it will
-be done only once.  On a 3.16-rc1 based kernel, the execution time of a
-microbenchmark that broke up 1000 transparent huge pages using munmap()
-had an execution time of 38,245us and 38,548us with and without the
-patch respectively.  The performance gain is about 1%.
+And indeed, while testing I was running a "ping -i0.01" to a host on my 
+network, and it managed to get a few packets out. Timing already seems 
+quite off though:
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Scott J Norton <scott.norton@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+22:11:49.515489 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
+id 3074, seq 894, length 64
+22:11:49.982265 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
+id 3074, seq 895, length 64
+22:11:50.986779 IP 192.168.44.101 > 192.168.44.100: ICMP echo request, 
+id 3074, seq 896, length 64
 
----
- mm/huge_memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Note the gaps that are 0.4-1.0s instead of the 0.01s they should've 
+been. To me these pings going *out* sound like userland's definitely 
+waking up for a while, or at least some processes are. Also, for several 
+seconds even during earlier stages of the resume, the machine is already 
+responding to echo requests.
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1819,6 +1819,8 @@ static int __split_huge_page_map(struct
- 	if (pmd) {
- 		pgtable = pgtable_trans_huge_withdraw(mm, pmd);
- 		pmd_populate(mm, &_pmd, pgtable);
-+		if (pmd_write(*pmd))
-+			BUG_ON(page_mapcount(page) != 1);
- 
- 		haddr = address;
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-@@ -1828,8 +1830,6 @@ static int __split_huge_page_map(struct
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
- 				entry = pte_wrprotect(entry);
--			else
--				BUG_ON(page_mapcount(page) != 1);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
- 			if (pmd_numa(*pmd))
+Sadly after this message to my serial console and these few ICMP 
+packets, the machine locks up quite hard, to the point that SysRq 
+doesn't respond anymore. :-(
+
+This is happening for a while already and makes suspend+resume mostly 
+useless on my machine. What other debugging info can I provide to help 
+with getting this fixed?
+
+I've found out about pm_trace, which always points at the same line (and 
+no device):
+
+/var/log/syslog.1:Oct 10 16:43:58 ruby kernel: [    0.780503]   Magic 
+number: 0:52:740
+/var/log/syslog.1:Oct 10 16:43:58 ruby kernel: [    0.780599]   hash 
+matches /tmp/linux-3.16.3/drivers/base/power/main.c:812
+
+In my source tree that line is:
+
+         TRACE_RESUME(error);
+
+Right at the end of device_resume(), under the Complete: label. Note 
+that I might have to redo this though, as I now realise I had only 
+recompiled my *kernel* with the PM_TRACE_RTC flag set, not all my 
+modules, which I assume is not enough. (I'm thinking of filing a Debian 
+bug requesting this flag to be enabled by default..) However since the 
+kernel seems to declare the resume as complete I'm not sure whether 
+pm_trace is still of any use?
+
+With kernels 3.10 and older I have no such problems, I can 
+suspend+resume as often as I want.
+
+I've already tried to skip the NVidia + VMware modules at boot time (as 
+you can see from the logs they're not loaded at any point), but it 
+didn't help. I could try omitting more modules.
+
+I'm attaching a full dmesg of boot + a few suspend+resume cycles in 3.10 
+and 3.16, and a dump of the serial console showing the last resume cycle 
+(which I couldn't get from dmesg of course).
+
+You might notice the message about s2ram segfaulting which I've looked 
+at, that seems to be VBE-related code, but this problem occurs even when 
+I just echo ram to /sys/power/state directly without using s2ram, so I 
+assume it's not related.
+
+Sorry for the long message. I'd love some ideas for troubleshooting an 
+issue like this.
+
+"Attachments" in http://roy.gaast.net/~wilmer/.lkml/ since I just 
+realised >200KB of attachments might not be appreciated. :-)
 
 
+Cheers,
+
+Wilmer van der Gaast.
+
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
