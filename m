@@ -1,154 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882AbaJGPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:05:09 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:56558 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281AbaJGPFH (ORCPT
+	id S1754120AbaJGPFk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:05:40 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:22299 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971AbaJGPFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:05:07 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation for the dma controller API
-Date: Tue, 07 Oct 2014 18:05:15 +0300
-Message-ID: <2491176.7TIClHxUkE@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <20141007145226.GA17925@lukather>
-References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com> <5433D9AF.8020508@atmel.com> <20141007145226.GA17925@lukather>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 7 Oct 2014 11:05:38 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f156d0000063c7-62-54340140e769
+Content-transfer-encoding: 8BIT
+Message-id: <1412694334.1185.1.camel@AMDC1943>
+Subject: Re: [PATCH] power: charger-manager: Avoid recursive thermal get_temp
+ call
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: jonghwa3.lee@samsung.com
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 07 Oct 2014 17:05:34 +0200
+In-reply-to: <5433E518.40300@samsung.com>
+References: <1412611212-24803-1-git-send-email-k.kozlowski@samsung.com>
+ <54334E00.9030403@samsung.com> <1412665994.11780.3.camel@AMDC1943>
+ <5433BE0D.6000306@samsung.com> <1412686205.15309.1.camel@AMDC1943>
+ <5433E518.40300@samsung.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t/xa7oOjCYhBo8O8Foc3Kppcf3Lc1aL
+	SU/eM1tMXDmZ2aLz7BNmi8u75rBZfO49wmhxu3EFm8Xp3SUOnB4T+j8xeuycdZfdY/MKLY9N
+	qzrZPPq2rGL0+LxJLoAtissmJTUnsyy1SN8ugSvjyKJOpoJv0hVLTk9gbmDcLNbFyMkhIWAi
+	sXnzRVYIW0ziwr31bF2MXBxCAksZJdrO/GMHSfAKCEr8mHyPpYuRg4NZQF7iyKVskDCzgLrE
+	pHmLmCHqPzNKbDh5gAmkhldAT6JlrSpIjbBAiMTumZeYQWw2AWOJzcuXsIHYIgIyEiuv/mQC
+	6WUW2MQkse7lHBaQBIuAqkTn82VgezkFNCUmLfzPDrHgA6NEb/s0dpAFEgLKEo39bhMYBWYh
+	OW8WwnmzkJy3gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZI6H/Zwbj4mNUhRgEORiUe
+	3g2GxiFCrIllxZW5hxglOJiVRHinvAcK8aYkVlalFuXHF5XmpBYfYmTi4JRqYFSoPLrUfV/f
+	m8kyN4/cP79a5mj3x+yv8yfYJlzrsJv5XMTxJbd56U+JHznnJpbw6QYUfNof5ntC+OuVVTOm
+	XPmXxe2sFCp0u1tN9pr5Tz71iDWTlP/xqS+dHNKsc+hyg8236JU1Nr9uvt7kO2G3ddynz7IT
+	RTp5nwTfi4qWipyVqmY9N9/56WslluKMREMt5qLiRADbhIIjWwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 07 October 2014 16:52:26 Maxime Ripard wrote:
-> On Tue, Oct 07, 2014 at 02:16:47PM +0200, Nicolas Ferre wrote:
-> > On 06/10/2014 14:09, Laurent Pinchart :
-> > > On Friday 26 September 2014 17:40:35 Maxime Ripard wrote:
-> > >> The dmaengine is neither trivial nor properly documented at the moment,
-> > >> which means a lot of trial and error development, which is not that
-> > >> good for such a central piece of the system.
-> > >> 
-> > >> Attempt at making such a documentation.
-> > >> 
-> > >> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > >> ---
-> > >> 
-> > >>  Documentation/dmaengine/provider.txt | 358 +++++++++++++++++++++++++++
-> > >>  1 file changed, 358 insertions(+)
-> > >>  create mode 100644 Documentation/dmaengine/provider.txt
-> > >> 
-> > >> diff --git a/Documentation/dmaengine/provider.txt
-> > >> b/Documentation/dmaengine/provider.txt new file mode 100644
-> > >> index 000000000000..ba407e706cde
-> > >> --- /dev/null
-> > >> +++ b/Documentation/dmaengine/provider.txt
-> > >> @@ -0,0 +1,358 @@
-
-[snip]
-
-> > >> +Device operations
-> > >> +-----------------
-> > >> +
-> > >> +Our dma_device structure also requires a few function pointers in
-> > >> +order to implement the actual logic, now that we described what
-> > >> +operations we were able to perform.
-> > >> +
-> > >> +The functions that we have to fill in there, and hence have to
-> > >> +implement, obviously depend on the transaction types you reported as
-> > >> +supported.
-> > >> +
-> > >> +   * device_alloc_chan_resources
-> > >> +   * device_free_chan_resources
-> > >> +     - These functions will be called whenever a driver will call
-> > >> +       dma_request_channel or dma_release_channel for the first/last
-> > >> +       time on the channel associated to that driver.
-> > >> +     - They are in charge of allocating/freeing all the needed
-> > >> +       resources in order for that channel to be useful for your
-> > >> +       driver.
-> > >> +     - These functions can sleep.
-> > >> +
-> > >> +   * device_prep_dma_*
-> > >> +     - These functions are matching the capabilities you registered
-> > >> +       previously.
-> > >> +     - These functions all take the buffer or the scatterlist relevant
-> > >> +       for the transfer being prepared, and should create a hardware
-> > >> +       descriptor or a list of descriptors from it
-> > >> +     - These functions can be called from an interrupt context
-> > >> +     - Any allocation you might do should be using the GFP_NOWAIT
-> > >> +       flag, in order not to potentially sleep, but without depleting
-> > >> +       the emergency pool either.
-> > > 
-> > > You could add "Drivers should try to preallocate the data structures
-> > > they require to prepare a transfer."
-> > > 
-> > >> +
-> > >> +     - It should return a unique instance of the
-> > >> +       dma_async_tx_descriptor structure, that further represents this
-> > >> +       particular transfer.
-> > >> +
-> > >> +     - This structure can be allocated using the function
-> > >> +       dma_async_tx_descriptor_init.
-> > > 
-> > > That function only initializes the tx descriptor, it doesn't allocate
-> > > it.
-> > 
-> > Beware, it can be confusing when mixing "descriptors" and "hardware
-> > descriptors". The ones used by the DMA controller itself to describe the
-> > chunks of data (hardware descriptors) and the ones that would represent
-> > them in the driver (tx descriptors). However, it's true that both must
-> > be prepared by this set of functions.
+On wto, 2014-10-07 at 22:05 +0900, jonghwa3.lee@samsung.com wrote:
+> On 2014년 10월 07일 21:50, Krzysztof Kozlowski wrote:
 > 
-> There's a few "hardware" missing indeed, but we can't really avoid the
-> confusion here, since it does rely also on a dma_async_tx_descriptor.
-
-How about always specifying whether we refer to a "hardware descriptor" or a 
-"transaction descriptor" ?
-
-> > >> +     - You'll also need to set two fields in this structure:
-> > >> +       + flags:
-> > >> +		TODO: Can it be modified by the driver itself, or
-> > >> +		should it be always the flags passed in the arguments
-> > >> +
-> > >> +       + tx_submit:	A pointer to a function you have to implement,
-> > >> +			that is supposed to push the current descriptor
-> > >> +			to a pending queue, waiting for issue_pending to
-> > >> +			be called.
+> > On wto, 2014-10-07 at 19:18 +0900, jonghwa3.lee@samsung.com wrote:
+> >> On 2014년 10월 07일 16:13, Krzysztof Kozlowski wrote:
+> >>
+> >>>
+> >>> On wto, 2014-10-07 at 11:20 +0900, jonghwa3.lee@samsung.com wrote:
+> >>>> Hi,
+> >>>> On 2014년 10월 07일 01:00, Krzysztof Kozlowski wrote:
+> >>>>
+> >>>>> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
+> >>>>> as a thermal zone if any of these conditions match:
+> >>>>> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
+> >>>>> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
+> >>>>>    the fuel gauge temperature property).
+> >>>>>
+> >>>>> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
+> >>>>> is not set) the charger manager forwards its get_temp calls to fuel
+> >>>>> gauge thermal zone.
+> >>>>>
+> >>>>> This leads to reporting by lockdep a false positive deadlock for thermal
+> >>>>> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
+> >>>>> false positive because these are different mutexes: one for charger
+> >>>>> manager thermal zone and second for fuel gauge thermal zone.
+> >>>>>
+> >>>>
+> >>>>
+> >>>> Yes, this happens because power_supply_subsystem automatically creates
+> >>>> thermal_zone when POWER_SUPPLY_PROP_TEMP is available at the time of
+> >>>> power_supply registering. And as you point out, it makes duplicate thermal_zone
+> >>>> when some power_supply references other power_supply's. I hope it would become
+> >>>> to be a selectable option or change the manner of charger-manager itself (if the
+> >>>> charger-manager is only one who references other power_supply's temperature
+> >>>> sensing ability).
+> >>>>
+> >>>> Anyway, the code looks fine to me.
+> >>>>
+> >>>> Acked-by : Jonghwa Lee <jonghwa3.lee@samsung.com>
+> >>>
+> >>> Thank you for looking at patch. However later I started to wonder
+> >>> whether my fix is sufficient. For the case when fuel gauge is used as
+> >>> source of temperature it is. But for the case when external sensor is
+> >>> used it is not - still there will be recursive call and false positive
+> >>> from lockdep.
+> >>>
+> >>> Also minor fix is needed in my patch - s/IS_ENABLED/config_enabled/.
+> >>>
+> >>> I can send a v2 fixing this but first question - what about second
+> >>> recursive issue (when external sensor is used instead of fuel gauge)?
+> >>>
+> >>
+> >>
+> >> Yes, you're right, it still had problem for external temperature sensor case.
+> >> How about we change the core not to make duplicate thermal zone if it already
+> >> existed. It's not the common case, but it looks worthy.
+> >>
+> >> like as below,
+> >>
+> >> static int psy_register_thermal(struct power_supply *psy)
+> >> {
+> >> ...
+> >> +	if (psy->tzd)
+> >> +		return 0;
+> >> ...
+> >>
+> >> We also needs some modification at charger-manager driver, however we can avoid
+> >> recursive call problem with this way :)
 > > 
-> > The question remains: why wait when all the information is already
-> > prepared and available for the DMA controller to start the job?
-> > Actually, we don't wait in at_hdmac, just to be more efficient, but I
-> > known that we kind of break this "requirement"... But sorry, it is
-> > another discussion which should be lead elsewhere.
+> > Yes, that would remove recursive call but this would also remove thermal
+> > zone for charger manager's power supply. Does anyone (user space?)
+> > depend and use charger managers thermal zone?
+> > 
+> 
+> 
+> AFAIK, no,, charger manager's thermal zone means nothing but just replica of
+> other thermal zone related with battery. It is better to remove it.
 
->From my recollection of a discussion I've had with Russell King, I believe the 
-main reason to separate transaction submission (queueing) issue (start) is to 
-let DMA engine drivers issuing several queued requests in one go when hardware 
-supports chaining requests only when none of them are running. It's thus just 
-an optimization. Russell, could you confirm (or infirm) that ?
+Great! I'll send a patch fixing both paths of recursive call.
 
-> It's just a guess, but maybe you might not be able to schedule the
-> transfer right away? Think about a very dumb 1-channel (or a more
-> realistic more-DRQ-than-channel) device. You might have all the
-> channels busy doing some other transfers, and it's not really part of
-> the client driver job to address that kind of contention: it just
-> wants to queue some work for a later transfer.
+Best regards,
+Krzysztof
 
--- 
-Regards,
-
-Laurent Pinchart
 
