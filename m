@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaJGWG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 18:06:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaJGWG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 18:06:56 -0400
-From: Paul Moore <pmoore@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>, sgrubb@redhat.com
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, serge@hallyn.com,
-        keescook@chromium.org
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
-Date: Tue, 07 Oct 2014 18:06:51 -0400
-Message-ID: <3117997.iSq2b2nm2S@sifl>
-Organization: Red Hat
+	id S1754205AbaJGWNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 18:13:38 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:36586 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895AbaJGWNh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 18:13:37 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1 net-next] netlabel: kernel-doc warning fix
+Date: Tue, 07 Oct 2014 18:13:34 -0400
+Message-ID: <18856194.K9PbrNbEaI@sifl>
 User-Agent: KMail/4.14.1 (Linux/3.16.1-gentoo; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <20141007193951.GZ1992@madcap2.tricolour.ca>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com> <1412708594.3333.94.camel@localhost> <20141007193951.GZ1992@madcap2.tricolour.ca>
+In-Reply-To: <1412713892-5537-1-git-send-email-fabf@skynet.be>
+References: <1412713892-5537-1-git-send-email-fabf@skynet.be>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
@@ -25,22 +23,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 07, 2014 03:39:51 PM Richard Guy Briggs wrote:
-> I also thought of moving audit_log_task() from auditsc.c to audit.c
-> and using that.  For that matter, both audit_log_task() and
-> audit_log_task_info() could use audit_log_session_info(), but they are
-> in slightly different order of keywords which will upset sgrubb's
-> parser.
+On Tuesday, October 07, 2014 10:31:32 PM Fabian Frederick wrote:
+> no secid argument in netlbl_cfg_unlbl_static_del
+> 
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-A bit of an aside from the patch, but in my opinion the parser should be made 
-a bit more robust so that it can handle fields in any particular order.  I 
-agree that having fields in a "canonical ordering" is helpful, both for tools 
-and people, but the tools shouldn't require it in my opinion.
+Thanks.  Likely a copy/paste error from netlbl_cfg_unlbl_static_add().
 
-Steve, why exactly can't the userspace parser handle fields in any order?  How 
-difficult would it be to fix?
+Acked-by: Paul Moore <paul@paul-moore.com>
+
+> ---
+>  net/netlabel/netlabel_kapi.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+> index 0b4692d..a845cd4 100644
+> --- a/net/netlabel/netlabel_kapi.c
+> +++ b/net/netlabel/netlabel_kapi.c
+> @@ -246,7 +246,6 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
+>   * @addr: IP address in network byte order (struct in[6]_addr)
+>   * @mask: address mask in network byte order (struct in[6]_addr)
+>   * @family: address family
+> - * @secid: LSM secid value for the entry
+>   * @audit_info: NetLabel audit information
+>   *
+>   * Description:
 
 -- 
 paul moore
-security and virtualization @ redhat
+www.paul-moore.com
 
