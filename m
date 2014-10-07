@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaJGXYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:24:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39894 "EHLO
+	id S932727AbaJGXYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:24:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932422AbaJGXUV (ORCPT
+	with ESMTP id S932220AbaJGXUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:21 -0400
+	Tue, 7 Oct 2014 19:20:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Waiman Long <Waiman.Long@hp.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Sylvain ythier Hitier <sylvain.hitier@gmail.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 05/13] mm, thp: move invariant bug check out of loop in __split_huge_page_map
-Date: Tue,  7 Oct 2014 16:20:10 -0700
-Message-Id: <20141007231920.083937057@linuxfoundation.org>
+Subject: [PATCH 3.10 02/13] perf: fix perf bug in fork()
+Date: Tue,  7 Oct 2014 16:20:07 -0700
+Message-Id: <20141007231919.997655907@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -33,54 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Waiman Long <Waiman.Long@hp.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit f8303c2582b889351e261ff18c4d8eb197a77db2 upstream.
+commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
 
-In __split_huge_page_map(), the check for page_mapcount(page) is
-invariant within the for loop.  Because of the fact that the macro is
-implemented using atomic_read(), the redundant check cannot be optimized
-away by the compiler leading to unnecessary read to the page structure.
+Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
+calling perf_event_free_task() when failing sched_fork() we will not yet
+have done the memset() on ->perf_event_ctxp[] and will therefore try and
+'free' the inherited contexts, which are still in use by the parent
+process.  This is bad..
 
-This patch moves the invariant bug check out of the loop so that it will
-be done only once.  On a 3.16-rc1 based kernel, the execution time of a
-microbenchmark that broke up 1000 transparent huge pages using munmap()
-had an execution time of 38,245us and 38,548us with and without the
-patch respectively.  The performance gain is about 1%.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Scott J Norton <scott.norton@hp.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/events/core.c |    4 +++-
+ kernel/fork.c        |    5 +++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1733,6 +1733,8 @@ static int __split_huge_page_map(struct
- 	if (pmd) {
- 		pgtable = pgtable_trans_huge_withdraw(mm);
- 		pmd_populate(mm, &_pmd, pgtable);
-+		if (pmd_write(*pmd))
-+			BUG_ON(page_mapcount(page) != 1);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7482,8 +7482,10 @@ int perf_event_init_task(struct task_str
  
- 		haddr = address;
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
-@@ -1742,8 +1744,6 @@ static int __split_huge_page_map(struct
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
- 				entry = pte_wrprotect(entry);
--			else
--				BUG_ON(page_mapcount(page) != 1);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
- 			if (pmd_numa(*pmd))
+ 	for_each_task_context_nr(ctxn) {
+ 		ret = perf_event_init_context(child, ctxn);
+-		if (ret)
++		if (ret) {
++			perf_event_free_task(child);
+ 			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1324,7 +1324,7 @@ static struct task_struct *copy_process(
+ 		goto bad_fork_cleanup_policy;
+ 	retval = audit_alloc(p);
+ 	if (retval)
+-		goto bad_fork_cleanup_policy;
++		goto bad_fork_cleanup_perf;
+ 	/* copy all the process information */
+ 	retval = copy_semundo(clone_flags, p);
+ 	if (retval)
+@@ -1522,8 +1522,9 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+ 	perf_event_free_task(p);
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+ bad_fork_cleanup_cgroup:
 
 
