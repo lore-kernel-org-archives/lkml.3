@@ -1,783 +1,1076 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaJGRES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:04:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:51705 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630AbaJGREP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:04:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,671,1406617200"; 
-   d="scan'208";a="614632103"
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org,
-        Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Will Arthur <will.c.arthur@intel.com>
-Subject: [PATCH v2 4/7] tpm: TPM 2.0 commands
-Date: Tue,  7 Oct 2014 20:01:14 +0300
-Message-Id: <1412701277-27794-5-git-send-email-jarkko.sakkinen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1754734AbaJGRFr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:05:47 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:49285 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaJGRFo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:05:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412158843-8115-2-git-send-email-djkurtz@chromium.org>
+References: <1412158843-8115-1-git-send-email-djkurtz@chromium.org>
+	<1412158843-8115-2-git-send-email-djkurtz@chromium.org>
+Date: Tue, 7 Oct 2014 10:05:43 -0700
+X-Google-Sender-Auth: tyWwLTvV6HwwYsIwZtm0oppNexY
+Message-ID: <CANEJEGvvHS6+w6WcfP-ZSNdREeBmFysz-Nfo2RQdFZmSdFedUQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] iommu/rockchip: rk3288 iommu driver
+From: Grant Grundler <grundler@chromium.org>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Heiko Stuebner <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, Simon Xue <xxm@rock-chips.com>,
+        Grant Grundler <grundler@chromium.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        linux-rockchip@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains the following internal helper functions for
-tpm.ko:
+On Wed, Oct 1, 2014 at 3:20 AM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> The rk3288 has several iommus.  Each iommu belongs to a single master
+> device.  There is one device (ISP) that has two slave iommus, but that
+> case is not yet supported by this driver.
+>
+> At subsys init, the iommu driver registers itself as the iommu driver for
+> the platform bus.  The master devices find their slave iommus using the
+> "iommus" field in their devicetree description.  Since each slave iommu
+> belongs to exactly one master, their is no additional data needed at probe
+> to associate a slave with its master.
+>
+> An iommu device's power domain, clock and irq are all shared with its
+> master device, and the master device must be careful to attach from the
+> iommu only after powering and clocking it (and leave it powered and
+> clocked before detaching).  Because their is no guarantee what the status
+> of the iommu is at probe, and since the driver does not even know if the
+> device is powered, we delay requesting its irq until the master device
+> attaches, at which point we have a guarantee that the device is powered
+> and clocked and we can reset it and disable its interrupt mask.
+>
+> An iommu_domain describes a virtual iova address space.  Each iommu_domain
+> has a corresponding page table that lists the mappings from iova to
+> physical address.
+>
+> For the rk3288 iommu, the page table has two levels:
+>  The Level 1 "directory_table" has 1024 4-byte dte entries.
+>  Each dte points to a level 2 "page_table".
+>  Each level 2 page_table has 1024 4-byte pte entries.
+>  Each pte points to a 4 KiB page of memory.
+>
+> An iommu_domain is created when a dma_iommu_mapping is created via
+> arm_iommu_create_mapping.  Master devices can then attach themselves to
+> this mapping (or attach the mapping to themselves?) by calling
+> arm_iommu_attach_device().  This in turn instructs the iommu driver to
+> write the page table's physical address into the slave iommu's "Directory
+> Table Entry" (DTE) register.
+>
+> In fact multiple master devices, each with their own slave iommu device,
+> can all attach to the same mapping.  The iommus for these devices will
+> share the same iommu_domain and therefore point to the same page table.
+> Thus, the iommu domain maintains a list of iommu devices which are
+> attached.  This driver relies on the iommu core to ensure that all devices
+> have detached before destroying a domain.
+>
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> Signed-off-by: Simon Xue <xxm@rock-chips.com>
 
-- tpm2_get_random()
-- tpm2_get_tpm_pt()
-- tpm2_pcr_extend()
-- tpm2_pcr_read()
-- tpm2_startup()
+Reviewed-by: Grant Grundler <grundler@chromium.org>
 
-and the following exported functions for implementing new device
-drivers:
+There are some nits in this version and my "R-b:" applies to what you
+can pull from here:
+    https://chromium-review.googlesource.com/218049
 
-- tpm2_do_selftest()
-- tpm2_calc_ordinal_durations()
-- tpm2_gen_interrupt()
+    git fetch https://chromium.googlesource.com/chromiumos/third_party/kernel
+refs/changes/49/218049/11 && git checkout FETCH_HEAD
 
-Functions that are defined in include/linux/tpm.h and tpm_transmit()
-use TPM2 commands for TPM2 chips.
+I expect djkurtz will post a new version here soon (and include my
+Reviewed-By line please).
 
-Added a new field "flags" to struct tpm_chip and enum tpm_chip_flags.
-TPM2 chips can set TPM_CHIP_FLAG_TPM2 after tpm_chip_alloc() to
-enable TPM2 commands.
+cheers,
+grant
 
-The code for tpm2_calc_ordinal_duration() and tpm2_startup() is
-derived from the code originally made by Will Arthur.
 
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Signed-off-by: Will Arthur <will.c.arthur@intel.com>
----
- drivers/char/tpm/Makefile        |   2 +-
- drivers/char/tpm/tpm-interface.c |  24 +-
- drivers/char/tpm/tpm.h           |  66 +++++
- drivers/char/tpm/tpm2-cmd.c      | 543 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 631 insertions(+), 4 deletions(-)
- create mode 100644 drivers/char/tpm/tpm2-cmd.c
-
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index 837da04..ae56af9 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for the kernel tpm device drivers.
- #
- obj-$(CONFIG_TCG_TPM) += tpm.o
--tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o
-+tpm-y := tpm-interface.o tpm-dev.o tpm-sysfs.o tpm-chip.o tpm2-cmd.o
- tpm-$(CONFIG_ACPI) += tpm_ppi.o
- 
- ifdef CONFIG_ACPI
-diff --git a/drivers/char/tpm/tpm-interface.c b/drivers/char/tpm/tpm-interface.c
-index 1ce3ad3..ec28b5f 100644
---- a/drivers/char/tpm/tpm-interface.c
-+++ b/drivers/char/tpm/tpm-interface.c
-@@ -360,7 +360,10 @@ static ssize_t tpm_transmit(struct tpm_chip *chip, const char *buf,
- 	if (chip->vendor.irq)
- 		goto out_recv;
- 
--	stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		stop = jiffies + tpm2_calc_ordinal_duration(chip, ordinal);
-+	else
-+		stop = jiffies + tpm_calc_ordinal_duration(chip, ordinal);
- 	do {
- 		u8 status = chip->ops->status(chip);
- 		if ((status & chip->ops->req_complete_mask) ==
-@@ -482,7 +485,7 @@ static const struct tpm_input_header tpm_startup_header = {
- static int tpm_startup(struct tpm_chip *chip, __be16 startup_type)
- {
- 	struct tpm_cmd_t start_cmd;
--	start_cmd.header.in = tpm_startup_header;
-+
- 	start_cmd.params.startup_in.startup_type = startup_type;
- 	return tpm_transmit_cmd(chip, &start_cmd, TPM_INTERNAL_RESULT_SIZE,
- 				"attempting to start the TPM");
-@@ -679,7 +682,10 @@ int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf)
- 	chip = tpm_chip_find_get(chip_num);
- 	if (chip == NULL)
- 		return -ENODEV;
--	rc = tpm_pcr_read_dev(chip, pcr_idx, res_buf);
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2)
-+		rc = tpm2_pcr_read(chip, pcr_idx, res_buf);
-+	else
-+		rc = tpm_pcr_read_dev(chip, pcr_idx, res_buf);
- 	tpm_chip_put(chip);
- 	return rc;
- }
-@@ -713,6 +719,12 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-+		rc = tpm2_pcr_extend(chip, pcr_idx, hash);
-+		tpm_chip_put(chip);
-+		return rc;
-+	}
-+
- 	cmd.header.in = pcrextend_header;
- 	cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(pcr_idx);
- 	memcpy(cmd.params.pcrextend_in.hash, hash, TPM_DIGEST_SIZE);
-@@ -986,6 +998,12 @@ int tpm_get_random(u32 chip_num, u8 *out, size_t max)
- 	if (chip == NULL)
- 		return -ENODEV;
- 
-+	if (chip->flags & TPM_CHIP_FLAG_TPM2) {
-+		err = tpm2_get_random(chip, out, max);
-+		tpm_chip_put(chip);
-+		return err;
-+	}
-+
- 	do {
- 		tpm_cmd.header.in = tpm_getrandom_header;
- 		tpm_cmd.params.getrandom_in.num_bytes = cpu_to_be32(num_bytes);
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index 5eb89897..d141639 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -61,6 +61,57 @@ enum tpm_duration {
- #define TPM_ERR_INVALID_POSTINIT 38
- 
- #define TPM_HEADER_SIZE		10
-+
-+enum tpm2_const {
-+	TPM2_PLATFORM_PCR	= 24,
-+	TPM2_PCR_SELECT_MIN	= ((TPM2_PLATFORM_PCR + 7) / 8),
-+	TPM2_TIMEOUT_A		= 750 * 1000,
-+	TPM2_TIMEOUT_B		= 2000 * 1000,
-+	TPM2_TIMEOUT_C		= 200 * 1000,
-+	TPM2_TIMEOUT_D		= 30 * 1000,
-+	TPM2_DURATION_SHORT	= 20 * 1000,
-+	TPM2_DURATION_MEDIUM	= 750 * 1000,
-+	TPM2_DURATION_LONG	= 2000 * 1000,
-+};
-+
-+enum tpm2_structures {
-+	TPM2_ST_NO_SESSIONS	= 0x8001,
-+	TPM2_ST_SESSIONS	= 0x8002,
-+};
-+
-+enum tpm2_return_codes {
-+	TPM2_RC_TESTING		= 0x090A,
-+	TPM2_RC_DISABLED	= 0x0120,
-+};
-+
-+enum tpm2_algorithms {
-+	TPM2_ALG_SHA1		= 0x0004,
-+};
-+
-+enum tpm2_command_codes {
-+	TPM2_CC_FIRST		= 0x011F,
-+	TPM2_CC_SELF_TEST	= 0x0143,
-+	TPM2_CC_STARTUP		= 0x0144,
-+	TPM2_CC_GET_CAPABILITY	= 0x017A,
-+	TPM2_CC_GET_RANDOM	= 0x017B,
-+	TPM2_CC_PCR_READ	= 0x017E,
-+	TPM2_CC_PCR_EXTEND	= 0x0182,
-+	TPM2_CC_LAST		= 0x018F,
-+};
-+
-+enum tpm2_permanent_handles {
-+	TPM2_RS_PW		= 0x40000009,
-+};
-+
-+enum tpm2_capabilities {
-+	TPM2_CAP_TPM_PROPERTIES = 6,
-+};
-+
-+enum tpm2_startup_types {
-+	TPM2_SU_CLEAR	= 0x0000,
-+	TPM2_SU_STATE	= 0x0001,
-+};
-+
- struct tpm_chip;
- 
- struct tpm_vendor_specific {
-@@ -94,9 +145,14 @@ struct tpm_vendor_specific {
- #define TPM_VID_WINBOND  0x1050
- #define TPM_VID_STM      0x104A
- 
-+enum tpm_chip_flags {
-+	TPM_CHIP_FLAG_TPM2	= BIT(0),
-+};
-+
- struct tpm_chip {
- 	struct device *dev;	/* Device stuff */
- 	const struct tpm_class_ops *ops;
-+	unsigned int flags;
- 
- 	int dev_num;		/* /dev/tpm# */
- 	char devname[7];
-@@ -353,3 +409,13 @@ static inline void tpm_remove_ppi(struct kobject *parent)
- {
- }
- #endif
-+
-+int tpm2_startup(struct tpm_chip *chip, __be16 startup_type);
-+int tpm2_pcr_read(struct tpm_chip *chip, int pcr_idx, u8 *res_buf);
-+int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash);
-+int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max);
-+
-+extern ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,
-+			       u32* value, const char *desc);
-+extern unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *, u32);
-+extern int tpm2_do_selftest(struct tpm_chip *chip);
-diff --git a/drivers/char/tpm/tpm2-cmd.c b/drivers/char/tpm/tpm2-cmd.c
-new file mode 100644
-index 0000000..e0c455d
---- /dev/null
-+++ b/drivers/char/tpm/tpm2-cmd.c
-@@ -0,0 +1,543 @@
-+/*
-+ * Copyright (C) 2014 Intel Corporation
-+ *
-+ * Authors:
-+ * Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-+ *
-+ * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-+ *
-+ * This file contains TPM2 protocol implementations of the commands
-+ * used by the kernel internally.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include "tpm.h"
-+
-+struct tpm2_startup_in {
-+	__be16	startup_type;
-+} __packed;
-+
-+struct tpm2_self_test_in {
-+	u8	full_test;
-+} __packed;
-+
-+struct tpm2_pcr_read_in {
-+	__be32	pcr_selects_cnt;
-+	__be16	hash_alg;
-+	u8	pcr_select_size;
-+	u8	pcr_select[TPM2_PCR_SELECT_MIN];
-+} __packed;
-+
-+struct tpm2_pcr_read_out {
-+	__be32	update_cnt;
-+	__be32	pcr_selects_cnt;
-+	__be16	hash_alg;
-+	u8	pcr_select_size;
-+	u8	pcr_select[TPM2_PCR_SELECT_MIN];
-+	__be32	digests_cnt;
-+	__be16	digest_size;
-+	u8	digest[TPM_DIGEST_SIZE];
-+} __packed;
-+
-+struct tpm2_null_auth_area {
-+	__be32			handle;
-+	__be16			nonce_size;
-+	u8			attributes;
-+	__be16			auth_size;
-+} __packed;
-+
-+struct tpm2_pcr_extend_in {
-+	__be32				pcr_idx;
-+	__be32				auth_area_size;
-+	struct tpm2_null_auth_area	auth_area;
-+	__be32				digest_cnt;
-+	__be16				hash_alg;
-+	u8				digest[TPM_DIGEST_SIZE];
-+} __packed;
-+
-+struct tpm2_get_tpm_pt_in {
-+	__be32	cap_id;
-+	__be32	property_id;
-+	__be32	property_cnt;
-+} __packed;
-+
-+struct tpm2_get_tpm_pt_out {
-+	u8	more_data;
-+	__be32	subcap_id;
-+	__be32	property_cnt;
-+	__be32	property_id;
-+	__be32	value;
-+} __packed;
-+
-+struct tpm2_get_random_in {
-+	__be16	size;
-+} __packed;
-+
-+struct tpm2_get_random_out {
-+	__be16	size;
-+	u8	buffer[TPM_MAX_RNG_DATA];
-+} __packed;
-+
-+union tpm2_cmd_params {
-+	struct	tpm2_startup_in		startup_in;
-+	struct	tpm2_self_test_in	selftest_in;
-+	struct	tpm2_pcr_read_in	pcrread_in;
-+	struct	tpm2_pcr_read_out	pcrread_out;
-+	struct	tpm2_pcr_extend_in	pcrextend_in;
-+	struct	tpm2_get_tpm_pt_in	get_tpm_pt_in;
-+	struct	tpm2_get_tpm_pt_out	get_tpm_pt_out;
-+	struct	tpm2_get_random_in	getrandom_in;
-+	struct	tpm2_get_random_out	getrandom_out;
-+};
-+
-+struct tpm2_cmd {
-+	tpm_cmd_header		header;
-+	union tpm2_cmd_params	params;
-+} __packed;
-+
-+/*
-+ * Array with one entry per ordinal defining the maximum amount
-+ * of time the chip could take to return the result. The values
-+ * of the SHORT, MEDIUM, and LONG durations are taken from the
-+ * PC Client Profile (PTP) specification.
-+ */
-+static const u8 tpm2_ordinal_duration[TPM2_CC_LAST - TPM2_CC_FIRST + 1] = {
-+	TPM_UNDEFINED,		/* 11F */
-+	TPM_UNDEFINED,		/* 120 */
-+	TPM_LONG,		/* 121 */
-+	TPM_UNDEFINED,		/* 122 */
-+	TPM_UNDEFINED,		/* 123 */
-+	TPM_UNDEFINED,		/* 124 */
-+	TPM_UNDEFINED,		/* 125 */
-+	TPM_UNDEFINED,		/* 126 */
-+	TPM_UNDEFINED,		/* 127 */
-+	TPM_UNDEFINED,		/* 128 */
-+	TPM_LONG,		/* 129 */
-+	TPM_UNDEFINED,		/* 12a */
-+	TPM_UNDEFINED,		/* 12b */
-+	TPM_UNDEFINED,		/* 12c */
-+	TPM_UNDEFINED,		/* 12d */
-+	TPM_UNDEFINED,		/* 12e */
-+	TPM_UNDEFINED,		/* 12f */
-+	TPM_UNDEFINED,		/* 130 */
-+	TPM_UNDEFINED,		/* 131 */
-+	TPM_UNDEFINED,		/* 132 */
-+	TPM_UNDEFINED,		/* 133 */
-+	TPM_UNDEFINED,		/* 134 */
-+	TPM_UNDEFINED,		/* 135 */
-+	TPM_UNDEFINED,		/* 136 */
-+	TPM_UNDEFINED,		/* 137 */
-+	TPM_UNDEFINED,		/* 138 */
-+	TPM_UNDEFINED,		/* 139 */
-+	TPM_UNDEFINED,		/* 13a */
-+	TPM_UNDEFINED,		/* 13b */
-+	TPM_UNDEFINED,		/* 13c */
-+	TPM_UNDEFINED,		/* 13d */
-+	TPM_MEDIUM,		/* 13e */
-+	TPM_UNDEFINED,		/* 13f */
-+	TPM_UNDEFINED,		/* 140 */
-+	TPM_UNDEFINED,		/* 141 */
-+	TPM_UNDEFINED,		/* 142 */
-+	TPM_LONG,		/* 143 */
-+	TPM_MEDIUM,		/* 144 */
-+	TPM_UNDEFINED,		/* 145 */
-+	TPM_UNDEFINED,		/* 146 */
-+	TPM_UNDEFINED,		/* 147 */
-+	TPM_UNDEFINED,		/* 148 */
-+	TPM_UNDEFINED,		/* 149 */
-+	TPM_UNDEFINED,		/* 14a */
-+	TPM_UNDEFINED,		/* 14b */
-+	TPM_UNDEFINED,		/* 14c */
-+	TPM_UNDEFINED,		/* 14d */
-+	TPM_LONG,		/* 14e */
-+	TPM_UNDEFINED,		/* 14f */
-+	TPM_UNDEFINED,		/* 150 */
-+	TPM_UNDEFINED,		/* 151 */
-+	TPM_UNDEFINED,		/* 152 */
-+	TPM_UNDEFINED,		/* 153 */
-+	TPM_UNDEFINED,		/* 154 */
-+	TPM_UNDEFINED,		/* 155 */
-+	TPM_UNDEFINED,		/* 156 */
-+	TPM_UNDEFINED,		/* 157 */
-+	TPM_UNDEFINED,		/* 158 */
-+	TPM_UNDEFINED,		/* 159 */
-+	TPM_UNDEFINED,		/* 15a */
-+	TPM_UNDEFINED,		/* 15b */
-+	TPM_MEDIUM,		/* 15c */
-+	TPM_UNDEFINED,		/* 15d */
-+	TPM_UNDEFINED,		/* 15e */
-+	TPM_UNDEFINED,		/* 15f */
-+	TPM_UNDEFINED,		/* 160 */
-+	TPM_UNDEFINED,		/* 161 */
-+	TPM_UNDEFINED,		/* 162 */
-+	TPM_UNDEFINED,		/* 163 */
-+	TPM_UNDEFINED,		/* 164 */
-+	TPM_UNDEFINED,		/* 165 */
-+	TPM_UNDEFINED,		/* 166 */
-+	TPM_UNDEFINED,		/* 167 */
-+	TPM_UNDEFINED,		/* 168 */
-+	TPM_UNDEFINED,		/* 169 */
-+	TPM_UNDEFINED,		/* 16a */
-+	TPM_UNDEFINED,		/* 16b */
-+	TPM_UNDEFINED,		/* 16c */
-+	TPM_UNDEFINED,		/* 16d */
-+	TPM_UNDEFINED,		/* 16e */
-+	TPM_UNDEFINED,		/* 16f */
-+	TPM_UNDEFINED,		/* 170 */
-+	TPM_UNDEFINED,		/* 171 */
-+	TPM_UNDEFINED,		/* 172 */
-+	TPM_UNDEFINED,		/* 173 */
-+	TPM_UNDEFINED,		/* 174 */
-+	TPM_UNDEFINED,		/* 175 */
-+	TPM_UNDEFINED,		/* 176 */
-+	TPM_LONG,		/* 177 */
-+	TPM_UNDEFINED,		/* 178 */
-+	TPM_UNDEFINED,		/* 179 */
-+	TPM_MEDIUM,		/* 17a */
-+	TPM_LONG,		/* 17b */
-+	TPM_UNDEFINED,		/* 17c */
-+	TPM_UNDEFINED,		/* 17d */
-+	TPM_UNDEFINED,		/* 17e */
-+	TPM_UNDEFINED,		/* 17f */
-+	TPM_UNDEFINED,		/* 180 */
-+	TPM_UNDEFINED,		/* 181 */
-+	TPM_MEDIUM,		/* 182 */
-+	TPM_UNDEFINED,		/* 183 */
-+	TPM_UNDEFINED,		/* 184 */
-+	TPM_MEDIUM,		/* 185 */
-+	TPM_MEDIUM,		/* 186 */
-+	TPM_UNDEFINED,		/* 187 */
-+	TPM_UNDEFINED,		/* 188 */
-+	TPM_UNDEFINED,		/* 189 */
-+	TPM_UNDEFINED,		/* 18a */
-+	TPM_UNDEFINED,		/* 18b */
-+	TPM_UNDEFINED,		/* 18c */
-+	TPM_UNDEFINED,		/* 18d */
-+	TPM_UNDEFINED,		/* 18e */
-+	TPM_UNDEFINED		/* 18f */
-+};
-+
-+static const struct tpm_input_header tpm2_startup_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(12),
-+	.ordinal = cpu_to_be32(TPM2_CC_STARTUP)
-+};
-+
-+/**
-+ * tpm2_startup() - send startup command to the TPM chip
-+ * @chip:		TPM chip to use.
-+ * @startup_type	startup type. The value is either
-+ * 			TPM_SU_CLEAR or TPM_SU_STATE.
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+int tpm2_startup(struct tpm_chip *chip, __be16 startup_type)
-+{
-+	struct tpm2_cmd cmd;
-+
-+	cmd.header.in = tpm2_startup_header;
-+
-+	cmd.params.startup_in.startup_type = startup_type;
-+	return tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
-+				"attempting to start the TPM");
-+}
-+
-+#define TPM2_PCR_READ_IN_SIZE \
-+	(sizeof(struct tpm_input_header) + \
-+	 sizeof(struct tpm2_pcr_read_in))
-+
-+static const struct tpm_input_header tpm2_pcrread_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(TPM2_PCR_READ_IN_SIZE),
-+	.ordinal = cpu_to_be32(TPM2_CC_PCR_READ)
-+};
-+
-+/**
-+ * tpm2_pcr_read() - read a PCR value
-+ * @chip:	TPM chip to use.
-+ * @pcr_idx:	index of the PCR to read.
-+ * @ref_buf:	buffer to store the resulting hash,
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+int tpm2_pcr_read(struct tpm_chip *chip, int pcr_idx, u8 *res_buf)
-+{
-+	int rc;
-+	struct tpm2_cmd cmd;
-+	u8 *buf;
-+	int i, j;
-+
-+	if (pcr_idx >= TPM2_PLATFORM_PCR)
-+		return -EINVAL;
-+
-+	cmd.header.in = tpm2_pcrread_header;
-+	cmd.params.pcrread_in.pcr_selects_cnt = cpu_to_be32(1);
-+	cmd.params.pcrread_in.hash_alg = cpu_to_be16(TPM2_ALG_SHA1);
-+	cmd.params.pcrread_in.pcr_select_size = TPM2_PCR_SELECT_MIN;
-+
-+	for (i = 0; i < TPM2_PCR_SELECT_MIN; i++) {
-+		j = pcr_idx - i * 8;
-+
-+		cmd.params.pcrread_in.pcr_select[i] =
-+			(j >= 0 && j < 8) ? 1 << j : 0;
-+	}
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
-+			      "attempting to read a pcr value");
-+
-+	if (rc == 0) {
-+		buf = cmd.params.pcrread_out.digest;
-+		memcpy(res_buf, buf, TPM_DIGEST_SIZE);
-+	}
-+
-+	return rc;
-+}
-+
-+/**
-+ * tpm2_pcr_extend() - extend a PCR value
-+ * @chip:	TPM chip to use.
-+ * @pcr_idx:	index of the PCR.
-+ * @hash:	hash value to use for the extend operation.
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+static const struct tpm_input_header tpm2_pcrextend_header = {
-+	.tag = cpu_to_be16(TPM2_ST_SESSIONS),
-+	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-+			      sizeof(struct tpm2_pcr_extend_in)),
-+	.ordinal = cpu_to_be32(TPM2_CC_PCR_EXTEND)
-+};
-+
-+int tpm2_pcr_extend(struct tpm_chip *chip, int pcr_idx, const u8 *hash)
-+{
-+	struct tpm2_cmd cmd;
-+	int rc;
-+
-+	cmd.header.in = tpm2_pcrextend_header;
-+	cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(pcr_idx);
-+	cmd.params.pcrextend_in.auth_area_size =
-+		cpu_to_be32(sizeof(struct tpm2_null_auth_area));
-+	cmd.params.pcrextend_in.auth_area.handle =
-+		cpu_to_be32(TPM2_RS_PW);
-+	cmd.params.pcrextend_in.auth_area.nonce_size = 0;
-+	cmd.params.pcrextend_in.auth_area.attributes = 0;
-+	cmd.params.pcrextend_in.auth_area.auth_size = 0;
-+	cmd.params.pcrextend_in.digest_cnt = cpu_to_be32(1);
-+	cmd.params.pcrextend_in.hash_alg = cpu_to_be16(TPM2_ALG_SHA1);
-+	memcpy(cmd.params.pcrextend_in.digest, hash, TPM_DIGEST_SIZE);
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
-+			      "attempting extend a PCR value");
-+
-+	return rc;
-+}
-+
-+static const struct tpm_input_header tpm2_getrandom_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-+			      sizeof(struct tpm2_get_random_in)),
-+	.ordinal = cpu_to_be32(TPM2_CC_GET_RANDOM)
-+};
-+
-+/**
-+ * tpm2_get_random() - get random bytes from the TPM RNG
-+ * @chip: TPM chip to use
-+ * @out: destination buffer for the random bytes
-+ * @max: the max number of bytes to write to @out
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+int tpm2_get_random(struct tpm_chip *chip, u8 *out, size_t max)
-+{
-+	struct tpm2_cmd cmd;
-+	u32 recd, num_bytes = min_t(u32, max, TPM_MAX_RNG_DATA);
-+	int err, total = 0, retries = 5;
-+	u8 *dest = out;
-+
-+	if (!out || !num_bytes || max > TPM_MAX_RNG_DATA)
-+		return -EINVAL;
-+
-+	do {
-+		cmd.header.in = tpm2_getrandom_header;
-+		cmd.params.getrandom_in.size = cpu_to_be16(num_bytes);
-+
-+		err = tpm_transmit_cmd(chip, &cmd, sizeof(cmd),
-+				       "attempting get random");
-+		if (err)
-+			break;
-+
-+		recd = be16_to_cpu(cmd.params.getrandom_out.size);
-+		memcpy(dest, cmd.params.getrandom_out.buffer, recd);
-+
-+		dest += recd;
-+		total += recd;
-+		num_bytes -= recd;
-+	} while (retries-- && total < max);
-+
-+	return total ? total : -EIO;
-+}
-+
-+#define TPM2_GET_TPM_PT_IN_SIZE \
-+	(sizeof(struct tpm_input_header) + \
-+	 sizeof(struct tpm2_get_tpm_pt_in))
-+
-+static const struct tpm_input_header tpm2_get_tpm_pt_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(TPM2_GET_TPM_PT_IN_SIZE),
-+	.ordinal = cpu_to_be32(TPM2_CC_GET_CAPABILITY)
-+};
-+
-+/**
-+ * tpm2_get_tpm_pt() - get value of a TPM_CAP_TPM_PROPERTIES type property
-+ * @chip:		TPM chip to use.
-+ * @property_id:	property ID.
-+ * @value:		output variable.
-+ * @desc:		passed to tpm_transmit_cmd()
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+ssize_t tpm2_get_tpm_pt(struct tpm_chip *chip, u32 property_id,  u32* value,
-+			const char *desc)
-+{
-+	struct tpm2_cmd cmd;
-+	int rc;
-+
-+	cmd.header.in = tpm2_get_tpm_pt_header;
-+	cmd.params.get_tpm_pt_in.cap_id = cpu_to_be32(TPM2_CAP_TPM_PROPERTIES);
-+	cmd.params.get_tpm_pt_in.property_id = property_id;
-+	cmd.params.get_tpm_pt_in.property_cnt = cpu_to_be32(1);
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, sizeof(cmd), desc);
-+	if (!rc)
-+		*value = cmd.params.get_tpm_pt_out.value;
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(tpm2_get_tpm_pt);
-+
-+/*
-+ * tpm2_calc_ordinal_duration() - maximum duration for a command
-+ * @chip: 	TPM chip to use.
-+ * @ordinal:	command code number.
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+unsigned long tpm2_calc_ordinal_duration(struct tpm_chip *chip, u32 ordinal)
-+{
-+	int index = TPM_UNDEFINED;
-+	int duration = 0;
-+
-+	if (ordinal >= TPM2_CC_FIRST && ordinal <= TPM2_CC_LAST)
-+		index = tpm2_ordinal_duration[ordinal - TPM2_CC_FIRST];
-+
-+	if (index != TPM_UNDEFINED)
-+		duration = chip->vendor.duration[index];
-+	if (duration <= 0)
-+		return 2 * 60 * HZ;
-+	else
-+		return duration;
-+}
-+EXPORT_SYMBOL_GPL(tpm2_calc_ordinal_duration);
-+
-+static const struct tpm_input_header tpm2_selftest_header = {
-+	.tag = cpu_to_be16(TPM2_ST_NO_SESSIONS),
-+	.length = cpu_to_be32(sizeof(struct tpm_input_header) +
-+			      sizeof(struct tpm2_self_test_in)),
-+	.ordinal = cpu_to_be32(TPM2_CC_SELF_TEST)
-+};
-+
-+#define TPM2_SELF_TEST_IN_SIZE \
-+	(sizeof(struct tpm_input_header) + sizeof(struct tpm2_self_test_in))
-+
-+/**
-+ * tpm2_continue_selftest() - start a self test
-+ * @chip: TPM chip to use
-+ * @full: test all commands instead of testing only those that were not
-+ *        previously tested.
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+static int tpm2_start_selftest(struct tpm_chip *chip, bool full)
-+{
-+	int rc;
-+	struct tpm2_cmd cmd;
-+
-+	cmd.header.in = tpm2_selftest_header;
-+	cmd.params.selftest_in.full_test = full;
-+
-+	rc = tpm_transmit_cmd(chip, &cmd, TPM2_SELF_TEST_IN_SIZE,
-+			      "continue selftest");
-+
-+	return rc;
-+}
-+
-+/**
-+ * tpm2_do_selftest() - run a full self test
-+ * @chip: TPM chip to use
-+ *
-+ * During the self test TPM2 commands return with the error code RC_TESTING.
-+ * Waiting is done by issuing PCR read until it executes succesfully.
-+ *
-+ * 0 is returned when the operation is succesful. When a negative number is
-+ * returned it remarks a POSIX error code. When a positive number is returned
-+ * it remarks a TPM error.
-+ */
-+int tpm2_do_selftest(struct tpm_chip *chip)
-+{
-+	int rc;
-+	unsigned int loops;
-+	unsigned int delay_msec = 100;
-+	unsigned long duration;
-+	struct tpm2_cmd cmd;
-+	int i;
-+
-+	duration = tpm2_calc_ordinal_duration(chip, TPM2_CC_SELF_TEST);
-+
-+	loops = jiffies_to_msecs(duration) / delay_msec;
-+
-+	rc = tpm2_start_selftest(chip, true);
-+	if (rc)
-+		return rc;
-+
-+	for (i = 0; i < loops; i++) {
-+		/* Attempt to read a PCR value */
-+		cmd.header.in = tpm2_pcrread_header;
-+		cmd.params.pcrread_in.pcr_selects_cnt = cpu_to_be32(1);
-+		cmd.params.pcrread_in.hash_alg = cpu_to_be16(TPM2_ALG_SHA1);
-+		cmd.params.pcrread_in.pcr_select_size = TPM2_PCR_SELECT_MIN;
-+		cmd.params.pcrread_in.pcr_select[0] = 0x01;
-+		cmd.params.pcrread_in.pcr_select[1] = 0x00;
-+		cmd.params.pcrread_in.pcr_select[2] = 0x00;
-+
-+		rc = tpm_transmit_cmd(chip, (u8 *) &cmd, sizeof(cmd), NULL);
-+		if (rc < 0)
-+			break;
-+
-+		rc = be32_to_cpu(cmd.header.out.return_code);
-+		if (rc != TPM2_RC_TESTING)
-+			break;
-+
-+		msleep(delay_msec);
-+	}
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(tpm2_do_selftest);
--- 
-2.1.0
-
+> ---
+>  drivers/iommu/Kconfig          |  11 +
+>  drivers/iommu/Makefile         |   1 +
+>  drivers/iommu/rockchip-iommu.c | 924 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 936 insertions(+)
+>  create mode 100644 drivers/iommu/rockchip-iommu.c
+>
+> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+> index dd51122..b80454c 100644
+> --- a/drivers/iommu/Kconfig
+> +++ b/drivers/iommu/Kconfig
+> @@ -152,6 +152,17 @@ config OMAP_IOMMU_DEBUG
+>
+>           Say N unless you know you need this.
+>
+> +config ROCKCHIP_IOMMU
+> +       bool "Rockchip IOMMU Support"
+> +       depends on ARCH_ROCKCHIP
+> +       select IOMMU_API
+> +       help
+> +         Support for IOMMUs found on Rockchip rk32xx SOCs.
+> +         These IOMMUs allow virtualization of the address space used by most
+> +         cores within the multimedia subsystem.
+> +         Say Y here if you are using a Rockchip SoC that includes an IOMMU
+> +         device.
+> +
+>  config TEGRA_IOMMU_GART
+>         bool "Tegra GART IOMMU Support"
+>         depends on ARCH_TEGRA_2x_SOC
+> diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
+> index 16edef7..3e47ef3 100644
+> --- a/drivers/iommu/Makefile
+> +++ b/drivers/iommu/Makefile
+> @@ -13,6 +13,7 @@ obj-$(CONFIG_IRQ_REMAP) += intel_irq_remapping.o irq_remapping.o
+>  obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
+>  obj-$(CONFIG_OMAP_IOMMU) += omap-iommu2.o
+>  obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
+> +obj-$(CONFIG_ROCKCHIP_IOMMU) += rockchip-iommu.o
+>  obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
+>  obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
+>  obj-$(CONFIG_EXYNOS_IOMMU) += exynos-iommu.o
+> diff --git a/drivers/iommu/rockchip-iommu.c b/drivers/iommu/rockchip-iommu.c
+> new file mode 100644
+> index 0000000..4116df1
+> --- /dev/null
+> +++ b/drivers/iommu/rockchip-iommu.c
+> @@ -0,0 +1,924 @@
+> +/*
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <asm/cacheflush.h>
+> +#include <asm/pgtable.h>
+> +#include <linux/compiler.h>
+> +#include <linux/delay.h>
+> +#include <linux/device.h>
+> +#include <linux/errno.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/iommu.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/list.h>
+> +#include <linux/mm.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/spinlock.h>
+> +
+> +/** MMU register offsets */
+> +#define RK_MMU_DTE_ADDR                0x00    /* Directory table address */
+> +#define RK_MMU_STATUS          0x04
+> +#define RK_MMU_COMMAND         0x08
+> +#define RK_MMU_PAGE_FAULT_ADDR 0x0C    /* IOVA of last page fault */
+> +#define RK_MMU_ZAP_ONE_LINE    0x10    /* Shootdown one IOTLB entry */
+> +#define RK_MMU_INT_RAWSTAT     0x14    /* IRQ status ignoring mask */
+> +#define RK_MMU_INT_CLEAR       0x18    /* Acknowledge and re-arm irq */
+> +#define RK_MMU_INT_MASK                0x1C    /* IRQ enable */
+> +#define RK_MMU_INT_STATUS      0x20    /* IRQ status after masking */
+> +#define RK_MMU_AUTO_GATING     0x24
+> +
+> +#define DTE_ADDR_DUMMY         0xCAFEBABE
+> +#define FORCE_RESET_TIMEOUT    100     /* ms */
+> +
+> +/* RK_MMU_STATUS fields */
+> +#define RK_MMU_STATUS_PAGING_ENABLED       BIT(0)
+> +#define RK_MMU_STATUS_PAGE_FAULT_ACTIVE    BIT(1)
+> +#define RK_MMU_STATUS_STALL_ACTIVE         BIT(2)
+> +#define RK_MMU_STATUS_IDLE                 BIT(3)
+> +#define RK_MMU_STATUS_REPLAY_BUFFER_EMPTY  BIT(4)
+> +#define RK_MMU_STATUS_PAGE_FAULT_IS_WRITE  BIT(5)
+> +#define RK_MMU_STATUS_STALL_NOT_ACTIVE     BIT(31)
+> +
+> +/* RK_MMU_COMMAND command values */
+> +#define RK_MMU_CMD_ENABLE_PAGING    0  /* Enable memory translation */
+> +#define RK_MMU_CMD_DISABLE_PAGING   1  /* Disable memory translation */
+> +#define RK_MMU_CMD_ENABLE_STALL     2  /* Stall paging to allow other cmds */
+> +#define RK_MMU_CMD_DISABLE_STALL    3  /* Stop stall re-enables paging */
+> +#define RK_MMU_CMD_ZAP_CACHE        4  /* Shoot down entire IOTLB */
+> +#define RK_MMU_CMD_PAGE_FAULT_DONE  5  /* Clear page fault */
+> +#define RK_MMU_CMD_FORCE_RESET      6  /* Reset all registers */
+> +
+> +/* RK_MMU_INT_* register fields */
+> +#define RK_MMU_IRQ_PAGE_FAULT    0x01  /* page fault */
+> +#define RK_MMU_IRQ_BUS_ERROR     0x02  /* bus read error */
+> +#define RK_MMU_IRQ_MASK          (RK_MMU_IRQ_PAGE_FAULT | RK_MMU_IRQ_BUS_ERROR)
+> +
+> +#define NUM_DT_ENTRIES 1024
+> +#define NUM_PT_ENTRIES 1024
+> +
+> +#define SPAGE_ORDER 12
+> +#define SPAGE_SIZE (1 << SPAGE_ORDER)
+> +
+> + /*
+> +  * Support mapping any size that fits in one page table:
+> +  *   4 KiB to 4 MiB
+> +  */
+> +#define RK_IOMMU_PGSIZE_BITMAP 0x007ff000
+> +
+> +#define IOMMU_REG_POLL_COUNT_FAST 1000
+> +
+> +struct rk_iommu_domain {
+> +       struct list_head iommus;
+> +       spinlock_t iommus_lock; /* lock for iommus list */
+> +       u32 *dt; /* page directory table */
+> +       spinlock_t dt_lock; /* lock for modifying page directory table */
+> +};
+> +
+> +struct rk_iommu {
+> +       struct device *dev;
+> +       void __iomem *base;
+> +       int irq;
+> +       struct list_head node; /* entry in rk_iommu_domain.iommus */
+> +       struct iommu_domain *domain; /* domain to which iommu is attached */
+> +};
+> +
+> +static inline void rk_table_flush(u32 *va, unsigned int count)
+> +{
+> +       phys_addr_t pa_start = virt_to_phys(va);
+> +       phys_addr_t pa_end = virt_to_phys(va + count);
+> +       size_t size = pa_end - pa_start;
+> +
+> +       __cpuc_flush_dcache_area(va, size);
+> +       outer_flush_range(pa_start, pa_end);
+> +}
+> +
+> +/**
+> + * Inspired by _wait_for in intel_drv.h
+> + * This is NOT safe for use in interrupt context.
+> + *
+> + * Note that it's important that we check the condition again after having
+> + * timed out, since the timeout could be due to preemption or similar and
+> + * we've never had a chance to check the condition before the timeout.
+> + */
+> +#define rk_wait_for(COND, MS) ({ \
+> +       unsigned long timeout__ = jiffies + msecs_to_jiffies(MS) + 1;   \
+> +       int ret__ = 0;                                                  \
+> +       while (!(COND)) {                                               \
+> +               if (time_after(jiffies, timeout__)) {                   \
+> +                       ret__ = (COND) ? 0 : -ETIMEDOUT;                \
+> +                       break;                                          \
+> +               }                                                       \
+> +               usleep_range(50, 100);                                  \
+> +       }                                                               \
+> +       ret__;                                                          \
+> +})
+> +
+> +/*
+> + * The Rockchip rk3288 iommu uses a 2-level page table.
+> + * The first level is the "Directory Table" (DT).
+> + * The DT consists of 1024 4-byte Directory Table Entries (DTEs), each pointing
+> + * to a "Page Table".
+> + * The second level is the 1024 Page Tables (PT).
+> + * Each PT consists of 1024 4-byte Page Table Entries (PTEs), each pointing to
+> + * a 4 KB page of physical memory.
+> + *
+> + * The DT and each PT fits in a single 4 KB page (4-bytes * 1024 entries).
+> + * Each iommu device has a MMU_DTE_ADDR register that contains the physical
+> + * address of the start of the DT page.
+> + *
+> + * The structure of the page table is as follows:
+> + *
+> + *                   DT
+> + * MMU_DTE_ADDR -> +-----+
+> + *                 |     |
+> + *                 +-----+     PT
+> + *                 | DTE | -> +-----+
+> + *                 +-----+    |     |     Memory
+> + *                 |     |    +-----+     Page
+> + *                 |     |    | PTE | -> +-----+
+> + *                 +-----+    +-----+    |     |
+> + *                            |     |    |     |
+> + *                            |     |    |     |
+> + *                            +-----+    |     |
+> + *                                       |     |
+> + *                                       |     |
+> + *                                       +-----+
+> + */
+> +
+> +/*
+> + * Each DTE has a PT address and a valid bit:
+> + * +---------------------+-----------+-+
+> + * | PT address          | Reserved  |V|
+> + * +---------------------+-----------+-+
+> + *  31:12 - PT address (PTs always starts on a 4 KB boundary)
+> + *  11: 1 - Reserved
+> + *      0 - 1 if PT @ PT address is valid
+> + */
+> +#define RK_DTE_PT_ADDRESS_MASK    0xfffff000
+> +#define RK_DTE_PT_VALID           BIT(0)
+> +
+> +static inline phys_addr_t rk_dte_pt_address(u32 dte)
+> +{
+> +       return (phys_addr_t)dte & RK_DTE_PT_ADDRESS_MASK;
+> +}
+> +
+> +static inline bool rk_dte_is_pt_valid(u32 dte)
+> +{
+> +       return dte & RK_DTE_PT_VALID;
+> +}
+> +
+> +static u32 rk_mk_dte(u32 *pt)
+> +{
+> +       phys_addr_t pt_phys = virt_to_phys(pt);
+> +       return (pt_phys & RK_DTE_PT_ADDRESS_MASK) | RK_DTE_PT_VALID;
+> +}
+> +
+> +/*
+> + * Each PTE has a Page address, some flags and a valid bit:
+> + * +---------------------+---+-------+-+
+> + * | Page address        |Rsv| Flags |V|
+> + * +---------------------+---+-------+-+
+> + *  31:12 - Page address (Pages always start on a 4 KB boundary)
+> + *  11: 9 - Reserved
+> + *   8: 1 - Flags
+> + *      8 - Read allocate - allocate cache space on read misses
+> + *      7 - Read cache - enable cache & prefetch of data
+> + *      6 - Write buffer - enable delaying writes on their way to memory
+> + *      5 - Write allocate - allocate cache space on write misses
+> + *      4 - Write cache - different writes can be merged together
+> + *      3 - Override cache attributes
+> + *          if 1, bits 4-8 control cache attributes
+> + *          if 0, the system bus defaults are used
+> + *      2 - Writable
+> + *      1 - Readable
+> + *      0 - 1 if Page @ Page address is valid
+> + */
+> +#define RK_PTE_PAGE_ADDRESS_MASK  0xfffff000
+> +#define RK_PTE_PAGE_FLAGS_MASK    0x000001fe
+> +#define RK_PTE_PAGE_WRITABLE      BIT(2)
+> +#define RK_PTE_PAGE_READABLE      BIT(1)
+> +#define RK_PTE_PAGE_VALID         BIT(0)
+> +
+> +static inline phys_addr_t rk_pte_page_address(u32 pte)
+> +{
+> +       return (phys_addr_t)pte & RK_PTE_PAGE_ADDRESS_MASK;
+> +}
+> +
+> +static inline bool rk_pte_is_page_valid(u32 pte)
+> +{
+> +       return pte & RK_PTE_PAGE_VALID;
+> +}
+> +
+> +/* TODO: set cache flags per prot IOMMU_CACHE */
+> +static u32 rk_mk_pte(phys_addr_t page, int prot)
+> +{
+> +       u32 flags = 0;
+> +       flags |= (prot & IOMMU_READ) ? RK_PTE_PAGE_READABLE : 0;
+> +       flags |= (prot & IOMMU_WRITE) ? RK_PTE_PAGE_WRITABLE : 0;
+> +       page &= RK_PTE_PAGE_ADDRESS_MASK;
+> +       return page | flags | RK_PTE_PAGE_VALID;
+> +}
+> +
+> +static u32 rk_mk_pte_invalid(u32 pte)
+> +{
+> +       return pte & ~RK_PTE_PAGE_VALID;
+> +}
+> +
+> +/*
+> + * rk3288 iova (IOMMU Virtual Address) format
+> + *  31       22.21       12.11          0
+> + * +-----------+-----------+-------------+
+> + * | DTE index | PTE index | Page offset |
+> + * +-----------+-----------+-------------+
+> + *  31:22 - DTE index   - index of DTE in DT
+> + *  21:12 - PTE index   - index of PTE in PT @ DTE.pt_address
+> + *  11: 0 - Page offset - offset into page @ PTE.page_address
+> + */
+> +#define RK_IOVA_DTE_MASK    0xffc00000
+> +#define RK_IOVA_DTE_SHIFT   22
+> +#define RK_IOVA_PTE_MASK    0x003ff000
+> +#define RK_IOVA_PTE_SHIFT   12
+> +#define RK_IOVA_PAGE_MASK   0x00000fff
+> +#define RK_IOVA_PAGE_SHIFT  0
+> +
+> +static u32 rk_iova_dte_index(dma_addr_t iova)
+> +{
+> +       return (u32)(iova & RK_IOVA_DTE_MASK) >> RK_IOVA_DTE_SHIFT;
+> +}
+> +
+> +static u32 rk_iova_pte_index(dma_addr_t iova)
+> +{
+> +       return (u32)(iova & RK_IOVA_PTE_MASK) >> RK_IOVA_PTE_SHIFT;
+> +}
+> +
+> +static u32 rk_iova_page_offset(dma_addr_t iova)
+> +{
+> +       return (u32)(iova & RK_IOVA_PAGE_MASK) >> RK_IOVA_PAGE_SHIFT;
+> +}
+> +
+> +static u32 rk_iommu_read(struct rk_iommu *iommu, u32 offset)
+> +{
+> +       return readl(iommu->base + offset);
+> +}
+> +
+> +static void rk_iommu_write(struct rk_iommu *iommu, u32 offset, u32 value)
+> +{
+> +       writel(value, iommu->base + offset);
+> +}
+> +
+> +static void rk_iommu_command(struct rk_iommu *iommu, u32 command)
+> +{
+> +       writel(command, iommu->base + RK_MMU_COMMAND);
+> +}
+> +
+> +static void rk_iommu_zap_lines(struct rk_iommu *iommu, dma_addr_t iova,
+> +                              size_t size)
+> +{
+> +       dma_addr_t iova_end = iova + size;
+> +       /*
+> +        * TODO(djkurtz): Figure out when it is more efficient to shootdown the
+> +        * entire iotlb rather than iterate over individual iovas.
+> +        */
+> +       for (; iova < iova_end; iova += SPAGE_SIZE)
+> +               rk_iommu_write(iommu, RK_MMU_ZAP_ONE_LINE, iova);
+> +}
+> +
+> +static bool rk_iommu_is_stall_active(struct rk_iommu *iommu)
+> +{
+> +       return rk_iommu_read(iommu, RK_MMU_STATUS) & RK_MMU_STATUS_STALL_ACTIVE;
+> +}
+> +
+> +static bool rk_iommu_is_paging_enabled(struct rk_iommu *iommu)
+> +{
+> +       return rk_iommu_read(iommu, RK_MMU_STATUS) &
+> +                            RK_MMU_STATUS_PAGING_ENABLED;
+> +}
+> +
+> +static int rk_iommu_enable_stall(struct rk_iommu *iommu)
+> +{
+> +       int ret;
+> +
+> +       if (rk_iommu_is_stall_active(iommu))
+> +               return 0;
+> +
+> +       /* Stall can only be enabled if paging is enabled */
+> +       if (!rk_iommu_is_paging_enabled(iommu))
+> +               return 0;
+> +
+> +       rk_iommu_command(iommu, RK_MMU_CMD_ENABLE_STALL);
+> +
+> +       ret = rk_wait_for(rk_iommu_is_stall_active(iommu), 1);
+> +       if (ret)
+> +               dev_err(iommu->dev, "Enable stall request timed out, status: %#08x\n",
+> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
+> +
+> +       return ret;
+> +}
+> +
+> +static int rk_iommu_disable_stall(struct rk_iommu *iommu)
+> +{
+> +       int ret;
+> +
+> +       if (!rk_iommu_is_stall_active(iommu))
+> +               return 0;
+> +
+> +       rk_iommu_command(iommu, RK_MMU_CMD_DISABLE_STALL);
+> +
+> +       ret = rk_wait_for(!rk_iommu_is_stall_active(iommu), 1);
+> +       if (ret)
+> +               dev_err(iommu->dev, "Disable stall request timed out, status: %#08x\n",
+> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
+> +
+> +       return ret;
+> +}
+> +
+> +static int rk_iommu_enable_paging(struct rk_iommu *iommu)
+> +{
+> +       int ret;
+> +
+> +       if (rk_iommu_is_paging_enabled(iommu))
+> +               return 0;
+> +
+> +       rk_iommu_command(iommu, RK_MMU_CMD_ENABLE_PAGING);
+> +
+> +       ret = rk_wait_for(rk_iommu_is_paging_enabled(iommu), 1);
+> +       if (ret)
+> +               dev_err(iommu->dev, "Enable paging request timed out, status: %#08x\n",
+> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
+> +
+> +       return ret;
+> +}
+> +
+> +static int rk_iommu_disable_paging(struct rk_iommu *iommu)
+> +{
+> +       int ret;
+> +
+> +       if (!rk_iommu_is_paging_enabled(iommu))
+> +               return 0;
+> +
+> +       rk_iommu_command(iommu, RK_MMU_CMD_DISABLE_PAGING);
+> +
+> +       ret = rk_wait_for(!rk_iommu_is_paging_enabled(iommu), 1);
+> +       if (ret)
+> +               dev_err(iommu->dev, "Disable paging request timed out, status: #%08x\n",
+> +                       rk_iommu_read(iommu, RK_MMU_STATUS));
+> +
+> +       return ret;
+> +}
+> +
+> +static int rk_iommu_force_reset(struct rk_iommu *iommu)
+> +{
+> +       int ret;
+> +       u32 dte_addr;
+> +
+> +       /*
+> +        * Check if register DTE_ADDR is working by writing DTE_ADDR_DUMMY
+> +        * and verifying that upper 5 nybbles are read back.
+> +        */
+> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, DTE_ADDR_DUMMY);
+> +
+> +       dte_addr = rk_iommu_read(iommu, RK_MMU_DTE_ADDR);
+> +       if (dte_addr != (DTE_ADDR_DUMMY & RK_DTE_PT_ADDRESS_MASK)) {
+> +               dev_err(iommu->dev, "Error during raw reset. MMU_DTE_ADDR is not functioning\n");
+> +               return -EFAULT;
+> +       }
+> +
+> +       rk_iommu_command(iommu, RK_MMU_CMD_FORCE_RESET);
+> +
+> +       ret = rk_wait_for(rk_iommu_read(iommu, RK_MMU_DTE_ADDR) == 0x00000000,
+> +                         FORCE_RESET_TIMEOUT);
+> +       if (ret)
+> +               dev_err(iommu->dev, "FORCE_RESET command timed out\n");
+> +
+> +       return ret;
+> +}
+> +
+> +static void log_iova(struct rk_iommu *iommu, dma_addr_t iova)
+> +{
+> +       u32 dte_index, pte_index, page_offset;
+> +       u32 mmu_dte_addr;
+> +       phys_addr_t mmu_dte_addr_phys, dte_addr_phys;
+> +       u32 *dte_addr;
+> +       u32 dte;
+> +       phys_addr_t pte_addr_phys = 0;
+> +       u32 *pte_addr = NULL;
+> +       u32 pte = 0;
+> +       phys_addr_t page_addr_phys = 0;
+> +       u32 page_flags = 0;
+> +
+> +       dte_index = rk_iova_dte_index(iova);
+> +       pte_index = rk_iova_pte_index(iova);
+> +       page_offset = rk_iova_page_offset(iova);
+> +
+> +       mmu_dte_addr = rk_iommu_read(iommu, RK_MMU_DTE_ADDR);
+> +       mmu_dte_addr_phys = (phys_addr_t)mmu_dte_addr;
+> +
+> +       dte_addr_phys = mmu_dte_addr_phys + (4 * dte_index);
+> +       dte_addr = phys_to_virt(dte_addr_phys);
+> +       dte = *dte_addr;
+> +
+> +       if (!rk_dte_is_pt_valid(dte))
+> +               goto print_it;
+> +
+> +       pte_addr_phys = rk_dte_pt_address(dte) + (pte_index * 4);
+> +       pte_addr = phys_to_virt(pte_addr_phys);
+> +       pte = *pte_addr;
+> +
+> +       if (!rk_pte_is_page_valid(pte))
+> +               goto print_it;
+> +
+> +       page_addr_phys = rk_pte_page_address(pte) + page_offset;
+> +       page_flags = pte & RK_PTE_PAGE_FLAGS_MASK;
+> +
+> +print_it:
+> +       dev_err(iommu->dev, "iova = %pad: dte_index: 0x%03x pte_index: 0x%03x page_offset: 0x%03x\n",
+> +               &iova, dte_index, pte_index, page_offset);
+> +       dev_err(iommu->dev, "mmu_dte_addr: %pa dte@%pa: %#08x valid: %u pte@%pa: %#08x valid: %u page@%pa flags: %#03x\n",
+> +               &mmu_dte_addr_phys, &dte_addr_phys, dte,
+> +               rk_dte_is_pt_valid(dte), &pte_addr_phys, pte,
+> +               rk_pte_is_page_valid(pte), &page_addr_phys, page_flags);
+> +}
+> +
+> +static irqreturn_t rk_iommu_irq(int irq, void *dev_id)
+> +{
+> +       struct rk_iommu *iommu = dev_id;
+> +       u32 status;
+> +       u32 int_status;
+> +       dma_addr_t iova;
+> +
+> +       int_status = rk_iommu_read(iommu, RK_MMU_INT_STATUS);
+> +       if (int_status == 0)
+> +               return IRQ_NONE;
+> +
+> +       iova = rk_iommu_read(iommu, RK_MMU_PAGE_FAULT_ADDR);
+> +
+> +       if (int_status & RK_MMU_IRQ_PAGE_FAULT) {
+> +               int flags;
+> +
+> +               status = rk_iommu_read(iommu, RK_MMU_STATUS);
+> +               flags = (status & RK_MMU_STATUS_PAGE_FAULT_IS_WRITE) ?
+> +                               IOMMU_FAULT_WRITE : IOMMU_FAULT_READ;
+> +
+> +               dev_err(iommu->dev, "Page fault at %pad of type %s\n",
+> +                       &iova,
+> +                       (flags == IOMMU_FAULT_WRITE) ? "write" : "read");
+> +
+> +               log_iova(iommu, iova);
+> +
+> +               /*
+> +                * Report page fault to any installed handlers.
+> +                * Ignore the return code, though, since we always zap cache
+> +                * and clear the page fault anyway.
+> +                */
+> +               if (iommu->domain)
+> +                       report_iommu_fault(iommu->domain, iommu->dev, iova,
+> +                                          flags);
+> +               else
+> +                       dev_err(iommu->dev, "Page fault while iommu not attached to domain?\n");
+> +
+> +               rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
+> +               rk_iommu_command(iommu, RK_MMU_CMD_PAGE_FAULT_DONE);
+> +       }
+> +
+> +       if (int_status & RK_MMU_IRQ_BUS_ERROR)
+> +               dev_err(iommu->dev, "BUS_ERROR occurred at %pad\n", &iova);
+> +
+> +       if (int_status & ~RK_MMU_IRQ_MASK)
+> +               dev_err(iommu->dev, "unexpected int_status: %#08x\n",
+> +                       int_status);
+> +
+> +       rk_iommu_write(iommu, RK_MMU_INT_CLEAR, int_status);
+> +
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
+> +                                        dma_addr_t iova)
+> +{
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       unsigned long flags;
+> +       phys_addr_t pt_phys, phys = 0;
+> +       u32 dte, pte;
+> +       u32 *page_table;
+> +
+> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
+> +
+> +       dte = rk_domain->dt[rk_iova_dte_index(iova)];
+> +       if (!rk_dte_is_pt_valid(dte))
+> +               goto out;
+> +
+> +       pt_phys = rk_dte_pt_address(dte);
+> +       page_table = (u32 *)phys_to_virt(pt_phys);
+> +       pte = page_table[rk_iova_pte_index(iova)];
+> +       if (!rk_pte_is_page_valid(pte))
+> +               goto out;
+> +
+> +       phys = rk_pte_page_address(pte) + rk_iova_page_offset(iova);
+> +out:
+> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+> +
+> +       return phys;
+> +}
+> +
+> +static void rk_iommu_zap_iova(struct rk_iommu_domain *rk_domain,
+> +                             dma_addr_t iova, size_t size)
+> +{
+> +       struct list_head *pos;
+> +       unsigned long flags;
+> +
+> +       /* shootdown these iova from all iommus using this domain */
+> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+> +       list_for_each(pos, &rk_domain->iommus) {
+> +               struct rk_iommu *iommu;
+> +               iommu = list_entry(pos, struct rk_iommu, node);
+> +               rk_iommu_zap_lines(iommu, iova, size);
+> +       }
+> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
+> +}
+> +
+> +static u32 *rk_dte_get_page_table(struct rk_iommu_domain *rk_domain,
+> +                                 dma_addr_t iova)
+> +{
+> +       u32 *page_table, *dte_addr;
+> +       u32 dte;
+> +       phys_addr_t pt_phys;
+> +
+> +       assert_spin_locked(&rk_domain->dt_lock);
+> +
+> +       dte_addr = &rk_domain->dt[rk_iova_dte_index(iova)];
+> +       dte = *dte_addr;
+> +       if (rk_dte_is_pt_valid(dte))
+> +               goto done;
+> +
+> +       page_table = (u32 *)get_zeroed_page(GFP_ATOMIC);
+> +       if (!page_table)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       dte = rk_mk_dte(page_table);
+> +       *dte_addr = dte;
+> +
+> +       rk_table_flush(page_table, NUM_PT_ENTRIES);
+> +       rk_table_flush(dte_addr, 1);
+> +
+> +       /*
+> +        * Zap the first iova of newly allocated page table so iommu evicts
+> +        * old cached value of new dte from the iotlb.
+> +        */
+> +       rk_iommu_zap_iova(rk_domain, iova, SPAGE_SIZE);
+> +
+> +done:
+> +       pt_phys = rk_dte_pt_address(dte);
+> +       return (u32 *)phys_to_virt(pt_phys);
+> +}
+> +
+> +static size_t rk_iommu_unmap_iova(struct rk_iommu_domain *rk_domain,
+> +                                 u32 *pte_addr, dma_addr_t iova, size_t size)
+> +{
+> +       unsigned int pte_count;
+> +       unsigned int pte_total = size / SPAGE_SIZE;
+> +
+> +       assert_spin_locked(&rk_domain->dt_lock);
+> +
+> +       for (pte_count = 0; pte_count < pte_total; pte_count++) {
+> +               u32 pte = pte_addr[pte_count];
+> +               if (!rk_pte_is_page_valid(pte))
+> +                       break;
+> +
+> +               pte_addr[pte_count] = rk_mk_pte_invalid(pte);
+> +       }
+> +
+> +       rk_table_flush(pte_addr, pte_count);
+> +
+> +       return pte_count * SPAGE_SIZE;
+> +}
+> +
+> +static int rk_iommu_map_iova(struct rk_iommu_domain *rk_domain, u32 *pte_addr,
+> +                            dma_addr_t iova, phys_addr_t paddr, size_t size,
+> +                            int prot)
+> +{
+> +       unsigned int pte_count;
+> +       unsigned int pte_total = size / SPAGE_SIZE;
+> +       phys_addr_t page_phys;
+> +
+> +       assert_spin_locked(&rk_domain->dt_lock);
+> +
+> +       for (pte_count = 0; pte_count < pte_total; pte_count++) {
+> +               u32 pte = pte_addr[pte_count];
+> +
+> +               if (rk_pte_is_page_valid(pte))
+> +                       goto unwind;
+> +
+> +               pte_addr[pte_count] = rk_mk_pte(paddr, prot);
+> +
+> +               paddr += SPAGE_SIZE;
+> +       }
+> +
+> +       rk_table_flush(pte_addr, pte_count);
+> +
+> +       return 0;
+> +unwind:
+> +       /* Unmap the range of iovas that we just mapped */
+> +       rk_iommu_unmap_iova(rk_domain, pte_addr, iova, pte_count * SPAGE_SIZE);
+> +
+> +       iova += pte_count * SPAGE_SIZE;
+> +       page_phys = rk_pte_page_address(pte_addr[pte_count]);
+> +       pr_err("iova: %pad already mapped to %pa cannot remap to phys: %pa prot:%#x\n",
+> +              &iova, &page_phys, &paddr, prot);
+> +
+> +       return -EADDRINUSE;
+> +}
+> +
+> +static int rk_iommu_map(struct iommu_domain *domain, unsigned long _iova,
+> +                       phys_addr_t paddr, size_t size, int prot)
+> +{
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       unsigned long flags;
+> +       dma_addr_t iova = (dma_addr_t)_iova;
+> +       u32 *page_table, *pte_addr;
+> +       int ret;
+> +
+> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
+> +
+> +       /*
+> +        * We advertise support for iova regions that will fit in one page
+> +        * table (1024 4-KiB pages = 4 MiB).
+> +        * So, size will always be 1024 <= size <= 4194304.
+> +        * iommu core guarantees that both iova and size will be aligned.
+> +        * So, we will only ever be mapping to a single dte->page_table.
+> +        */
+> +       page_table = rk_dte_get_page_table(rk_domain, iova);
+> +       if (IS_ERR(page_table)) {
+> +               spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+> +               return PTR_ERR(page_table);
+> +       }
+> +
+> +       pte_addr = &page_table[rk_iova_pte_index(iova)];
+> +       ret = rk_iommu_map_iova(rk_domain, pte_addr, iova, paddr, size, prot);
+> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+> +
+> +       return ret;
+> +}
+> +
+> +static size_t rk_iommu_unmap(struct iommu_domain *domain, unsigned long _iova,
+> +                            size_t size)
+> +{
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       unsigned long flags;
+> +       dma_addr_t iova = (dma_addr_t)_iova;
+> +       phys_addr_t pt_phys;
+> +       u32 dte;
+> +       u32 *pte_addr;
+> +       size_t unmap_size;
+> +
+> +       spin_lock_irqsave(&rk_domain->dt_lock, flags);
+> +
+> +       /*
+> +        * We advertise support for iova regions up to the size that will fit
+> +        * in one page table (1024 4-KiB pages = 4 MiB).
+> +        * So, size will always be 1024 <= size <= 4194304.
+> +        * iommu core guarantees that both iova and size will be aligned.
+> +        * So, we will only ever be unmapping from a single dte.
+> +        */
+> +       dte = rk_domain->dt[rk_iova_dte_index(iova)];
+> +       /* Just return 0 if iova is unmapped */
+> +       if (!rk_dte_is_pt_valid(dte)) {
+> +               spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+> +               return 0;
+> +       }
+> +
+> +       pt_phys = rk_dte_pt_address(dte);
+> +       pte_addr = (u32 *)phys_to_virt(pt_phys) + rk_iova_pte_index(iova);
+> +       unmap_size = rk_iommu_unmap_iova(rk_domain, pte_addr, iova, size);
+> +
+> +       spin_unlock_irqrestore(&rk_domain->dt_lock, flags);
+> +
+> +       /* Shootdown iotlb entries for iova range that was just unmapped */
+> +       rk_iommu_zap_iova(rk_domain, iova, unmap_size);
+> +
+> +       return unmap_size;
+> +}
+> +
+> +static int rk_iommu_attach_device(struct iommu_domain *domain,
+> +                                 struct device *dev)
+> +{
+> +       struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       unsigned long flags;
+> +       int ret;
+> +       phys_addr_t dte_addr;
+> +
+> +       /*
+> +        * Allow 'virtual devices' (e.g., drm) to attach to domain.
+> +        * Such a device has a NULL archdata.iommu.
+> +        */
+> +       if (!iommu)
+> +               return 0;
+> +
+> +       ret = rk_iommu_enable_stall(iommu);
+> +       if (ret)
+> +               return ret;
+> +
+> +       ret = rk_iommu_force_reset(iommu);
+> +       if (ret)
+> +               return ret;
+> +
+> +       iommu->domain = domain;
+> +
+> +       ret = devm_request_irq(dev, iommu->irq, rk_iommu_irq,
+> +                              IRQF_SHARED, dev_name(dev), iommu);
+> +       if (ret)
+> +               return ret;
+> +
+> +       dte_addr = virt_to_phys(rk_domain->dt);
+> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, dte_addr);
+> +       rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
+> +       rk_iommu_write(iommu, RK_MMU_INT_MASK, RK_MMU_IRQ_MASK);
+> +
+> +       ret = rk_iommu_enable_paging(iommu);
+> +       if (ret)
+> +               return ret;
+> +
+> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+> +       list_add_tail(&iommu->node, &rk_domain->iommus);
+> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
+> +
+> +       dev_info(dev, "Attached to iommu domain\n");
+> +
+> +       rk_iommu_disable_stall(iommu);
+> +
+> +       return 0;
+> +}
+> +
+> +static void rk_iommu_detach_device(struct iommu_domain *domain,
+> +                                  struct device *dev)
+> +{
+> +       struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       unsigned long flags;
+> +
+> +       /* Allow 'virtual devices' (eg drm) to detach from domain */
+> +       if (!iommu)
+> +               return;
+> +
+> +       iommu->domain = NULL;
+> +
+> +       spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+> +       list_del_init(&iommu->node);
+> +       spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
+> +
+> +       devm_free_irq(dev, iommu->irq, iommu);
+> +
+> +       iommu->domain = NULL;
+> +
+> +       /* Ignore error while disabling, just keep going */
+> +       rk_iommu_enable_stall(iommu);
+> +       rk_iommu_disable_paging(iommu);
+> +       rk_iommu_write(iommu, RK_MMU_INT_MASK, 0);
+> +       rk_iommu_write(iommu, RK_MMU_DTE_ADDR, 0);
+> +       rk_iommu_disable_stall(iommu);
+> +
+> +       dev_info(dev, "Detached from iommu domain\n");
+> +}
+> +
+> +static int rk_iommu_domain_init(struct iommu_domain *domain)
+> +{
+> +       struct rk_iommu_domain *rk_domain;
+> +
+> +       rk_domain = kzalloc(sizeof(*rk_domain), GFP_KERNEL);
+> +       if (!rk_domain)
+> +               return -ENOMEM;
+> +
+> +       /*
+> +        * rk32xx iommus use a 2 level pagetable.
+> +        * Each level1 (dt) and level2 (pt) table has 1024 4-byte entries.
+> +        * Allocate one 4 KiB page for each table.
+> +        */
+> +       rk_domain->dt = (u32 *)get_zeroed_page(GFP_KERNEL);
+> +       if (!rk_domain->dt)
+> +               goto err_dt;
+> +
+> +       rk_table_flush(rk_domain->dt, NUM_DT_ENTRIES);
+> +
+> +       spin_lock_init(&rk_domain->iommus_lock);
+> +       spin_lock_init(&rk_domain->dt_lock);
+> +       INIT_LIST_HEAD(&rk_domain->iommus);
+> +
+> +       domain->priv = rk_domain;
+> +
+> +       return 0;
+> +err_dt:
+> +       kfree(rk_domain);
+> +       return -ENOMEM;
+> +}
+> +
+> +static void rk_iommu_domain_destroy(struct iommu_domain *domain)
+> +{
+> +       struct rk_iommu_domain *rk_domain = domain->priv;
+> +       int i;
+> +
+> +       WARN_ON(!list_empty(&rk_domain->iommus));
+> +
+> +       for (i = 0; i < NUM_DT_ENTRIES; i++) {
+> +               u32 dte = rk_domain->dt[i];
+> +               if (rk_dte_is_pt_valid(dte)) {
+> +                       phys_addr_t pt_phys = rk_dte_pt_address(dte);
+> +                       u32 *page_table = phys_to_virt(pt_phys);
+> +                       free_page((unsigned long)page_table);
+> +               }
+> +       }
+> +
+> +       free_page((unsigned long)rk_domain->dt);
+> +       kfree(domain->priv);
+> +       domain->priv = NULL;
+> +}
+> +
+> +static const struct iommu_ops rk_iommu_ops = {
+> +       .domain_init = rk_iommu_domain_init,
+> +       .domain_destroy = rk_iommu_domain_destroy,
+> +       .attach_dev = rk_iommu_attach_device,
+> +       .detach_dev = rk_iommu_detach_device,
+> +       .map = rk_iommu_map,
+> +       .unmap = rk_iommu_unmap,
+> +       .iova_to_phys = rk_iommu_iova_to_phys,
+> +       .pgsize_bitmap = RK_IOMMU_PGSIZE_BITMAP,
+> +};
+> +
+> +static int rk_iommu_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct rk_iommu *iommu;
+> +       struct resource *res;
+> +
+> +       iommu = devm_kzalloc(dev, sizeof(*iommu), GFP_KERNEL);
+> +       if (!iommu)
+> +               return -ENOMEM;
+> +
+> +       platform_set_drvdata(pdev, iommu);
+> +       iommu->dev = dev;
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       iommu->base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(iommu->base))
+> +               return PTR_ERR(iommu->base);
+> +
+> +       iommu->irq = platform_get_irq(pdev, 0);
+> +       if (iommu->irq < 0) {
+> +               dev_err(dev, "Failed to get IRQ, %d\n", iommu->irq);
+> +               return -ENXIO;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int rk_iommu_remove(struct platform_device *pdev)
+> +{
+> +       return 0;
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id rk_iommu_dt_ids[] = {
+> +       { .compatible = "rockchip,iommu" },
+> +       { /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, rk_iommu_dt_ids);
+> +#endif
+> +
+> +static struct platform_driver rk_iommu_driver = {
+> +       .probe = rk_iommu_probe,
+> +       .remove = rk_iommu_remove,
+> +       .driver = {
+> +                  .name = "rk_iommu",
+> +                  .owner = THIS_MODULE,
+> +                  .of_match_table = of_match_ptr(rk_iommu_dt_ids),
+> +       },
+> +};
+> +
+> +static int __init rk_iommu_init(void)
+> +{
+> +       int ret;
+> +
+> +       ret = bus_set_iommu(&platform_bus_type, &rk_iommu_ops);
+> +       if (ret)
+> +               return ret;
+> +
+> +       return platform_driver_register(&rk_iommu_driver);
+> +}
+> +static void __exit rk_iommu_exit(void)
+> +{
+> +       platform_driver_unregister(&rk_iommu_driver);
+> +}
+> +
+> +subsys_initcall(rk_iommu_init);
+> +module_exit(rk_iommu_exit);
+> +
+> +MODULE_DESCRIPTION("IOMMU API for Rockchip");
+> +MODULE_AUTHOR("Simon Xue <xxm@rock-chips.com> and Daniel Kurtz <djkurtz@chromium.org>");
+> +MODULE_ALIAS("platform:rockchip-iommu");
+> +MODULE_LICENSE("GPL v2");
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
