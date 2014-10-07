@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaJGR0n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:26:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754675AbaJGR0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:26:41 -0400
-Date: Tue, 7 Oct 2014 18:25:48 +0100
-From: "Dr. David Alan Gilbert" <dgilbert@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, qemu-devel@nongnu.org,
-        KVM list <kvm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 10/17] mm: rmap preparation for remap_anon_pages
-Message-ID: <20141007172547.GQ2404@work-vm>
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
- <1412356087-16115-11-git-send-email-aarcange@redhat.com>
- <CA+55aFx++R42L75ooE=Fmaem73=V=q7f6pYTcALxgrA1y98G-A@mail.gmail.com>
- <20141006085540.GD2336@work-vm>
- <20141006164156.GA31075@redhat.com>
- <CA+55aFxAOYBny+QwXfkPy-P3rs-RPr5SLYLcPNBiFO3waBXtQA@mail.gmail.com>
- <20141007170731.GO2404@work-vm>
- <54341F77.6060400@redhat.com>
+	id S1754849AbaJGR1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:27:42 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38745 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718AbaJGR1k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:27:40 -0400
+Message-ID: <54342287.7020005@linaro.org>
+Date: Tue, 07 Oct 2014 18:27:35 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54341F77.6060400@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-5-git-send-email-sboyd@codeaurora.org> <542EE5FE.9080806@codeaurora.org>
+In-Reply-To: <542EE5FE.9080806@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paolo Bonzini (pbonzini@redhat.com) wrote:
-> Il 07/10/2014 19:07, Dr. David Alan Gilbert ha scritto:
-> >> > 
-> >> > So I'd *much* rather have a "write()" style interface (ie _copying_
-> >> > bytes from user space into a newly allocated page that gets mapped)
-> >> > than a "remap page" style interface
-> > Something like that might work for the postcopy case; it doesn't work
-> > for some of the other uses that need to stop a page being changed by the
-> > guest, but then need to somehow get a copy of that page internally to QEMU,
-> > and perhaps provide it back later.
-> 
-> I cannot parse this.  Which uses do you have in mind?  Is it for
-> QEMU-specific or is it for other applications of userfaults?
+Hi Stephen,
 
-> As long as the page is atomically mapped, I'm not sure what the
-> difference from remap_anon_pages are (as far as the destination page is
-> concerned).  Are you thinking of having userfaults enabled on the source
-> as well?
+Just noticed this regression while testing the patch on Arndale board.
 
-What I'm talking about here is when I want to stop a page being accessed by the
-guest, do something with the data in qemu, and give it back to the guest sometime
-later.
+https://bugs.linaro.org/show_bug.cgi?id=740
 
-The main example is: Memory pools for guests where you swap RAM between a series of
-VM hosts.  You have to take the page out, send it over the wire, sometime later if
-the guest tries to access it you userfault and pull it back.
-(There's at least one or two companies selling something like this, and at least
-one Linux based implementations with their own much more involved kernel hacks)
 
-Dave
---
-Dr. David Alan Gilbert / dgilbert@redhat.com / Manchester, UK
+--srini
+
+On 03/10/14 19:07, Stephen Boyd wrote:
+> On 09/05/14 15:47, Stephen Boyd wrote:
+>> +
+>> +int divider_get_val(unsigned long rate, unsigned long parent_rate,
+>> +		    const struct clk_div_table *table, u8 width,
+>> +		    unsigned long flags)
+>> +{
+>>   	unsigned int div, value;
+>> -	unsigned long flags = 0;
+>> -	u32 val;
+>>
+>>   	div = DIV_ROUND_UP(parent_rate, rate);
+>>
+>> -	if (!_is_valid_div(divider, div))
+>> +	if (!_is_valid_div(table, div, flags))
+>>   		return -EINVAL;
+>>
+>> -	value = _get_val(divider, div);
+>> +	value = _get_val(table, div, flags);
+>> +
+>> +	min_t(unsigned int, value, div_mask(width));
+>> +
+>> +	return 0;
+>
+> This should be return value, not return 0.
+>
+>> +}
+>> +EXPORT_SYMBOL_GPL(divider_get_val);
+>>
