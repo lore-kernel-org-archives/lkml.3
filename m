@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaJGOQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:16:28 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41639 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaJGOQX (ORCPT
+	id S1754133AbaJGOQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:16:36 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48627 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaJGOQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:16:23 -0400
-Date: Mon, 6 Oct 2014 11:00:45 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: pull request: wireless-next 2014-10-03
-Message-ID: <20141006150044.GA25590@tuxdriver.com>
-References: <20141003180151.GE27414@tuxdriver.com>
- <20141005.213511.339356320070784471.davem@davemloft.net>
- <20141005.213853.488066614144870837.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141005.213853.488066614144870837.davem@davemloft.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 7 Oct 2014 10:16:33 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, tony@atomide.com, linux@arm.linux.org.uk,
+        linux-omap@vger.kernel.org, nm@ti.com
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH/v2] ARM: OMAP2: Remove unnecessary KERN_* in omap_phy_internal.c
+Date: Tue,  7 Oct 2014 23:16:16 +0900
+Message-Id: <1412691376-7895-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.1.1.273.g97b8860
+In-Reply-To: <20141006162151.GA21908@kahuna>
+References: <20141006162151.GA21908@kahuna>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 05, 2014 at 09:38:53PM -0400, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Sun, 05 Oct 2014 21:35:11 -0400 (EDT)
-> 
-> > From: "John W. Linville" <linville@tuxdriver.com>
-> > Date: Fri, 3 Oct 2014 14:01:52 -0400
-> > 
-> >> Please pull tihs batch of updates intended for the 3.18 stream!
-> > 
-> > Pulled, thanks for the stellar pull request text, as always.
-> 
-> John, what's the deal with the following?  Will it be resolved by the
-> driver being removed from the staging tree?
-> 
-> WARNING: drivers/staging/rtl8192ee/r8192ee: 'rtl_evm_dbm_jaguar' exported twice. Previous export was in drivers/net/wireless/rtlwifi/rtlwifi.ko
+This patch remove unnecessary KERN_INFO and KERN_ERR from omap_phy_internal.c.
+Add pr_fmt. 
 
-Yes, exactly.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ arch/arm/mach-omap2/omap_phy_internal.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
+index 50640b3..1a19fa0 100644
+--- a/arch/arm/mach-omap2/omap_phy_internal.c
++++ b/arch/arm/mach-omap2/omap_phy_internal.c
+@@ -21,6 +21,8 @@
+   *
+   */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/types.h>
+ #include <linux/delay.h>
+ #include <linux/clk.h>
+@@ -97,13 +99,13 @@ void am35x_musb_phy_power(u8 on)
+ 
+ 		omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
+ 
+-		pr_info(KERN_INFO "Waiting for PHY clock good...\n");
++		pr_info("Waiting for PHY clock good...\n");
+ 		while (!(omap_ctrl_readl(AM35XX_CONTROL_DEVCONF2)
+ 				& CONF2_PHYCLKGD)) {
+ 			cpu_relax();
+ 
+ 			if (time_after(jiffies, timeout)) {
+-				pr_err(KERN_ERR "musb PHY clock good timed out\n");
++				pr_err("musb PHY clock good timed out\n");
+ 				break;
+ 			}
+ 		}
+@@ -145,7 +147,7 @@ void am35x_set_mode(u8 musb_mode)
+ 		devconf2 |= CONF2_NO_OVERRIDE;
+ 		break;
+ 	default:
+-		pr_info(KERN_INFO "Unsupported mode %u\n", musb_mode);
++		pr_info("Unsupported mode %u\n", musb_mode);
+ 	}
+ 
+ 	omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+2.1.1.273.g97b8860
+
