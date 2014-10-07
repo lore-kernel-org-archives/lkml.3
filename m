@@ -1,122 +1,725 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaJGW3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 18:29:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:15148 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaJGW3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 18:29:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,673,1406617200"; 
-   d="scan'208";a="585026249"
-Date: Wed, 8 Oct 2014 01:28:14 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
- functions
-Message-ID: <20141007222814.GA7262@intel.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141007175017.GA10432@obsidianresearch.com>
+	id S1755409AbaJGWb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 18:31:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39138 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaJGWbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 18:31:24 -0400
+Date: Tue, 7 Oct 2014 15:31:23 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PULL] USB driver patches for 3.18-rc1
+Message-ID: <20141007223123.GA5392@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141007175017.GA10432@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 11:50:17AM -0600, Jason Gunthorpe wrote:
-> On Tue, Oct 07, 2014 at 08:01:12PM +0300, Jarkko Sakkinen wrote:
-> > Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
-> > reserves memory resources and tpm_chip_register() initializes the
-> > device driver. This way it is possible to alter struct tpm_chip
-> > attributes before passing it to tpm_chip_register().
-> 
-> This looks broadly reasonable to me
-> 
-> Please add a note to the commit that this is known to still have
-> problems with resource reference counting, but they are less severe
-> than what existed before, and this is only an interm step.
-> 
-> > +/**
-> > + * tpm_chip_alloc() - allocate a new struct tpm_chip instance
-> 
-> This is using devm so it should be called 'tpmm_chip_alloc()' for
-> clarity
-> 
-> 
-> I know that was there before, but it sure is racy:
-> 
-> > +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
-> [..]
-> > +	set_bit(chip->dev_num, dev_mask);
-> 
-> Someday it should use IDR.
-> 
-> 
-> > @@ -896,18 +872,7 @@ void tpm_remove_hardware(struct device *dev)
-> >  		return;
-> >  	}
-> >  
-> > -	spin_lock(&driver_lock);
-> > -	list_del_rcu(&chip->list);
-> > -	spin_unlock(&driver_lock);
-> > -	synchronize_rcu();
-> > -
-> > -	tpm_dev_del_device(chip);
-> > -	tpm_sysfs_del_device(chip);
-> > -	tpm_remove_ppi(&dev->kobj);
-> > -	tpm_bios_log_teardown(chip->bios_dir);
-> > -
-> > -	/* write it this way to be explicit (chip->dev == dev) */
-> > -	put_device(chip->dev);
-> > +	tpm_chip_unregister(chip);
-> >  }
-> >  EXPORT_SYMBOL_GPL(tpm_remove_hardware);
-> 
-> This can move to tpm-chip too, same with tpm_register_hardware
-> 
-> > @@ -714,15 +709,10 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
-> >  	struct tpm_chip *chip = tpm_dev.chip;
-> >  	release_locality(chip, chip->vendor.locality, 1);
-> >  
-> > -	/* close file handles */
-> > -	tpm_dev_vendor_release(chip);
-> > -
-> >  	/* remove hardware */
-> >  	tpm_remove_hardware(chip->dev);
-> 
-> Wrong ordering here, tpm_remove_hardware should always be first -
-> drivers should not tear down internal state before calling it, so
-> release_locality should be second.
-> 
-> Noting that since we use devm the kfree will not happen until
-> remove returns, so the chip pointer is still valid.
+The following changes since commit 452b6361c4d9baf6940adb7b1316e0f386c39799:
 
-Should I fix this ordering? I was thinking to focus putting proper
-patterns in place only in tpm_tis and tpm_crb because they are the
-that I'm able to test easily and then they can work as guideline for
-other drivers.
+  Merge tag 'rdma-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2014-09-23 16:47:34 -0700)
 
-> >  	/* reset these pointers, otherwise we oops */
-> > -	chip->dev->release = NULL;
-> > -	chip->release = NULL;
-> >  	tpm_dev.client = NULL;
-> 
-> The comment can go too
-> 
-> Note: tpm_dev should be driver private data, but that is not your
-> problem..
-> 
-> Did you test compile all the drivers? One of my git commits on github
-> has some hackery to make that possible on x86.
-> 
-> Jason
+are available in the git repository at:
 
-/Jarkko
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git/ tags/usb-3.18-rc1
+
+for you to fetch changes up to 4ed9a3d455558406cad83d38764ee659de25851c:
+
+  USB: host: st: fix typo 'CONFIG_USB_EHCI_HCD_ST' (2014-10-03 14:50:10 -0700)
+
+----------------------------------------------------------------
+USB patches for 3.18-rc1
+
+Here's the big USB patchset for 3.18-rc1.  Also in here is the PHY tree,
+as it seems to fit well with the USB tree for various reasons...
+
+Anyway, lots of little changes in here, all over the place, full details
+in the changelog below.
+
+All have been in the linux-next tree for a while with no issues.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Al Cooper (1):
+      usb: xhci_suspend is not stopping the root hub timer for the shared HCD
+
+Amit Virdi (3):
+      usb: gadget: zero: Add support for interrupt EP
+      usbtest: Add interrupt EP testcases
+      usb: gadget: zero: Fix warning generated by kbuild
+
+Andreas Bomholtz (1):
+      USB: cp210x: add support for Seluxit USB dongle
+
+Andreas Larsson (2):
+      usb: gadget: udc_core: Use right kobj when calling sysfs_notify
+      usb: gadget: gr_udc: Add bounce buffer to handle odd sized OUT requests
+
+Andrew Bresticker (4):
+      xhci: Introduce xhci_init_driver()
+      xhci: Check for XHCI_COMP_MODE_QUIRK when disabling D3cold
+      xhci: Export symbols used by host-controller drivers
+      xhci: Allow xHCI drivers to be built as separate modules
+
+Andrzej Pietrasiewicz (24):
+      usb: gadget: audio: Use container_of to free audio_dev
+      usb: gadget: f_uac2: convert to new function interface with backward compatibility
+      usb: gadget: audio: convert to new interface of f_uac2
+      usb: gadget: f_uac2: remove compatibility layer
+      usb: gadget: f_uac2: use usb_gstrings_attach
+      usb: gadget: f_uac2: use defined constants as defaults
+      usb: gadget: f_uac2: add configfs support
+      usb: gadget: f_uac1: add function strings
+      usb: gadget: f_uac1: prepare for separate compilation
+      usb: gadget: f_uac1: convert to new function interface with backward compatibility
+      usb: gadget: audio: convert to new interface of f_uac1
+      usb: gadget: f_uac1: remove compatibility layer
+      usb: gadget: f_uac1: use usb_gstrings_attach
+      usb: gadget: f_uac1: use defined constants as defaults
+      usb: gadget: f_uac1: add configfs support
+      usb: gadget: f_uvc: fix potential memory leak
+      usb: gadget: uvc: move module parameters from f_uvc
+      usb: gadget: uvc: rename functions to avoid conflicts with host uvc
+      usb: gadget: uvc: separately compile some components of f_uvc
+      usb: gadget: f_uvc: convert f_uvc to new function interface
+      usb: gadget: webcam: convert webcam to new interface of f_uvc
+      usb: gadget: f_uvc: remove compatibility layer
+      usb: gadget: f_uvc: use usb_gstrings_attach
+      usb: dwc2/gadget: Fix comment text
+
+Andy Shevchenko (1):
+      USB: storage: use %*ph specifier to dump small buffers
+
+Antoine Tenart (1):
+      usb: rename phy to usb_phy in HCD
+
+Arjun Sreedharan (1):
+      usb: misc: yurex: remove useless casting of private_data
+
+Arnd Bergmann (2):
+      USB: host: st: fix ehci/ohci driver selection
+      usb: gadget: uvc: fix up uvcg_v4l2_get_unmapped_area typo
+
+Bartlomiej Zolnierkiewicz (4):
+      usb: phy: samsung: remove old USB 2.0 PHY driver
+      usb: phy: samsung: remove old USB 3.0 PHY driver
+      usb: phy: samsung: remove old common USB PHY code
+      usb: renesas_usbhs: fix driver dependencies
+
+Chen Gang (1):
+      drivers/usb/host/ehci-xilinx-of.c: Include "linux/of_irq.h" to avoid compiling error
+
+Dan Carpenter (1):
+      usb: gadget: f_fs: signedness bug in __ffs_func_bind_do_descs()
+
+Daniel Mack (6):
+      usb: gadget: f_uac2: restructure some code in afunc_set_alt()
+      usb: gadget: f_uac2: add short-hand for 'dev'
+      usb: gadget: f_uac2: introduce agdev_to_uac2_opts
+      usb: gadget: f_uac2: handle partial dma area wrap
+      usb: gadget: f_uac2: send reasonably sized packets
+      usb: musb: cppi41: tweak hrtimer values
+
+Dinh Nguyen (2):
+      usb: dwc2: Update Kconfig to support dual-role
+      usb: dwc2: move "samsung,s3c6400-hsotg" into common platform
+
+Doug Anderson (1):
+      usb: dwc2: Read GNPTXFSIZ when in forced HOST mode.
+
+Felipe Balbi (10):
+      usb: phy: msm: mark msm_otg_mode_fops static
+      usb: dwc3: move all string helper functions to debug.h
+      usb: dwc3: debug: add dwc3_gadget_event_type_string
+      usb: dwc3: gadget: cmd argument should always be unsigned
+      usb: dwc3: add tracepoints to aid debugging
+      Merge tag 'v3.17-rc4' into next
+      Merge tag 'v3.17-rc5' into next
+      usb: musb: dsps: kill OTG timer on suspend
+      Revert "usb: gadget: composite: dequeue cdev->req before free its buffer"
+      Revert "usb: gadget: composite: dequeue cdev->req before free it in composite_dev_cleanup"
+
+Fengguang Wu (1):
+      usb: gadget: uvc: uvc_alloc() can be static
+
+Frans Klaver (2):
+      usb: serial: xsens_mt: add author and description
+      usb: serial: xsens_mt: always bind to interface number 1
+
+Geert Uytterhoeven (1):
+      usb: gadget: USB_RENESAS_USBHS_UDC should depend on HAS_DMA
+
+Greg Kroah-Hartman (7):
+      Merge 3.17-rc5 into usb-next
+      Merge tag 'usb-for-v3.18' of git://git.kernel.org/.../balbi/usb into usb-next
+      Merge tag 'usb-serial-3.18-rc1' of git://git.kernel.org/.../johan/usb-serial into usb-next
+      Merge 3.17-rc6 into usb-next
+      USB: quirks.h: use BIT()
+      Merge tag 'usb-serial-3.17-final' of git://git.kernel.org/.../johan/usb-serial into usb-next
+      Merge tag 'phy-for_3.18' of git://git.kernel.org/.../kishon/linux-phy into usb-next
+
+Hans de Goede (34):
+      uas: Add a quirk for rejecting ATA_12 and ATA_16 commands
+      uas: Add no-report-opcodes quirk
+      uas: Add US_FL_NO_ATA_1X quirk for Seagate (0bc2:ab20) drives
+      uas: Add another ASM1051 usb-id to the uas blacklist
+      uas: Remove task-management / abort error handling code
+      uas: Fix resetting flag handling
+      uas: Add uas_get_tag() helper function
+      uas: Do not use scsi_host_find_tag
+      uas: Check against unexpected completions
+      uas: Simplify unlink of data urbs on error
+      uas: Free data urbs on completion
+      uas: Simplify reset / disconnect handling
+      uas: zap_pending: data urbs should have completed at this time
+      uas: Drop inflight list
+      uas: Remove cmnd reference from the cmd urb
+      uas: Drop all references to a scsi_cmnd once it has been aborted
+      uas: Fix memleak of non-submitted urbs
+      uas: pre_reset and suspend: Fix a few races
+      uas: Use streams on upcoming 10Gbps / 3.1 USB
+      uas: Do not log urb status error on cancellation
+      uas: Use scsi_print_command
+      uas: Drop COMMAND_COMPLETED flag
+      uas: Remove support for old sense ui as used in pre-production hardware
+      uas: Remove protype hardware usb interface info
+      uas: Cleanup uas_log_cmd_state usage
+      uas: Log error codes when logging errors
+      uas: Add response iu handling
+      xhci: Move allocating of command for new_dequeue_state to queue_set_tr_deq()
+      xhci: xhci_ring_device: Ring stream ring bells for endpoints with streams
+      xhci: Fold queue_set_tr_deq into xhci_queue_new_dequeue_state
+      xhci: Always ring the doorbell for active eps when a Set TR deq ptr cmd completes
+      xhci: Remove "FIXME - check all the stream rings for pending cancellations"
+      xhci: Log extra info on "ERROR Transfer event TRB DMA ptr not part of current TD"
+      uas: Reduce number of function arguments for uas_alloc_foo functions
+
+Himangi Saraogi (1):
+      usb: gadget: udc: use USB API functions rather than constants
+
+Ivan T. Ivanov (2):
+      usb: dwc3: qcom: Add device tree binding
+      usb: dwc3: Add Qualcomm DWC3 glue layer driver
+
+Jingoo Han (2):
+      usb: dwc3: remove unnecessary OOM messages
+      usb: phy: samsung: Remove unnecessary lines of register bit definitions
+
+Joe Savage (1):
+      USB: serial: cp210x: added Ketra N1 wireless interface support
+
+Johan Hovold (7):
+      USB: serial: add support for multi-port simple drivers
+      USB: serial: add Novatel Wireless GPS driver
+      USB: serial: add Medtronic CareLink USB driver
+      Merge tag 'v3.17-rc5' into usb-next
+      USB: serial: remove zte_ev driver
+      USB: core: add device-qualifier quirk
+      USB: quirks: enable device-qualifier quirk for Elan Touchscreen
+
+Julia Lawall (1):
+      wusb: delete double assignment
+
+Kamil Debski (1):
+      usb: dwc2/gadget: move phy bus legth initialization
+
+Kever Yang (4):
+      Documentation: dt-bindings: add dt binding info for Rockchip dwc2
+      usb: dwc2: add compatible data for rockchip soc
+      Documentation: dt-bindings: add dt binding info for dwc2 dr_mode
+      usb: dwc2: add 'mode' which based on Kconfig select or dts setting
+
+Kiran Padwal (1):
+      USB: Remove .owner field for driver
+
+Laurent Pinchart (4):
+      usb: gadget: f_uvc: Store EP0 control request state during setup stage
+      usb: gadget: f_uvc: Move to video_ioctl2
+      usb: gadget: uvc: Fix endianness mismatches
+      usb: gadget: uvc: Simplify uvcg_video_pump by using local variable
+
+Lauri Hintsala (1):
+      USB: pl2303: use divisors for unsupported baud rates
+
+Li Jun (1):
+      usb: gadget: composite: dequeue cdev->req before free its buffer
+
+Lu Baolu (1):
+      USB: Add device quirk for ASUS T100 Base Station keyboard
+
+Marek Szyprowski (2):
+      usb: dwc2/gadget: hide some not really needed debug messages
+      usb: dwc2/gadget: ensure that all fifos have correct memory buffers
+
+Mark Knibbs (3):
+      storage: Replace magic number with define in usb_stor_euscsi_init()
+      storage: Add quirks for Castlewood and Double-H USB-SCSI converters
+      storage: Add quirk for another SCM-based USB-SCSI converter
+
+Michael Grzeschik (2):
+      usb: gadget: uvc: Change KERN_INFO to KERN_DEBUG on request shutdown
+      usb: gadget: uvc: remove DRIVER_VERSION{,_NUMBER}
+
+Michal Nazarewicz (5):
+      usb: gadget: f_fs: add usb_functionfs_descs_head_v2 structure
+      tools: ffs-test: convert to new descriptor format
+      tools: ffs-test: add compatibility code for old kernels
+      usb: gadget: f_mass_storage: simplify start_transfer slightly
+      usb: f_fs: replace BUG in dead-code with less serious WARN_ON
+
+Michal Sojka (4):
+      usb: gadget: Introduce usb_gadget_giveback_request()
+      usb: gadget: Refactor request completion
+      usb: Rename usb-common.c
+      usb: Add LED triggers for USB activity
+
+Mickael Maison (1):
+      usb: Fixed a few typos
+
+Nick Hudson (1):
+      usb: dwc2: make the scheduler handle excessive NAKs better
+
+Paul Bolle (1):
+      USB: host: st: fix typo 'CONFIG_USB_EHCI_HCD_ST'
+
+Paul Zimmerman (4):
+      usb: gadget: document a usb_ep_dequeue() requirement
+      usb: dwc2: clip max_transfer_size to 65535
+      usb: dwc2: handle DMA buffer unmapping sanely
+      usb: dwc2: add T: line to MAINTAINERS showing Felipe's tree
+
+Peter Chen (16):
+      usb: gadget: add reset API at usb_gadget_driver
+      usb: gadget: composite: add reset API at usb_gadget_driver
+      usb: gadget: configfs: add reset API at usb_gadget_driver
+      usb: gadget: gadgetfs: add reset API at usb_gadget_driver
+      usb: gadget: dbgp: add reset API at usb_gadget_driver
+      usb: gadget: udc-core: add utility for bus reset
+      usb: hcd: add TPL support flag
+      usb: core: TPL should apply for both OTG and EH
+      usb: core: Kconfig: TPL should apply for both OTG and EH
+      usb: common: add API to get if the platform supports TPL
+      usb: chipidea: add TPL support for targeted hosts
+      doc: dt-binding: ci-hdrc-imx: add TPL support
+      usb: chipidea: otg initialization is only needed when the gadget is supported
+      usb: chipidea: enhance kernel-doc format
+      of: add vendor prefix for Chipidea
+      usb: core: return -ENOTSUPP for all targeted hosts
+
+Peter Griffin (23):
+      usb: dwc3: add ST dwc3 glue layer to manage dwc3 HC
+      usb: dwc3: dwc3-st: Add st-dwc3 devicetree bindings documentation
+      MAINTAINERS: Add dwc3-st.c file to ARCH/STI architecture
+      usb: host: ehci-st: Add EHCI support for ST STB devices
+      usb: host: ohci-st: Add OHCI driver support for ST STB devices
+      usb: host: ehci-st: Add ehci-st devicetree bindings documentation
+      usb: host: ohci-st: Add ohci-st devicetree bindings documentation
+      MAINTAINERS: Add ehci-st.c and ohci-st.c to ARCH/STI architecture
+      phy: phy-omap-control: Remove unncessary site specific OOM messages
+      phy: phy-mvebu-sata: Add missing error check for devm_kzalloc
+      phy: phy-omap-usb2: Remove unncessary site specific OOM messages
+      phy: phy-ti-pipe3: Remove unncessary site specific OOM messages
+      phy: phy-spear1310-miphy: Remove unncessary site specific OOM messages
+      phy: phy-spear1340-miphy: Remove unncessary site specific OOM messages
+      phy: phy-spear1310-miphy: Use module_platform_driver to register driver.
+      phy: phy-spear1340-miphy: Use module_platform_driver to register driver.
+      phy: phy-stih407-usb: Add usb picoPHY driver found on stih407 SoC family
+      phy: phy-stih407-usb: Add dt documentation for USB picophy found on stih407 SoC family
+      MAINTAINERS: Add phy-stih407-usb.c file to ARCH/STI architecture
+      phy: phy-stih41x-usb: Add usb phy support for STiH41x SoCs.
+      phy: phy-stih41x-usb: Add dt documentation for USB phy on STiH415/6
+      MAINTAINERS: Add phy-stih41x-usb.c to ARCH/STI architecture
+      phy: remove .owner field for drivers using module_platform_driver
+
+Petr Mladek (6):
+      usb: hub: keep hub->dev reference all the time when struct usb_hub lives
+      usb: hub: rename hub_events() to hub_event() and handle only one event there
+      usb: hub: convert khubd into workqueue
+      usb: hub: rename usb_kick_khubd() to usb_kick_hub_wq()
+      usb: hub: rename khubd to hub_wq in documentation and comments
+      usb: hub: allow to process more usb hub events in parallel
+
+Philipp Zabel (1):
+      usb: gadget: uvc: Add support for DMABUF importing
+
+Richard Leitner (2):
+      usb: gadget: serial: replace {V,}DBG macro with dev_{v,}dbg
+      usb: gadget: serial: remove PREFIX macro
+
+Robert Baldyga (6):
+      usb: gadget: f_fs: add ioctl returning ep descriptor
+      Revert "usb: dwc2: Update Kconfig to support dual-role"
+      Revert "usb: dwc2: move "samsung,s3c6400-hsotg" into common platform"
+      usb: gadget: f_fs: virtual endpoint address mapping
+      usb: dwc2/gadget: assign TX FIFO dynamically
+      usb: dwc2/gadget: disable clock when it's not needed
+
+Sanjeev Sharma (1):
+      uas: replace WARN_ON_ONCE() with lockdep_assert_held()
+
+Scot Doyle (1):
+      usb: core: log higher level message on malformed LANGID descriptor
+
+Sergei Shtylyov (2):
+      phy: Renesas R-Car Gen2 PHY driver
+      usb: hcd: add generic PHY support
+
+Srinivas Kandagatla (1):
+      usb: phy: msm: Make phy_reset clk and reset line optional.
+
+Stefan Agner (2):
+      usb: phy: mxs: Add VF610 USB PHY support
+      chipidea: usbmisc_imx: Add USB support for VF610 SoCs
+
+Subbaraya Sundeep Bhatta (2):
+      usb: doc: udc-xilinx: Add devicetree bindings
+      usb: gadget: Add xilinx usb2 device support
+
+Thomas Pugliese (12):
+      uwb: line length cleanup
+      uwb: update uwb device prints to be more useful
+      uwb: remove UWB build dependency on PCI
+      uwb: create a uwb bus type and add in-range peer devices to it
+      uwb: doc: bring uwb documentation up to date
+      uwb: add an ASIE sysfs attribute to uwb_rc devices
+      uwb: doc: add documentation for ASIE sysfs attribute
+      usb: hwa: add USB build dependency for USB_HWA_HCD
+      usb: wusbcore: remove USB_WUSB build dependency on PCI
+      usb: wusbcore: USB_WUSB_CBAF depends on USB
+      usb: wusbcore: skip done segs before completing aborted transfer
+      usb: wusbcore: fix device disconnect on rekey timeout
+
+Tobias Jakobi (3):
+      usb3503: correct error message in probe ('connect' to 'interrupt')
+      usb3503: fix typos in devicetree binding documentation
+      usb3503: clarify what the registers 'PDS' and 'CFG1' really do
+
+Tobias Klauser (1):
+      USB: isp1362: Use devm_ioremap_resource
+
+Tony Lindgren (6):
+      usb: phy: twl6030-usb: Remove unused irq_enabled
+      usb: phy: twl4030-usb: Remove unused irq_enabled
+      usb: phy: twl4030-usb: Simplify phy init to use runtime PM
+      usb: phy: twl4030-usb: Move code from twl4030_phy_power to the runtime PM calls
+      usb: phy: twl4030-usb: Remove asleep and rely on runtime PM
+      usb: phy: twl4030-usb: Use mutex instead of spinlock for protecting the data
+
+Vivek Gautam (4):
+      usb: ehci/ohci-exynos: Fix PHY getting sequence
+      usb: host: ohci-exynos: Remove unnecessary usb-phy support
+      phy: exynos-dp-video: Use syscon support to control pmu register
+      usb: host: ehci-exynos: Remove unnecessary usb-phy support
+
+Wei Yongjun (1):
+      usb: gadget: Remove redundant dev_err call in r8a66597_sudmac_ioremap()
+
+Yegor Yefremov (1):
+      usb: gadget: use $(srctree) instead of $(PWD) for includes
+
+Yoshihiro Shimoda (2):
+      usb: renesas_usbhs: Add device tree bindings documentation
+      usb: renesas_usbhs: Add device tree support for R-Car H2 and M2
+
+ Documentation/ABI/testing/configfs-usb-gadget-uac1 |   12 +
+ Documentation/ABI/testing/configfs-usb-gadget-uac2 |   12 +
+ Documentation/ABI/testing/sysfs-class-uwb_rc       |   13 +
+ Documentation/DocBook/usb.tmpl                     |    2 +-
+ .../devicetree/bindings/phy/phy-stih407-usb.txt    |   30 +
+ .../devicetree/bindings/phy/phy-stih41x-usb.txt    |   24 +
+ .../devicetree/bindings/phy/qcom-dwc3-usb-phy.txt  |   39 +
+ .../devicetree/bindings/phy/rcar-gen2-phy.txt      |   51 +
+ .../devicetree/bindings/phy/samsung-phy.txt        |    7 +-
+ .../devicetree/bindings/usb/ci-hdrc-imx.txt        |    2 +
+ Documentation/devicetree/bindings/usb/dwc2.txt     |    5 +
+ Documentation/devicetree/bindings/usb/dwc3-st.txt  |   68 +
+ Documentation/devicetree/bindings/usb/ehci-st.txt  |   39 +
+ Documentation/devicetree/bindings/usb/mxs-phy.txt  |    1 +
+ Documentation/devicetree/bindings/usb/ohci-st.txt  |   37 +
+ .../devicetree/bindings/usb/qcom,dwc3.txt          |   66 +
+ .../devicetree/bindings/usb/renesas_usbhs.txt      |   24 +
+ .../devicetree/bindings/usb/udc-xilinx.txt         |   18 +
+ Documentation/devicetree/bindings/usb/usb3503.txt  |    4 +-
+ .../devicetree/bindings/usb/usbmisc-imx.txt        |    1 +
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ Documentation/kernel-parameters.txt                |    4 +
+ Documentation/usb/WUSB-Design-overview.txt         |   23 +-
+ Documentation/usb/hotplug.txt                      |    2 +-
+ MAINTAINERS                                        |   16 +-
+ drivers/net/usb/usbnet.c                           |   14 +-
+ drivers/phy/Kconfig                                |   24 +
+ drivers/phy/Makefile                               |    3 +
+ drivers/phy/phy-bcm-kona-usb2.c                    |    1 -
+ drivers/phy/phy-berlin-sata.c                      |    1 -
+ drivers/phy/phy-exynos-dp-video.c                  |   80 +-
+ drivers/phy/phy-exynos-mipi-video.c                |    1 -
+ drivers/phy/phy-exynos5-usbdrd.c                   |    1 -
+ drivers/phy/phy-exynos5250-sata.c                  |    1 -
+ drivers/phy/phy-hix5hd2-sata.c                     |    1 -
+ drivers/phy/phy-miphy365x.c                        |    1 -
+ drivers/phy/phy-mvebu-sata.c                       |    3 +-
+ drivers/phy/phy-omap-control.c                     |    5 +-
+ drivers/phy/phy-omap-usb2.c                        |    9 +-
+ drivers/phy/phy-qcom-apq8064-sata.c                |    1 -
+ drivers/phy/phy-qcom-ipq806x-sata.c                |    1 -
+ drivers/phy/phy-rcar-gen2.c                        |  341 +++
+ drivers/phy/phy-samsung-usb2.c                     |    1 -
+ drivers/phy/phy-spear1310-miphy.c                  |   17 +-
+ drivers/phy/phy-spear1340-miphy.c                  |   17 +-
+ drivers/phy/phy-stih407-usb.c                      |  177 ++
+ drivers/phy/phy-stih41x-usb.c                      |  187 ++
+ drivers/phy/phy-sun4i-usb.c                        |    1 -
+ drivers/phy/phy-ti-pipe3.c                         |    6 +-
+ drivers/phy/phy-twl4030-usb.c                      |  125 +-
+ drivers/phy/phy-xgene.c                            |    1 -
+ drivers/usb/Kconfig                                |   10 +
+ drivers/usb/README                                 |    2 +-
+ drivers/usb/chipidea/ci.h                          |   14 +-
+ drivers/usb/chipidea/ci_hdrc_imx.c                 |    8 +
+ drivers/usb/chipidea/ci_hdrc_imx.h                 |    1 +
+ drivers/usb/chipidea/core.c                        |   14 +-
+ drivers/usb/chipidea/host.c                        |    3 +-
+ drivers/usb/chipidea/udc.c                         |    6 +-
+ drivers/usb/chipidea/usbmisc_imx.c                 |   52 +-
+ drivers/usb/common/Makefile                        |    5 +-
+ drivers/usb/common/{usb-common.c => common.c}      |   15 +
+ drivers/usb/common/led.c                           |   57 +
+ drivers/usb/core/Kconfig                           |   12 +-
+ drivers/usb/core/hcd.c                             |   76 +-
+ drivers/usb/core/hub.c                             |  431 ++--
+ drivers/usb/core/hub.h                             |    2 +-
+ drivers/usb/core/message.c                         |    4 +-
+ drivers/usb/core/otg_whitelist.h                   |   13 +-
+ drivers/usb/core/quirks.c                          |    8 +
+ drivers/usb/core/usb.h                             |    2 +-
+ drivers/usb/dwc2/core.c                            |   31 +-
+ drivers/usb/dwc2/core.h                            |    8 +
+ drivers/usb/dwc2/gadget.c                          |  138 +-
+ drivers/usb/dwc2/hcd.c                             |   42 +-
+ drivers/usb/dwc2/hcd.h                             |    4 +-
+ drivers/usb/dwc2/hcd_intr.c                        |   30 +-
+ drivers/usb/dwc2/hcd_queue.c                       |   16 +-
+ drivers/usb/dwc2/platform.c                        |   33 +
+ drivers/usb/dwc3/Kconfig                           |   17 +
+ drivers/usb/dwc3/Makefile                          |    7 +-
+ drivers/usb/dwc3/core.c                            |    9 +-
+ drivers/usb/dwc3/core.h                            |    4 +-
+ drivers/usb/dwc3/debug.c                           |   32 +
+ drivers/usb/dwc3/debug.h                           |  200 +-
+ drivers/usb/dwc3/dwc3-exynos.c                     |    4 +-
+ drivers/usb/dwc3/dwc3-keystone.c                   |    1 -
+ drivers/usb/dwc3/dwc3-omap.c                       |    4 +-
+ drivers/usb/dwc3/dwc3-pci.c                        |    4 +-
+ drivers/usb/dwc3/dwc3-qcom.c                       |  130 ++
+ drivers/usb/dwc3/dwc3-st.c                         |  367 ++++
+ drivers/usb/dwc3/ep0.c                             |   65 +-
+ drivers/usb/dwc3/gadget.c                          |  140 +-
+ drivers/usb/dwc3/gadget.h                          |   56 -
+ drivers/usb/dwc3/io.h                              |   30 +-
+ drivers/usb/dwc3/trace.c                           |   19 +
+ drivers/usb/dwc3/trace.h                           |  220 ++
+ drivers/usb/gadget/Kconfig                         |    9 +
+ drivers/usb/gadget/Makefile                        |    2 +-
+ drivers/usb/gadget/composite.c                     |    2 +-
+ drivers/usb/gadget/configfs.c                      |    1 +
+ drivers/usb/gadget/function/Makefile               |   10 +-
+ drivers/usb/gadget/function/f_acm.c                |   49 +-
+ drivers/usb/gadget/function/f_fs.c                 |   52 +-
+ drivers/usb/gadget/function/f_loopback.c           |    3 +-
+ drivers/usb/gadget/function/f_mass_storage.c       |   27 +-
+ drivers/usb/gadget/function/f_obex.c               |   28 +-
+ drivers/usb/gadget/function/f_serial.c             |   19 +-
+ drivers/usb/gadget/function/f_sourcesink.c         |  511 ++++-
+ drivers/usb/gadget/function/f_uac1.c               |  337 ++-
+ drivers/usb/gadget/function/f_uac2.c               |  520 +++--
+ drivers/usb/gadget/function/f_uvc.c                |  274 ++-
+ drivers/usb/gadget/function/f_uvc.h                |   13 +-
+ drivers/usb/gadget/function/g_zero.h               |   13 +-
+ drivers/usb/gadget/function/u_fs.h                 |    2 +
+ drivers/usb/gadget/function/u_serial.c             |   30 +-
+ drivers/usb/gadget/function/u_uac1.c               |   38 +-
+ drivers/usb/gadget/function/u_uac1.h               |   31 +-
+ drivers/usb/gadget/function/u_uac2.h               |   42 +
+ drivers/usb/gadget/function/u_uvc.h                |   39 +
+ drivers/usb/gadget/function/uvc.h                  |    4 +-
+ drivers/usb/gadget/function/uvc_queue.c            |   46 +-
+ drivers/usb/gadget/function/uvc_queue.h            |   33 +
+ drivers/usb/gadget/function/uvc_v4l2.c             |  329 +--
+ drivers/usb/gadget/function/uvc_v4l2.h             |   22 +
+ drivers/usb/gadget/function/uvc_video.c            |   48 +-
+ drivers/usb/gadget/function/uvc_video.h            |   24 +
+ drivers/usb/gadget/legacy/Kconfig                  |    3 +
+ drivers/usb/gadget/legacy/Makefile                 |    6 +-
+ drivers/usb/gadget/legacy/audio.c                  |  149 +-
+ drivers/usb/gadget/legacy/dbgp.c                   |    1 +
+ drivers/usb/gadget/legacy/inode.c                  |    1 +
+ drivers/usb/gadget/legacy/webcam.c                 |   75 +-
+ drivers/usb/gadget/legacy/zero.c                   |   21 +
+ drivers/usb/gadget/udc/Kconfig                     |   17 +-
+ drivers/usb/gadget/udc/Makefile                    |    1 +
+ drivers/usb/gadget/udc/amd5536udc.c                |    2 +-
+ drivers/usb/gadget/udc/at91_udc.c                  |    2 +-
+ drivers/usb/gadget/udc/atmel_usba_udc.c            |    4 +-
+ drivers/usb/gadget/udc/bcm63xx_udc.c               |    2 +-
+ drivers/usb/gadget/udc/dummy_hcd.c                 |   10 +-
+ drivers/usb/gadget/udc/fotg210-udc.c               |    2 +-
+ drivers/usb/gadget/udc/fsl_qe_udc.c                |    6 +-
+ drivers/usb/gadget/udc/fsl_udc_core.c              |    6 +-
+ drivers/usb/gadget/udc/fusb300_udc.c               |    2 +-
+ drivers/usb/gadget/udc/goku_udc.c                  |    2 +-
+ drivers/usb/gadget/udc/gr_udc.c                    |   83 +-
+ drivers/usb/gadget/udc/gr_udc.h                    |    7 +
+ drivers/usb/gadget/udc/lpc32xx_udc.c               |    2 +-
+ drivers/usb/gadget/udc/m66592-udc.c                |    2 +-
+ drivers/usb/gadget/udc/mv_u3d_core.c               |    8 +-
+ drivers/usb/gadget/udc/mv_udc_core.c               |    8 +-
+ drivers/usb/gadget/udc/net2272.c                   |    2 +-
+ drivers/usb/gadget/udc/net2280.c                   |    2 +-
+ drivers/usb/gadget/udc/omap_udc.c                  |    2 +-
+ drivers/usb/gadget/udc/pch_udc.c                   |    2 +-
+ drivers/usb/gadget/udc/pxa25x_udc.c                |    2 +-
+ drivers/usb/gadget/udc/pxa27x_udc.c                |    2 +-
+ drivers/usb/gadget/udc/r8a66597-udc.c              |   12 +-
+ drivers/usb/gadget/udc/s3c-hsudc.c                 |    3 +-
+ drivers/usb/gadget/udc/s3c2410_udc.c               |    2 +-
+ drivers/usb/gadget/udc/udc-core.c                  |   51 +-
+ drivers/usb/gadget/udc/udc-xilinx.c                | 2180 ++++++++++++++++++++
+ drivers/usb/host/Kconfig                           |   25 +-
+ drivers/usb/host/Makefile                          |   14 +-
+ drivers/usb/host/ehci-exynos.c                     |   66 +-
+ drivers/usb/host/ehci-fsl.c                        |   18 +-
+ drivers/usb/host/ehci-hcd.c                        |    2 +-
+ drivers/usb/host/ehci-hub.c                        |   10 +-
+ drivers/usb/host/ehci-msm.c                        |    4 +-
+ drivers/usb/host/ehci-st.c                         |  375 ++++
+ drivers/usb/host/ehci-tegra.c                      |   16 +-
+ drivers/usb/host/ehci-xilinx-of.c                  |    1 +
+ drivers/usb/host/fhci-hcd.c                        |    6 +-
+ drivers/usb/host/fotg210-hcd.c                     |    8 +-
+ drivers/usb/host/fusbh200-hcd.c                    |    8 +-
+ drivers/usb/host/isp1362-hcd.c                     |  103 +-
+ drivers/usb/host/isp1760-hcd.c                     |    6 +-
+ drivers/usb/host/ohci-exynos.c                     |   76 +-
+ drivers/usb/host/ohci-hcd.c                        |    6 +-
+ drivers/usb/host/ohci-hub.c                        |    4 +-
+ drivers/usb/host/ohci-omap.c                       |   22 +-
+ drivers/usb/host/ohci-st.c                         |  349 ++++
+ drivers/usb/host/oxu210hp-hcd.c                    |   10 +-
+ drivers/usb/host/sl811-hcd.c                       |    8 +-
+ drivers/usb/host/xhci-dbg.c                        |    1 +
+ drivers/usb/host/xhci-hub.c                        |   17 +-
+ drivers/usb/host/xhci-mem.c                        |    4 +-
+ drivers/usb/host/xhci-pci.c                        |   80 +-
+ drivers/usb/host/xhci-plat.c                       |   68 +-
+ drivers/usb/host/xhci-ring.c                       |  137 +-
+ drivers/usb/host/xhci-trace.c                      |    2 +
+ drivers/usb/host/xhci.c                            |  112 +-
+ drivers/usb/host/xhci.h                            |   30 +-
+ drivers/usb/misc/lvstest.c                         |    8 +-
+ drivers/usb/misc/usb3503.c                         |    6 +-
+ drivers/usb/misc/usbtest.c                         |  115 +-
+ drivers/usb/misc/yurex.c                           |    8 +-
+ drivers/usb/musb/am35x.c                           |    1 +
+ drivers/usb/musb/musb_cppi41.c                     |    4 +-
+ drivers/usb/musb/musb_dsps.c                       |    2 +
+ drivers/usb/musb/musb_gadget.c                     |    2 +-
+ drivers/usb/musb/musb_regs.h                       |    2 +-
+ drivers/usb/musb/tusb6010.c                        |    2 +-
+ drivers/usb/phy/Kconfig                            |   16 -
+ drivers/usb/phy/Makefile                           |    2 -
+ drivers/usb/phy/phy-fsl-usb.c                      |    2 +-
+ drivers/usb/phy/phy-isp1301-omap.c                 |    2 +-
+ drivers/usb/phy/phy-msm-usb.c                      |   16 +-
+ drivers/usb/phy/phy-mxs-usb.c                      |    6 +
+ drivers/usb/phy/phy-samsung-usb.c                  |  241 ---
+ drivers/usb/phy/phy-samsung-usb.h                  |  349 ----
+ drivers/usb/phy/phy-samsung-usb2.c                 |  541 -----
+ drivers/usb/phy/phy-samsung-usb3.c                 |  350 ----
+ drivers/usb/phy/phy-twl6030-usb.c                  |    2 -
+ drivers/usb/renesas_usbhs/Kconfig                  |    1 +
+ drivers/usb/renesas_usbhs/common.c                 |   44 +
+ drivers/usb/renesas_usbhs/mod_gadget.c             |    2 +-
+ drivers/usb/serial/Kconfig                         |   10 +-
+ drivers/usb/serial/Makefile                        |    1 -
+ drivers/usb/serial/cp210x.c                        |    2 +
+ drivers/usb/serial/option.c                        |   11 +-
+ drivers/usb/serial/pl2303.c                        |   13 +-
+ drivers/usb/serial/usb-serial-simple.c             |   19 +-
+ drivers/usb/serial/xsens_mt.c                      |   25 +-
+ drivers/usb/serial/zte_ev.c                        |  305 ---
+ drivers/usb/storage/alauda.c                       |   11 +-
+ drivers/usb/storage/initializers.c                 |    2 +-
+ drivers/usb/storage/realtek_cr.c                   |    4 +-
+ drivers/usb/storage/scsiglue.c                     |    2 +-
+ drivers/usb/storage/sddr09.c                       |    3 +-
+ drivers/usb/storage/uas.c                          |  709 +++----
+ drivers/usb/storage/unusual_devs.h                 |   24 +-
+ drivers/usb/storage/unusual_uas.h                  |   45 +-
+ drivers/usb/storage/usb.c                          |   11 +-
+ drivers/usb/wusbcore/Kconfig                       |    2 +-
+ drivers/usb/wusbcore/crypto.c                      |    2 -
+ drivers/usb/wusbcore/devconnect.c                  |    6 +-
+ drivers/usb/wusbcore/security.c                    |   17 +-
+ drivers/usb/wusbcore/wa-hc.h                       |    2 +-
+ drivers/usb/wusbcore/wa-xfer.c                     |   17 +-
+ drivers/usb/wusbcore/wusbhc.h                      |    3 +
+ drivers/uwb/Kconfig                                |    1 -
+ drivers/uwb/driver.c                               |   11 +
+ drivers/uwb/lc-dev.c                               |   19 +-
+ drivers/uwb/lc-rc.c                                |   99 +
+ drivers/uwb/uwb-internal.h                         |    4 +-
+ include/linux/platform_data/samsung-usbphy.h       |   27 -
+ include/linux/usb.h                                |   12 +
+ include/linux/usb/chipidea.h                       |    1 +
+ include/linux/usb/gadget.h                         |   26 +-
+ include/linux/usb/hcd.h                            |    4 +-
+ include/linux/usb/of.h                             |    5 +
+ include/linux/usb/quirks.h                         |   22 +-
+ include/linux/usb_usual.h                          |    4 +
+ include/uapi/linux/usb/functionfs.h                |   19 +-
+ sound/usb/midi.c                                   |    2 +-
+ tools/usb/ffs-test.c                               |  126 +-
+ 258 files changed, 9501 insertions(+), 4546 deletions(-)
+ create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac1
+ create mode 100644 Documentation/ABI/testing/configfs-usb-gadget-uac2
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-stih407-usb.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-stih41x-usb.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/qcom-dwc3-usb-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/rcar-gen2-phy.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/dwc3-st.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ehci-st.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/ohci-st.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/qcom,dwc3.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/renesas_usbhs.txt
+ create mode 100644 Documentation/devicetree/bindings/usb/udc-xilinx.txt
+ create mode 100644 drivers/phy/phy-rcar-gen2.c
+ create mode 100644 drivers/phy/phy-stih407-usb.c
+ create mode 100644 drivers/phy/phy-stih41x-usb.c
+ rename drivers/usb/common/{usb-common.c => common.c} (90%)
+ create mode 100644 drivers/usb/common/led.c
+ create mode 100644 drivers/usb/dwc3/debug.c
+ create mode 100644 drivers/usb/dwc3/dwc3-qcom.c
+ create mode 100644 drivers/usb/dwc3/dwc3-st.c
+ create mode 100644 drivers/usb/dwc3/trace.c
+ create mode 100644 drivers/usb/dwc3/trace.h
+ create mode 100644 drivers/usb/gadget/function/u_uac2.h
+ create mode 100644 drivers/usb/gadget/function/u_uvc.h
+ create mode 100644 drivers/usb/gadget/function/uvc_v4l2.h
+ create mode 100644 drivers/usb/gadget/function/uvc_video.h
+ create mode 100644 drivers/usb/gadget/udc/udc-xilinx.c
+ create mode 100644 drivers/usb/host/ehci-st.c
+ create mode 100644 drivers/usb/host/ohci-st.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb.h
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb2.c
+ delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
+ delete mode 100644 drivers/usb/serial/zte_ev.c
+ delete mode 100644 include/linux/platform_data/samsung-usbphy.h
