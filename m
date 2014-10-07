@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbaJGNmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:42:45 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58577 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028AbaJGNmo (ORCPT
+	id S1753966AbaJGNnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:43:05 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:33480 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837AbaJGNnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:42:44 -0400
-Message-ID: <5433EDCB.8060006@roeck-us.net>
-Date: Tue, 07 Oct 2014 06:42:35 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 7 Oct 2014 09:43:03 -0400
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Xen-devel@lists.xen.org" <Xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH 08/44] kernel: Move pm_power_off to common
- code
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-9-git-send-email-linux@roeck-us.net> <5433B0FE.60901@citrix.com>
-In-Reply-To: <5433B0FE.60901@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.5433EDD4.0029,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <1411726047-3224-3-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+	<1411726047-3224-3-git-send-email-rebecca.swee.fun.chang@intel.com>
+Date: Tue, 7 Oct 2014 16:43:02 +0300
+Message-ID: <CAHp75VcypTyGV_vmf0-=tEgwx4__LgCHfLuj4STnhvKaaSXMZQ@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 02:23 AM, David Vrabel wrote:
-> On 07/10/14 06:28, Guenter Roeck wrote:
->> pm_power_off is defined for all architectures. Move it to common code.
->>
->> Have all architectures call do_kernel_poweroff instead of pm_power_off.
->> Some architectures point pm_power_off to machine_power_off. For those,
->> call do_kernel_poweroff from machine_power_off instead.
-> [...]
->>   arch/x86/xen/enlighten.c           |  3 +--
+On Fri, Sep 26, 2014 at 1:07 PM, Chang Rebecca Swee Fun
+<rebecca.swee.fun.chang@intel.com> wrote:
+> Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split between
+> the legacy I/O bridge and the GPIO controller.
 >
-> The xen bits:
+> GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
+> Intel Quark X1000 has 2 GPIOs powered by the core power well and 6 from
+> the suspend power well.
 >
-> Acked-by: David Vrabel <david.vrabel@citrix.com>
+> This piece of work is derived from Dan O'Donovan's initial work for Quark
+> X1000 enabling.
 >
-> Although for a mechanical change like this I wonder if acks from all
-> subsystem maintainers is really necessary.
+> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+> ---
+>  drivers/gpio/Kconfig    |   11 +++++++++--
+>  drivers/gpio/gpio-sch.c |    6 ++++++
+>  2 files changed, 15 insertions(+), 2 deletions(-)
 >
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 690904a..64683a9 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -356,25 +356,32 @@ config GPIO_VR41XX
+>           Say yes here to support the NEC VR4100 series General-purpose I/O Uint
+>
+>  config GPIO_SCH
+> -       tristate "Intel SCH/TunnelCreek/Centerton GPIO"
+> +       tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
 
-Probably not, but helpful. On the other side, as others may have
-noticed, sending an e-mail with that many Cc: gets it classified
-as spam by many mailers. I'll have to find a way to cut that down
-for the next round without offending anyone.
+Do we need 'X1000' here right now?
 
-Guenter
+>         depends on PCI && X86
+>         select MFD_CORE
+>         select LPC_SCH
+>         help
+>           Say yes here to support GPIO interface on Intel Poulsbo SCH,
+> -         Intel Tunnel Creek processor or Intel Centerton processor.
+> +         Intel Tunnel Creek processor, Intel Centerton processor or
 
+I think you may use comma before 'or' word.
+
+> +         Intel Quark X1000 SoC.
+> +
+>           The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
+>           powered by the core power rail and are turned off during sleep
+>           modes (S3 and higher). The remaining four GPIOs are powered by
+>           the Intel SCH suspend power supply. These GPIOs remain
+>           active during S3. The suspend powered GPIOs can be used to wake the
+>           system from the Suspend-to-RAM state.
+> +
+>           The Intel Tunnel Creek processor has 5 GPIOs powered by the
+>           core power rail and 9 from suspend power supply.
+> +
+>           The Intel Centerton processor has a total of 30 GPIO pins.
+>           Twenty-one are powered by the core power rail and 9 from the
+>           suspend power supply.
+>
+> +         The Intel Quark X1000 SoC has 2 GPIOs powered by the core
+> +         power well and 6 from the suspend power well.
+> +
+>  config GPIO_ICH
+>         tristate "Intel ICH GPIO"
+>         depends on PCI && X86
+> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+> index 6e89be9..952990f 100644
+> --- a/drivers/gpio/gpio-sch.c
+> +++ b/drivers/gpio/gpio-sch.c
+> @@ -241,6 +241,12 @@ static int sch_gpio_probe(struct platform_device *pdev)
+>                 sch->chip.ngpio = 30;
+>                 break;
+>
+> +       case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
+> +               sch->core_base = 0;
+> +               sch->resume_base = 2;
+> +               sch->chip.ngpio = 8;
+> +               break;
+> +
+>         default:
+>                 return -ENODEV;
+>         }
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+With Best Regards,
+Andy Shevchenko
