@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaJGPYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:24:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55843 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754035AbaJGPYR (ORCPT
+	id S1754643AbaJGPYv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:24:51 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:54645 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536AbaJGPWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:24:17 -0400
-Date: Tue, 7 Oct 2014 17:24:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH V5 11/16] perf, core: Pass perf_sample_data to
- perf_callchain()
-Message-ID: <20141007152412.GC5850@twins.programming.kicks-ass.net>
-References: <1410358153-421-1-git-send-email-kan.liang@intel.com>
- <1410358153-421-12-git-send-email-kan.liang@intel.com>
- <20140924141507.GF2805@worktop.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F0770160F98C@SHSMSX103.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770160F98C@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 7 Oct 2014 11:22:51 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 4/8] clk: Don't expose __clk_get_accuracy
+Date: Tue,  7 Oct 2014 17:21:49 +0200
+Message-Id: <1412695334-2608-5-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think you're going to have to stop using outlook or whatnot, this is
-horrible.
+As it's only used internally, in drivers/clk/clk.c.
 
-On Tue, Oct 07, 2014 at 03:00:00AM +0000, Liang, Kan wrote:
-> > -----Original Message-----
-> > From: Peter Zijlstra [mailto:peterz@infradead.org]
+Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+---
+ drivers/clk/clk.c            | 2 +-
+ include/linux/clk-provider.h | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-> > So I don't like this. Why not use the regular PERF_SAMPLE_BRANCH_STACK
-> > output to generate the stuff from? We already have two different means,
-> > with different transport, for callchains anyhow, so a third really won't matter.
-> 
-> I'm not sure what you mean by using the regular
-> PERF_SAMPLE_BRANCH_STACK output to generate the stuff from.  But we
-> don't need to modify various architectures' perf_callchain_user, if
-> that's your concern.  An alternative way is to generate the callchain
-> output in a higher level, like perf_callchain.  If there is no frame
-> pointer, the entry->nr will be set to MAX+1. So  the perf_callchain
-> knows that we need to try LBR callstack if possible.  In
-> perf_callchain, it resets entry->nr to old value, and call
-> perf_callchain_lbr_callstack to check and fill the callchain struct if
-> possible.  The patch is as below.
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 55d2368..1dcd81a 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -608,7 +608,7 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(__clk_get_rate);
+ 
+-unsigned long __clk_get_accuracy(struct clk *clk)
++static unsigned long __clk_get_accuracy(struct clk *clk)
+ {
+ 	if (!clk)
+ 		return 0;
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 94c491e..eef1778 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -513,7 +513,6 @@ struct clk *__clk_get_parent(struct clk *clk);
+ struct clk *clk_get_parent_by_index(struct clk *clk, u8 index);
+ unsigned int __clk_get_enable_count(struct clk *clk);
+ unsigned long __clk_get_rate(struct clk *clk);
+-unsigned long __clk_get_accuracy(struct clk *clk);
+ unsigned long __clk_get_flags(struct clk *clk);
+ bool __clk_is_prepared(struct clk *clk);
+ bool __clk_is_enabled(struct clk *clk);
+-- 
+1.9.3
 
-Please instruct your MUA to wrap at 78 chars.
-
-What I meant was: why can't we use the regular PERF_SAMPLE_BRANCH_STACK
-output to generate user traces from?
-
-PERF_SAMPLE_BRANCH_STACK is the 'normal' LBR output format. Clobbering
-the callstack output is bad.
-
-> What do you think?
-
-I think it still sucks.. you're still clobbering potentially more useful
-data.
