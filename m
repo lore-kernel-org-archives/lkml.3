@@ -1,182 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaJGPPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:15:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52513 "EHLO mx2.suse.de"
+	id S1754215AbaJGPQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:16:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47006 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035AbaJGPPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:15:44 -0400
-Date: Tue, 7 Oct 2014 17:15:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: memcontrol: lockless page counters
-Message-ID: <20141007151543.GE14243@dhcp22.suse.cz>
-References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
- <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411573390-9601-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753176AbaJGPQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:16:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396614969"
+From: kan.liang@intel.com
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V8 0/4] perf tools: pmu event new style format fix
+Date: Tue,  7 Oct 2014 11:08:48 -0400
+Message-Id: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-09-14 11:43:08, Johannes Weiner wrote:
-> Memory is internally accounted in bytes, using spinlock-protected
-> 64-bit counters, even though the smallest accounting delta is a page.
-> The counter interface is also convoluted and does too many things.
-> 
-> Introduce a new lockless word-sized page counter API, then change all
-> memory accounting over to it and remove the old one.  The translation
-> from and to bytes then only happens when interfacing with userspace.
-> 
-> Aside from the locking costs, this gets rid of the icky unsigned long
-> long types in the very heart of memcg, which is great for 32 bit and
-> also makes the code a lot more readable.
-> 
+From: Kan Liang <kan.liang@intel.com>
 
-I only now got to the res_counter -> page_counter change. It looks
-correct to me. Some really minor comments below.
+There are two types of pmu event stytle formats, "pmu_event_name"
+or "cpu/pmu_event_name/". However, there is a bug on supporting these
+two formats, especially when they mixed with other perf events.
+The patch set intends to fix this issue.
 
-[...]
->  static inline void memcg_memory_allocated_sub(struct cg_proto *prot,
->  					      unsigned long amt)
->  {
-> -	res_counter_uncharge(&prot->memory_allocated, amt << PAGE_SHIFT);
-> -}
-> -
-> -static inline u64 memcg_memory_allocated_read(struct cg_proto *prot)
-> -{
-> -	u64 ret;
-> -	ret = res_counter_read_u64(&prot->memory_allocated, RES_USAGE);
-> -	return ret >> PAGE_SHIFT;
-> +	page_counter_uncharge(&prot->memory_allocated, amt);
->  }
+The patch set has been tested by perf automated test "./perf test parse -v"
+on haswell, ivybridge and Romley platform.
+The patch set also has been tested on haswell by the following script.
+(Note: please make sure that your test system support TSX and
+L1-dcache-loads events. Otherwise, you may want to change the events
+to other pmu events.)
 
-There is only one caller of memcg_memory_allocated_sub and the caller
-can use the counter directly same as memcg_memory_allocated_read
-original users.
+[lk@localhost ~]$ cat perf_style_test.sh
+#hardware events + kernel pmu event with different style
+perf stat -x, -e cycles,mem-stores,tx-start sleep 2
+perf stat -x, -e cpu-cycles,cycles-ct,cycles-t sleep 2
+perf stat -x, -e cycles,cpu/cycles-ct/,cpu/cycles-t/ sleep 2
+perf stat -x, -e instructions,cpu/tx-start/ sleep 2
+perf stat -x, -e '{cycles,tx-start}' sleep 2
+perf stat -x, -e '{cycles,cpu/tx-start/}' sleep 2
 
-[...]
-> diff --git a/init/Kconfig b/init/Kconfig
-> index ed4f42d79bd1..88b56940cb9e 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -983,9 +983,12 @@ config RESOURCE_COUNTERS
->  	  This option enables controller independent resource accounting
->  	  infrastructure that works with cgroups.
->  
-> +config PAGE_COUNTER
-> +       bool
-> +
->  config MEMCG
->  	bool "Memory Resource Controller for Control Groups"
-> -	depends on RESOURCE_COUNTERS
-> +	select PAGE_COUNTER
->  	select EVENTFD
->  	help
->  	  Provides a memory resource controller that manages both anonymous
+#HW Cache event + kernel pmu event with different style
+perf stat -x, -e L1-dcache-loads,cpu/mem-stores/,tx-start sleep 2
+perf stat -x, -e L1-dcache-loads,mem-stores,cpu/tx-start/ sleep 2
+perf stat -x, -e '{L1-dcache-loads,mem-stores}' sleep 2
+perf stat -x, -e '{L1-dcache-loads,cpu/tx-start/}' sleep 2
 
-Thanks for this!
+#Raw event + kernel pmu event with different style:
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,mem-loads,cpu/mem-stores/ sleep 2
+perf stat -x, -e cpu/event=0xc0,umask=0x00/,tx-start,cpu/el-start/ sleep 2
+perf stat -x, -e '{cpu/event=0xc0,umask=0x00/,tx-start}' sleep 2
 
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index c2c75262a209..52c24119be69 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -1490,12 +1495,23 @@ int mem_cgroup_inactive_anon_is_low(struct lruvec *lruvec)
->   */
->  static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
->  {
-> -	unsigned long long margin;
-> +	unsigned long margin = 0;
-> +	unsigned long count;
-> +	unsigned long limit;
->  
-> -	margin = res_counter_margin(&memcg->res);
-> -	if (do_swap_account)
-> -		margin = min(margin, res_counter_margin(&memcg->memsw));
-> -	return margin >> PAGE_SHIFT;
-> +	count = page_counter_read(&memcg->memory);
-> +	limit = ACCESS_ONCE(memcg->memory.limit);
-> +	if (count < limit)
-> +		margin = limit - count;
-> +
-> +	if (do_swap_account) {
-> +		count = page_counter_read(&memcg->memsw);
-> +		limit = ACCESS_ONCE(memcg->memsw.limit);
-> +		if (count < limit)
+Changes since V1:
+Read kernel PMU events from sysfs at runtime
 
-I guess you wanted (count <= limit) here?
+Changes since V2:
+Use strlcpy to replace strncpy
 
-> +			margin = min(margin, limit - count);
-> +	}
-> +
-> +	return margin;
->  }
->  
->  int mem_cgroup_swappiness(struct mem_cgroup *memcg)
-[...]
-> @@ -2293,33 +2295,31 @@ static DEFINE_MUTEX(percpu_charge_mutex);
->  static bool consume_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
->  {
->  	struct memcg_stock_pcp *stock;
-> -	bool ret = true;
-> +	bool ret = false;
->  
->  	if (nr_pages > CHARGE_BATCH)
-> -		return false;
-> +		return ret;
->  
->  	stock = &get_cpu_var(memcg_stock);
-> -	if (memcg == stock->cached && stock->nr_pages >= nr_pages)
-> +	if (memcg == stock->cached && stock->nr_pages >= nr_pages) {
->  		stock->nr_pages -= nr_pages;
-> -	else /* need to call res_counter_charge */
-> -		ret = false;
-> +		ret = true;
-> +	}
->  	put_cpu_var(memcg_stock);
->  	return ret;
+Changes since V3:
+rebase to git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
 
-This change is not really needed but at least it woke me up after some
-monotonic and mechanical changes...
+Changes since V4:
+scan kernel pmu events from sysfs only needed
+rename the init/check/clenup functions and related struct.
+allocate each symbol string separatelly
+Use ALLOC_LIST
 
-[...]
-> @@ -4389,14 +4346,16 @@ static int memcg_stat_show(struct seq_file *m, void *v)
->  			   mem_cgroup_nr_lru_pages(memcg, BIT(i)) * PAGE_SIZE);
->  
->  	/* Hierarchical information */
-> -	{
-> -		unsigned long long limit, memsw_limit;
-> -		memcg_get_hierarchical_limit(memcg, &limit, &memsw_limit);
-> -		seq_printf(m, "hierarchical_memory_limit %llu\n", limit);
-> -		if (do_swap_account)
-> -			seq_printf(m, "hierarchical_memsw_limit %llu\n",
-> -				   memsw_limit);
-> +	memory = memsw = PAGE_COUNTER_MAX;
-> +	for (mi = memcg; mi; mi = parent_mem_cgroup(mi)) {
-> +		memory = min(memory, mi->memory.limit);
-> +		memsw = min(memsw, mi->memsw.limit);
->  	}
+Changes since V5:
+Using perf_pmu__find to instead of perf_pmu__scan
+Don't scan all the time if the system doesn't support kernel pmu events
 
-This looks much better!
+Changes since V6:
+Add test case in automated tests suite
+Use strdup and macro to refine the code
+Add sep_dc for PMU event to support PE_MODIFIER_EVENT
+Some minor changes for code style
 
-> +	seq_printf(m, "hierarchical_memory_limit %llu\n",
-> +		   (u64)memory * PAGE_SIZE);
-> +	if (do_swap_account)
-> +		seq_printf(m, "hierarchical_memsw_limit %llu\n",
-> +			   (u64)memsw * PAGE_SIZE);
->  
->  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
->  		long long val = 0;
+Changes since V7:
+Add allocation failure check
 
-[...]
+Kan Liang (4):
+  Revert "perf tools: Default to cpu// for events v5"
+  perf tools: parse the pmu event prefix and suffix
+  perf tools: Add support to new style format of kernel PMU event
+  perf tools: Add test case for pmu event new style format
+
+ tools/perf/tests/parse-events.c        |  36 +++++++++
+ tools/perf/util/include/linux/string.h |   1 -
+ tools/perf/util/parse-events.c         | 133 +++++++++++++++++++++++++++------
+ tools/perf/util/parse-events.h         |  14 ++++
+ tools/perf/util/parse-events.l         |  30 +++++++-
+ tools/perf/util/parse-events.y         |  40 ++++++++++
+ tools/perf/util/pmu.c                  |  10 ---
+ tools/perf/util/pmu.h                  |  10 +++
+ tools/perf/util/string.c               |  24 ------
+ 9 files changed, 240 insertions(+), 58 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.2
+
