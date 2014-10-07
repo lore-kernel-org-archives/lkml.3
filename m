@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaJGUbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:31:49 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:29151 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751712AbaJGUbr (ORCPT
+	id S1754988AbaJGUdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:33:55 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47387 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaJGUdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:31:47 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Am0UAFJNNFRXQB1d/2dsb2JhbABfgw6BK7hxAQEBAQEBBQFzmX8EAoESFwF7hGAjgRo3iEIBs06PEoYgiUBkHYQ1BZh1hE2WCINlOy+BBoFEAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Paul Moore <paul@paul-moore.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] netlabel: kernel-doc warning fix
-Date: Tue,  7 Oct 2014 22:31:32 +0200
-Message-Id: <1412713892-5537-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Tue, 7 Oct 2014 16:33:54 -0400
+Date: Tue, 7 Oct 2014 13:33:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: David Miller <davem@davemloft.net>
+Cc: fabf@skynet.be, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
+Message-ID: <20141007203344.GA4748@roeck-us.net>
+References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
+ <20141007.161832.453892039501955243.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007.161832.453892039501955243.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.54344E31.0112,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-no secid argument in netlbl_cfg_unlbl_static_del
+On Tue, Oct 07, 2014 at 04:18:32PM -0400, David Miller wrote:
+> From: Fabian Frederick <fabf@skynet.be>
+> Date: Tue,  7 Oct 2014 22:16:36 +0200
+> 
+> > static values are automatically initialized to NULL
+> > 
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> 
+> Isn't there some implementation room given to compilers
+> as to the representation of true and false?
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/netlabel/netlabel_kapi.c | 1 -
- 1 file changed, 1 deletion(-)
+Not for true/false.
 
-diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
-index 0b4692d..a845cd4 100644
---- a/net/netlabel/netlabel_kapi.c
-+++ b/net/netlabel/netlabel_kapi.c
-@@ -246,7 +246,6 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
-  * @addr: IP address in network byte order (struct in[6]_addr)
-  * @mask: address mask in network byte order (struct in[6]_addr)
-  * @family: address family
-- * @secid: LSM secid value for the entry
-  * @audit_info: NetLabel audit information
-  *
-  * Description:
--- 
-1.9.3
+C99 standard, section 7.16:
 
+...
+The remaining three macros are suitable for use in #if preprocessing
+directives. They are
+
+true
+
+which expands to the integer constant 1,
+
+false
+
+which expands to the integer constant 0, and
+...
+
+No idea where the NULL comes into the picture, though.
+
+Guenter
