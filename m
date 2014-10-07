@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155AbaJGSqa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:46:30 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8648 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242AbaJGSq2 (ORCPT
+	id S1755176AbaJGSrO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:47:14 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:55320 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388AbaJGSrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:46:28 -0400
-Date: Tue, 7 Oct 2014 11:46:41 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Qualcomm PM8941 power key driver
-Message-ID: <20141007184640.GB31125@sonymobile.com>
-References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412672510.1027.57.camel@iivanov-dev>
+	Tue, 7 Oct 2014 14:47:13 -0400
+Message-ID: <5434352A.6080403@linux.vnet.ibm.com>
+Date: Tue, 07 Oct 2014 14:47:06 -0400
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1412672510.1027.57.camel@iivanov-dev>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: Andy Lutomirski <luto@amacapital.net>, Peter Huewe <PeterHuewe@gmx.de>,
+        keyrings@linux-nfs.org, jarkko.sakkinnen@linux.intel.com,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        tpmdd-devel@lists.sourceforge.net,
+        James Morris <james.l.morris@oracle.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit
+ @ LinuxCon Europe
+References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07> <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com> <543428E1.7050702@linux.vnet.ibm.com> <20141007180209.GD10432@obsidianresearch.com>
+In-Reply-To: <20141007180209.GD10432@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100718-1344-0000-0000-000004C0FE85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 07 Oct 02:01 PDT 2014, Ivan T. Ivanov wrote:
+On 10/07/2014 02:02 PM, Jason Gunthorpe wrote:
+> On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
+>
+>> Why add the complexity of swapping of authenticated sessions and keys
+>> into the kernel if you can handle this in userspace? You need a library
+>> that is aware of the number of key slots and slots for sessions in the
+>> TPM and swaps them in at out when applications need them. Trousers is
+>> such a library that was designed to cope with the limitations of the
+>> device and make its functionality available to all applications that
+>> want to access it.
+> How does trousers work with the kernel when the kernel is also using
+> TPM key slots for IMA/keyring/whatever?
 
-> 
-> Hi Bjorn,
-> 
-> On Mon, 2014-10-06 at 18:11 -0700, Bjorn Andersson wrote:
-> > These patches add dt bindings and a device driver for the power key block in
-> > the Qualcomm PM8941 pmic.
-> > 
-> > Courtney Cavin (2):
-> >   input: Add Qualcomm PM8941 power key driver
-> >   input: pm8941-pwrkey: Add DT binding documentation
-> > 
-> >  .../bindings/input/qcom,pm8941-pwrkey.txt          |   43 +++++
-> >  drivers/input/misc/Kconfig                         |   12 ++
-> >  drivers/input/misc/Makefile                        |    1 +
-> >  drivers/input/misc/pm8941-pwrkey.c                 |  196 ++++++++++++++++++++
-> >  4 files changed, 252 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
-> >  create mode 100644 drivers/input/misc/pm8941-pwrkey.c
-> 
-> Any reason why we cannot reuse pm8xxx-pwrkey driver? It have been
-> converted to regmap already. 
-> 
+IIRC it only uses a single key slot and swaps all keys in and out of 
+that one. If the kernel was to fill up all key (and sessions) slots, TSS 
+would probably not work anymore.
 
-The boilerplate code is the same, but configuration registers have different
-layout and values written in them are different. The pm8xxx block have separate
-interrupts for press and release events while pm8941 have one interrupt for
-both, so the pm8941 must read out the irq status bits to figure out which event
-it was.
-
-Maybe if we introduce some vagueness related to interrupts in the dt binding
-documentation for pm8xxx we could simply reuse that binding.
+Another argument for the TSS is that you also wouldn't want applications 
+to swap out each others keys and sessions and leave them out or assume 
+that they would always cleanup if they do not currently need them.
 
 Regards,
-Bjorn
+    Stefan
+
