@@ -1,133 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113AbaJGTDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:03:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754494AbaJGTDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:03:19 -0400
-Message-ID: <1412708594.3333.94.camel@localhost>
-Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
- multicast log socket
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
-        pmoore@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
-        keescook@chromium.org
-Date: Tue, 07 Oct 2014 15:03:14 -0400
-In-Reply-To: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
-References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755036AbaJGTHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:07:54 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:58053 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325AbaJGTHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 15:07:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAB=NE6V_1yyYPhzbV_yRzt7fg=_8yF2YYNBz4qH_2TbH0nozcw@mail.gmail.com>
+References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
+ <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
+ <20141006201926.GF18303@htj.dyndns.org> <20141006203627.GZ14081@wotan.suse.de>
+ <20141006210118.GG18303@htj.dyndns.org> <20141006231046.GD14081@wotan.suse.de>
+ <20141007173404.GB31328@mtj.dyndns.org> <20141007175010.GH14081@wotan.suse.de>
+ <20141007175503.GE31328@mtj.dyndns.org> <CAB=NE6V_1yyYPhzbV_yRzt7fg=_8yF2YYNBz4qH_2TbH0nozcw@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 7 Oct 2014 12:07:29 -0700
+X-Google-Sender-Auth: dJY2B9B8Gy6tqwBrgBM93DvW-J8
+Message-ID: <CAB=NE6X1zf6JYxiitvoOi-7OcmvhSJyP2oVE4gCF5JgfqhAyQA@mail.gmail.com>
+Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
+ built-in and modules
+To: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, Arjan van de Ven <arjan@linux.intel.com>,
+        Tom Gundersen <teg@jklm.no>, Robert Milasan <rmilasan@suse.com>,
+        werner@suse.com, Oleg Nesterov <oleg@redhat.com>, hare <hare@suse.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>, Petr Mladek <pmladek@suse.cz>,
+        dbueso@suse.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>,
+        Kay Sievers <kay@vrfy.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
-> Log the event when a client attempts to connect to the netlink audit multicast
-> socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
-> group.  Log the disconnect too.
-> 
-> Sample output:
-> time->Tue Oct  7 14:15:19 2014
-> type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1 pid=3552 comm="audit-multicast" exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0 op=connect res=1
-> 
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> ---
-> For some reason unbind isn't being called on disconnect.  I suspect missing
-> plumbing in netlink.  Investigation needed...
-> 
->  include/uapi/linux/audit.h |    1 +
->  kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 45 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 4d100c8..7fa6e8f 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -110,6 +110,7 @@
->  #define AUDIT_SECCOMP		1326	/* Secure Computing event */
->  #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
->  #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
-> +#define AUDIT_EVENT_LISTENER	1348	/* task joined multicast read socket */
->  
->  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
->  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 53bb39b..74c81a7 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
->  	mutex_unlock(&audit_cmd_mutex);
->  }
->  
-> +static void audit_log_bind(int group, char *op, int err)
-> +{
-> +	struct audit_buffer *ab;
-> +	char comm[sizeof(current->comm)];
-> +	struct mm_struct *mm = current->mm;
-> +
-> +	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
-> +	if (!ab)
-> +		return;
-> +
-> +	audit_log_format(ab, "auid=%d",
-> +			from_kuid(&init_user_ns, audit_get_loginuid(current)));
-> +	audit_log_format(ab, " uid=%d",
-> +			 from_kuid(&init_user_ns, current_uid()));
-> +	audit_log_format(ab, " gid=%d",
-> +			 from_kgid(&init_user_ns, current_gid()));
-> +	audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
-> +	audit_log_format(ab, " pid=%d", task_pid_nr(current));
-> +	audit_log_format(ab, " comm=");
-> +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
-> +	if (mm) {
-> +		down_read(&mm->mmap_sem);
-> +		if (mm->exe_file)
-> +			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
-> +		up_read(&mm->mmap_sem);
-> +	} else 
-> +		audit_log_format(ab, " exe=(null)");
-> +	audit_log_task_context(ab); /* subj= */
+On Tue, Oct 7, 2014 at 11:55 AM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> OK I'll just kill bus.enable_kern_async=1 to enable built-in async
+> probe support *and* also have prefer_async_probe *always* be
+> respected, whether modular or not.
 
-super crazy yuck.  audit_log_task_info() ??
+Well and I just realized you *do* want to flush, so will throw that in
+too without an option to skip it.
 
-> +	audit_log_format(ab, " group=%d", group);
-
-group seems like too easily confused a name.
-
-> +	audit_log_format(ab, " op=%s", op);
-> +	audit_log_format(ab, " res=%d", !err);
-> +	audit_log_end(ab);
-> +}
-> +
->  /* Run custom bind function on netlink socket group connect or bind requests. */
->  static int audit_bind(int group)
->  {
-> +	int err = 0;
-> +
->  	if (!capable(CAP_AUDIT_READ))
-> -		return -EPERM;
-> +		err = -EPERM;
-> +	audit_log_bind(group, "connect", err);
-> +	return err;
-> +}
->  
-> -	return 0;
-> +static void audit_unbind(int group)
-> +{
-> +	audit_log_bind(group, "disconnect", 0);
->  }
->  
->  static int __net_init audit_net_init(struct net *net)
-> @@ -1124,6 +1165,7 @@ static int __net_init audit_net_init(struct net *net)
->  		.bind	= audit_bind,
->  		.flags	= NL_CFG_F_NONROOT_RECV,
->  		.groups	= AUDIT_NLGRP_MAX,
-> +		.unbind	= audit_unbind,
->  	};
->  
->  	struct audit_net *aunet = net_generic(net, audit_net_id);
-
-
+ Luis
