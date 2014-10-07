@@ -1,103 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbaJGAqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 20:46:10 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59314 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaJGAqH (ORCPT
+	id S1752576AbaJGAtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 20:49:19 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:61194 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252AbaJGAtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 20:46:07 -0400
-X-AuditID: cbfee68f-f791c6d000004834-f0-543337ccc443
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pebolle@tiscali.nl, linux-samsung-soc@vger.kernel.org,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1412610430-8647-1-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1412610430-8647-1-git-send-email-s.nawrocki@samsung.com>
-Subject: Re: [PATCH] usb: Remove references to non-existent PLAT_S5P symbol
-Date: Tue, 07 Oct 2014 09:46:04 +0900
-Message-id: <00d301cfe1c8$1320a8d0$3961fa70$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/hfNFCO1v7MOywS06N68ZmQ6PQuAASxScQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ90z5sYhBjN3WVg0L17PZnF54SVW
-	i8u75rBZzDi/j8li0bJWZotFt84wWxx+087qwO6xf+4ado++LasYPTZuf8Lk8XmTXABLFJdN
-	SmpOZllqkb5dAlfGn5abjAXfuCoutGc1MF7h6GLk5JAQMJHY8OItC4QtJnHh3nq2LkYuDiGB
-	ZYwSV79sZ4IpWnJmJzuILSQwnVHi73dviKLfjBK7Tn4AK2ITUJP48uUwWJGIgKHEu82bwSYx
-	C5xllJj4bwsLRLerxJXuI2BFnAJuEvcOX2EGsYUFvCV+nTsJZHNwsAioSvy8aAYS5hWwlVh/
-	7gkjhC0o8WPyPbAxzAJaEut3HmeCsOUlNq95C9YqIaAu8eivLsQJRhILZsxnhSgRkdj34h0j
-	yDkSAvfYJY52rQGbwyIgIPFt8iEWiF5ZiU0HmCH+lZQ4uOIGywRGiVlINs9CsnkWks2zkKxY
-	wMiyilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMkYvt3MN49YH2IUYCDUYmHd4WWcYgQa2JZ
-	cWXuIUZToIsmMkuJJucD00JeSbyhsZmRhamJqbGRuaWZkjjvQqmfwUIC6YklqdmpqQWpRfFF
-	pTmpxYcYmTg4pRoYI5dmW2yuztoU2MF45qSTmlSw6IGwBVN8ora1XVov4PHfc5LIv1vhqmeS
-	z80qb7rW+3b38SlvWyJDPi9dbr6BL8ZGY/pLXQ0P4fbJP/ed0HnvsPbXN5EtcVs3WdudbvWv
-	0b3Llzd1F9Of4pjvp4Xq3yyu6f1a1L9CqeKNya/Zdjcn8Um7a6Y9V2Ipzkg01GIuKk4EAM0n
-	g03TAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xoO4Zc+MQg5OLTCyaF69ns7i88BKr
-	xeVdc9gsZpzfx2SxaFkrs8WiW2eYLQ6/aWd1YPfYP3cNu0ffllWMHhu3P2Hy+LxJLoAlqoHR
-	JiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoBCWFssSc
-	UqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxp+Wm4wF37gqLrRnNTBe4ehi5OSQ
-	EDCRWHJmJzuELSZx4d56NhBbSGA6o8Tf795djFxA9m9GiV0nPzCBJNgE1CS+fDkM1iAiYCjx
-	bvNmNpAiZoGzjBIT/21hgeh2lbjSfQSsiFPATeLe4SvMILawgLfEr3MngWwODhYBVYmfF81A
-	wrwCthLrzz1hhLAFJX5Mvgc2hllAS2L9zuNMELa8xOY1b8FaJQTUJR791YU4wUhiwYz5rBAl
-	IhL7XrxjnMAoNAvJpFlIJs1CMmkWkpYFjCyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYLT
-	wTPpHYyrGiwOMQpwMCrx8K7QMg4RYk0sK67MPcQowcGsJMLL9dsoRIg3JbGyKrUoP76oNCe1
-	+BCjKdCfE5mlRJPzgakqryTe0NjEzMjSyMzCyMTcXEmc92CrdaCQQHpiSWp2ampBahFMHxMH
-	p1QD4ybP2KXV8ie8FhmeTXpbuLymjVPd47JCE7OWi077sRIT/Yg2qZntF35Luc/K8J15O/SY
-	R9WfLeZZ4Zfmi1WX8hcvOB64jyWPrfmtRKfqnMX6D/R9P2QeDVRyKuvpm3F+wtUq8cSXRYdk
-	1nw/lj9jk21lpHj6tdNLlp2IO9Zww6r6bY7w03UeSizFGYmGWsxFxYkAmicnOx0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 6 Oct 2014 20:49:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <543334CE.8060305@caviumnetworks.com>
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+ <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com>
+ <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com>
+ <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net>
+ <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx>
+ <543334CE.8060305@caviumnetworks.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 6 Oct 2014 17:48:55 -0700
+Message-ID: <CALCETrWHYaZSVC_V2h4fSxSpHh5D6RPHG8VupKUjCJGiwpwmyg@mail.gmail.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Rich Felker <dalias@libc.org>, David Daney <ddaney.cavm@gmail.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 07, 2014 12:47 AM, Sylwester Nawrocki wrote:
-> 
-> The PLAT_S5P Kconfig symbol was removed in commit d78c16ccde96
-> ("ARM: SAMSUNG: Remove remaining legacy code"). There are still
-> some references left, fix that by replacing them with ARCH_S5PV210.
-> 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+On Mon, Oct 6, 2014 at 5:33 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+> On 10/06/2014 05:05 PM, Rich Felker wrote:
+>>
+>> On Mon, Oct 06, 2014 at 04:48:52PM -0700, David Daney wrote:
+>>>
+>>> On 10/06/2014 04:38 PM, Andy Lutomirski wrote:
+>>>>
+>>>> On 10/06/2014 02:58 PM, Rich Felker wrote:
+>>>>>
+>>>>> On Mon, Oct 06, 2014 at 02:45:29PM -0700, David Daney wrote:
+>>>
+>>> [...]
+>>>>>
+>>>>> This is a huge ill-designed mess.
+>>>>
+>>>>
+>>>> Amen.
+>>>>
+>>>> Can the kernel not just emulate the instructions directly?
+>>>
+>>>
+>>> In theory it could, but since there can be implementation defined
+>>> instructions, there is no way to achieve full instruction set
+>>> coverage for all possible machines.
+>>
+>>
+>> Is the issue really implementation-defined instructions with delay
+>> slots?
+>
+>
+> It is the instructions in the delay slots, not the branch instructions
+> themselves that are of interest.  But, for the sake of the arguments, this
+> is not a critical point.
+>
+>> If so it sounds like a made-up issue.
+>
+>
+> It is not a made up issue.
+>
+> If you want an architecture that has a well defined instruction set, stick
+> with x86, Intel will tell you what is good for you and you will take
+> whatever they give you.
+>
+> If you want an architecture where you can add implementation defined
+> instructions to do whatever you want, then you use an architecture like
+> MIPS.
+>
+>> They're not going to
+>> occur in real binaries. Certainly a compiler is not going to generate
+>> implementation-defined instructions,
+>
+>
+> Why not?  It will emit any instructions we care to make it emit.  If we want
+> it to emit crypto instructions with patented algorithms, then it will do
+> that.  But we would still like to use a generic kernel with generic FPU
+> support.
+>
+> The most straight forward way (and the currently implemented way) of doing
+> this is to execute the instructions in question out-of-line (on the
+> userspace stack).
+>
+> The question here is:  What is the best way to get to a non-executable
+> stack.
+>
+> The consensus among MIPS developers is that we should continue using the
+> out-of-line execution trick, but do it somewhere other than in stack memory.
+>
+> One way of doing this is to have the kernel magically generate thread local
+> memory regions.
+>
+> Another option is to have userspace manage the out-of-line execution areas.
+>
+> As is often the case, each approach has different pluses and minuses.
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+Your patch is still buggy.  Imagine this sequence:
 
-Best regards,
-Jingoo Han
+Daft userspace code does:
 
-> ---
->  drivers/usb/host/Kconfig |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 82800a7..6f1d48e 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -220,7 +220,7 @@ config USB_EHCI_SH
-> 
->  config USB_EHCI_EXYNOS
->         tristate "EHCI support for Samsung S5P/EXYNOS SoC Series"
-> -       depends on PLAT_S5P || ARCH_EXYNOS
-> +       depends on ARCH_S5PV210 || ARCH_EXYNOS
->         help
->  	Enable support for the Samsung Exynos SOC's on-chip EHCI controller.
-> 
-> @@ -527,7 +527,7 @@ config USB_OHCI_SH
-> 
->  config USB_OHCI_EXYNOS
->  	tristate "OHCI support for Samsung S5P/EXYNOS SoC Series"
-> -	depends on PLAT_S5P || ARCH_EXYNOS
-> +	depends on ARCH_S5PV210 || ARCH_EXYNOS
->  	help
->  	 Enable support for the Samsung Exynos SOC's on-chip OHCI controller.
-> 
-> --
-> 1.7.9.5
+emulated fp branch to elsewhere (not taken)
+insn 1
+insn 2
 
+The kernel shoves insn1 and insn2 in this magic trampoline and
+re-enters user code there.
+
+An asynchronous signal happens before insn1 executes.
+
+The signal hander runs similar daft code, gets fixed up and returns
+*to the now-overwritten trampoline*.  Boom.  This kind of failure mode
+is why using any kind of magic trampoline sucks on all architectures.
+
+Even the current code might have the same bug for all I know -- are
+really updating the stack pointer when you emulate these instructions?
+ Do you have a redzone for exactly this purpose?  Does the MIPS signal
+delivery code check to see whether you're executing off the stack
+outside of the ABI-protected region?
+
+
+Given that this is documented as an ABI change, I'll ask again: can
+you demand that user code that wants the ABI-breaking non-executable
+stack must not do this?  IOW, binaries that claim to work with
+non-executable stacks must not have fp branches (or alternatively must
+not have anything other than nops in the delay slots of possibly
+emulated FP branches)?  Or you could be polite and explicitly define
+the set of instructions that are safe in fp branch delay slots.
+
+(Also, seriously, fp branches have usable delay slots?  Wow!)
+
+--Andy
