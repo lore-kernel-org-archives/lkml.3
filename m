@@ -1,182 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754837AbaJGUMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 16:12:13 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:25502 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709AbaJGUMM (ORCPT
+	id S1753857AbaJGUPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 16:15:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36683 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752074AbaJGUPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 16:12:12 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAOAO1HNFRXQB1d/2dsb2JhbABfgw6BK7hrCwUBc5ppgRIXAXuEMS8jgRo3iEIBsz+PFIYgiiSEUgWdQoxYiTCDZTsvgkoBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        linux-wimax@intel.com, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] wimax: convert printk to pr_foo()
-Date: Tue,  7 Oct 2014 22:12:03 +0200
-Message-Id: <1412712724-4100-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Tue, 7 Oct 2014 16:15:04 -0400
+Date: Tue, 7 Oct 2014 22:11:38 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
+        ctl <ctl@merrii.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 1/7] ARM: sunxi: Introduce Allwinner A80 support
+Message-ID: <20141007201138.GF17925@lukather>
+References: <1411570141-29960-1-git-send-email-wens@csie.org>
+ <1411570141-29960-2-git-send-email-wens@csie.org>
+ <20140925132527.GF15315@lukather>
+ <CAGb2v64LwgEZkiuej2KKi+CUU3OkUZaBKJ3ZZn_Y64tDD+LRwg@mail.gmail.com>
+ <20141001093314.GI6884@lukather>
+ <CAGb2v66wMm-wZLmwzf==XSDUy9Z0EbjC_NN9EZvf9DFV8PbwrA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Pql/uPZNXIm1JCle"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v66wMm-wZLmwzf==XSDUy9Z0EbjC_NN9EZvf9DFV8PbwrA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use current logging functions and add module name prefix.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
-Compiled but untested.
+--Pql/uPZNXIm1JCle
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- net/wimax/id-table.c       | 2 +-
- net/wimax/op-msg.c         | 9 ++++-----
- net/wimax/op-reset.c       | 3 +--
- net/wimax/op-rfkill.c      | 3 +--
- net/wimax/op-state-get.c   | 3 +--
- net/wimax/stack.c          | 7 +++----
- net/wimax/wimax-internal.h | 6 ++++++
- 7 files changed, 17 insertions(+), 16 deletions(-)
+On Fri, Oct 03, 2014 at 02:23:03PM +0800, Chen-Yu Tsai wrote:
+> On Wed, Oct 1, 2014 at 5:33 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > On Sat, Sep 27, 2014 at 09:16:02PM +0800, Chen-Yu Tsai wrote:
+> >> On Thu, Sep 25, 2014 at 9:25 PM, Maxime Ripard
+> >> <maxime.ripard@free-electrons.com> wrote:
+> >> > On Wed, Sep 24, 2014 at 10:48:55PM +0800, Chen-Yu Tsai wrote:
+> >> >> The Allwinner A80 is a new Cortex octo-core A7/A15 big.LITTLE SoC.
+> >> >> While it's processor cores and interconnecting bus are new, it
+> >> >> re-uses many peripherals found in earlier Allwinner SoCs.
+> >> >>
+> >> >> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> >> >> ---
+> >> >>  arch/arm/mach-sunxi/Kconfig | 5 +++++
+> >> >>  arch/arm/mach-sunxi/sunxi.c | 9 +++++++++
+> >> >>  2 files changed, 14 insertions(+)
+> >> >>
+> >> >> diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kcon=
+fig
+> >> >> index 1aaa1e1..72f222b 100644
+> >> >> --- a/arch/arm/mach-sunxi/Kconfig
+> >> >> +++ b/arch/arm/mach-sunxi/Kconfig
+> >> >> @@ -42,4 +42,9 @@ config MACH_SUN8I
+> >> >>       select MFD_SUN6I_PRCM
+> >> >>       select RESET_CONTROLLER
+> >> >>
+> >> >> +config MACH_SUN9I
+> >> >> +     bool "Allwinner A80 (sun9i) SoCs support"
+> >> >
+> >> > With the new naming scheme, I wonder wether it makes sense to have t=
+he
+> >> > A80 displayed here and in the machine definition.
+> >>
+> >> I expect anything that falls under sun9i to be compatible, or a trimmed
+> >> down version. But that's just me.
+> >
+> > Well, compatible is a rather vague notion. They will be different for
+> > sure. Maybe not that different, but still.
+>=20
+> So what you're saying is we have a MACH_* Kconfig symbol for each SoC.
+> As we add or test drivers, we mark them as compatible by adding that
+> symbol to the DEPENDS part?
+>=20
+> I can live with that.
 
-diff --git a/net/wimax/id-table.c b/net/wimax/id-table.c
-index 72273ab..a21508d 100644
---- a/net/wimax/id-table.c
-+++ b/net/wimax/id-table.c
-@@ -137,7 +137,7 @@ void wimax_id_table_release(void)
- #endif
- 	spin_lock(&wimax_id_table_lock);
- 	list_for_each_entry(wimax_dev, &wimax_id_table, id_table_node) {
--		printk(KERN_ERR "BUG: %s wimax_dev %p ifindex %d not cleared\n",
-+		pr_err("BUG: %s wimax_dev %p ifindex %d not cleared\n",
- 		       __func__, wimax_dev, wimax_dev->net_dev->ifindex);
- 		WARN_ON(1);
- 	}
-diff --git a/net/wimax/op-msg.c b/net/wimax/op-msg.c
-index c278b33..54aa146 100644
---- a/net/wimax/op-msg.c
-+++ b/net/wimax/op-msg.c
-@@ -189,7 +189,7 @@ const void *wimax_msg_data_len(struct sk_buff *msg, size_t *size)
- 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
- 			      WIMAX_GNL_MSG_DATA);
- 	if (nla == NULL) {
--		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
-+		pr_err("Cannot find attribute WIMAX_GNL_MSG_DATA\n");
- 		return NULL;
- 	}
- 	*size = nla_len(nla);
-@@ -211,7 +211,7 @@ const void *wimax_msg_data(struct sk_buff *msg)
- 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
- 			      WIMAX_GNL_MSG_DATA);
- 	if (nla == NULL) {
--		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
-+		pr_err("Cannot find attribute WIMAX_GNL_MSG_DATA\n");
- 		return NULL;
- 	}
- 	return nla_data(nla);
-@@ -232,7 +232,7 @@ ssize_t wimax_msg_len(struct sk_buff *msg)
- 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
- 			      WIMAX_GNL_MSG_DATA);
- 	if (nla == NULL) {
--		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
-+		pr_err("Cannot find attribute WIMAX_GNL_MSG_DATA\n");
- 		return -EINVAL;
- 	}
- 	return nla_len(nla);
-@@ -343,8 +343,7 @@ int wimax_gnl_doit_msg_from_user(struct sk_buff *skb, struct genl_info *info)
- 	d_fnstart(3, NULL, "(skb %p info %p)\n", skb, info);
- 	result = -ENODEV;
- 	if (info->attrs[WIMAX_GNL_MSG_IFIDX] == NULL) {
--		printk(KERN_ERR "WIMAX_GNL_MSG_FROM_USER: can't find IFIDX "
--		       "attribute\n");
-+		pr_err("WIMAX_GNL_MSG_FROM_USER: can't find IFIDX attribute\n");
- 		goto error_no_wimax_dev;
- 	}
- 	ifindex = nla_get_u32(info->attrs[WIMAX_GNL_MSG_IFIDX]);
-diff --git a/net/wimax/op-reset.c b/net/wimax/op-reset.c
-index eb45807..a420791 100644
---- a/net/wimax/op-reset.c
-+++ b/net/wimax/op-reset.c
-@@ -107,8 +107,7 @@ int wimax_gnl_doit_reset(struct sk_buff *skb, struct genl_info *info)
- 	d_fnstart(3, NULL, "(skb %p info %p)\n", skb, info);
- 	result = -ENODEV;
- 	if (info->attrs[WIMAX_GNL_RESET_IFIDX] == NULL) {
--		printk(KERN_ERR "WIMAX_GNL_OP_RFKILL: can't find IFIDX "
--			"attribute\n");
-+		pr_err("WIMAX_GNL_OP_RFKILL: can't find IFIDX attribute\n");
- 		goto error_no_wimax_dev;
- 	}
- 	ifindex = nla_get_u32(info->attrs[WIMAX_GNL_RESET_IFIDX]);
-diff --git a/net/wimax/op-rfkill.c b/net/wimax/op-rfkill.c
-index 403078d..7d73054 100644
---- a/net/wimax/op-rfkill.c
-+++ b/net/wimax/op-rfkill.c
-@@ -421,8 +421,7 @@ int wimax_gnl_doit_rfkill(struct sk_buff *skb, struct genl_info *info)
- 	d_fnstart(3, NULL, "(skb %p info %p)\n", skb, info);
- 	result = -ENODEV;
- 	if (info->attrs[WIMAX_GNL_RFKILL_IFIDX] == NULL) {
--		printk(KERN_ERR "WIMAX_GNL_OP_RFKILL: can't find IFIDX "
--			"attribute\n");
-+		pr_err("WIMAX_GNL_OP_RFKILL: can't find IFIDX attribute\n");
- 		goto error_no_wimax_dev;
- 	}
- 	ifindex = nla_get_u32(info->attrs[WIMAX_GNL_RFKILL_IFIDX]);
-diff --git a/net/wimax/op-state-get.c b/net/wimax/op-state-get.c
-index 995c08c..e6788d2 100644
---- a/net/wimax/op-state-get.c
-+++ b/net/wimax/op-state-get.c
-@@ -49,8 +49,7 @@ int wimax_gnl_doit_state_get(struct sk_buff *skb, struct genl_info *info)
- 	d_fnstart(3, NULL, "(skb %p info %p)\n", skb, info);
- 	result = -ENODEV;
- 	if (info->attrs[WIMAX_GNL_STGET_IFIDX] == NULL) {
--		printk(KERN_ERR "WIMAX_GNL_OP_STATE_GET: can't find IFIDX "
--			"attribute\n");
-+		pr_err("WIMAX_GNL_OP_STATE_GET: can't find IFIDX attribute\n");
- 		goto error_no_wimax_dev;
- 	}
- 	ifindex = nla_get_u32(info->attrs[WIMAX_GNL_STGET_IFIDX]);
-diff --git a/net/wimax/stack.c b/net/wimax/stack.c
-index ec8b577..3f816e2 100644
---- a/net/wimax/stack.c
-+++ b/net/wimax/stack.c
-@@ -191,8 +191,8 @@ void __check_new_state(enum wimax_st old_state, enum wimax_st new_state,
- 		       unsigned int allowed_states_bm)
- {
- 	if (WARN_ON(((1 << new_state) & allowed_states_bm) == 0)) {
--		printk(KERN_ERR "SW BUG! Forbidden state change %u -> %u\n",
--			old_state, new_state);
-+		pr_err("SW BUG! Forbidden state change %u -> %u\n",
-+		       old_state, new_state);
- 	}
- }
- 
-@@ -602,8 +602,7 @@ int __init wimax_subsys_init(void)
- 						      wimax_gnl_ops,
- 						      wimax_gnl_mcgrps);
- 	if (unlikely(result < 0)) {
--		printk(KERN_ERR "cannot register generic netlink family: %d\n",
--		       result);
-+		pr_err("cannot register generic netlink family: %d\n", result);
- 		goto error_register_family;
- 	}
- 
-diff --git a/net/wimax/wimax-internal.h b/net/wimax/wimax-internal.h
-index b445b82..733c4bf 100644
---- a/net/wimax/wimax-internal.h
-+++ b/net/wimax/wimax-internal.h
-@@ -30,6 +30,12 @@
- #define __WIMAX_INTERNAL_H__
- #ifdef __KERNEL__
- 
-+#ifdef pr_fmt
-+#undef pr_fmt
-+#endif
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/device.h>
- #include <net/wimax.h>
- 
--- 
-1.9.3
+No, what I'm saying is drop the A80 mention from the bool label, and
+only leave the family there.
 
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Pql/uPZNXIm1JCle
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUNEj6AAoJEBx+YmzsjxAgWfwP/0NwdUh/RhxzLre88/7iBlrJ
+iEztgsnyBe+PZHeEq3TjhdDDHbliA0LNBVgQ0i7zwUuAUkGBgZFGfHC8NY115zkq
+a5lNa9X9ow2R8L/5e2WQ8nSvRY+UgAVicSLBbl60rUsqbnvYv1IeNiUBV0HY71na
+nPonQIQU9zb7kNIDWf/Ezek0VqPx5zASxIVEJGS/SRdTqhwxsj1Ccfch+SSCkRyF
+WztYkGGNtAnmli+98RmTivouSwWZkz2TPAYJRA+EFWI8K5x/HxMf7XlTzJsOQM8i
+TMUEYnnpFJYGH9ezdbvd/Ka2ziWbpO6ipBo5Wgqjt5tAJewQXkLsP+PC1Og1zYVV
+4hTMOdU0QF6msIPLcwOI2r4IT0k8Y6dWFlhgfg/nUbqFw2wnfHv+OSaBN+16dEV5
+04ttHZyXcbiSP6cKRnczGLVgZIAIVlO9TDLDS9zRGopX7cs6FHYv0ZCNAdymJKpR
+jtyX7VdB5pEGos1VUGI40FtgFc0y+CW0mJyFpFkt80Cd4nsPkxnXIphs34I/9mzF
+2aSBBL/EIuAf3mCQjtoV5KoZwmdZeqwLW7wpuWKRIdek6um+upzJ9ihPEEvcNBKE
+BJ2NcODVU2dDYBiXGW9CukjbVXrsfUcCd4t20QTZtG5CtTVV3YbLHpt/zZYy1i4e
+3VxPBMzK/W/BpoTvjZSx
+=8TSU
+-----END PGP SIGNATURE-----
+
+--Pql/uPZNXIm1JCle--
