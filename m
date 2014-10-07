@@ -1,275 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaJGNFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:05:04 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:55670 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753739AbaJGNE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:04:59 -0400
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/2] net: fs_enet: Remove non NAPI RX
-Message-Id: <20141007130457.7F04E1AB266@localhost.localdomain>
-Date: Tue,  7 Oct 2014 15:04:57 +0200 (CEST)
+	id S1753988AbaJGNHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:07:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38061 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396AbaJGNHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:07:41 -0400
+Date: Tue, 7 Oct 2014 15:07:37 +0200
+From: Markus Pargmann <mpa@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH 4/5] regulator: Use gpio_is_valid
+Message-ID: <20141007130737.GH5042@pengutronix.de>
+References: <1412626635-7404-1-git-send-email-mpa@pengutronix.de>
+ <1412626635-7404-5-git-send-email-mpa@pengutronix.de>
+ <20141007120106.GY4609@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qoTlaiD+Y2fIM3Ll"
+Content-Disposition: inline
+In-Reply-To: <20141007120106.GY4609@sirena.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 15:05:41 up 27 days,  5:53, 82 users,  load average: 0.31, 0.12,
+ 0.07
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: mpa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the probe function, use_napi is inconditionnaly set to 1. This patch removes
-all the code which is conditional to !use_napi, and removes use_napi which has
-then become useless.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+--qoTlaiD+Y2fIM3Ll
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
----
- .../net/ethernet/freescale/fs_enet/fs_enet-main.c  | 164 ++-------------------
- include/linux/fs_enet_pd.h                         |   1 -
- 2 files changed, 15 insertions(+), 150 deletions(-)
+On Tue, Oct 07, 2014 at 01:01:06PM +0100, Mark Brown wrote:
+> On Mon, Oct 06, 2014 at 10:17:14PM +0200, Markus Pargmann wrote:
+> > Use gpio_is_valid instead of custom check.
+>=20
+> Patches per driver please, this isn't just a mechanical transformation.
 
-diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-index 748fd24..71a25b4 100644
---- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-+++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-@@ -215,128 +215,6 @@ static int fs_enet_rx_napi(struct napi_struct *napi, int budget)
- 	return received;
- }
- 
--/* non NAPI receive function */
--static int fs_enet_rx_non_napi(struct net_device *dev)
--{
--	struct fs_enet_private *fep = netdev_priv(dev);
--	const struct fs_platform_info *fpi = fep->fpi;
--	cbd_t __iomem *bdp;
--	struct sk_buff *skb, *skbn, *skbt;
--	int received = 0;
--	u16 pkt_len, sc;
--	int curidx;
--	/*
--	 * First, grab all of the stats for the incoming packet.
--	 * These get messed up if we get called due to a busy condition.
--	 */
--	bdp = fep->cur_rx;
--
--	while (((sc = CBDR_SC(bdp)) & BD_ENET_RX_EMPTY) == 0) {
--
--		curidx = bdp - fep->rx_bd_base;
--
--		/*
--		 * Since we have allocated space to hold a complete frame,
--		 * the last indicator should be set.
--		 */
--		if ((sc & BD_ENET_RX_LAST) == 0)
--			dev_warn(fep->dev, "rcv is not +last\n");
--
--		/*
--		 * Check for errors.
--		 */
--		if (sc & (BD_ENET_RX_LG | BD_ENET_RX_SH | BD_ENET_RX_CL |
--			  BD_ENET_RX_NO | BD_ENET_RX_CR | BD_ENET_RX_OV)) {
--			fep->stats.rx_errors++;
--			/* Frame too long or too short. */
--			if (sc & (BD_ENET_RX_LG | BD_ENET_RX_SH))
--				fep->stats.rx_length_errors++;
--			/* Frame alignment */
--			if (sc & (BD_ENET_RX_NO | BD_ENET_RX_CL))
--				fep->stats.rx_frame_errors++;
--			/* CRC Error */
--			if (sc & BD_ENET_RX_CR)
--				fep->stats.rx_crc_errors++;
--			/* FIFO overrun */
--			if (sc & BD_ENET_RX_OV)
--				fep->stats.rx_crc_errors++;
--
--			skb = fep->rx_skbuff[curidx];
--
--			dma_unmap_single(fep->dev, CBDR_BUFADDR(bdp),
--				L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
--				DMA_FROM_DEVICE);
--
--			skbn = skb;
--
--		} else {
--
--			skb = fep->rx_skbuff[curidx];
--
--			dma_unmap_single(fep->dev, CBDR_BUFADDR(bdp),
--				L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
--				DMA_FROM_DEVICE);
--
--			/*
--			 * Process the incoming frame.
--			 */
--			fep->stats.rx_packets++;
--			pkt_len = CBDR_DATLEN(bdp) - 4;	/* remove CRC */
--			fep->stats.rx_bytes += pkt_len + 4;
--
--			if (pkt_len <= fpi->rx_copybreak) {
--				/* +2 to make IP header L1 cache aligned */
--				skbn = netdev_alloc_skb(dev, pkt_len + 2);
--				if (skbn != NULL) {
--					skb_reserve(skbn, 2);	/* align IP header */
--					skb_copy_from_linear_data(skb,
--						      skbn->data, pkt_len);
--					/* swap */
--					skbt = skb;
--					skb = skbn;
--					skbn = skbt;
--				}
--			} else {
--				skbn = netdev_alloc_skb(dev, ENET_RX_FRSIZE);
--
--				if (skbn)
--					skb_align(skbn, ENET_RX_ALIGN);
--			}
--
--			if (skbn != NULL) {
--				skb_put(skb, pkt_len);	/* Make room */
--				skb->protocol = eth_type_trans(skb, dev);
--				received++;
--				netif_rx(skb);
--			} else {
--				fep->stats.rx_dropped++;
--				skbn = skb;
--			}
--		}
--
--		fep->rx_skbuff[curidx] = skbn;
--		CBDW_BUFADDR(bdp, dma_map_single(fep->dev, skbn->data,
--			     L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
--			     DMA_FROM_DEVICE));
--		CBDW_DATLEN(bdp, 0);
--		CBDW_SC(bdp, (sc & ~BD_ENET_RX_STATS) | BD_ENET_RX_EMPTY);
--
--		/*
--		 * Update BD pointer to next entry.
--		 */
--		if ((sc & BD_ENET_RX_WRAP) == 0)
--			bdp++;
--		else
--			bdp = fep->rx_bd_base;
--
--		(*fep->ops->rx_bd_done)(dev);
--	}
--
--	fep->cur_rx = bdp;
--
--	return 0;
--}
--
- static void fs_enet_tx(struct net_device *dev)
- {
- 	struct fs_enet_private *fep = netdev_priv(dev);
-@@ -453,8 +331,7 @@ fs_enet_interrupt(int irq, void *dev_id)
- 		nr++;
- 
- 		int_clr_events = int_events;
--		if (fpi->use_napi)
--			int_clr_events &= ~fep->ev_napi_rx;
-+		int_clr_events &= ~fep->ev_napi_rx;
- 
- 		(*fep->ops->clear_int_events)(dev, int_clr_events);
- 
-@@ -462,19 +339,15 @@ fs_enet_interrupt(int irq, void *dev_id)
- 			(*fep->ops->ev_error)(dev, int_events);
- 
- 		if (int_events & fep->ev_rx) {
--			if (!fpi->use_napi)
--				fs_enet_rx_non_napi(dev);
--			else {
--				napi_ok = napi_schedule_prep(&fep->napi);
--
--				(*fep->ops->napi_disable_rx)(dev);
--				(*fep->ops->clear_int_events)(dev, fep->ev_napi_rx);
--
--				/* NOTE: it is possible for FCCs in NAPI mode    */
--				/* to submit a spurious interrupt while in poll  */
--				if (napi_ok)
--					__napi_schedule(&fep->napi);
--			}
-+			napi_ok = napi_schedule_prep(&fep->napi);
-+
-+			(*fep->ops->napi_disable_rx)(dev);
-+			(*fep->ops->clear_int_events)(dev, fep->ev_napi_rx);
-+
-+			/* NOTE: it is possible for FCCs in NAPI mode    */
-+			/* to submit a spurious interrupt while in poll  */
-+			if (napi_ok)
-+				__napi_schedule(&fep->napi);
- 		}
- 
- 		if (int_events & fep->ev_tx)
-@@ -811,24 +684,21 @@ static int fs_enet_open(struct net_device *dev)
- 	/* not doing this, will cause a crash in fs_enet_rx_napi */
- 	fs_init_bds(fep->ndev);
- 
--	if (fep->fpi->use_napi)
--		napi_enable(&fep->napi);
-+	napi_enable(&fep->napi);
- 
- 	/* Install our interrupt handler. */
- 	r = request_irq(fep->interrupt, fs_enet_interrupt, IRQF_SHARED,
- 			"fs_enet-mac", dev);
- 	if (r != 0) {
- 		dev_err(fep->dev, "Could not allocate FS_ENET IRQ!");
--		if (fep->fpi->use_napi)
--			napi_disable(&fep->napi);
-+		napi_disable(&fep->napi);
- 		return -EINVAL;
- 	}
- 
- 	err = fs_init_phy(dev);
- 	if (err) {
- 		free_irq(fep->interrupt, dev);
--		if (fep->fpi->use_napi)
--			napi_disable(&fep->napi);
-+		napi_disable(&fep->napi);
- 		return err;
- 	}
- 	phy_start(fep->phydev);
-@@ -845,8 +715,7 @@ static int fs_enet_close(struct net_device *dev)
- 
- 	netif_stop_queue(dev);
- 	netif_carrier_off(dev);
--	if (fep->fpi->use_napi)
--		napi_disable(&fep->napi);
-+	napi_disable(&fep->napi);
- 	phy_stop(fep->phydev);
- 
- 	spin_lock_irqsave(&fep->lock, flags);
-@@ -1022,7 +891,6 @@ static int fs_enet_probe(struct platform_device *ofdev)
- 	fpi->rx_ring = 32;
- 	fpi->tx_ring = 32;
- 	fpi->rx_copybreak = 240;
--	fpi->use_napi = 1;
- 	fpi->napi_weight = 17;
- 	fpi->phy_node = of_parse_phandle(ofdev->dev.of_node, "phy-handle", 0);
- 	if (!fpi->phy_node && of_phy_is_fixed_link(ofdev->dev.of_node)) {
-@@ -1102,9 +970,7 @@ static int fs_enet_probe(struct platform_device *ofdev)
- 
- 	ndev->netdev_ops = &fs_enet_netdev_ops;
- 	ndev->watchdog_timeo = 2 * HZ;
--	if (fpi->use_napi)
--		netif_napi_add(ndev, &fep->napi, fs_enet_rx_napi,
--		               fpi->napi_weight);
-+	netif_napi_add(ndev, &fep->napi, fs_enet_rx_napi, fpi->napi_weight);
- 
- 	ndev->ethtool_ops = &fs_ethtool_ops;
- 
-diff --git a/include/linux/fs_enet_pd.h b/include/linux/fs_enet_pd.h
-index efb0596..77d783f 100644
---- a/include/linux/fs_enet_pd.h
-+++ b/include/linux/fs_enet_pd.h
-@@ -139,7 +139,6 @@ struct fs_platform_info {
- 	int rx_ring, tx_ring;	/* number of buffers on rx     */
- 	__u8 macaddr[ETH_ALEN];	/* mac address                 */
- 	int rx_copybreak;	/* limit we copy small frames  */
--	int use_napi;		/* use NAPI                    */
- 	int napi_weight;	/* NAPI weight                 */
- 
- 	int use_rmii;		/* use RMII mode 	       */
--- 
-2.1.0
+Okay, but you mean just patches 4 and 5 and not patch 2 right?
 
+Thanks,
+
+Markus
+
+--=20
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
+--qoTlaiD+Y2fIM3Ll
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUM+WYAAoJEEpcgKtcEGQQzxwQAITHY27s/PRNELtXyI3tAu9w
+LZ+hfFdnuSvvJESziEYAiu4Rw1j36184MemxfxrfM8LOKoOyClKb6ZGvnIjbWjnf
+hZ+ZWG3jXRfBeUPdv1XEuOstYr383v40KSlsXwfWc02/1Ezk2oLcD2sHYVIHrnfC
+9ws5tImNgYa4HZLUe8BydPbPFaSDMX++mfrHxUJTv9+/mWXkzmJJeWbnjt9a7PEU
+vnl9WUmNvzxtnBGklPo3oxHNv5npj4Aa4WQ/0pji9utICnUJuNI5hDuZL6ifFlEb
+HGRPHAxKD5yiHtXfALCoTmhMNQpVMBs5jmeidFsyih16aDm1O6QzY5og+KmhX/VJ
+xEt9475l0K+Yb/gyRWWwiqkOTv6Tb9FPsYmavjeiD/2cPiDtQpfOsxj9Ri6EDTZN
+CME6j7piwAaCk+clvdwuCQGJ3H/+mxN0/nTgvI5GamI07zkHwzBGwZkNwyp56e3u
+dpjYxV5cSaWNmj9wR60ZD3sXiAjQehiWETMD1/XVdsAd9R2GgIf5Rxnptqhjclhx
+u2UqWg8jU1RKR7WbjSZ0nBPqXN7p/9AynY8FJj15KSdi2dKoP+Xctdw1OJa+N6Pv
+ZxMLhFMfKbHWF4SataOrV/UIbmUeGE/itnwlWRicxKuULzveS9WY96Bz+J+6aJJ8
+M3xG6ZVRdDbbaLp1TTZW
+=Qiuq
+-----END PGP SIGNATURE-----
+
+--qoTlaiD+Y2fIM3Ll--
