@@ -1,67 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679AbaJGQ4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:56:37 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:61914 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605AbaJGQ4d convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:56:33 -0400
+	id S1754709AbaJGQ5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:57:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46540 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754586AbaJGQ47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 12:56:59 -0400
+Date: Tue, 7 Oct 2014 12:56:45 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH v3 2/5] mm/hugetlb: take page table lock in
+ follow_huge_pmd()
+Message-ID: <20141007165645.GA24093@nhori.bos.redhat.com>
+References: <1410820799-27278-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1410820799-27278-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.LSU.2.11.1409292041540.4640@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <1412674438-26160-2-git-send-email-kever.yang@rock-chips.com>
-References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
-	<1412674438-26160-2-git-send-email-kever.yang@rock-chips.com>
-Date: Tue, 7 Oct 2014 09:56:32 -0700
-X-Google-Sender-Auth: U2lcmq0sO-3-BLHskOje21YVTao
-Message-ID: <CAD=FV=VjgO=4j+5=yC+THE2hWM_zSXhyvo22oHHXOjm98LkaAA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: rockchip: add 400MHz and 500MHz for rk3288 clock rate
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1409292041540.4640@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+Hi Hugh,
 
-On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> This patch add 400MHz and 500MHz to clock rate table for rk3288.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
->  drivers/clk/rockchip/clk-rk3288.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
-> index d053529..f6ea9c6 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -86,8 +86,10 @@ struct rockchip_pll_rate_table rk3288_pll_rates[] = {
->         RK3066_PLL_RATE( 594000000, 2, 198, 4),
->         RK3066_PLL_RATE( 552000000, 1, 46, 2),
->         RK3066_PLL_RATE( 504000000, 1, 84, 4),
-> +       RK3066_PLL_RATE( 500000000, 3, 125, 2),
->         RK3066_PLL_RATE( 456000000, 1, 76, 4),
->         RK3066_PLL_RATE( 408000000, 1, 68, 4),
-> +       RK3066_PLL_RATE( 400000000, 3, 50, 1),
+Sorry for the delayed response, I was off for vacation.
 
-This violates the constraints in the TRM.  That says:
+On Mon, Sep 29, 2014 at 09:32:20PM -0700, Hugh Dickins wrote:
+> On Mon, 15 Sep 2014, Naoya Horiguchi wrote:
+> > We have a race condition between move_pages() and freeing hugepages,
+> 
+> I've been looking through these 5 today, and they're much better now,
+> thank you.  But a new concern below, and a minor correction to 3/5.
+> 
+> > --- mmotm-2014-09-09-14-42.orig/mm/gup.c
+> > +++ mmotm-2014-09-09-14-42/mm/gup.c
+> > @@ -162,33 +162,16 @@ struct page *follow_page_mask(struct vm_area_struct *vma,
+> >  
+> >  	pmd = pmd_offset(pud, address);
+> >  	if (pmd_none(*pmd))
+> >  		return no_page_table(vma, flags);
+> > -	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
+> > -		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
+> > -		if (flags & FOLL_GET) {
+> > -			/*
+> > -			 * Refcount on tail pages are not well-defined and
+> > -			 * shouldn't be taken. The caller should handle a NULL
+> > -			 * return when trying to follow tail pages.
+> > -			 */
+> > -			if (PageHead(page))
+> > -				get_page(page);
+> > -			else
+> > -				page = NULL;
+> > -		}
+> > -		return page;
+> > -	}
+> > +	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB)
+> > +		return follow_huge_pmd(mm, address, pmd, flags);
+> 
+> This code here allows for pmd_none() and pmd_huge(), and for pmd_numa()
+> and pmd_trans_huge() below; but makes no explicit allowance for !present
+> migration and hwpoison entries.
+> 
+> Is it assumed that the pmd_bad() test in follow_page_pte() will catch
+> those?
 
-Fvco = (Fin/NR)*NF value range requirement: 440MHz – 2200MHz
+Yes, it is now.
 
-I believe you end up with 400Mhz, not 440.  Are you aware of this?  Is
-there some reason it's OK to violate the TRM in this case?
+> But what of races?
 
--Doug
+The current patch is still racy when hugepage migrations from different
+reasons (hotremove and mbind, for example) happen concurrently.
+We need a fix.
+
+> migration entries are highly volatile.  And
+> is it assumed that a migration entry cannot pass the pmd_huge() test?
+
+Yes, _PAGE_PSE bit is always clear for migration/hwpoison entry, so they
+can never pass pmd_huge() test for now.
+
+> That may be true of x86 today, I'm not certain; but if the soft-dirty
+> people catch up with the hugetlb-migration people, that might change
+> (they #define _PAGE_SWP_SOFT_DIRTY _PAGE_PSE).
+
+Yes, this problem is not visible now (note that currently _PAGE_SWP_SOFT_DIRTY
+is never set on pmd because hugepage is never swapped out,)
+but it's potential one.
+
+> 
+> Why pmd_huge() does not itself test for present, I cannot say; but it
+> probably didn't matter at all before hwpoison and migration were added.
+
+Correct, so we need check _PAGE_PRESENT bit in x86_64 pmd_huge() now.
+And we need do some proper actions if we find migration/hwpoison here.
+To do this, adding another routine like huge_pmd_present() might be useful
+(pmd_present() is already used for thp.)
+
+> 
+> Mind you, with __get_user_pages()'s is_vm_hugtlb_page() test avoiding
+> all this code, maybe the only thing that can stumble here is your own
+> hugetlb migration code; but that appears to be guarded only by
+> down_read of mmap_sem, so races would be possible (if userspace
+> is silly enough or malicious enough to do so).
+
+I guess that the race is fixed by this patch with checking _PAGE_PRESENT
+in pmd_huge(). Or are you mentioning another race?
+
+> 
+> What we have here today looks too fragile to me, but it's probably
+> best dealt with by a separate patch.
+> 
+> Or I may be over-anxious, and there may be something "obvious"
+> that I'm missing, which saves us from further change.
+
+No, you found a new issue in the current code, thank you very much.
+
+> >  	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
+> >  		return no_page_table(vma, flags);
+> >  	if (pmd_trans_huge(*pmd)) {
+> > diff --git mmotm-2014-09-09-14-42.orig/mm/hugetlb.c mmotm-2014-09-09-14-42/mm/hugetlb.c
+> > index 34351251e164..941832ee3d5a 100644
+> > --- mmotm-2014-09-09-14-42.orig/mm/hugetlb.c
+> > +++ mmotm-2014-09-09-14-42/mm/hugetlb.c
+> > @@ -3668,26 +3668,34 @@ follow_huge_addr(struct mm_struct *mm, unsigned long address,
+> >  
+> >  struct page * __weak
+> >  follow_huge_pmd(struct mm_struct *mm, unsigned long address,
+> > -		pmd_t *pmd, int write)
+> > +		pmd_t *pmd, int flags)
+> >  {
+> > -	struct page *page;
+> > +	struct page *page = NULL;
+> > +	spinlock_t *ptl;
+> >  
+> > -	page = pte_page(*(pte_t *)pmd);
+> > -	if (page)
+> > -		page += ((address & ~PMD_MASK) >> PAGE_SHIFT);
+> > +	ptl = pmd_lockptr(mm, pmd);
+> > +	spin_lock(ptl);
+> > +
+> > +	if (!pmd_huge(*pmd))
+> > +		goto out;
+> 
+> And similarly here.  Though at least here we now have the necessary
+> lock, so it's no longer racy, and maybe this pmd_huge() test just needs
+> to be replaced by a pmd_present() test?  Or are both needed?
+
+This check is introduced because the first pmd_huge() check outside
+follow_huge_pmd() is called without page table lock. So keeping it to
+recheck after holding lock looks correct to me.
+But as I mentioned above, I'm thinking of changing x86_64's pmd_huge to
+check both _PAGE_PRESENT and _PAGE_PSE to make sure that *pmd is pointing
+to a normal hugepage, so this check is internally changed to check both.
+
+Thanks,
+Naoya Horiguchi
+
+> > +
+> > +	page = pte_page(*(pte_t *)pmd) + ((address & ~PMD_MASK) >> PAGE_SHIFT);
+> > +
+> > +	if (flags & FOLL_GET)
+> > +		get_page(page);
+> > +out:
+> > +	spin_unlock(ptl);
+> >  	return page;
+> >  }
+> 
