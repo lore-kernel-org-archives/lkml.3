@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbaJGVKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 17:10:16 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:37495 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaJGVKN convert rfc822-to-8bit (ORCPT
+	id S1755043AbaJGVOq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 17:14:46 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:55570 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678AbaJGVOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 17:10:13 -0400
+	Tue, 7 Oct 2014 17:14:44 -0400
+Date: Tue, 7 Oct 2014 16:14:39 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Meelis Roos <mroos@ut.ee>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.17
+Message-ID: <20141007161439.4b5818e7@as>
+In-Reply-To: <alpine.LRH.2.11.1410072337230.7472@adalberg.ut.ee>
+References: <alpine.LRH.2.11.1410072337230.7472@adalberg.ut.ee>
 MIME-Version: 1.0
-In-Reply-To: <3345042.lGjGYUIfnV@phil>
-References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com>
-	<1854393.Qf7h4x8eso@phil>
-	<CAD=FV=WwXXQ6941WuATBiNqZ0sM3EkSo-EHHoqn3uGmZdNvW5w@mail.gmail.com>
-	<3345042.lGjGYUIfnV@phil>
-Date: Tue, 7 Oct 2014 14:10:12 -0700
-X-Google-Sender-Auth: UBO8ihZRVbOJLihJKiLsYvdsnxA
-Message-ID: <CAD=FV=WnSM1swHG7aEFk0ox11QmhMHM=WX6gD9jzPbXtUqnfTg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: dts: enable init rate for clock
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Kever Yang <kever.yang@rock-chips.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 7 Oct 2014 23:45:20 +0300 (EEST)
+Meelis Roos <mroos@ut.ee> wrote:
 
-On Tue, Oct 7, 2014 at 12:37 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Dienstag, 7. Oktober 2014, 12:20:38 schrieb Doug Anderson:
->> Heiko,
->>
->> On Tue, Oct 7, 2014 at 11:27 AM, Heiko Stübner <heiko@sntech.de> wrote:
->> > Am Dienstag, 7. Oktober 2014, 10:03:19 schrieb Doug Anderson:
->> >> Kever,
->> >>
->> >> On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com>
->> >
->> > wrote:
->> >> > We need to initialize PLL rate and some of bus clock rate while
->> >> > kernel init, for there is no other module will do that.
->> >> >
->> >> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
->> >> > ---
->> >> >
->> >> >  arch/arm/boot/dts/rk3288.dtsi | 10 ++++++++++
->> >> >  1 file changed, 10 insertions(+)
->> >> >
->> >> > diff --git a/arch/arm/boot/dts/rk3288.dtsi
->> >> > b/arch/arm/boot/dts/rk3288.dtsi
->> >> > index 874e66d..2f4519b 100644
->> >> > --- a/arch/arm/boot/dts/rk3288.dtsi
->> >> > +++ b/arch/arm/boot/dts/rk3288.dtsi
->> >> > @@ -455,6 +455,16 @@
->> >> >
->> >> >                 rockchip,grf = <&grf>;
->> >> >                 #clock-cells = <1>;
->> >> >                 #reset-cells = <1>;
->> >> >
->> >> > +               assigned-clocks = <&cru PLL_GPLL>, <&cru PLL_CPLL>,
->> >> > +                                 <&cru PLL_NPLL>, <&cru ACLK_CPU>,
->> >> > +                                 <&cru HCLK_CPU>, <&cru PCLK_CPU>,
->> >> > +                                 <&cru ACLK_PERI>, <&cru HCLK_PERI>,
->> >> > +                                 <&cru PCLK_PERI>;
->> >> > +               assigned-clock-rates = <594000000>, <400000000>,
->> >> > +                                      <500000000>, <300000000>,
->> >>
->> >> When I boot up, I see that ACLK_CPU was 297000000.  You specified
->> >> 300000000.  Did you expect to get 300?  If you expected 297, I think
->> >> you should put 297.  If you expected 300 then we have some debugging
->> >> to do.  Note: I'm not quite sure how you'd expect to get 300 given
->> >> that none of the PLLs divide evenly to 300...
->> >
->> > I'd think 300 is simply the target value. I.e. take the closest rate <=
->> > 300
->> > MHz, same for 150 etc. I somehow like the approach of specifying what the
->> > rate _should_ ideally be :-) .
->> >
->> > Also reduces the amount of thougths necessary (and possible
->> > head-scratching) when adapting the pll rates to some other constraints
->> > (child-clocks already have the target rates and cannot drop to some even
->> > stranger value).
->> OK, fair enough.  I guess maybe I've overly paranoid and like to make
->> sure that someone has thought through exactly what various core clocks
->> should be and made sure that the voltage matched and that clocks were
->> never out of spec.  ...but if others really like specifying more ideal
->> values then I'm OK with it.
->
-> Especially as clocks like ACLK_CPU can select from different plls (cpll and
-> gpll on the rk3288) it would be even more difficult to predict which path the
-> clock selection would take. So it makes sense to specifiy the value we wish for
-> and let the common-clock-framework do its magic to select the best sources.
->
->
->>I will say that I'd really like the PLLs
->> to be exact, though.  I think those are now...
->
-> agreed. PLL rates should be exact.
+> > Anyway, back to 3.17. Nothing major happened during the last week, as
+> > you can see from the appended shortlog. Mostly drivers (i915, nouveau,
+> > ethernet, scsi, sound) and some networking fixes.  With some misc
+> > noise all over.
+> > 
+> > Go out and test,
+> 
+> Unfortunately my computer still livelocks with watchdog timeouts. The
+> previous reports are here: https://lkml.org/lkml/2014/9/28/40 and
+> https://lkml.org/lkml/2014/9/30/217 and this time the dmesg is like that 
+> (config is also below):
+> 
 
-OK, fair enough.  Then you can give my:
+Unforunately the fixes for this did not make 3.17, even though they
+were available Sept. 25th:
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
+http://marc.info/?t=141165576100004&r=1&w=2
 
-...of course I'd still like comments addressed for part 1 of this series.  ;)
-
--Doug
+> [87785.429264] ------------[ cut here ]------------
+> [87785.429276] WARNING: CPU: 2 PID: 19638 at kernel/watchdog.c:267 watchdog_overflow_callback+0x90/0xc0()
+> [87785.429278] Watchdog detected hard LOCKUP on cpu 2
+> [87785.429280] Modules linked in:
+> [87785.429282]  ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat dm_mod nfsv2 cpufreq_stats cpufreq_powersave cpufreq_userspace cpufreq_conservative snd_hrtimer snd_seq_dummy snd_seq_midi snd_seq_oss snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device binfmt_misc nfsd auth_rpcgss oid_registry nfs_acl nfs lockd sunrpc bridge stp llc tun joydev hid_generic usbhid hid x86_pkg_temp_thermal kvm_intel kvm crc32c_intel aesni_intel i915 aes_x86_64 glue_helper lrw gf128mul snd_hda_codec_realtek snd_hda_codec_generic ablk_helper cryptd i2c_algo_bit video drm_kms_helper iTCO_wdt psmouse pcspkr iTCO_vendor_support drm snd_hda_intel evdev snd_hda_controller microcode snd_hda_codec e1000e sr_mod cdrom snd_hwdep snd_pcm_oss ehci_pci snd_mixer_oss parport_pc snd_pcm ehci_hcd parport snd_timer snd usbcore sg soundcore
+> [87785.429341]  tpm_tis nuvoton_cir i2c_i801 rc_core floppy tpm ptp pps_core lpc_ich button mfd_core processor usb_common thermal_sys msr w83627ehf hwmon_vid coretemp hwmon eeprom i2c_core loop fuse autofs4
+> [87785.429359] CPU: 2 PID: 19638 Comm: less Not tainted 3.17.0 #130
+> [87785.429361] Hardware name:                  /DQ67OW, BIOS SWQ6710H.86A.0066.2012.1105.1504 11/05/2012
+> [87785.429363]  0000000000000009 ffffffff814636f3 ffff88023e306cd0 ffffffff8104494d
+> [87785.429366]  ffff880232e24000 ffff88023e306d20 ffff88023e306db8 ffff88023e306ef8
+> [87785.429369]  0000000000000000 ffffffff810449b7 ffffffff816e7fc0 0000000000000020
+> [87785.429373] Call Trace:
+> [87785.429375]  <NMI>  [<ffffffff814636f3>] ? dump_stack+0x41/0x51
+> [87785.429385]  [<ffffffff8104494d>] ? warn_slowpath_common+0x6d/0x90
+> [87785.429388]  [<ffffffff810449b7>] ? warn_slowpath_fmt+0x47/0x50
+> [87785.429392]  [<ffffffff810c60e0>] ? watchdog_overflow_callback+0x90/0xc0
+> [87785.429397]  [<ffffffff810d1a47>] ? __perf_event_overflow+0x87/0x2c0
+> [87785.429401]  [<ffffffff8101d0b5>] ? intel_pmu_handle_irq+0x1d5/0x390
+> [87785.429406]  [<ffffffff81015c86>] ? perf_event_nmi_handler+0x26/0x40
+> [87785.429410]  [<ffffffff810068e1>] ? nmi_handle+0x61/0xc0
+> [87785.429413]  [<ffffffff81006a03>] ? do_nmi+0xc3/0x340
+> [87785.429418]  [<ffffffff8146a91a>] ? end_repeat_nmi+0x1e/0x2e
+> [87785.429423]  [<ffffffff81093f7b>] ? lock_hrtimer_base.isra.29+0x1b/0x40
+> [87785.429427]  [<ffffffff81093f7b>] ? lock_hrtimer_base.isra.29+0x1b/0x40
+> [87785.429430]  [<ffffffff81093f7b>] ? lock_hrtimer_base.isra.29+0x1b/0x40
+> [87785.429432]  <<EOE>>  <IRQ>  [<ffffffff810944ba>] ? hrtimer_try_to_cancel+0x1a/0x80
+> [87785.429439]  [<ffffffff8109453a>] ? hrtimer_cancel+0x1a/0x20
+> [87785.429442]  [<ffffffff810a1a1d>] ? tick_nohz_restart+0xd/0x80
+> [87785.429445]  [<ffffffff810a1e3c>] ? __tick_nohz_full_check+0x9c/0xa0
+> [87785.429448]  [<ffffffff810c891c>] ? irq_work_run_list+0x3c/0x70
+> [87785.429451]  [<ffffffff810c8965>] ? irq_work_run+0x15/0x40
+> [87785.429454]  [<ffffffff81093aff>] ? update_process_times+0x4f/0x60
+> [87785.429457]  [<ffffffff810a1957>] ? tick_sched_timer+0x37/0x60
+> [87785.429461]  [<ffffffff810943f1>] ? __run_hrtimer.isra.32+0x41/0xf0
+> [87785.429464]  [<ffffffff8109478f>] ? hrtimer_interrupt+0xef/0x240
+> [87785.429468]  [<ffffffff8102cce6>] ? smp_apic_timer_interrupt+0x36/0x50
+> [87785.429472]  [<ffffffff81469e8a>] ? apic_timer_interrupt+0x6a/0x70
+> [87785.429473]  <EOI> 
+> [87785.429476] ---[ end trace c05bae025e1c336d ]---
