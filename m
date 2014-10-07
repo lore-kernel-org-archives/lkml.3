@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaJGOnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 10:43:21 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:50372 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753862AbaJGOnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 10:43:19 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Topic: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Index: AQHP4jrJm8o16PSYfUeOu2GPn2nYPZwksznA
-Date: Tue, 7 Oct 2014 14:41:49 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C6116@AcuExch.aculab.com>
-References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
- <1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1754159AbaJGOnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 10:43:53 -0400
+Received: from mail-bn1on0068.outbound.protection.outlook.com ([157.56.110.68]:44672
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752904AbaJGOnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 10:43:52 -0400
+Date: Tue, 7 Oct 2014 16:27:44 +0200
+From: Robert Richter <robert.richter@caviumnetworks.com>
+To: Arnd Bergmann <arnd@arndb.de>, Liviu Dudau <liviu.dudau@arm.com>
+CC: <linux-arm-kernel@lists.infradead.org>, Robert Richter <rric@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, <devicetree@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Sunil Goutham <sgoutham@cavium.com>
+Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree
+ bindings
+Message-ID: <20141007142744.GE31556@rric.localhost>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org>
+ <1411573068-12952-4-git-send-email-rric@kernel.org>
+ <3082935.e3X4GsVUDn@wuerfel>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <3082935.e3X4GsVUDn@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [92.224.195.77]
+X-ClientProxiedBy: AMSPR04CA0049.eurprd04.prod.outlook.com (10.242.87.167) To
+ SN2PR0701MB816.namprd07.prod.outlook.com (25.160.16.15)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:SN2PR0701MB816;
+X-Forefront-PRVS: 035748864E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6069001)(6009001)(189002)(199003)(24454002)(42186005)(47776003)(97756001)(85852003)(83506001)(120916001)(4396001)(50986999)(23726002)(40100002)(31966008)(80022003)(76506005)(54356999)(76176999)(87976001)(46102003)(64706001)(20776003)(77096002)(66066001)(101416001)(86362001)(50466002)(46406003)(92566001)(105586002)(102836001)(106356001)(33656002)(95666004)(92726001)(76482002)(99396003)(107046002)(85306004)(97736003)(122386002)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR0701MB816;H:rric.localhost;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s97EhQkM017205
 
-From: Eric Dumazet
-> On Tue, 2014-10-07 at 15:19 +0200, Lothar Wamann wrote:
-> > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-> > introduced a regression for i.MX28. The swap_buffer() function doing
-> > the endian conversion of the received data on i.MX28 may access memory
-> > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-> > does not copy those bytes, so that the last bytes of a packet may be
-> > filled with invalid data after swapping.
-> > This will likely lead to checksum errors on received packets.
-> > E.g. when trying to mount an NFS rootfs:
-> > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-> >
-> > Do the byte swapping and copying to the new skb in one go if
-> > necessary.
-> >
-> > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
-> > ---
-> >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
-> >  1 file changed, 21 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-> > index 87975b5..eaaebad 100644
-> > --- a/drivers/net/ethernet/freescale/fec_main.c
-> > +++ b/drivers/net/ethernet/freescale/fec_main.c
-> > @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
-> >  	return bufaddr;
-> >  }
-> >
-> > +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-> > +{
-> > +	int i;
-> > +	unsigned int *src = src_buf;
-> > +	unsigned int *dst = dst_buf;
-> > +
-> > +	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
-> > +		*dst = cpu_to_be32(*src);
+On 24.09.14 18:06:04, Arnd Bergmann wrote:
+> > +               compatible = "cavium,thunder-pcie";
+> > +               device_type = "pci";
+> > +               msi-parent = <&its>;
+> > +               bus-range = <0 255>;
+> > +               #size-cells = <2>;
+> > +               #address-cells = <3>;
+> > +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
+> > +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
+> > +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
+> > +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
+> > +        };
 > 
-> No need for the DIV :
-> 
-> 	for (i = 0; i < len; i += sizeof(*dst), src++, dst++)
-> 		*dst = cpu_to_be32(*src);
-> 
-> Also are you sure both src/dst are aligned to word boundaries, or is
-> this architecture OK with possible misalignment ?
+> If you claim the entire 0-255 bus range, I think you should also
+> specify a domain, otherwise it's not predictable which domain you
+> get.
 
-I wondered about that as well.
-I wouldn't have expected ppc to support misaligned transfers, and you'd also
-want to make sure that cpu_to_be(*src) was using a byte-swapping instruction.
-Hmmm... cpu_to_be() doesn't sound like the right 'swap' macro name.
+Liviu's code assigns a unique id to the domain if missing, see
+of_pci_get_domain_nr(). So I don't think we need to add a "pci-domain"
+property here.
 
-It looks as though this is processing an entire ethernet frame, in which
-case the data (destination address) would normally be on an 4n+2 boundary.
-The two bytes before the data can be safely copied (as can the rounding bytes at
-the end) - so provided the pointers allow for this it should be fine.
-OTOH I've NFI what the actual data is.
+Liviu's DT implementation that assigns a unique number differs a bit
+from ACPI which states: "If _SEG [aka domain number] does not exist,
+OSPM assumes that all PCI bus segments are in PCI Segment Group 0."
 
-	David
+Maybe of_pci_get_domain_nr() should be similar to ACPI. If there are
+multiple root bridges, the "pci-domain" property could be forced
+instead.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-Robert
