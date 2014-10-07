@@ -1,128 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406AbaJGVfn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 17:35:43 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35176 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755340AbaJGVew (ORCPT
+	id S1755382AbaJGVi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 17:38:29 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:51016 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754193AbaJGVi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 17:34:52 -0400
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Carlo Caione <carlo@caione.org>, devicetree@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH 2/3] pinctrl: meson: add device tree bindings documentation
-Date: Tue,  7 Oct 2014 23:32:55 +0200
-Message-Id: <1412717576-19737-3-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412717576-19737-1-git-send-email-b.galvani@gmail.com>
-References: <1412717576-19737-1-git-send-email-b.galvani@gmail.com>
+	Tue, 7 Oct 2014 17:38:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <87siizshav.fsf@x220.int.ebiederm.org>
+References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
+ <20141007133039.GG7996@ZenIV.linux.org.uk> <20141007133339.GH7996@ZenIV.linux.org.uk>
+ <87r3yjy64e.fsf@x220.int.ebiederm.org> <CALCETrXgssZfi3BirQ=K7-vrPyEh5AzFX2pF+yj76Ngi0sf7Yw@mail.gmail.com>
+ <87siizshav.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 7 Oct 2014 14:38:06 -0700
+Message-ID: <CALCETrWfZwbGCxnUAg0PnM=tN8MGRQkHrJVC42bVF7sdJKXLmw@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
+ current root
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree bindings documentation for Amlogic Meson pinmux and
-GPIO controller.
+On Tue, Oct 7, 2014 at 2:26 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> Why should MNT_LOCKED on submounts be enforced?
+>>
+>> Is it because, if you retain a reference to the detached tree, then
+>> you can see under the submounts?
+>
+> Yes. MNT_DETACH is a recursive operation that detaches all of the mount
+> and all of it's submounts.  Which means you can see under the submounts
+> if you have a reference to a detached mount.
+>
+>> If so, let's fix *that*.  Because
+>> otherwise the whole model of pivot_root + detach will break.
+>
+> I am not certain what you are referring to.  pivot_root doesn't
+> manipulate the mount tree so you can see under anything.
+>
+> What I believe is the appropriate fix is to fail umount2(...,MNT_DETACH)
+> if there are any referenced mount points being detached that have a
+> locked submount.
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
- .../devicetree/bindings/pinctrl/meson,pinctrl.txt  | 80 ++++++++++++++++++++++
- 1 file changed, 80 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
+Most of the container-using things do, roughly:
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
-new file mode 100644
-index 0000000..dd573d9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/meson,pinctrl.txt
-@@ -0,0 +1,80 @@
-+* Amlogic Meson pinmux controller
-+
-+Pins are organized in banks; all banks except AO are controlled by the
-+same set of registers, while the AO bank uses a dedicated register
-+range. The device tree uses sub-nodes to represent set of banks which
-+share the same address space.
-+
-+Required properties for the root node:
-+ - compatible: "amlogic,meson8-pinctrl"
-+ - reg: address and size of the common registers controlling gpio irq
-+   functionality
-+
-+Required properties for gpio sub-nodes:
-+ - reg: should contain address and size for mux, pull-enable, pull and
-+   gpio register sets
-+ - reg-names: an array of strings describing the "reg" entries. Must
-+   contain "mux", "pull" and "gpio". "pull-enable" is optional and
-+   when it is missing the "pull" registers are used instead
-+ - gpio-controller: identifies the node as a gpio controller
-+ - #gpio-cells: must be 2
-+
-+Valid gpio sub-nodes name are:
-+ - "banks" for the standard banks
-+ - "ao-bank" for the AO bank which belong to the special always-on
-+   power domain
-+
-+Required properties for configuration nodes:
-+ - pins: the name of a pin group. The list of all available groups can
-+   be found in driver sources.
-+ - function: the name of a function to activate for the specified set
-+   of groups. The list of all available functions can be found in
-+   driver sources.
-+
-+Example:
-+
-+	pinctrl: pinctrl@c1109880 {
-+		compatible = "amlogic,meson8-pinctrl";
-+		reg = <0xc1109880 0x10>;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		gpio: banks@c11080b0 {
-+			reg = <0xc11080b0 0x28>,
-+			      <0xc11080e4 0x18>,
-+			      <0xc1108120 0x18>,
-+			      <0xc1108030 0x30>;
-+			reg-names = "mux", "pull-enable", "pull", "gpio";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+               };
-+
-+		gpio_ao: ao-bank@c1108030 {
-+			reg = <0xc8100014 0x4>,
-+			      <0xc810002c 0x4>,
-+			      <0xc8100024 0x8>;
-+			reg-names = "mux", "pull", "gpio";
-+			gpio-controller;
-+			#gpio-cells = <2>;
-+		};
-+
-+		nand {
-+			nand {
-+				pins = "nand_io", "nand_io_ce0", "nand_io_ce1",
-+				       "nand_io_rb0", "nand_ale", "nand_cle",
-+				       "nand_wen_clk", "nand_ren_clk", "nand_dqs",
-+				       "nand_ce2", "nand_ce3";
-+				function = "nand";
-+			};
-+		};
-+
-+		uart_ao_a: uart_ao_a {
-+			uart_ao_a {
-+				pins = "uart_tx_ao_a", "uart_rx_ao_a";
-+				       "uart_cts_ao_a", "uart_rts_ao_a";
-+				function = "uart_ao";
-+			};
-+		};
-+	};
-+
--- 
-1.9.1
+Unshare userns and mountns
+Mount some new stuff
+pivot_root to the new stuff
+MNT_DETACH the old.
 
+That last step will almost always fail if you make this change.
+
+--Andy
