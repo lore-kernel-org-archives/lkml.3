@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932365AbaJGXnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:43:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39510 "EHLO
+	id S932395AbaJGXn2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:43:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495AbaJGXTq (ORCPT
+	with ESMTP id S1755487AbaJGXTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:19:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Sylvain ythier Hitier <sylvain.hitier@gmail.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.16 06/26] mm: migrate: Close race between migration completion and mprotect
-Date: Tue,  7 Oct 2014 16:19:22 -0700
-Message-Id: <20141007231848.680657180@linuxfoundation.org>
+Subject: [PATCH 3.16 04/26] perf: fix perf bug in fork()
+Date: Tue,  7 Oct 2014 16:19:20 -0700
+Message-Id: <20141007231848.623763417@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
 References: <20141007231848.487609292@linuxfoundation.org>
@@ -29,44 +33,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit d3cb8bf6081b8b7a2dabb1264fe968fd870fa595 upstream.
+commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
 
-A migration entry is marked as write if pte_write was true at the time the
-entry was created. The VMA protections are not double checked when migration
-entries are being removed as mprotect marks write-migration-entries as
-read. It means that potentially we take a spurious fault to mark PTEs write
-again but it's straight-forward. However, there is a race between write
-migrations being marked read and migrations finishing. This potentially
-allows a PTE to be write that should have been read. Close this race by
-double checking the VMA permissions using maybe_mkwrite when migration
-completes.
+Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
+calling perf_event_free_task() when failing sched_fork() we will not yet
+have done the memset() on ->perf_event_ctxp[] and will therefore try and
+'free' the inherited contexts, which are still in use by the parent
+process.  This is bad..
 
-[torvalds@linux-foundation.org: use maybe_mkwrite]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/migrate.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/events/core.c |    4 +++-
+ kernel/fork.c        |    5 +++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -146,8 +146,11 @@ static int remove_migration_pte(struct p
- 	pte = pte_mkold(mk_pte(new, vma->vm_page_prot));
- 	if (pte_swp_soft_dirty(*ptep))
- 		pte = pte_mksoft_dirty(pte);
-+
-+	/* Recheck VMA as permissions can change since migration started  */
- 	if (is_write_migration_entry(entry))
--		pte = pte_mkwrite(pte);
-+		pte = maybe_mkwrite(pte, vma);
-+
- #ifdef CONFIG_HUGETLB_PAGE
- 	if (PageHuge(new)) {
- 		pte = pte_mkhuge(pte);
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7921,8 +7921,10 @@ int perf_event_init_task(struct task_str
+ 
+ 	for_each_task_context_nr(ctxn) {
+ 		ret = perf_event_init_context(child, ctxn);
+-		if (ret)
++		if (ret) {
++			perf_event_free_task(child);
+ 			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1326,7 +1326,7 @@ static struct task_struct *copy_process(
+ 		goto bad_fork_cleanup_policy;
+ 	retval = audit_alloc(p);
+ 	if (retval)
+-		goto bad_fork_cleanup_policy;
++		goto bad_fork_cleanup_perf;
+ 	/* copy all the process information */
+ 	retval = copy_semundo(clone_flags, p);
+ 	if (retval)
+@@ -1525,8 +1525,9 @@ bad_fork_cleanup_semundo:
+ 	exit_sem(p);
+ bad_fork_cleanup_audit:
+ 	audit_free(p);
+-bad_fork_cleanup_policy:
++bad_fork_cleanup_perf:
+ 	perf_event_free_task(p);
++bad_fork_cleanup_policy:
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+ bad_fork_cleanup_threadgroup_lock:
 
 
