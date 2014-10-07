@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176AbaJGSrO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:47:14 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:55320 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaJGSrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:47:13 -0400
-Message-ID: <5434352A.6080403@linux.vnet.ibm.com>
-Date: Tue, 07 Oct 2014 14:47:06 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755038AbaJGSu1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:50:27 -0400
+Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:6824
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754242AbaJGSu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:50:26 -0400
+Message-ID: <543435EA.7060406@caviumnetworks.com>
+Date: Tue, 7 Oct 2014 11:50:18 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: Andy Lutomirski <luto@amacapital.net>, Peter Huewe <PeterHuewe@gmx.de>,
-        keyrings@linux-nfs.org, jarkko.sakkinnen@linux.intel.com,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>,
+        Matthew Fortune <Matthew.Fortune@imgtec.com>,
+        David Daney <david.s.daney@gmail.com>, Rich Felker <dalias@libc.org>,
+        David Daney <ddaney.cavm@gmail.com>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        James Morris <james.l.morris@oracle.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit
- @ LinuxCon Europe
-References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07> <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com> <543428E1.7050702@linux.vnet.ibm.com> <20141007180209.GD10432@obsidianresearch.com>
-In-Reply-To: <20141007180209.GD10432@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org> <543431DA.4090809@imgtec.com> <CALCETrUQEbb=DotSzsneN7Hano_eC-EoTMko6uKcyZXvEcktkw@mail.gmail.com>
+In-Reply-To: <CALCETrUQEbb=DotSzsneN7Hano_eC-EoTMko6uKcyZXvEcktkw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100718-1344-0000-0000-000004C0FE85
+X-Originating-IP: [64.2.3.195]
+X-ClientProxiedBy: BLUPR07CA097.namprd07.prod.outlook.com (25.160.24.52) To
+ BY2PR07MB583.namprd07.prod.outlook.com (10.141.221.155)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR07MB583;
+X-Forefront-PRVS: 035748864E
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(51704005)(377454003)(479174003)(189002)(51444003)(164054003)(24454002)(65816999)(50986999)(23676002)(87266999)(81156004)(95666004)(54356999)(66066001)(99396003)(120916001)(76176999)(21056001)(87976001)(65806001)(64706001)(110136001)(47776003)(76482002)(20776003)(106356001)(85852003)(99136001)(105586002)(122386002)(36756003)(33656002)(80316001)(19580395003)(64126003)(92726001)(92566001)(107046002)(83506001)(101416001)(69596002)(102836001)(19580405001)(77096002)(4396001)(93886004)(31966008)(97736003)(42186005)(50466002)(85306004)(59896002)(80022003)(46102003)(53416004)(40100002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB583;H:dl.caveonetworks.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 02:02 PM, Jason Gunthorpe wrote:
-> On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
+On 10/07/2014 11:44 AM, Andy Lutomirski wrote:
+> On Tue, Oct 7, 2014 at 11:32 AM, Leonid Yegoshin
+> <Leonid.Yegoshin@imgtec.com> wrote:
+>> Well, I am not a subscriber to mail-list, so I read it the first time and
+>> some notes:
+>>
 >
->> Why add the complexity of swapping of authenticated sessions and keys
->> into the kernel if you can handle this in userspace? You need a library
->> that is aware of the number of key slots and slots for sessions in the
->> TPM and swaps them in at out when applications need them. Trousers is
->> such a library that was designed to cope with the limitations of the
->> device and make its functionality available to all applications that
->> want to access it.
-> How does trousers work with the kernel when the kernel is also using
-> TPM key slots for IMA/keyring/whatever?
+>>
+>> 3)  The signal happened during execution of emulated instruction - signals
+>> are under control of kernel and we can easily delay a signal during
+>> execution of emulated instruction until return from do_dsemulret. It is not
+>> a big deal - nor code, nor performance. Thank you for good point.
+>
+> If you go down this particular rabbit hole, you will never come back out.
+>
+> What happens if one of those out-of-line instructions causes a
+> synchronous trap?  What if SIGSTOP arrives before ret?  What if
+> another thread removes the magic ret sequence?
+>
+>>
+>> 4)  The voice for doing any instruction emulation in kernel - it is not a
+>> MIPS business model to force customer to put details of all Coprocessor 2
+>> instructions public. We provide an interface and the rest is a customer
+>> business. Besides that it is really painful to make a differentiation
+>> between Cavium Octeon and some another CPU instructions with the same
+>> opcode. On other side, leaving emulation of their instructions to them is
+>> not a wise after having some good way doing that multiple years.
+>
+> IMO this is all backwards.  If MIPS customers put proprietary
+> instructions into their ISA, they leave out the FPU, and they put a
+> proprietary insn in a branch delay slot, then I think that they
+> deserve a fatal signal.
+>
+> There's a really easy solution for new systems: fix the toolchain.
+> Teach the assembler to disallow any proprietary instructions in an FP
+> branch delay slot.
+>
 
-IIRC it only uses a single key slot and swaps all keys in and out of 
-that one. If the kernel was to fill up all key (and sessions) slots, TSS 
-would probably not work anymore.
+Yes, gas for MIPS already has an instruction attribute for instructions 
+that cannot be placed in delay slots.  It should be a fairly simple 
+matter to extend this to instructions that cannot be emulated.
 
-Another argument for the TSS is that you also wouldn't want applications 
-to swap out each others keys and sessions and leave them out or assume 
-that they would always cleanup if they do not currently need them.
+Thanks,
+David Daney
 
-Regards,
-    Stefan
+
+> --Andy
+>
 
