@@ -1,89 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754347AbaJGPRo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:17:44 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:58716 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaJGPRO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754329AbaJGPRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:17:42 -0400
+Received: from mga14.intel.com ([192.55.52.115]:16505 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754234AbaJGPRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 11:17:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141007151035.GC2256@redhat.com>
-References: <20141006083532.GA4850@quad>
-	<8761fwh1nc.fsf@sejong.aot.lge.com>
-	<20141007140050.GB2256@redhat.com>
-	<CABPqkBSMapWzo5k7WXpt8Ejtdvk_znX1P6xV0eYRpK7rcTjjZw@mail.gmail.com>
-	<20141007151035.GC2256@redhat.com>
-Date: Tue, 7 Oct 2014 17:17:12 +0200
-Message-ID: <CABPqkBR2FzTvkRsTH91hYbt7H-BDZ2kcnF1xDqKBB0h=2HSapw@mail.gmail.com>
-Subject: Re: [PATCH v2] perf tools: fix off-by-one error in maps
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396615082"
+From: kan.liang@intel.com
+To: jolsa@redhat.com
+Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org,
+        Kan Liang <kan.liang@intel.com>
+Subject: [PATCH V8 3/4] perf tools: Add support to new style format of kernel PMU event
+Date: Tue,  7 Oct 2014 11:08:51 -0400
+Message-Id: <1412694532-23391-4-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
+References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 5:10 PM, Arnaldo Carvalho de Melo
-<acme@redhat.com> wrote:
-> Em Tue, Oct 07, 2014 at 04:17:41PM +0200, Stephane Eranian escreveu:
->> On Tue, Oct 7, 2014 at 4:00 PM, Arnaldo Carvalho de Melo
->> <acme@redhat.com> wrote:
->> > Em Tue, Oct 07, 2014 at 02:47:19PM +0900, Namhyung Kim escreveu:
->> >> On Mon, 6 Oct 2014 10:35:32 +0200, Stephane Eranian wrote:
->> >> > This patch fixes off-by-one errors in the management of maps.
->> >> > A map is defined by start address and length as implemented by map__new():
->> >
->> >> > map__init(map, type, start, start + len, pgoff, dso);
->> >
->> >> > map->start = addr;
->> >> > map->end = end;
->> >
->> >> > Consequently, the actual address range is ]start; end[
->> >> > map->end is the first byte outside the range. This patch
->> >> > fixes two bugs where upper bound checking was off-by-one.
->> >
->> >> > In V2, we fix map_groups__fixup_overlappings() some more
->> >> > where map->start was off-by-one as reported by Jiri.
->> >
->> >> It seems we also need to fix maps__find():
->> >
->> >> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
->> >> index b7090596ac50..107a8c90785b 100644
->> >> --- a/tools/perf/util/map.c
->> >> +++ b/tools/perf/util/map.c
->> >> @@ -752,7 +752,7 @@ struct map *maps__find(struct rb_root *maps, u64 ip)
->> >>                 m = rb_entry(parent, struct map, rb_node);
->> >>                 if (ip < m->start)
->> >>                         p = &(*p)->rb_left;
->> >> -               else if (ip > m->end)
->> >> +               else if (ip >= m->end)
->> >>                         p = &(*p)->rb_right;
->> >>                 else
->> >>                         return m;
->> >
->> > I keep thinking that this change is making things unclear.
->> >
->> > I.e. the _start_ of a map (map->start) is _in_ the map, and the _end_
->> > of a map (map->end) is _in_ the map as well.
->> >
->> >         if (addr > m->end)
->> >
->> > is shorter than:
->> >
->> >         if (addr >= m->end)
->> >
->> > "start" and "end" should have the same rule applied, i.e. if one is in,
->> > the other is in as well.
->> >
->> It is okay but then we need to be consistent all across. This is not
->> the case today.
->> I mentioned the cases I ran into.
->
-> Ok, and provided a patch doing the way I thought was confusing, now its
-> my turn to use that info and come up with a patch, ok, will do that.
->
-You got it! ;->
+From: Kan Liang <kan.liang@intel.com>
+
+Add new rules for kernel PMU event.
+
+Currently, the patch only want to handle the PMU event name as "a-b" and
+"a".
+
+event_pmu:
+PE_KERNEL_PMU_EVENT sep_dc
+|
+PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
+
+PE_KERNEL_PMU_EVENT token is for
+cycles-ct/cycles-t/mem-loads/mem-stores.
+The prefix cycles is mixed up with cpu-cycles.
+loads and stores are mixed up with cache event
+So they have to be hardcode in lex.
+
+PE_PMU_EVENT_PRE and PE_PMU_EVENT_SUF tokens are for other PMU
+events.
+The lex looks generic identifier up in the table and return the matched
+token. If there is no match, generic PE_NAME token will be return.
+
+Using the rules, kernel PMU event could use new style format without //
+
+so you can use
+
+perf record -e mem-loads ...
+
+instead of
+
+perf record -e cpu/mem-loads/
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ tools/perf/util/parse-events.l | 30 +++++++++++++++++++++++++++++-
+ tools/perf/util/parse-events.y | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..906630b 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -51,6 +51,24 @@ static int str(yyscan_t scanner, int token)
+ 	return token;
+ }
+ 
++static int pmu_str_check(yyscan_t scanner)
++{
++	YYSTYPE *yylval = parse_events_get_lval(scanner);
++	char *text = parse_events_get_text(scanner);
++
++	yylval->str = strdup(text);
++	switch (perf_pmu__parse_check(text)) {
++		case PMU_EVENT_SYMBOL_PREFIX:
++			return PE_PMU_EVENT_PRE;
++		case PMU_EVENT_SYMBOL_SUFFIX:
++			return PE_PMU_EVENT_SUF;
++		case PMU_EVENT_SYMBOL:
++			return PE_KERNEL_PMU_EVENT;
++		default:
++			return PE_NAME;
++	}
++}
++
+ static int sym(yyscan_t scanner, int type, int config)
+ {
+ 	YYSTYPE *yylval = parse_events_get_lval(scanner);
+@@ -178,6 +196,16 @@ alignment-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_AL
+ emulation-faults				{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_EMULATION_FAULTS); }
+ dummy						{ return sym(yyscanner, PERF_TYPE_SOFTWARE, PERF_COUNT_SW_DUMMY); }
+ 
++	/*
++	 * We have to handle the kernel PMU event cycles-ct/cycles-t/mem-loads/mem-stores separately.
++	 * Because the prefix cycles is mixed up with cpu-cycles.
++	 * loads and stores are mixed up with cache event
++	 */
++cycles-ct					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++cycles-t					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-loads					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++mem-stores					{ return str(yyscanner, PE_KERNEL_PMU_EVENT); }
++
+ L1-dcache|l1-d|l1d|L1-data		|
+ L1-icache|l1-i|l1i|L1-instruction	|
+ LLC|L2					|
+@@ -199,7 +227,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+ {num_hex}		{ return value(yyscanner, 16); }
+ 
+ {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+-{name}			{ return str(yyscanner, PE_NAME); }
++{name}			{ return pmu_str_check(yyscanner); }
+ "/"			{ BEGIN(config); return '/'; }
+ -			{ return '-'; }
+ ,			{ BEGIN(event); return ','; }
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 55fab6a..93c4c9f 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -47,6 +47,7 @@ static inc_group_count(struct list_head *list,
+ %token PE_NAME_CACHE_TYPE PE_NAME_CACHE_OP_RESULT
+ %token PE_PREFIX_MEM PE_PREFIX_RAW PE_PREFIX_GROUP
+ %token PE_ERROR
++%token PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> PE_VALUE
+ %type <num> PE_VALUE_SYM_HW
+ %type <num> PE_VALUE_SYM_SW
+@@ -58,6 +59,7 @@ static inc_group_count(struct list_head *list,
+ %type <str> PE_MODIFIER_EVENT
+ %type <str> PE_MODIFIER_BP
+ %type <str> PE_EVENT_NAME
++%type <str> PE_PMU_EVENT_PRE PE_PMU_EVENT_SUF PE_KERNEL_PMU_EVENT
+ %type <num> value_sym
+ %type <head> event_config
+ %type <term> event_term
+@@ -220,6 +222,44 @@ PE_NAME '/' '/'
+ 	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, NULL));
+ 	$$ = list;
+ }
++|
++PE_KERNEL_PMU_EVENT sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					$1, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
++|
++PE_PMU_EVENT_PRE '-' PE_PMU_EVENT_SUF sep_dc
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *head;
++	struct parse_events_term *term;
++	struct list_head *list;
++	char pmu_name[128];
++	snprintf(&pmu_name, 128, "%s-%s", $1, $3);
++
++	ALLOC_LIST(head);
++	ABORT_ON(parse_events_term__num(&term, PARSE_EVENTS__TERM_TYPE_USER,
++					&pmu_name, 1));
++	list_add_tail(&term->list, head);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, "cpu", head));
++	parse_events__free_terms(head);
++	$$ = list;
++}
+ 
+ value_sym:
+ PE_VALUE_SYM_HW
+-- 
+1.8.3.2
+
