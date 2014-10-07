@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754496AbaJGQEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:04:54 -0400
-Received: from [157.56.111.67] ([157.56.111.67]:38176 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754303AbaJGQEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:04:53 -0400
-Message-ID: <54340F14.6030809@caviumnetworks.com>
-Date: Tue, 7 Oct 2014 09:04:36 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754309AbaJGQFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:05:34 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:17244 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753176AbaJGQFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 12:05:33 -0400
+Date: Tue, 7 Oct 2014 12:05:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Shuah Khan <shuah.kh@samsung.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH ftrace/for-next ] tracing/kprobes: Replace startup test
+ with selftest script
+Message-ID: <20141007120530.136312fd@gandalf.local.home>
+In-Reply-To: <5433817C.3000206@hitachi.com>
+References: <20141006114806.2573.63966.stgit@kbuild-f20.novalocal>
+	<20141006183349.60998821@gandalf.local.home>
+	<5433817C.3000206@hitachi.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Matthew Fortune <Matthew.Fortune@imgtec.com>
-CC: David Daney <david.s.daney@gmail.com>, Rich Felker <dalias@libc.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Daney <ddaney.cavm@gmail.com>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        David Daney <david.daney@cavium.com>,
-        Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
-In-Reply-To: <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.195]
-X-ClientProxiedBy: BY2PR07CA020.namprd07.prod.outlook.com (10.255.247.45) To
- CO2PR07MB585.namprd07.prod.outlook.com (10.141.229.146)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO2PR07MB585;
-X-Forefront-PRVS: 035748864E
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(189002)(199003)(377454003)(479174003)(24454002)(83506001)(120916001)(50466002)(80316001)(46102003)(92566001)(21056001)(80022003)(69596002)(110136001)(99136001)(4396001)(99396003)(65816999)(76482002)(50986999)(122386002)(23756003)(87266999)(66066001)(85852003)(54356999)(64126003)(92726001)(33656002)(107046002)(42186005)(95666004)(101416001)(106356001)(64706001)(47776003)(102836001)(53416004)(20776003)(81156004)(31966008)(59896002)(65806001)(77096002)(105586002)(93886004)(76176999)(87976001)(36756003)(85306004)(97736003)(40100002);DIR:OUT;SFP:1101;SCL:1;SRVR:CO2PR07MB585;H:dl.caveonetworks.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: caviumnetworks.com
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 02:13 AM, Matthew Fortune wrote:
->>>> the out-of-line execution trick, but do it somewhere other than in
->>>> stack memory.
->>> How do you answer Andy Lutomirski's question about what happens when a
->>> signal handler interrupts execution while the program counter is
->>> pointing at this "out-of-line execution" trampoline? This seems like a
->>> show-stopper for using anything other than the stack.
->> It would be nice to support, but not doing so would not be a regression
->> from current behavior.
->
-> It seems appropriate to mention another issue which should be addressed as
-> part of the overall FPU emulation work...
->
->  From what I can see the out-of-line execution of delay slot instructions
-> will break micromips R3 addiupc, and all MIPS32r6 and MIPS64r6 PC-relative
-> instructions (inc load/store) as they will have the wrong base. Is there
-> anything in the current set of proposals that can address this (beyond
-> adding restrictions to what is ABI allowed in FPU branch delay slots)?
->
-> This is an issue whether the stack is executable or not but does directly
-> relate to the topic of FPU emulation.  It sounds like the kernel would not
-> be able to emulate a pc-relative load/store even if it was a special case
-> as it would not run in the correct MM context? [be gentle, I'm no expert
-> in this area].
->
+On Tue, 07 Oct 2014 15:00:28 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-I haven't studied the r6 ISA in depth.  But you are correct, the r6 ISA 
-cannot be supported with the eXecute-Out-of-Line tricks due to the PC 
-relative instructions.
+> (2014/10/07 7:33), Steven Rostedt wrote:
+> > On Mon, 06 Oct 2014 11:48:06 +0000
+> > Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> > 
+> >> Replace the kprobe_tracer's startup test with two selftest scripts.
+> >> These test cases are testing that the kprobe_event can accept a
+> >> kprobe event with $stack related arguments and a kretprobe event
+> >> with $retval argument.
+> > 
+> > Can't we keep both? I have boxes I run my own tests with and enables
+> > these start up tests in the kernel. I don't plan on testing on all
+> > theses boxes using the scripts in the kernel.
+> > 
+> > Having a self test in the kernel itself can be useful too.
+> 
+> Hmm, deprecating the test is acceptable, but I think it is just
+> a dead weight that if we have both of them forever in the kernel.
+> Of course, if that feature is fundamentally related to booting up
+> the kernel, we need to keep them in boot up code. But if it is
+> possible to run after booting up, I think we'd better to move it
+> under kselftest, since we can do more investigation after booting.
+> 
 
-So probably the best path forward is to abandon the current method, and 
-bite the bullet and write an entire instruction set emulator.  It 
-doesn't have to be fast.
+I'm just saying that it is more likely to have this test run if it's in
+the kernel than in userspace. But as you say, we can debug it better if
+there's a userspace tool that can run too. This is why I'm saying we
+should keep both. I think they are both useful for different reasons.
+Keeping it in the kernel as a config option will give it more exposure,
+and keeping it in the tools/testing directory gives us a way to debug
+it if there an issue should arise.
 
-David Daney
+Both of these have valid reasons staying in the kernel and I don't see
+either as dead weight. Is there a maintenance issue with keeping it in
+the kernel? There doesn't seem to be much done to it. It seems
+untouched for over a year, and that was to add support for multiple
+buffers.
 
-
-> Matthew
->
-
+-- Steve
