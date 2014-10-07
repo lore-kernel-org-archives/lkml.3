@@ -1,122 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbaJGKUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:20:53 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39626 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470AbaJGKTu (ORCPT
+	id S1753703AbaJGKWJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:22:09 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52378 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753256AbaJGKWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:19:50 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org,
-        kishon@ti.com, Vivek Gautam <gautam.vivek@samsung.com>
-Subject: [PATCH v2 2/4] phy: exynos5-usbdrd: Add pipe-clk and utmi-clk support
-Date: Tue,  7 Oct 2014 15:49:34 +0530
-Message-Id: <1412677176-3850-3-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com>
-References: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com>
+	Tue, 7 Oct 2014 06:22:07 -0400
+Date: Tue, 7 Oct 2014 11:21:59 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Nathan Lynch <Nathan_Lynch@mentor.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+Subject: Re: [PATCH v3] clocksource: arch_timer: Allow the device tree to
+ specify uninitialized CNTVOFF
+Message-ID: <20141007102158.GA24725@leverpostej>
+References: <1412663852-32681-1-git-send-email-sonnyrao@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412663852-32681-1-git-send-email-sonnyrao@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos7 SoC has now separate gate control for 125MHz pipe3 phy
-clock, as well as 60MHz utmi phy clock.
-So get the same and control in the phy-exynos5-usbdrd driver.
+Hi Sonny,
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
- .../devicetree/bindings/phy/samsung-phy.txt        |    4 ++++
- drivers/phy/phy-exynos5-usbdrd.c                   |   22 ++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+This looks generally fine, but there are a couple of minor changes below
+that I would like to see (removing arm64/armv8 confusion, and describing
+the problem more precisely).
 
-diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-index 15e0f2c..c2bc9dc 100644
---- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
-+++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
-@@ -138,6 +138,10 @@ Required properties:
- 	       PHY operations, associated by phy name. It is used to
- 	       determine bit values for clock settings register.
- 	       For Exynos5420 this is given as 'sclk_usbphy30' in CMU.
-+	- optional clocks: Exynos7 SoC has now following additional
-+			   gate clocks available:
-+			   - phy_pipe: for PIPE3 phy
-+			   - phy_utmi: for UTMI+ phy
- - samsung,pmu-syscon: phandle for PMU system controller interface, used to
- 		      control pmu registers for power isolation.
- - #phy-cells : from the generic PHY bindings, must be 1;
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index f756aca..013ee84 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -148,6 +148,8 @@ struct exynos5_usbdrd_phy_drvdata {
-  * @dev: pointer to device instance of this platform device
-  * @reg_phy: usb phy controller register memory base
-  * @clk: phy clock for register access
-+ * @pipeclk: clock for pipe3 phy
-+ * @utmiclk: clock for utmi+ phy
-  * @drv_data: pointer to SoC level driver data structure
-  * @phys[]: array for 'EXYNOS5_DRDPHYS_NUM' number of PHY
-  *	    instances each with its 'phy' and 'phy_cfg'.
-@@ -161,6 +163,8 @@ struct exynos5_usbdrd_phy {
- 	struct device *dev;
- 	void __iomem *reg_phy;
- 	struct clk *clk;
-+	struct clk *pipeclk;
-+	struct clk *utmiclk;
- 	const struct exynos5_usbdrd_phy_drvdata *drv_data;
- 	struct phy_usb_instance {
- 		struct phy *phy;
-@@ -446,6 +450,8 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- 	dev_dbg(phy_drd->dev, "Request to power_on usbdrd_phy phy\n");
- 
-+	clk_prepare_enable(phy_drd->utmiclk);
-+	clk_prepare_enable(phy_drd->pipeclk);
- 	clk_prepare_enable(phy_drd->ref_clk);
- 
- 	/* Enable VBUS supply */
-@@ -464,6 +470,8 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- fail_vbus:
- 	clk_disable_unprepare(phy_drd->ref_clk);
-+	clk_disable_unprepare(phy_drd->pipeclk);
-+	clk_disable_unprepare(phy_drd->utmiclk);
- 
- 	return ret;
- }
-@@ -483,6 +491,8 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
- 		regulator_disable(phy_drd->vbus);
- 
- 	clk_disable_unprepare(phy_drd->ref_clk);
-+	clk_disable_unprepare(phy_drd->pipeclk);
-+	clk_disable_unprepare(phy_drd->utmiclk);
- 
- 	return 0;
- }
-@@ -582,6 +592,18 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		return PTR_ERR(phy_drd->clk);
- 	}
- 
-+	phy_drd->pipeclk = devm_clk_get(dev, "phy_pipe");
-+	if (IS_ERR(phy_drd->pipeclk)) {
-+		dev_info(dev, "PIPE3 phy operational clock not specified\n");
-+		phy_drd->pipeclk = NULL;
-+	}
-+
-+	phy_drd->utmiclk = devm_clk_get(dev, "phy_utmi");
-+	if (IS_ERR(phy_drd->utmiclk)) {
-+		dev_info(dev, "UTMI phy operational clock not specified\n");
-+		phy_drd->utmiclk = NULL;
-+	}
-+
- 	phy_drd->ref_clk = devm_clk_get(dev, "ref");
- 	if (IS_ERR(phy_drd->ref_clk)) {
- 		dev_err(dev, "Failed to get reference clock of usbdrd phy\n");
--- 
-1.7.10.4
+On Tue, Oct 07, 2014 at 07:37:32AM +0100, Sonny Rao wrote:
+> From: Doug Anderson <dianders@chromium.org>
+> 
+> Some 32-bit (ARMv7) systems are architected like this:
+> 
+> * The firmware doesn't know and doesn't care about hypervisor mode and
+>   we don't want to add the complexity of hypervisor there.
+> 
+> * The firmware isn't involved in SMP bringup or resume.
+> 
+> * The ARCH timer come up with an uninitialized offset (CNTVOFF)
+>   between the virtual and physical counters.  Each core gets a
+>   different random offset.
+> 
+> * The device boots in "Secure SVC" mode.
+> 
+> * Nothing has touched the reset value of CNTHCTL.PL1PCEN or
+>   CNTHCTL.PL1PCTEN (both default to 1 at reset)
+> 
+> On systems like the above, it doesn't make sense to use the virtual
+> counter.  There's nobody managing the offset and each time a core goes
+> down and comes back up it will get reinitialized to some other random
+> value.
+> 
+> This adds an optional property which can inform the kernel of this
+> situation, and firmware is free to remove the property if it is going
+> to initialize the CNTVOFF registers when each CPU comes out of reset.
+> 
+> Currently, the best course of action in this case is to use the
+> physical timer, which is why it is important that CNTHCTL hasn't been
+> changed from its reset value and it's a reasonable assumption given
+> that the firmware has never entered HYP mode.
+> 
+> Note that it's been said that ARM64 (ARMv8) systems the firmware and
+> kernel really can't be architected as described above.  That means
+> using the physical timer like this really only makes sense for ARMv7
+> systems.
 
+Please drop the mention of arm64 here, and just say ARMv8 (they aren't
+quite the same thing, and this confuses the matter). The differences
+w.r.t. privilege boundaries and reset values are properties of ARMv8,
+and would also apply to a 32-bit kernel.
+
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+> ---
+> Changes in v2:
+> - Add "#ifdef CONFIG_ARM" as per Will Deacon
+> 
+> Changes in v3:
+> - change property name to arm,cntvoff-not-fw-configured and specify
+>   that the value of CNTHCTL.PL1PC(T)EN must still be the reset value
+>   of 1 as per Mark Rutland
+> ---
+>  Documentation/devicetree/bindings/arm/arch_timer.txt | 8 ++++++++
+>  drivers/clocksource/arm_arch_timer.c                 | 9 +++++++++
+>  2 files changed, 17 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> index 37b2caf..67837c9 100644
+> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> @@ -22,6 +22,14 @@ to deliver its interrupts via SPIs.
+>  - always-on : a boolean property. If present, the timer is powered through an
+>    always-on power domain, therefore it never loses context.
+>  
+> +** Optional properties:
+> +
+> +- arm,cntvoff-not-fw-configured : Firmware does not initialize
+> +  CNTVOFF, which may reset to arbitrary and different values on each
+> +  CPU.  CNTHCTL.PL1PC(T)EN must both be 1, which is the reset value
+> +  specificed by the architecture.   Only supported for ARM (not ARM64).
+
+Could we change this to:
+
+- arm,cpu-registers-not-fw-configured: Firmware does not initialize any
+  of the generic timer CPU registers, which contain their
+  architecturally-defined reset values. Only supported for 32-bit
+  systems which follow the ARMv7 architected reset values.
+
+That should match your case precisely, and we can derive the reset
+values of CNTVOFF and CNTHCTL from the architecture.
+
+> +
+> +
+>  Example:
+>  
+>  	timer {
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index bd8da15..234d7b9 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -668,6 +668,15 @@ static void __init arch_timer_init(struct device_node *np)
+>  		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+>  	arch_timer_detect_rate(NULL, np);
+>  
+> +#ifdef CONFIG_ARM
+> +	/*
+> +	 * If we cannot rely on firmware initializing the CNTVOFF then
+> +	 * we should use the physical timers instead.
+> +	 */
+> +	if (of_property_read_bool(np, "arm,cntvoff-not-fw-configured"))
+> +		arch_timer_use_virtual = false;
+> +#endif
+
+This would need fixing up similarly to "arm,cpu-registers-not-fw-configured".
+
+With that:
+
+Reviewed-by: Mark Rutland <mark.rutland@arm.com>
+
+Thanks,
+Mark.
