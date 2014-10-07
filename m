@@ -1,112 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325AbaJGTgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:36:50 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:52453 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaJGTgs (ORCPT
+	id S932342AbaJGThL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:37:11 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39232 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932137AbaJGThJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:36:48 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB518D23@SW-EX-MBX01.diasemi.com>
-References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com> <ee4c56931f326d8ee9c1313c44456bce2dec8b8c.1411396719.git.Adam.Thomson.Opensource@diasemi.com> <5426964A.3050407@kernel.org> <2E89032DDAA8B9408CB92943514A0337AB518D23@SW-EX-MBX01.diasemi.com>
+	Tue, 7 Oct 2014 15:37:09 -0400
+Date: Tue, 7 Oct 2014 20:36:56 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ben Zhang <benzh@chromium.org>
+Cc: alsa-devel@alsa-project.org, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>, linux-kernel@vger.kernel.org
+Message-ID: <20141007193656.GH4609@sirena.org.uk>
+References: <1412372246-10489-1-git-send-email-benzh@chromium.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: RE: [PATCH 3/8] iio: Add support for DA9150 GPADC
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Tue, 07 Oct 2014 20:36:36 +0100
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Message-ID: <3B049606-083E-4220-ADBF-71D74C0A9D9F@kernel.org>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="213B/23bCmw+8GSd"
+Content-Disposition: inline
+In-Reply-To: <1412372246-10489-1-git-send-email-benzh@chromium.org>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] ASoC: rt5677: Include gpio driver header
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--213B/23bCmw+8GSd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On October 7, 2014 3:55:55 PM GMT+01:00, "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com> wrote:
->On September 27, 2014 11:50, Jonathan Cameron wrote:
->
->> On 23/09/14 11:53, Adam Thomson wrote:
->> > This patch adds support for DA9150 Charger & Fuel-Gauge IC GPADC.
->
->> > +
->> > +static inline int da9150_gpadc_gpio_6v_voltage_now(int raw_val)
->> > +{
->> > +	/* Convert to mV */
->> > +	return (6 * ((raw_val * 1000) + 500)) / 1024;
->> These could all be expressed as raw values with offsets
->> and scales (and that would be preferred).
->> E.g. This one has offset 500000 and scale 6000/1024 or even
->> better use IIO_VAL_FRACTIONAL_LOG2 for scale with val1 = 6000
->> and val2 = (log_2 1024) = 10.
->> 
->
->What you've suggested isn't correct. The problem here is that the
->offset is
->added first to the raw ADC reading, without factoring the ADC value
->accordingly
->to match the factor of the offset. If we take the original equation
->provided for
->this channel of the ADC, the offset is actually 0.5 which should be
->added to the
->raw ADC value. This doesn't fit into the implementation in the kernel
->as we
->can't use floating point. If we multiply the offset but not the raw ADC
->value,
->then add them before applying the scale factor, then the result is
->wrong at the
->end. Basically you need a scale for the raw ADC value to match the
->offset scale
->so you can achieve the correct results, which is what my calculation
->does.
->But that seems impossible with the current raw|offset|scale method.
-Oops got that wrong.  The fixed point maths to fix the in kernel interface isn't exactly
- difficult but indeed it does not handle this currently.
->
->> > +	ret = iio_map_array_register(indio_dev,
->da9150_gpadc_default_maps);
->> > +	if (ret) {
->> > +		dev_err(dev, "Failed to register IIO maps: %d\n", ret);
->> > +		return ret;
->> > +	}
->> I'd suggest doing the devm_request_thread_irq before the
->iio_map_array
->> stuff.  This is purely to avoid the order during remove not being
->> obviously correct as it isn't the reverse of during probe.
->
->Ok, should still work ok that way so can update.
->
->> > +static int da9150_gpadc_remove(struct platform_device *pdev)
->> > +{
->> > +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
->> > +
->> > +	iio_map_array_unregister(indio_dev);
->> Twice in one day.  I'm definitely thinking we should add a
->> devm version of iio_map_array_register...
->
->I assume you mean here that iio_device_unregister() should come first?
->Will
->update.
-Nope just that such a new function might be useful.
+On Fri, Oct 03, 2014 at 02:37:24PM -0700, Ben Zhang wrote:
+> The header file is needed because struct gpio_chip is
+> placed in struct rt5677_priv.
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Applied, thanks.
+
+--213B/23bCmw+8GSd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNEDXAAoJECTWi3JdVIfQ6dYH/jXvxYPxAx6ZVQIA9aR5/g/Y
+A8LuwelO9gzn74pTii6eFMZ81SgsWe+GPtma5LWXzHEBCpOd4JGZWTqTG4RdPjyf
+SdGEdioS20MqMKGLdSZ+/UMVOGt95KpoxkxaBK8vwrQWk/Veyc1aGKzG+adWbf4V
+VHC6o8EY0AnI+/bqtx++VVZnvtV+9QPWSZf7DjuW/D0ji6N/llY5qbnFm3AUsAcB
+DZIElp0VZ39hn6+0ALhqTPJDJkxExN1m328Lw/eZRYWrEKAWYSh3inwKg4pnNZqw
+c372yG4mxky2r1o3Z1TjMzNlCNpya+FK8vETtbtIIuQUBieY8Jta4DIadmfrsOw=
+=uuD2
+-----END PGP SIGNATURE-----
+
+--213B/23bCmw+8GSd--
