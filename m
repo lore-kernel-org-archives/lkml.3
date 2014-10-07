@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaJGNxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:53:13 -0400
-Received: from mout.kundenserver.de ([212.227.17.10]:53588 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaJGNxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:53:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, rmk+kernel@arm.linux.org.uk
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Date: Tue, 07 Oct 2014 15:52:27 +0200
-Message-ID: <3659934.boXsmm8jcn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141007120659.GA30590@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <3256560.C0cZnIlnAv@wuerfel> <20141007120659.GA30590@e102568-lin.cambridge.arm.com>
+	id S1753823AbaJGNy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:54:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63078 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266AbaJGNyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:54:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,670,1406617200"; 
+   d="scan'208";a="482530934"
+From: "Tirdea, Irina" <irina.tirdea@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: "Baluta, Daniel" <daniel.baluta@intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH 4/8] iio: core: Introduce pedometer STEP counter
+ modifier
+Thread-Topic: [RFC PATCH 4/8] iio: core: Introduce pedometer STEP counter
+ modifier
+Thread-Index: AQHP39IqO8PzZJcz2UyGrX1QEK4nhZwjD6NAgAAl4YCAAXWuoA==
+Date: Tue, 7 Oct 2014 13:54:21 +0000
+Deferred-Delivery: Tue, 7 Oct 2014 13:54:00 +0000
+Message-ID: <1F3AC3675D538145B1661F571FE1805F199ADF59@IRSMSX105.ger.corp.intel.com>
+References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
+ <1412257439-15683-5-git-send-email-daniel.baluta@intel.com>
+ <542FEDB7.3050302@kernel.org>
+ <1F3AC3675D538145B1661F571FE1805F199AD91D@IRSMSX105.ger.corp.intel.com>
+ <888C517D-6823-4FB5-870E-484DADAF5230@kernel.org>
+In-Reply-To: <888C517D-6823-4FB5-870E-484DADAF5230@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:wRyjLbOireHYfVNHQV8+IqjKUhHp+VJXi6r3ejCxmp3
- am32ZHtdzF2XGaq2avxXX+UewA9ywT5bH3N11SeG1h79kmiIbj
- 8WzOIw/l+OlPtv4+Zh3VQzdQwGfqWRgRc3dpojgk42Y2JqTKbS
- uTlQhCHZquQLn84z8y0bvY5xharI26W+E6otFE/3lykU9uLe4E
- tK0tuZJgH6nVsZNG/ygZfcPCscIibwn6NpE7bYH+G/z2cfpRab
- F4iShjTHqz3tvFgcOWjIInn+Ml6xCPajDbk3aEZXjF7ELvvXc+
- EG+UufluPR/Z+3AfH4U0W0UR6KNoykt/2T6lOXRj4xHqtsSV6h
- Mtpnh2BKk45kST98ebxA=
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s97DsWSI016889
 
-On Tuesday 07 October 2014 13:06:59 Lorenzo Pieralisi wrote:
-> On Wed, Oct 01, 2014 at 10:38:45AM +0100, Arnd Bergmann wrote:
+
+
+> -----Original Message-----
+> From: linux-iio-owner@vger.kernel.org [mailto:linux-iio-owner@vger.kernel.org] On Behalf Of Jonathan Cameron
+> On October 6, 2014 2:50:13 PM GMT+01:00, "Tirdea, Irina" <irina.tirdea@intel.com> wrote:
+> >> From: Jonathan Cameron [mailto:jic23@kernel.org]
+> >> On 02/10/14 14:43, Daniel Baluta wrote:
+> >> > From: Irina Tirdea <irina.tirdea@intel.com>
+> >> >
+> >> > One of the functionalities of a pedometer is a step counter.
+> >> > The step counter needs to be enabled and then it will count the
+> >steps
+> >> > in its hardware register. Whenever the applications need to check
+> >> > the step count, they will read the step counter register.
+> >> >
+> >> > To support this functionality we need a steps attribute that
+> >> > will export the number of steps.
+> >> >
+> >> I'm not keen on multiplexing different types of data onto a single
+> >activity type.
+> >> Steps is well enough defined on it's own to have it's own channel
+> >type.
+> >>
+> >> in_steps_input would be fine by me.  I suppose steps might mean
+> >something else
+> >> though...
+> >>
+> >
+> >Hi Jonathan,
+> >
+> >Thanks for the review.
+> >
+> >Moving the pedometer part to a new type sounds good to me.
+> >However, I would prefer to add a new type called pedometer and keep
+> >steps as a modifier, generating names like in_ped_steps_input for the
+> >attribute and in_ped_steps_instance_en for the event.
+> >The reason for this is that for supporting Freescale's MMA9553L we will
+> >need additional attributes (distance, speed, calories, height, weight)
+> >that we can add as modifiers to this pedometer type. To keep things
+> >simple, I did not add these additional attributes to the RFC series,
+> >but I could do that if you think it would be useful. For this device,
+> >the motion events (walking, running, jogging, still) also depend on the
+> >height attribute being set, but we intend to deal with this dependency
+> >in the driver (using the pedometer's height attribute).
+> >
+> >What do you think?
+> I think I would rather each of these was included as a type rather than a modifier.
+> There are lots of other ways to measure speed for starters and often user space
+> won't care where it comes from...
 > 
-> [...]
+> In_speed_raw etc...
 > 
-> > pci_mmap_page_range could either get generalized some more in an attempt
-> > to have a __weak default implementation that works on ARM, or it could
-> > be changed to lose the dependency on pci_sys_data instead. In either
-> > case, the change would involve using the generic pci_host_bridge_window
-> > list.
-> 
-> On ARM pci_mmap_page_range requires pci_sys_data to retrieve its
-> mem_offset parameter. I had a look, and I do not understand *why*
-> it is required in that function, so I am asking. That function
-> is basically used to map PCI resources to userspace, IIUC, through
-> /proc or /sysfs file mappings. As far as I understand those mappings
-> expect VMA pgoff to be the CPU address when files representing resources
-> are mmapped from /proc and 0 when mmapped from /sys (I mean from
-> userspace, then VMA pgoff should be updated by the kernel to map the
-> resource).
+> Trick where possible is to think about what is measured rather than how. Tends to give
+>  more consistent interfaces.
 
-Applying the mem_offset is certainly the more intuitive way, since
-that lets you read the PCI BAR values from a device and access the
-device with the appropriate offsets.
+That makes sense. Will do the changes and also add one of these other types in v2.
 
-> Question is: why pci_mmap_page_range() should apply an additional
-> shift to the VMA pgoff based on pci_sys_data.mem_offset, which represents
-> the offset from cpu->bus offset. I do not understand that. PowerPC
-> does not seem to apply that fix-up (in PowerPC __pci_mmap_make_offset there
-> is commented out code which prevents the pci_mem_offset shift to be
-> applied). I think it all boils down to what the userspace interface is
-> expecting when the memory areas are mmapped, if anyone has comments on
-> this that is appreciated.
+Thanks,
+Irina
 
-The important part is certainly that whatever transformation is done
-by pci_resource_to_user() gets undone by __pci_mmap_make_offset().
-
-In case of PowerPC and Microblaze, the mem_offset handling is commented
-out in both, to work around X11 trying to use the same values on
-/dev/mem. However, they do have the respective fixup for io_offset.
-
-sparc applies the offset in both places for both io_offset and mem_offset.
-xtensa applies only io_offset in __pci_mmap_make_offset but neither
-  in pci_resource_to_user. This probably works because the mem_offset is
-  always zero there.
-mips applies a different fixup (for 36-bit addressing), but not the
-  mem_offset.
-
-Every other architecture applies no offset here, neither in __pci_mmap_make_offset/pci_mmap_page_range nor in pci_resource_to_user
-
-The only hint I could find for how the ARM version came to be is
-from the historic kernel tree git log for linux-2.5.42, which added
-the current code as
-
-    2002/10/13 11:05:47+01:00 rmk
-    [ARM] Update pcibios_enable_device, supply pci_mmap_page_range()
-    Update pcibios_enable_device to only enable requested resources,
-    mainly for IDE.  Supply a pci_mmap_page_range() function to allow
-    user space to mmap PCI regions.
-
-At that point, only two platforms had a nonzero mem_offset:
-footbridge/dc21285 and integrator/pci_v3. Both were using VGA,
-and presumably used this to make X work. (rmk might remember
-details).
-
-The code at the time matched what powerpc and sparc did, but then
-both implemented pci_resource_to_user() in order for libpciaccess
-to work correctly (bcea1db16b for sparc, 463ce0e103f for powerpc),
-and later powerpc changed it again to not apply the offset in
-pci_resource_to_user or pci_mmap_page_range in 396a1a5832ae.
-
-	Arnd
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
