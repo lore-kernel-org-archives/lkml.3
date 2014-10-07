@@ -1,656 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829AbaJGERn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 00:17:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64460 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751223AbaJGERc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 00:17:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,667,1406617200"; 
-   d="scan'208";a="482423651"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: IIO <linux-iio@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        DEVICE TREE <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Cc: Carlo Caione <carlo@caione.org>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh+dt@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hartmut Knaack <knaack.h@gmx.de>, Fugang Duan <B38611@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Zubair Lutfullah <zubair.lutfullah@gmail.com>,
-        Sebastian Reichel <sre@debian.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Philippe Reynes <tremyfr@yahoo.fr>,
-        Angelo Compagnucci <angelo.compagnucci@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Ramakrishna Pallala <ramakrishna.pallala@intel.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Todd Brandt <todd.e.brandt@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v7 1/2] mfd/axp20x: extend axp20x to support axp288 pmic
-Date: Mon,  6 Oct 2014 21:17:14 -0700
-Message-Id: <1412655435-31284-2-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412655435-31284-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1412655435-31284-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1751458AbaJGEcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 00:32:50 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:64242 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaJGEcs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 00:32:48 -0400
+Message-ID: <54336CED.3040106@gmail.com>
+Date: Mon, 06 Oct 2014 21:32:45 -0700
+From: David Daney <david.s.daney@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+MIME-Version: 1.0
+To: "Kevin D. Kissell" <kevink@paralogos.com>,
+        David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org
+CC: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <54333B9C.2040302@paralogos.com>
+In-Reply-To: <54333B9C.2040302@paralogos.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-X-Powers AXP288 is a customized PMIC for Intel Baytrail-CR platforms. Similar
-to AXP202/209, AXP288 comes with USB charger, more LDO and BUCK channels, and
-AD converters. It also provides extended status and interrupt reporting
-capabilities than the devices currently supported in axp20x.c.
+On 10/06/2014 06:02 PM, Kevin D. Kissell wrote:
+> On 10/06/2014 01:23 PM, David Daney wrote:
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> In order for MIPS to be able to support a non-executable stack, we
+>> need to supply a method to specify a userspace area that can be used
+>> for executing emulated branch delay slot instructions.
+>>
+>> We add a new system call, sys_set_fpuemul_xol_area so that userspace
+>> threads that are using the FPU can specify the location of the FPU
+>> emulation out of line execution area.
+>>
+>> Background:
+>>
+>> MIPS floating point support requires that any instruction that cannot
+>> be directly executed by the FPU, be emulated by the kernel. Part of
+>> this emulation involves executing non-FPU instructions that fall in
+>> the delay slots of FP branch instructions.  Since the beginning of
+>> MIPS/Linux time, this has been done by placing the instructions on the
+>> userspace thread stack, and executing them there, as the instructions
+>> must be executed in the MM context of the thread receiving the
+>> emulation.
+> Well, actually it doesn't go back to the beginning of MIPS/Linux time 
+> - I was the b*astard who took the user-mode functional emulator from 
+> Algorithmics and got it to work in the MIPS Linux kernel context, some 
+> time in the early 2000s.  It was all pretty straightforward, except 
+> for the delay-slot-of-an-emulated-FP-conditional-branch problem. As 
+> you note, it may be a load or store (though not a branch), so it needs 
+> to be done in the user's MM context, and the user stack has nice 
+> properties of being intrinsically per-thread and re-entrancy tolerant.
+>> Because of this, the de facto MIPS Linux userspace ABI requires that
+>> the userspace thread have an executable stack.  It is de facto,
+>> because it is not written anywhere that this must be the case, but it
+>> is never the less a requirement.
+> IIRC, when I first did the code, we already needed this for signal 
+> trampolines.  I just extended it.  Is it no longer required for signal 
+> support?  If not, how are signal trampolines now done, and could this 
+> not be re-extended to the FP branch delay slot emulation problem?
 
-In addition to feature extension, this patch also adds ACPI binding for
-enumeration.
+I moved signal trampolines off the stack quite a few years ago. This is 
+the only thing blocking non-executable stack.
 
-This consolidated driver should support more X-Powers' PMICs in both device
-tree and ACPI enumerated platforms.
+The problem with the FP branch delay slot emulation is that the code 
+that needs to be executed varies.  The signal trampoline code is known 
+at kernel build time.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Reviewed-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Reviewed-by: Jonathan Cameron <jic23@kernel.org>
----
- drivers/mfd/Kconfig        |   3 +-
- drivers/mfd/axp20x.c       | 361 ++++++++++++++++++++++++++++++++++++++-------
- include/linux/mfd/axp20x.h |  59 ++++++++
- 3 files changed, 367 insertions(+), 56 deletions(-)
+>> Problem:
+>>
+>> How do we get MIPS Linux to use a non-executable stack in the face of
+>> the FPU emulation problem?
+>>
+>> Since userspace desires to change the ABI, put some of the onus on the
+>> userspace code.  Any userspace thread desiring a non-executable stack,
+>> must allocate a 4-byte aligned area at least 8 bytes long with that
+>> has read/write/execute permissions and pass the address of that area
+>> to the kernel with the new sys_set_fpuemul_xol_area system call.
+>>
+>> This is similar to how we require userspace to notify the kernel of
+>> the value of the thread local pointer.
+> It's easy for me to criticise, since I'm no longer responsible for 
+> maintenance, but I hope you'll excuse me for commenting that, while 
+> this seems like a small enough and neat enough patch per se,  I find 
+> it disagreeable to break legacy binaries
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index de5abf2..c183edb 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -74,7 +74,8 @@ config MFD_AXP20X
- 	select REGMAP_IRQ
- 	depends on I2C=y
- 	help
--	  If you say Y here you get support for the X-Powers AXP202 and AXP209.
-+	  If you say Y here you get support for the X-Powers AXP202, AXP209 and
-+	  AXP288 power management IC (PMIC).
- 	  This driver include only the core APIs. You have to select individual
- 	  components like regulators or the PEK (Power Enable Key) under the
- 	  corresponding menus.
-diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-index dee6539..69fd231 100644
---- a/drivers/mfd/axp20x.c
-+++ b/drivers/mfd/axp20x.c
-@@ -1,9 +1,9 @@
- /*
-- * axp20x.c - MFD core driver for the X-Powers AXP202 and AXP209
-+ * axp20x.c - MFD core driver for the X-Powers' Power Management ICs
-  *
-- * AXP20x comprises an adaptive USB-Compatible PWM charger, 2 BUCK DC-DC
-- * converters, 5 LDOs, multiple 12-bit ADCs of voltage, current and temperature
-- * as well as 4 configurable GPIOs.
-+ * AXP20x typically comprises an adaptive USB-Compatible PWM charger, BUCK DC-DC
-+ * converters, LDOs, multiple 12-bit ADCs of voltage, current and temperature
-+ * as well as configurable GPIOs.
-  *
-  * Author: Carlo Caione <carlo@caione.org>
-  *
-@@ -25,9 +25,16 @@
- #include <linux/mfd/core.h>
- #include <linux/of_device.h>
- #include <linux/of_irq.h>
-+#include <linux/acpi.h>
- 
- #define AXP20X_OFF	0x80
- 
-+static const char const *axp20x_model_names[] = {
-+	"AXP202",
-+	"AXP209",
-+	"AXP288",
-+};
-+
- static const struct regmap_range axp20x_writeable_ranges[] = {
- 	regmap_reg_range(AXP20X_DATACACHE(0), AXP20X_IRQ5_STATE),
- 	regmap_reg_range(AXP20X_DCDC_MODE, AXP20X_FG_RES),
-@@ -47,6 +54,25 @@ static const struct regmap_access_table axp20x_volatile_table = {
- 	.n_yes_ranges	= ARRAY_SIZE(axp20x_volatile_ranges),
- };
- 
-+static const struct regmap_range axp288_writeable_ranges[] = {
-+	regmap_reg_range(AXP20X_DATACACHE(0), AXP20X_IRQ6_STATE),
-+	regmap_reg_range(AXP20X_DCDC_MODE, AXP288_FG_TUNE5),
-+};
-+
-+static const struct regmap_range axp288_volatile_ranges[] = {
-+	regmap_reg_range(AXP20X_IRQ1_EN,  AXP20X_IPSOUT_V_HIGH_L),
-+};
-+
-+static const struct regmap_access_table axp288_writeable_table = {
-+	.yes_ranges	= axp288_writeable_ranges,
-+	.n_yes_ranges	= ARRAY_SIZE(axp288_writeable_ranges),
-+};
-+
-+static const struct regmap_access_table axp288_volatile_table = {
-+	.yes_ranges	= axp288_volatile_ranges,
-+	.n_yes_ranges	= ARRAY_SIZE(axp288_volatile_ranges),
-+};
-+
- static struct resource axp20x_pek_resources[] = {
- 	{
- 		.name	= "PEK_DBR",
-@@ -61,6 +87,39 @@ static struct resource axp20x_pek_resources[] = {
- 	},
- };
- 
-+static struct resource axp288_battery_resources[] = {
-+	{
-+		.start = AXP288_IRQ_QWBTU,
-+		.end   = AXP288_IRQ_QWBTU,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_WBTU,
-+		.end   = AXP288_IRQ_WBTU,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_QWBTO,
-+		.end   = AXP288_IRQ_QWBTO,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_WBTO,
-+		.end   = AXP288_IRQ_WBTO,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_WL2,
-+		.end   = AXP288_IRQ_WL2,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_WL1,
-+		.end   = AXP288_IRQ_WL1,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
- static const struct regmap_config axp20x_regmap_config = {
- 	.reg_bits	= 8,
- 	.val_bits	= 8,
-@@ -70,47 +129,96 @@ static const struct regmap_config axp20x_regmap_config = {
- 	.cache_type	= REGCACHE_RBTREE,
- };
- 
--#define AXP20X_IRQ(_irq, _off, _mask) \
--	[AXP20X_IRQ_##_irq] = { .reg_offset = (_off), .mask = BIT(_mask) }
-+static const struct regmap_config axp288_regmap_config = {
-+	.reg_bits	= 8,
-+	.val_bits	= 8,
-+	.wr_table	= &axp288_writeable_table,
-+	.volatile_table	= &axp288_volatile_table,
-+	.max_register	= AXP288_FG_TUNE5,
-+	.cache_type	= REGCACHE_RBTREE,
-+};
-+
-+#define INIT_REGMAP_IRQ(_variant, _irq, _off, _mask)			\
-+	[_variant##_IRQ_##_irq] = { .reg_offset = (_off), .mask = BIT(_mask) }
- 
- static const struct regmap_irq axp20x_regmap_irqs[] = {
--	AXP20X_IRQ(ACIN_OVER_V,		0, 7),
--	AXP20X_IRQ(ACIN_PLUGIN,		0, 6),
--	AXP20X_IRQ(ACIN_REMOVAL,	0, 5),
--	AXP20X_IRQ(VBUS_OVER_V,		0, 4),
--	AXP20X_IRQ(VBUS_PLUGIN,		0, 3),
--	AXP20X_IRQ(VBUS_REMOVAL,	0, 2),
--	AXP20X_IRQ(VBUS_V_LOW,		0, 1),
--	AXP20X_IRQ(BATT_PLUGIN,		1, 7),
--	AXP20X_IRQ(BATT_REMOVAL,	1, 6),
--	AXP20X_IRQ(BATT_ENT_ACT_MODE,	1, 5),
--	AXP20X_IRQ(BATT_EXIT_ACT_MODE,	1, 4),
--	AXP20X_IRQ(CHARG,		1, 3),
--	AXP20X_IRQ(CHARG_DONE,		1, 2),
--	AXP20X_IRQ(BATT_TEMP_HIGH,	1, 1),
--	AXP20X_IRQ(BATT_TEMP_LOW,	1, 0),
--	AXP20X_IRQ(DIE_TEMP_HIGH,	2, 7),
--	AXP20X_IRQ(CHARG_I_LOW,		2, 6),
--	AXP20X_IRQ(DCDC1_V_LONG,	2, 5),
--	AXP20X_IRQ(DCDC2_V_LONG,	2, 4),
--	AXP20X_IRQ(DCDC3_V_LONG,	2, 3),
--	AXP20X_IRQ(PEK_SHORT,		2, 1),
--	AXP20X_IRQ(PEK_LONG,		2, 0),
--	AXP20X_IRQ(N_OE_PWR_ON,		3, 7),
--	AXP20X_IRQ(N_OE_PWR_OFF,	3, 6),
--	AXP20X_IRQ(VBUS_VALID,		3, 5),
--	AXP20X_IRQ(VBUS_NOT_VALID,	3, 4),
--	AXP20X_IRQ(VBUS_SESS_VALID,	3, 3),
--	AXP20X_IRQ(VBUS_SESS_END,	3, 2),
--	AXP20X_IRQ(LOW_PWR_LVL1,	3, 1),
--	AXP20X_IRQ(LOW_PWR_LVL2,	3, 0),
--	AXP20X_IRQ(TIMER,		4, 7),
--	AXP20X_IRQ(PEK_RIS_EDGE,	4, 6),
--	AXP20X_IRQ(PEK_FAL_EDGE,	4, 5),
--	AXP20X_IRQ(GPIO3_INPUT,		4, 3),
--	AXP20X_IRQ(GPIO2_INPUT,		4, 2),
--	AXP20X_IRQ(GPIO1_INPUT,		4, 1),
--	AXP20X_IRQ(GPIO0_INPUT,		4, 0),
-+	INIT_REGMAP_IRQ(AXP20X, ACIN_OVER_V,		0, 7),
-+	INIT_REGMAP_IRQ(AXP20X, ACIN_PLUGIN,		0, 6),
-+	INIT_REGMAP_IRQ(AXP20X, ACIN_REMOVAL,	        0, 5),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_OVER_V,		0, 4),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_PLUGIN,		0, 3),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_REMOVAL,	        0, 2),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_V_LOW,		0, 1),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_PLUGIN,		1, 7),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_REMOVAL,	        1, 6),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_ENT_ACT_MODE,	1, 5),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_EXIT_ACT_MODE,	1, 4),
-+	INIT_REGMAP_IRQ(AXP20X, CHARG,		        1, 3),
-+	INIT_REGMAP_IRQ(AXP20X, CHARG_DONE,		1, 2),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_TEMP_HIGH,	        1, 1),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_TEMP_LOW,	        1, 0),
-+	INIT_REGMAP_IRQ(AXP20X, DIE_TEMP_HIGH,	        2, 7),
-+	INIT_REGMAP_IRQ(AXP20X, CHARG_I_LOW,		2, 6),
-+	INIT_REGMAP_IRQ(AXP20X, DCDC1_V_LONG,	        2, 5),
-+	INIT_REGMAP_IRQ(AXP20X, DCDC2_V_LONG,	        2, 4),
-+	INIT_REGMAP_IRQ(AXP20X, DCDC3_V_LONG,	        2, 3),
-+	INIT_REGMAP_IRQ(AXP20X, PEK_SHORT,		2, 1),
-+	INIT_REGMAP_IRQ(AXP20X, PEK_LONG,		2, 0),
-+	INIT_REGMAP_IRQ(AXP20X, N_OE_PWR_ON,		3, 7),
-+	INIT_REGMAP_IRQ(AXP20X, N_OE_PWR_OFF,	        3, 6),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_VALID,		3, 5),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_NOT_VALID,	        3, 4),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_SESS_VALID,	3, 3),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_SESS_END,	        3, 2),
-+	INIT_REGMAP_IRQ(AXP20X, LOW_PWR_LVL1,	        3, 1),
-+	INIT_REGMAP_IRQ(AXP20X, LOW_PWR_LVL2,	        3, 0),
-+	INIT_REGMAP_IRQ(AXP20X, TIMER,		        4, 7),
-+	INIT_REGMAP_IRQ(AXP20X, PEK_RIS_EDGE,	        4, 6),
-+	INIT_REGMAP_IRQ(AXP20X, PEK_FAL_EDGE,	        4, 5),
-+	INIT_REGMAP_IRQ(AXP20X, GPIO3_INPUT,		4, 3),
-+	INIT_REGMAP_IRQ(AXP20X, GPIO2_INPUT,		4, 2),
-+	INIT_REGMAP_IRQ(AXP20X, GPIO1_INPUT,		4, 1),
-+	INIT_REGMAP_IRQ(AXP20X, GPIO0_INPUT,		4, 0),
-+};
-+
-+/* some IRQs are compatible with axp20x models */
-+static const struct regmap_irq axp288_regmap_irqs[] = {
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_REMOVAL,           0, 2),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_PLUGIN,            0, 3),
-+	INIT_REGMAP_IRQ(AXP20X, VBUS_OVER_V,            0, 4),
-+
-+	INIT_REGMAP_IRQ(AXP20X, CHARG_DONE,             1, 2),
-+	INIT_REGMAP_IRQ(AXP20X, CHARG,                  1, 3),
-+	INIT_REGMAP_IRQ(AXP288, SAFE_QUIT,              1, 4),
-+	INIT_REGMAP_IRQ(AXP288, SAFE_ENTER,             1, 5),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_REMOVAL,           1, 6),
-+	INIT_REGMAP_IRQ(AXP20X, BATT_PLUGIN,            1, 7),
-+
-+	INIT_REGMAP_IRQ(AXP288, QWBTU,                  2, 0),
-+	INIT_REGMAP_IRQ(AXP288, WBTU,                   2, 1),
-+	INIT_REGMAP_IRQ(AXP288, QWBTO,                  2, 2),
-+	INIT_REGMAP_IRQ(AXP288, WBTU,                   2, 3),
-+	INIT_REGMAP_IRQ(AXP288, QCBTU,                  2, 4),
-+	INIT_REGMAP_IRQ(AXP288, CBTU,                   2, 5),
-+	INIT_REGMAP_IRQ(AXP288, QCBTO,                  2, 6),
-+	INIT_REGMAP_IRQ(AXP288, CBTO,                   2, 7),
-+
-+	INIT_REGMAP_IRQ(AXP288, WL2,                    3, 0),
-+	INIT_REGMAP_IRQ(AXP288, WL1,                    3, 1),
-+	INIT_REGMAP_IRQ(AXP288, GPADC,                  3, 2),
-+	INIT_REGMAP_IRQ(AXP288, OT,                     3, 7),
-+
-+	INIT_REGMAP_IRQ(AXP288, GPIO0,                  4, 0),
-+	INIT_REGMAP_IRQ(AXP288, GPIO1,                  4, 1),
-+	INIT_REGMAP_IRQ(AXP288, POKO,                   4, 2),
-+	INIT_REGMAP_IRQ(AXP288, POKL,                   4, 3),
-+	INIT_REGMAP_IRQ(AXP288, POKS,                   4, 4),
-+	INIT_REGMAP_IRQ(AXP288, POKN,                   4, 5),
-+	INIT_REGMAP_IRQ(AXP288, POKP,                   4, 6),
-+	INIT_REGMAP_IRQ(AXP20X, TIMER,                  4, 7),
-+
-+	INIT_REGMAP_IRQ(AXP288, MV_CHNG,                5, 0),
-+	INIT_REGMAP_IRQ(AXP288, BC_USB_CHNG,            5, 1),
- };
- 
- static const struct of_device_id axp20x_of_match[] = {
-@@ -128,16 +236,39 @@ static const struct i2c_device_id axp20x_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, axp20x_i2c_id);
- 
-+static struct acpi_device_id axp20x_acpi_match[] = {
-+	{
-+		.id = "INT33F4",
-+		.driver_data = AXP288_ID,
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, axp20x_acpi_match);
-+
- static const struct regmap_irq_chip axp20x_regmap_irq_chip = {
- 	.name			= "axp20x_irq_chip",
- 	.status_base		= AXP20X_IRQ1_STATE,
- 	.ack_base		= AXP20X_IRQ1_STATE,
- 	.mask_base		= AXP20X_IRQ1_EN,
--	.num_regs		= 5,
-+	.mask_invert		= true,
-+	.init_ack_masked	= true,
- 	.irqs			= axp20x_regmap_irqs,
- 	.num_irqs		= ARRAY_SIZE(axp20x_regmap_irqs),
-+	.num_regs		= 5,
-+
-+};
-+
-+static const struct regmap_irq_chip axp288_regmap_irq_chip = {
-+	.name			= "axp288_irq_chip",
-+	.status_base		= AXP20X_IRQ1_STATE,
-+	.ack_base		= AXP20X_IRQ1_STATE,
-+	.mask_base		= AXP20X_IRQ1_EN,
- 	.mask_invert		= true,
- 	.init_ack_masked	= true,
-+	.irqs			= axp288_regmap_irqs,
-+	.num_irqs		= ARRAY_SIZE(axp288_regmap_irqs),
-+	.num_regs		= 6,
-+
- };
- 
- static const char * const axp20x_supplies[] = {
-@@ -161,36 +292,155 @@ static struct mfd_cell axp20x_cells[] = {
- 	},
- };
- 
-+static struct resource axp288_adc_resources[] = {
-+	{
-+		.name	= "GPADC",
-+		.start = AXP288_IRQ_GPADC,
-+		.end   = AXP288_IRQ_GPADC,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource axp288_charger_resources[] = {
-+	{
-+		.start = AXP288_IRQ_OV,
-+		.end   = AXP288_IRQ_OV,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_DONE,
-+		.end   = AXP288_IRQ_DONE,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_CHARGING,
-+		.end   = AXP288_IRQ_CHARGING,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_SAFE_QUIT,
-+		.end   = AXP288_IRQ_SAFE_QUIT,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_SAFE_ENTER,
-+		.end   = AXP288_IRQ_SAFE_ENTER,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_QCBTU,
-+		.end   = AXP288_IRQ_QCBTU,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_CBTU,
-+		.end   = AXP288_IRQ_CBTU,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_QCBTO,
-+		.end   = AXP288_IRQ_QCBTO,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.start = AXP288_IRQ_CBTO,
-+		.end   = AXP288_IRQ_CBTO,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct mfd_cell axp288_cells[] = {
-+	{
-+		.name = "axp288_adc",
-+		.num_resources = ARRAY_SIZE(axp288_adc_resources),
-+		.resources = axp288_adc_resources,
-+	},
-+	{
-+		.name = "axp288_charger",
-+		.num_resources = ARRAY_SIZE(axp288_charger_resources),
-+		.resources = axp288_charger_resources,
-+	},
-+	{
-+		.name = "axp288_battery",
-+		.num_resources = ARRAY_SIZE(axp288_battery_resources),
-+		.resources = axp288_battery_resources,
-+	},
-+};
-+
- static struct axp20x_dev *axp20x_pm_power_off;
- static void axp20x_power_off(void)
- {
-+	if (axp20x_pm_power_off->variant == AXP288_ID)
-+		return;
-+
- 	regmap_write(axp20x_pm_power_off->regmap, AXP20X_OFF_CTRL,
- 		     AXP20X_OFF);
- }
- 
-+static int axp20x_match_device(struct axp20x_dev *axp20x, struct device *dev)
-+{
-+	const struct acpi_device_id *acpi_id;
-+	const struct of_device_id *of_id;
-+
-+	if (dev->of_node) {
-+		of_id = of_match_device(axp20x_of_match, dev);
-+		if (!of_id) {
-+			dev_err(dev, "Unable to match OF ID\n");
-+			return -ENODEV;
-+		}
-+		axp20x->variant = (long) of_id->data;
-+	} else {
-+		acpi_id = acpi_match_device(dev->driver->acpi_match_table, dev);
-+		if (!acpi_id || !acpi_id->driver_data) {
-+			dev_err(dev, "Unable to match ACPI ID and data\n");
-+			return -ENODEV;
-+		}
-+		axp20x->variant = (long) acpi_id->driver_data;
-+	}
-+
-+	switch (axp20x->variant) {
-+	case AXP202_ID:
-+	case AXP209_ID:
-+		axp20x->nr_cells = ARRAY_SIZE(axp20x_cells);
-+		axp20x->cells = axp20x_cells;
-+		axp20x->regmap_cfg = &axp20x_regmap_config;
-+		axp20x->regmap_irq_chip = &axp20x_regmap_irq_chip;
-+		break;
-+	case AXP288_ID:
-+		axp20x->cells = axp288_cells;
-+		axp20x->nr_cells = ARRAY_SIZE(axp288_cells);
-+		axp20x->regmap_cfg = &axp288_regmap_config;
-+		axp20x->regmap_irq_chip = &axp288_regmap_irq_chip;
-+		break;
-+	default:
-+		dev_err(dev, "unsupported AXP20X ID %lu\n", axp20x->variant);
-+		return -EINVAL;
-+	}
-+	dev_info(dev, "AXP20x variant %s found\n",
-+		axp20x_model_names[axp20x->variant]);
-+
-+	return 0;
-+}
-+
- static int axp20x_i2c_probe(struct i2c_client *i2c,
- 			 const struct i2c_device_id *id)
- {
- 	struct axp20x_dev *axp20x;
--	const struct of_device_id *of_id;
- 	int ret;
- 
- 	axp20x = devm_kzalloc(&i2c->dev, sizeof(*axp20x), GFP_KERNEL);
- 	if (!axp20x)
- 		return -ENOMEM;
- 
--	of_id = of_match_device(axp20x_of_match, &i2c->dev);
--	if (!of_id) {
--		dev_err(&i2c->dev, "Unable to setup AXP20X data\n");
--		return -ENODEV;
--	}
--	axp20x->variant = (long) of_id->data;
-+	ret = axp20x_match_device(axp20x, &i2c->dev);
-+	if (ret)
-+		return ret;
- 
- 	axp20x->i2c_client = i2c;
- 	axp20x->dev = &i2c->dev;
- 	dev_set_drvdata(axp20x->dev, axp20x);
- 
--	axp20x->regmap = devm_regmap_init_i2c(i2c, &axp20x_regmap_config);
-+	axp20x->regmap = devm_regmap_init_i2c(i2c, axp20x->regmap_cfg);
- 	if (IS_ERR(axp20x->regmap)) {
- 		ret = PTR_ERR(axp20x->regmap);
- 		dev_err(&i2c->dev, "regmap init failed: %d\n", ret);
-@@ -199,15 +449,15 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
- 
- 	ret = regmap_add_irq_chip(axp20x->regmap, i2c->irq,
- 				  IRQF_ONESHOT | IRQF_SHARED, -1,
--				  &axp20x_regmap_irq_chip,
-+				  axp20x->regmap_irq_chip,
- 				  &axp20x->regmap_irqc);
- 	if (ret) {
- 		dev_err(&i2c->dev, "failed to add irq chip: %d\n", ret);
- 		return ret;
- 	}
- 
--	ret = mfd_add_devices(axp20x->dev, -1, axp20x_cells,
--			      ARRAY_SIZE(axp20x_cells), NULL, 0, NULL);
-+	ret = mfd_add_devices(axp20x->dev, -1, axp20x->cells,
-+			axp20x->nr_cells, NULL, 0, NULL);
- 
- 	if (ret) {
- 		dev_err(&i2c->dev, "failed to add MFD devices: %d\n", ret);
-@@ -245,6 +495,7 @@ static struct i2c_driver axp20x_i2c_driver = {
- 		.name	= "axp20x",
- 		.owner	= THIS_MODULE,
- 		.of_match_table	= of_match_ptr(axp20x_of_match),
-+		.acpi_match_table = ACPI_PTR(axp20x_acpi_match),
- 	},
- 	.probe		= axp20x_i2c_probe,
- 	.remove		= axp20x_i2c_remove,
-diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
-index d0e31a2..81589d1 100644
---- a/include/linux/mfd/axp20x.h
-+++ b/include/linux/mfd/axp20x.h
-@@ -14,6 +14,8 @@
- enum {
- 	AXP202_ID = 0,
- 	AXP209_ID,
-+	AXP288_ID,
-+	NR_AXP20X_VARIANTS,
- };
- 
- #define AXP20X_DATACACHE(m)		(0x04 + (m))
-@@ -49,11 +51,13 @@ enum {
- #define AXP20X_IRQ3_EN			0x42
- #define AXP20X_IRQ4_EN			0x43
- #define AXP20X_IRQ5_EN			0x44
-+#define AXP20X_IRQ6_EN			0x45
- #define AXP20X_IRQ1_STATE		0x48
- #define AXP20X_IRQ2_STATE		0x49
- #define AXP20X_IRQ3_STATE		0x4a
- #define AXP20X_IRQ4_STATE		0x4b
- #define AXP20X_IRQ5_STATE		0x4c
-+#define AXP20X_IRQ6_STATE		0x4d
- 
- /* ADC */
- #define AXP20X_ACIN_V_ADC_H		0x56
-@@ -116,6 +120,15 @@ enum {
- #define AXP20X_CC_CTRL			0xb8
- #define AXP20X_FG_RES			0xb9
- 
-+/* AXP288 specific registers */
-+#define AXP288_PMIC_ADC_H               0x56
-+#define AXP288_PMIC_ADC_L               0x57
-+#define AXP288_ADC_TS_PIN_CTRL          0x84
-+
-+#define AXP288_PMIC_ADC_EN              0x84
-+#define AXP288_FG_TUNE5			0xed
-+
-+
- /* Regulators IDs */
- enum {
- 	AXP20X_LDO1 = 0,
-@@ -169,12 +182,58 @@ enum {
- 	AXP20X_IRQ_GPIO0_INPUT,
- };
- 
-+enum axp288_irqs {
-+	AXP288_IRQ_VBUS_FALL     = 2,
-+	AXP288_IRQ_VBUS_RISE,
-+	AXP288_IRQ_OV,
-+	AXP288_IRQ_FALLING_ALT,
-+	AXP288_IRQ_RISING_ALT,
-+	AXP288_IRQ_OV_ALT,
-+	AXP288_IRQ_DONE          = 10,
-+	AXP288_IRQ_CHARGING,
-+	AXP288_IRQ_SAFE_QUIT,
-+	AXP288_IRQ_SAFE_ENTER,
-+	AXP288_IRQ_ABSENT,
-+	AXP288_IRQ_APPEND,
-+	AXP288_IRQ_QWBTU,
-+	AXP288_IRQ_WBTU,
-+	AXP288_IRQ_QWBTO,
-+	AXP288_IRQ_WBTO,
-+	AXP288_IRQ_QCBTU,
-+	AXP288_IRQ_CBTU,
-+	AXP288_IRQ_QCBTO,
-+	AXP288_IRQ_CBTO,
-+	AXP288_IRQ_WL2,
-+	AXP288_IRQ_WL1,
-+	AXP288_IRQ_GPADC,
-+	AXP288_IRQ_OT            = 31,
-+	AXP288_IRQ_GPIO0,
-+	AXP288_IRQ_GPIO1,
-+	AXP288_IRQ_POKO,
-+	AXP288_IRQ_POKL,
-+	AXP288_IRQ_POKS,
-+	AXP288_IRQ_POKN,
-+	AXP288_IRQ_POKP,
-+	AXP288_IRQ_TIMER,
-+	AXP288_IRQ_MV_CHNG,
-+	AXP288_IRQ_BC_USB_CHNG,
-+};
-+
-+#define AXP288_TS_ADC_H		0x58
-+#define AXP288_TS_ADC_L		0x59
-+#define AXP288_GP_ADC_H		0x5a
-+#define AXP288_GP_ADC_L		0x5b
-+
- struct axp20x_dev {
- 	struct device			*dev;
- 	struct i2c_client		*i2c_client;
- 	struct regmap			*regmap;
- 	struct regmap_irq_chip_data	*regmap_irqc;
- 	long				variant;
-+	int                             nr_cells;
-+	struct mfd_cell                 *cells;
-+	const struct regmap_config	*regmap_cfg;
-+	const struct regmap_irq_chip	*regmap_irq_chip;
- };
- 
- #endif /* __LINUX_MFD_AXP20X_H */
--- 
-1.9.1
+It doesn't break legacy binaries.  They continue to use a executable 
+stack and the emulation is done there.
+
+This only would change new binaries that explicitly asked for a 
+non-executable stack.
+
+> and to see a mechanism whose name and implementation is so strictly 
+> tied to the one purpose.  Even if it's only used for the FP delay slot 
+> emulation today, shouldn't it be designed/coded/documented as a sort 
+> of generic trampoline scratchpad?  And shouldn't we try to design 
+> things so that legacy code with FP but no new magic system call "just 
+> works"?  e.g. auto-allocate and initialize the space for a thread the 
+> first time it actually needs to emulate an FP branch?
+
+The binaries have to be tagged as non-executable stack, this is because 
+GCC can, and does, generate trampolines on the stack as part of its 
+normal code generation strategy.
+
+That said, there are many problems with both the current code, and my 
+proposal.
+
+The main issue, as mentioned by another commenter, is the problem of 
+signals and nested emulations.
+
+If the emulated instruction raises a synchronous exception that is 
+converted to a signal, what is the EPC in the register state on the 
+stack?  Should it be the original location of the instruction, or the 
+out-of-line location used by emulation?  Are there userspace runtime 
+systems that care about this?
+
+If we are emulating on the stack, a signal stack state could clobber the 
+emulation location.
+
+If the kernel automatically allocated the emulation locations, what 
+would happen if there were a signal that interrupted the emulation, and 
+the signal handler did a longjump to somewhere else?  How would we clean 
+up the now unused emulation memory allocations?
+
+>
+> /K.
+>>
+>> Signed-off-by: David Daney <david.daney@cavium.com>
+>> ---
+>>
+>> First attempt to libc-alpha@ failed due to anti-spam technology,
+>> reattempting to a reduced list of recipients.
+>>
+>> This patch has only been compile tested, and lacks the userspace
+>> component.  It is presented as an alternate approch to the recently
+>> proposed MIPS non-executable stack patches posted here:
+>>
+>> http://www.linux-mips.org/archives/linux-mips/2014-10/msg00024.html
+>>
+>>   arch/mips/include/asm/thread_info.h |  2 ++
+>>   arch/mips/include/uapi/asm/unistd.h | 15 +++++++++------
+>>   arch/mips/kernel/process.c          |  1 +
+>>   arch/mips/kernel/scall32-o32.S      |  1 +
+>>   arch/mips/kernel/scall64-64.S       |  1 +
+>>   arch/mips/kernel/scall64-n32.S      |  1 +
+>>   arch/mips/kernel/scall64-o32.S      |  1 +
+>>   arch/mips/kernel/syscall.c          |  8 ++++++++
+>>   arch/mips/math-emu/dsemul.c         | 11 +++++++----
+>>   9 files changed, 31 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/mips/include/asm/thread_info.h 
+>> b/arch/mips/include/asm/thread_info.h
+>> index 7de8658..20d47f6 100644
+>> --- a/arch/mips/include/asm/thread_info.h
+>> +++ b/arch/mips/include/asm/thread_info.h
+>> @@ -26,6 +26,7 @@ struct thread_info {
+>>       struct exec_domain    *exec_domain;    /* execution domain */
+>>       unsigned long        flags;        /* low level flags */
+>>       unsigned long        tp_value;    /* thread pointer */
+>> +    unsigned long        fpu_emul_xol;    /* FPU emul eXecute Out of 
+>> Line VA */
+>>       __u32            cpu;        /* current CPU */
+>>       int            preempt_count;    /* 0 => preemptable, <0 => BUG */
+>>   @@ -46,6 +47,7 @@ struct thread_info {
+>>       .task        = &tsk,            \
+>>       .exec_domain    = &default_exec_domain, \
+>>       .flags        = _TIF_FIXADE,        \
+>> +    .fpu_emul_xol    = ~0ul,            \
+>>       .cpu        = 0,            \
+>>       .preempt_count    = INIT_PREEMPT_COUNT,    \
+>>       .addr_limit    = KERNEL_DS,        \
+>> diff --git a/arch/mips/include/uapi/asm/unistd.h 
+>> b/arch/mips/include/uapi/asm/unistd.h
+>> index fdb4923..f1270ee 100644
+>> --- a/arch/mips/include/uapi/asm/unistd.h
+>> +++ b/arch/mips/include/uapi/asm/unistd.h
+>> @@ -375,16 +375,17 @@
+>>   #define __NR_seccomp            (__NR_Linux + 352)
+>>   #define __NR_getrandom            (__NR_Linux + 353)
+>>   #define __NR_memfd_create        (__NR_Linux + 354)
+>> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 355)
+>>     /*
+>>    * Offset of the last Linux o32 flavoured syscall
+>>    */
+>> -#define __NR_Linux_syscalls        354
+>> +#define __NR_Linux_syscalls        355
+>>     #endif /* _MIPS_SIM == _MIPS_SIM_ABI32 */
+>>     #define __NR_O32_Linux            4000
+>> -#define __NR_O32_Linux_syscalls        354
+>> +#define __NR_O32_Linux_syscalls        355
+>>     #if _MIPS_SIM == _MIPS_SIM_ABI64
+>>   @@ -707,16 +708,17 @@
+>>   #define __NR_seccomp            (__NR_Linux + 312)
+>>   #define __NR_getrandom            (__NR_Linux + 313)
+>>   #define __NR_memfd_create        (__NR_Linux + 314)
+>> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 315)
+>>     /*
+>>    * Offset of the last Linux 64-bit flavoured syscall
+>>    */
+>> -#define __NR_Linux_syscalls        314
+>> +#define __NR_Linux_syscalls        315
+>>     #endif /* _MIPS_SIM == _MIPS_SIM_ABI64 */
+>>     #define __NR_64_Linux            5000
+>> -#define __NR_64_Linux_syscalls        314
+>> +#define __NR_64_Linux_syscalls        315
+>>     #if _MIPS_SIM == _MIPS_SIM_NABI32
+>>   @@ -1043,15 +1045,16 @@
+>>   #define __NR_seccomp            (__NR_Linux + 316)
+>>   #define __NR_getrandom            (__NR_Linux + 317)
+>>   #define __NR_memfd_create        (__NR_Linux + 318)
+>> +#define __NR_set_fpuemul_xol_area    (__NR_Linux + 319)
+>>     /*
+>>    * Offset of the last N32 flavoured syscall
+>>    */
+>> -#define __NR_Linux_syscalls        318
+>> +#define __NR_Linux_syscalls        319
+>>     #endif /* _MIPS_SIM == _MIPS_SIM_NABI32 */
+>>     #define __NR_N32_Linux            6000
+>> -#define __NR_N32_Linux_syscalls        318
+>> +#define __NR_N32_Linux_syscalls        319
+>>     #endif /* _UAPI_ASM_UNISTD_H */
+>> diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+>> index 636b074..6dde6bb 100644
+>> --- a/arch/mips/kernel/process.c
+>> +++ b/arch/mips/kernel/process.c
+>> @@ -151,6 +151,7 @@ int copy_thread(unsigned long clone_flags, 
+>> unsigned long usp,
+>>         if (clone_flags & CLONE_SETTLS)
+>>           ti->tp_value = regs->regs[7];
+>> +    ti->fpu_emul_xol = ~0ul;
+>>         return 0;
+>>   }
+>> diff --git a/arch/mips/kernel/scall32-o32.S 
+>> b/arch/mips/kernel/scall32-o32.S
+>> index 744cd10..8c19a39 100644
+>> --- a/arch/mips/kernel/scall32-o32.S
+>> +++ b/arch/mips/kernel/scall32-o32.S
+>> @@ -579,3 +579,4 @@ EXPORT(sys_call_table)
+>>       PTR    sys_seccomp
+>>       PTR    sys_getrandom
+>>       PTR    sys_memfd_create
+>> +    PTR    sys_set_fpuemul_xol_area    /* 4355 */
+>> diff --git a/arch/mips/kernel/scall64-64.S 
+>> b/arch/mips/kernel/scall64-64.S
+>> index 002b1bc..0b9f72e 100644
+>> --- a/arch/mips/kernel/scall64-64.S
+>> +++ b/arch/mips/kernel/scall64-64.S
+>> @@ -434,4 +434,5 @@ EXPORT(sys_call_table)
+>>       PTR    sys_seccomp
+>>       PTR    sys_getrandom
+>>       PTR    sys_memfd_create
+>> +    PTR    sys_set_fpuemul_xol_area    /* 5315 */
+>>       .size    sys_call_table,.-sys_call_table
+>> diff --git a/arch/mips/kernel/scall64-n32.S 
+>> b/arch/mips/kernel/scall64-n32.S
+>> index ca6cbbe..48f1760 100644
+>> --- a/arch/mips/kernel/scall64-n32.S
+>> +++ b/arch/mips/kernel/scall64-n32.S
+>> @@ -427,4 +427,5 @@ EXPORT(sysn32_call_table)
+>>       PTR    sys_seccomp
+>>       PTR    sys_getrandom
+>>       PTR    sys_memfd_create
+>> +    PTR    sys_set_fpuemul_xol_area
+>>       .size    sysn32_call_table,.-sysn32_call_table
+>> diff --git a/arch/mips/kernel/scall64-o32.S 
+>> b/arch/mips/kernel/scall64-o32.S
+>> index 9e10d11..60def68 100644
+>> --- a/arch/mips/kernel/scall64-o32.S
+>> +++ b/arch/mips/kernel/scall64-o32.S
+>> @@ -564,4 +564,5 @@ EXPORT(sys32_call_table)
+>>       PTR    sys_seccomp
+>>       PTR    sys_getrandom
+>>       PTR    sys_memfd_create
+>> +    PTR    sys_set_fpuemul_xol_area    /* 4355 */
+>>       .size    sys32_call_table,.-sys32_call_table
+>> diff --git a/arch/mips/kernel/syscall.c b/arch/mips/kernel/syscall.c
+>> index 4a4f9dd..5f9d9e8 100644
+>> --- a/arch/mips/kernel/syscall.c
+>> +++ b/arch/mips/kernel/syscall.c
+>> @@ -96,6 +96,14 @@ SYSCALL_DEFINE1(set_thread_area, unsigned long, addr)
+>>       return 0;
+>>   }
+>>   +SYSCALL_DEFINE1(set_fpuemul_xol_area, unsigned long, addr)
+>> +{
+>> +    struct thread_info *ti = task_thread_info(current);
+>> +
+>> +    ti->fpu_emul_xol = addr;
+>> +    return 0;
+>> +}
+>> +
+>>   static inline int mips_atomic_set(unsigned long addr, unsigned long 
+>> new)
+>>   {
+>>       unsigned long old, tmp;
+>> diff --git a/arch/mips/math-emu/dsemul.c b/arch/mips/math-emu/dsemul.c
+>> index 4f514f3..bf4ff61 100644
+>> --- a/arch/mips/math-emu/dsemul.c
+>> +++ b/arch/mips/math-emu/dsemul.c
+>> @@ -34,6 +34,7 @@ struct emuframe {
+>>   int mips_dsemul(struct pt_regs *regs, mips_instruction ir, unsigned 
+>> long cpc)
+>>   {
+>>       extern asmlinkage void handle_dsemulret(void);
+>> +    struct thread_info *ti = task_thread_info(current);
+>>       struct emuframe __user *fr;
+>>       int err;
+>>   @@ -64,10 +65,12 @@ int mips_dsemul(struct pt_regs *regs, 
+>> mips_instruction ir, unsigned long cpc)
+>>        * branches, but gives us a cleaner interface to the exception
+>>        * handler (single entry point).
+>>        */
+>> -
+>> -    /* Ensure that the two instructions are in the same cache line */
+>> -    fr = (struct emuframe __user *)
+>> -        ((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
+>> +    if (ti->fpu_emul_xol != ~0ul)
+>> +        fr = (struct emuframe *)ti->fpu_emul_xol;
+>> +    else
+>> +        /* Ensure that the two instructions are in the same cache 
+>> line */
+>> +        fr = (struct emuframe __user *)
+>> +            ((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
+>>         /* Verify that the stack pointer is not competely insane */
+>>       if (unlikely(!access_ok(VERIFY_WRITE, fr, sizeof(struct 
+>> emuframe))))
+>
+>
 
