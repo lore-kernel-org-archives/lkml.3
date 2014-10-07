@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575AbaJGJvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 05:51:23 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:54147 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338AbaJGJut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 05:50:49 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+	id S1753502AbaJGJ4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 05:56:21 -0400
+Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:57948 "EHLO
+	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753335AbaJGJ4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 05:56:19 -0400
+X-Sender-Id: kiran.padwal@smartplayin.com
+Message-ID: <5433B843.5060200@smartplayin.com>
+Date: Tue, 07 Oct 2014 15:24:11 +0530
+From: Kiran Padwal <kiran.padwal@smartplayin.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH 4/4] Input: pmic8xxx-keypad - update DT bindings documentation
-Date: Tue,  7 Oct 2014 12:50:48 +0300
-Message-Id: <1412675448-11990-5-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>
-References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org,
+        Courtney Cavin <courtney.cavin@sonymobile.com>
+Subject: Re: [PATCH 1/2] input: Add Qualcomm PM8941 power key driver
+References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com> <1412644321-27683-2-git-send-email-bjorn.andersson@sonymobile.com>
+In-Reply-To: <1412644321-27683-2-git-send-email-bjorn.andersson@sonymobile.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix incorrect dimensions for 'debonce' and 'scan-delay' times.
-Now they represent what driver really expect. Add possible
-time quants for 'debonce', 'scan-delay' and 'row-hold' times.
-Update bindings example.
+On Tuesday 07 October 2014 06:42 AM, Bjorn Andersson wrote:
+> From: Courtney Cavin <courtney.cavin@sonymobile.com>
+> 
+> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+> ---
+>  drivers/input/misc/Kconfig         |   12 +++
+>  drivers/input/misc/Makefile        |    1 +
+>  drivers/input/misc/pm8941-pwrkey.c |  196 ++++++++++++++++++++++++++++++++++++
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+<snip>
 
-diff --git a/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-index 2b60f8a..df5e2a1 100644
---- a/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-+++ b/Documentation/devicetree/bindings/input/qcom,pm8xxx-keypad.txt
-@@ -54,20 +54,23 @@ PROPERTIES
- - debounce:
- 	Usage: optional
- 	Value type: <u32>
--	Definition: time in microseconds that key must be pressed or release
-+	Definition: time in miliseconds that key must be pressed or release
- 		    for key sense interrupt to trigger.
-+		    Possible values: 5, 10, 15, 20.
- 
- - scan-delay:
- 	Usage: optional
- 	Value type: <u32>
--	Definition: time in microseconds to pause between successive scans
-+	Definition: time in miliseconds to pause between successive scans
- 		    of the matrix array.
-+		    Possible values: 1, 2, 4, 8, 16, 32, 64, 128.
- 
- - row-hold:
- 	Usage: optional
- 	Value type: <u32>
- 	Definition: time in nanoseconds to pause between scans of each row in
- 		    the matrix array.
-+		    Possible values: 30500, 61000, 122000.
- 
- EXAMPLE
- 
-@@ -86,5 +89,5 @@ EXAMPLE
- 		keypad,num-columns = <5>;
- 		debounce = <15>;
- 		scan-delay = <32>;
--		row-hold = <91500>;
-+		row-hold = <61000>;
- 	};
--- 
-1.9.1
+> +
+> +	platform_set_drvdata(pdev, pwrkey);
+> +	device_init_wakeup(&pdev->dev, 1);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pm8941_pwrkey_remove(struct platform_device *pdev)
+> +{
+> +	device_init_wakeup(&pdev->dev, 0);
 
+Shouldn't we unregister input device?
+
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id pm8941_pwr_key_id_table[] = {
+> +	{ .compatible = "qcom,pm8941-pwrkey" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, pm8941_pwr_key_id_table);
+> +
+> +static struct platform_driver pm8941_pwrkey_driver = {
+> +	.probe		= pm8941_pwrkey_probe,
+> +	.remove		= pm8941_pwrkey_remove,
+> +	.driver		= {
+> +		.name	= "pm8941-pwrkey",
+> +		.owner	= THIS_MODULE,
+
+This field can be removed because this driver which use the
+module_platform_driver api as this is overridden in
+platform_driver_register.
+
+> +		.pm	= &pm8941_pwr_key_pm_ops,
+> +		.of_match_table = of_match_ptr(pm8941_pwr_key_id_table),
+> +	},
+> +};
+> +module_platform_driver(pm8941_pwrkey_driver);
+> +
+> +MODULE_DESCRIPTION("PM8941 Power Key driver");
+> +MODULE_LICENSE("GPL v2");
+
+May be you can add module author name.
+
+Thanks,
+--Kiran
