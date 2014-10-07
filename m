@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203AbaJGXUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39518 "EHLO
+	id S932920AbaJGXbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:31:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932112AbaJGXT6 (ORCPT
+	with ESMTP id S932222AbaJGXUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:58 -0400
+	Tue, 7 Oct 2014 19:20:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.14 09/37] ring-buffer: Fix infinite spin in reading buffer
-Date: Tue,  7 Oct 2014 16:19:26 -0700
-Message-Id: <20141007231827.351210350@linuxfoundation.org>
+        Pavel Shilovsky <pshilovsky@samba.org>,
+        Steve French <smfrench@gmail.com>
+Subject: [PATCH 3.14 10/37] CIFS: Fix SMB2 readdir error handling
+Date: Tue,  7 Oct 2014 16:19:27 -0700
+Message-Id: <20141007231827.380337327@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
 References: <20141007231827.043235686@linuxfoundation.org>
@@ -28,55 +29,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Pavel Shilovsky <pshilovsky@samba.org>
 
-commit 24607f114fd14f2f37e3e0cb3d47bce96e81e848 upstream.
+commit 52755808d4525f4d5b86d112d36ffc7a46f3fb48 upstream.
 
-Commit 651e22f2701b "ring-buffer: Always reset iterator to reader page"
-fixed one bug but in the process caused another one. The reset is to
-update the header page, but that fix also changed the way the cached
-reads were updated. The cache reads are used to test if an iterator
-needs to be updated or not.
+SMB2 servers indicates the end of a directory search with
+STATUS_NO_MORE_FILE error code that is not processed now.
+This causes generic/257 xfstest to fail. Fix this by triggering
+the end of search by this error code in SMB2_query_directory.
 
-A ring buffer iterator, when created, disables writes to the ring buffer
-but does not stop other readers or consuming reads from happening.
-Although all readers are synchronized via a lock, they are only
-synchronized when in the ring buffer functions. Those functions may
-be called by any number of readers. The iterator continues down when
-its not interrupted by a consuming reader. If a consuming read
-occurs, the iterator starts from the beginning of the buffer.
+Also when negotiating CIFS protocol we tell the server to close
+the search automatically at the end and there is no need to do
+it itself. In the case of SMB2 protocol, we need to close it
+explicitly - separate close directory checks for different
+protocols.
 
-The way the iterator sees that a consuming read has happened since
-its last read is by checking the reader "cache". The cache holds the
-last counts of the read and the reader page itself.
-
-Commit 651e22f2701b changed what was saved by the cache_read when
-the rb_iter_reset() occurred, making the iterator never match the cache.
-Then if the iterator calls rb_iter_reset(), it will go into an
-infinite loop by checking if the cache doesn't match, doing the reset
-and retrying, just to see that the cache still doesn't match! Which
-should never happen as the reset is suppose to set the cache to the
-current value and there's locks that keep a consuming reader from
-having access to the data.
-
-Fixes: 651e22f2701b "ring-buffer: Always reset iterator to reader page"
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Pavel Shilovsky <pshilovsky@samba.org>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/trace/ring_buffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -3372,7 +3372,7 @@ static void rb_iter_reset(struct ring_bu
- 	iter->head = cpu_buffer->reader_page->read;
+---
+ fs/cifs/cifsglob.h     |    2 ++
+ fs/cifs/file.c         |    2 +-
+ fs/cifs/readdir.c      |    2 +-
+ fs/cifs/smb1ops.c      |    7 +++++++
+ fs/cifs/smb2maperror.c |    2 +-
+ fs/cifs/smb2ops.c      |    9 +++++++++
+ fs/cifs/smb2pdu.c      |    9 ++++-----
+ 7 files changed, 25 insertions(+), 8 deletions(-)
+
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -399,6 +399,8 @@ struct smb_version_operations {
+ 			const struct cifs_fid *, u32 *);
+ 	int (*set_acl)(struct cifs_ntsd *, __u32, struct inode *, const char *,
+ 			int);
++	/* check if we need to issue closedir */
++	bool (*dir_needs_close)(struct cifsFileInfo *);
+ };
  
- 	iter->cache_reader_page = iter->head_page;
--	iter->cache_read = iter->head;
-+	iter->cache_read = cpu_buffer->read;
+ struct smb_version_values {
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -762,7 +762,7 @@ int cifs_closedir(struct inode *inode, s
  
- 	if (iter->head)
- 		iter->read_stamp = cpu_buffer->read_stamp;
+ 	cifs_dbg(FYI, "Freeing private data in close dir\n");
+ 	spin_lock(&cifs_file_list_lock);
+-	if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
++	if (server->ops->dir_needs_close(cfile)) {
+ 		cfile->invalidHandle = true;
+ 		spin_unlock(&cifs_file_list_lock);
+ 		if (server->ops->close_dir)
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -593,7 +593,7 @@ find_cifs_entry(const unsigned int xid,
+ 		/* close and restart search */
+ 		cifs_dbg(FYI, "search backing up - close and restart search\n");
+ 		spin_lock(&cifs_file_list_lock);
+-		if (!cfile->srch_inf.endOfSearch && !cfile->invalidHandle) {
++		if (server->ops->dir_needs_close(cfile)) {
+ 			cfile->invalidHandle = true;
+ 			spin_unlock(&cifs_file_list_lock);
+ 			if (server->ops->close_dir)
+--- a/fs/cifs/smb1ops.c
++++ b/fs/cifs/smb1ops.c
+@@ -1009,6 +1009,12 @@ cifs_is_read_op(__u32 oplock)
+ 	return oplock == OPLOCK_READ;
+ }
+ 
++static bool
++cifs_dir_needs_close(struct cifsFileInfo *cfile)
++{
++	return !cfile->srch_inf.endOfSearch && !cfile->invalidHandle;
++}
++
+ struct smb_version_operations smb1_operations = {
+ 	.send_cancel = send_nt_cancel,
+ 	.compare_fids = cifs_compare_fids,
+@@ -1078,6 +1084,7 @@ struct smb_version_operations smb1_opera
+ 	.query_mf_symlink = cifs_query_mf_symlink,
+ 	.create_mf_symlink = cifs_create_mf_symlink,
+ 	.is_read_op = cifs_is_read_op,
++	.dir_needs_close = cifs_dir_needs_close,
+ #ifdef CONFIG_CIFS_XATTR
+ 	.query_all_EAs = CIFSSMBQAllEAs,
+ 	.set_EA = CIFSSMBSetEA,
+--- a/fs/cifs/smb2maperror.c
++++ b/fs/cifs/smb2maperror.c
+@@ -214,7 +214,7 @@ static const struct status_to_posix_erro
+ 	{STATUS_BREAKPOINT, -EIO, "STATUS_BREAKPOINT"},
+ 	{STATUS_SINGLE_STEP, -EIO, "STATUS_SINGLE_STEP"},
+ 	{STATUS_BUFFER_OVERFLOW, -EIO, "STATUS_BUFFER_OVERFLOW"},
+-	{STATUS_NO_MORE_FILES, -EIO, "STATUS_NO_MORE_FILES"},
++	{STATUS_NO_MORE_FILES, -ENODATA, "STATUS_NO_MORE_FILES"},
+ 	{STATUS_WAKE_SYSTEM_DEBUGGER, -EIO, "STATUS_WAKE_SYSTEM_DEBUGGER"},
+ 	{STATUS_HANDLES_CLOSED, -EIO, "STATUS_HANDLES_CLOSED"},
+ 	{STATUS_NO_INHERITANCE, -EIO, "STATUS_NO_INHERITANCE"},
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -1102,6 +1102,12 @@ smb3_parse_lease_buf(void *buf, unsigned
+ 	return le32_to_cpu(lc->lcontext.LeaseState);
+ }
+ 
++static bool
++smb2_dir_needs_close(struct cifsFileInfo *cfile)
++{
++	return !cfile->invalidHandle;
++}
++
+ struct smb_version_operations smb20_operations = {
+ 	.compare_fids = smb2_compare_fids,
+ 	.setup_request = smb2_setup_request,
+@@ -1175,6 +1181,7 @@ struct smb_version_operations smb20_oper
+ 	.create_lease_buf = smb2_create_lease_buf,
+ 	.parse_lease_buf = smb2_parse_lease_buf,
+ 	.clone_range = smb2_clone_range,
++	.dir_needs_close = smb2_dir_needs_close,
+ };
+ 
+ struct smb_version_operations smb21_operations = {
+@@ -1250,6 +1257,7 @@ struct smb_version_operations smb21_oper
+ 	.create_lease_buf = smb2_create_lease_buf,
+ 	.parse_lease_buf = smb2_parse_lease_buf,
+ 	.clone_range = smb2_clone_range,
++	.dir_needs_close = smb2_dir_needs_close,
+ };
+ 
+ struct smb_version_operations smb30_operations = {
+@@ -1328,6 +1336,7 @@ struct smb_version_operations smb30_oper
+ 	.parse_lease_buf = smb3_parse_lease_buf,
+ 	.clone_range = smb2_clone_range,
+ 	.validate_negotiate = smb3_validate_negotiate,
++	.dir_needs_close = smb2_dir_needs_close,
+ };
+ 
+ struct smb_version_values smb20_values = {
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -2136,6 +2136,10 @@ SMB2_query_directory(const unsigned int
+ 	rsp = (struct smb2_query_directory_rsp *)iov[0].iov_base;
+ 
+ 	if (rc) {
++		if (rc == -ENODATA && rsp->hdr.Status == STATUS_NO_MORE_FILES) {
++			srch_inf->endOfSearch = true;
++			rc = 0;
++		}
+ 		cifs_stats_fail_inc(tcon, SMB2_QUERY_DIRECTORY_HE);
+ 		goto qdir_exit;
+ 	}
+@@ -2173,11 +2177,6 @@ SMB2_query_directory(const unsigned int
+ 	else
+ 		cifs_dbg(VFS, "illegal search buffer type\n");
+ 
+-	if (rsp->hdr.Status == STATUS_NO_MORE_FILES)
+-		srch_inf->endOfSearch = 1;
+-	else
+-		srch_inf->endOfSearch = 0;
+-
+ 	return rc;
+ 
+ qdir_exit:
 
 
