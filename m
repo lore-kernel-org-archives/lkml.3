@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932260AbaJGTfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:35:50 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:57143 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258AbaJGTfs (ORCPT
+	id S932313AbaJGTgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:36:03 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39227 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266AbaJGTf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:35:48 -0400
+	Tue, 7 Oct 2014 15:35:59 -0400
+Date: Tue, 7 Oct 2014 20:35:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ben Zhang <benzh@chromium.org>
+Cc: alsa-devel@alsa-project.org, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>, linux-kernel@vger.kernel.org
+Message-ID: <20141007193542.GG4609@sirena.org.uk>
+References: <1412372246-10489-1-git-send-email-benzh@chromium.org>
+ <1412372246-10489-3-git-send-email-benzh@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <20141007191624.GD30038@quack.suse.cz>
-References: <1412266184-23776-1-git-send-email-thanos.makatos@citrix.com>
-	<542DAEAC.8010203@kernel.dk>
-	<20141006080659.GA7526@quack.suse.cz>
-	<2368A3FCF9F7214298E53C823B0A48EC042405BC@AMSPEX01CL02.citrite.net>
-	<2368A3FCF9F7214298E53C823B0A48EC0424106C@AMSPEX01CL02.citrite.net>
-	<20141006143019.GG7526@quack.suse.cz>
-	<20141007013059.GL2301@dastard>
-	<20141007191624.GD30038@quack.suse.cz>
-Date: Tue, 7 Oct 2014 15:35:47 -0400
-Message-ID: <CAHQdGtTgbrFOnpT9H-MNw=9DbuM=Dc3yUGBt2zjnVB5eaF76Mg@mail.gmail.com>
-Subject: Re: [PATCH RFC] introduce ioctl to completely invalidate page cache
-From: Trond Myklebust <trond.myklebust@primarydata.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Thanos Makatos <thanos.makatos@citrix.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "jlayton@poochiereds.net" <jlayton@poochiereds.net>,
-        "bfields@fieldses.org" <bfields@fieldses.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gA19+fZe+9B2YWyg"
+Content-Disposition: inline
+In-Reply-To: <1412372246-10489-3-git-send-email-benzh@chromium.org>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/3] ASoC: rt5677: Add jack detection support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 3:16 PM, Jan Kara <jack@suse.cz> wrote:
-> On Tue 07-10-14 12:30:59, Dave Chinner wrote:
->> On Mon, Oct 06, 2014 at 04:30:19PM +0200, Jan Kara wrote:
->> > On Mon 06-10-14 11:33:23, Thanos Makatos wrote:
->> > > > > Trond also had a comment that if we extended the ioctl to work for all
->> > > > > inodes (not just blkdev) and allowed some additional flags of what
->> > > > > needs to be invalidated, the new ioctl would be also useful to NFS
->> > > > > userspace - see Trond's email at
->> > > > >
->> > > > > http://www.spinics.net/lists/linux-fsdevel/msg78917.html
->> > > > >
->> > > > > and the following thread. I would prefer to cover that usecase when we
->> > > > > are introducing new invalidation ioctl. Have you considered that Thanos?
->> > > >
->> > > > Sure, though I don't really know how to do it. I'll start by looking at the code
->> > > > flow when someone does " echo 3 > /proc/sys/vm/drop_caches", unless you
->> > > > already have a rough idea how to do that.
->> > >
->> > > I realise I haven't clearly understood what the semantics of this new ioctl
->> > > should be.
->> > >
->> > > My initial goal was to implement an ioctl that would _completely_ invalidate
->> > > the buffer cache of a block device when there is no file-system involved.
->> > > Unless I'm mistaken the patch I posted achieves this goal.
->> >   Yes.
->> >
->> > > We now want to extend this patch to take care of cached metadata, which seems
->> > > to be of particular importance for NFS, and I suspect that this piece of
->> > > functionality will still be applicable to any kind of file-system, correct?
->> >   So most notably they want the ioctl to work not only for block devices
->> > but also for any regular file. That's easily doable - you just call
->> > filemap_write_and_wait() and invalidate_inode_pages2() in the ioctl handler
->> > for regular files.
->> >
->> > Also they wanted to be able to specify a range of a mapping to invalidate -
->> > that's easily doable as well. Finally they wanted a 'flags' argument so you
->> > can additionally ask fs to invalidate also some metadata. How invalidation
->> > is done will be a fs specific thing and for now I guess we don't need to go
->> > into details. NFS guys can sort that out when they decide to implement it.
->> > So in the beginning we can just have u64 flags argument and in
->> > it a single 'INVAL_DATA' flag meaning that invalidation of data in a given
->> > range is requested. Later NFS guys can add further flags.
->>
->> Why do we need a new ioctl to do this? fadvise64() seems like it's
->> the exact fit for "FADV_INVALIDATE_[META]DATA" flags...
->   Well, fadvise() is currently a hint to kernel. In this case we would
-> really like the call to do the invalidation and return error if it fails
-> for some reason. So I'm not sure fadvise() is a perfect fit. But I wouldn't
-> be strongly opposed to it either.
->
 
-fadvise is about giving programs the ability to "announce an intention
-to access file data in a specific pattern in the future, thus allowing
-the kernel to perform appropriate optimizations" according to the
-manpage.
+--gA19+fZe+9B2YWyg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Cache invalidation and revalidation, OTOH, is about ensuring meta/data
-consistency between the disk and inode/page cache.
+On Fri, Oct 03, 2014 at 02:37:26PM -0700, Ben Zhang wrote:
 
-I'm not seeing a perfect match. :-)
+> This patch adds support for jack detection using GPIOs on the codec.
+> Plug detect signal and mic present signal can be routed from the physical
+> audio jack to GPIOs on the codec. The codec is configured so that upon
+> signal change, an IRQ(GPIO1) is fired. The codec interrupt handler reads
 
--- 
-Trond Myklebust
+This then assumes that GPIO1 was configured as the IRQ - what happens if
+it was connected with some other function on the board and some other
+GPIO was assigned as IRQ?
 
-Linux NFS client maintainer, PrimaryData
+> +	desc = devm_gpiod_get_index(&i2c->dev, "RT5677_GPIO",
+> +			RT5677_GPIO_PLUG_DET);
+> +	if (!IS_ERR(desc) && !gpiod_direction_input(desc))
+> +		rt5677->gpio_plug_det = desc_to_gpio(desc)
+> +				- rt5677->gpio_chip.base + 1;
 
-trond.myklebust@primarydata.com
+I'm having trouble reading this, I think other reasonable users would
+too.  It's not entirely clear to me what it's supposed to be doing or
+why we are mixing the descriptor and number based GPIO APIs.
+
+> +       /*
+> +        * Loop to handle interrupts until the last i2c read shows no pending
+> +        * irqs with a safeguard of 20 loops
+> +        */
+> +       for (i = 0; i < 20; i++) {
+
+Eh?  Why are we doing this and why are we so sure that 20 is a good
+value?
+
+>  static int rt5677_probe(struct snd_soc_codec *codec)
+>  {
+
+> +       rt5677_setup_jack_detect(codec, rt5677);
+>         return 0;
+
+This sets up GPIO1 as an interrupt without verifying that we have an
+interrupt assigned for it successfully and only in the ASoC level probe,
+not in the chip level probe.  This means we might not have an interrupt
+at all if the board configuration was buggy and means that we'll start
+paying attention to the interrupt (which is requested in the i2c level
+probe as it should be) without configuring the chip to be in the
+appropriate state which means that it might start falsely flagging
+interrupts.  I'd expect the configuration to be closer together, and
+to have the CODEC set up ready to generate interrupts prior to starting
+to listen to them.
+
+--gA19+fZe+9B2YWyg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNECNAAoJECTWi3JdVIfQyFwH/RIacYxm0bJJbNcaS1zlc81K
+UuWl+iSMDvMKkY5PLvXu+nDvpwtffjzKMvRG1VMhR5QdmnmKut2lAepeJieCECes
+JbIFVE9O+/vXtT+iVomM4ZBvrpqfah8woQy0Kv0aaR+1qxG62C8Wojjufj3eyJPr
+DNauwNU28VGmXTZY/aXa6/xBoH1N3hi27E6i1npMbBT/AYV8pBBHh9b33wuCMojy
+f7k5zn8QnQeurW2U1Ue2zpjfumcM0YZFpUtEZoZ92Y7Mwf9OqJr+bQsIbqrcEJYW
+v1jXAbrUBzAR+0JpQ4KtHK9VCeWjniWlK/bCvxSWo03/hKcHtm9qndjKU+kgZUY=
+=9JXa
+-----END PGP SIGNATURE-----
+
+--gA19+fZe+9B2YWyg--
