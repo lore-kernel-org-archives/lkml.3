@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaJGReP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:34:15 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:53633 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaJGReK (ORCPT
+	id S1754896AbaJGRfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:35:00 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49778 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619AbaJGRe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:34:10 -0400
-Date: Tue, 7 Oct 2014 13:34:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, gregkh@linuxfoundation.org,
-        dmitry.torokhov@gmail.com, tiwai@suse.de, arjan@linux.intel.com,
-        teg@jklm.no, rmilasan@suse.com, werner@suse.com, oleg@redhat.com,
-        hare@suse.com, bpoirier@suse.de, santosh@chelsio.com, pmladek@suse.cz,
-        dbueso@suse.com, linux-kernel@vger.kernel.org,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kay Sievers <kay@vrfy.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2 7/7] driver-core: add preferred async probe option for
- built-in and modules
-Message-ID: <20141007173404.GB31328@mtj.dyndns.org>
-References: <1412372683-2003-1-git-send-email-mcgrof@do-not-panic.com>
- <1412372683-2003-8-git-send-email-mcgrof@do-not-panic.com>
- <20141006201926.GF18303@htj.dyndns.org>
- <20141006203627.GZ14081@wotan.suse.de>
- <20141006210118.GG18303@htj.dyndns.org>
- <20141006231046.GD14081@wotan.suse.de>
+	Tue, 7 Oct 2014 13:34:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141006231046.GD14081@wotan.suse.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141007171703.GA30274@infradead.org>
+References: <1409834323-7171-1-git-send-email-jlayton@primarydata.com>
+	<1409834323-7171-3-git-send-email-jlayton@primarydata.com>
+	<CACE9dm-gEfVnHvESfewAPx1vDSdpUW+za=H_zpA8hJd55AR=tA@mail.gmail.com>
+	<20141007171703.GA30274@infradead.org>
+Date: Tue, 7 Oct 2014 20:34:57 +0300
+Message-ID: <CACE9dm_NKwFV__MeQw039yenbjzT+XwakgxZuynr25EVWHjRdQ@mail.gmail.com>
+Subject: Re: [PATCH v2 02/17] security: make security_file_set_fowner,
+ f_setown and __f_setown void return
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Layton <jlayton@primarydata.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 7 October 2014 20:17, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Oct 07, 2014 at 08:11:42PM +0300, Dmitry Kasatkin wrote:
+>> If file_set_fowner op is now type of "void", how you can actually
+>> return the value?
+>> I think compiler must give error. How could you compile it?
+>
+> Returning void values is a GNU extension.  I've seen it in a few
+> places in the kernel.  Although in general I'd prefer it we'd remove
+> it (and have the compiler warn about it).
+>
 
-On Tue, Oct 07, 2014 at 01:10:46AM +0200, Luis R. Rodriguez wrote:
-> On Mon, Oct 06, 2014 at 05:01:18PM -0400, Tejun Heo wrote:
-> > For in-kernel stuff, we already have a clear
-> > synchronization point where we already synchronize all async calls.
-> > Shouldn't we be flushing these async probes there too?
-> 
-> This seems to be addressing if what I meant by prepared, "ready", so let
-> me address this as I do think its important.
-> 
-> By async calls do you mean users of async_schedule()? I see it
-
-Yes.
-
-> also uses system_unbound_wq as well but I do not see anyone calling
-> flush_workqueue(system_unbound_wq) on the kernel. We do use
-> async_synchronize_full() on kernel_init() but that just waits.
-
-But you can create a new workqueue and queue all the async probing
-work items there and flush the workqueue right after
-async_synchronize_full().
-
-...
-> bus.enable_kern_async=1 would still also serve as a helper for the driver core
-> to figure out if it should use async probe then on modules if prefer_async_probe
-> was enabled. Let me know if you figure out a way to avoid it.
-
-Why do we need the choice at all?  It always should, no?
-
-Thanks.
+Cool. There were patches around to use LLVM as well.
+Will it work there?
 
 -- 
-tejun
+Thanks,
+Dmitry
