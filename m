@@ -1,109 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaJGTiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:38:21 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:48311 "EHLO gloria.sntech.de"
+	id S1755229AbaJGTkC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:40:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081AbaJGTiU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:38:20 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kever Yang <kever.yang@rock-chips.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        =?utf-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dts: enable init rate for clock
-Date: Tue, 07 Oct 2014 21:37:48 +0200
-Message-ID: <3345042.lGjGYUIfnV@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAD=FV=WwXXQ6941WuATBiNqZ0sM3EkSo-EHHoqn3uGmZdNvW5w@mail.gmail.com>
-References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com> <1854393.Qf7h4x8eso@phil> <CAD=FV=WwXXQ6941WuATBiNqZ0sM3EkSo-EHHoqn3uGmZdNvW5w@mail.gmail.com>
+	id S1751277AbaJGTkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 15:40:00 -0400
+Date: Tue, 7 Oct 2014 15:39:51 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
+        pmoore@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
+        keescook@chromium.org
+Subject: Re: [RFC][PATCH] audit: log join and part events to the read-only
+ multicast log socket
+Message-ID: <20141007193951.GZ1992@madcap2.tricolour.ca>
+References: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
+ <1412708594.3333.94.camel@localhost>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412708594.3333.94.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 7. Oktober 2014, 12:20:38 schrieb Doug Anderson:
-> Heiko,
+On 14/10/07, Eric Paris wrote:
+> On Tue, 2014-10-07 at 14:23 -0400, Richard Guy Briggs wrote:
+> > Log the event when a client attempts to connect to the netlink audit multicast
+> > socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
+> > group.  Log the disconnect too.
+> > 
+> > Sample output:
+> > time->Tue Oct  7 14:15:19 2014
+> > type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1 pid=3552 comm="audit-multicast" exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0 op=connect res=1
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> > For some reason unbind isn't being called on disconnect.  I suspect missing
+> > plumbing in netlink.  Investigation needed...
+> > 
+> >  include/uapi/linux/audit.h |    1 +
+> >  kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++-
+> >  2 files changed, 45 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+> > index 4d100c8..7fa6e8f 100644
+> > --- a/include/uapi/linux/audit.h
+> > +++ b/include/uapi/linux/audit.h
+> > @@ -110,6 +110,7 @@
+> >  #define AUDIT_SECCOMP		1326	/* Secure Computing event */
+> >  #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
+> >  #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
+> > +#define AUDIT_EVENT_LISTENER	1348	/* task joined multicast read socket */
+> >  
+> >  #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+> >  #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+> > diff --git a/kernel/audit.c b/kernel/audit.c
+> > index 53bb39b..74c81a7 100644
+> > --- a/kernel/audit.c
+> > +++ b/kernel/audit.c
+> > @@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
+> >  	mutex_unlock(&audit_cmd_mutex);
+> >  }
+> >  
+> > +static void audit_log_bind(int group, char *op, int err)
+> > +{
+> > +	struct audit_buffer *ab;
+> > +	char comm[sizeof(current->comm)];
+> > +	struct mm_struct *mm = current->mm;
+> > +
+> > +	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
+> > +	if (!ab)
+> > +		return;
+> > +
+> > +	audit_log_format(ab, "auid=%d",
+> > +			from_kuid(&init_user_ns, audit_get_loginuid(current)));
+> > +	audit_log_format(ab, " uid=%d",
+> > +			 from_kuid(&init_user_ns, current_uid()));
+> > +	audit_log_format(ab, " gid=%d",
+> > +			 from_kgid(&init_user_ns, current_gid()));
+> > +	audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
+> > +	audit_log_format(ab, " pid=%d", task_pid_nr(current));
+> > +	audit_log_format(ab, " comm=");
+> > +	audit_log_untrustedstring(ab, get_task_comm(comm, current));
+> > +	if (mm) {
+> > +		down_read(&mm->mmap_sem);
+> > +		if (mm->exe_file)
+> > +			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
+> > +		up_read(&mm->mmap_sem);
+> > +	} else 
+> > +		audit_log_format(ab, " exe=(null)");
+> > +	audit_log_task_context(ab); /* subj= */
 > 
-> On Tue, Oct 7, 2014 at 11:27 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Am Dienstag, 7. Oktober 2014, 10:03:19 schrieb Doug Anderson:
-> >> Kever,
-> >> 
-> >> On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com>
-> > 
-> > wrote:
-> >> > We need to initialize PLL rate and some of bus clock rate while
-> >> > kernel init, for there is no other module will do that.
-> >> > 
-> >> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> >> > ---
-> >> > 
-> >> >  arch/arm/boot/dts/rk3288.dtsi | 10 ++++++++++
-> >> >  1 file changed, 10 insertions(+)
-> >> > 
-> >> > diff --git a/arch/arm/boot/dts/rk3288.dtsi
-> >> > b/arch/arm/boot/dts/rk3288.dtsi
-> >> > index 874e66d..2f4519b 100644
-> >> > --- a/arch/arm/boot/dts/rk3288.dtsi
-> >> > +++ b/arch/arm/boot/dts/rk3288.dtsi
-> >> > @@ -455,6 +455,16 @@
-> >> > 
-> >> >                 rockchip,grf = <&grf>;
-> >> >                 #clock-cells = <1>;
-> >> >                 #reset-cells = <1>;
-> >> > 
-> >> > +               assigned-clocks = <&cru PLL_GPLL>, <&cru PLL_CPLL>,
-> >> > +                                 <&cru PLL_NPLL>, <&cru ACLK_CPU>,
-> >> > +                                 <&cru HCLK_CPU>, <&cru PCLK_CPU>,
-> >> > +                                 <&cru ACLK_PERI>, <&cru HCLK_PERI>,
-> >> > +                                 <&cru PCLK_PERI>;
-> >> > +               assigned-clock-rates = <594000000>, <400000000>,
-> >> > +                                      <500000000>, <300000000>,
-> >> 
-> >> When I boot up, I see that ACLK_CPU was 297000000.  You specified
-> >> 300000000.  Did you expect to get 300?  If you expected 297, I think
-> >> you should put 297.  If you expected 300 then we have some debugging
-> >> to do.  Note: I'm not quite sure how you'd expect to get 300 given
-> >> that none of the PLLs divide evenly to 300...
-> > 
-> > I'd think 300 is simply the target value. I.e. take the closest rate <=
-> > 300
-> > MHz, same for 150 etc. I somehow like the approach of specifying what the
-> > rate _should_ ideally be :-) .
-> > 
-> > Also reduces the amount of thougths necessary (and possible
-> > head-scratching) when adapting the pll rates to some other constraints
-> > (child-clocks already have the target rates and cannot drop to some even
-> > stranger value).
-> OK, fair enough.  I guess maybe I've overly paranoid and like to make
-> sure that someone has thought through exactly what various core clocks
-> should be and made sure that the voltage matched and that clocks were
-> never out of spec.  ...but if others really like specifying more ideal
-> values then I'm OK with it.
+> super crazy yuck.  audit_log_task_info() ??
 
-Especially as clocks like ACLK_CPU can select from different plls (cpll and 
-gpll on the rk3288) it would be even more difficult to predict which path the 
-clock selection would take. So it makes sense to specifiy the value we wish for 
-and let the common-clock-framework do its magic to select the best sources.
+I agree.  I already suggested that a while ago.  I'd love to.  sgrubb
+thinks it dumps way too much info.  We still haven't got a definitive
+answer about what is enough and what is too much info for any given type
+of record.
 
+I also thought of moving audit_log_task() from auditsc.c to audit.c
+and using that.  For that matter, both audit_log_task() and
+audit_log_task_info() could use audit_log_session_info(), but they are
+in slightly different order of keywords which will upset sgrubb's
+parser.
 
->I will say that I'd really like the PLLs
-> to be exact, though.  I think those are now...
+What to do?
 
-agreed. PLL rates should be exact.
+Another paragraph I'd like to see added to
+	http://people.redhat.com/sgrubb/audit/audit-parse.txt
+would be a "canonical order" of keywords.  However, that discussion went
+nowhere.  Would it be reasonable to suggest only two possible orders
+instead of the almost infinite iterations possible and declare a
+standard order of keywords and gradually move to it?
+
+> > +	audit_log_format(ab, " group=%d", group);
+> 
+> group seems like too easily confused a name.
+
+"multicast_group" or "mc_group"?
+
+> > +	audit_log_format(ab, " op=%s", op);
+> > +	audit_log_format(ab, " res=%d", !err);
+> > +	audit_log_end(ab);
+> > +}
+> > +
+> >  /* Run custom bind function on netlink socket group connect or bind requests. */
+> >  static int audit_bind(int group)
+> >  {
+> > +	int err = 0;
+> > +
+> >  	if (!capable(CAP_AUDIT_READ))
+> > -		return -EPERM;
+> > +		err = -EPERM;
+> > +	audit_log_bind(group, "connect", err);
+> > +	return err;
+> > +}
+> >  
+> > -	return 0;
+> > +static void audit_unbind(int group)
+> > +{
+> > +	audit_log_bind(group, "disconnect", 0);
+> >  }
+> >  
+> >  static int __net_init audit_net_init(struct net *net)
+> > @@ -1124,6 +1165,7 @@ static int __net_init audit_net_init(struct net *net)
+> >  		.bind	= audit_bind,
+> >  		.flags	= NL_CFG_F_NONROOT_RECV,
+> >  		.groups	= AUDIT_NLGRP_MAX,
+> > +		.unbind	= audit_unbind,
+> >  	};
+> >  
+> >  	struct audit_net *aunet = net_generic(net, audit_net_id);
+> 
+> 
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
