@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755370AbaJGTou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:44:50 -0400
-Received: from relay.parallels.com ([195.214.232.42]:59805 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755213AbaJGTos (ORCPT
+	id S1755020AbaJGTwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:52:30 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:54232 "HELO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752470AbaJGTw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:44:48 -0400
-Date: Tue, 7 Oct 2014 23:44:35 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Andrey Vagin <avagin@openvz.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-api@vger.kernel.org>,
-        Andrey Vagin <avagin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
- current root
-Message-ID: <20141007194434.GA19745@paralelels.com>
-References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
- <20141007133039.GG7996@ZenIV.linux.org.uk>
- <20141007133339.GH7996@ZenIV.linux.org.uk>
+	Tue, 7 Oct 2014 15:52:29 -0400
+X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Tue, 07 Oct 2014 15:52:28 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <20141007133339.GH7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.24.24.25]
+In-Reply-To: <54341BD7.3070207@infradead.org>
+References: <20141007194454.10502188@canb.auug.org.au>
+	<54341BD7.3070207@infradead.org>
+Date: Tue, 7 Oct 2014 12:45:19 -0700
+Message-ID: <CACzMAJK+_GkDxSWpim764EafuDTgb3rAxNzMenNC1sP1wX7s9Q@mail.gmail.com>
+Subject: Re: [ovs-dev] linux-next: Tree for Oct 7 (openvswitch)
+From: Andy Zhou <azhou@nicira.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 02:33:39PM +0100, Al Viro wrote:
-> On Tue, Oct 07, 2014 at 02:30:40PM +0100, Al Viro wrote:
-> > On Tue, Oct 07, 2014 at 04:12:57PM +0400, Andrey Vagin wrote:
-> > > Another problem is that rootfs can't be hidden from a container, because
-> > > rootfs can't be moved or umounted.
-> > 
-> > ... which is a bug in mntns_install(), AFAICS.
-> 
-> Ability to get to exposed rootfs, that is.
-> 
-> > > Here is an example how to get access to rootfs:
-> > > fd = open("/proc/self/ns/mnt", O_RDONLY)
-> > > umount2("/", MNT_DETACH);
-> > > setns(fd, CLONE_NEWNS)
-> > > 
-> > > rootfs may contain data, which should not be avaliable in CT-s.
-> > 
-> > Indeed.
-> 
-> ... and it looks like the above is what your mangled reproducer in previous
-> patch had been made of -
-> 	fd = open("/proc/self/ns/mnt", O_RDONLY)
-> 	umount2("/", MNT_DETACH);
-> 	setns(fd, CLONE_NEWNS)
-> 	umount2("/", MNT_DETACH);
-> 
-> IMO what it shows is setns() bug.  This "switch root/cwd, no matter what"
-> is wrong.
+This issue should have been fixed with commit
+7c5df8fa1921450d2210db9928f43cf4f414982c
 
-How can we move in another namespace without this "switch"? If the task
-root and cwd isn't switched, they points to the old tree. In this case
-how can we open something from the new tree?
+Fix a openvswitch compilation error when CONFIG_INET is not set:
 
-Do you mean that root should not be changed if it points on a detached
-mount or on a mount from another mount namespace? This looks reasonable.
+    =====================================================
+       In file included from include/net/geneve.h:4:0,
+                           from net/openvswitch/flow_netlink.c:45:
+                          include/net/udp_tunnel.h: In function 'udp_tunnel_hand
+                          >> include/net/udp_tunnel.h:100:2: error: implicit dec
+                          >>      return iptunnel_handle_offloads(skb, udp_csum,
+                          >>           ^
+                          >>           >> include/net/udp_tunnel.h:100:2: warnin
+                          >>           >>    cc1: some warnings being treated as
+
+    =====================================================
+
+    Reported-by: kbuild test robot <fengguang.wu@intel.com>
+    Signed-off-by: Andy Zhou <azhou@nicira.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+On Tue, Oct 7, 2014 at 9:59 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
+> On 10/07/14 01:44, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20141003:
+>>
+>
+> on i386 or x86_64:
+>
+> In file included from ../include/net/geneve.h:4:0,
+>                  from ../net/openvswitch/flow_netlink.c:45:
+> ../include/net/udp_tunnel.h: In function 'udp_tunnel_handle_offloads':
+> ../include/net/udp_tunnel.h:100:2: error: implicit declaration of function 'iptunnel_handle_offloads' [-Werror=implicit-function-declaration]
+>   return iptunnel_handle_offloads(skb, udp_csum, type);
+>   ^
+> ../include/net/udp_tunnel.h:100:2: warning: return makes pointer from integer without a cast [enabled by default]
+>
+>
+>
+> --
+> ~Randy
+> _______________________________________________
+> dev mailing list
+> dev@openvswitch.org
+> http://openvswitch.org/mailman/listinfo/dev
