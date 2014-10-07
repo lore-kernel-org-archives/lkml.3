@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaJGRyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:54:49 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:52234 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657AbaJGRyr (ORCPT
+	id S932140AbaJGRyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:54:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39063 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657AbaJGRyu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:54:47 -0400
-Message-ID: <543428E1.7050702@linux.vnet.ibm.com>
-Date: Tue, 07 Oct 2014 13:54:41 -0400
-From: Stefan Berger <stefanb@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 7 Oct 2014 13:54:50 -0400
+Date: Tue, 7 Oct 2014 18:54:02 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Marcel Ziswiler <marcel@ziswiler.com>
+Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        stefan@agner.ch, Fabio Estevam <festevam@gmail.com>
+Message-ID: <20141007175402.GT4609@sirena.org.uk>
+References: <cover.1412381377.git.marcel@ziswiler.com>
+ <74ea4fe20e653d2da555c8d7dd1478746bccd529.1412381377.git.marcel@ziswiler.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>, Peter Huewe <PeterHuewe@gmx.de>
-CC: keyrings@linux-nfs.org, jarkko.sakkinnen@linux.intel.com,
-        "ksummit-discuss@lists.linuxfoundation.org" 
-	<ksummit-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        James Morris <james.l.morris@oracle.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        trousers-tech@lists.sourceforge.net
-Subject: Re: [TrouSerS-tech] [Ksummit-discuss] TPM MiniSummit @ LinuxCon Europe
-References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07> <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
-In-Reply-To: <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100717-0017-0000-0000-0000056826C2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Z1gw0Ba8VHj8Ap4r"
+Content-Disposition: inline
+In-Reply-To: <74ea4fe20e653d2da555c8d7dd1478746bccd529.1412381377.git.marcel@ziswiler.com>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/3] ASoC: tegra: add tegra sgtl5000 machine driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2014 12:42 PM, Andy Lutomirski wrote:
-> On Sep 22, 2014 2:07 AM, "Peter Huewe" <PeterHuewe@gmx.de> wrote:
->> Hi,
->>
->> I would like to 'invite' all interested parties in a short TPM minisummit where we can discuss the following hot topics of the TPM subsystem over a beer or two:
->>   - State of the TPM Subsystem
->>   - De-/Initialization Mess
->>   - Devm'ification
->>   - Testing
->>   - TPM 2.0 Support
->>   - Dependencies / interaction with other subsystems (e.g. keyring / IMA)
->>   - Status of old 1.1b TPM drivers, deprecation plans
->>   - ...
->>
-> I am unlikely to be there, but I have a feature request / food for thought:
->
-> Using a mandatory userspace daemon (e.g. trousers) for TPM access
-> sucks.  Might it be possible to teach the kernel to handle context
-> save and restore and let multiple processes open the device at once?
-> Then a daemon wouldn't be necessary.
 
-Why add the complexity of swapping of authenticated sessions and keys 
-into the kernel if you can handle this in userspace? You need a library 
-that is aware of the number of key slots and slots for sessions in the 
-TPM and swaps them in at out when applications need them. Trousers is 
-such a library that was designed to cope with the limitations of the 
-device and make its functionality available to all applications that 
-want to access it.
+--Z1gw0Ba8VHj8Ap4r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    Stefan
+On Sat, Oct 04, 2014 at 02:15:43AM +0200, Marcel Ziswiler wrote:
+> This binding and driver describe/support playback to headphones, and
+> capture from line-in and microphone.
+>=20
+> This driver is useful for the Toradex Apalis T30 and Colibri T30 modules.
+>=20
+> Signed-off-by: Marcel Ziswiler <marcel@ziswiler.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes in v3:
+> - Revert to not using simple-audio-card being incompatible with tegra.
+> - Rebased to for-next.
 
->
-> There would still be a need for some policy (e.g. who can clear the
-> SRK), but that should be manageable.  Maybe there should be two device
-> nodes.  /dev/tpm_unpriv would be fully virtualized for access by
-> multiple processes, but it would only allow use of the key hierarchy
-> and read access to PCRs.  /dev/tpm_priv would allow NV access, PCR
-> writes, SRK clears, etc.
->
-> --Andy
->
->> Please register your interest by filling out this doodle
->>   http://doodle.com/q9ezcrivhqrktw6u
->>
->> I'm not sure if I can get any funding for the summit... but maybe I can arrange something.
->>
->>
->> Also I'm trying to bring along some TPM samples from my employer if possible.
->>
->>
->> Thanks
->> Peter
->>
->> p.s.: experienced kernel developers welcome :)
->> _______________________________________________
->> Ksummit-discuss mailing list
->> Ksummit-discuss@lists.linuxfoundation.org
->> https://lists.linuxfoundation.org/mailman/listinfo/ksummit-discuss
-> ------------------------------------------------------------------------------
-> Meet PCI DSS 3.0 Compliance Requirements with EventLog Analyzer
-> Achieve PCI DSS 3.0 Compliant Status with Out-of-the-box PCI DSS Reports
-> Are you Audit-Ready for PCI DSS 3.0 Compliance? Download White paper
-> Comply to PCI DSS 3.0 Requirement 10 and 11.5 with EventLog Analyzer
-> http://pubads.g.doubleclick.net/gampad/clk?id=154622311&iu=/4140/ostg.clktrk
-> _______________________________________________
-> TrouSerS-tech mailing list
-> TrouSerS-tech@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/trousers-tech
->
+I can't help but think that't there's still room for a Tegra simple card
+here, there doesn't seem to be anything particularly CODEC specific
+about the driver here - it *could* use simple-card were it not for the
+CPU side.  This also seems like a specific example of the same problem
+we see with supporting DPCM in simple-card, we need a way for CPUs to
+be able to say that they need some general setup that covers the CPU
+internal configuration.
 
+--Z1gw0Ba8VHj8Ap4r
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNCi5AAoJECTWi3JdVIfQEAQH/i4sms+iNsBEGLCrkZmdPBR+
+NdQBJrohsOUj0V4xeOOspSVUlM3PeR2PDEh7QxNInRnFRmi8+r8cqmgX49AOhFr5
+vk3s+aIJY+vjhpctHG3uzwKvJC/4pdem+oV1qdgjSTs1EmZIMpiilRzavx/Etugu
+ZYfVxeC7xNVsaYnBhIVSC+7mF4vDRaf+cPpfAGls7VkkuEw4X8eFs5hwKLMctY+r
+RBxeiqQ6Qh7++Esj6nJE4Z9wFpxePhKnN4hfjcoka21U6oSfBaQkdp8VVEExEY8E
+ms9B4g+ErcvtPJVoBnLaWXTcO9eXc5Dr49PmqDyvaUn5Q5tFcIEsvGqjBre63vg=
+=ZNY2
+-----END PGP SIGNATURE-----
+
+--Z1gw0Ba8VHj8Ap4r--
