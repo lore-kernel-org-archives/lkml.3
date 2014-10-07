@@ -1,57 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346AbaJGT2K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:28:10 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:47780 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932075AbaJGT2E (ORCPT
+	id S932362AbaJGT2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:28:24 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:57713 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932348AbaJGT2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:28:04 -0400
+	Tue, 7 Oct 2014 15:28:19 -0400
+Message-ID: <54343ED0.6070200@linaro.org>
+Date: Tue, 07 Oct 2014 20:28:16 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Date: Tue, 7 Oct 2014 21:28:02 +0200
-Message-ID: <CAFLt3pjkXgz9H9p=u-NATyf4C+8ybJ3fwLc=GXEjaabBZ8NF5g@mail.gmail.com>
-Subject: High latency while CPU is under full load
-From: Grozdan <neutrino8@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 04/15] clk: divider: Make generic for usage elsewhere
+References: <1409957256-23729-1-git-send-email-sboyd@codeaurora.org> <1409957256-23729-5-git-send-email-sboyd@codeaurora.org> <542EE5FE.9080806@codeaurora.org> <54342287.7020005@linaro.org> <54343038.2060007@codeaurora.org>
+In-Reply-To: <54343038.2060007@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Basically, my problem is this:
 
-I'm doing a lot of audio/video encoding on an AMD FX8350. The encoder
-process always runs at nice 10. Even so, my whole system feels very
-sluggish. Switching between different app windows and/or virtual
-desktops takes up usually 3-5 seconds giving the impression that there
-is not enough processing power. Browsing the web is also severely
-impacted.
+On 07/10/14 19:26, Stephen Boyd wrote:
+> On 10/07/2014 10:27 AM, Srinivas Kandagatla wrote:
+>> Hi Stephen,
+>>
+>> Just noticed this regression while testing the patch on Arndale board.
+>>
+>> https://bugs.linaro.org/show_bug.cgi?id=740
+>
+> If you return value it works correctly right?
+>
+Am really not sure, as this bug was originally reported as part of 
+Linaro tracking kernel.
 
-I had to tune CFS in order to be (much) more responsive during an
-encoding session. This has worked out pretty well thus far, but it is
-my opinion that the user should *not* need to fiddle with buttons to
-make his system respond fluently even under high load. The below is
-what I had to do in order to get a snappy system during such load
-
-kernel.sched_nr_migrate = 64
-kernel.sched_latency_ns = 65000000
-kernel.sched_wakeup_granularity_ns = 100000
-kernel.sched_min_granularity_ns = 100000
-kernel.sched_migration_cost_ns = 7000000
-
-I have tried 3 different kernels, including one compiled myself, but
-the results are the same
-Kernels I tried were: 3.11.10, 3.12 and 3.16.4 (self-compiled)
-
-My system specs are as follows
-
-CPU: AMD FX-8350 @ 4GHz
-RAM: 16GB DDR1333
-GPU: NVIDIA GTX 560 with NV blob driver
-HDD: Seagate Constellation ES.3 128MB cache
-Desktop: KDE 4.11
-
--- 
-Yours truly
+--srini
