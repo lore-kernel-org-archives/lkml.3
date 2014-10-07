@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaJGFaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:30:05 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40462 "EHLO
+	id S1753976AbaJGFlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 01:41:51 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:40664 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbaJGF3q (ORCPT
+	with ESMTP id S1753534AbaJGFaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:29:46 -0400
+	Tue, 7 Oct 2014 01:30:05 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
@@ -24,12 +24,13 @@ Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
         linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
         linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH 20/44] power/reset: restart-poweroff: Register with kernel poweroff handler
-Date: Mon,  6 Oct 2014 22:28:22 -0700
-Message-Id: <1412659726-29957-21-git-send-email-linux@roeck-us.net>
+        Guenter Roeck <linux@roeck-us.net>,
+        Julian Andres Klode <jak@jak-linux.org>,
+        Marc Dietrich <marvin24@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 29/44] staging: nvec: Register with kernel poweroff handler
+Date: Mon,  6 Oct 2014 22:28:31 -0700
+Message-Id: <1412659726-29957-30-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
 References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
@@ -39,13 +40,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.54337A49.00E8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020207.54337A5D.0022,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: 
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 224
+X-CTCH-SenderID-TotalMessages: 391
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -65,70 +66,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel poweroff handler instead of seting pm_power_off
-directly.  Register as poweroff handler of last resort since the driver
-does not really power off the system but executes a restart.
+Register with kernel poweroff handler instead of setting pm_power_off
+directly. Register with default priority value of 128 since we don't know
+any better.
 
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Julian Andres Klode <jak@jak-linux.org>
+Cc: Marc Dietrich <marvin24@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/power/reset/restart-poweroff.c | 25 ++++++++++++-------------
- 1 file changed, 12 insertions(+), 13 deletions(-)
+ drivers/staging/nvec/nvec.c | 24 +++++++++++++++---------
+ drivers/staging/nvec/nvec.h |  2 ++
+ 2 files changed, 17 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index edd707e..5437697 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -12,35 +12,34 @@
-  */
- #include <linux/kernel.h>
- #include <linux/init.h>
-+#include <linux/notifier.h>
- #include <linux/platform_device.h>
- #include <linux/of_platform.h>
- #include <linux/module.h>
+diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+index a93208a..33d406c 100644
+--- a/drivers/staging/nvec/nvec.c
++++ b/drivers/staging/nvec/nvec.c
+@@ -33,6 +33,7 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mutex.h>
+ #include <linux/notifier.h>
 +#include <linux/pm.h>
- #include <linux/reboot.h>
--#include <asm/system_misc.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/workqueue.h>
+@@ -80,8 +81,6 @@ enum nvec_sleep_subcmds {
+ #define LID_SWITCH BIT(1)
+ #define PWR_BUTTON BIT(15)
  
--static void restart_poweroff_do_poweroff(void)
-+static int restart_poweroff_do_poweroff(struct notifier_block *this,
-+					unsigned long unused1, void *unused2)
+-static struct nvec_chip *nvec_power_handle;
+-
+ static const struct mfd_cell nvec_devices[] = {
+ 	{
+ 		.name = "nvec-kbd",
+@@ -759,12 +758,17 @@ static void nvec_disable_i2c_slave(struct nvec_chip *nvec)
+ }
+ #endif
+ 
+-static void nvec_power_off(void)
++static int nvec_power_off(struct notifier_block *this, unsigned long unused1,
++			  void *unused2)
  {
- 	reboot_mode = REBOOT_HARD;
- 	machine_restart(NULL);
++	struct nvec_chip *nvec = container_of(this, struct nvec_chip,
++					      poweroff_nb);
+ 	char ap_pwr_down[] = { NVEC_SLEEP, AP_PWR_DOWN };
+ 
+-	nvec_toggle_global_events(nvec_power_handle, false);
+-	nvec_write_async(nvec_power_handle, ap_pwr_down, 2);
++	nvec_toggle_global_events(nvec, false);
++	nvec_write_async(nvec, ap_pwr_down, 2);
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block restart_poweroff_handler = {
-+	.notifier_call = restart_poweroff_do_poweroff,
-+};
-+
- static int restart_poweroff_probe(struct platform_device *pdev)
- {
--	/* If a pm_power_off function has already been added, leave it alone */
--	if (pm_power_off != NULL) {
--		dev_err(&pdev->dev,
--			"pm_power_off function already registered");
--		return -EBUSY;
--	}
--
--	pm_power_off = &restart_poweroff_do_poweroff;
--	return 0;
-+	return register_poweroff_handler(&restart_poweroff_handler);
- }
+ /*
+@@ -878,8 +882,11 @@ static int tegra_nvec_probe(struct platform_device *pdev)
+ 	nvec->nvec_status_notifier.notifier_call = nvec_status_notifier;
+ 	nvec_register_notifier(nvec, &nvec->nvec_status_notifier, 0);
  
- static int restart_poweroff_remove(struct platform_device *pdev)
+-	nvec_power_handle = nvec;
+-	pm_power_off = nvec_power_off;
++	nvec->poweroff_nb.notifier_call = nvec_power_off;
++	nvec->poweroff_nb.priority = 128;
++	ret = register_poweroff_handler(&nvec->poweroff_nb);
++	if (ret)
++		dev_err(nvec->dev, "Failed to register poweroff handler\n");
+ 
+ 	/* Get Firmware Version */
+ 	msg = nvec_write_sync(nvec, get_firmware_version, 2);
+@@ -914,13 +921,12 @@ static int tegra_nvec_remove(struct platform_device *pdev)
  {
--	if (pm_power_off == &restart_poweroff_do_poweroff)
--		pm_power_off = NULL;
-+	unregister_poweroff_handler(&restart_poweroff_handler);
+ 	struct nvec_chip *nvec = platform_get_drvdata(pdev);
+ 
++	unregister_poweroff_handler(&nvec->poweroff_nb);
+ 	nvec_toggle_global_events(nvec, false);
+ 	mfd_remove_devices(nvec->dev);
+ 	nvec_unregister_notifier(nvec, &nvec->nvec_status_notifier);
+ 	cancel_work_sync(&nvec->rx_work);
+ 	cancel_work_sync(&nvec->tx_work);
+-	/* FIXME: needs check wether nvec is responsible for power off */
+-	pm_power_off = NULL;
  
  	return 0;
  }
+diff --git a/drivers/staging/nvec/nvec.h b/drivers/staging/nvec/nvec.h
+index e271375..e5ee2af 100644
+--- a/drivers/staging/nvec/nvec.h
++++ b/drivers/staging/nvec/nvec.h
+@@ -163,6 +163,8 @@ struct nvec_chip {
+ 	struct nvec_msg *last_sync_msg;
+ 
+ 	int state;
++
++	struct notifier_block poweroff_nb;
+ };
+ 
+ extern int nvec_write_async(struct nvec_chip *nvec, const unsigned char *data,
 -- 
 1.9.1
 
