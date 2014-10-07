@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932507AbaJGXUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39944 "EHLO
+	id S932450AbaJGXUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39724 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480AbaJGXU3 (ORCPT
+	with ESMTP id S932308AbaJGXUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:29 -0400
+	Tue, 7 Oct 2014 19:20:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Paul Turner <pjt@google.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>, Aaron Jacobs <jacobsa@google.com>,
-        Andrew Hunter <ahh@google.com>, John Stultz <john.stultz@linaro.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.10 09/13] jiffies: Fix timeval conversion to jiffies
-Date: Tue,  7 Oct 2014 16:20:14 -0700
-Message-Id: <20141007231920.198918326@linuxfoundation.org>
+        Vladimir Davydov <vdavydov@parallels.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 3.14 34/37] mm: vmscan: shrink_slab: rename max_pass -> freeable
+Date: Tue,  7 Oct 2014 16:19:51 -0700
+Message-Id: <20141007231828.100214595@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
-References: <20141007231919.924479934@linuxfoundation.org>
+In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
+References: <20141007231827.043235686@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -29,213 +28,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andrew Hunter <ahh@google.com>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-commit d78c9300c51d6ceed9f6d078d4e9366f259de28c upstream.
+commit d5bc5fd3fcb7b8dfb431694a8c8052466504c10c upstream.
 
-timeval_to_jiffies tried to round a timeval up to an integral number
-of jiffies, but the logic for doing so was incorrect: intervals
-corresponding to exactly N jiffies would become N+1. This manifested
-itself particularly repeatedly stopping/starting an itimer:
+The name `max_pass' is misleading, because this variable actually keeps
+the estimate number of freeable objects, not the maximal number of
+objects we can scan in this pass, which can be twice that.  Rename it to
+reflect its actual meaning.
 
-setitimer(ITIMER_PROF, &val, NULL);
-setitimer(ITIMER_PROF, NULL, &val);
-
-would add a full tick to val, _even if it was exactly representable in
-terms of jiffies_ (say, the result of a previous rounding.)  Doing
-this repeatedly would cause unbounded growth in val.  So fix the math.
-
-Here's what was wrong with the conversion: we essentially computed
-(eliding seconds)
-
-jiffies = usec  * (NSEC_PER_USEC/TICK_NSEC)
-
-by using scaling arithmetic, which took the best approximation of
-NSEC_PER_USEC/TICK_NSEC with denominator of 2^USEC_JIFFIE_SC =
-x/(2^USEC_JIFFIE_SC), and computed:
-
-jiffies = (usec * x) >> USEC_JIFFIE_SC
-
-and rounded this calculation up in the intermediate form (since we
-can't necessarily exactly represent TICK_NSEC in usec.) But the
-scaling arithmetic is a (very slight) *over*approximation of the true
-value; that is, instead of dividing by (1 usec/ 1 jiffie), we
-effectively divided by (1 usec/1 jiffie)-epsilon (rounding
-down). This would normally be fine, but we want to round timeouts up,
-and we did so by adding 2^USEC_JIFFIE_SC - 1 before the shift; this
-would be fine if our division was exact, but dividing this by the
-slightly smaller factor was equivalent to adding just _over_ 1 to the
-final result (instead of just _under_ 1, as desired.)
-
-In particular, with HZ=1000, we consistently computed that 10000 usec
-was 11 jiffies; the same was true for any exact multiple of
-TICK_NSEC.
-
-We could possibly still round in the intermediate form, adding
-something less than 2^USEC_JIFFIE_SC - 1, but easier still is to
-convert usec->nsec, round in nanoseconds, and then convert using
-time*spec*_to_jiffies.  This adds one constant multiplication, and is
-not observably slower in microbenchmarks on recent x86 hardware.
-
-Tested: the following program:
-
-int main() {
-  struct itimerval zero = {{0, 0}, {0, 0}};
-  /* Initially set to 10 ms. */
-  struct itimerval initial = zero;
-  initial.it_interval.tv_usec = 10000;
-  setitimer(ITIMER_PROF, &initial, NULL);
-  /* Save and restore several times. */
-  for (size_t i = 0; i < 10; ++i) {
-    struct itimerval prev;
-    setitimer(ITIMER_PROF, &zero, &prev);
-    /* on old kernels, this goes up by TICK_USEC every iteration */
-    printf("previous value: %ld %ld %ld %ld\n",
-           prev.it_interval.tv_sec, prev.it_interval.tv_usec,
-           prev.it_value.tv_sec, prev.it_value.tv_usec);
-    setitimer(ITIMER_PROF, &prev, NULL);
-  }
-    return 0;
-}
-
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Turner <pjt@google.com>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Reported-by: Aaron Jacobs <jacobsa@google.com>
-Signed-off-by: Andrew Hunter <ahh@google.com>
-[jstultz: Tweaked to apply to 3.17-rc]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-[bwh: Backported to 3.16: adjust filename]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/jiffies.h |   12 ----------
- kernel/time.c           |   54 ++++++++++++++++++++++++++----------------------
- 2 files changed, 30 insertions(+), 36 deletions(-)
+ mm/vmscan.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -254,23 +254,11 @@ extern unsigned long preset_lpj;
- #define SEC_JIFFIE_SC (32 - SHIFT_HZ)
- #endif
- #define NSEC_JIFFIE_SC (SEC_JIFFIE_SC + 29)
--#define USEC_JIFFIE_SC (SEC_JIFFIE_SC + 19)
- #define SEC_CONVERSION ((unsigned long)((((u64)NSEC_PER_SEC << SEC_JIFFIE_SC) +\
-                                 TICK_NSEC -1) / (u64)TICK_NSEC))
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -224,15 +224,15 @@ shrink_slab_node(struct shrink_control *
+ 	unsigned long freed = 0;
+ 	unsigned long long delta;
+ 	long total_scan;
+-	long max_pass;
++	long freeable;
+ 	long nr;
+ 	long new_nr;
+ 	int nid = shrinkctl->nid;
+ 	long batch_size = shrinker->batch ? shrinker->batch
+ 					  : SHRINK_BATCH;
  
- #define NSEC_CONVERSION ((unsigned long)((((u64)1 << NSEC_JIFFIE_SC) +\
-                                         TICK_NSEC -1) / (u64)TICK_NSEC))
--#define USEC_CONVERSION  \
--                    ((unsigned long)((((u64)NSEC_PER_USEC << USEC_JIFFIE_SC) +\
--                                        TICK_NSEC -1) / (u64)TICK_NSEC))
--/*
-- * USEC_ROUND is used in the timeval to jiffie conversion.  See there
-- * for more details.  It is the scaled resolution rounding value.  Note
-- * that it is a 64-bit value.  Since, when it is applied, we are already
-- * in jiffies (albit scaled), it is nothing but the bits we will shift
-- * off.
-- */
--#define USEC_ROUND (u64)(((u64)1 << USEC_JIFFIE_SC) - 1)
- /*
-  * The maximum jiffie value is (MAX_INT >> 1).  Here we translate that
-  * into seconds.  The 64-bit case will overflow if we are not careful,
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -496,17 +496,20 @@ EXPORT_SYMBOL(usecs_to_jiffies);
-  * that a remainder subtract here would not do the right thing as the
-  * resolution values don't fall on second boundries.  I.e. the line:
-  * nsec -= nsec % TICK_NSEC; is NOT a correct resolution rounding.
-+ * Note that due to the small error in the multiplier here, this
-+ * rounding is incorrect for sufficiently large values of tv_nsec, but
-+ * well formed timespecs should have tv_nsec < NSEC_PER_SEC, so we're
-+ * OK.
-  *
-  * Rather, we just shift the bits off the right.
-  *
-  * The >> (NSEC_JIFFIE_SC - SEC_JIFFIE_SC) converts the scaled nsec
-  * value to a scaled second value.
-  */
--unsigned long
--timespec_to_jiffies(const struct timespec *value)
-+static unsigned long
-+__timespec_to_jiffies(unsigned long sec, long nsec)
- {
--	unsigned long sec = value->tv_sec;
--	long nsec = value->tv_nsec + TICK_NSEC - 1;
-+	nsec = nsec + TICK_NSEC - 1;
+-	max_pass = shrinker->count_objects(shrinker, shrinkctl);
+-	if (max_pass == 0)
++	freeable = shrinker->count_objects(shrinker, shrinkctl);
++	if (freeable == 0)
+ 		return 0;
  
- 	if (sec >= MAX_SEC_IN_JIFFIES){
- 		sec = MAX_SEC_IN_JIFFIES;
-@@ -517,6 +520,13 @@ timespec_to_jiffies(const struct timespe
- 		 (NSEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
+ 	/*
+@@ -244,14 +244,14 @@ shrink_slab_node(struct shrink_control *
  
- }
-+
-+unsigned long
-+timespec_to_jiffies(const struct timespec *value)
-+{
-+	return __timespec_to_jiffies(value->tv_sec, value->tv_nsec);
-+}
-+
- EXPORT_SYMBOL(timespec_to_jiffies);
+ 	total_scan = nr;
+ 	delta = (4 * nr_pages_scanned) / shrinker->seeks;
+-	delta *= max_pass;
++	delta *= freeable;
+ 	do_div(delta, lru_pages + 1);
+ 	total_scan += delta;
+ 	if (total_scan < 0) {
+ 		printk(KERN_ERR
+ 		"shrink_slab: %pF negative objects to delete nr=%ld\n",
+ 		       shrinker->scan_objects, total_scan);
+-		total_scan = max_pass;
++		total_scan = freeable;
+ 	}
  
- void
-@@ -533,31 +543,27 @@ jiffies_to_timespec(const unsigned long
- }
- EXPORT_SYMBOL(jiffies_to_timespec);
+ 	/*
+@@ -260,26 +260,26 @@ shrink_slab_node(struct shrink_control *
+ 	 * shrinkers to return -1 all the time. This results in a large
+ 	 * nr being built up so when a shrink that can do some work
+ 	 * comes along it empties the entire cache due to nr >>>
+-	 * max_pass.  This is bad for sustaining a working set in
++	 * freeable. This is bad for sustaining a working set in
+ 	 * memory.
+ 	 *
+ 	 * Hence only allow the shrinker to scan the entire cache when
+ 	 * a large delta change is calculated directly.
+ 	 */
+-	if (delta < max_pass / 4)
+-		total_scan = min(total_scan, max_pass / 2);
++	if (delta < freeable / 4)
++		total_scan = min(total_scan, freeable / 2);
  
--/* Same for "timeval"
-+/*
-+ * We could use a similar algorithm to timespec_to_jiffies (with a
-+ * different multiplier for usec instead of nsec). But this has a
-+ * problem with rounding: we can't exactly add TICK_NSEC - 1 to the
-+ * usec value, since it's not necessarily integral.
-+ *
-+ * We could instead round in the intermediate scaled representation
-+ * (i.e. in units of 1/2^(large scale) jiffies) but that's also
-+ * perilous: the scaling introduces a small positive error, which
-+ * combined with a division-rounding-upward (i.e. adding 2^(scale) - 1
-+ * units to the intermediate before shifting) leads to accidental
-+ * overflow and overestimates.
-  *
-- * Well, almost.  The problem here is that the real system resolution is
-- * in nanoseconds and the value being converted is in micro seconds.
-- * Also for some machines (those that use HZ = 1024, in-particular),
-- * there is a LARGE error in the tick size in microseconds.
--
-- * The solution we use is to do the rounding AFTER we convert the
-- * microsecond part.  Thus the USEC_ROUND, the bits to be shifted off.
-- * Instruction wise, this should cost only an additional add with carry
-- * instruction above the way it was done above.
-+ * At the cost of one additional multiplication by a constant, just
-+ * use the timespec implementation.
-  */
- unsigned long
- timeval_to_jiffies(const struct timeval *value)
- {
--	unsigned long sec = value->tv_sec;
--	long usec = value->tv_usec;
--
--	if (sec >= MAX_SEC_IN_JIFFIES){
--		sec = MAX_SEC_IN_JIFFIES;
--		usec = 0;
--	}
--	return (((u64)sec * SEC_CONVERSION) +
--		(((u64)usec * USEC_CONVERSION + USEC_ROUND) >>
--		 (USEC_JIFFIE_SC - SEC_JIFFIE_SC))) >> SEC_JIFFIE_SC;
-+	return __timespec_to_jiffies(value->tv_sec,
-+				     value->tv_usec * NSEC_PER_USEC);
- }
- EXPORT_SYMBOL(timeval_to_jiffies);
+ 	/*
+ 	 * Avoid risking looping forever due to too large nr value:
+ 	 * never try to free more than twice the estimate number of
+ 	 * freeable entries.
+ 	 */
+-	if (total_scan > max_pass * 2)
+-		total_scan = max_pass * 2;
++	if (total_scan > freeable * 2)
++		total_scan = freeable * 2;
+ 
+ 	trace_mm_shrink_slab_start(shrinker, shrinkctl, nr,
+ 				nr_pages_scanned, lru_pages,
+-				max_pass, delta, total_scan);
++				freeable, delta, total_scan);
+ 
+ 	/*
+ 	 * Normally, we should not scan less than batch_size objects in one
+@@ -292,12 +292,12 @@ shrink_slab_node(struct shrink_control *
+ 	 *
+ 	 * We detect the "tight on memory" situations by looking at the total
+ 	 * number of objects we want to scan (total_scan). If it is greater
+-	 * than the total number of objects on slab (max_pass), we must be
++	 * than the total number of objects on slab (freeable), we must be
+ 	 * scanning at high prio and therefore should try to reclaim as much as
+ 	 * possible.
+ 	 */
+ 	while (total_scan >= batch_size ||
+-	       total_scan >= max_pass) {
++	       total_scan >= freeable) {
+ 		unsigned long ret;
+ 		unsigned long nr_to_scan = min(batch_size, total_scan);
  
 
 
