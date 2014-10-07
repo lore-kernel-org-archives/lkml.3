@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbaJGSRR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:17:17 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45613 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaJGSRQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:17:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <54341013.2030509@caviumnetworks.com>
-References: <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx>
- <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx>
- <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com>
- <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com>
- <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com>
- <20141007111102.GH23797@brightrain.aerifal.cx> <54341013.2030509@caviumnetworks.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Oct 2014 11:16:54 -0700
-Message-ID: <CALCETrWHE0nMZFthg_JP9dEABpvyumcKoHGn1-2q2F2nm2CvLg@mail.gmail.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        David Daney <ddaney.cavm@gmail.com>,
-        David Daney <david.daney@cavium.com>, Rich Felker <dalias@libc.org>,
-        David Daney <david.s.daney@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754859AbaJGSXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:23:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753857AbaJGSXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:23:49 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        pmoore@redhat.com, ebiederm@xmission.com, serge@hallyn.com,
+        keescook@chromium.org
+Subject: [RFC][PATCH] audit: log join and part events to the read-only multicast log socket
+Date: Tue,  7 Oct 2014 14:23:19 -0400
+Message-Id: <30ef5c1ba42b52953e5684a0322975c3f0fadc77.1412706089.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 7, 2014 9:09 AM, "David Daney" <ddaney@caviumnetworks.com> wrote:
->
-> On 10/07/2014 04:11 AM, Rich Felker wrote:
->>
->> On Mon, Oct 06, 2014 at 09:50:47PM -0700, David Daney wrote:
->>>>>
->>>>> the out-of-line execution trick, but do it somewhere other than in
->>>>> stack memory.
->>>>
->>>> How do you answer Andy Lutomirski's question about what happens when a
->>>> signal handler interrupts execution while the program counter is
->>>> pointing at this "out-of-line execution" trampoline? This seems like a
->>>> show-stopper for using anything other than the stack.
->>>
->>> It would be nice to support, but not doing so would not be a
->>> regression from current behavior.
->>
->>
->> It's not just "nice" to support, it's mandatory. Otherwise you will
->> execute essentially *random instructions* in this case, providing a
->> very nice attack vector that can almost certainly be elevated to
->> arbitrary code execution via timing of signals during floating point
->> code.
->>
->> The current behavior in regards to this is correct: because you have a
->> *stack*, each trampoline is pushed onto the stack in its own context,
->> and popped when it's no longer needed. You can have arbitrarily many
->> such trampolines up to the stack size. Note that each nested signal
->> handler already requires sizeof(ucontext_t) in stack space, so these
->> trampolines are a negligible additional cost without major effects on
->> the number of signal handlers you can nest without overflowing the
->> stack.
->
->
-> Yes, the stack takes care of the allocations, but the current implementation has many problems:
->
-> 1) Signals clobber the emulation area.
-> 2) Signals caused by the emulation, have incorrect saved machine state.
->
-> We have a low bar to pass, any new solution doesn't have to be perfect, it only has to be an improvement.
->
-> Keep in mind that we are not starting from a clean slate, there are many years of legacy code that has built up here.
+Log the event when a client attempts to connect to the netlink audit multicast
+socket, requiring CAP_AUDIT_READ capability, binding to the AUDIT_NLGRP_READLOG
+group.  Log the disconnect too.
 
-A lesson I learned when doing the x86 vsyscall stuff: Don't waste time
-improving legacy crap without a really good reason.  Especially don't
-extend the interface.  Deprecate it (without breaking working user
-code) and move on.
+Sample output:
+time->Tue Oct  7 14:15:19 2014
+type=UNKNOWN[1348] msg=audit(1412705719.316:117): auid=0 uid=0 gid=0 ses=1 pid=3552 comm="audit-multicast" exe="/home/rgb/rgb/git/audit-multicast-listen/audit-multicast-listen" subj=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 group=0 op=connect res=1
 
---Andy
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+For some reason unbind isn't being called on disconnect.  I suspect missing
+plumbing in netlink.  Investigation needed...
 
->
-> David Daney
+ include/uapi/linux/audit.h |    1 +
+ kernel/audit.c             |   46 ++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 45 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 4d100c8..7fa6e8f 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -110,6 +110,7 @@
+ #define AUDIT_SECCOMP		1326	/* Secure Computing event */
+ #define AUDIT_PROCTITLE		1327	/* Proctitle emit event */
+ #define AUDIT_FEATURE_CHANGE	1328	/* audit log listing feature changes */
++#define AUDIT_EVENT_LISTENER	1348	/* task joined multicast read socket */
+ 
+ #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
+ #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 53bb39b..74c81a7 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1108,13 +1108,54 @@ static void audit_receive(struct sk_buff  *skb)
+ 	mutex_unlock(&audit_cmd_mutex);
+ }
+ 
++static void audit_log_bind(int group, char *op, int err)
++{
++	struct audit_buffer *ab;
++	char comm[sizeof(current->comm)];
++	struct mm_struct *mm = current->mm;
++
++	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_EVENT_LISTENER);
++	if (!ab)
++		return;
++
++	audit_log_format(ab, "auid=%d",
++			from_kuid(&init_user_ns, audit_get_loginuid(current)));
++	audit_log_format(ab, " uid=%d",
++			 from_kuid(&init_user_ns, current_uid()));
++	audit_log_format(ab, " gid=%d",
++			 from_kgid(&init_user_ns, current_gid()));
++	audit_log_format(ab, " ses=%d", audit_get_sessionid(current));
++	audit_log_format(ab, " pid=%d", task_pid_nr(current));
++	audit_log_format(ab, " comm=");
++	audit_log_untrustedstring(ab, get_task_comm(comm, current));
++	if (mm) {
++		down_read(&mm->mmap_sem);
++		if (mm->exe_file)
++			audit_log_d_path(ab, " exe=", &mm->exe_file->f_path);
++		up_read(&mm->mmap_sem);
++	} else 
++		audit_log_format(ab, " exe=(null)");
++	audit_log_task_context(ab); /* subj= */
++	audit_log_format(ab, " group=%d", group);
++	audit_log_format(ab, " op=%s", op);
++	audit_log_format(ab, " res=%d", !err);
++	audit_log_end(ab);
++}
++
+ /* Run custom bind function on netlink socket group connect or bind requests. */
+ static int audit_bind(int group)
+ {
++	int err = 0;
++
+ 	if (!capable(CAP_AUDIT_READ))
+-		return -EPERM;
++		err = -EPERM;
++	audit_log_bind(group, "connect", err);
++	return err;
++}
+ 
+-	return 0;
++static void audit_unbind(int group)
++{
++	audit_log_bind(group, "disconnect", 0);
+ }
+ 
+ static int __net_init audit_net_init(struct net *net)
+@@ -1124,6 +1165,7 @@ static int __net_init audit_net_init(struct net *net)
+ 		.bind	= audit_bind,
+ 		.flags	= NL_CFG_F_NONROOT_RECV,
+ 		.groups	= AUDIT_NLGRP_MAX,
++		.unbind	= audit_unbind,
+ 	};
+ 
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+-- 
+1.7.1
+
