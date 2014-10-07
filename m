@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593AbaJGQ7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:59:41 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:42360 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858AbaJGQ7e (ORCPT
+	id S1754828AbaJGQ7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:59:49 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:51010 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbaJGQ7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:59:34 -0400
-Message-ID: <54341BF1.9020001@gmail.com>
-Date: Tue, 07 Oct 2014 09:59:29 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 7 Oct 2014 12:59:46 -0400
+Date: Tue, 7 Oct 2014 09:59:41 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [git pull] Input updates for 3.18-rc0
+Message-ID: <20141007165941.GF16469@dtor-ws>
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Rob Landley <rob@landley.net>
-CC: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
-        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 05/44] mfd: as3722: Drop reference to pm_power_off from
- devicetree bindings
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-6-git-send-email-linux@roeck-us.net> <543412F7.8040909@landley.net> <20141007163131.GE28835@roeck-us.net>
-In-Reply-To: <20141007163131.GE28835@roeck-us.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 09:31 AM, Guenter Roeck wrote:
-> On Tue, Oct 07, 2014 at 11:21:11AM -0500, Rob Landley wrote:
->> On 10/07/14 00:28, Guenter Roeck wrote:
->>> Devicetree bindings are supposed to be operating system independent
->>> and should thus not describe how a specific functionality is implemented
->>> in Linux.
->>
->> So your argument is that linux/Documentation/devicetree/bindings should
->> not be specific to Linux. Merely hosted in the Linux kernel source
->> repository.
->>
->> Well that's certainly a point of view.
->>
-> Not specifically my argument, really, and nothing new either. But, yes, I do
-> think that devicetree bindings descriptions should not include implementation
-> details, especially since those may change over time (as is the case here).
->
+Hi Linus,
 
-I fully agree.
+Please pull from:
 
-Many device trees come from outside the kernel (i.e. they are supplied 
-by the system boot environment).  Obviously these device trees cannot be 
-changed at the whim of kernel developers, *and* it is perfectly 
-reasonable to think that software other than the Linux kernel will run 
-on this type of system too.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-So yes, it is really true, device trees are not a Linux kernel private 
-implementation detail, they are really an external ABI that, although 
-documented in the kernel source tree, cannot be changed in incompatible 
-ways as time progresses.
+to receive updates for the input subsystem. You will receive a few new
+haptic/button drivers, a rudimentary support for laptops using FocalTech
+touchpads; xpad driver will bind to more devices, and a few other driver
+fixes.
 
-David Daney
+Changelog:
+---------
+
+Benjamin Valentin (1):
+      Input: xpad - sync device IDs with xboxdrv
+
+Dan Murphy (5):
+      Input: drv260x - add TI drv260x haptics driver
+      Input: drv260x - remove unused defines
+      Input: drv260x - add check for ERM mode and LRA Libraries
+      Input: drv260x - fix binding document
+      Input: add support for the DRV2667 haptic driver
+
+Frank Razenberg (1):
+      Input: xpad - add VID/PID for Razer Sabertooth
+
+Hans de Goede (2):
+      Input: psmouse - add psmouse_matches_pnp_id helper function
+      Input: psmouse - add support for detecting FocalTech PS/2 touchpads
+
+Jaewon Kim (1):
+      Input: add haptic driver on max77693
+
+Jin Yao (1):
+      Input: soc_button_array - convert to platform bus
+
+Nishanth Menon (3):
+      Input: introduce palmas-pwrbutton
+      Input: palmas-pwrbutton - use IRQF_ONESHOT
+      Input: palmas-pwrbutton - fix typo in the license string
+
+Takashi Iwai (1):
+      Input: joystick - use ktime for measuring timing
+
+Todd Broch (1):
+      Input: cros_ec_keyb - optimize ghosting algorithm
 
 
+Diffstat:
+--------
+
+ .../devicetree/bindings/input/ti,drv260x.txt       |  50 ++
+ .../devicetree/bindings/input/ti,drv2667.txt       |  17 +
+ .../bindings/input/ti,palmas-pwrbutton.txt         |  36 +
+ drivers/acpi/acpi_pnp.c                            |   2 -
+ drivers/input/gameport/gameport.c                  |  41 +-
+ drivers/input/joystick/analog.c                    |  71 +-
+ drivers/input/joystick/xpad.c                      |  34 +
+ drivers/input/keyboard/cros_ec_keyb.c              |  92 +--
+ drivers/input/misc/Kconfig                         |  43 ++
+ drivers/input/misc/Makefile                        |   4 +
+ drivers/input/misc/drv260x.c                       | 741 +++++++++++++++++++++
+ drivers/input/misc/drv2667.c                       | 500 ++++++++++++++
+ drivers/input/misc/max77693-haptic.c               | 357 ++++++++++
+ drivers/input/misc/palmas-pwrbutton.c              | 332 +++++++++
+ drivers/input/misc/soc_button_array.c              |  60 +-
+ drivers/input/mouse/Makefile                       |   2 +-
+ drivers/input/mouse/focaltech.c                    |  52 ++
+ drivers/input/mouse/focaltech.h                    |  22 +
+ drivers/input/mouse/psmouse-base.c                 |  30 +
+ drivers/input/mouse/psmouse.h                      |   1 +
+ drivers/input/mouse/synaptics.c                    |  17 +-
+ include/dt-bindings/input/ti-drv260x.h             |  36 +
+ include/linux/mfd/max77693-private.h               |   9 +
+ include/linux/platform_data/drv260x-pdata.h        |  28 +
+ 24 files changed, 2468 insertions(+), 109 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/input/ti,drv260x.txt
+ create mode 100644 Documentation/devicetree/bindings/input/ti,drv2667.txt
+ create mode 100644 Documentation/devicetree/bindings/input/ti,palmas-pwrbutton.txt
+ create mode 100644 drivers/input/misc/drv260x.c
+ create mode 100644 drivers/input/misc/drv2667.c
+ create mode 100644 drivers/input/misc/max77693-haptic.c
+ create mode 100644 drivers/input/misc/palmas-pwrbutton.c
+ create mode 100644 drivers/input/mouse/focaltech.c
+ create mode 100644 drivers/input/mouse/focaltech.h
+ create mode 100644 include/dt-bindings/input/ti-drv260x.h
+ create mode 100644 include/linux/platform_data/drv260x-pdata.h
+
+-- 
+Dmitry
 
