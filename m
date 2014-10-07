@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaJGInr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 04:43:47 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:33064 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753092AbaJGInm (ORCPT
+	id S1753418AbaJGIoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 04:44:15 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:34305 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092AbaJGIoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 04:43:42 -0400
-Message-ID: <5433A7BB.1090207@imgtec.com>
-Date: Tue, 7 Oct 2014 09:43:39 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
-MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>, <Zubair.Kakakhel@imgtec.com>,
-        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
-        <davidlohr@hp.com>, <macro@linux-mips.org>, <chenhc@lemote.com>,
-        <zajec5@gmail.com>, <keescook@chromium.org>, <alex@alex-smith.me.uk>,
-        <tglx@linutronix.de>, <blogic@openwrt.org>, <jchandra@broadcom.com>,
-        <paul.burton@imgtec.com>, <qais.yousef@imgtec.com>,
-        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
-        <manuel.lauss@gmail.com>, <akpm@linux-foundation.org>,
-        <lars.persson@axis.com>, <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
-        <libc-alpha@sourceware.org>, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] MIPS: Allow FPU emulator to use non-stack area.
-References: <1412626317-4128-1-git-send-email-ddaney.cavm@gmail.com>
-In-Reply-To: <1412626317-4128-1-git-send-email-ddaney.cavm@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.101]
+	Tue, 7 Oct 2014 04:44:11 -0400
+From: Chris Zhong <zyw@rock-chips.com>
+To: dianders@chromium.org, heiko@sntech.de
+Cc: linux-rockchip@lists.infradead.org, Chris Zhong <zyw@rock-chips.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] regulator: rk808: Add support setting suspend voltage
+Date: Tue,  7 Oct 2014 16:43:57 +0800
+Message-Id: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+support setting suspend voltage and disable regulator in suspend.
 
-On 06/10/14 21:11, David Daney wrote:
-> Any userspace thread desiring a non-executable stack,
-> must allocate a 4-byte aligned area at least 8 bytes long
+Signed-off-by: Chris Zhong <zyw@rock-chips.com>
 
-<snip>
+---
 
-> +SYSCALL_DEFINE1(set_fpuemul_xol_area, unsigned long, addr)
-> +{
-> +	struct thread_info *ti = task_thread_info(current);
-> +
-> +	ti->fpu_emul_xol = addr;
-> +	return 0;
-> +}
-> +
+ drivers/regulator/rk808-regulator.c |   37 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-<snip>
+diff --git a/drivers/regulator/rk808-regulator.c b/drivers/regulator/rk808-regulator.c
+index e305416..6687e6e 100644
+--- a/drivers/regulator/rk808-regulator.c
++++ b/drivers/regulator/rk808-regulator.c
+@@ -36,6 +36,12 @@
+ #define RK808_RAMP_RATE_6MV_PER_US	(2 << RK808_RAMP_RATE_OFFSET)
+ #define RK808_RAMP_RATE_10MV_PER_US	(3 << RK808_RAMP_RATE_OFFSET)
+ 
++/* Offset from XXX_ON_VSEL to XXX_SLP_VSEL */
++#define RK808_SLP_REG_OFFSET 1
++
++/* Offset from XXX_EN_REG to SLEEP_SET_OFF_XXX */
++#define RK808_SLP_SET_OFF_REG_OFFSET 2
++
+ static const int rk808_buck_config_regs[] = {
+ 	RK808_BUCK1_CONFIG_REG,
+ 	RK808_BUCK2_CONFIG_REG,
+@@ -91,6 +97,32 @@ static int rk808_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 				  RK808_RAMP_RATE_MASK, ramp_value);
+ }
+ 
++int rk808_set_suspend_voltage(struct regulator_dev *rdev, int uv)
++{
++	unsigned int reg;
++	int sel = regulator_map_voltage_linear_range(rdev, uv, uv);
++
++	if (sel < 0)
++		return -EINVAL;
++
++	reg = rdev->desc->vsel_reg + RK808_SLP_REG_OFFSET;
++
++	return regmap_update_bits(rdev->regmap, reg,
++				  rdev->desc->vsel_mask,
++				  sel);
++}
++
++int rk808_set_suspend_disable(struct regulator_dev *rdev)
++{
++	unsigned int reg;
++
++	reg = rdev->desc->enable_reg + RK808_SLP_SET_OFF_REG_OFFSET;
++
++	return regmap_update_bits(rdev->regmap, reg,
++				  rdev->desc->enable_mask,
++				  rdev->desc->enable_mask);
++}
++
+ static struct regulator_ops rk808_buck1_2_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear_range,
+ 	.map_voltage		= regulator_map_voltage_linear_range,
+@@ -100,6 +132,8 @@ static struct regulator_ops rk808_buck1_2_ops = {
+ 	.disable		= regulator_disable_regmap,
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.set_ramp_delay		= rk808_set_ramp_delay,
++	.set_suspend_voltage    = rk808_set_suspend_voltage,
++	.set_suspend_disable    = rk808_set_suspend_disable,
+ };
+ 
+ static struct regulator_ops rk808_reg_ops = {
+@@ -110,12 +144,15 @@ static struct regulator_ops rk808_reg_ops = {
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
+ 	.is_enabled		= regulator_is_enabled_regmap,
++	.set_suspend_voltage    = rk808_set_suspend_voltage,
++	.set_suspend_disable    = rk808_set_suspend_disable,
+ };
+ 
+ static struct regulator_ops rk808_switch_ops = {
+ 	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+ 	.is_enabled = regulator_is_enabled_regmap,
++	.set_suspend_disable    = rk808_set_suspend_disable,
+ };
+ 
+ static const struct regulator_desc rk808_reg[] = {
+-- 
+1.7.9.5
 
-> -	/* Ensure that the two instructions are in the same cache line */
-> -	fr = (struct emuframe __user *)
-> -		((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
-> +	if (ti->fpu_emul_xol != ~0ul)
-> +		fr = (struct emuframe *)ti->fpu_emul_xol;
-> +	else
-> +		/* Ensure that the two instructions are in the same cache line */
-> +		fr = (struct emuframe __user *)
-> +			((regs->regs[29] - sizeof(struct emuframe)) & ~0x7);
-
-I know your patch was more an RFC, but on a technical note, this
-comment/code seems to imply that the address should be 8 byte aligned
-(rather than 4 byte) so they both land in the same cache line. Also, I
-think the alignment should be validated in the syscall.
-
-Cheers
-James
