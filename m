@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766AbaJGSOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:14:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39098 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaJGSO3 (ORCPT
+	id S1754878AbaJGSRR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:17:17 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:45613 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaJGSRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:14:29 -0400
-Date: Tue, 7 Oct 2014 19:13:49 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: dianders@chromium.org, heiko@sntech.de, linux-rockchip@lists.infradead.org,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20141007181349.GV4609@sirena.org.uk>
-References: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
+	Tue, 7 Oct 2014 14:17:16 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yV94raM4eJLN8srE"
-Content-Disposition: inline
-In-Reply-To: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: rk808: Add support setting suspend voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <54341013.2030509@caviumnetworks.com>
+References: <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx>
+ <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx>
+ <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com>
+ <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com>
+ <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com>
+ <20141007111102.GH23797@brightrain.aerifal.cx> <54341013.2030509@caviumnetworks.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 7 Oct 2014 11:16:54 -0700
+Message-ID: <CALCETrWHE0nMZFthg_JP9dEABpvyumcKoHGn1-2q2F2nm2CvLg@mail.gmail.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Linux MIPS Mailing List <linux-mips@linux-mips.org>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        David Daney <ddaney.cavm@gmail.com>,
+        David Daney <david.daney@cavium.com>, Rich Felker <dalias@libc.org>,
+        David Daney <david.s.daney@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Oct 7, 2014 9:09 AM, "David Daney" <ddaney@caviumnetworks.com> wrote:
+>
+> On 10/07/2014 04:11 AM, Rich Felker wrote:
+>>
+>> On Mon, Oct 06, 2014 at 09:50:47PM -0700, David Daney wrote:
+>>>>>
+>>>>> the out-of-line execution trick, but do it somewhere other than in
+>>>>> stack memory.
+>>>>
+>>>> How do you answer Andy Lutomirski's question about what happens when a
+>>>> signal handler interrupts execution while the program counter is
+>>>> pointing at this "out-of-line execution" trampoline? This seems like a
+>>>> show-stopper for using anything other than the stack.
+>>>
+>>> It would be nice to support, but not doing so would not be a
+>>> regression from current behavior.
+>>
+>>
+>> It's not just "nice" to support, it's mandatory. Otherwise you will
+>> execute essentially *random instructions* in this case, providing a
+>> very nice attack vector that can almost certainly be elevated to
+>> arbitrary code execution via timing of signals during floating point
+>> code.
+>>
+>> The current behavior in regards to this is correct: because you have a
+>> *stack*, each trampoline is pushed onto the stack in its own context,
+>> and popped when it's no longer needed. You can have arbitrarily many
+>> such trampolines up to the stack size. Note that each nested signal
+>> handler already requires sizeof(ucontext_t) in stack space, so these
+>> trampolines are a negligible additional cost without major effects on
+>> the number of signal handlers you can nest without overflowing the
+>> stack.
+>
+>
+> Yes, the stack takes care of the allocations, but the current implementation has many problems:
+>
+> 1) Signals clobber the emulation area.
+> 2) Signals caused by the emulation, have incorrect saved machine state.
+>
+> We have a low bar to pass, any new solution doesn't have to be perfect, it only has to be an improvement.
+>
+> Keep in mind that we are not starting from a clean slate, there are many years of legacy code that has built up here.
 
---yV94raM4eJLN8srE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+A lesson I learned when doing the x86 vsyscall stuff: Don't waste time
+improving legacy crap without a really good reason.  Especially don't
+extend the interface.  Deprecate it (without breaking working user
+code) and move on.
 
-On Tue, Oct 07, 2014 at 04:43:57PM +0800, Chris Zhong wrote:
+--Andy
 
-> @@ -100,6 +132,8 @@ static struct regulator_ops rk808_buck1_2_ops = {
->  	.disable		= regulator_disable_regmap,
->  	.is_enabled		= regulator_is_enabled_regmap,
->  	.set_ramp_delay		= rk808_set_ramp_delay,
-> +	.set_suspend_voltage    = rk808_set_suspend_voltage,
-> +	.set_suspend_disable    = rk808_set_suspend_disable,
->  };
-
-Why are there only disable operations, no enable ones?  Otherwise this
-all looks good.
-
---yV94raM4eJLN8srE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUNC1dAAoJECTWi3JdVIfQvuoH/iNnOzs3gX3JgZcSVgB0MiTW
-q447kCJkoL+fj+r9Ivkl2uIdzGprSJiCvL2/J2UYXkLpSUZxCgBpEEYdha/go0eK
-m+wd+qfZfugd8EeQBxKqdg3t4C4mUur6AOMj7YD3rV3caWXzNE4kraPEt5g/y5Pt
-A40dolAGkrqnynDsrm0vuvndc9ezqp6t6mD5H3+2W7H5TXgdDnOrInnqoZC7SBn+
-6oPPr1W2xnP7mnLK5GbRaZZlKyLHMKjD7xv5DhWEhCIFivUCh89n+Mt/BStnxa4n
-tvg91dtU98JVpo+jD9kXyDzYyXmqyGcotJ0AiFj+7w8fQo65PEc8+ZJwhVUXAjc=
-=89PX
------END PGP SIGNATURE-----
-
---yV94raM4eJLN8srE--
+>
+> David Daney
