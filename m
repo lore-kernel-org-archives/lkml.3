@@ -1,172 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbaJGKsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:48:51 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51598 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaJGKst (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:48:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <542FF252.1020206@kernel.org>
-References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
-	<1412257439-15683-4-git-send-email-daniel.baluta@intel.com>
-	<542FF252.1020206@kernel.org>
-Date: Tue, 7 Oct 2014 13:48:47 +0300
-X-Google-Sender-Auth: VWGz_y5fUlEmdDv4b_ul4NaRe_I
-Message-ID: <CAEnQRZDP84sdnO4mnS2CtCdy7WzBMhMfuNrMM=rkR0ty7b-1Rw@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/8] iio: core: Introduce new MOTION event
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Daniel Baluta <daniel.baluta@intel.com>, linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        irina.tirdea@intel.com
-Content-Type: text/plain; charset=UTF-8
+	id S1753595AbaJGKte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:49:34 -0400
+Received: from ozlabs.org ([103.22.144.67]:46530 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075AbaJGKt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 06:49:29 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH v3 0/16] POWER8 Coherent Accelerator device driver
+Date: Tue,  7 Oct 2014 21:48:06 +1100
+Message-Id: <1412678902-18672-1-git-send-email-mikey@neuling.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 4, 2014 at 4:12 PM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 02/10/14 14:43, Daniel Baluta wrote:
->> This is to be used by drivers to signal detection of motion. We also
->> add some possible values for motion as IIO events modifiers:
->>       * running
->>       * jogging
->>       * walking
->>       * still
->>
->> These values are supported by Frescale's MMA9553 sensor:
->>
->> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
->>
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-> Hmm.. This is the interesting one.
-> Not immediately obvious how best to represent this stuff.
->> ---
->>  Documentation/ABI/testing/sysfs-bus-iio | 7 +++++++
->>  drivers/iio/industrialio-core.c         | 4 ++++
->>  drivers/iio/industrialio-event.c        | 1 +
->>  include/linux/iio/types.h               | 7 ++++++-
->>  4 files changed, 18 insertions(+), 1 deletion(-)
->>
->> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
->> index d760b02..070346d 100644
->> --- a/Documentation/ABI/testing/sysfs-bus-iio
->> +++ b/Documentation/ABI/testing/sysfs-bus-iio
->> @@ -808,6 +808,13 @@ Description:
->>               number or direction is not specified, applies to all channels of
->>               this type.
->>
->> +What:                /sys/.../events/in_activity_motion_either_en
->> +KernelVersion:       3.17
->> +Contact:     linux-iio@vger.kernel.org
->> +Description:
->> +             Enables or disables motion detection. Each time motion is detected an
->> +             event of this type will be generated.
->> +
-> The either bit seems a bit random but I can see there is no particularly obvious
-> alternative.
->
-> We really need a clean way of representing a multilevel 'state change' like this.
->
-> Looking at the event code, I almost wonder if we would be better using the
-> direction element for running, walking etc rather than a modifier.
->
-> Having said that we will probably also get devices where this is polled rather than
-> event.  'What activity is currently going on?'
-> If we take that view modifiers make sense as it becomes
-> 'Is the user running?'  Perhaps even offering a confidence interval, e.g units as
-> percentage
-> in_activity_running_input 0..100
-> in_activity_walking_input 0..100
-> etc
->
+This is the latest version of the cxl driver.  Change log below:
 
-This is clear.
+v3:
+ - Updates based on comments from mpe, benh, aneesh and offline reviews.
+ - Fixed bug freeing AFU IRQs that also freed the multiplexed PSL IRQ
+ - Change copro_flush_all_slbs to a static inline as suggested by mpe
+ - Implement sanitisation routines to clear out more registers and do full
+   adapter wide tlbia and slbia when initialising hardware
+ - Add self testcase to msi_bitmap to test allocations are aligned to a power of
+   2 and cleanup comment as suggested by mpe
+ - Clean up cxl_use_count
+ - Split out detach_process_native into two logical functions
+ - Improve comment in set_msi_irq_chip as requested by mpe
+ - Move cxl functions in pci-ioda.c to be under just one #ifdef CONFIG_CXL_BASE
+ - Cleanup hash_page and hash_page_mm from mpes and Aneesh' reviews
+ - Remove dead code in cxl_alloc_sst
+ - Add timeout in afu_slbia_native
+ - Remove cxl backend and driver ops abstractions
+   - Removed separate cxl-pci module
+   - Merged cxl pci module init calls into main driver init
+ - Refactor afu_read() to be a bit simpler and more closely follow exising
+   patterns in the kernel
+ - Userspace API updates from reviews:
+   - Added ioctl to get the process element number, and removed it as a return
+     from the start work ioctl
+   - Alter cxl_event to have one common header struct
+   - Dropped check error ioctl
+   - Added current and binary compatible API version numbers to sysfs
+   - read() now takes a 4K (or greater) buffer
+   - Pack event structs to reduce unecessary reserved fields
+     - Event sizes can now differ
+     - All event sizes are 64bit multiples to allow future event coalescing
+   - Add flags fields to indicate which fields contain valid data
+   - Add BUILD_BUG_ONs to protect against inadvertantly changing API without
+     bumping version number and/or flags
+   - Update documentation
+ - Skip CXL SLBIA codepath if CXL is not in use
+ - Split cxl_slbia_core into two functions to be easier to read
+ - Refactor copro_data_segment (renamed to copro_calc_slb) since we are no
+   longer merging with hash_page and cleaned up parameters.
+ - Some renames:
+   - struct cxl_t -> struct cxl
+   - struct cxl_afu_t -> struct cxl_afu
+   - struct cxl_context_t -> struct cxl_context
+   - copro_data_segment -> copro_calc_slb
+   - ctx->ph -> ctx->pe
+ - Added ctx->status mutex lock around for start and release context
 
-> Then our event becomes a state change event (yup we'll need to add that)
+v2:
+ - Updates based on comments from, Anton, Gavin, Aneesh, jk and offline reviews
+ - Simplified copro_data_segment() and merged code with hash_page_mm()
+    (New patch 10/17)
+ - PCIe code simplifications based on Gavin's review
+ - Removed redundant comment in msi_bitmap_alloc_hwirqs()
+ - Fix for locking in idr_remove in core driver
+ - Ensure PSL is enabled when PHB is flipped to CXL mode
+ - Added CONFIG_PPC_COPRO_BASE to compile copro_fault.c
+ - Merged SPU and cxl slb flushing calls into copro_flush_all_slbs()
+    (New patch 03/17)
+ - Moved slb_vsid_shift() to static inline from #define
+ - Don't write paca->context when demoting segments and mm != current
+ - Fix minor typos in documentation
 
-So this means we will have a single event type named "state_change"?
-Or better "transition".
+v1:
+ - Initial post
 
->
-> /events/in_activity_walking_rising_en  will then cause events when the percentage
-> confidence on a state rises above the provided threshold or goes above it
-> (default of 50% perhaps on devices which only report one state).
+This add support for the Coherent Accelerator (cxl) attached to POWER8
+processors.  This coherent accelerator interface is designed to allow the
+coherent connection of FPGA based accelerators (and other devices) to a POWER
+systems.
 
-Then here the attribute name will be:
-/events/in_activity_state_change_walking_rising_en
+IBM refers to this as the Coherent Accelerator Processor Interface or CAPI.  In
+this driver it's referred to by the name cxl to avoid confusion with the ISDN
+CAPI subsystem.
 
-or if we call the event type "transition" this will be:
-/events/in_activity_transition_walking_rising_en
+An overview of the patches:
+  Patches  1-3:  Split some of the old Cell co-processor code out so it can be
+		   reused.
+  Patches  4-10: Add infrastructure to arch/powerpc needed by cxl.
+  Patches  11:   Add call backs needed for invalidating cxl mm contexts.
+  Patch    12:   Add cxl specific support that needs to be built in to the
+		   kernel (can't be a module).
+  Patches 13-15: Add the majority of the device driver and API header.
+  Patch    16:   Documentation.
 
-I am a little bit confused :).
+The documentation in this last patch gives an overview of the hardware
+architecture as well as the userspace API.
 
->
-> /events/in_activity_walking_falling_en will do the leaving case.
->
-> Note these are just some quick initial thoughts on alternative methods.
-> I'll want to think on this more and get responses from more interested
-> parties!
->
->>  What:                /sys/bus/iio/devices/iio:deviceX/trigger/current_trigger
->>  KernelVersion:       2.6.35
->>  Contact:     linux-iio@vger.kernel.org
->> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
->> index 67e8561..e453ef9 100644
->> --- a/drivers/iio/industrialio-core.c
->> +++ b/drivers/iio/industrialio-core.c
->> @@ -92,6 +92,10 @@ static const char * const iio_modifier_names[] = {
->>       [IIO_MOD_NORTH_TRUE] = "from_north_true",
->>       [IIO_MOD_NORTH_MAGN_TILT_COMP] = "from_north_magnetic_tilt_comp",
->>       [IIO_MOD_NORTH_TRUE_TILT_COMP] = "from_north_true_tilt_comp",
->> +     [IIO_MOD_RUNNING] = "running",
->> +     [IIO_MOD_JOGGING] = "jogging",
->> +     [IIO_MOD_WALKING] = "walking",
->> +     [IIO_MOD_STILL] = "still",
->>  };
->>
->>  /* relies on pairs of these shared then separate */
->> diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
->> index 0c1e37e..eca5af2 100644
->> --- a/drivers/iio/industrialio-event.c
->> +++ b/drivers/iio/industrialio-event.c
->> @@ -197,6 +197,7 @@ static const char * const iio_ev_type_text[] = {
->>       [IIO_EV_TYPE_ROC] = "roc",
->>       [IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
->>       [IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
->> +     [IIO_EV_TYPE_MOTION] = "motion",
->>  };
->>
->>  static const char * const iio_ev_dir_text[] = {
->> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
->> index d58769a..003638d 100644
->> --- a/include/linux/iio/types.h
->> +++ b/include/linux/iio/types.h
->> @@ -60,7 +60,11 @@ enum iio_modifier {
->>       IIO_MOD_NORTH_MAGN,
->>       IIO_MOD_NORTH_TRUE,
->>       IIO_MOD_NORTH_MAGN_TILT_COMP,
->> -     IIO_MOD_NORTH_TRUE_TILT_COMP
->> +     IIO_MOD_NORTH_TRUE_TILT_COMP,
->> +     IIO_MOD_RUNNING,
->> +     IIO_MOD_JOGGING,
->> +     IIO_MOD_WALKING,
->> +     IIO_MOD_STILL,
->>  };
->>
->>  enum iio_event_type {
->> @@ -69,6 +73,7 @@ enum iio_event_type {
->>       IIO_EV_TYPE_ROC,
->>       IIO_EV_TYPE_THRESH_ADAPTIVE,
->>       IIO_EV_TYPE_MAG_ADAPTIVE,
->> +     IIO_EV_TYPE_MOTION,
->>  };
->>
->>  enum iio_event_info {
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The cxl driver has a user-space interface described in include/uapi/misc/cxl.h
+and Documentation/powerpc/cxl.txt.  There are two ioctls which can be used to
+talk to the driver once the new /dev/cxl/afu0.0 device is opened.  This device
+can also be read and mmaped.
+
+There's also sysfs entries used to communicate information about the cxl
+configuration to userspace.  These are documented in
+Documentation/ABI/testing/sysfs-class-cxl.
+
+Many contributed to this device driver but Ian Munsie is the principal author.
+
+Driver can also be found here (based on 3.17-rc5):
+   git://github.com/mikey/linux.git cxl
+   https://github.com/mikey/linux/commits/cxl
+(Series rebases on recent linux-next with one trivial include file conflict)
+
+Please consider for inclusion.  Feedback welcome!
+
+Regards,
+Mikey
