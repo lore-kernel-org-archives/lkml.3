@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683AbaJGK7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:59:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:57715 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaJGK6u convert rfc822-to-8bit (ORCPT
+	id S1753786AbaJGK7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:59:38 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:14259 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075AbaJGK6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:58:50 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-a9-5433c768ad18
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
+	Tue, 7 Oct 2014 06:58:49 -0400
+X-AuditID: cbfee68d-f79296d000004278-93-5433c766518c
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
         dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
         jenny.tc@intel.com, Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: =?UTF-8?q?=5BPATCH=203/3=5D=20power=3A=20of=5Fbattery=3A=20Initial=20support=20for=20of-based=20battery=20specification=20driver=2E?=
-Date: Tue, 07 Oct 2014 19:58:38 +0900
-Message-id: <1412679518-21499-4-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH 1/3] power: core: Add generic interface to get battery
+ specification.
+Date: Tue, 07 Oct 2014 19:58:36 +0900
+Message-id: <1412679518-21499-2-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
 References: <1412679518-21499-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkWDfjuHGIQf8JEYuDWzUtJj15z2wx
-	ceVkZou1X3vYLTrPPmG2uLxrDpvF594jjBZ3Tx1lszi9u8SB02NC/ydGj52z7rJ7bF6h5bF4
-	z0smj02rOtk8+rasYvRYsfo7u8fnTXIBHFFcNimpOZllqUX6dglcGTd/GhWcMai4MvUHYwPj
-	BI0uRk4OCQETif+/9rNB2GISF+6tB7K5OIQEljJKNH3ZxA5TtKznPVRiOqNE65xdLCAJXgFB
-	iR+T74HZzALqEpPmLWKGsEUk5s/7BhXXlli28DVYXEigjUni4kFjEJtNQEfi/76bYAtEBBQk
-	Nvc+Y4Wo384oMfdTMsgyYYEJjBLz2v+DDWIRUJV4NXEVI8RiD4mjH38DNXAAXacgMWeSDUiY
-	U8BTovF2OwvELg+JRQ/esoLMkRD4yC7xY9F8Jog5AhLfJh9igeiVldh0gBniSUmJgytusExg
-	FJ+F5LVZSF6bheS1WUheW8DIsopRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjMKJP/3s2cQfj
-	/QPWhxgFOBiVeHhXaBmHCLEmlhVX5h5iNAW6aCKzlGhyPjBt5JXEGxqbGVmYmpgaG5lbmimJ
-	8+pI/wwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwJjPL6n8pMJQ1DEvq3fPq95zlQt+lQb1
-	3/DjsGrXNZnqpnalZKvfE3vhox6RXfME7kvpnzK9pvXYYP6ia+v7vl+T8W9f2PtBn+GCyE71
-	T06rJohtWSvvZvpGbBYnX4/qYdH/jh/dQqd15W9zYGisMZi6RTvk5+HECOZ7Pl5T4zjaDi6I
-	ien+o8RSnJFoqMVcVJwIAAd/8VXjAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+xoG7GceMQg5nHuC0ObtW0mPTkPbPF
-	xJWTmS3Wfu1ht+g8+4TZ4vKuOWwWn3uPMFrcPXWUzeL07hIHTo8J/Z8YPXbOusvusXmFlsfi
-	PS+ZPDat6mTz6NuyitFjxerv7B6fN8kFcEQ1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
-	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
-	x8gADSSsYcy48O05a8Eig4rTDxeyNjA+U+9i5OSQEDCRWNbzng3CFpO4cG89kM3FISQwnVGi
-	dc4uFpAEr4CgxI/J94BsDg5mAXmJI5eyQcLMAuoSk+YtYgaxhQTamCQuHjQGsdkEdCT+77vJ
-	DmKLCChIbO59xgpRv51RYu6nZJD5wgITGCXmtf8Hm88ioCrxauIqRohdHhJHP/5mBdklAdQ8
-	Z5INSJhTwFOi8XY7C8QuD4lFD96yTmAUmIXkulkI181Cct0CRuZVjKKpBckFxUnpuUZ6xYm5
-	xaV56XrJ+bmbGMHR/0x6B+OqBotDjAIcjEo8vCu0jEOEWBPLiitzDzFKcDArifBaHwMK8aYk
-	VlalFuXHF5XmpBYfYjQFunsis5Rocj4wMeWVxBsam5gZWRqZG1oYGZsrifMebLUOFBJITyxJ
-	zU5NLUgtgulj4uCUamCMt7ZTubjzHtO3vm0CwpYCzKenz5nTXdK8JNBv+Z75/zJCHyXXMx3a
-	E5C5J4EpV7hzL1ti9bav5dy8IvHnVc8EnFblnbHugmiDc2fYzcK7foEPudhUlfY4XKqexsZ8
-	WfFrGXdF7Y92jjjrc1nTE398PS7+alm229HJ03f9jfvvs8HnqF/8/3lKLMUZiYZazEXFiQBS
-	6FGEFAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkQDf9uHGIwXQHi4NbNS0mPXnPbDFx
+	5WRmi7Vfe9gtOs8+Yba4vGsOm8Xn3iOMFndPHWWzOL27xIHTY0L/J0aPnbPusntsXqHlsXjP
+	SyaPTas62Tz6tqxi9Fix+ju7x+dNcgEcUVw2Kak5mWWpRfp2CVwZ22ZzFZxTqrjQu4qxgfGm
+	bBcjJ4eEgInEx32djBC2mMSFe+vZuhi5OIQEljJK9Bx+zwpT9Of9FxaIxHRGiVVn10JVtTFJ
+	HP42hQ2kik1AR+L/vpvsILaIgILE5t5nYN3MAtsZJeZ+SgaxhQXCJToOtjKD2CwCqhJv5iwH
+	W80r4CFx+O8KIJsDaJuCxJxJNiBhTgFPicbb7SwgthBQyaIHb1lB9koI7GKX2LRlGxPEHAGJ
+	b5MPsUD0ykpsOsAMcbSkxMEVN1gmMAovYGRYxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iREY
+	D6f/PevdwXj7gPUhRgEORiUe3hVaxiFCrIllxZW5hxhNgTZMZJYSTc4HRl1eSbyhsZmRhamJ
+	qbGRuaWZkjivotTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mi5tk7rjfX7D+xbbW/siq
+	G/X3tPkalxoKOkZPLLV98lvQyum+WeP53DkfP+qWvxY6xBds0Ly84V6M2EoV/8M5TXIFzRMK
+	G7o3aL6W2Ob30eun/8cMGZ3APWH1mw5z/DTuV+MvkJdYzrR93tabdbrXBW8cXmCcs2jKgguS
+	11tKfk+IObevsX26EktxRqKhFnNRcSIASkP0W4ICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jQd2048YhBk/+m1gc3KppMenJe2aL
+	iSsnM1us/drDbtF59gmzxeVdc9gsPvceYbS4e+oom8Xp3SUOnB4T+j8xeuycdZfdY/MKLY/F
+	e14yeWxa1cnm0bdlFaPHitXf2T0+b5IL4IhqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
+	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
+	j5EBGkhYw5ixbTZXwTmligu9qxgbGG/KdjFyckgImEj8ef+FBcIWk7hwbz1bFyMXh5DAdEaJ
+	VWfXQjltTBKHv01hA6liE9CR+L/vJjuILSKgILG59xkriM0ssJ1RYu6nZBBbWCBcouNgKzOI
+	zSKgKvFmznJGEJtXwEPi8N8VQDYH0DYFiTmTbEDCnAKeEo2328GOEAIqWfTgLesERt4FjAyr
+	GEVTC5ILipPScw31ihNzi0vz0vWS83M3MYLj7ZnUDsaVDRaHGAU4GJV4eFdoGYcIsSaWFVfm
+	HmKU4GBWEuEtOwYU4k1JrKxKLcqPLyrNSS0+xGgKdNREZinR5HxgKsgriTc0NjEzsjQyN7Qw
+	MjZXEuc90GodKCSQnliSmp2aWpBaBNPHxMEp1cC4cNehlZyzN5wPTDyte25e7XO3DvUre1Of
+	CRmIKD+QES1IvL8/otTzQsk14ys3J5dPun3wvdoNkyMNrVu8D/q7z7xwR5b7StQB4Y1hb0zf
+	TP1ndlHpfPnuBkWFU23LA7adFlh/bgF74JX2GeWnZn8N5hGYznbv06Jskc13xO1qhYoTbzOe
+	tOj4ocRSnJFoqMVcVJwIAOHLmK/NAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,196 +52,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports battery specification through the generic interface of
-power_supply subsystem. All data are parsed from device tree and it exactly
-matches with power_supply_info's content.
+In power supply system, battery specification's dealt as static
+information regardless of battery chainging. And it often assumed
+fuelgauge's role to hold battery specification even same driver is
+used with different batteries. To make subsystem handles above cases
+properly, this patch adds helper functions to manager the battery
+specification.
 
 Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 ---
- .../bindings/power_supply/of_battery.txt           |   34 +++++++
- drivers/power/Kconfig                              |    7 ++
- drivers/power/Makefile                             |    1 +
- drivers/power/of_battery.c                         |  100 ++++++++++++++++++++
- 4 files changed, 142 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/of_battery.txt
- create mode 100644 drivers/power/of_battery.c
+ drivers/power/power_supply_core.c |   91 +++++++++++++++++++++++++++++++++++++
+ include/linux/power_supply.h      |    7 +++
+ 2 files changed, 98 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/power_supply/of_battery.txt b/Documentation/devicetree/bindings/power_supply/of_battery.txt
-new file mode 100644
-index 0000000..5ccd2a1
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/of_battery.txt
-@@ -0,0 +1,34 @@
-+of_battery bindings
-+~~~~~~~~~~~~~~~~~~~
-+
-+This documentation describes how to define data in device tree
-+to use of_battery driver. All properties are just matched with
-+power_supply_info's.
-+
-+Required properties :
-+ - battery-name : battery's name for identifying.
-+
-+Optional properties :
-+ - voltage_max : Maximum voltage of the battery (uV).
-+ - voltage_min : Minimum voltage of the battery (uV).
-+ - charge_full : Full capacity of the battery (uAh).
-+ - charge_empty : Empty capacity of the battery (uAh).
-+ - energy_full : Full capacity of the battery (uWh).
-+ - energy_empty : Empty capacity of the battery (uWh).
-+ - temperature_max : Maximum temperature for the battery (deci 'C)
-+ - temperature_min : Minium temperature for the battery (deci 'C)
-+
-+Example:
-+	battery {
-+		main-battery {
-+			battery-name = "battery";
-+			voltage-max = <4350000>;
-+			charge-full = <2500000>;
-+			temperature_max = <600>;
-+			temperature_min = <(-100)>;
-+		};
-+		backup-battery {
-+			battery-name = "coin-battery";
-+			voltage-max = <3000000>;
-+		};
-+	};
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 73cfcdf..c324ac6 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -36,6 +36,13 @@ config GENERIC_ADC_BATTERY
- 	  Say Y here to enable support for the generic battery driver
- 	  which uses IIO framework to read adc.
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 078afd6..59207d9 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -653,6 +653,97 @@ static void __exit power_supply_class_exit(void)
+ subsys_initcall(power_supply_class_init);
+ module_exit(power_supply_class_exit);
  
-+config BATTERY_OF
-+	tristate "Generic of-based battery specification driver"
-+	depends on OF
-+	help
-+	  Say Y here to enable support for the of-based generic battery
-+	  specification driver which gives static battery data.
++/****************************************************************
++ *                   Battery information interface              *
++ ****************************************************************/
 +
- config MAX8925_POWER
- 	tristate "MAX8925 battery charger support"
- 	depends on MFD_MAX8925
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index dfa8942..38a83aa 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -6,6 +6,7 @@ power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
- 
- obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
- obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
-+obj-$(CONFIG_BATTERY_OF)	+= of_battery.o
- 
- obj-$(CONFIG_PDA_POWER)		+= pda_power.o
- obj-$(CONFIG_APM_POWER)		+= apm_power.o
-diff --git a/drivers/power/of_battery.c b/drivers/power/of_battery.c
-new file mode 100644
-index 0000000..3c66765
---- /dev/null
-+++ b/drivers/power/of_battery.c
-@@ -0,0 +1,100 @@
-+/*
-+ * OF-based battery specification driver
-+ *
-+ * This driver supports generic interface to get static battery data.
-+ *
-+ * Copyright © 2014 Jonghwa Lee <jonghwa3.lee@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
++ATOMIC_NOTIFIER_HEAD(psy_battery_info_notifier);
++static LIST_HEAD(psy_battery_info_list);
 +
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/power_supply.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/of.h>
-+
-+static struct power_supply_info *of_get_battery_info(struct device_node *np)
-+{
++struct psy_battery_info {
++	struct list_head entry;
 +	struct power_supply_info *info;
++};
 +
-+	info = kzalloc(sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return ERR_PTR(-ENOMEM);
++enum battery_info_notifier_events {
++	PSY_BATT_INFO_REGISTERED,
++	PSY_BATT_INFO_UNREGISTERED,
++};
 +
-+	if (of_property_read_string(np, "battery-name", &info->name)) {
-+		kfree(info);
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	of_property_read_u32(np, "voltage_max", &info->voltage_max_design);
-+	of_property_read_u32(np, "voltage_min", &info->voltage_min_design);
-+	of_property_read_u32(np, "charge_full", &info->charge_full_design);
-+	of_property_read_u32(np, "charge_empty", &info->charge_empty_design);
-+	of_property_read_u32(np, "energy_full", &info->energy_full_design);
-+	of_property_read_u32(np, "energy_empty", &info->energy_empty_design);
-+	of_property_read_u32(np, "temperature_max", &info->temperature_max);
-+	of_property_read_u32(np, "temperature_min", &info->temperature_min);
-+
-+	return info;
++int psy_battery_info_notifier_register(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&psy_battery_info_notifier, nb);
 +}
++EXPORT_SYMBOL_GPL(psy_battery_info_notifier_register);
 +
-+static int __init psy_of_battery_init(void)
++void psy_battery_info_notifier_unregister(struct notifier_block *nb)
 +{
-+	struct power_supply_info *info;
-+	struct device_node *np, *child;
-+	int ret;
++	atomic_notifier_chain_unregister(&psy_battery_info_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(psy_battery_info_notifier_unregister);
 +
-+	np = of_find_node_by_name(NULL, "battery");
-+	if (!np)
-+		return -ENODEV;
++struct power_supply_info *psy_get_battery_info(const char *name)
++{
++	struct psy_battery_info *battery;
 +
-+	for_each_child_of_node(np, child) {
-+		info = of_get_battery_info(child);
-+		if (IS_ERR(info)) {
-+			pr_err("Failed to get battery information (%ld)\n",
-+				PTR_ERR(info));
-+			continue;
-+		}
-+		ret = psy_register_battery_info(info);
-+		if (ret) {
-+			pr_err("Failed to register battery information (%d)\n",
-+				ret);
-+			kfree(info);
-+			continue;
-+		}
++	/* Sanity check */
++	if (!name)
++		goto err_out;
++
++	list_for_each_entry(battery, &psy_battery_info_list, entry) {
++		if (!strcmp(battery->info->name, name))
++			return battery->info;
 +	}
++
++err_out:
++	return NULL;
++}
++EXPORT_SYMBOL(psy_get_battery_info);
++
++int psy_register_battery_info(struct power_supply_info *info)
++{
++	struct psy_battery_info *battery;
++
++	/* Sanity check */
++	if (!info->name)
++		return -EINVAL;
++
++	/* Check if same data is existed */
++	list_for_each_entry(battery, &psy_battery_info_list, entry)
++		if (!strcmp(battery->info->name, info->name))
++			return -EEXIST;
++
++	battery = kzalloc(sizeof(*battery), GFP_KERNEL);
++	if (!battery)
++		return -ENOMEM;
++
++	battery->info = info;
++	list_add_tail(&battery->entry, &psy_battery_info_list);
++
++	atomic_notifier_call_chain(&psy_battery_info_notifier,
++				PSY_BATT_INFO_REGISTERED, info);
 +
 +	return 0;
 +}
-+module_init(psy_of_battery_init);
++EXPORT_SYMBOL(psy_register_battery_info);
 +
-+static void __exit psy_of_battery_exit(void)
++void psy_unregister_battery_info(struct power_supply_info *info)
 +{
-+	struct power_supply_info *info;
-+	struct device_node *np, *child;
-+	const char *name;
++	struct psy_battery_info *battery, *tmp;
 +
-+	np = of_find_node_by_name(NULL, "battery");
-+	if (!np)
-+		return;
-+
-+	for_each_child_of_node(np, child) {
-+		if (!of_property_read_string(np, "battery-name", &name))
-+			continue;
-+
-+		info = psy_get_battery_info(name);
-+		if (IS_ERR(info))
-+			continue;
-+
-+		psy_unregister_battery_info(info);
++	list_for_each_entry_safe(battery, tmp, &psy_battery_info_list, entry) {
++		if (battery->info == info) {
++			list_del(&battery->entry);
++			kfree(battery);
++			return;
++		}
 +	}
-+}
-+module_exit(psy_of_battery_exit);
 +
-+MODULE_AUTHOR("Jonghwa Lee <jonhgwa3.lee@samsung.com>");
-+MODULE_DESCRIPTION("of battery specification driver");
-+MODULE_LICENSE("GPL");
++	atomic_notifier_call_chain(&psy_battery_info_notifier,
++				PSY_BATT_INFO_UNREGISTERED, info);
++}
++EXPORT_SYMBOL(psy_unregister_battery_info);
++
+ MODULE_DESCRIPTION("Universal power supply monitor class");
+ MODULE_AUTHOR("Ian Molton <spyro@f2s.com>, "
+ 	      "Szabolcs Gyurko, "
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index f3dea41..99306aa 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -276,6 +276,13 @@ extern int power_supply_powers(struct power_supply *psy, struct device *dev);
+ /* For APM emulation, think legacy userspace. */
+ extern struct class *power_supply_class;
+ 
++/* Battery information helper */
++extern int psy_battery_info_notifier_register(struct notifier_block *);
++extern void psy_battery_info_notifier_unregister(struct notifier_block *);
++extern struct power_supply_info *psy_get_battery_info(const char *);
++extern int psy_register_battery_info(struct power_supply_info *);
++extern void psy_unregister_battery_info(struct power_supply_info *);
++
+ static inline bool power_supply_is_amp_property(enum power_supply_property psp)
+ {
+ 	switch (psp) {
 -- 
 1.7.9.5
 
