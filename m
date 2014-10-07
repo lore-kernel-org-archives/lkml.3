@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbaJGIky (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 04:40:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:17041 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751447AbaJGIku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 04:40:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,668,1406617200"; 
-   d="scan'208";a="584614709"
-Date: Tue, 7 Oct 2014 16:40:44 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jet Chen <jet.chen@intel.com>, Su Tao <tao.su@intel.com>,
-        Yuanhan Liu <yuanhan.liu@intel.com>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org, Dave Jones <davej@redhat.com>
-Subject: Re: [perf] BUG: unable to handle kernel NULL pointer dereference at
- 00000085
-Message-ID: <20141007084044.GA12300@wfg-t540p.sh.intel.com>
-References: <20141004134622.GA5214@wfg-t540p.sh.intel.com>
- <20141004172456.GA7509@worktop.ger.corp.intel.com>
- <20141007050348.GB17972@wfg-t540p.sh.intel.com>
- <20141007081732.GF19379@twins.programming.kicks-ass.net>
+	id S1753304AbaJGIlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 04:41:01 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:56847 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169AbaJGIk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 04:40:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007081732.GF19379@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <8761fwh1nc.fsf@sejong.aot.lge.com>
+References: <20141006083532.GA4850@quad>
+	<8761fwh1nc.fsf@sejong.aot.lge.com>
+Date: Tue, 7 Oct 2014 10:40:56 +0200
+Message-ID: <CABPqkBR30utE1aQd5f=CKY5fJOai0GabJ=ryXro+HV12qwp_4Q@mail.gmail.com>
+Subject: Re: [PATCH v2] perf tools: fix off-by-one error in maps
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 10:17:32AM +0200, Peter Zijlstra wrote:
-> On Tue, Oct 07, 2014 at 01:03:48PM +0800, Fengguang Wu wrote:
-> > > What is lacking is the actual .config.
-> > 
-> > Sorry, attached the .config. I expected the script to auto attach it,
-> > but obviously it's not yet perfect and failed to attach .config in
-> > this case.
-> 
-> Sure no problem, just figured I'd tell you.
-> 
-> > > Also the times above (~285 seconds) seem to suggest userspace needs to
-> > > do something ?
-> > 
-> > It's trinity. I'll try upgrade it, but it seems be valid for trinity
-> > to feed kernel with any parameters that it can accept -- unless the
-> > kernel completely rejects it one day.
-> 
-> OK, does it make sense to augment that script you have with a trinity
-> parameter? Maybe have that userspace read the kernel cmdline and also
-> run trinity when observed?  That way you can provide full
-> reproduction environments, which it appears you're striving towards.
-
-The trinity binary is included in the initrd image that it downloads,
-and will auto run after boot up. I also plan to add trinity as a LKP
-test case. :)
-
-Thanks,
-Fengguang
+On Tue, Oct 7, 2014 at 7:47 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Hi Stephane,
+>
+> On Mon, 6 Oct 2014 10:35:32 +0200, Stephane Eranian wrote:
+>> This patch fixes off-by-one errors in the management of maps.
+>> A map is defined by start address and length as implemented by map__new():
+>>
+>> map__init(map, type, start, start + len, pgoff, dso);
+>>
+>> map->start = addr;
+>> map->end = end;
+>>
+>> Consequently, the actual address range is ]start; end[
+>> map->end is the first byte outside the range. This patch
+>> fixes two bugs where upper bound checking was off-by-one.
+>>
+>> In V2, we fix map_groups__fixup_overlappings() some more
+>> where map->start was off-by-one as reported by Jiri.
+>
+> It seems we also need to fix maps__find():
+>
+>
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index b7090596ac50..107a8c90785b 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -752,7 +752,7 @@ struct map *maps__find(struct rb_root *maps, u64 ip)
+>                 m = rb_entry(parent, struct map, rb_node);
+>                 if (ip < m->start)
+>                         p = &(*p)->rb_left;
+> -               else if (ip > m->end)
+> +               else if (ip >= m->end)
+>                         p = &(*p)->rb_right;
+>                 else
+>                         return m;
+>
+> Thanks,
+> Namhyung
+>
+Yep, missing that one too. Hope there aren't any others....
+Thanks.
