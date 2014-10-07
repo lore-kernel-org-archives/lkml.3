@@ -1,58 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552AbaJGQXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:23:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32984 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422AbaJGQXI (ORCPT
+	id S1754099AbaJGQYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:24:39 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33534 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaJGQYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:23:08 -0400
-Date: Tue, 7 Oct 2014 09:23:06 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
-        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
-        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Julian Andres Klode <jak@jak-linux.org>,
-        Marc Dietrich <marvin24@gmx.de>
-Subject: Re: [PATCH 29/44] staging: nvec: Register with kernel poweroff
- handler
-Message-ID: <20141007162306.GA2913@kroah.com>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-30-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412659726-29957-30-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 7 Oct 2014 12:24:37 -0400
+From: mathieu.poirier@linaro.org
+To: linux@arm.linux.org.uk, gregkh@linuxfoundation.org
+Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
+        jonas.svennebring@avagotech.com, james.king@linaro.org,
+        kaixu.xia@linaro.org, marcin.jabrzyk@gmail.com, r.sengupta@samsung.com,
+        robbelibobban@gmail.com, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH RESEND v7 00/11] Coresight framework and drivers 
+Date: Tue,  7 Oct 2014 10:24:13 -0600
+Message-Id: <1412699064-17376-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 10:28:31PM -0700, Guenter Roeck wrote:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly. Register with default priority value of 128 since we don't know
-> any better.
-> 
-> Cc: Julian Andres Klode <jak@jak-linux.org>
-> Cc: Marc Dietrich <marvin24@gmx.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/staging/nvec/nvec.c | 24 +++++++++++++++---------
->  drivers/staging/nvec/nvec.h |  2 ++
->  2 files changed, 17 insertions(+), 9 deletions(-)
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Coresight is an umbrella of technologies allowing for the debugging of ARM
+based SoCs.  It includes solutions for JTAG and HW assisted tracing.  This
+patchset is concerned with the latter.
+
+Coresight components are cathegorised as source, link and sinks and are
+(usually) discovered using the AMBA bus.
+
+"Sources" generate a compressed stream representing the processor instruction
+path based on tracing scenarios as configured by users.  From there the stream
+flows through the coresight system (via ATB bus) using links that are connecting
+the emanating source to a sink(s).  Sinks serve as endpoints to the coresight
+implementation, either storing the compressed stream in a memory buffer or
+creating an interface to the outside world where data can be transfered to a
+host without fear of filling up the onboard coresight memory buffer.
+
+At typical coresight system would look like this:
+
+  *****************************************************************
+ **************************** AMBA AXI  ****************************===||
+  *****************************************************************    ||
+        ^                    ^                            |            ||
+        |                    |                            *            **
+     0000000    :::::     0000000    :::::    :::::    @@@@@@@    ||||||||||||
+     0 CPU 0<-->: C :     0 CPU 0<-->: C :    : C :    @ STM @    || System ||
+  |->0000000    : T :  |->0000000    : T :    : T :<--->@@@@@     || Memory ||
+  |  #######<-->: I :  |  #######<-->: I :    : I :      @@@<-|   ||||||||||||
+  |  # ETM #    :::::  |  # PTM #    :::::    :::::       @   |
+  |   #####      ^ ^   |   #####      ^ !      ^ !        .   |   |||||||||
+  | |->###       | !   | |->###       | !      | !        .   |   || DAP ||
+  | |   #        | !   | |   #        | !      | !        .   |   |||||||||
+  | |   .        | !   | |   .        | !      | !        .   |      |  |
+  | |   .        | !   | |   .        | !      | !        .   |      |  *
+  | |   .        | !   | |   .        | !      | !        .   |      | SWD/
+  | |   .        | !   | |   .        | !      | !        .   |      | JTAG
+  *****************************************************************<-|
+ *************************** AMBA Debug ABP ************************
+  *****************************************************************
+   |    .          !         .          !        !        .    |
+   |    .          *         .          *        *        .    |
+  *****************************************************************
+ ******************** Cross Trigger Matrix (CTM) *******************
+  *****************************************************************
+   |    .     ^              .                            .    |
+   |    *     !              *                            *    |
+  *****************************************************************
+ ****************** AMBA Advanced Trace Bus (ATB) ******************
+  *****************************************************************
+   |          !                        ===============         |
+   |          *                         ===== F =====<---------|
+   |   :::::::::                         ==== U ====
+   |-->:: CTI ::<!!                       === N ===
+   |   :::::::::  !                        == N ==
+   |    ^         *                        == E ==
+   |    !  &&&&&&&&&       IIIIIII         == L ==
+   |------>&& ETB &&<......II     I        =======
+   |    !  &&&&&&&&&       II     I           .
+   |    !                    I     I          .
+   |    !                    I REP I<..........
+   |    !                    I     I
+   |    !!>&&&&&&&&&       II     I           *Source: ARM ltd.
+   |------>& TPIU  &<......II    I            DAP = Debug Access Port
+           &&&&&&&&&       IIIIIII            ETM = Embedded Trace Macrocell
+               ;                              PTM = Program Trace Macrocell
+               ;                              CTI = Cross Trigger Interface
+               *                              ETB = Embedded Trace Buffer
+          To trace port                       TPIU= Trace Port Interface Unit
+                                              SWD = Serial Wire Debug
+
+While on target configuration of the components is done via the ABP bus,
+all trace data are carried out-of-band on the ATB bus.  The CTM provides
+a way to aggregate and distribute signals between CoreSight components.
+
+The coresight framework provides a central point to represent, configure and
+manage coresight devices on a platform.  This first wave centers on the basic
+tracing functionnality, enabling components such ETM/PTM, funnel, replicator, TMC,
+TPIU and ETB.  Subsequent submissions will enable more intricate IP blocks such
+as STM and CTI.
+
+Generated traces are encoded in a PFTv1.1 format and can be interpreted
+using the procedure detailed here [1] or ptm2human [2]. STM abides to the
+widely available STPv2 standard.
+
+Bindings for the driver have been sent separately to the devicetree list.
+
+[1].https://wiki.linaro.org/WorklingGroups/Kernel/Coresight/traceDecodingWithDS5
+[2].https://github.com/hwangcc23/ptm2human
+
+New in this patchset:
+. Going back to refcnts for component usage accounting
+. All structure documentation following proper kerneldoc guidelines
+. Removale of WARN_ON() macros
+. Fixed loop bug in @coresight_timeout() function
+. Using a mutex rather than a semaphore for serialization
+. Using device model list rather than a built-in one
+. Moved configuration interface to /sys/bus/coresight
+. Using device names rather than device IDs for lookups
+. using dev_* rather than pr_* utilities for logging
+
+Mathieu Poirier (4):
+  coresight: adding documentation for coresight
+  coresight: adding support for beagle and beagleXM
+  coresight: adding basic support for Vexpress TC2
+  ARM: removing support for etb/etm in "arch/arm/kernel/"
+
+Pratik Patel (7):
+  coresight: add CoreSight core layer framework
+  coresight-tmc: add CoreSight TMC driver
+  coresight-tpiu: add CoreSight TPIU driver
+  coresight-etb: add CoreSight ETB driver
+  coresight-funnel: add CoreSight Funnel driver
+  coresight-replicator: add CoreSight Replicator driver
+  coresight-etm: add CoreSight ETM/PTM driver
+
+ Documentation/trace/coresight.txt          |  300 +++++
+ arch/arm/Kconfig.debug                     |   35 +-
+ arch/arm/boot/dts/omap3-beagle-xm.dts      |   28 +
+ arch/arm/boot/dts/omap3-beagle.dts         |   28 +
+ arch/arm/boot/dts/vexpress-v2p-ca15_a7.dts |  198 +++
+ arch/arm/include/asm/hardware/coresight.h  |  157 ---
+ arch/arm/include/asm/hardware/cp14.h       |  542 ++++++++
+ arch/arm/kernel/Makefile                   |    1 -
+ arch/arm/kernel/etm.c                      |  654 ----------
+ arch/arm/kernel/hw_breakpoint.c            |    4 +-
+ arch/arm/mach-omap2/Kconfig                |    8 -
+ arch/arm/mach-omap2/Makefile               |    1 -
+ arch/arm/mach-omap2/emu.c                  |   50 -
+ drivers/Makefile                           |    1 +
+ drivers/amba/bus.c                         |    2 +-
+ drivers/coresight/Makefile                 |    9 +
+ drivers/coresight/coresight-etb10.c        |  537 ++++++++
+ drivers/coresight/coresight-etm-cp14.c     |  591 +++++++++
+ drivers/coresight/coresight-etm.h          |  251 ++++
+ drivers/coresight/coresight-etm3x.c        | 1926 ++++++++++++++++++++++++++++
+ drivers/coresight/coresight-funnel.c       |  268 ++++
+ drivers/coresight/coresight-priv.h         |   63 +
+ drivers/coresight/coresight-replicator.c   |  138 ++
+ drivers/coresight/coresight-tmc.c          |  776 +++++++++++
+ drivers/coresight/coresight-tpiu.c         |  217 ++++
+ drivers/coresight/coresight.c              |  717 +++++++++++
+ drivers/coresight/of_coresight.c           |  204 +++
+ include/linux/amba/bus.h                   |    1 +
+ include/linux/coresight.h                  |  263 ++++
+ 29 files changed, 7088 insertions(+), 882 deletions(-)
+ create mode 100644 Documentation/trace/coresight.txt
+ delete mode 100644 arch/arm/include/asm/hardware/coresight.h
+ create mode 100644 arch/arm/include/asm/hardware/cp14.h
+ delete mode 100644 arch/arm/kernel/etm.c
+ delete mode 100644 arch/arm/mach-omap2/emu.c
+ create mode 100644 drivers/coresight/Makefile
+ create mode 100644 drivers/coresight/coresight-etb10.c
+ create mode 100644 drivers/coresight/coresight-etm-cp14.c
+ create mode 100644 drivers/coresight/coresight-etm.h
+ create mode 100644 drivers/coresight/coresight-etm3x.c
+ create mode 100644 drivers/coresight/coresight-funnel.c
+ create mode 100644 drivers/coresight/coresight-priv.h
+ create mode 100644 drivers/coresight/coresight-replicator.c
+ create mode 100644 drivers/coresight/coresight-tmc.c
+ create mode 100644 drivers/coresight/coresight-tpiu.c
+ create mode 100644 drivers/coresight/coresight.c
+ create mode 100644 drivers/coresight/of_coresight.c
+ create mode 100644 include/linux/coresight.h
+
+-- 
+1.9.1
+
