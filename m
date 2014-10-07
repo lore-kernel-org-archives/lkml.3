@@ -1,64 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaJGLHf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:07:35 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:41738 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753386AbaJGLHd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:07:33 -0400
+	id S1753655AbaJGLJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:09:07 -0400
+Received: from ozlabs.org ([103.22.144.67]:49084 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216AbaJGLJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 07:09:05 -0400
+Date: Tue, 7 Oct 2014 22:08:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michael Neuling <mikey@neuling.org>
+Cc: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
+        benh@kernel.crashing.org, cbe-oss-dev@lists.ozlabs.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        imunsie@au.ibm.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, anton@samba.org
+Subject: Re: [PATCH v3 01/16] powerpc/cell: Move spu_handle_mm_fault() out
+ of cell platform
+Message-ID: <20141007220855.75b64a57@canb.auug.org.au>
+In-Reply-To: <1412678902-18672-2-git-send-email-mikey@neuling.org>
+References: <1412678902-18672-1-git-send-email-mikey@neuling.org>
+	<1412678902-18672-2-git-send-email-mikey@neuling.org>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <85851374-20d5-400b-b773-ea6ba2acdaf7@BY2FFO11FD045.protection.gbl>
-References: <c2b9a1c1-d3b9-48c5-9c14-a4c3a95965fa@BN1AFFO11FD046.protection.gbl>
-	<20140925081748.GB26991@pengutronix.de>
-	<85851374-20d5-400b-b773-ea6ba2acdaf7@BY2FFO11FD045.protection.gbl>
-Date: Tue, 7 Oct 2014 13:07:33 +0200
-Message-ID: <CACRpkdY7cGWDRRnMd_Ni_ptBpEoQsjFcNyDSfPhXYWk=SZ2_9Q@mail.gmail.com>
-Subject: Re: [RFC] pinctrl driver for Zynq
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/5Mn39_SXGJ4L86bW5KiabNZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 6:02 PM, Sören Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
-> On Thu, 2014-09-25 at 10:17AM +0200, Steffen Trumtrar wrote:
->> On Wed, Sep 24, 2014 at 02:09:14PM -0700, Sören Brinkmann wrote:
+--Sig_/5Mn39_SXGJ4L86bW5KiabNZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> (...)
->>
->> > +                           pinctrl_sdio1_cd_54: pinctrl-sdio1_cd@54 {
->> > +                                   sdio1_cd-mux {
->> > +                                           function = "sdio1_cd";
->> > +                                           pins = "sdio1_emio_cd_grp";
->> > +                                   };
->> > +                           };
->> > +                   };
->> >             };
->> >
->>
->> Wouldn't this reaaally bloat the dtb?
->> I know that imx decided to remove all the pinctrls from the dtsis, because
->> the dtbs got to big.
+Hi Mikey,
+
+On Tue,  7 Oct 2014 21:48:07 +1100 Michael Neuling <mikey@neuling.org> wrot=
+e:
 >
-> Yep, it absolutely does and I don't really know what to do about it.
-> Listing them all is a lot. Not listing them all would force board DTs to
-> potentially duplicate such nodes. This is definitely one of the things
-> I'm seeking input on.
-> Is there any good solution or best practice?
+> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/=
+copro.h
+> new file mode 100644
+> index 0000000..2858108
+> --- /dev/null
+> +++ b/arch/powerpc/include/asm/copro.h
+> @@ -0,0 +1,18 @@
+> +/*
+> + * Copyright 2014 IBM Corp.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#ifndef _ASM_POWERPC_COPRO_H
+> +#define _ASM_POWERPC_COPRO_H
+> +
+> +int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+> +			  unsigned long dsisr, unsigned *flt);
+> +
+> +int copro_data_segment(struct mm_struct *mm, u64 ea, u64 *esid, u64 *vsi=
+d);
 
-What about the middle road just putting those that are actually
-used in some DTS file into the DTSI?
+This function is otherwise not included in this patch, so it should
+probably be removed (as the next patch removes it anyway).
 
-Else I vote for duplicating them in each DTS.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Yours,
-Linus Walleij
+--Sig_/5Mn39_SXGJ4L86bW5KiabNZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUM8nNAAoJEMDTa8Ir7ZwVHqoQAJHLMnHM8SXXlGzS7t39h1hH
+bQOom5cvmHAH+8a6j5JBzMUx9FoQz05nhdJlFcr3Bku9ZyU9jVgpdaMhYa3OeNSk
+xehqH50e/RavicrYj7gF0qroCRSPt1vaFbnrPj0mNQKG2DOsn1bGmL8SkZERj5Lm
+bhAXfSZwwgu8FYYxoYPYaxUNTl0E093NWoP+b2Tte6RD/egGgABQmhTuVdSWAVbX
++YiiDO90US8UYX7BSR6BJ4ea4/nv9QH4lh0E491knJBTTvzSKgRD4+imizF7YcAr
+6Udb84ktJDgod8P5Y/7h8wi1y9X8Px64XnvVFnJ2+fatTbbC+cyF8n8vJKV6lK5N
+pImyh0Y/6E+mqlvF5pYJ9uaVoNRlJaTO5JFNepgHNOL0HashpMT9FjMTu+SdiE3N
+6VP16w2LLY7sF9lWXiAIKgRMr+pnpo2n/DtzsJzbEVBcPOlUM92HeReHHcDDxQ1j
+u4e5iERYa8AyRfv7UzktgqVYMUlDwcm0Qk0uy9ScHIE2O3/L/kk93fsJnPWTZ99Y
+MDcXuYMPQTXeuLZzHg+o+WkSdDT3XEE+3UDxVDkWPtvR4CVbvDKiaS43a0l0sajy
+DZKVCjo9+etgkpCtGRzkYNufOQlp00rljSdbZ+EFht/g7ZKc+goN3HzoENZuiaUU
+zb3KtqRddSkEcz5BiuYm
+=L5aM
+-----END PGP SIGNATURE-----
+
+--Sig_/5Mn39_SXGJ4L86bW5KiabNZ--
