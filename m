@@ -1,68 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaJGPeD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:34:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53005 "EHLO mx2.suse.de"
+	id S1754468AbaJGPev (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:34:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783AbaJGPeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:34:01 -0400
+	id S1753909AbaJGPeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:34:02 -0400
 From: Vlastimil Babka <vbabka@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH 0/5] Further compaction tuning
-Date: Tue,  7 Oct 2014 17:33:34 +0200
-Message-Id: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH 5/5] mm, compaction: more focused lru and pcplists draining
+Date: Tue,  7 Oct 2014 17:33:39 +0200
+Message-Id: <1412696019-21761-6-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on next-20141007. Patch 5 needs "mm: introduce single zone pcplists
-drain" from https://lkml.org/lkml/2014/10/2/375
+The goal of memory compaction is to create high-order freepages through page
+migration. Page migration however puts pages on the per-cpu lru_add cache,
+which is later flushed to per-cpu pcplists, and only after pcplists are
+drained the pages can actually merge. This can happen due to the per-cpu
+caches becoming full through further freeing, or explicitly.
 
-OK, time to reset the "days without a compaction series" counter back to 0.
-This series is mostly what was postponed in the previous one (but sadly not
-all of it), along with some smaller changes.
+During direct compaction, it is useful to do the draining explicitly so that
+pages merge as soon as possible and compaction can detect success immediately
+and keep the latency impact at minimum. However the current implementation is
+far from ideal. Draining is done only in  __alloc_pages_direct_compact(),
+after all zones were already compacted, and the decisions to continue or stop
+compaction in individual zones was done without the last batch of migrations
+being merged. It is also missing the draining of lru_add cache before the
+pcplists.
 
-Patch 1 tries to solve the mismatch in watermark checking by compaction and
-allocations by adding the missing pieces to compact_control. This mainly
-allows simplifying deferred allocation handling by Patch 2. Change in Patch 2
-was suggested by Joonsoo reviewing the previous series, but was not possible
-without Patch 1. Patch 3 is a rather cosmetic change to deferred compaction.
+This patch moves the draining for direct compaction into compact_zone(). It
+adds the missing lru_cache draining and uses the newly introduced single zone
+pcplists draining to reduce overhead and avoid impact on unrelated zones.
+Draining is only performed when it can actually lead to merging of a page of
+desired order (passed by cc->order). This means it is only done when migration
+occurred in the previously scanned cc->order aligned block(s) and the
+migration scanner is now pointing to the next cc->order aligned block.
 
-Patch 4 removes probably the last occurence of compaction scanners rescanning
-some pages when being restarted in the middle of the zone.
+The patch has been tested with stress-highalloc benchmark from mmtests.
+Although overal allocation success rates of the benchmark were not affected,
+the number of detected compaction successes has doubled. This suggests that
+allocations were previously successful due to implicit merging caused by
+background activity, making a later allocation attempt succeed immediately,
+but not attributing the success to compaction. Since stress-highalloc always
+tries to allocate almost the whole memory, it cannot show the improvement in
+its reported success rate metric. However after this patch, compaction should
+detect success and terminate earlier, reducing the direct compaction latencies
+in a real scenario.
 
-Patch 5 is a posthumous child of patch "mm, compaction: try to capture the
-just-created high-order freepage" which was removed from the previous series.
-Thanks to Joonsoo's objections we could find out that the improvements of the
-capture patch was mainly due to better lru_add cache and pcplists draining.
-The remaining delta wrt success rates between this patch and page capture was
-due to different (questionable) watermark checking in the capture mechanism.
-So this patch brings most of the improvements without the questionable parts
-and complexity that capture had.
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 41 ++++++++++++++++++++++++++++++++++++++++-
+ mm/page_alloc.c |  4 ----
+ 2 files changed, 40 insertions(+), 5 deletions(-)
 
-Vlastimil Babka (5):
-  mm, compaction: pass classzone_idx and alloc_flags to watermark
-    checking
-  mm, compaction: simplify deferred compaction
-  mm, compaction: defer only on COMPACT_COMPLETE
-  mm, compaction: always update cached scanner positions
-  mm, compaction: more focused lru and pcplists draining
-
- include/linux/compaction.h | 10 +++---
- mm/compaction.c            | 89 +++++++++++++++++++++++++++++-----------------
- mm/internal.h              |  7 ++--
- mm/page_alloc.c            | 15 +-------
- mm/vmscan.c                | 12 +++----
- 5 files changed, 71 insertions(+), 62 deletions(-)
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 8fa888d..41b49d7 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1179,6 +1179,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 	while ((ret = compact_finished(zone, cc, migratetype)) ==
+ 						COMPACT_CONTINUE) {
+ 		int err;
++		unsigned long last_migrated_pfn = 0;
+ 
+ 		switch (isolate_migratepages(zone, cc)) {
+ 		case ISOLATE_ABORT:
+@@ -1187,7 +1188,12 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 			cc->nr_migratepages = 0;
+ 			goto out;
+ 		case ISOLATE_NONE:
+-			continue;
++			/*
++			 * We haven't isolated and migrated anything, but
++			 * there might still be unflushed migrations from
++			 * previous cc->order aligned block.
++			 */
++			goto check_drain;
+ 		case ISOLATE_SUCCESS:
+ 			;
+ 		}
+@@ -1212,6 +1218,39 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 				goto out;
+ 			}
+ 		}
++
++		/*
++		 * Record where we have freed pages by migration and not yet
++		 * flushed them to buddy allocator. Subtract 1, because often
++		 * we finish a pageblock and migrate_pfn points to the first
++		 * page* of the next one. In that case we want the drain below
++		 * to happen immediately.
++		 */
++		if (!last_migrated_pfn)
++			last_migrated_pfn = cc->migrate_pfn - 1;
++
++check_drain:
++		/*
++		 * Have we moved away from the previous cc->order aligned block
++		 * where we migrated from? If yes, flush the pages that were
++		 * freed, so that they can merge and compact_finished() can
++		 * detect immediately if allocation should succeed.
++		 */
++		if (cc->order > 0 && last_migrated_pfn) {
++			int cpu;
++			unsigned long current_block_start =
++				cc->migrate_pfn & ~((1UL << cc->order) - 1);
++
++			if (last_migrated_pfn < current_block_start) {
++				cpu = get_cpu();
++				lru_add_drain_cpu(cpu);
++				drain_local_pages(zone);
++				put_cpu();
++				/* No more flushing until we migrate again */
++				last_migrated_pfn = 0;
++			}
++		}
++
+ 	}
+ 
+ out:
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5a4506f..14fac43 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2357,10 +2357,6 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	 */
+ 	count_vm_event(COMPACTSTALL);
+ 
+-	/* Page migration frees to the PCP lists but we want merging */
+-	drain_pages(get_cpu());
+-	put_cpu();
+-
+ 	page = get_page_from_freelist(gfp_mask, nodemask,
+ 			order, zonelist, high_zoneidx,
+ 			alloc_flags & ~ALLOC_NO_WATERMARKS,
 -- 
 1.8.4.5
 
