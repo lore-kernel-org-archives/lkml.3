@@ -1,151 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968AbaJGNFl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:05:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:16570 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaJGNFh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:05:37 -0400
-X-AuditID: cbfee691-f79b86d000004a5a-54-5433e519acfd
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-Message-id: <5433E518.40300@samsung.com>
-Date: Tue, 07 Oct 2014 22:05:28 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
- Thunderbird/11.0.1
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power: charger-manager: Avoid recursive thermal get_temp
- call
-References: <1412611212-24803-1-git-send-email-k.kozlowski@samsung.com>
- <54334E00.9030403@samsung.com> <1412665994.11780.3.camel@AMDC1943>
- <5433BE0D.6000306@samsung.com> <1412686205.15309.1.camel@AMDC1943>
-In-reply-to: <1412686205.15309.1.camel@AMDC1943>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsWyRsSkQFfyqXGIwYmNghYHt2paXP/ynNVi
-	0pP3zBYTV05mtnj9wtDi8q45bBafe48wWtxuXMFmcXp3iQOnx4T+T4weO2fdZffYvELLY9Oq
-	TjaPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyth2cw1bwTapipfHN7I0MJ4Q7WLk5JAQMJHY
-	v/kzO4QtJnHh3nq2LkYuDiGBpYwS87ZNYoIpWjDvFCNEYhGjxMpbL5hBErwCghI/Jt9jAbGZ
-	BdQlJs1bxAxhi0gcXHufHcLWlli28DUzRPNrRonbyxYBTeIAataQuNzDC1LDIqAq8XX3HbB6
-	NgE5ibdN3xhBbFGBMImrE46DzRcRMJQ4uHs7E8gcZoFNTBLrXs4BSwgLhEjsnnkJasFFRolV
-	19eygiQ4BQwkppxdAPXCS3aJFa/kIbYJSHybfIgF5AgJAVmJTQeYIUokJQ6uuMEygVF8FpLf
-	ZiH5bRaS32Yh+W0BI8sqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjMD4Pf3v2cQdjPcPWB9i
-	FOBgVOLhXaFlHCLEmlhWXJl7iNEU6KKJzFKiyfnAJJFXEm9obGZkYWpiamxkbmmmJM6rI/0z
-	WEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAMjv+9rh6Wy9X6PTHIWHN25+33y/MuiN5+8uyCg
-	KdKWnZvBt8ojRV/upEd9xaZaM9Y1r+59Y9i12i33hcTB55sNFvqyyC/gD3p9itviRF3J/XWP
-	34ZvO3YpfuLP4lmytStv/s/ebv79822TTU7Sq2/38pUf4GwSeHT+nlnsIbG7j8IO+Gx7U/5B
-	QomlOCPRUIu5qDgRAH6RTEzaAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jAV3Jp8YhBnsXcFoc3Kppcf3Lc1aL
-	SU/eM1tMXDmZ2eL1C0OLy7vmsFl87j3CaHG7cQWbxendJQ6cHhP6PzF67Jx1l91j8wotj02r
-	Otk8+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
-	1VbJxSdA1y0zB+gkJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGp60n
-	WAt+SVZ0/PjB0sDYI9rFyMkhIWAisWDeKUYIW0ziwr31bF2MXBxCAosYJVbeesEMkuAVEJT4
-	MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMUPUv2aUuL1sESNIDa+AhsTlHl6QGhYBVYmvu++w
-	g9hsAnISb5u+ge0SFQiTuDrhOAuILSJgKHFw93YmkDnMApuYJNa9nAOWEBYIkdg98xLUgouM
-	Equur2UFSXAKGEhMObuAaQKjwCwk981CuG8WkvsWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dL
-	zs/dxAiO9WdSOxhXNlgcYhTgYFTi4V2hZRwixJpYVlyZe4hRgoNZSYT39EWgEG9KYmVValF+
-	fFFpTmrxIUZToPcmMkuJJucD01BeSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILU
-	Ipg+Jg5OqQbG7XpSh+e0TC24fyw0Rr3g1vU3obI359jsD1Btvde+I1h3HfOj8Dk3z9xszzRv
-	qWhV45qxXGR/19GihZcO3OXb3xt+yerhiXVLld0LuhTYiv8FK/z6qHQjv+5m655DOm7TzNZG
-	zFl6SGXrz6ZSPsk2Jc0ZjTNE3ob7GKUIKjEGu4dMyjU19lunxFKckWioxVxUnAgAriVZBgsD	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753861AbaJGNFE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:05:04 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:55670 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753739AbaJGNE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 09:04:59 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Vitaly Bordug <vbordug@ru.mvista.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/2] net: fs_enet: Remove non NAPI RX
+Message-Id: <20141007130457.7F04E1AB266@localhost.localdomain>
+Date: Tue,  7 Oct 2014 15:04:57 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 10월 07일 21:50, Krzysztof Kozlowski wrote:
+In the probe function, use_napi is inconditionnaly set to 1. This patch removes
+all the code which is conditional to !use_napi, and removes use_napi which has
+then become useless.
 
-> On wto, 2014-10-07 at 19:18 +0900, jonghwa3.lee@samsung.com wrote:
->> On 2014년 10월 07일 16:13, Krzysztof Kozlowski wrote:
->>
->>>
->>> On wto, 2014-10-07 at 11:20 +0900, jonghwa3.lee@samsung.com wrote:
->>>> Hi,
->>>> On 2014년 10월 07일 01:00, Krzysztof Kozlowski wrote:
->>>>
->>>>> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
->>>>> as a thermal zone if any of these conditions match:
->>>>> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
->>>>> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
->>>>>    the fuel gauge temperature property).
->>>>>
->>>>> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
->>>>> is not set) the charger manager forwards its get_temp calls to fuel
->>>>> gauge thermal zone.
->>>>>
->>>>> This leads to reporting by lockdep a false positive deadlock for thermal
->>>>> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
->>>>> false positive because these are different mutexes: one for charger
->>>>> manager thermal zone and second for fuel gauge thermal zone.
->>>>>
->>>>
->>>>
->>>> Yes, this happens because power_supply_subsystem automatically creates
->>>> thermal_zone when POWER_SUPPLY_PROP_TEMP is available at the time of
->>>> power_supply registering. And as you point out, it makes duplicate thermal_zone
->>>> when some power_supply references other power_supply's. I hope it would become
->>>> to be a selectable option or change the manner of charger-manager itself (if the
->>>> charger-manager is only one who references other power_supply's temperature
->>>> sensing ability).
->>>>
->>>> Anyway, the code looks fine to me.
->>>>
->>>> Acked-by : Jonghwa Lee <jonghwa3.lee@samsung.com>
->>>
->>> Thank you for looking at patch. However later I started to wonder
->>> whether my fix is sufficient. For the case when fuel gauge is used as
->>> source of temperature it is. But for the case when external sensor is
->>> used it is not - still there will be recursive call and false positive
->>> from lockdep.
->>>
->>> Also minor fix is needed in my patch - s/IS_ENABLED/config_enabled/.
->>>
->>> I can send a v2 fixing this but first question - what about second
->>> recursive issue (when external sensor is used instead of fuel gauge)?
->>>
->>
->>
->> Yes, you're right, it still had problem for external temperature sensor case.
->> How about we change the core not to make duplicate thermal zone if it already
->> existed. It's not the common case, but it looks worthy.
->>
->> like as below,
->>
->> static int psy_register_thermal(struct power_supply *psy)
->> {
->> ...
->> +	if (psy->tzd)
->> +		return 0;
->> ...
->>
->> We also needs some modification at charger-manager driver, however we can avoid
->> recursive call problem with this way :)
-> 
-> Yes, that would remove recursive call but this would also remove thermal
-> zone for charger manager's power supply. Does anyone (user space?)
-> depend and use charger managers thermal zone?
-> 
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
+---
+ .../net/ethernet/freescale/fs_enet/fs_enet-main.c  | 164 ++-------------------
+ include/linux/fs_enet_pd.h                         |   1 -
+ 2 files changed, 15 insertions(+), 150 deletions(-)
 
-AFAIK, no,, charger manager's thermal zone means nothing but just replica of
-other thermal zone related with battery. It is better to remove it.
-
-Thanks,
-Jonghwa.
-
-> Best regards,
-> Krzysztof
-> 
-> 
-
+diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+index 748fd24..71a25b4 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
++++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
+@@ -215,128 +215,6 @@ static int fs_enet_rx_napi(struct napi_struct *napi, int budget)
+ 	return received;
+ }
+ 
+-/* non NAPI receive function */
+-static int fs_enet_rx_non_napi(struct net_device *dev)
+-{
+-	struct fs_enet_private *fep = netdev_priv(dev);
+-	const struct fs_platform_info *fpi = fep->fpi;
+-	cbd_t __iomem *bdp;
+-	struct sk_buff *skb, *skbn, *skbt;
+-	int received = 0;
+-	u16 pkt_len, sc;
+-	int curidx;
+-	/*
+-	 * First, grab all of the stats for the incoming packet.
+-	 * These get messed up if we get called due to a busy condition.
+-	 */
+-	bdp = fep->cur_rx;
+-
+-	while (((sc = CBDR_SC(bdp)) & BD_ENET_RX_EMPTY) == 0) {
+-
+-		curidx = bdp - fep->rx_bd_base;
+-
+-		/*
+-		 * Since we have allocated space to hold a complete frame,
+-		 * the last indicator should be set.
+-		 */
+-		if ((sc & BD_ENET_RX_LAST) == 0)
+-			dev_warn(fep->dev, "rcv is not +last\n");
+-
+-		/*
+-		 * Check for errors.
+-		 */
+-		if (sc & (BD_ENET_RX_LG | BD_ENET_RX_SH | BD_ENET_RX_CL |
+-			  BD_ENET_RX_NO | BD_ENET_RX_CR | BD_ENET_RX_OV)) {
+-			fep->stats.rx_errors++;
+-			/* Frame too long or too short. */
+-			if (sc & (BD_ENET_RX_LG | BD_ENET_RX_SH))
+-				fep->stats.rx_length_errors++;
+-			/* Frame alignment */
+-			if (sc & (BD_ENET_RX_NO | BD_ENET_RX_CL))
+-				fep->stats.rx_frame_errors++;
+-			/* CRC Error */
+-			if (sc & BD_ENET_RX_CR)
+-				fep->stats.rx_crc_errors++;
+-			/* FIFO overrun */
+-			if (sc & BD_ENET_RX_OV)
+-				fep->stats.rx_crc_errors++;
+-
+-			skb = fep->rx_skbuff[curidx];
+-
+-			dma_unmap_single(fep->dev, CBDR_BUFADDR(bdp),
+-				L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
+-				DMA_FROM_DEVICE);
+-
+-			skbn = skb;
+-
+-		} else {
+-
+-			skb = fep->rx_skbuff[curidx];
+-
+-			dma_unmap_single(fep->dev, CBDR_BUFADDR(bdp),
+-				L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
+-				DMA_FROM_DEVICE);
+-
+-			/*
+-			 * Process the incoming frame.
+-			 */
+-			fep->stats.rx_packets++;
+-			pkt_len = CBDR_DATLEN(bdp) - 4;	/* remove CRC */
+-			fep->stats.rx_bytes += pkt_len + 4;
+-
+-			if (pkt_len <= fpi->rx_copybreak) {
+-				/* +2 to make IP header L1 cache aligned */
+-				skbn = netdev_alloc_skb(dev, pkt_len + 2);
+-				if (skbn != NULL) {
+-					skb_reserve(skbn, 2);	/* align IP header */
+-					skb_copy_from_linear_data(skb,
+-						      skbn->data, pkt_len);
+-					/* swap */
+-					skbt = skb;
+-					skb = skbn;
+-					skbn = skbt;
+-				}
+-			} else {
+-				skbn = netdev_alloc_skb(dev, ENET_RX_FRSIZE);
+-
+-				if (skbn)
+-					skb_align(skbn, ENET_RX_ALIGN);
+-			}
+-
+-			if (skbn != NULL) {
+-				skb_put(skb, pkt_len);	/* Make room */
+-				skb->protocol = eth_type_trans(skb, dev);
+-				received++;
+-				netif_rx(skb);
+-			} else {
+-				fep->stats.rx_dropped++;
+-				skbn = skb;
+-			}
+-		}
+-
+-		fep->rx_skbuff[curidx] = skbn;
+-		CBDW_BUFADDR(bdp, dma_map_single(fep->dev, skbn->data,
+-			     L1_CACHE_ALIGN(PKT_MAXBUF_SIZE),
+-			     DMA_FROM_DEVICE));
+-		CBDW_DATLEN(bdp, 0);
+-		CBDW_SC(bdp, (sc & ~BD_ENET_RX_STATS) | BD_ENET_RX_EMPTY);
+-
+-		/*
+-		 * Update BD pointer to next entry.
+-		 */
+-		if ((sc & BD_ENET_RX_WRAP) == 0)
+-			bdp++;
+-		else
+-			bdp = fep->rx_bd_base;
+-
+-		(*fep->ops->rx_bd_done)(dev);
+-	}
+-
+-	fep->cur_rx = bdp;
+-
+-	return 0;
+-}
+-
+ static void fs_enet_tx(struct net_device *dev)
+ {
+ 	struct fs_enet_private *fep = netdev_priv(dev);
+@@ -453,8 +331,7 @@ fs_enet_interrupt(int irq, void *dev_id)
+ 		nr++;
+ 
+ 		int_clr_events = int_events;
+-		if (fpi->use_napi)
+-			int_clr_events &= ~fep->ev_napi_rx;
++		int_clr_events &= ~fep->ev_napi_rx;
+ 
+ 		(*fep->ops->clear_int_events)(dev, int_clr_events);
+ 
+@@ -462,19 +339,15 @@ fs_enet_interrupt(int irq, void *dev_id)
+ 			(*fep->ops->ev_error)(dev, int_events);
+ 
+ 		if (int_events & fep->ev_rx) {
+-			if (!fpi->use_napi)
+-				fs_enet_rx_non_napi(dev);
+-			else {
+-				napi_ok = napi_schedule_prep(&fep->napi);
+-
+-				(*fep->ops->napi_disable_rx)(dev);
+-				(*fep->ops->clear_int_events)(dev, fep->ev_napi_rx);
+-
+-				/* NOTE: it is possible for FCCs in NAPI mode    */
+-				/* to submit a spurious interrupt while in poll  */
+-				if (napi_ok)
+-					__napi_schedule(&fep->napi);
+-			}
++			napi_ok = napi_schedule_prep(&fep->napi);
++
++			(*fep->ops->napi_disable_rx)(dev);
++			(*fep->ops->clear_int_events)(dev, fep->ev_napi_rx);
++
++			/* NOTE: it is possible for FCCs in NAPI mode    */
++			/* to submit a spurious interrupt while in poll  */
++			if (napi_ok)
++				__napi_schedule(&fep->napi);
+ 		}
+ 
+ 		if (int_events & fep->ev_tx)
+@@ -811,24 +684,21 @@ static int fs_enet_open(struct net_device *dev)
+ 	/* not doing this, will cause a crash in fs_enet_rx_napi */
+ 	fs_init_bds(fep->ndev);
+ 
+-	if (fep->fpi->use_napi)
+-		napi_enable(&fep->napi);
++	napi_enable(&fep->napi);
+ 
+ 	/* Install our interrupt handler. */
+ 	r = request_irq(fep->interrupt, fs_enet_interrupt, IRQF_SHARED,
+ 			"fs_enet-mac", dev);
+ 	if (r != 0) {
+ 		dev_err(fep->dev, "Could not allocate FS_ENET IRQ!");
+-		if (fep->fpi->use_napi)
+-			napi_disable(&fep->napi);
++		napi_disable(&fep->napi);
+ 		return -EINVAL;
+ 	}
+ 
+ 	err = fs_init_phy(dev);
+ 	if (err) {
+ 		free_irq(fep->interrupt, dev);
+-		if (fep->fpi->use_napi)
+-			napi_disable(&fep->napi);
++		napi_disable(&fep->napi);
+ 		return err;
+ 	}
+ 	phy_start(fep->phydev);
+@@ -845,8 +715,7 @@ static int fs_enet_close(struct net_device *dev)
+ 
+ 	netif_stop_queue(dev);
+ 	netif_carrier_off(dev);
+-	if (fep->fpi->use_napi)
+-		napi_disable(&fep->napi);
++	napi_disable(&fep->napi);
+ 	phy_stop(fep->phydev);
+ 
+ 	spin_lock_irqsave(&fep->lock, flags);
+@@ -1022,7 +891,6 @@ static int fs_enet_probe(struct platform_device *ofdev)
+ 	fpi->rx_ring = 32;
+ 	fpi->tx_ring = 32;
+ 	fpi->rx_copybreak = 240;
+-	fpi->use_napi = 1;
+ 	fpi->napi_weight = 17;
+ 	fpi->phy_node = of_parse_phandle(ofdev->dev.of_node, "phy-handle", 0);
+ 	if (!fpi->phy_node && of_phy_is_fixed_link(ofdev->dev.of_node)) {
+@@ -1102,9 +970,7 @@ static int fs_enet_probe(struct platform_device *ofdev)
+ 
+ 	ndev->netdev_ops = &fs_enet_netdev_ops;
+ 	ndev->watchdog_timeo = 2 * HZ;
+-	if (fpi->use_napi)
+-		netif_napi_add(ndev, &fep->napi, fs_enet_rx_napi,
+-		               fpi->napi_weight);
++	netif_napi_add(ndev, &fep->napi, fs_enet_rx_napi, fpi->napi_weight);
+ 
+ 	ndev->ethtool_ops = &fs_ethtool_ops;
+ 
+diff --git a/include/linux/fs_enet_pd.h b/include/linux/fs_enet_pd.h
+index efb0596..77d783f 100644
+--- a/include/linux/fs_enet_pd.h
++++ b/include/linux/fs_enet_pd.h
+@@ -139,7 +139,6 @@ struct fs_platform_info {
+ 	int rx_ring, tx_ring;	/* number of buffers on rx     */
+ 	__u8 macaddr[ETH_ALEN];	/* mac address                 */
+ 	int rx_copybreak;	/* limit we copy small frames  */
+-	int use_napi;		/* use NAPI                    */
+ 	int napi_weight;	/* NAPI weight                 */
+ 
+ 	int use_rmii;		/* use RMII mode 	       */
+-- 
+2.1.0
 
