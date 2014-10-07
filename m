@@ -1,109 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbaJGS2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:28:19 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:47800 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141AbaJGS2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:28:16 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Kever Yang <kever.yang@rock-chips.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        =?utf-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dts: enable init rate for clock
-Date: Tue, 07 Oct 2014 20:27:46 +0200
-Message-ID: <1854393.Qf7h4x8eso@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CAD=FV=UNXUuJbRpECV0Ay0hR02Dg=rBw+XScvMdfngzWfCqp4w@mail.gmail.com>
-References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com> <1412674438-26160-3-git-send-email-kever.yang@rock-chips.com> <CAD=FV=UNXUuJbRpECV0Ay0hR02Dg=rBw+XScvMdfngzWfCqp4w@mail.gmail.com>
+	id S1754909AbaJGSeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:34:16 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:12970 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754697AbaJGSeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:34:15 -0400
+Message-ID: <543431DA.4090809@imgtec.com>
+Date: Tue, 7 Oct 2014 11:32:58 -0700
+From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Matthew Fortune <Matthew.Fortune@imgtec.com>
+CC: David Daney <david.s.daney@gmail.com>, Rich Felker <dalias@libc.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Daney <ddaney.cavm@gmail.com>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com> <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com> <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com> <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net> <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx> <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx> <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
+In-Reply-To: <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.65.146]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 7. Oktober 2014, 10:03:19 schrieb Doug Anderson:
-> Kever,
-> 
-> On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com> 
-wrote:
-> > We need to initialize PLL rate and some of bus clock rate while
-> > kernel init, for there is no other module will do that.
-> > 
-> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> > ---
-> > 
-> >  arch/arm/boot/dts/rk3288.dtsi | 10 ++++++++++
-> >  1 file changed, 10 insertions(+)
-> > 
-> > diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> > index 874e66d..2f4519b 100644
-> > --- a/arch/arm/boot/dts/rk3288.dtsi
-> > +++ b/arch/arm/boot/dts/rk3288.dtsi
-> > @@ -455,6 +455,16 @@
-> > 
-> >                 rockchip,grf = <&grf>;
-> >                 #clock-cells = <1>;
-> >                 #reset-cells = <1>;
-> > 
-> > +               assigned-clocks = <&cru PLL_GPLL>, <&cru PLL_CPLL>,
-> > +                                 <&cru PLL_NPLL>, <&cru ACLK_CPU>,
-> > +                                 <&cru HCLK_CPU>, <&cru PCLK_CPU>,
-> > +                                 <&cru ACLK_PERI>, <&cru HCLK_PERI>,
-> > +                                 <&cru PCLK_PERI>;
-> > +               assigned-clock-rates = <594000000>, <400000000>,
-> > +                                      <500000000>, <300000000>,
-> 
-> When I boot up, I see that ACLK_CPU was 297000000.  You specified
-> 300000000.  Did you expect to get 300?  If you expected 297, I think
-> you should put 297.  If you expected 300 then we have some debugging
-> to do.  Note: I'm not quite sure how you'd expect to get 300 given
-> that none of the PLLs divide evenly to 300...
+Well, I am not a subscriber to mail-list, so I read it the first time 
+and some notes:
 
-I'd think 300 is simply the target value. I.e. take the closest rate <= 300 
-MHz, same for 150 etc. I somehow like the approach of specifying what the rate 
-_should_ ideally be :-) .
+1)  David's approach would likely work for FPU emulation but unlikely 
+works for MIPS Rel 2/Rel 1/ MIPS I emulation in MIPS R6 architecture. 
+The reason is that the first MIPS R2 instruction (removed from MIPS R6) 
+can be hit long before GLIBC/bionic/etc can determine how to use 
+properly a new system call. And that instruction needs to be emulated. I 
+actually hit this problem with ssh-keygen first and referred to  FPU 
+emulation because I got it later, during my attempt to salvage a situation.
 
-Also reduces the amount of thougths necessary (and possible head-scratching) 
-when adapting the pll rates to some other constraints (child-clocks already 
-have the target rates and cannot drop to some even stranger value).
+2)  The issue of uMIPS ADDIUPC and similar instructions are overblown in 
+my opinion. Never of them are memory-related and their emulation in 
+BD-slot can be easily done in kernel and that actually accelerates an 
+emulation. Look at piece of code which I wrote to accelerate an 
+emulation of some instructions in BD-slot of JR instruction:
 
+         switch (MIPSInst_OPCODE(ir)) {
+         case addiu_op:
+                 if (MIPSInst_RT(ir))
+                         regs->regs[MIPSInst_RT(ir)] =
+(s32)regs->regs[MIPSInst_RS(ir)] +
+                                 (s32)MIPSInst_SIMM(ir);
+                 return(0);
+#ifdef CONFIG_64BIT
+         case daddiu_op:
+                 if (MIPSInst_RT(ir))
+                         regs->regs[MIPSInst_RT(ir)] =
+(s64)regs->regs[MIPSInst_RS(ir)] +
+(s64)MIPSInst_SIMM(ir);
+return(0);
+#endif
 
-Heiko
+Five lines per instruction.
 
+3)  The signal happened during execution of emulated instruction - 
+signals are under control of kernel and we can easily delay a signal 
+during execution of emulated instruction until return from do_dsemulret. 
+It is not a big deal - nor code, nor performance. Thank you for good point.
 
-> 
-> > +                                      <150000000>, <75000000>,
-> 
-> Similarly, I see 148500000, 74250000
-> 
-> > +                                      <300000000>, <150000000>,
-> 
-> 297000000, 148500000
-> 
-> > +                                      <75000000>;
-> 
-> 74250000
-> 
-> >         };
-> >         
-> >         grf: syscon@ff770000 {
-> > 
-> > --
-> > 1.9.1
+4)  The voice for doing any instruction emulation in kernel - it is not 
+a MIPS business model to force customer to put details of all 
+Coprocessor 2 instructions public. We provide an interface and the rest 
+is a customer business. Besides that it is really painful to make a 
+differentiation between Cavium Octeon and some another CPU instructions 
+with the same opcode. On other side, leaving emulation of their 
+instructions to them is not a wise after having some good way doing that 
+multiple years.
+
+- Leonid.
 
