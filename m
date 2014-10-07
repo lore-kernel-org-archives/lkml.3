@@ -1,133 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755631AbaJHAZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 20:25:59 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43741 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485AbaJHAZ4 (ORCPT
+	id S1755644AbaJHA3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 20:29:09 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63114 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462AbaJHA3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 20:25:56 -0400
+	Tue, 7 Oct 2014 20:29:08 -0400
+Date: Tue, 7 Oct 2014 16:48:23 -0700
+From: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        florian.c.schilhabel@googlemail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8712: fix unnecessary elses after return/break
+ in rtl8712_efuse.c
+Message-ID: <20141007234823.GA25549@fedora.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <87vbnvif9e.fsf@x220.int.ebiederm.org>
-References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
- <20141007133039.GG7996@ZenIV.linux.org.uk> <20141007133339.GH7996@ZenIV.linux.org.uk>
- <87r3yjy64e.fsf@x220.int.ebiederm.org> <20141007204627.GI28519@ubuntumail>
- <87wq8bvbzg.fsf@x220.int.ebiederm.org> <20141007213257.GJ28519@ubuntumail>
- <87zjd7r1z9.fsf@x220.int.ebiederm.org> <CALCETrVZNDTa3jc2HJ+_9sab+MhdXQ-rgNPHqT8qbDmJGXByBg@mail.gmail.com>
- <87h9zfpkm3.fsf@x220.int.ebiederm.org> <CALCETrWqD7j8d+0GYZeUMhf5PnZKmV0DGoHu49qo3tGx0TUnhg@mail.gmail.com>
- <87siizla5p.fsf@x220.int.ebiederm.org> <CALCETrV-B=ahQ9mDdZkSQTGD1zmHcFQA0OyQxxwFC9Ei8Vsp4Q@mail.gmail.com>
- <87vbnvif9e.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 7 Oct 2014 17:25:34 -0700
-Message-ID: <CALCETrVuJbjWwTfZrH4U3hZDSxwMi9b3XxL5-KAi4bTSJgq0jw@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
- current root
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrey Vagin <avagin@openvz.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Rob Landley <rob@landley.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 5:20 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
->
->> On Tue, Oct 7, 2014 at 4:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> Andy Lutomirski <luto@amacapital.net> writes:
->>>
->>>> On Tue, Oct 7, 2014 at 3:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>>>> Andy Lutomirski <luto@amacapital.net> writes:
->>>>>
->>>>>> On Tue, Oct 7, 2014 at 2:42 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>>>>>>
->>>>>>> I am squinting and looking this way and that but while I can imagine
->>>>>>> someone more clever than I can think up some unique property of rootfs
->>>>>>> that makes it a little more exploitable than just mounting a ramfs,
->>>>>>> but since you have to be root to exploit those properties I think the
->>>>>>> game is pretty much lost.
->>>>>>
->>>>>> Yes.  rootfs might not be empty, it might have totally insane
->>>>>> permissions, and it's globally shared, which makes it into a wonderful
->>>>>> channel to pass things around that shouldn't be passed around.
->>>>>
->>>>> But if only root with proc mounted can reach it...  I don't know.
->>>>
->>>> It doesn't have to be global root.  It could be userns root.
->>>>
->>>>> There might be a case for setting MNT_LOCKED when we overmount "/"
->>>>> as root but I don't yet see it.
->>>>>
->>>>>> Can non-root do this?  You'd need to be in a userns with a "/" that
->>>>>> isn't MNT_LOCKED.  Can this happen on any normal setup?
->>>>>>
->>>>>> FWIW, I think we should unconditionally MNT_LOCKED the root on userns
->>>>>> unshare, even if it's the only mount.
->>>>>
->>>>> To the best of my knowledge MNT_LOCKED is set uncondintially on userns
->>>>> unshare.
->>>>
->>>> Only if list_empty(&old->mnt_expire), whatever that means, I think.
->>>
->>> An autofs or nfs automounted mount.  Can those ever become root?
->>
->> Dunno.
->>
->> I thought that this code was what set MNT_LOCKED for things that
->> should be locked:
->
-> It does.
->
->>     /* Don't allow unprivileged users to reveal what is under a mount */
->>     if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
->>         mnt->mnt.mnt_flags |= MNT_LOCKED;
->>
->> Now I'm confused.  Shouldn't that be checking for submounts?  Is that
->> what it's doing?
->
-> As it copies each mount (mostly submounts) it sets MNT_LOCKED.
+This patch fixes two unnecessary else conditions that were found by checkpatch.pl.
 
-Oh.  They're *all* MNT_LOCKED.  Duh.
+Signed-off-by: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+---
+ drivers/staging/rtl8712/rtl8712_efuse.c | 41 +++++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 20 deletions(-)
 
->
->> Anyway, I think that this should unconditionally set MNT_LOCKED on the
->> thing that mounted on rootfs.
->
-> As I read the code mnt_set_expiry is only for nfs, cifs, and afs
-> submounts (and perhaps proc should use them). So as they are generated
-> mnt_expiry should never start on the root of filesystem of the mount tree.
->
-> Furthermore mnt_expiry is cleared when a mount is moved, and when
-> it is bind mounted, or propagated.
->
-> pivot_root does look as though it may be missing the proper mnt_expiry
-> handling list_del_init(&old->mnt_expire), but pivot_root does have
-> proper MNT_LOCKED handling.
-
-pivot_root is quite broken, as noted in my other email.  It's just not
-broken like this, I think. :)
-
->
-> Looking that test was slightly off and it should be:
->         if ((flag & CL_UNPRIVILEGED) &&
->             (!(flag & CL_EXPIRE) || list_empty(&old->mnt_expire))
->                 mnt->mnt.mnt_flags |= MNT_LOCKED;
->
-> So on that note we might clear CL_EXPIRE when CL_UNPRIVILEGED is set
-> in copy_tree but I don't see that as being really needed.
->
-> Eric
-
-
-
+diff --git a/drivers/staging/rtl8712/rtl8712_efuse.c b/drivers/staging/rtl8712/rtl8712_efuse.c
+index c9eeb42..0e155d9 100644
+--- a/drivers/staging/rtl8712/rtl8712_efuse.c
++++ b/drivers/staging/rtl8712/rtl8712_efuse.c
+@@ -414,19 +414,19 @@ u8 r8712_efuse_pg_packet_write(struct _adapter *padapter, const u8 offset,
+ 					bResult = false;
+ 			}
+ 			break;
+-		} else { /* write header fail */
+-			bResult = false;
+-			if (0xFF == efuse_data)
+-				return bResult; /* nothing damaged. */
+-			/* call rescue procedure */
+-			if (fix_header(padapter, efuse_data, efuse_addr) ==
+-			    false)
+-				return false; /* rescue fail */
+-
+-			if (++repeat_times > _REPEAT_THRESHOLD_) /* fail */
+-				break;
+-			/* otherwise, take another risk... */
+ 		}
++		/* write header fail */
++		bResult = false;
++		if (0xFF == efuse_data)
++			return bResult; /* nothing damaged. */
++		/* call rescue procedure */
++		if (fix_header(padapter, efuse_data, efuse_addr) ==
++		    false)
++			return false; /* rescue fail */
++
++		if (++repeat_times > _REPEAT_THRESHOLD_) /* fail */
++			break;
++		/* otherwise, take another risk... */
+ 	}
+ 	return bResult;
+ }
+@@ -541,15 +541,16 @@ u8 r8712_efuse_map_write(struct _adapter *padapter, u16 addr, u16 cnts,
+ 				}
+ 				idx++;
+ 				break;
+-			} else {
+-				if ((data[idx] != pktdata[i]) || (data[idx+1] !=
+-				     pktdata[i+1])) {
+-					word_en &= ~BIT(i >> 1);
+-					newdata[j++] = data[idx];
+-					newdata[j++] = data[idx + 1];
+-				}
+-				idx += 2;
+ 			}
++
++			if ((data[idx] != pktdata[i]) || (data[idx+1] !=
++			     pktdata[i+1])) {
++				word_en &= ~BIT(i >> 1);
++				newdata[j++] = data[idx];
++				newdata[j++] = data[idx + 1];
++			}
++			idx += 2;
++
+ 			if (idx == cnts)
+ 				break;
+ 		}
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.3
+
