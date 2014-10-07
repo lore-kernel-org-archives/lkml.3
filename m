@@ -1,39 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875AbaJGXgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:36:45 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:41261 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669AbaJGXgl (ORCPT
+	id S1755827AbaJGXgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:36:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39595 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755605AbaJGXTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:36:41 -0400
+	Tue, 7 Oct 2014 19:19:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, Chuck Ebbert <cebbert.lkml@gmail.com>
+Subject: [PATCH 3.14 01/37] udf: Avoid infinite loop when processing indirect ICBs
+Date: Tue,  7 Oct 2014 16:19:18 -0700
+Message-Id: <20141007231827.088225894@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
+References: <20141007231827.043235686@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-In-Reply-To: <1412659726-29957-9-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-	<1412659726-29957-9-git-send-email-linux@roeck-us.net>
-Date: Wed, 8 Oct 2014 03:36:41 +0400
-Message-ID: <CAMo8BfLX_0-+dqXeGK=rCdopLp1xi=uLyQF0ZMzU4bqKuFumYg@mail.gmail.com>
-Subject: Re: [PATCH 08/44] kernel: Move pm_power_off to common code
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        linux-pm@vger.kernel.org, Chris Zankel <chris@zankel.net>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 9:28 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> pm_power_off is defined for all architectures. Move it to common code.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-For xtensa:
-Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+------------------
 
-> Have all architectures call do_kernel_poweroff instead of pm_power_off.
-> Some architectures point pm_power_off to machine_power_off. For those,
-> call do_kernel_poweroff from machine_power_off instead.
+From: Jan Kara <jack@suse.cz>
 
--- 
-Thanks.
--- Max
+commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
+
+We did not implement any bound on number of indirect ICBs we follow when
+loading inode. Thus corrupted medium could cause kernel to go into an
+infinite loop, possibly causing a stack overflow.
+
+Fix the possible stack overflow by removing recursion from
+__udf_read_inode() and limit number of indirect ICBs we follow to avoid
+infinite loops.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/udf/inode.c |   35 +++++++++++++++++++++--------------
+ 1 file changed, 21 insertions(+), 14 deletions(-)
+
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1271,13 +1271,22 @@ update_time:
+ 	return 0;
+ }
+ 
++/*
++ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
++ * arbitrary - just that we hopefully don't limit any real use of rewritten
++ * inode on write-once media but avoid looping for too long on corrupted media.
++ */
++#define UDF_MAX_ICB_NESTING 1024
++
+ static void __udf_read_inode(struct inode *inode)
+ {
+ 	struct buffer_head *bh = NULL;
+ 	struct fileEntry *fe;
+ 	uint16_t ident;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
++	unsigned int indirections = 0;
+ 
++reread:
+ 	/*
+ 	 * Set defaults, but the inode is still incomplete!
+ 	 * Note: get_new_inode() sets the following on a new inode:
+@@ -1314,28 +1323,26 @@ static void __udf_read_inode(struct inod
+ 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
+ 					&ident);
+ 		if (ident == TAG_IDENT_IE && ibh) {
+-			struct buffer_head *nbh = NULL;
+ 			struct kernel_lb_addr loc;
+ 			struct indirectEntry *ie;
+ 
+ 			ie = (struct indirectEntry *)ibh->b_data;
+ 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
+ 
+-			if (ie->indirectICB.extLength &&
+-				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
+-							&ident))) {
+-				if (ident == TAG_IDENT_FE ||
+-					ident == TAG_IDENT_EFE) {
+-					memcpy(&iinfo->i_location,
+-						&loc,
+-						sizeof(struct kernel_lb_addr));
+-					brelse(bh);
+-					brelse(ibh);
+-					brelse(nbh);
+-					__udf_read_inode(inode);
++			if (ie->indirectICB.extLength) {
++				brelse(bh);
++				brelse(ibh);
++				memcpy(&iinfo->i_location, &loc,
++				       sizeof(struct kernel_lb_addr));
++				if (++indirections > UDF_MAX_ICB_NESTING) {
++					udf_err(inode->i_sb,
++						"too many ICBs in ICB hierarchy"
++						" (max %d supported)\n",
++						UDF_MAX_ICB_NESTING);
++					make_bad_inode(inode);
+ 					return;
+ 				}
+-				brelse(nbh);
++				goto reread;
+ 			}
+ 		}
+ 		brelse(ibh);
+
+
