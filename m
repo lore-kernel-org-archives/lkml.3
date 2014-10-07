@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054AbaJGSn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:43:29 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:36363 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755020AbaJGSnX (ORCPT
+	id S1755127AbaJGSo6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:44:58 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:44031 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242AbaJGSo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:43:23 -0400
-Message-ID: <54343449.1020605@codeaurora.org>
-Date: Tue, 07 Oct 2014 11:43:21 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 7 Oct 2014 14:44:57 -0400
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <543431DA.4090809@imgtec.com>
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+ <20141006205459.GZ23797@brightrain.aerifal.cx> <5433071B.4050606@caviumnetworks.com>
+ <20141006213101.GA23797@brightrain.aerifal.cx> <54330D79.80102@caviumnetworks.com>
+ <20141006215813.GB23797@brightrain.aerifal.cx> <543327E7.4020608@amacapital.net>
+ <54332A64.5020605@caviumnetworks.com> <20141007000514.GD23797@brightrain.aerifal.cx>
+ <543334CE.8060305@caviumnetworks.com> <20141007004915.GF23797@brightrain.aerifal.cx>
+ <54337127.40806@gmail.com> <6D39441BF12EF246A7ABCE6654B0235320F1E173@LEMAIL01.le.imgtec.org>
+ <543431DA.4090809@imgtec.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 7 Oct 2014 11:44:35 -0700
+Message-ID: <CALCETrUQEbb=DotSzsneN7Hano_eC-EoTMko6uKcyZXvEcktkw@mail.gmail.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+Cc: Matthew Fortune <Matthew.Fortune@imgtec.com>,
+        David Daney <david.s.daney@gmail.com>, Rich Felker <dalias@libc.org>,
+        David Daney <ddaney@caviumnetworks.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH 1/2] clk: Make clk API return per-user struct clk instances
-References: <1412255097-15928-1-git-send-email-tomeu.vizoso@collabora.com> <1412255097-15928-2-git-send-email-tomeu.vizoso@collabora.com> <20141003231515.GM10233@codeaurora.org> <CAAObsKD6=xRqR9m8dNATUAuiky-HZW4LHJtnG1BbpO8dsBBJPg@mail.gmail.com>
-In-Reply-To: <CAAObsKD6=xRqR9m8dNATUAuiky-HZW4LHJtnG1BbpO8dsBBJPg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 08:28 AM, Tomeu Vizoso wrote:
-> On 4 October 2014 01:15, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> On 10/02, Tomeu Vizoso wrote:
->>> +
->>>   #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
->> These ifdefs look useless.
->>
->>>   struct clk *of_clk_get_by_clkspec(struct of_phandle_args *clkspec);
->>>   struct clk *__of_clk_get_from_provider(struct of_phandle_args *clkspec);
->>>   void of_clk_lock(void);
->>>   void of_clk_unlock(void);
->>>   #endif
->>> +
->>> +#if defined(CONFIG_COMMON_CLK)
->> So we shouldn't need this one either.
-> Actually, i had to put it back so clkdev.c builds on
-> !CONFIG_COMMON_CLK. Do you have another idea on how to deal with this?
+On Tue, Oct 7, 2014 at 11:32 AM, Leonid Yegoshin
+<Leonid.Yegoshin@imgtec.com> wrote:
+> Well, I am not a subscriber to mail-list, so I read it the first time and
+> some notes:
+>
 
-What's the error? Probably need to add a forward declaration for struct 
-clk, struct of_phandle_args, and struct clk_hw.
+>
+> 3)  The signal happened during execution of emulated instruction - signals
+> are under control of kernel and we can easily delay a signal during
+> execution of emulated instruction until return from do_dsemulret. It is not
+> a big deal - nor code, nor performance. Thank you for good point.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+If you go down this particular rabbit hole, you will never come back out.
 
+What happens if one of those out-of-line instructions causes a
+synchronous trap?  What if SIGSTOP arrives before ret?  What if
+another thread removes the magic ret sequence?
+
+>
+> 4)  The voice for doing any instruction emulation in kernel - it is not a
+> MIPS business model to force customer to put details of all Coprocessor 2
+> instructions public. We provide an interface and the rest is a customer
+> business. Besides that it is really painful to make a differentiation
+> between Cavium Octeon and some another CPU instructions with the same
+> opcode. On other side, leaving emulation of their instructions to them is
+> not a wise after having some good way doing that multiple years.
+
+IMO this is all backwards.  If MIPS customers put proprietary
+instructions into their ISA, they leave out the FPU, and they put a
+proprietary insn in a branch delay slot, then I think that they
+deserve a fatal signal.
+
+There's a really easy solution for new systems: fix the toolchain.
+Teach the assembler to disallow any proprietary instructions in an FP
+branch delay slot.
+
+--Andy
