@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbaJGS2G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 14:28:06 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:57293 "EHLO quartz.orcorp.ca"
+	id S1754882AbaJGS2T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 14:28:19 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:47800 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932151AbaJGS2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 14:28:03 -0400
-Date: Tue, 7 Oct 2014 12:27:56 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
- functions
-Message-ID: <20141007182756.GA10774@obsidianresearch.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141007175017.GA10432@obsidianresearch.com>
- <20141007180417.GA29459@intel.com>
+	id S932141AbaJGS2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 14:28:16 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Kever Yang <kever.yang@rock-chips.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        =?utf-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dts: enable init rate for clock
+Date: Tue, 07 Oct 2014 20:27:46 +0200
+Message-ID: <1854393.Qf7h4x8eso@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CAD=FV=UNXUuJbRpECV0Ay0hR02Dg=rBw+XScvMdfngzWfCqp4w@mail.gmail.com>
+References: <1412674438-26160-1-git-send-email-kever.yang@rock-chips.com> <1412674438-26160-3-git-send-email-kever.yang@rock-chips.com> <CAD=FV=UNXUuJbRpECV0Ay0hR02Dg=rBw+XScvMdfngzWfCqp4w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007180417.GA29459@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 09:04:17PM +0300, Jarkko Sakkinen wrote:
-
-> > Did you test compile all the drivers? One of my git commits on github
-> > has some hackery to make that possible on x86.
+Am Dienstag, 7. Oktober 2014, 10:03:19 schrieb Doug Anderson:
+> Kever,
 > 
-> Yeah, I compiled all the drivers:
+> On Tue, Oct 7, 2014 at 2:33 AM, Kever Yang <kever.yang@rock-chips.com> 
+wrote:
+> > We need to initialize PLL rate and some of bus clock rate while
+> > kernel init, for there is no other module will do that.
+> > 
+> > Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> > ---
+> > 
+> >  arch/arm/boot/dts/rk3288.dtsi | 10 ++++++++++
+> >  1 file changed, 10 insertions(+)
+> > 
+> > diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> > index 874e66d..2f4519b 100644
+> > --- a/arch/arm/boot/dts/rk3288.dtsi
+> > +++ b/arch/arm/boot/dts/rk3288.dtsi
+> > @@ -455,6 +455,16 @@
+> > 
+> >                 rockchip,grf = <&grf>;
+> >                 #clock-cells = <1>;
+> >                 #reset-cells = <1>;
+> > 
+> > +               assigned-clocks = <&cru PLL_GPLL>, <&cru PLL_CPLL>,
+> > +                                 <&cru PLL_NPLL>, <&cru ACLK_CPU>,
+> > +                                 <&cru HCLK_CPU>, <&cru PCLK_CPU>,
+> > +                                 <&cru ACLK_PERI>, <&cru HCLK_PERI>,
+> > +                                 <&cru PCLK_PERI>;
+> > +               assigned-clock-rates = <594000000>, <400000000>,
+> > +                                      <500000000>, <300000000>,
 > 
-> $ grep CONFIG_TCG .config
-> CONFIG_TCG_TPM=m
-> CONFIG_TCG_TIS=m
-> CONFIG_TCG_TIS_I2C_ATMEL=m
-> CONFIG_TCG_TIS_I2C_INFINEON=m
-> CONFIG_TCG_TIS_I2C_NUVOTON=m
-> CONFIG_TCG_NSC=m
-> CONFIG_TCG_ATMEL=m
-> CONFIG_TCG_INFINEON=m
-> CONFIG_TCG_ST33_I2C=m
-> CONFIG_TCG_XEN=m
-> CONFIG_TCG_CRB=m
+> When I boot up, I see that ACLK_CPU was 297000000.  You specified
+> 300000000.  Did you expect to get 300?  If you expected 297, I think
+> you should put 297.  If you expected 300 then we have some debugging
+> to do.  Note: I'm not quite sure how you'd expect to get 300 given
+> that none of the PLLs divide evenly to 300...
 
-CONFIG_TCG_IBMVTPM is missing, apply this:
+I'd think 300 is simply the target value. I.e. take the closest rate <= 300 
+MHz, same for 150 etc. I somehow like the approach of specifying what the rate 
+_should_ ideally be :-) .
 
-https://github.com/jgunthorpe/linux/commit/74afd69de603783858283f9b337e1694988964f8
+Also reduces the amount of thougths necessary (and possible head-scratching) 
+when adapting the pll rates to some other constraints (child-clocks already 
+have the target rates and cannot drop to some even stranger value).
 
-Jason
+
+Heiko
+
+
+> 
+> > +                                      <150000000>, <75000000>,
+> 
+> Similarly, I see 148500000, 74250000
+> 
+> > +                                      <300000000>, <150000000>,
+> 
+> 297000000, 148500000
+> 
+> > +                                      <75000000>;
+> 
+> 74250000
+> 
+> >         };
+> >         
+> >         grf: syscon@ff770000 {
+> > 
+> > --
+> > 1.9.1
+
