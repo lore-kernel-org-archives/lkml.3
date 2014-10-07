@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414AbaJGXUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39740 "EHLO
+	id S932471AbaJGXUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220AbaJGXUE (ORCPT
+	with ESMTP id S932411AbaJGXUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:20:04 -0400
+	Tue, 7 Oct 2014 19:20:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 24/37] drbd: fix regression out of mem, failed to invoke fence-peer helper
-Date: Tue,  7 Oct 2014 16:19:41 -0700
-Message-Id: <20141007231827.805724214@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Chuck Ebbert <cebbert.lkml@gmail.com>
+Subject: [PATCH 3.10 01/13] udf: Avoid infinite loop when processing indirect ICBs
+Date: Tue,  7 Oct 2014 16:20:06 -0700
+Message-Id: <20141007231919.969237988@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
-References: <20141007231827.043235686@linuxfoundation.org>
+In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
+References: <20141007231919.924479934@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,45 +24,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+From: Jan Kara <jack@suse.cz>
 
-commit bbc1c5e8ad6dfebf9d13b8a4ccdf66c92913eac9 upstream.
+commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
 
-Since linux kernel 3.13, kthread_run() internally uses
-wait_for_completion_killable().  We sometimes may use kthread_run()
-while we still have a signal pending, which we used to kick our threads
-out of potentially blocking network functions, causing kthread_run() to
-mistake that as a new fatal signal and fail.
+We did not implement any bound on number of indirect ICBs we follow when
+loading inode. Thus corrupted medium could cause kernel to go into an
+infinite loop, possibly causing a stack overflow.
 
-Fix: flush_signals() before kthread_run().
+Fix the possible stack overflow by removing recursion from
+__udf_read_inode() and limit number of indirect ICBs we follow to avoid
+infinite loops.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/drbd/drbd_nl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/udf/inode.c |   35 +++++++++++++++++++++--------------
+ 1 file changed, 21 insertions(+), 14 deletions(-)
 
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -525,6 +525,12 @@ void conn_try_outdate_peer_async(struct
- 	struct task_struct *opa;
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1270,13 +1270,22 @@ update_time:
+ 	return 0;
+ }
  
- 	kref_get(&tconn->kref);
-+	/* We may just have force_sig()'ed this thread
-+	 * to get it out of some blocking network function.
-+	 * Clear signals; otherwise kthread_run(), which internally uses
-+	 * wait_on_completion_killable(), will mistake our pending signal
-+	 * for a new fatal signal and fail. */
-+	flush_signals(current);
- 	opa = kthread_run(_try_outdate_peer_async, tconn, "drbd_async_h");
- 	if (IS_ERR(opa)) {
- 		conn_err(tconn, "out of mem, failed to invoke fence-peer helper\n");
++/*
++ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
++ * arbitrary - just that we hopefully don't limit any real use of rewritten
++ * inode on write-once media but avoid looping for too long on corrupted media.
++ */
++#define UDF_MAX_ICB_NESTING 1024
++
+ static void __udf_read_inode(struct inode *inode)
+ {
+ 	struct buffer_head *bh = NULL;
+ 	struct fileEntry *fe;
+ 	uint16_t ident;
+ 	struct udf_inode_info *iinfo = UDF_I(inode);
++	unsigned int indirections = 0;
+ 
++reread:
+ 	/*
+ 	 * Set defaults, but the inode is still incomplete!
+ 	 * Note: get_new_inode() sets the following on a new inode:
+@@ -1313,28 +1322,26 @@ static void __udf_read_inode(struct inod
+ 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
+ 					&ident);
+ 		if (ident == TAG_IDENT_IE && ibh) {
+-			struct buffer_head *nbh = NULL;
+ 			struct kernel_lb_addr loc;
+ 			struct indirectEntry *ie;
+ 
+ 			ie = (struct indirectEntry *)ibh->b_data;
+ 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
+ 
+-			if (ie->indirectICB.extLength &&
+-				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
+-							&ident))) {
+-				if (ident == TAG_IDENT_FE ||
+-					ident == TAG_IDENT_EFE) {
+-					memcpy(&iinfo->i_location,
+-						&loc,
+-						sizeof(struct kernel_lb_addr));
+-					brelse(bh);
+-					brelse(ibh);
+-					brelse(nbh);
+-					__udf_read_inode(inode);
++			if (ie->indirectICB.extLength) {
++				brelse(bh);
++				brelse(ibh);
++				memcpy(&iinfo->i_location, &loc,
++				       sizeof(struct kernel_lb_addr));
++				if (++indirections > UDF_MAX_ICB_NESTING) {
++					udf_err(inode->i_sb,
++						"too many ICBs in ICB hierarchy"
++						" (max %d supported)\n",
++						UDF_MAX_ICB_NESTING);
++					make_bad_inode(inode);
+ 					return;
+ 				}
+-				brelse(nbh);
++				goto reread;
+ 			}
+ 		}
+ 		brelse(ibh);
 
 
