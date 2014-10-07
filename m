@@ -1,185 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaJGFtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 01:49:43 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40152 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064AbaJGF3G (ORCPT
+	id S1752800AbaJGGAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 02:00:39 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40934 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaJGGAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 01:29:06 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: adi-buildroot-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        devicetree@vger.kernel.org, lguest@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-alpha@vger.kernel.org,
-        linux-am33-list@redhat.com, linux-cris-kernel@axis.com,
-        linux-efi@vger.kernel.org, linux-hexagon@vger.kernel.org,
-        linux-m32r-ja@ml.linux-m32r.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-xtensa@linux-xtensa.org,
-        openipmi-developer@lists.sourceforge.net,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
-        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Ungerer <gerg@uclinux.org>, Joshua Thompson <funaho@jurai.org>
-Subject: [PATCH 04/44] m68k: Replace mach_power_off with pm_power_off
-Date: Mon,  6 Oct 2014 22:28:06 -0700
-Message-Id: <1412659726-29957-5-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=0.3
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.54337A21.00D8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 7 Oct 2014 02:00:37 -0400
+Message-ID: <5433817C.3000206@hitachi.com>
+Date: Tue, 07 Oct 2014 15:00:28 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH ftrace/for-next ] tracing/kprobes: Replace startup test
+ with selftest script
+References: <20141006114806.2573.63966.stgit@kbuild-f20.novalocal> <20141006183349.60998821@gandalf.local.home>
+In-Reply-To: <20141006183349.60998821@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace mach_power_off with pm_power_off to simplify the subsequent
-move of pm_power_off to generic code.
+(2014/10/07 7:33), Steven Rostedt wrote:
+> On Mon, 06 Oct 2014 11:48:06 +0000
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Replace the kprobe_tracer's startup test with two selftest scripts.
+>> These test cases are testing that the kprobe_event can accept a
+>> kprobe event with $stack related arguments and a kretprobe event
+>> with $retval argument.
+> 
+> Can't we keep both? I have boxes I run my own tests with and enables
+> these start up tests in the kernel. I don't plan on testing on all
+> theses boxes using the scripts in the kernel.
+> 
+> Having a self test in the kernel itself can be useful too.
 
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Greg Ungerer <gerg@uclinux.org>
-Cc: Joshua Thompson <funaho@jurai.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- arch/m68k/emu/natfeat.c         | 3 ++-
- arch/m68k/include/asm/machdep.h | 1 -
- arch/m68k/kernel/process.c      | 5 +++--
- arch/m68k/kernel/setup_mm.c     | 1 -
- arch/m68k/kernel/setup_no.c     | 1 -
- arch/m68k/mac/config.c          | 3 ++-
- 6 files changed, 7 insertions(+), 7 deletions(-)
+Hmm, deprecating the test is acceptable, but I think it is just
+a dead weight that if we have both of them forever in the kernel.
+Of course, if that feature is fundamentally related to booting up
+the kernel, we need to keep them in boot up code. But if it is
+possible to run after booting up, I think we'd better to move it
+under kselftest, since we can do more investigation after booting.
 
-diff --git a/arch/m68k/emu/natfeat.c b/arch/m68k/emu/natfeat.c
-index 71b78ec..91e2ae7 100644
---- a/arch/m68k/emu/natfeat.c
-+++ b/arch/m68k/emu/natfeat.c
-@@ -15,6 +15,7 @@
- #include <linux/string.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/pm.h>
- #include <linux/io.h>
- #include <asm/machdep.h>
- #include <asm/natfeat.h>
-@@ -90,5 +91,5 @@ void __init nf_init(void)
- 	pr_info("NatFeats found (%s, %lu.%lu)\n", buf, version >> 16,
- 		version & 0xffff);
- 
--	mach_power_off = nf_poweroff;
-+	pm_power_off = nf_poweroff;
- }
-diff --git a/arch/m68k/include/asm/machdep.h b/arch/m68k/include/asm/machdep.h
-index 953ca21..f9fac51 100644
---- a/arch/m68k/include/asm/machdep.h
-+++ b/arch/m68k/include/asm/machdep.h
-@@ -24,7 +24,6 @@ extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
- extern int (*mach_set_clock_mmss)(unsigned long);
- extern void (*mach_reset)( void );
- extern void (*mach_halt)( void );
--extern void (*mach_power_off)( void );
- extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
- extern void (*mach_hd_setup)(char *, int *);
- extern long mach_max_dma_address;
-diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-index c55ff71..afe3d6e 100644
---- a/arch/m68k/kernel/process.c
-+++ b/arch/m68k/kernel/process.c
-@@ -22,6 +22,7 @@
- #include <linux/unistd.h>
- #include <linux/ptrace.h>
- #include <linux/user.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
- #include <linux/init_task.h>
- #include <linux/mqueue.h>
-@@ -77,8 +78,8 @@ void machine_halt(void)
- 
- void machine_power_off(void)
- {
--	if (mach_power_off)
--		mach_power_off();
-+	if (pm_power_off)
-+		pm_power_off();
- 	for (;;);
- }
- 
-diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-index 5b8ec4d..002fea6 100644
---- a/arch/m68k/kernel/setup_mm.c
-+++ b/arch/m68k/kernel/setup_mm.c
-@@ -96,7 +96,6 @@ EXPORT_SYMBOL(mach_get_rtc_pll);
- EXPORT_SYMBOL(mach_set_rtc_pll);
- void (*mach_reset)( void );
- void (*mach_halt)( void );
--void (*mach_power_off)( void );
- long mach_max_dma_address = 0x00ffffff; /* default set to the lower 16MB */
- #ifdef CONFIG_HEARTBEAT
- void (*mach_heartbeat) (int);
-diff --git a/arch/m68k/kernel/setup_no.c b/arch/m68k/kernel/setup_no.c
-index 88c27d9..1520156 100644
---- a/arch/m68k/kernel/setup_no.c
-+++ b/arch/m68k/kernel/setup_no.c
-@@ -55,7 +55,6 @@ int (*mach_hwclk) (int, struct rtc_time*);
- /* machine dependent reboot functions */
- void (*mach_reset)(void);
- void (*mach_halt)(void);
--void (*mach_power_off)(void);
- 
- #ifdef CONFIG_M68000
- #if defined(CONFIG_M68328)
-diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
-index a471eab..677913ff 100644
---- a/arch/m68k/mac/config.c
-+++ b/arch/m68k/mac/config.c
-@@ -16,6 +16,7 @@
- #include <linux/tty.h>
- #include <linux/console.h>
- #include <linux/interrupt.h>
-+#include <linux/pm.h>
- /* keyb */
- #include <linux/random.h>
- #include <linux/delay.h>
-@@ -159,7 +160,7 @@ void __init config_mac(void)
- 	mach_set_clock_mmss = mac_set_clock_mmss;
- 	mach_reset = mac_reset;
- 	mach_halt = mac_poweroff;
--	mach_power_off = mac_poweroff;
-+	pm_power_off = mac_poweroff;
- 	mach_max_dma_address = 0xffffffff;
- #if defined(CONFIG_INPUT_M68K_BEEP) || defined(CONFIG_INPUT_M68K_BEEP_MODULE)
- 	mach_beep = mac_mksound;
+Thank you,
+
+> 
+> -- Steve
+> 
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
+>>  kernel/trace/trace_kprobe.c                        |  142 --------------------
+>>  .../selftests/ftrace/test.d/kprobe/kprobe_args.tc  |   16 ++
+>>  .../ftrace/test.d/kprobe/kretprobe_args.tc         |   15 ++
+>>  3 files changed, 31 insertions(+), 142 deletions(-)
+>>  create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
+>>  create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+>>
+>> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+>> index 282f6e4..1018f77 100644
+>> --- a/kernel/trace/trace_kprobe.c
+>> +++ b/kernel/trace/trace_kprobe.c
+>> @@ -1352,145 +1352,3 @@ static __init int init_kprobe_trace(void)
+>>  }
+>>  fs_initcall(init_kprobe_trace);
+>>  
+>> -
+>> -#ifdef CONFIG_FTRACE_STARTUP_TEST
+>> -
+>> -/*
+>> - * The "__used" keeps gcc from removing the function symbol
+>> - * from the kallsyms table.
+>> - */
+>> -static __used int kprobe_trace_selftest_target(int a1, int a2, int a3,
+>> -					       int a4, int a5, int a6)
+>> -{
+>> -	return a1 + a2 + a3 + a4 + a5 + a6;
+>> -}
+>> -
+>> -static struct ftrace_event_file *
+>> -find_trace_probe_file(struct trace_kprobe *tk, struct trace_array *tr)
+>> -{
+>> -	struct ftrace_event_file *file;
+>> -
+>> -	list_for_each_entry(file, &tr->events, list)
+>> -		if (file->event_call == &tk->tp.call)
+>> -			return file;
+>> -
+>> -	return NULL;
+>> -}
+>> -
+>> -/*
+>> - * Nobody but us can call enable_trace_kprobe/disable_trace_kprobe at this
+>> - * stage, we can do this lockless.
+>> - */
+>> -static __init int kprobe_trace_self_tests_init(void)
+>> -{
+>> -	int ret, warn = 0;
+>> -	int (*target)(int, int, int, int, int, int);
+>> -	struct trace_kprobe *tk;
+>> -	struct ftrace_event_file *file;
+>> -
+>> -	if (tracing_is_disabled())
+>> -		return -ENODEV;
+>> -
+>> -	target = kprobe_trace_selftest_target;
+>> -
+>> -	pr_info("Testing kprobe tracing: ");
+>> -
+>> -	ret = traceprobe_command("p:testprobe kprobe_trace_selftest_target "
+>> -				  "$stack $stack0 +0($stack)",
+>> -				  create_trace_kprobe);
+>> -	if (WARN_ON_ONCE(ret)) {
+>> -		pr_warn("error on probing function entry.\n");
+>> -		warn++;
+>> -	} else {
+>> -		/* Enable trace point */
+>> -		tk = find_trace_kprobe("testprobe", KPROBE_EVENT_SYSTEM);
+>> -		if (WARN_ON_ONCE(tk == NULL)) {
+>> -			pr_warn("error on getting new probe.\n");
+>> -			warn++;
+>> -		} else {
+>> -			file = find_trace_probe_file(tk, top_trace_array());
+>> -			if (WARN_ON_ONCE(file == NULL)) {
+>> -				pr_warn("error on getting probe file.\n");
+>> -				warn++;
+>> -			} else
+>> -				enable_trace_kprobe(tk, file);
+>> -		}
+>> -	}
+>> -
+>> -	ret = traceprobe_command("r:testprobe2 kprobe_trace_selftest_target "
+>> -				  "$retval", create_trace_kprobe);
+>> -	if (WARN_ON_ONCE(ret)) {
+>> -		pr_warn("error on probing function return.\n");
+>> -		warn++;
+>> -	} else {
+>> -		/* Enable trace point */
+>> -		tk = find_trace_kprobe("testprobe2", KPROBE_EVENT_SYSTEM);
+>> -		if (WARN_ON_ONCE(tk == NULL)) {
+>> -			pr_warn("error on getting 2nd new probe.\n");
+>> -			warn++;
+>> -		} else {
+>> -			file = find_trace_probe_file(tk, top_trace_array());
+>> -			if (WARN_ON_ONCE(file == NULL)) {
+>> -				pr_warn("error on getting probe file.\n");
+>> -				warn++;
+>> -			} else
+>> -				enable_trace_kprobe(tk, file);
+>> -		}
+>> -	}
+>> -
+>> -	if (warn)
+>> -		goto end;
+>> -
+>> -	ret = target(1, 2, 3, 4, 5, 6);
+>> -
+>> -	/* Disable trace points before removing it */
+>> -	tk = find_trace_kprobe("testprobe", KPROBE_EVENT_SYSTEM);
+>> -	if (WARN_ON_ONCE(tk == NULL)) {
+>> -		pr_warn("error on getting test probe.\n");
+>> -		warn++;
+>> -	} else {
+>> -		file = find_trace_probe_file(tk, top_trace_array());
+>> -		if (WARN_ON_ONCE(file == NULL)) {
+>> -			pr_warn("error on getting probe file.\n");
+>> -			warn++;
+>> -		} else
+>> -			disable_trace_kprobe(tk, file);
+>> -	}
+>> -
+>> -	tk = find_trace_kprobe("testprobe2", KPROBE_EVENT_SYSTEM);
+>> -	if (WARN_ON_ONCE(tk == NULL)) {
+>> -		pr_warn("error on getting 2nd test probe.\n");
+>> -		warn++;
+>> -	} else {
+>> -		file = find_trace_probe_file(tk, top_trace_array());
+>> -		if (WARN_ON_ONCE(file == NULL)) {
+>> -			pr_warn("error on getting probe file.\n");
+>> -			warn++;
+>> -		} else
+>> -			disable_trace_kprobe(tk, file);
+>> -	}
+>> -
+>> -	ret = traceprobe_command("-:testprobe", create_trace_kprobe);
+>> -	if (WARN_ON_ONCE(ret)) {
+>> -		pr_warn("error on deleting a probe.\n");
+>> -		warn++;
+>> -	}
+>> -
+>> -	ret = traceprobe_command("-:testprobe2", create_trace_kprobe);
+>> -	if (WARN_ON_ONCE(ret)) {
+>> -		pr_warn("error on deleting a probe.\n");
+>> -		warn++;
+>> -	}
+>> -
+>> -end:
+>> -	release_all_trace_kprobes();
+>> -	if (warn)
+>> -		pr_cont("NG: Some tests are failed. Please check them.\n");
+>> -	else
+>> -		pr_cont("OK\n");
+>> -	return 0;
+>> -}
+>> -
+>> -late_initcall(kprobe_trace_self_tests_init);
+>> -
+>> -#endif
+>> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
+>> new file mode 100644
+>> index 0000000..a603d3f
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
+>> @@ -0,0 +1,16 @@
+>> +#!/bin/sh
+>> +# description: Kprobe dynamic event with arguments
+>> +
+>> +[ -f kprobe_events ] || exit_unsupported # this is configurable
+>> +
+>> +echo 0 > events/enable
+>> +echo > kprobe_events
+>> +echo 'p:testprobe do_fork $stack $stack0 +0($stack)' > kprobe_events
+>> +grep testprobe kprobe_events
+>> +test -d events/kprobes/testprobe
+>> +echo 1 > events/kprobes/testprobe/enable
+>> +( echo "forked")
+>> +echo 0 > events/kprobes/testprobe/enable
+>> +echo "-:testprobe" >> kprobe_events
+>> +test -d events/kprobes/testprobe && exit 1 || exit 0
+>> +
+>> diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+>> new file mode 100644
+>> index 0000000..283c29e
+>> --- /dev/null
+>> +++ b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+>> @@ -0,0 +1,15 @@
+>> +#!/bin/sh
+>> +# description: Kretprobe dynamic event with arguments
+>> +
+>> +[ -f kprobe_events ] || exit_unsupported # this is configurable
+>> +
+>> +echo 0 > events/enable
+>> +echo > kprobe_events
+>> +echo 'r:testprobe2 do_fork $retval' > kprobe_events
+>> +grep testprobe2 kprobe_events
+>> +test -d events/kprobes/testprobe2
+>> +echo 1 > events/kprobes/testprobe2/enable
+>> +( echo "forked")
+>> +echo 0 > events/kprobes/testprobe2/enable
+>> +echo '-:testprobe2' >> kprobe_events
+>> +test -d events/kprobes/testprobe2 && exit 1 || exit 0
+>>
+> 
+> 
+
+
 -- 
-1.9.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
