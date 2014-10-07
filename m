@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966AbaJGNnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:43:05 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:33480 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaJGNnD (ORCPT
+	id S1754040AbaJGNni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:43:38 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49321 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851AbaJGNnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:43:03 -0400
+	Tue, 7 Oct 2014 09:43:37 -0400
+Date: Tue, 7 Oct 2014 06:43:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jiri Pirko <jiri@resnulli.us>
+Cc: Tejun Heo <tj@kernel.org>, Joe Lawrence <joe.lawrence@stratus.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] workqueue: add quiescent state between work items
+Message-ID: <20141007134329.GA4880@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1412529862-17954-1-git-send-email-joe.lawrence@stratus.com>
+ <1412529862-17954-2-git-send-email-joe.lawrence@stratus.com>
+ <20141005192119.GE8549@htj.dyndns.org>
+ <20141005194748.GG8549@htj.dyndns.org>
+ <20141006042158.GW5015@linux.vnet.ibm.com>
+ <20141007072942.GA2088@nanopsycho.orion>
 MIME-Version: 1.0
-In-Reply-To: <1411726047-3224-3-git-send-email-rebecca.swee.fun.chang@intel.com>
-References: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-	<1411726047-3224-3-git-send-email-rebecca.swee.fun.chang@intel.com>
-Date: Tue, 7 Oct 2014 16:43:02 +0300
-Message-ID: <CAHp75VcypTyGV_vmf0-=tEgwx4__LgCHfLuj4STnhvKaaSXMZQ@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] gpio: sch: Add support for Intel Quark X1000 SoC
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007072942.GA2088@nanopsycho.orion>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100713-7164-0000-0000-0000052DF274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 1:07 PM, Chang Rebecca Swee Fun
-<rebecca.swee.fun.chang@intel.com> wrote:
-> Intel Quark X1000 provides a total of 16 GPIOs. The GPIOs are split between
-> the legacy I/O bridge and the GPIO controller.
->
-> GPIO-SCH is the GPIO pins on legacy bridge for Intel Quark SoC.
-> Intel Quark X1000 has 2 GPIOs powered by the core power well and 6 from
-> the suspend power well.
->
-> This piece of work is derived from Dan O'Donovan's initial work for Quark
-> X1000 enabling.
->
-> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-> ---
->  drivers/gpio/Kconfig    |   11 +++++++++--
->  drivers/gpio/gpio-sch.c |    6 ++++++
->  2 files changed, 15 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 690904a..64683a9 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -356,25 +356,32 @@ config GPIO_VR41XX
->           Say yes here to support the NEC VR4100 series General-purpose I/O Uint
->
->  config GPIO_SCH
-> -       tristate "Intel SCH/TunnelCreek/Centerton GPIO"
-> +       tristate "Intel SCH/TunnelCreek/Centerton/Quark X1000 GPIO"
+On Tue, Oct 07, 2014 at 09:29:42AM +0200, Jiri Pirko wrote:
+> Mon, Oct 06, 2014 at 06:21:58AM CEST, paulmck@linux.vnet.ibm.com wrote:
+> >On Sun, Oct 05, 2014 at 03:47:48PM -0400, Tejun Heo wrote:
+> >> On Sun, Oct 05, 2014 at 03:21:19PM -0400, Tejun Heo wrote:
+> >> > On Sun, Oct 05, 2014 at 01:24:21PM -0400, Joe Lawrence wrote:
+> >> > > Similar to the stop_machine deadlock scenario on !PREEMPT kernels
+> >> > > addressed in b22ce2785d97 "workqueue: cond_resched() after processing
+> >> > > each work item", kworker threads requeueing back-to-back with zero jiffy
+> >> > > delay can stall RCU. The cond_resched call introduced in that fix will
+> >> > > yield only iff there are other higher priority tasks to run, so force a
+> >> > > quiescent RCU state between work items.
+> >> > > 
+> >> > > Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+> >> > > Link: https://lkml.kernel.org/r/20140926105227.01325697@jlaw-desktop.mno.stratus.com
+> >> > > Link: https://lkml.kernel.org/r/20140929115445.40221d8e@jlaw-desktop.mno.stratus.com
+> >> > > Fixes: b22ce2785d97 ("workqueue: cond_resched() after processing each work item")
+> >> > > Cc: <stable@vger.kernel.org>
+> >> > 
+> >> > Applied to wq/for-3.17-fixes.  If 3.17 comes out before this gets
+> >> > merged, I'll send it as for-3.18.
+> >> 
+> >> Oops, the rcu calls aren't in mainline yet.  I think it'd be best to
+> >> route these through the RCU tree.  Paul, can you please route these
+> >> two patches?
+> >> 
+> >> Acked-by: Tejun Heo <tj@kernel.org>
+> >
+> >Will do!
+> >
+> >I will try 3.17, failing that, 3.18.
+> 
+> 
+> Paul, Tehun, how do you propose to fix this on older kernels which do
+> not have rcu_note_voluntary_context_switch? I'm particullary interested
+> in 3.10.
 
-Do we need 'X1000' here right now?
+Hello, Jiri,
 
->         depends on PCI && X86
->         select MFD_CORE
->         select LPC_SCH
->         help
->           Say yes here to support GPIO interface on Intel Poulsbo SCH,
-> -         Intel Tunnel Creek processor or Intel Centerton processor.
-> +         Intel Tunnel Creek processor, Intel Centerton processor or
+Older kernels can instead use rcu_note_context_switch().
 
-I think you may use comma before 'or' word.
+							Thanx, Paul
 
-> +         Intel Quark X1000 SoC.
-> +
->           The Intel SCH contains a total of 14 GPIO pins. Ten GPIOs are
->           powered by the core power rail and are turned off during sleep
->           modes (S3 and higher). The remaining four GPIOs are powered by
->           the Intel SCH suspend power supply. These GPIOs remain
->           active during S3. The suspend powered GPIOs can be used to wake the
->           system from the Suspend-to-RAM state.
-> +
->           The Intel Tunnel Creek processor has 5 GPIOs powered by the
->           core power rail and 9 from suspend power supply.
-> +
->           The Intel Centerton processor has a total of 30 GPIO pins.
->           Twenty-one are powered by the core power rail and 9 from the
->           suspend power supply.
->
-> +         The Intel Quark X1000 SoC has 2 GPIOs powered by the core
-> +         power well and 6 from the suspend power well.
-> +
->  config GPIO_ICH
->         tristate "Intel ICH GPIO"
->         depends on PCI && X86
-> diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
-> index 6e89be9..952990f 100644
-> --- a/drivers/gpio/gpio-sch.c
-> +++ b/drivers/gpio/gpio-sch.c
-> @@ -241,6 +241,12 @@ static int sch_gpio_probe(struct platform_device *pdev)
->                 sch->chip.ngpio = 30;
->                 break;
->
-> +       case PCI_DEVICE_ID_INTEL_QUARK_X1000_ILB:
-> +               sch->core_base = 0;
-> +               sch->resume_base = 2;
-> +               sch->chip.ngpio = 8;
-> +               break;
-> +
->         default:
->                 return -ENODEV;
->         }
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
--- 
-With Best Regards,
-Andy Shevchenko
