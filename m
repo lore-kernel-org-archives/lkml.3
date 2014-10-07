@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008AbaJGTbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 15:31:47 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58131 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932408AbaJGT3f (ORCPT
+	id S1755250AbaJGTe3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 15:34:29 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57025 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025AbaJGTe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 15:29:35 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: broonie@kernel.org
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        galak@codeaurora.org
-Subject: [PATCH 2/8] ASoC: fsl_spdif: Add indentation for binding doc to increase readability
-Date: Tue,  7 Oct 2014 12:29:05 -0700
-Message-Id: <b2f1493f287141c01f6db5aae23e084730c02b49.1412708790.git.nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1412708790.git.nicoleotsuka@gmail.com>
-References: <cover.1412708790.git.nicoleotsuka@gmail.com>
-In-Reply-To: <cover.1412708790.git.nicoleotsuka@gmail.com>
-References: <cover.1412708790.git.nicoleotsuka@gmail.com>
+	Tue, 7 Oct 2014 15:34:27 -0400
+Date: Tue, 7 Oct 2014 21:34:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 06/11] perf: Move cgroup init before PMU ->event_init()
+Message-ID: <20141007193424.GB4750@worktop.programming.kicks-ass.net>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-7-git-send-email-matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411567455-31264-7-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simply adds indentations for DT binding doc to increase readability
-without changing any contents.
+On Wed, Sep 24, 2014 at 03:04:10PM +0100, Matt Fleming wrote:
+> +++ b/kernel/events/core.c
+> @@ -6859,7 +6859,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+>  		 struct perf_event *group_leader,
+>  		 struct perf_event *parent_event,
+>  		 perf_overflow_handler_t overflow_handler,
+> -		 void *context)
+> +		 void *context, bool cgroup, pid_t pid)
+>  {
+>  	struct pmu *pmu;
+>  	struct perf_event *event;
 
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
----
- .../devicetree/bindings/sound/fsl,spdif.txt        | 37 +++++++++++-----------
- 1 file changed, 18 insertions(+), 19 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/sound/fsl,spdif.txt b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
-index 3e9e82c8..b5ee32e 100644
---- a/Documentation/devicetree/bindings/sound/fsl,spdif.txt
-+++ b/Documentation/devicetree/bindings/sound/fsl,spdif.txt
-@@ -6,32 +6,31 @@ a fibre cable.
- 
- Required properties:
- 
--  - compatible : Compatible list, must contain "fsl,imx35-spdif".
-+  - compatible		: Compatible list, must contain "fsl,imx35-spdif".
- 
--  - reg : Offset and length of the register set for the device.
-+  - reg			: Offset and length of the register set for the device.
- 
--  - interrupts : Contains the spdif interrupt.
-+  - interrupts		: Contains the spdif interrupt.
- 
--  - dmas : Generic dma devicetree binding as described in
--  Documentation/devicetree/bindings/dma/dma.txt.
-+  - dmas		: Generic dma devicetree binding as described in
-+			  Documentation/devicetree/bindings/dma/dma.txt.
- 
--  - dma-names : Two dmas have to be defined, "tx" and "rx".
-+  - dma-names		: Two dmas have to be defined, "tx" and "rx".
- 
--  - clocks : Contains an entry for each entry in clock-names.
-+  - clocks		: Contains an entry for each entry in clock-names.
- 
--  - clock-names : Includes the following entries:
--	"core"		The core clock of spdif controller
--	"rxtx<0-7>"	Clock source list for tx and rx clock.
--			This clock list should be identical to
--			the source list connecting to the spdif
--			clock mux in "SPDIF Transceiver Clock
--			Diagram" of SoC reference manual. It
--			can also be referred to TxClk_Source
--			bit of register SPDIF_STC.
-+  - clock-names		: Includes the following entries:
-+	"core"		  The core clock of spdif controller.
-+	"rxtx<0-7>"	  Clock source list for tx and rx clock.
-+			  This clock list should be identical to the source
-+			  list connecting to the spdif clock mux in "SPDIF
-+			  Transceiver Clock Diagram" of SoC reference manual.
-+			  It can also be referred to TxClk_Source bit of
-+			  register SPDIF_STC.
- 
--   - big-endian : If this property is absent, the native endian mode will
--   be in use as default, or the big endian mode will be in use for all the
--   device registers.
-+   - big-endian		: If this property is absent, the native endian mode
-+			  will be in use as default, or the big endian mode
-+			  will be in use for all the device registers.
- 
- Example:
- 
--- 
-1.9.1
-
+I don't get this extension, why a bool and pid_t ?
