@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975AbaJGMCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:02:47 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:38407 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563AbaJGMCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:02:30 -0400
-Message-ID: <5433D654.2020108@monom.org>
-Date: Tue, 07 Oct 2014 14:02:28 +0200
-From: Daniel Wagner <wagi@monom.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1753547AbaJGMFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaJGMFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 08:05:21 -0400
+Date: Tue, 7 Oct 2014 17:35:13 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 01/15] virtio_pci: fix virtio spec compliance on
+ restore
+Message-ID: <20141007120513.GA823@grmbl.mre>
+References: <1412608214-31944-1-git-send-email-mst@redhat.com>
+ <1412608214-31944-2-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>,
-        Daniel Wagner <daniel.wagner@bmw-carit.de>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-CC: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] sched: Do not try to replenish from a non deadline tasks
-References: <1411565056-15577-1-git-send-email-daniel.wagner@bmw-carit.de> <5433B5B9.70006@arm.com>
-In-Reply-To: <5433B5B9.70006@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412608214-31944-2-git-send-email-mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-
-On 10/07/2014 11:43 AM, Juri Lelli wrote:
-> Hi Daniel,
+On (Mon) 06 Oct 2014 [18:10:40], Michael S. Tsirkin wrote:
+> On restore, virtio pci does the following:
+> + set features
+> + init vqs etc - device can be used at this point!
+> + set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
 > 
-> On 24/09/14 14:24, Daniel Wagner wrote:
->> When a PI mutex is shared between an deadline task and normal task we
->> might end up trying to replenish from the normal task. In this case neither
->> dl_runtime, dl_period or dl_deadline are set. replenish_dl_entity() can't do
->> anything useful.
->>
+> This is in violation of the virtio spec, which
+> requires the following order:
+> - ACKNOWLEDGE
+> - DRIVER
+> - init vqs
+> - DRIVER_OK
 > 
-> Is this same bug we have with rt_mutex_setprio or something different?
-> I'm sorry, but I don't remember anymore :/. It looks like a different
-> issue, though.
+> This behaviour will break with hypervisors that assume spec compliant
+> behaviour.  It seems like a good idea to have this patch applied to
+> stable branches to reduce the support butden for the hypervisors.
+> 
+> Cc: stable@vger.kernel.org
+> Cc: Amit Shah <amit.shah@redhat.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-There are two independent bugs but in both cases BUG_ON in
-enqueue_dl_entity() is triggered.
+I didn't see my previous questions answered from the initial posting
+-- can you please respond to them?
 
-The first one (this patch) is triggered by trying to use the sched_attr
-of the non deadline task. The second one is the double queuing.
-
-> Anyway, the callpath you talked about on IRC seems to make sense, does
-> what below fix the thing?
-
-I'll give it a spin.
-
-> Could you please point me again to where the
-> tests you are running are hosted, so that I can easily reproduce the
-> bug here?
-
-Sure. I reduced my original program to this:
-
-http://www.monom.org/rt/pthread_test.c
-
-If you let it run with 'pthread_test inherit' you should see the bugs
-eventually.
-
-cheers,
-daniel
+		Amit
