@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaJGPRU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:17:20 -0400
-Received: from mga14.intel.com ([192.55.52.115]:16505 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754266AbaJGPRS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:17:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="396615110"
-From: kan.liang@intel.com
-To: jolsa@redhat.com
-Cc: linux-kernel@vger.kernel.org, ak@linux.intel.com, acme@kernel.org,
-        Kan Liang <kan.liang@intel.com>
-Subject: [PATCH V8 4/4] perf tools: Add test case for pmu event new style format
-Date: Tue,  7 Oct 2014 11:08:52 -0400
-Message-Id: <1412694532-23391-5-git-send-email-kan.liang@intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
-References: <1412694532-23391-1-git-send-email-kan.liang@intel.com>
+	id S1754347AbaJGPRo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:17:44 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:58716 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232AbaJGPRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:17:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141007151035.GC2256@redhat.com>
+References: <20141006083532.GA4850@quad>
+	<8761fwh1nc.fsf@sejong.aot.lge.com>
+	<20141007140050.GB2256@redhat.com>
+	<CABPqkBSMapWzo5k7WXpt8Ejtdvk_znX1P6xV0eYRpK7rcTjjZw@mail.gmail.com>
+	<20141007151035.GC2256@redhat.com>
+Date: Tue, 7 Oct 2014 17:17:12 +0200
+Message-ID: <CABPqkBR2FzTvkRsTH91hYbt7H-BDZ2kcnF1xDqKBB0h=2HSapw@mail.gmail.com>
+Subject: Re: [PATCH v2] perf tools: fix off-by-one error in maps
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan Liang <kan.liang@intel.com>
-
-Add test case in automated tests suite. It checks not only the two types
-of pmu event stytle formats "pmu_event_name" and "cpu/pmu_event_name/",
-but also the different formats mixtures which are more likely to trigger
-parse issue.
-
-Signed-off-by: Kan Liang <kan.liang@intel.com>
----
- tools/perf/tests/parse-events.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
-
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 5941927..7f2f51f 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -457,6 +457,36 @@ static int test__checkevent_pmu_events(struct perf_evlist *evlist)
- 	return 0;
- }
- 
-+
-+static int test__checkevent_pmu_events_mix(struct perf_evlist *evlist)
-+{
-+	struct perf_evsel *evsel = perf_evlist__first(evlist);
-+
-+	/* pmu-event:u */
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong exclude_user",
-+			!evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel",
-+			evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
-+
-+	/* cpu/pmu-event/u*/
-+	evsel = perf_evsel__next(evsel);
-+	TEST_ASSERT_VAL("wrong number of entries", 2 == evlist->nr_entries);
-+	TEST_ASSERT_VAL("wrong type", PERF_TYPE_RAW == evsel->attr.type);
-+	TEST_ASSERT_VAL("wrong exclude_user",
-+			!evsel->attr.exclude_user);
-+	TEST_ASSERT_VAL("wrong exclude_kernel",
-+			evsel->attr.exclude_kernel);
-+	TEST_ASSERT_VAL("wrong exclude_hv", evsel->attr.exclude_hv);
-+	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
-+	TEST_ASSERT_VAL("wrong pinned", !evsel->attr.pinned);
-+
-+	return 0;
-+}
-+
- static int test__checkterms_simple(struct list_head *terms)
- {
- 	struct parse_events_term *term;
-@@ -1554,6 +1584,12 @@ static int test_pmu_events(void)
- 		e.check = test__checkevent_pmu_events;
- 
- 		ret = test_event(&e);
-+		if (ret)
-+			break;
-+		snprintf(name, MAX_NAME, "%s:u,cpu/event=%s/u", ent->d_name, ent->d_name);
-+		e.name  = name;
-+		e.check = test__checkevent_pmu_events_mix;
-+		ret = test_event(&e);
- #undef MAX_NAME
- 	}
- 
--- 
-1.8.3.2
-
+On Tue, Oct 7, 2014 at 5:10 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+> Em Tue, Oct 07, 2014 at 04:17:41PM +0200, Stephane Eranian escreveu:
+>> On Tue, Oct 7, 2014 at 4:00 PM, Arnaldo Carvalho de Melo
+>> <acme@redhat.com> wrote:
+>> > Em Tue, Oct 07, 2014 at 02:47:19PM +0900, Namhyung Kim escreveu:
+>> >> On Mon, 6 Oct 2014 10:35:32 +0200, Stephane Eranian wrote:
+>> >> > This patch fixes off-by-one errors in the management of maps.
+>> >> > A map is defined by start address and length as implemented by map__new():
+>> >
+>> >> > map__init(map, type, start, start + len, pgoff, dso);
+>> >
+>> >> > map->start = addr;
+>> >> > map->end = end;
+>> >
+>> >> > Consequently, the actual address range is ]start; end[
+>> >> > map->end is the first byte outside the range. This patch
+>> >> > fixes two bugs where upper bound checking was off-by-one.
+>> >
+>> >> > In V2, we fix map_groups__fixup_overlappings() some more
+>> >> > where map->start was off-by-one as reported by Jiri.
+>> >
+>> >> It seems we also need to fix maps__find():
+>> >
+>> >> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+>> >> index b7090596ac50..107a8c90785b 100644
+>> >> --- a/tools/perf/util/map.c
+>> >> +++ b/tools/perf/util/map.c
+>> >> @@ -752,7 +752,7 @@ struct map *maps__find(struct rb_root *maps, u64 ip)
+>> >>                 m = rb_entry(parent, struct map, rb_node);
+>> >>                 if (ip < m->start)
+>> >>                         p = &(*p)->rb_left;
+>> >> -               else if (ip > m->end)
+>> >> +               else if (ip >= m->end)
+>> >>                         p = &(*p)->rb_right;
+>> >>                 else
+>> >>                         return m;
+>> >
+>> > I keep thinking that this change is making things unclear.
+>> >
+>> > I.e. the _start_ of a map (map->start) is _in_ the map, and the _end_
+>> > of a map (map->end) is _in_ the map as well.
+>> >
+>> >         if (addr > m->end)
+>> >
+>> > is shorter than:
+>> >
+>> >         if (addr >= m->end)
+>> >
+>> > "start" and "end" should have the same rule applied, i.e. if one is in,
+>> > the other is in as well.
+>> >
+>> It is okay but then we need to be consistent all across. This is not
+>> the case today.
+>> I mentioned the cases I ran into.
+>
+> Ok, and provided a patch doing the way I thought was confusing, now its
+> my turn to use that info and come up with a patch, ok, will do that.
+>
+You got it! ;->
