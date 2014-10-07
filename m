@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaJGRM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:12:58 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:52721 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858AbaJGRM4 (ORCPT
+	id S1754609AbaJGRPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:15:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46557 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaJGRPK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:12:56 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Tue, 7 Oct 2014 19:10:03 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20141007171003.GI5362@localhost>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
- <1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
- <20141003171207.GC2394@localhost>
- <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Tue, 7 Oct 2014 13:15:10 -0400
+Date: Tue, 07 Oct 2014 13:15:07 -0400 (EDT)
+Message-Id: <20141007.131507.635415594538460008.davem@davemloft.net>
+To: LW@KARO-electronics.de
+Cc: netdev@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
+        Frank.Li@freescale.com, fabio.estevam@freescale.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 07 Oct 2014 10:15:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 03:17:22PM +0300, Octavian Purdila wrote:
-> On Fri, Oct 3, 2014 at 8:12 PM, Johan Hovold <johan@kernel.org> wrote:
-> >
-> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
-> > > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> > > Master Adapter DLN-2. Details about the device can be found here:
-> > >
-> 
-> <snip>
-> 
-> > > +
-> > > +             ret = dln2_submit_urb(dln2, dln2->rx_urb[i], GFP_KERNEL);
-> > > +             if (ret < 0)
-> > > +                     return ret;
-> >
-> > Is it really worth having this helper only to save a couple of lines on
-> > a dev_err? If you do all resubmissions on completion inline in the
-> > handler, you only have three places where usb_submit_urb is called.
-> >
-> 
-> I moved the completion in the handler as you suggested. I have kept
-> the helper, would you prefer to remove it?
+From: Lothar Waﬂmann <LW@KARO-electronics.de>
+Date: Tue,  7 Oct 2014 15:19:37 +0200
 
-Moved the "completion"? I was suggesting that the URB resubmission
-should be done inline the URB completion handler.
-
-[ "Completion" may be a little ambiguous. The URB callback is called an
-URB completion handler. Not be confused with the completion structures
-you use to wait for responses. ]
-
-It's fine to keep the helper as long as it's clear that the urb has been
-"cached" and should not be resubmitted (inline) in the completion
-handler in that case.
- 
-> <snip>
+> commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> introduced a regression for i.MX28. The swap_buffer() function doing
+> the endian conversion of the received data on i.MX28 may access memory
+> beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> does not copy those bytes, so that the last bytes of a packet may be
+> filled with invalid data after swapping.
+> This will likely lead to checksum errors on received packets.
+> E.g. when trying to mount an NFS rootfs:
+> UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
 > 
-> > > +     id = dln2->usb_dev->bus->busnum << 8 | dln2->usb_dev->devnum;
-> >
-> > After giving this some more thought, I think you should just
-> > use PLATFORM_DEVID_AUTO as id. I have submitted a series to fix the
-> > other USB MFD drivers and add a convenience helper to register
-> > hotpluggable MFDs here:
-> >
+> Do the byte swapping and copying to the new skb in one go if
+> necessary.
 > 
-> OK, I will use PLATFORM_DEVID_AUTO for now. If your series merges
-> first and I have to resubmit mine, I will switch to using
-> mfd_add_hotplug_devices.
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
 
-Lee merged the helper function earlier today.
+Why don't you just round up the length fec_enet_copybreak() uses when
+need_swap is true?  Then you will end up mimicking the original behavior
+and not require this new helper function.
 
-Johan
+And in any case I agree with Sergei that if you do retain your approach,
+the new 'swap' argument to fec_enet_copybreak() should be a 'bool'.
+
+I'm really surprised there isn't a control register bit to adjust the
+endianness of the data DMA'd to/from the network.
