@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467AbaJGWc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 18:32:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39145 "EHLO
+	id S1755482AbaJGWda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 18:33:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaJGWc4 (ORCPT
+	with ESMTP id S1750895AbaJGWd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 18:32:56 -0400
-Date: Tue, 7 Oct 2014 15:32:56 -0700
+	Tue, 7 Oct 2014 18:33:29 -0400
+Date: Tue, 7 Oct 2014 15:33:28 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [GIT PULL] Driver core patches for 3.18-rc1
-Message-ID: <20141007223256.GA5547@kroah.com>
+Cc: linux-kernel@vger.kernel.org, "Don A. Bailey" <donb@securitymouse.com>
+Subject: [GIT PULL] Compression patches for 3.18-rc1
+Message-ID: <20141007223328.GA5588@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,73 +28,30 @@ The following changes since commit 9e82bf014195d6f0054982c463575cdce24292be:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.18-rc1
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git tags/compress-3.18-rc1
 
-for you to fetch changes up to 906d201530f2c52aeb4eee31895c71cdccf1e9a0:
+for you to fetch changes up to 72cf90124e87d975d0b2114d930808c58b4c05e4:
 
-  dynamic_debug: change __dynamic_<foo>_dbg return types to void (2014-10-03 14:55:48 -0700)
+  lzo: check for length overrun in variable length encoding. (2014-09-28 11:08:01 +0200)
 
 ----------------------------------------------------------------
-Driver core patches for 3.18-rc1
+Compression patches for 3.18-rc1
 
-Here's the driver core patches for 3.18-rc1.  Just a few small things,
-and the addition of a new interface to dump firmware "core dumps" to
-userspace through sysfs that the wireless and graphic drivers want to
-use.
+More fun with the LZO compression code.  Here's some patches that
+properly document what the logic is, and fix up all of the previously
+reported issues against the LZO code.
 
-All of these have been in linux-next for a while.
+This has been in linux-next for a while with no issues.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Ben Hutchings (1):
-      drivers/base: Fix length checks in create_syslog_header()/dev_vprintk_emit()
+Willy Tarreau (3):
+      Documentation: lzo: document part of the encoding
+      Revert "lzo: properly check for overruns"
+      lzo: check for length overrun in variable length encoding.
 
-Darren Hart (1):
-      Documentation/sysfs-rules.txt: Add device attribute error code documentation
-
-Geert Uytterhoeven (2):
-      Documentation: devres: Add missing devm_kstrdup() managed interface
-      devres: Improve devm_kasprintf()/kvasprintf() support
-
-Joe Perches (1):
-      dynamic_debug: change __dynamic_<foo>_dbg return types to void
-
-Johannes Berg (1):
-      device coredump: add new device coredump class
-
-Kees Cook (1):
-      firmware_class: make sure fw requests contain a name
-
-Thierry Reding (1):
-      driver core: Remove kerneldoc from local function
-
-Tina Johnson (2):
-      attribute_container: fix whitespace errors
-      attribute_container: fix coding style issues
-
-Tobias Klauser (1):
-      Documentation: devres: Add missing IRQ functions
-
-Yasuaki Ishimatsu (1):
-      driver/base/node: remove unnecessary kfree of node struct from unregister_one_node
-
- Documentation/driver-model/devres.txt |   5 +
- Documentation/sysfs-rules.txt         |  21 +++
- MAINTAINERS                           |   7 +
- drivers/base/Kconfig                  |  21 +++
- drivers/base/Makefile                 |   1 +
- drivers/base/attribute_container.c    |  14 +-
- drivers/base/core.c                   |   9 ++
- drivers/base/dd.c                     |   2 +-
- drivers/base/devcoredump.c            | 265 ++++++++++++++++++++++++++++++++++
- drivers/base/devres.c                 |  15 +-
- drivers/base/firmware_class.c         |   3 +
- drivers/base/node.c                   |   1 -
- include/linux/devcoredump.h           |  35 +++++
- include/linux/device.h                |   4 +-
- include/linux/dynamic_debug.h         |  12 +-
- lib/dynamic_debug.c                   |  50 +++----
- 16 files changed, 411 insertions(+), 54 deletions(-)
- create mode 100644 drivers/base/devcoredump.c
- create mode 100644 include/linux/devcoredump.h
+ Documentation/lzo.txt           | 164 ++++++++++++++++++++++++++++++++++++++++
+ lib/lzo/lzo1x_decompress_safe.c | 103 ++++++++++++++-----------
+ 2 files changed, 221 insertions(+), 46 deletions(-)
+ create mode 100644 Documentation/lzo.txt
