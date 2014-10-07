@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaJGL5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:57:25 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:40353 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751334AbaJGL5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:57:23 -0400
-Message-ID: <1412683049.1027.60.camel@iivanov-dev>
-Subject: Re: [PATCH v3 1/2] iio: vadc: Qualcomm SPMI PMIC voltage ADC driver
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, lars <lars@metafoo.de>,
-        sachin.kamat@linaro.org, srinivas.pandruvada@linux.intel.com,
-        linux-iio@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Date: Tue, 07 Oct 2014 14:57:29 +0300
-In-Reply-To: <542FDF41.2040106@kernel.org>
-References: <1411563415-11933-1-git-send-email-svarbanov@mm-sol.com>
-		 <1411563415-11933-2-git-send-email-svarbanov@mm-sol.com>
-		 <542D1B11.8070600@mm-sol.com> <1412251686.1027.15.camel@iivanov-dev>
-	 <542FDF41.2040106@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753769AbaJGL6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:58:52 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38463 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830AbaJGL6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 07:58:50 -0400
+Date: Tue, 7 Oct 2014 12:58:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Markus Pargmann <mpa@pengutronix.de>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Message-ID: <20141007115817.GX4609@sirena.org.uk>
+References: <1412626635-7404-1-git-send-email-mpa@pengutronix.de>
+ <1412626635-7404-3-git-send-email-mpa@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gX5Hm7FaHdN5aeGl"
+Content-Disposition: inline
+In-Reply-To: <1412626635-7404-3-git-send-email-mpa@pengutronix.de>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] regulator: Set ena_gpio_valid in regulator drivers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-04 at 12:51 +0100, Jonathan Cameron wrote:
-> On 02/10/14 13:08, Ivan T. Ivanov wrote:
-> > +iio maintainers
-> > 
-> > On Thu, 2014-10-02 at 12:29 +0300, Ivan T. Ivanov wrote:
-> >> Hi Stan,
-> >>
-> >> On 09/24/2014 03:56 PM, Stanimir Varbanov wrote:
-> >>
-> >> <snip>
-> >>
-> >>> +static int vadc_get_dt_data(struct vadc_priv *vadc, struct device_node *node)
-> >>> +{
-> >>> +	struct iio_chan_spec *iio_chan = vadc->iio_chans;
-> >>> +	const struct vadc_channels *vadc_chan;
-> >>> +	struct vadc_channel_prop prop;
-> >>> +	struct device_node *child;
-> >>> +	int ret, index = 0;
-> >>> +
-> >>> +	for_each_available_child_of_node(node, child) {
-> >>> +		ret = vadc_get_dt_channel_data(vadc->dev, &prop, child);
-> >>> +		if (ret)
-> >>> +			return ret;
-> >>> +
-> >>> +		vadc->chan_props[index] = prop;
-> >>> +
-> >>> +		vadc_chan = &vadc_chans[prop.channel];
-> >>> +
-> >>> +		iio_chan->channel = prop.channel;
-> >>> +		iio_chan->datasheet_name = vadc_chan->datasheet_name;
-> >>> +		iio_chan->info_mask_separate = vadc_chan->info_mask;
-> >>> +		iio_chan->type = vadc_chan->type;
-> >>> +		iio_chan->indexed = 1;
-> >>> +		iio_chan->scan_type.sign = 's';
-> >>> +		iio_chan->scan_type.realbits = 15;
-> >>> +		iio_chan->scan_type.storagebits = 16;
-> >>> +		iio_chan->address = index++;
-> >>> +
-> >>> +		iio_chan++;
-> >>> +	}
-> >>> +
-> >>> +	return 0;
-> >>> +}
-> >>> +
-> >>
-> >> <snip>
-> >>
-> >>> +static int vadc_probe(struct platform_device *pdev)
-> >>> +{
-> >>
-> >> <snip>
-> >>
-> >>> +
-> >>> +	indio_dev->dev.parent = dev;
-> >>> +	indio_dev->dev.of_node = node;
-> >>> +	indio_dev->name = pdev->name;
-> >>> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> >>> +	indio_dev->info = &vadc_info;
-> >>> +	indio_dev->channels = vadc->iio_chans;
-> >>> +	indio_dev->num_channels = vadc->nchannels;
-> >>
-> >> This will not work as we thought. Registration will be fine and entries
-> >> in sysfs are created as expected, but this is breaking numbering scheme
-> >> for client drivers. For us the problem is that iio framework expect channels
-> >> numbering to be linear and channel number should not be greater than
-> >> channel count. For example even if die temperature channel is always 8, if
-> >> I describe only 5 channels in DTS files (4 for reference points measurement)
-> >> and 1 for die temperature, clients could not get OF reference to 
-> >> temperature
-> >> channel using io-channels = <&pm8941_vadc 8>;
-> >>
-> >> Jonathan, please, could you advise us.
-> I'd like to let the solution you proposed sit on the list a little longer.
-> It seems fairly sensible, but lets see what others suggest.
 
-Sure. 
+--gX5Hm7FaHdN5aeGl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thank you.
-Ivan
+On Mon, Oct 06, 2014 at 10:17:12PM +0200, Markus Pargmann wrote:
+> This patch sets the new field ena_gpio_valid for all drivers which set a
+> valid ena_gpio.
 
+>  	config.ena_gpio = arizona->pdata.ldoena;
+> +	config.ena_gpio_valid = true;
 
+This patch just unconditionally sets the flag in all drivers which will
+break any system which relies on the existing behaviour that we ignore
+GPIO 0.  We can definitely set this flag in any DT only system if we get
+the GPIO from DT but otherwise doing this defeats the point of having
+the flag in the first place.
+
+--gX5Hm7FaHdN5aeGl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUM9VYAAoJECTWi3JdVIfQtwQIAITfiaPH6vX7PBF6R/6RBzzL
+oV6dGfz2FlEQE2TSQBVYOsd4rRdyNGyaSdFrA//RuOQR4SSjK2mbH2bt7b8fQrry
+8Z09UNWAXkVEqTIRczvtIi7bdYpA3+ImMwWaKuBKyDu+xMCH/9Sz4L6s0bAUG1rq
+D2Ef0XREQWCqn1Jp2APnJvnKTeX+amHJ9R0XPfMG2UmHc10vOs5UdsfMxKPgf+Pe
+D82MX3MBj5YEq2GpMuK5xt/q6sev37wLXzf9Dwtn4VSl7V+W1c8pD4RE470Vuoj+
+qTrDvYg8vuIkxs3bWGl7rpcpN9syRBmk4pcgvCiJtI3Nb6Di9773uFG9R0+YL2o=
+=mPto
+-----END PGP SIGNATURE-----
+
+--gX5Hm7FaHdN5aeGl--
