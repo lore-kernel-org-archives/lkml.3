@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932579AbaJGXUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:20:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39926 "EHLO
+	id S932563AbaJGXUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:20:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39933 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932476AbaJGXU2 (ORCPT
+	with ESMTP id S932477AbaJGXU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 7 Oct 2014 19:20:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Schwab <schwab@linux-m68k.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stratos Karafotis <stratosk@semaphore.gr>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 12/13] cpufreq: Fix wrong time unit conversion
-Date: Tue,  7 Oct 2014 16:20:17 -0700
-Message-Id: <20141007231920.286397153@linuxfoundation.org>
+Subject: [PATCH 3.10 13/13] cpufreq: ondemand: Change the calculation of target frequency
+Date: Tue,  7 Oct 2014 16:20:18 -0700
+Message-Id: <20141007231920.314796030@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141007231919.924479934@linuxfoundation.org>
 References: <20141007231919.924479934@linuxfoundation.org>
@@ -32,61 +31,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Schwab <schwab@linux-m68k.org>
+From: Stratos Karafotis <stratosk@semaphore.gr>
 
-commit a857c0b9e24e39fe5be82451b65377795f9538d8 upstream.
+commit dfa5bb622555d9da0df21b50f46ebdeef390041b upstream.
 
-The time spent by a CPU under a given frequency is stored in jiffies unit
-in the cpu var cpufreq_stats_table->time_in_state[i], i being the index of
-the frequency.
+The ondemand governor calculates load in terms of frequency and
+increases it only if load_freq is greater than up_threshold
+multiplied by the current or average frequency.  This appears to
+produce oscillations of frequency between min and max because,
+for example, a relatively small load can easily saturate minimum
+frequency and lead the CPU to the max.  Then, it will decrease
+back to the min due to small load_freq.
 
-This is what is displayed in the following file on the right column:
+Change the calculation method of load and target frequency on the
+basis of the following two observations:
 
-     cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
-     2301000 19835820
-     2300000 3172
-     [...]
+ - Load computation should not depend on the current or average
+   measured frequency.  For example, absolute load of 80% at 100MHz
+   is not necessarily equivalent to 8% at 1000MHz in the next
+   sampling interval.
 
-Now cpufreq converts this jiffies unit delta to clock_t before returning it
-to the user as in the above file. And that conversion is achieved using the API
-cputime64_to_clock_t().
+ - It should be possible to increase the target frequency to any
+   value present in the frequency table proportional to the absolute
+   load, rather than to the max only, so that:
 
-Although it accidentally works on traditional tick based cputime accounting, where
-cputime_t maps directly to jiffies, it doesn't work with other types of cputime
-accounting such as CONFIG_VIRT_CPU_ACCOUNTING_* where cputime_t can map to nsecs
-or any granularity preffered by the architecture.
+   Target frequency = C * load
 
-For example we get a buggy zero delta on full dyntick configurations:
+   where we take C = policy->cpuinfo.max_freq / 100.
 
-     cat /sys/devices/system/cpu/cpuX/cpufreq/stats/time_in_state
-     2301000 0
-     2300000 0
-     [...]
+Tested on Intel i7-3770 CPU @ 3.40GHz and on Quad core 1500MHz Krait.
+Phoronix benchmark of Linux Kernel Compilation 3.1 test shows an
+increase ~1.5% in performance. cpufreq_stats (time_in_state) shows
+that middle frequencies are used more, with this patch.  Highest
+and lowest frequencies were used less by ~9%.
 
-Fix this with using the proper jiffies_64_t to clock_t conversion.
+[rjw: We have run multiple other tests on kernels with this
+ change applied and in the vast majority of cases it turns out
+ that the resulting performance improvement also leads to reduced
+ consumption of energy.  The change is additionally justified by
+ the overall simplification of the code in question.]
 
-Reported-and-tested-by: Carsten Emde <C.Emde@osadl.org>
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Cc: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_stats.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/cpufreq/cpufreq_governor.c |   10 ---------
+ drivers/cpufreq/cpufreq_governor.h |    1 
+ drivers/cpufreq/cpufreq_ondemand.c |   39 ++++++-------------------------------
+ 3 files changed, 8 insertions(+), 42 deletions(-)
 
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -81,7 +81,7 @@ static ssize_t show_time_in_state(struct
- 	for (i = 0; i < stat->state_num; i++) {
- 		len += sprintf(buf + len, "%u %llu\n", stat->freq_table[i],
- 			(unsigned long long)
--			cputime64_to_clock_t(stat->time_in_state[i]));
-+			jiffies_64_to_clock_t(stat->time_in_state[i]));
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -97,7 +97,7 @@ void dbs_check_cpu(struct dbs_data *dbs_
+ 
+ 	policy = cdbs->cur_policy;
+ 
+-	/* Get Absolute Load (in terms of freq for ondemand gov) */
++	/* Get Absolute Load */
+ 	for_each_cpu(j, policy->cpus) {
+ 		struct cpu_dbs_common_info *j_cdbs;
+ 		u64 cur_wall_time, cur_idle_time;
+@@ -148,14 +148,6 @@ void dbs_check_cpu(struct dbs_data *dbs_
+ 
+ 		load = 100 * (wall_time - idle_time) / wall_time;
+ 
+-		if (dbs_data->cdata->governor == GOV_ONDEMAND) {
+-			int freq_avg = __cpufreq_driver_getavg(policy, j);
+-			if (freq_avg <= 0)
+-				freq_avg = policy->cur;
+-
+-			load *= freq_avg;
+-		}
+-
+ 		if (load > max_load)
+ 			max_load = load;
  	}
- 	return len;
- }
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -169,7 +169,6 @@ struct od_dbs_tuners {
+ 	unsigned int sampling_rate;
+ 	unsigned int sampling_down_factor;
+ 	unsigned int up_threshold;
+-	unsigned int adj_up_threshold;
+ 	unsigned int powersave_bias;
+ 	unsigned int io_is_busy;
+ };
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -29,11 +29,9 @@
+ #include "cpufreq_governor.h"
+ 
+ /* On-demand governor macros */
+-#define DEF_FREQUENCY_DOWN_DIFFERENTIAL		(10)
+ #define DEF_FREQUENCY_UP_THRESHOLD		(80)
+ #define DEF_SAMPLING_DOWN_FACTOR		(1)
+ #define MAX_SAMPLING_DOWN_FACTOR		(100000)
+-#define MICRO_FREQUENCY_DOWN_DIFFERENTIAL	(3)
+ #define MICRO_FREQUENCY_UP_THRESHOLD		(95)
+ #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
+ #define MIN_FREQUENCY_UP_THRESHOLD		(11)
+@@ -161,14 +159,10 @@ static void dbs_freq_increase(struct cpu
+ 
+ /*
+  * Every sampling_rate, we check, if current idle time is less than 20%
+- * (default), then we try to increase frequency. Every sampling_rate, we look
+- * for the lowest frequency which can sustain the load while keeping idle time
+- * over 30%. If such a frequency exist, we try to decrease to this frequency.
+- *
+- * Any frequency increase takes it to the maximum frequency. Frequency reduction
+- * happens at minimum steps of 5% (default) of current frequency
++ * (default), then we try to increase frequency. Else, we adjust the frequency
++ * proportional to load.
+  */
+-static void od_check_cpu(int cpu, unsigned int load_freq)
++static void od_check_cpu(int cpu, unsigned int load)
+ {
+ 	struct od_cpu_dbs_info_s *dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
+ 	struct cpufreq_policy *policy = dbs_info->cdbs.cur_policy;
+@@ -178,29 +172,17 @@ static void od_check_cpu(int cpu, unsign
+ 	dbs_info->freq_lo = 0;
+ 
+ 	/* Check for frequency increase */
+-	if (load_freq > od_tuners->up_threshold * policy->cur) {
++	if (load > od_tuners->up_threshold) {
+ 		/* If switching to max speed, apply sampling_down_factor */
+ 		if (policy->cur < policy->max)
+ 			dbs_info->rate_mult =
+ 				od_tuners->sampling_down_factor;
+ 		dbs_freq_increase(policy, policy->max);
+ 		return;
+-	}
+-
+-	/* Check for frequency decrease */
+-	/* if we cannot reduce the frequency anymore, break out early */
+-	if (policy->cur == policy->min)
+-		return;
+-
+-	/*
+-	 * The optimal frequency is the frequency that is the lowest that can
+-	 * support the current CPU usage without triggering the up policy. To be
+-	 * safe, we focus 10 points under the threshold.
+-	 */
+-	if (load_freq < od_tuners->adj_up_threshold
+-			* policy->cur) {
++	} else {
++		/* Calculate the next frequency proportional to load */
+ 		unsigned int freq_next;
+-		freq_next = load_freq / od_tuners->adj_up_threshold;
++		freq_next = load * policy->cpuinfo.max_freq / 100;
+ 
+ 		/* No longer fully busy, reset rate_mult */
+ 		dbs_info->rate_mult = 1;
+@@ -374,9 +356,6 @@ static ssize_t store_up_threshold(struct
+ 			input < MIN_FREQUENCY_UP_THRESHOLD) {
+ 		return -EINVAL;
+ 	}
+-	/* Calculate the new adj_up_threshold */
+-	od_tuners->adj_up_threshold += input;
+-	od_tuners->adj_up_threshold -= od_tuners->up_threshold;
+ 
+ 	od_tuners->up_threshold = input;
+ 	return count;
+@@ -525,8 +504,6 @@ static int od_init(struct dbs_data *dbs_
+ 	if (idle_time != -1ULL) {
+ 		/* Idle micro accounting is supported. Use finer thresholds */
+ 		tuners->up_threshold = MICRO_FREQUENCY_UP_THRESHOLD;
+-		tuners->adj_up_threshold = MICRO_FREQUENCY_UP_THRESHOLD -
+-			MICRO_FREQUENCY_DOWN_DIFFERENTIAL;
+ 		/*
+ 		 * In nohz/micro accounting case we set the minimum frequency
+ 		 * not depending on HZ, but fixed (very low). The deferred
+@@ -535,8 +512,6 @@ static int od_init(struct dbs_data *dbs_
+ 		dbs_data->min_sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
+ 	} else {
+ 		tuners->up_threshold = DEF_FREQUENCY_UP_THRESHOLD;
+-		tuners->adj_up_threshold = DEF_FREQUENCY_UP_THRESHOLD -
+-			DEF_FREQUENCY_DOWN_DIFFERENTIAL;
+ 
+ 		/* For correct statistics, we need 10 ticks for each measure */
+ 		dbs_data->min_sampling_rate = MIN_SAMPLING_RATE_RATIO *
 
 
