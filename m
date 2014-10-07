@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603AbaJGLLB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:11:01 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53787 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825AbaJGLK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:10:59 -0400
-Date: Tue, 7 Oct 2014 13:10:54 +0200
-From: Pavel Machek <pavel@denx.de>
-To: atull@opensource.altera.com
-Cc: dinguyen@opensource.altera.com, linux@arm.linux.org.uk,
-        yvanderv@opensource.altera.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, delicious.quinoa@gmail.com
-Subject: Re: [PATCH v2 1/2] socfpga: hotplug: put cpu1 in wfi
-Message-ID: <20141007111052.GA6904@amd>
-References: <1412192304-1209-1-git-send-email-atull@opensource.altera.com>
- <1412192304-1209-2-git-send-email-atull@opensource.altera.com>
+	id S1753729AbaJGLLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:11:17 -0400
+Received: from mta-out1.inet.fi ([62.71.2.197]:35298 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236AbaJGLLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 07:11:13 -0400
+Date: Tue, 7 Oct 2014 14:10:26 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-api@vger.kernel.org,
+        Robert Love <rlove@google.com>, Dave Hansen <dave@sr71.net>,
+        Jan Kara <jack@suse.cz>, Neil Brown <neilb@suse.de>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        Andrew Jones <drjones@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>, Taras Glek <tglek@mozilla.com>,
+        Juan Quintela <quintela@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Isaku Yamahata <yamahata@valinux.co.jp>, Mel Gorman <mgorman@suse.de>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
+        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Paolo Bonzini <pbonzini@redhat.com>, Keith Packard <keithp@keithp.com>,
+        Wenchao Xia <wenchaoqemu@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Minchan Kim <minchan@kernel.org>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mike Hommey <mh@glandium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Feiner <pfeiner@google.com>
+Subject: Re: [Qemu-devel] [PATCH 10/17] mm: rmap preparation for
+ remap_anon_pages
+Message-ID: <20141007111026.GD30762@node.dhcp.inet.fi>
+References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
+ <1412356087-16115-11-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412192304-1209-2-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1412356087-16115-11-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-10-01 14:38:23, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Use WFI when putting CPU1 to sleep.  Don't hold CPU1 in reset
-> since that results in increased power consumption.
-> 
-> Reset CPU1 briefly during CPU1 bootup.
-> 
-> This has been tested for hotplug and suspend/resume and results
-> in no increased power consumption.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+On Fri, Oct 03, 2014 at 07:08:00PM +0200, Andrea Arcangeli wrote:
+> There's one constraint enforced to allow this simplification: the
+> source pages passed to remap_anon_pages must be mapped only in one
+> vma, but this is not a limitation when used to handle userland page
+> faults with MADV_USERFAULT. The source addresses passed to
+> remap_anon_pages should be set as VM_DONTCOPY with MADV_DONTFORK to
+> avoid any risk of the mapcount of the pages increasing, if fork runs
+> in parallel in another thread, before or while remap_anon_pages runs.
 
-It is nice to Cc people who commented ont the patch before.
-
->  	if (cpu1start_addr) {
-> +		/* This will put CPU #1 into reset. */
-> +		__raw_writel(RSTMGR_MPUMODRST_CPU1,
-> +			     rst_manager_base_addr + SOCFPGA_RSTMGR_MODMPURST);
-> +
-
-I thought conclusion was to use writel (not __raw variant) here?
+Have you considered triggering COW instead of adding limitation on
+pages' mapcount? The limitation looks artificial from interface POV.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+ Kirill A. Shutemov
