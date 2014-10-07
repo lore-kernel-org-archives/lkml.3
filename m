@@ -1,127 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074AbaJGPfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:35:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811AbaJGPeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:34:01 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH 4/5] mm, compaction: always update cached scanner positions
-Date: Tue,  7 Oct 2014 17:33:38 +0200
-Message-Id: <1412696019-21761-5-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+	id S1754487AbaJGPf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:35:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48040 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520AbaJGPfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:35:54 -0400
+Message-ID: <54340857.9000409@wwwdotorg.org>
+Date: Tue, 07 Oct 2014 08:35:51 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Bart Tanghe <bart.tanghe@thomasmore.be>, thierry.reding@gmail.com
+CC: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
+Subject: Re: [PATCH v6]pwm: add BCM2835 PWM driver
+References: <1412690665-15416-1-git-send-email-bart.tanghe@thomasmore.be>
+In-Reply-To: <1412690665-15416-1-git-send-email-bart.tanghe@thomasmore.be>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compaction caches the migration and free scanner positions between compaction
-invocations, so that the whole zone gets eventually scanned and there is no
-bias towards the initial scanner positions at the beginning/end of the zone.
+On 10/07/2014 07:04 AM, Bart Tanghe wrote:
+> Add pwm driver for Broadcom BCM2835 processor (Raspberry Pi)
 
-The cached positions are continuously updated as scanners progress and the
-updating stops as soon as a page is successfully isolated. The reasoning
-behind this is that a pageblock where isolation succeeded is likely to succeed
-again in near future and it should be worth revisiting it.
+Just a few nits below,
 
-However, the downside is that potentially many pages are rescanned without
-successful isolation. At worst, there might be a page where isolation from LRU
-succeeds but migration fails (potentially always). So upon encountering this
-page, cached position would always stop being updated for no good reason.
-It might have been useful to let such page be rescanned with sync compaction
-after async one failed, but this is now handled by caching scanner position
-for async and sync mode separately since commit 35979ef33931 ("mm, compaction:
-add per-zone migration pfn cache for async compaction").
+> diff --git a/drivers/pwm/pwm-bcm2835.c b/drivers/pwm/pwm-bcm2835.c
 
-After this patch, cached positions are updated unconditionally. In
-stress-highalloc benchmark, this has decreased the numbers of scanned pages
-by few percent, without affecting allocation success rates.
+> +#define PWM_CONTROL_MASK	0xff
+> +#define PWM_MODE		0x80		/* set timer in pwm mode */
+> +#define DEFAULT		0xff		/* set timer in default mode */
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: David Rientjes <rientjes@google.com>
----
- mm/compaction.c | 14 --------------
- mm/internal.h   |  5 -----
- 2 files changed, 19 deletions(-)
+BTW, it'd be nice to say default *what*. Perhaps DEFAULT_PWM_MODE?
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9107588..8fa888d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -195,16 +195,12 @@ static void update_pageblock_skip(struct compact_control *cc,
- 
- 	/* Update where async and sync compaction should restart */
- 	if (migrate_scanner) {
--		if (cc->finished_update_migrate)
--			return;
- 		if (pfn > zone->compact_cached_migrate_pfn[0])
- 			zone->compact_cached_migrate_pfn[0] = pfn;
- 		if (cc->mode != MIGRATE_ASYNC &&
- 		    pfn > zone->compact_cached_migrate_pfn[1])
- 			zone->compact_cached_migrate_pfn[1] = pfn;
- 	} else {
--		if (cc->finished_update_free)
--			return;
- 		if (pfn < zone->compact_cached_free_pfn)
- 			zone->compact_cached_free_pfn = pfn;
- 	}
-@@ -705,7 +701,6 @@ isolate_migratepages_block(struct compact_control *cc, unsigned long low_pfn,
- 		del_page_from_lru_list(page, lruvec, page_lru(page));
- 
- isolate_success:
--		cc->finished_update_migrate = true;
- 		list_add(&page->lru, migratelist);
- 		cc->nr_migratepages++;
- 		nr_isolated++;
-@@ -876,15 +871,6 @@ static void isolate_freepages(struct compact_control *cc)
- 				block_start_pfn - pageblock_nr_pages;
- 
- 		/*
--		 * Set a flag that we successfully isolated in this pageblock.
--		 * In the next loop iteration, zone->compact_cached_free_pfn
--		 * will not be updated and thus it will effectively contain the
--		 * highest pageblock we isolated pages from.
--		 */
--		if (isolated)
--			cc->finished_update_free = true;
--
--		/*
- 		 * isolate_freepages_block() might have aborted due to async
- 		 * compaction being contended
- 		 */
-diff --git a/mm/internal.h b/mm/internal.h
-index 3cc9b0a..4928beb 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -136,11 +136,6 @@ struct compact_control {
- 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
- 	enum migrate_mode mode;		/* Async or sync migration mode */
- 	bool ignore_skip_hint;		/* Scan blocks even if marked skip */
--	bool finished_update_free;	/* True when the zone cached pfns are
--					 * no longer being updated
--					 */
--	bool finished_update_migrate;
--
- 	int order;			/* order a direct compactor needs */
- 	const gfp_t gfp_mask;		/* gfp mask of a direct compactor */
- 	const int alloc_flags;		/* alloc flags of a direct compactor */
--- 
-1.8.4.5
+> +static int bcm2835_pwm_request(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
+> +	u32 value;
+> +
+> +	value = readl(pc->base);
+> +	value &= ~(PWM_CONTROL_MASK << PWM_CONTROL_STRIDE * pwm->hwpwm);
+> +	value |= (PWM_MODE << (PWM_CONTROL_STRIDE * pwm->hwpwm));
 
+Presence/absence of brackets around the STRIDE*pwm calculation is still
+inconsistent here, and in other places.
+
+> +static void bcm2835_pwm_free(struct pwm_chip *chip, struct pwm_device *pwm)
+> +{
+> +	struct bcm2835_pwm *pc = to_bcm2835_pwm(chip);
+> +	u32 value;
+> +
+> +	value = readl(pc->base);
+> +	value &= (~DEFAULT << (PWM_CONTROL_STRIDE * pwm->hwpwm));
+
+Why clear the "DEFAULT" bits here; why not use PWM_CONTROL_MASK?
