@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbaJGBMJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 21:12:09 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8930 "EHLO
+	id S1752717AbaJGBMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 21:12:07 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:8922 "EHLO
 	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752488AbaJGBL4 (ORCPT
+	by vger.kernel.org with ESMTP id S1751720AbaJGBLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 21:11:56 -0400
+	Mon, 6 Oct 2014 21:11:52 -0400
 From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>,
         Courtney Cavin <courtney.cavin@sonymobile.com>
-Subject: [PATCH 2/2] input: pm8941-pwrkey: Add DT binding documentation
-Date: Mon, 6 Oct 2014 18:12:01 -0700
-Message-ID: <1412644321-27683-3-git-send-email-bjorn.andersson@sonymobile.com>
+Subject: [PATCH 1/2] input: Add Qualcomm PM8941 power key driver
+Date: Mon, 6 Oct 2014 18:12:00 -0700
+Message-ID: <1412644321-27683-2-git-send-email-bjorn.andersson@sonymobile.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
 References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
@@ -33,59 +33,249 @@ From: Courtney Cavin <courtney.cavin@sonymobile.com>
 Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
 Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 ---
- .../bindings/input/qcom,pm8941-pwrkey.txt          |   43 ++++++++++++++++++++
- 1 file changed, 43 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+ drivers/input/misc/Kconfig         |   12 +++
+ drivers/input/misc/Makefile        |    1 +
+ drivers/input/misc/pm8941-pwrkey.c |  196 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 209 insertions(+)
+ create mode 100644 drivers/input/misc/pm8941-pwrkey.c
 
-diff --git a/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 2ff4425..abe615c 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -105,6 +105,18 @@ config INPUT_PCSPKR
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called pcspkr.
+ 
++config INPUT_PM8941_PWRKEY
++	tristate "Qualcomm PM8X41 power key support"
++	depends on MFD_SPMI_PMIC
++	help
++	  Say Y here if you want support for the power key usually found
++	  on boards using a Qualcomm PM8941 compatible PMIC.
++
++	  If unsure, say Y.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called pm8941-pwrkey.
++
+ config INPUT_PM8XXX_VIBRATOR
+ 	tristate "Qualcomm PM8XXX vibrator support"
+ 	depends on MFD_PM8XXX
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 4955ad3..e4ab02c 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -44,6 +44,7 @@ obj-$(CONFIG_INPUT_PCAP)		+= pcap_keys.o
+ obj-$(CONFIG_INPUT_PCF50633_PMU)	+= pcf50633-input.o
+ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+ obj-$(CONFIG_INPUT_PCSPKR)		+= pcspkr.o
++obj-$(CONFIG_INPUT_PM8941_PWRKEY)	+= pm8941-pwrkey.o
+ obj-$(CONFIG_INPUT_PM8XXX_VIBRATOR)	+= pm8xxx-vibrator.o
+ obj-$(CONFIG_INPUT_PMIC8XXX_PWRKEY)	+= pmic8xxx-pwrkey.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+diff --git a/drivers/input/misc/pm8941-pwrkey.c b/drivers/input/misc/pm8941-pwrkey.c
 new file mode 100644
-index 0000000..4d75e2c
+index 0000000..58df8bc
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
-@@ -0,0 +1,43 @@
-+Qualcomm PM8941 PMIC Power Key
++++ b/drivers/input/misc/pm8941-pwrkey.c
+@@ -0,0 +1,196 @@
++/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2014, Sony Mobile Communications Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+PROPERTIES
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/log2.h>
++#include <linux/of.h>
 +
-+- compatible:
-+	Usage: required
-+	Value type: <string>
-+	Definition: must be one of:
-+		    "qcom,pm8941-pwrkey"
++#define PON_RT_STS		0x10
++#define PON_PULL_CTL		0x70
++#define PON_DBC_CTL		0x71
 +
-+- reg:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: base address of registers for block
++#define PON_DBC_DELAY_MASK	0x7
++#define PON_KPDPWR_N_SET	BIT(0)
++#define PON_KPDPWR_PULL_UP	BIT(1)
 +
-+- interrupts:
-+	Usage: required
-+	Value type: <prop-encoded-array>
-+	Definition: key change interrupt; The format of the specifier is
-+		    defined by the binding document describing the node's
-+		    interrupt parent.
++struct pm8941_pwrkey {
++	int irq;
++	u32 baseaddr;
++	struct regmap *regmap;
++	struct input_dev *input;
++};
 +
-+- debounce:
-+	Usage: optional
-+	Value type: <u32>
-+	Definition: time in microseconds that key must be pressed or released
-+		    for state change interrupt to trigger.
++static irqreturn_t pm8941_pwrkey_irq(int irq, void *_data)
++{
++	struct pm8941_pwrkey *pwrkey = _data;
++	unsigned int sts;
++	int rc;
 +
-+- bias-pull-up:
-+	Usage: optional
-+	Value type: <empty>
-+	Definition: presence of this property indicates that the KPDPWR_N pin
-+		    should be configured for pull up.
++	rc = regmap_read(pwrkey->regmap, pwrkey->baseaddr + PON_RT_STS, &sts);
++	if (rc)
++		return IRQ_HANDLED;
 +
-+EXAMPLE
++	input_report_key(pwrkey->input, KEY_POWER, !!(sts & PON_KPDPWR_N_SET));
++	input_sync(pwrkey->input);
 +
-+	pwrkey@800 {
-+		compatible = "qcom,pm8941-pwrkey";
-+		reg = <0x800>;
-+		interrupts = <0x0 0x8 0 0>;
-+		debounce = <15625>;
-+		bias-pull-up;
-+	};
++	return IRQ_HANDLED;
++}
++
++#ifdef CONFIG_PM_SLEEP
++static int pm8941_pwrkey_suspend(struct device *dev)
++{
++	struct pm8941_pwrkey *pwrkey = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev))
++		enable_irq_wake(pwrkey->irq);
++
++	return 0;
++}
++
++static int pm8941_pwrkey_resume(struct device *dev)
++{
++	struct pm8941_pwrkey *pwrkey = dev_get_drvdata(dev);
++
++	if (device_may_wakeup(dev))
++		disable_irq_wake(pwrkey->irq);
++
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(pm8941_pwr_key_pm_ops,
++		pm8941_pwrkey_suspend, pm8941_pwrkey_resume);
++
++static int pm8941_pwrkey_probe(struct platform_device *pdev)
++{
++	struct pm8941_pwrkey *pwrkey;
++	bool pull_up;
++	u32 req_delay;
++	int rc;
++
++	if (of_property_read_u32(pdev->dev.of_node, "debounce", &req_delay))
++		req_delay = 15625;
++
++	if (req_delay > 2000000 || req_delay == 0) {
++		dev_err(&pdev->dev, "invalid debounce time: %u\n", req_delay);
++		return -EINVAL;
++	}
++
++	pull_up = of_property_read_bool(pdev->dev.of_node, "bias-pull-up");
++
++	pwrkey = devm_kzalloc(&pdev->dev, sizeof(*pwrkey), GFP_KERNEL);
++	if (!pwrkey)
++		return -ENOMEM;
++
++	pwrkey->regmap = dev_get_regmap(pdev->dev.parent, NULL);
++	if (!pwrkey->regmap) {
++		dev_err(&pdev->dev, "failed to locate regmap\n");
++		return -ENODEV;
++	}
++
++	pwrkey->irq = platform_get_irq(pdev, 0);
++	if (pwrkey->irq < 0) {
++		dev_err(&pdev->dev, "failed to get irq\n");
++		return pwrkey->irq;
++	}
++
++	rc = of_property_read_u32(pdev->dev.of_node, "reg", &pwrkey->baseaddr);
++	if (rc)
++		return rc;
++
++	pwrkey->input = devm_input_allocate_device(&pdev->dev);
++	if (!pwrkey->input) {
++		dev_dbg(&pdev->dev, "unable to allocate input device\n");
++		return -ENOMEM;
++	}
++
++	input_set_capability(pwrkey->input, EV_KEY, KEY_POWER);
++
++	pwrkey->input->name = "pm8941_pwrkey";
++	pwrkey->input->phys = "pm8941_pwrkey/input0";
++
++	req_delay = (req_delay << 6) / USEC_PER_SEC;
++	req_delay = ilog2(req_delay);
++
++	rc = regmap_update_bits(pwrkey->regmap, pwrkey->baseaddr + PON_DBC_CTL,
++			PON_DBC_DELAY_MASK, req_delay);
++	if (rc) {
++		dev_err(&pdev->dev, "failed to set debounce: %d\n", rc);
++		return rc;
++	}
++
++	rc = regmap_update_bits(pwrkey->regmap,
++			pwrkey->baseaddr + PON_PULL_CTL, PON_KPDPWR_PULL_UP,
++			pull_up ? PON_KPDPWR_PULL_UP : 0);
++	if (rc) {
++		dev_err(&pdev->dev, "failed to set pull: %d\n", rc);
++		return rc;
++	}
++
++	rc = devm_request_threaded_irq(&pdev->dev, pwrkey->irq,
++				NULL, pm8941_pwrkey_irq,
++				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
++					IRQF_ONESHOT,
++				"pm8941_pwrkey", pwrkey);
++	if (rc) {
++		dev_err(&pdev->dev, "failed requesting IRQ: %d\n", rc);
++		return rc;
++	}
++
++	rc = input_register_device(pwrkey->input);
++	if (rc) {
++		dev_err(&pdev->dev, "failed to register input device: %d\n",
++			rc);
++		return rc;
++	}
++
++	platform_set_drvdata(pdev, pwrkey);
++	device_init_wakeup(&pdev->dev, 1);
++
++	return 0;
++}
++
++static int pm8941_pwrkey_remove(struct platform_device *pdev)
++{
++	device_init_wakeup(&pdev->dev, 0);
++
++	return 0;
++}
++
++static const struct of_device_id pm8941_pwr_key_id_table[] = {
++	{ .compatible = "qcom,pm8941-pwrkey" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pm8941_pwr_key_id_table);
++
++static struct platform_driver pm8941_pwrkey_driver = {
++	.probe		= pm8941_pwrkey_probe,
++	.remove		= pm8941_pwrkey_remove,
++	.driver		= {
++		.name	= "pm8941-pwrkey",
++		.owner	= THIS_MODULE,
++		.pm	= &pm8941_pwr_key_pm_ops,
++		.of_match_table = of_match_ptr(pm8941_pwr_key_id_table),
++	},
++};
++module_platform_driver(pm8941_pwrkey_driver);
++
++MODULE_DESCRIPTION("PM8941 Power Key driver");
++MODULE_LICENSE("GPL v2");
 -- 
 1.7.9.5
 
