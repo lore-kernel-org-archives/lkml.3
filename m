@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559AbaJGQYo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:24:44 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:51223 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139AbaJGQYk (ORCPT
+	id S1754640AbaJGQY5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:24:57 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:57529 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397AbaJGQYw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:24:40 -0400
+	Tue, 7 Oct 2014 12:24:52 -0400
 From: mathieu.poirier@linaro.org
 To: linux@arm.linux.org.uk, gregkh@linuxfoundation.org
 Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
@@ -15,9 +15,9 @@ Cc: pratikp@codeaurora.org, varshney@ti.com, Al.Grant@arm.com,
         robbelibobban@gmail.com, patches@linaro.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         mathieu.poirier@linaro.org
-Subject: [PATCH RESEND v7 01/11] coresight: add CoreSight core layer framework
-Date: Tue,  7 Oct 2014 10:24:14 -0600
-Message-Id: <1412699064-17376-2-git-send-email-mathieu.poirier@linaro.org>
+Subject: [PATCH RESEND v7 07/11] coresight-etm: add CoreSight ETM/PTM driver
+Date: Tue,  7 Oct 2014 10:24:20 -0600
+Message-Id: <1412699064-17376-8-git-send-email-mathieu.poirier@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412699064-17376-1-git-send-email-mathieu.poirier@linaro.org>
 References: <1412699064-17376-1-git-send-email-mathieu.poirier@linaro.org>
@@ -27,103 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratik Patel <pratikp@codeaurora.org>
 
-CoreSight components are compliant with the ARM CoreSight
-architecture specification and can be connected in various
-topologies to suit a particular SoC tracing needs. These trace
-components can generally be classified as sources, links and
-sinks. Trace data produced by one or more sources flows through
-the intermediate links connecting the source to the currently
-selected sink.
-
-The CoreSight framework provides an interface for the CoreSight trace
-drivers to register themselves with. It's intended to build up a
-topological view of the CoreSight components and configure the
-correct serie of components on user input via sysfs.
-
-For eg., when enabling a source, the framework builds up a path
-consisting of all the components connecting the source to the
-currently selected sink(s) and enables all of them.
-
-The framework also supports switching between available sinks
-and provides status information to user space applications
-through the debugfs interface.
+This driver manages CoreSight ETM (Embedded Trace Macrocell) that
+supports processor tracing. Currently supported version are ARM
+ETMv3.x and PTM1.x.
 
 Signed-off-by: Pratik Patel <pratikp@codeaurora.org>
 Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
 ---
- arch/arm/Kconfig.debug             |   9 +
- drivers/Makefile                   |   1 +
- drivers/amba/bus.c                 |   2 +-
- drivers/coresight/Makefile         |   5 +
- drivers/coresight/coresight-priv.h |  63 ++++
- drivers/coresight/coresight.c      | 717 +++++++++++++++++++++++++++++++++++++
- drivers/coresight/of_coresight.c   | 204 +++++++++++
- include/linux/amba/bus.h           |   1 +
- include/linux/coresight.h          | 263 ++++++++++++++
- 9 files changed, 1264 insertions(+), 1 deletion(-)
- create mode 100644 drivers/coresight/Makefile
- create mode 100644 drivers/coresight/coresight-priv.h
- create mode 100644 drivers/coresight/coresight.c
- create mode 100644 drivers/coresight/of_coresight.c
- create mode 100644 include/linux/coresight.h
+ arch/arm/Kconfig.debug                 |    9 +
+ arch/arm/include/asm/hardware/cp14.h   |  542 +++++++++
+ drivers/coresight/Makefile             |    1 +
+ drivers/coresight/coresight-etm-cp14.c |  591 ++++++++++
+ drivers/coresight/coresight-etm.h      |  251 +++++
+ drivers/coresight/coresight-etm3x.c    | 1926 ++++++++++++++++++++++++++++++++
+ 6 files changed, 3320 insertions(+)
+ create mode 100644 arch/arm/include/asm/hardware/cp14.h
+ create mode 100644 drivers/coresight/coresight-etm-cp14.c
+ create mode 100644 drivers/coresight/coresight-etm.h
+ create mode 100644 drivers/coresight/coresight-etm3x.c
 
 diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index b11ad54..2c659b5 100644
+index 40193c5..2b842df 100644
 --- a/arch/arm/Kconfig.debug
 +++ b/arch/arm/Kconfig.debug
-@@ -1281,4 +1281,13 @@ config DEBUG_SET_MODULE_RONX
- 	  against certain classes of kernel exploits.
- 	  If in doubt, say "N".
- 
-+menuconfig CORESIGHT
-+	bool "CoreSight Tracing Support"
-+	select ARM_AMBA
+@@ -1298,5 +1298,14 @@ config CORESIGHT_LINKS_AND_SINKS
+ 	  This enables support for CoreSight link and sink drivers that are
+ 	  responsible for transporting and collecting the trace data
+ 	  respectively.
++
++config CORESIGHT_SOURCE_ETM3X
++	bool "CoreSight Embedded Trace Macrocell 3.x driver"
++	select CORESIGHT_LINKS_AND_SINKS
 +	help
-+	  This framework provides a kernel interface for the CoreSight debug
-+	  and trace drivers to register themselves with. It's intended to build
-+	  a topological view of the CoreSight components based on a DT
-+	  specification and configure the right serie of components when a
-+	  trace source gets enabled.
++	  This driver provides support for processor ETM3.x and PTM1.x modules,
++	  which allows tracing the instructions that a processor is executing
++	  This is primarily useful for instruction level tracing.  Depending
++	  the ETM version data tracing may also be available.
+ endif
  endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index ebee555..628b512 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -161,3 +161,4 @@ obj-$(CONFIG_POWERCAP)		+= powercap/
- obj-$(CONFIG_MCB)		+= mcb/
- obj-$(CONFIG_RAS)		+= ras/
- obj-$(CONFIG_THUNDERBOLT)	+= thunderbolt/
-+obj-$(CONFIG_CORESIGHT)		+= coresight/
-diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
-index 3cf61a1..131258b 100644
---- a/drivers/amba/bus.c
-+++ b/drivers/amba/bus.c
-@@ -327,7 +327,7 @@ int amba_device_add(struct amba_device *dev, struct resource *parent)
- 
- 		amba_put_disable_pclk(dev);
- 
--		if (cid == AMBA_CID)
-+		if (cid == AMBA_CID || cid == CORESIGHT_CID)
- 			dev->periphid = pid;
- 
- 		if (!dev->periphid)
-diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+diff --git a/arch/arm/include/asm/hardware/cp14.h b/arch/arm/include/asm/hardware/cp14.h
 new file mode 100644
-index 0000000..218e3b5
+index 0000000..61576dc
 --- /dev/null
-+++ b/drivers/coresight/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for CoreSight drivers.
-+#
-+obj-$(CONFIG_CORESIGHT) += coresight.o
-+obj-$(CONFIG_OF) += of_coresight.o
-diff --git a/drivers/coresight/coresight-priv.h b/drivers/coresight/coresight-priv.h
-new file mode 100644
-index 0000000..8d1180c
---- /dev/null
-+++ b/drivers/coresight/coresight-priv.h
-@@ -0,0 +1,63 @@
++++ b/arch/arm/include/asm/hardware/cp14.h
+@@ -0,0 +1,542 @@
 +/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -136,64 +83,1406 @@ index 0000000..8d1180c
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef _CORESIGHT_PRIV_H
-+#define _CORESIGHT_PRIV_H
++#ifndef __ASM_HARDWARE_CP14_H
++#define __ASM_HARDWARE_CP14_H
 +
-+#include <linux/bitops.h>
-+#include <linux/io.h>
-+#include <linux/coresight.h>
++#include <linux/types.h>
++
++/* Accessors for CP14 registers */
++#define dbg_read(reg)			RCP14_##reg()
++#define dbg_write(val, reg)		WCP14_##reg(val)
++#define etm_read(reg)			RCP14_##reg()
++#define etm_write(val, reg)		WCP14_##reg(val)
++
++/* MRC14 and MCR14 */
++#define MRC14(op1, crn, crm, op2)					\
++({									\
++u32 val;								\
++asm volatile("mrc p14, "#op1", %0, "#crn", "#crm", "#op2 : "=r" (val));	\
++val;									\
++})
++
++#define MCR14(val, op1, crn, crm, op2)					\
++({									\
++asm volatile("mcr p14, "#op1", %0, "#crn", "#crm", "#op2 : : "r" (val));\
++})
 +
 +/*
-+ * Coresight management registers (0xf00-0xfcc)
-+ * 0xfa0 - 0xfa4: Management	registers in PFTv1.0
-+ *		  Trace		registers in PFTv1.1
++ * Debug Registers
++ *
++ * Available only in DBGv7
++ * DBGECR, DBGDSCCR, DBGDSMCR, DBGDRCR
++ *
++ * Available only in DBGv7.1
++ * DBGBXVRm, DBGOSDLR, DBGDEVID2, DBGDEVID1
++ *
++ * Read only
++ * DBGDIDR, DBGDSCRint, DBGDTRRXint, DBGDRAR, DBGOSLSR, DBGOSSRR, DBGPRSR,
++ * DBGPRSR, DBGDSAR, DBGAUTHSTATUS, DBGDEVID2, DBGDEVID1, DBGDEVID
++ *
++ * Write only
++ * DBGDTRTXint, DBGOSLAR
 + */
-+#define CORESIGHT_ITCTRL	0xf00
-+#define CORESIGHT_CLAIMSET	0xfa0
-+#define CORESIGHT_CLAIMCLR	0xfa4
-+#define CORESIGHT_LAR		0xfb0
-+#define CORESIGHT_LSR		0xfb4
-+#define CORESIGHT_AUTHSTATUS	0xfb8
-+#define CORESIGHT_DEVID		0xfc8
-+#define CORESIGHT_DEVTYPE	0xfcc
++#define RCP14_DBGDIDR()			MRC14(0, c0, c0, 0)
++#define RCP14_DBGDSCRint()		MRC14(0, c0, c1, 0)
++#define RCP14_DBGDTRRXint()		MRC14(0, c0, c5, 0)
++#define RCP14_DBGWFAR()			MRC14(0, c0, c6, 0)
++#define RCP14_DBGVCR()			MRC14(0, c0, c7, 0)
++#define RCP14_DBGECR()			MRC14(0, c0, c9, 0)
++#define RCP14_DBGDSCCR()		MRC14(0, c0, c10, 0)
++#define RCP14_DBGDSMCR()		MRC14(0, c0, c11, 0)
++#define RCP14_DBGDTRRXext()		MRC14(0, c0, c0, 2)
++#define RCP14_DBGDSCRext()		MRC14(0, c0, c2, 2)
++#define RCP14_DBGDTRTXext()		MRC14(0, c0, c3, 2)
++#define RCP14_DBGDRCR()			MRC14(0, c0, c4, 2)
++#define RCP14_DBGBVR0()			MRC14(0, c0, c0, 4)
++#define RCP14_DBGBVR1()			MRC14(0, c0, c1, 4)
++#define RCP14_DBGBVR2()			MRC14(0, c0, c2, 4)
++#define RCP14_DBGBVR3()			MRC14(0, c0, c3, 4)
++#define RCP14_DBGBVR4()			MRC14(0, c0, c4, 4)
++#define RCP14_DBGBVR5()			MRC14(0, c0, c5, 4)
++#define RCP14_DBGBVR6()			MRC14(0, c0, c6, 4)
++#define RCP14_DBGBVR7()			MRC14(0, c0, c7, 4)
++#define RCP14_DBGBVR8()			MRC14(0, c0, c8, 4)
++#define RCP14_DBGBVR9()			MRC14(0, c0, c9, 4)
++#define RCP14_DBGBVR10()		MRC14(0, c0, c10, 4)
++#define RCP14_DBGBVR11()		MRC14(0, c0, c11, 4)
++#define RCP14_DBGBVR12()		MRC14(0, c0, c12, 4)
++#define RCP14_DBGBVR13()		MRC14(0, c0, c13, 4)
++#define RCP14_DBGBVR14()		MRC14(0, c0, c14, 4)
++#define RCP14_DBGBVR15()		MRC14(0, c0, c15, 4)
++#define RCP14_DBGBCR0()			MRC14(0, c0, c0, 5)
++#define RCP14_DBGBCR1()			MRC14(0, c0, c1, 5)
++#define RCP14_DBGBCR2()			MRC14(0, c0, c2, 5)
++#define RCP14_DBGBCR3()			MRC14(0, c0, c3, 5)
++#define RCP14_DBGBCR4()			MRC14(0, c0, c4, 5)
++#define RCP14_DBGBCR5()			MRC14(0, c0, c5, 5)
++#define RCP14_DBGBCR6()			MRC14(0, c0, c6, 5)
++#define RCP14_DBGBCR7()			MRC14(0, c0, c7, 5)
++#define RCP14_DBGBCR8()			MRC14(0, c0, c8, 5)
++#define RCP14_DBGBCR9()			MRC14(0, c0, c9, 5)
++#define RCP14_DBGBCR10()		MRC14(0, c0, c10, 5)
++#define RCP14_DBGBCR11()		MRC14(0, c0, c11, 5)
++#define RCP14_DBGBCR12()		MRC14(0, c0, c12, 5)
++#define RCP14_DBGBCR13()		MRC14(0, c0, c13, 5)
++#define RCP14_DBGBCR14()		MRC14(0, c0, c14, 5)
++#define RCP14_DBGBCR15()		MRC14(0, c0, c15, 5)
++#define RCP14_DBGWVR0()			MRC14(0, c0, c0, 6)
++#define RCP14_DBGWVR1()			MRC14(0, c0, c1, 6)
++#define RCP14_DBGWVR2()			MRC14(0, c0, c2, 6)
++#define RCP14_DBGWVR3()			MRC14(0, c0, c3, 6)
++#define RCP14_DBGWVR4()			MRC14(0, c0, c4, 6)
++#define RCP14_DBGWVR5()			MRC14(0, c0, c5, 6)
++#define RCP14_DBGWVR6()			MRC14(0, c0, c6, 6)
++#define RCP14_DBGWVR7()			MRC14(0, c0, c7, 6)
++#define RCP14_DBGWVR8()			MRC14(0, c0, c8, 6)
++#define RCP14_DBGWVR9()			MRC14(0, c0, c9, 6)
++#define RCP14_DBGWVR10()		MRC14(0, c0, c10, 6)
++#define RCP14_DBGWVR11()		MRC14(0, c0, c11, 6)
++#define RCP14_DBGWVR12()		MRC14(0, c0, c12, 6)
++#define RCP14_DBGWVR13()		MRC14(0, c0, c13, 6)
++#define RCP14_DBGWVR14()		MRC14(0, c0, c14, 6)
++#define RCP14_DBGWVR15()		MRC14(0, c0, c15, 6)
++#define RCP14_DBGWCR0()			MRC14(0, c0, c0, 7)
++#define RCP14_DBGWCR1()			MRC14(0, c0, c1, 7)
++#define RCP14_DBGWCR2()			MRC14(0, c0, c2, 7)
++#define RCP14_DBGWCR3()			MRC14(0, c0, c3, 7)
++#define RCP14_DBGWCR4()			MRC14(0, c0, c4, 7)
++#define RCP14_DBGWCR5()			MRC14(0, c0, c5, 7)
++#define RCP14_DBGWCR6()			MRC14(0, c0, c6, 7)
++#define RCP14_DBGWCR7()			MRC14(0, c0, c7, 7)
++#define RCP14_DBGWCR8()			MRC14(0, c0, c8, 7)
++#define RCP14_DBGWCR9()			MRC14(0, c0, c9, 7)
++#define RCP14_DBGWCR10()		MRC14(0, c0, c10, 7)
++#define RCP14_DBGWCR11()		MRC14(0, c0, c11, 7)
++#define RCP14_DBGWCR12()		MRC14(0, c0, c12, 7)
++#define RCP14_DBGWCR13()		MRC14(0, c0, c13, 7)
++#define RCP14_DBGWCR14()		MRC14(0, c0, c14, 7)
++#define RCP14_DBGWCR15()		MRC14(0, c0, c15, 7)
++#define RCP14_DBGDRAR()			MRC14(0, c1, c0, 0)
++#define RCP14_DBGBXVR0()		MRC14(0, c1, c0, 1)
++#define RCP14_DBGBXVR1()		MRC14(0, c1, c1, 1)
++#define RCP14_DBGBXVR2()		MRC14(0, c1, c2, 1)
++#define RCP14_DBGBXVR3()		MRC14(0, c1, c3, 1)
++#define RCP14_DBGBXVR4()		MRC14(0, c1, c4, 1)
++#define RCP14_DBGBXVR5()		MRC14(0, c1, c5, 1)
++#define RCP14_DBGBXVR6()		MRC14(0, c1, c6, 1)
++#define RCP14_DBGBXVR7()		MRC14(0, c1, c7, 1)
++#define RCP14_DBGBXVR8()		MRC14(0, c1, c8, 1)
++#define RCP14_DBGBXVR9()		MRC14(0, c1, c9, 1)
++#define RCP14_DBGBXVR10()		MRC14(0, c1, c10, 1)
++#define RCP14_DBGBXVR11()		MRC14(0, c1, c11, 1)
++#define RCP14_DBGBXVR12()		MRC14(0, c1, c12, 1)
++#define RCP14_DBGBXVR13()		MRC14(0, c1, c13, 1)
++#define RCP14_DBGBXVR14()		MRC14(0, c1, c14, 1)
++#define RCP14_DBGBXVR15()		MRC14(0, c1, c15, 1)
++#define RCP14_DBGOSLSR()		MRC14(0, c1, c1, 4)
++#define RCP14_DBGOSSRR()		MRC14(0, c1, c2, 4)
++#define RCP14_DBGOSDLR()		MRC14(0, c1, c3, 4)
++#define RCP14_DBGPRCR()			MRC14(0, c1, c4, 4)
++#define RCP14_DBGPRSR()			MRC14(0, c1, c5, 4)
++#define RCP14_DBGDSAR()			MRC14(0, c2, c0, 0)
++#define RCP14_DBGITCTRL()		MRC14(0, c7, c0, 4)
++#define RCP14_DBGCLAIMSET()		MRC14(0, c7, c8, 6)
++#define RCP14_DBGCLAIMCLR()		MRC14(0, c7, c9, 6)
++#define RCP14_DBGAUTHSTATUS()		MRC14(0, c7, c14, 6)
++#define RCP14_DBGDEVID2()		MRC14(0, c7, c0, 7)
++#define RCP14_DBGDEVID1()		MRC14(0, c7, c1, 7)
++#define RCP14_DBGDEVID()		MRC14(0, c7, c2, 7)
 +
-+#define TIMEOUT_US		100
-+#define BMVAL(val, lsb, msb)	((val & GENMASK(msb, lsb)) >> lsb)
++#define WCP14_DBGDTRTXint(val)		MCR14(val, 0, c0, c5, 0)
++#define WCP14_DBGWFAR(val)		MCR14(val, 0, c0, c6, 0)
++#define WCP14_DBGVCR(val)		MCR14(val, 0, c0, c7, 0)
++#define WCP14_DBGECR(val)		MCR14(val, 0, c0, c9, 0)
++#define WCP14_DBGDSCCR(val)		MCR14(val, 0, c0, c10, 0)
++#define WCP14_DBGDSMCR(val)		MCR14(val, 0, c0, c11, 0)
++#define WCP14_DBGDTRRXext(val)		MCR14(val, 0, c0, c0, 2)
++#define WCP14_DBGDSCRext(val)		MCR14(val, 0, c0, c2, 2)
++#define WCP14_DBGDTRTXext(val)		MCR14(val, 0, c0, c3, 2)
++#define WCP14_DBGDRCR(val)		MCR14(val, 0, c0, c4, 2)
++#define WCP14_DBGBVR0(val)		MCR14(val, 0, c0, c0, 4)
++#define WCP14_DBGBVR1(val)		MCR14(val, 0, c0, c1, 4)
++#define WCP14_DBGBVR2(val)		MCR14(val, 0, c0, c2, 4)
++#define WCP14_DBGBVR3(val)		MCR14(val, 0, c0, c3, 4)
++#define WCP14_DBGBVR4(val)		MCR14(val, 0, c0, c4, 4)
++#define WCP14_DBGBVR5(val)		MCR14(val, 0, c0, c5, 4)
++#define WCP14_DBGBVR6(val)		MCR14(val, 0, c0, c6, 4)
++#define WCP14_DBGBVR7(val)		MCR14(val, 0, c0, c7, 4)
++#define WCP14_DBGBVR8(val)		MCR14(val, 0, c0, c8, 4)
++#define WCP14_DBGBVR9(val)		MCR14(val, 0, c0, c9, 4)
++#define WCP14_DBGBVR10(val)		MCR14(val, 0, c0, c10, 4)
++#define WCP14_DBGBVR11(val)		MCR14(val, 0, c0, c11, 4)
++#define WCP14_DBGBVR12(val)		MCR14(val, 0, c0, c12, 4)
++#define WCP14_DBGBVR13(val)		MCR14(val, 0, c0, c13, 4)
++#define WCP14_DBGBVR14(val)		MCR14(val, 0, c0, c14, 4)
++#define WCP14_DBGBVR15(val)		MCR14(val, 0, c0, c15, 4)
++#define WCP14_DBGBCR0(val)		MCR14(val, 0, c0, c0, 5)
++#define WCP14_DBGBCR1(val)		MCR14(val, 0, c0, c1, 5)
++#define WCP14_DBGBCR2(val)		MCR14(val, 0, c0, c2, 5)
++#define WCP14_DBGBCR3(val)		MCR14(val, 0, c0, c3, 5)
++#define WCP14_DBGBCR4(val)		MCR14(val, 0, c0, c4, 5)
++#define WCP14_DBGBCR5(val)		MCR14(val, 0, c0, c5, 5)
++#define WCP14_DBGBCR6(val)		MCR14(val, 0, c0, c6, 5)
++#define WCP14_DBGBCR7(val)		MCR14(val, 0, c0, c7, 5)
++#define WCP14_DBGBCR8(val)		MCR14(val, 0, c0, c8, 5)
++#define WCP14_DBGBCR9(val)		MCR14(val, 0, c0, c9, 5)
++#define WCP14_DBGBCR10(val)		MCR14(val, 0, c0, c10, 5)
++#define WCP14_DBGBCR11(val)		MCR14(val, 0, c0, c11, 5)
++#define WCP14_DBGBCR12(val)		MCR14(val, 0, c0, c12, 5)
++#define WCP14_DBGBCR13(val)		MCR14(val, 0, c0, c13, 5)
++#define WCP14_DBGBCR14(val)		MCR14(val, 0, c0, c14, 5)
++#define WCP14_DBGBCR15(val)		MCR14(val, 0, c0, c15, 5)
++#define WCP14_DBGWVR0(val)		MCR14(val, 0, c0, c0, 6)
++#define WCP14_DBGWVR1(val)		MCR14(val, 0, c0, c1, 6)
++#define WCP14_DBGWVR2(val)		MCR14(val, 0, c0, c2, 6)
++#define WCP14_DBGWVR3(val)		MCR14(val, 0, c0, c3, 6)
++#define WCP14_DBGWVR4(val)		MCR14(val, 0, c0, c4, 6)
++#define WCP14_DBGWVR5(val)		MCR14(val, 0, c0, c5, 6)
++#define WCP14_DBGWVR6(val)		MCR14(val, 0, c0, c6, 6)
++#define WCP14_DBGWVR7(val)		MCR14(val, 0, c0, c7, 6)
++#define WCP14_DBGWVR8(val)		MCR14(val, 0, c0, c8, 6)
++#define WCP14_DBGWVR9(val)		MCR14(val, 0, c0, c9, 6)
++#define WCP14_DBGWVR10(val)		MCR14(val, 0, c0, c10, 6)
++#define WCP14_DBGWVR11(val)		MCR14(val, 0, c0, c11, 6)
++#define WCP14_DBGWVR12(val)		MCR14(val, 0, c0, c12, 6)
++#define WCP14_DBGWVR13(val)		MCR14(val, 0, c0, c13, 6)
++#define WCP14_DBGWVR14(val)		MCR14(val, 0, c0, c14, 6)
++#define WCP14_DBGWVR15(val)		MCR14(val, 0, c0, c15, 6)
++#define WCP14_DBGWCR0(val)		MCR14(val, 0, c0, c0, 7)
++#define WCP14_DBGWCR1(val)		MCR14(val, 0, c0, c1, 7)
++#define WCP14_DBGWCR2(val)		MCR14(val, 0, c0, c2, 7)
++#define WCP14_DBGWCR3(val)		MCR14(val, 0, c0, c3, 7)
++#define WCP14_DBGWCR4(val)		MCR14(val, 0, c0, c4, 7)
++#define WCP14_DBGWCR5(val)		MCR14(val, 0, c0, c5, 7)
++#define WCP14_DBGWCR6(val)		MCR14(val, 0, c0, c6, 7)
++#define WCP14_DBGWCR7(val)		MCR14(val, 0, c0, c7, 7)
++#define WCP14_DBGWCR8(val)		MCR14(val, 0, c0, c8, 7)
++#define WCP14_DBGWCR9(val)		MCR14(val, 0, c0, c9, 7)
++#define WCP14_DBGWCR10(val)		MCR14(val, 0, c0, c10, 7)
++#define WCP14_DBGWCR11(val)		MCR14(val, 0, c0, c11, 7)
++#define WCP14_DBGWCR12(val)		MCR14(val, 0, c0, c12, 7)
++#define WCP14_DBGWCR13(val)		MCR14(val, 0, c0, c13, 7)
++#define WCP14_DBGWCR14(val)		MCR14(val, 0, c0, c14, 7)
++#define WCP14_DBGWCR15(val)		MCR14(val, 0, c0, c15, 7)
++#define WCP14_DBGBXVR0(val)		MCR14(val, 0, c1, c0, 1)
++#define WCP14_DBGBXVR1(val)		MCR14(val, 0, c1, c1, 1)
++#define WCP14_DBGBXVR2(val)		MCR14(val, 0, c1, c2, 1)
++#define WCP14_DBGBXVR3(val)		MCR14(val, 0, c1, c3, 1)
++#define WCP14_DBGBXVR4(val)		MCR14(val, 0, c1, c4, 1)
++#define WCP14_DBGBXVR5(val)		MCR14(val, 0, c1, c5, 1)
++#define WCP14_DBGBXVR6(val)		MCR14(val, 0, c1, c6, 1)
++#define WCP14_DBGBXVR7(val)		MCR14(val, 0, c1, c7, 1)
++#define WCP14_DBGBXVR8(val)		MCR14(val, 0, c1, c8, 1)
++#define WCP14_DBGBXVR9(val)		MCR14(val, 0, c1, c9, 1)
++#define WCP14_DBGBXVR10(val)		MCR14(val, 0, c1, c10, 1)
++#define WCP14_DBGBXVR11(val)		MCR14(val, 0, c1, c11, 1)
++#define WCP14_DBGBXVR12(val)		MCR14(val, 0, c1, c12, 1)
++#define WCP14_DBGBXVR13(val)		MCR14(val, 0, c1, c13, 1)
++#define WCP14_DBGBXVR14(val)		MCR14(val, 0, c1, c14, 1)
++#define WCP14_DBGBXVR15(val)		MCR14(val, 0, c1, c15, 1)
++#define WCP14_DBGOSLAR(val)		MCR14(val, 0, c1, c0, 4)
++#define WCP14_DBGOSSRR(val)		MCR14(val, 0, c1, c2, 4)
++#define WCP14_DBGOSDLR(val)		MCR14(val, 0, c1, c3, 4)
++#define WCP14_DBGPRCR(val)		MCR14(val, 0, c1, c4, 4)
++#define WCP14_DBGITCTRL(val)		MCR14(val, 0, c7, c0, 4)
++#define WCP14_DBGCLAIMSET(val)		MCR14(val, 0, c7, c8, 6)
++#define WCP14_DBGCLAIMCLR(val)		MCR14(val, 0, c7, c9, 6)
 +
-+static inline void CS_LOCK(void __iomem *addr)
-+{
-+	do {
-+		/* Wait for things to settle */
-+		mb();
-+		writel_relaxed(0x0, addr + CORESIGHT_LAR);
-+	} while (0);
-+}
++/*
++ * ETM Registers
++ *
++ * Available only in ETMv3.3, 3.4, 3.5
++ * ETMASICCR, ETMTECR2, ETMFFRR, ETMVDEVR, ETMVDCR1, ETMVDCR2, ETMVDCR3,
++ * ETMDCVRn, ETMDCMRn
++ *
++ * Available only in ETMv3.5 as read only
++ * ETMIDR2
++ *
++ * Available only in ETMv3.5, PFTv1.0, 1.1
++ * ETMTSEVR, ETMVMIDCVR, ETMPDCR
++ *
++ * Read only
++ * ETMCCR, ETMSCR, ETMIDR, ETMCCER, ETMOSLSR
++ * ETMLSR, ETMAUTHSTATUS, ETMDEVID, ETMDEVTYPE, ETMPIDR4, ETMPIDR5, ETMPIDR6,
++ * ETMPIDR7, ETMPIDR0, ETMPIDR1, ETMPIDR2, ETMPIDR2, ETMPIDR3, ETMCIDR0,
++ * ETMCIDR1, ETMCIDR2, ETMCIDR3
++ *
++ * Write only
++ * ETMOSLAR, ETMLAR
++ * Note: ETMCCER[11] controls WO nature of certain regs. Refer ETM arch spec.
++ */
++#define RCP14_ETMCR()			MRC14(1, c0, c0, 0)
++#define RCP14_ETMCCR()			MRC14(1, c0, c1, 0)
++#define RCP14_ETMTRIGGER()		MRC14(1, c0, c2, 0)
++#define RCP14_ETMASICCR()		MRC14(1, c0, c3, 0)
++#define RCP14_ETMSR()			MRC14(1, c0, c4, 0)
++#define RCP14_ETMSCR()			MRC14(1, c0, c5, 0)
++#define RCP14_ETMTSSCR()		MRC14(1, c0, c6, 0)
++#define RCP14_ETMTECR2()		MRC14(1, c0, c7, 0)
++#define RCP14_ETMTEEVR()		MRC14(1, c0, c8, 0)
++#define RCP14_ETMTECR1()		MRC14(1, c0, c9, 0)
++#define RCP14_ETMFFRR()			MRC14(1, c0, c10, 0)
++#define RCP14_ETMFFLR()			MRC14(1, c0, c11, 0)
++#define RCP14_ETMVDEVR()		MRC14(1, c0, c12, 0)
++#define RCP14_ETMVDCR1()		MRC14(1, c0, c13, 0)
++#define RCP14_ETMVDCR2()		MRC14(1, c0, c14, 0)
++#define RCP14_ETMVDCR3()		MRC14(1, c0, c15, 0)
++#define RCP14_ETMACVR0()		MRC14(1, c0, c0, 1)
++#define RCP14_ETMACVR1()		MRC14(1, c0, c1, 1)
++#define RCP14_ETMACVR2()		MRC14(1, c0, c2, 1)
++#define RCP14_ETMACVR3()		MRC14(1, c0, c3, 1)
++#define RCP14_ETMACVR4()		MRC14(1, c0, c4, 1)
++#define RCP14_ETMACVR5()		MRC14(1, c0, c5, 1)
++#define RCP14_ETMACVR6()		MRC14(1, c0, c6, 1)
++#define RCP14_ETMACVR7()		MRC14(1, c0, c7, 1)
++#define RCP14_ETMACVR8()		MRC14(1, c0, c8, 1)
++#define RCP14_ETMACVR9()		MRC14(1, c0, c9, 1)
++#define RCP14_ETMACVR10()		MRC14(1, c0, c10, 1)
++#define RCP14_ETMACVR11()		MRC14(1, c0, c11, 1)
++#define RCP14_ETMACVR12()		MRC14(1, c0, c12, 1)
++#define RCP14_ETMACVR13()		MRC14(1, c0, c13, 1)
++#define RCP14_ETMACVR14()		MRC14(1, c0, c14, 1)
++#define RCP14_ETMACVR15()		MRC14(1, c0, c15, 1)
++#define RCP14_ETMACTR0()		MRC14(1, c0, c0, 2)
++#define RCP14_ETMACTR1()		MRC14(1, c0, c1, 2)
++#define RCP14_ETMACTR2()		MRC14(1, c0, c2, 2)
++#define RCP14_ETMACTR3()		MRC14(1, c0, c3, 2)
++#define RCP14_ETMACTR4()		MRC14(1, c0, c4, 2)
++#define RCP14_ETMACTR5()		MRC14(1, c0, c5, 2)
++#define RCP14_ETMACTR6()		MRC14(1, c0, c6, 2)
++#define RCP14_ETMACTR7()		MRC14(1, c0, c7, 2)
++#define RCP14_ETMACTR8()		MRC14(1, c0, c8, 2)
++#define RCP14_ETMACTR9()		MRC14(1, c0, c9, 2)
++#define RCP14_ETMACTR10()		MRC14(1, c0, c10, 2)
++#define RCP14_ETMACTR11()		MRC14(1, c0, c11, 2)
++#define RCP14_ETMACTR12()		MRC14(1, c0, c12, 2)
++#define RCP14_ETMACTR13()		MRC14(1, c0, c13, 2)
++#define RCP14_ETMACTR14()		MRC14(1, c0, c14, 2)
++#define RCP14_ETMACTR15()		MRC14(1, c0, c15, 2)
++#define RCP14_ETMDCVR0()		MRC14(1, c0, c0, 3)
++#define RCP14_ETMDCVR2()		MRC14(1, c0, c2, 3)
++#define RCP14_ETMDCVR4()		MRC14(1, c0, c4, 3)
++#define RCP14_ETMDCVR6()		MRC14(1, c0, c6, 3)
++#define RCP14_ETMDCVR8()		MRC14(1, c0, c8, 3)
++#define RCP14_ETMDCVR10()		MRC14(1, c0, c10, 3)
++#define RCP14_ETMDCVR12()		MRC14(1, c0, c12, 3)
++#define RCP14_ETMDCVR14()		MRC14(1, c0, c14, 3)
++#define RCP14_ETMDCMR0()		MRC14(1, c0, c0, 4)
++#define RCP14_ETMDCMR2()		MRC14(1, c0, c2, 4)
++#define RCP14_ETMDCMR4()		MRC14(1, c0, c4, 4)
++#define RCP14_ETMDCMR6()		MRC14(1, c0, c6, 4)
++#define RCP14_ETMDCMR8()		MRC14(1, c0, c8, 4)
++#define RCP14_ETMDCMR10()		MRC14(1, c0, c10, 4)
++#define RCP14_ETMDCMR12()		MRC14(1, c0, c12, 4)
++#define RCP14_ETMDCMR14()		MRC14(1, c0, c14, 4)
++#define RCP14_ETMCNTRLDVR0()		MRC14(1, c0, c0, 5)
++#define RCP14_ETMCNTRLDVR1()		MRC14(1, c0, c1, 5)
++#define RCP14_ETMCNTRLDVR2()		MRC14(1, c0, c2, 5)
++#define RCP14_ETMCNTRLDVR3()		MRC14(1, c0, c3, 5)
++#define RCP14_ETMCNTENR0()		MRC14(1, c0, c4, 5)
++#define RCP14_ETMCNTENR1()		MRC14(1, c0, c5, 5)
++#define RCP14_ETMCNTENR2()		MRC14(1, c0, c6, 5)
++#define RCP14_ETMCNTENR3()		MRC14(1, c0, c7, 5)
++#define RCP14_ETMCNTRLDEVR0()		MRC14(1, c0, c8, 5)
++#define RCP14_ETMCNTRLDEVR1()		MRC14(1, c0, c9, 5)
++#define RCP14_ETMCNTRLDEVR2()		MRC14(1, c0, c10, 5)
++#define RCP14_ETMCNTRLDEVR3()		MRC14(1, c0, c11, 5)
++#define RCP14_ETMCNTVR0()		MRC14(1, c0, c12, 5)
++#define RCP14_ETMCNTVR1()		MRC14(1, c0, c13, 5)
++#define RCP14_ETMCNTVR2()		MRC14(1, c0, c14, 5)
++#define RCP14_ETMCNTVR3()		MRC14(1, c0, c15, 5)
++#define RCP14_ETMSQ12EVR()		MRC14(1, c0, c0, 6)
++#define RCP14_ETMSQ21EVR()		MRC14(1, c0, c1, 6)
++#define RCP14_ETMSQ23EVR()		MRC14(1, c0, c2, 6)
++#define RCP14_ETMSQ31EVR()		MRC14(1, c0, c3, 6)
++#define RCP14_ETMSQ32EVR()		MRC14(1, c0, c4, 6)
++#define RCP14_ETMSQ13EVR()		MRC14(1, c0, c5, 6)
++#define RCP14_ETMSQR()			MRC14(1, c0, c7, 6)
++#define RCP14_ETMEXTOUTEVR0()		MRC14(1, c0, c8, 6)
++#define RCP14_ETMEXTOUTEVR1()		MRC14(1, c0, c9, 6)
++#define RCP14_ETMEXTOUTEVR2()		MRC14(1, c0, c10, 6)
++#define RCP14_ETMEXTOUTEVR3()		MRC14(1, c0, c11, 6)
++#define RCP14_ETMCIDCVR0()		MRC14(1, c0, c12, 6)
++#define RCP14_ETMCIDCVR1()		MRC14(1, c0, c13, 6)
++#define RCP14_ETMCIDCVR2()		MRC14(1, c0, c14, 6)
++#define RCP14_ETMCIDCMR()		MRC14(1, c0, c15, 6)
++#define RCP14_ETMIMPSPEC0()		MRC14(1, c0, c0, 7)
++#define RCP14_ETMIMPSPEC1()		MRC14(1, c0, c1, 7)
++#define RCP14_ETMIMPSPEC2()		MRC14(1, c0, c2, 7)
++#define RCP14_ETMIMPSPEC3()		MRC14(1, c0, c3, 7)
++#define RCP14_ETMIMPSPEC4()		MRC14(1, c0, c4, 7)
++#define RCP14_ETMIMPSPEC5()		MRC14(1, c0, c5, 7)
++#define RCP14_ETMIMPSPEC6()		MRC14(1, c0, c6, 7)
++#define RCP14_ETMIMPSPEC7()		MRC14(1, c0, c7, 7)
++#define RCP14_ETMSYNCFR()		MRC14(1, c0, c8, 7)
++#define RCP14_ETMIDR()			MRC14(1, c0, c9, 7)
++#define RCP14_ETMCCER()			MRC14(1, c0, c10, 7)
++#define RCP14_ETMEXTINSELR()		MRC14(1, c0, c11, 7)
++#define RCP14_ETMTESSEICR()		MRC14(1, c0, c12, 7)
++#define RCP14_ETMEIBCR()		MRC14(1, c0, c13, 7)
++#define RCP14_ETMTSEVR()		MRC14(1, c0, c14, 7)
++#define RCP14_ETMAUXCR()		MRC14(1, c0, c15, 7)
++#define RCP14_ETMTRACEIDR()		MRC14(1, c1, c0, 0)
++#define RCP14_ETMIDR2()			MRC14(1, c1, c2, 0)
++#define RCP14_ETMVMIDCVR()		MRC14(1, c1, c0, 1)
++#define RCP14_ETMOSLSR()		MRC14(1, c1, c1, 4)
++/* Not available in PFTv1.1 */
++#define RCP14_ETMOSSRR()		MRC14(1, c1, c2, 4)
++#define RCP14_ETMPDCR()			MRC14(1, c1, c4, 4)
++#define RCP14_ETMPDSR()			MRC14(1, c1, c5, 4)
++#define RCP14_ETMITCTRL()		MRC14(1, c7, c0, 4)
++#define RCP14_ETMCLAIMSET()		MRC14(1, c7, c8, 6)
++#define RCP14_ETMCLAIMCLR()		MRC14(1, c7, c9, 6)
++#define RCP14_ETMLSR()			MRC14(1, c7, c13, 6)
++#define RCP14_ETMAUTHSTATUS()		MRC14(1, c7, c14, 6)
++#define RCP14_ETMDEVID()		MRC14(1, c7, c2, 7)
++#define RCP14_ETMDEVTYPE()		MRC14(1, c7, c3, 7)
++#define RCP14_ETMPIDR4()		MRC14(1, c7, c4, 7)
++#define RCP14_ETMPIDR5()		MRC14(1, c7, c5, 7)
++#define RCP14_ETMPIDR6()		MRC14(1, c7, c6, 7)
++#define RCP14_ETMPIDR7()		MRC14(1, c7, c7, 7)
++#define RCP14_ETMPIDR0()		MRC14(1, c7, c8, 7)
++#define RCP14_ETMPIDR1()		MRC14(1, c7, c9, 7)
++#define RCP14_ETMPIDR2()		MRC14(1, c7, c10, 7)
++#define RCP14_ETMPIDR3()		MRC14(1, c7, c11, 7)
++#define RCP14_ETMCIDR0()		MRC14(1, c7, c12, 7)
++#define RCP14_ETMCIDR1()		MRC14(1, c7, c13, 7)
++#define RCP14_ETMCIDR2()		MRC14(1, c7, c14, 7)
++#define RCP14_ETMCIDR3()		MRC14(1, c7, c15, 7)
 +
-+static inline void CS_UNLOCK(void __iomem *addr)
-+{
-+	do {
-+		writel_relaxed(CORESIGHT_UNLOCK, addr + CORESIGHT_LAR);
-+		/* Make sure eveyone has seen this */
-+		mb();
-+	} while (0);
-+}
++#define WCP14_ETMCR(val)		MCR14(val, 1, c0, c0, 0)
++#define WCP14_ETMTRIGGER(val)		MCR14(val, 1, c0, c2, 0)
++#define WCP14_ETMASICCR(val)		MCR14(val, 1, c0, c3, 0)
++#define WCP14_ETMSR(val)		MCR14(val, 1, c0, c4, 0)
++#define WCP14_ETMTSSCR(val)		MCR14(val, 1, c0, c6, 0)
++#define WCP14_ETMTECR2(val)		MCR14(val, 1, c0, c7, 0)
++#define WCP14_ETMTEEVR(val)		MCR14(val, 1, c0, c8, 0)
++#define WCP14_ETMTECR1(val)		MCR14(val, 1, c0, c9, 0)
++#define WCP14_ETMFFRR(val)		MCR14(val, 1, c0, c10, 0)
++#define WCP14_ETMFFLR(val)		MCR14(val, 1, c0, c11, 0)
++#define WCP14_ETMVDEVR(val)		MCR14(val, 1, c0, c12, 0)
++#define WCP14_ETMVDCR1(val)		MCR14(val, 1, c0, c13, 0)
++#define WCP14_ETMVDCR2(val)		MCR14(val, 1, c0, c14, 0)
++#define WCP14_ETMVDCR3(val)		MCR14(val, 1, c0, c15, 0)
++#define WCP14_ETMACVR0(val)		MCR14(val, 1, c0, c0, 1)
++#define WCP14_ETMACVR1(val)		MCR14(val, 1, c0, c1, 1)
++#define WCP14_ETMACVR2(val)		MCR14(val, 1, c0, c2, 1)
++#define WCP14_ETMACVR3(val)		MCR14(val, 1, c0, c3, 1)
++#define WCP14_ETMACVR4(val)		MCR14(val, 1, c0, c4, 1)
++#define WCP14_ETMACVR5(val)		MCR14(val, 1, c0, c5, 1)
++#define WCP14_ETMACVR6(val)		MCR14(val, 1, c0, c6, 1)
++#define WCP14_ETMACVR7(val)		MCR14(val, 1, c0, c7, 1)
++#define WCP14_ETMACVR8(val)		MCR14(val, 1, c0, c8, 1)
++#define WCP14_ETMACVR9(val)		MCR14(val, 1, c0, c9, 1)
++#define WCP14_ETMACVR10(val)		MCR14(val, 1, c0, c10, 1)
++#define WCP14_ETMACVR11(val)		MCR14(val, 1, c0, c11, 1)
++#define WCP14_ETMACVR12(val)		MCR14(val, 1, c0, c12, 1)
++#define WCP14_ETMACVR13(val)		MCR14(val, 1, c0, c13, 1)
++#define WCP14_ETMACVR14(val)		MCR14(val, 1, c0, c14, 1)
++#define WCP14_ETMACVR15(val)		MCR14(val, 1, c0, c15, 1)
++#define WCP14_ETMACTR0(val)		MCR14(val, 1, c0, c0, 2)
++#define WCP14_ETMACTR1(val)		MCR14(val, 1, c0, c1, 2)
++#define WCP14_ETMACTR2(val)		MCR14(val, 1, c0, c2, 2)
++#define WCP14_ETMACTR3(val)		MCR14(val, 1, c0, c3, 2)
++#define WCP14_ETMACTR4(val)		MCR14(val, 1, c0, c4, 2)
++#define WCP14_ETMACTR5(val)		MCR14(val, 1, c0, c5, 2)
++#define WCP14_ETMACTR6(val)		MCR14(val, 1, c0, c6, 2)
++#define WCP14_ETMACTR7(val)		MCR14(val, 1, c0, c7, 2)
++#define WCP14_ETMACTR8(val)		MCR14(val, 1, c0, c8, 2)
++#define WCP14_ETMACTR9(val)		MCR14(val, 1, c0, c9, 2)
++#define WCP14_ETMACTR10(val)		MCR14(val, 1, c0, c10, 2)
++#define WCP14_ETMACTR11(val)		MCR14(val, 1, c0, c11, 2)
++#define WCP14_ETMACTR12(val)		MCR14(val, 1, c0, c12, 2)
++#define WCP14_ETMACTR13(val)		MCR14(val, 1, c0, c13, 2)
++#define WCP14_ETMACTR14(val)		MCR14(val, 1, c0, c14, 2)
++#define WCP14_ETMACTR15(val)		MCR14(val, 1, c0, c15, 2)
++#define WCP14_ETMDCVR0(val)		MCR14(val, 1, c0, c0, 3)
++#define WCP14_ETMDCVR2(val)		MCR14(val, 1, c0, c2, 3)
++#define WCP14_ETMDCVR4(val)		MCR14(val, 1, c0, c4, 3)
++#define WCP14_ETMDCVR6(val)		MCR14(val, 1, c0, c6, 3)
++#define WCP14_ETMDCVR8(val)		MCR14(val, 1, c0, c8, 3)
++#define WCP14_ETMDCVR10(val)		MCR14(val, 1, c0, c10, 3)
++#define WCP14_ETMDCVR12(val)		MCR14(val, 1, c0, c12, 3)
++#define WCP14_ETMDCVR14(val)		MCR14(val, 1, c0, c14, 3)
++#define WCP14_ETMDCMR0(val)		MCR14(val, 1, c0, c0, 4)
++#define WCP14_ETMDCMR2(val)		MCR14(val, 1, c0, c2, 4)
++#define WCP14_ETMDCMR4(val)		MCR14(val, 1, c0, c4, 4)
++#define WCP14_ETMDCMR6(val)		MCR14(val, 1, c0, c6, 4)
++#define WCP14_ETMDCMR8(val)		MCR14(val, 1, c0, c8, 4)
++#define WCP14_ETMDCMR10(val)		MCR14(val, 1, c0, c10, 4)
++#define WCP14_ETMDCMR12(val)		MCR14(val, 1, c0, c12, 4)
++#define WCP14_ETMDCMR14(val)		MCR14(val, 1, c0, c14, 4)
++#define WCP14_ETMCNTRLDVR0(val)		MCR14(val, 1, c0, c0, 5)
++#define WCP14_ETMCNTRLDVR1(val)		MCR14(val, 1, c0, c1, 5)
++#define WCP14_ETMCNTRLDVR2(val)		MCR14(val, 1, c0, c2, 5)
++#define WCP14_ETMCNTRLDVR3(val)		MCR14(val, 1, c0, c3, 5)
++#define WCP14_ETMCNTENR0(val)		MCR14(val, 1, c0, c4, 5)
++#define WCP14_ETMCNTENR1(val)		MCR14(val, 1, c0, c5, 5)
++#define WCP14_ETMCNTENR2(val)		MCR14(val, 1, c0, c6, 5)
++#define WCP14_ETMCNTENR3(val)		MCR14(val, 1, c0, c7, 5)
++#define WCP14_ETMCNTRLDEVR0(val)	MCR14(val, 1, c0, c8, 5)
++#define WCP14_ETMCNTRLDEVR1(val)	MCR14(val, 1, c0, c9, 5)
++#define WCP14_ETMCNTRLDEVR2(val)	MCR14(val, 1, c0, c10, 5)
++#define WCP14_ETMCNTRLDEVR3(val)	MCR14(val, 1, c0, c11, 5)
++#define WCP14_ETMCNTVR0(val)		MCR14(val, 1, c0, c12, 5)
++#define WCP14_ETMCNTVR1(val)		MCR14(val, 1, c0, c13, 5)
++#define WCP14_ETMCNTVR2(val)		MCR14(val, 1, c0, c14, 5)
++#define WCP14_ETMCNTVR3(val)		MCR14(val, 1, c0, c15, 5)
++#define WCP14_ETMSQ12EVR(val)		MCR14(val, 1, c0, c0, 6)
++#define WCP14_ETMSQ21EVR(val)		MCR14(val, 1, c0, c1, 6)
++#define WCP14_ETMSQ23EVR(val)		MCR14(val, 1, c0, c2, 6)
++#define WCP14_ETMSQ31EVR(val)		MCR14(val, 1, c0, c3, 6)
++#define WCP14_ETMSQ32EVR(val)		MCR14(val, 1, c0, c4, 6)
++#define WCP14_ETMSQ13EVR(val)		MCR14(val, 1, c0, c5, 6)
++#define WCP14_ETMSQR(val)		MCR14(val, 1, c0, c7, 6)
++#define WCP14_ETMEXTOUTEVR0(val)	MCR14(val, 1, c0, c8, 6)
++#define WCP14_ETMEXTOUTEVR1(val)	MCR14(val, 1, c0, c9, 6)
++#define WCP14_ETMEXTOUTEVR2(val)	MCR14(val, 1, c0, c10, 6)
++#define WCP14_ETMEXTOUTEVR3(val)	MCR14(val, 1, c0, c11, 6)
++#define WCP14_ETMCIDCVR0(val)		MCR14(val, 1, c0, c12, 6)
++#define WCP14_ETMCIDCVR1(val)		MCR14(val, 1, c0, c13, 6)
++#define WCP14_ETMCIDCVR2(val)		MCR14(val, 1, c0, c14, 6)
++#define WCP14_ETMCIDCMR(val)		MCR14(val, 1, c0, c15, 6)
++#define WCP14_ETMIMPSPEC0(val)		MCR14(val, 1, c0, c0, 7)
++#define WCP14_ETMIMPSPEC1(val)		MCR14(val, 1, c0, c1, 7)
++#define WCP14_ETMIMPSPEC2(val)		MCR14(val, 1, c0, c2, 7)
++#define WCP14_ETMIMPSPEC3(val)		MCR14(val, 1, c0, c3, 7)
++#define WCP14_ETMIMPSPEC4(val)		MCR14(val, 1, c0, c4, 7)
++#define WCP14_ETMIMPSPEC5(val)		MCR14(val, 1, c0, c5, 7)
++#define WCP14_ETMIMPSPEC6(val)		MCR14(val, 1, c0, c6, 7)
++#define WCP14_ETMIMPSPEC7(val)		MCR14(val, 1, c0, c7, 7)
++/* Can be read only in ETMv3.4, ETMv3.5 */
++#define WCP14_ETMSYNCFR(val)		MCR14(val, 1, c0, c8, 7)
++#define WCP14_ETMEXTINSELR(val)		MCR14(val, 1, c0, c11, 7)
++#define WCP14_ETMTESSEICR(val)		MCR14(val, 1, c0, c12, 7)
++#define WCP14_ETMEIBCR(val)		MCR14(val, 1, c0, c13, 7)
++#define WCP14_ETMTSEVR(val)		MCR14(val, 1, c0, c14, 7)
++#define WCP14_ETMAUXCR(val)		MCR14(val, 1, c0, c15, 7)
++#define WCP14_ETMTRACEIDR(val)		MCR14(val, 1, c1, c0, 0)
++#define WCP14_ETMIDR2(val)		MCR14(val, 1, c1, c2, 0)
++#define WCP14_ETMVMIDCVR(val)		MCR14(val, 1, c1, c0, 1)
++#define WCP14_ETMOSLAR(val)		MCR14(val, 1, c1, c0, 4)
++/* Not available in PFTv1.1 */
++#define WCP14_ETMOSSRR(val)		MCR14(val, 1, c1, c2, 4)
++#define WCP14_ETMPDCR(val)		MCR14(val, 1, c1, c4, 4)
++#define WCP14_ETMPDSR(val)		MCR14(val, 1, c1, c5, 4)
++#define WCP14_ETMITCTRL(val)		MCR14(val, 1, c7, c0, 4)
++#define WCP14_ETMCLAIMSET(val)		MCR14(val, 1, c7, c8, 6)
++#define WCP14_ETMCLAIMCLR(val)		MCR14(val, 1, c7, c9, 6)
++/* Writes to this from CP14 interface are ignored */
++#define WCP14_ETMLAR(val)		MCR14(val, 1, c7, c12, 6)
 +
-+#ifdef CONFIG_CORESIGHT_SOURCE_ETM3X
-+extern int etm_readl_cp14(u32 off, unsigned int *val);
-+extern int etm_writel_cp14(u32 off, u32 val);
-+#else
-+static inline int etm_readl_cp14(u32 off, unsigned int *val) { return 0; }
-+static inline int etm_writel_cp14(u32 val, u32 off) { return 0; }
 +#endif
-+
-+#endif
-diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
+diff --git a/drivers/coresight/Makefile b/drivers/coresight/Makefile
+index 3a32c06..fef87bc 100644
+--- a/drivers/coresight/Makefile
++++ b/drivers/coresight/Makefile
+@@ -6,3 +6,4 @@ obj-$(CONFIG_OF) += of_coresight.o
+ obj-$(CONFIG_CORESIGHT_LINKS_AND_SINKS) += coresight-tmc.o coresight-tpiu.o \
+ 					   coresight-etb10.o coresight-funnel.o \
+ 					   coresight-replicator.o
++obj-$(CONFIG_CORESIGHT_SOURCE_ETM3X) += coresight-etm3x.o coresight-etm-cp14.o
+diff --git a/drivers/coresight/coresight-etm-cp14.c b/drivers/coresight/coresight-etm-cp14.c
 new file mode 100644
-index 0000000..6e0181f
+index 0000000..12a2206
 --- /dev/null
-+++ b/drivers/coresight/coresight.c
-@@ -0,0 +1,717 @@
++++ b/drivers/coresight/coresight-etm-cp14.c
+@@ -0,0 +1,591 @@
 +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/bug.h>
++#include <asm/hardware/cp14.h>
++
++#include "coresight-etm.h"
++
++int etm_readl_cp14(u32 reg, unsigned int *val)
++{
++	switch (reg) {
++	case ETMCR:
++		*val = etm_read(ETMCR);
++		return 0;
++	case ETMCCR:
++		*val = etm_read(ETMCCR);
++		return 0;
++	case ETMTRIGGER:
++		*val = etm_read(ETMTRIGGER);
++		return 0;
++	case ETMSR:
++		*val = etm_read(ETMSR);
++		return 0;
++	case ETMSCR:
++		*val = etm_read(ETMSCR);
++		return 0;
++	case ETMTSSCR:
++		*val = etm_read(ETMTSSCR);
++		return 0;
++	case ETMTEEVR:
++		*val = etm_read(ETMTEEVR);
++		return 0;
++	case ETMTECR1:
++		*val = etm_read(ETMTECR1);
++		return 0;
++	case ETMFFLR:
++		*val = etm_read(ETMFFLR);
++		return 0;
++	case ETMACVRn(0):
++		*val = etm_read(ETMACVR0);
++		return 0;
++	case ETMACVRn(1):
++		*val = etm_read(ETMACVR1);
++		return 0;
++	case ETMACVRn(2):
++		*val = etm_read(ETMACVR2);
++		return 0;
++	case ETMACVRn(3):
++		*val = etm_read(ETMACVR3);
++		return 0;
++	case ETMACVRn(4):
++		*val = etm_read(ETMACVR4);
++		return 0;
++	case ETMACVRn(5):
++		*val = etm_read(ETMACVR5);
++		return 0;
++	case ETMACVRn(6):
++		*val = etm_read(ETMACVR6);
++		return 0;
++	case ETMACVRn(7):
++		*val = etm_read(ETMACVR7);
++		return 0;
++	case ETMACVRn(8):
++		*val = etm_read(ETMACVR8);
++		return 0;
++	case ETMACVRn(9):
++		*val = etm_read(ETMACVR9);
++		return 0;
++	case ETMACVRn(10):
++		*val = etm_read(ETMACVR10);
++		return 0;
++	case ETMACVRn(11):
++		*val = etm_read(ETMACVR11);
++		return 0;
++	case ETMACVRn(12):
++		*val = etm_read(ETMACVR12);
++		return 0;
++	case ETMACVRn(13):
++		*val = etm_read(ETMACVR13);
++		return 0;
++	case ETMACVRn(14):
++		*val = etm_read(ETMACVR14);
++		return 0;
++	case ETMACVRn(15):
++		*val = etm_read(ETMACVR15);
++		return 0;
++	case ETMACTRn(0):
++		*val = etm_read(ETMACTR0);
++		return 0;
++	case ETMACTRn(1):
++		*val = etm_read(ETMACTR1);
++		return 0;
++	case ETMACTRn(2):
++		*val = etm_read(ETMACTR2);
++		return 0;
++	case ETMACTRn(3):
++		*val = etm_read(ETMACTR3);
++		return 0;
++	case ETMACTRn(4):
++		*val = etm_read(ETMACTR4);
++		return 0;
++	case ETMACTRn(5):
++		*val = etm_read(ETMACTR5);
++		return 0;
++	case ETMACTRn(6):
++		*val = etm_read(ETMACTR6);
++		return 0;
++	case ETMACTRn(7):
++		*val = etm_read(ETMACTR7);
++		return 0;
++	case ETMACTRn(8):
++		*val = etm_read(ETMACTR8);
++		return 0;
++	case ETMACTRn(9):
++		*val = etm_read(ETMACTR9);
++		return 0;
++	case ETMACTRn(10):
++		*val = etm_read(ETMACTR10);
++		return 0;
++	case ETMACTRn(11):
++		*val = etm_read(ETMACTR11);
++		return 0;
++	case ETMACTRn(12):
++		*val = etm_read(ETMACTR12);
++		return 0;
++	case ETMACTRn(13):
++		*val = etm_read(ETMACTR13);
++		return 0;
++	case ETMACTRn(14):
++		*val = etm_read(ETMACTR14);
++		return 0;
++	case ETMACTRn(15):
++		*val = etm_read(ETMACTR15);
++		return 0;
++	case ETMCNTRLDVRn(0):
++		*val = etm_read(ETMCNTRLDVR0);
++		return 0;
++	case ETMCNTRLDVRn(1):
++		*val = etm_read(ETMCNTRLDVR1);
++		return 0;
++	case ETMCNTRLDVRn(2):
++		*val = etm_read(ETMCNTRLDVR2);
++		return 0;
++	case ETMCNTRLDVRn(3):
++		*val = etm_read(ETMCNTRLDVR3);
++		return 0;
++	case ETMCNTENRn(0):
++		*val = etm_read(ETMCNTENR0);
++		return 0;
++	case ETMCNTENRn(1):
++		*val = etm_read(ETMCNTENR1);
++		return 0;
++	case ETMCNTENRn(2):
++		*val = etm_read(ETMCNTENR2);
++		return 0;
++	case ETMCNTENRn(3):
++		*val = etm_read(ETMCNTENR3);
++		return 0;
++	case ETMCNTRLDEVRn(0):
++		*val = etm_read(ETMCNTRLDEVR0);
++		return 0;
++	case ETMCNTRLDEVRn(1):
++		*val = etm_read(ETMCNTRLDEVR1);
++		return 0;
++	case ETMCNTRLDEVRn(2):
++		*val = etm_read(ETMCNTRLDEVR2);
++		return 0;
++	case ETMCNTRLDEVRn(3):
++		*val = etm_read(ETMCNTRLDEVR3);
++		return 0;
++	case ETMCNTVRn(0):
++		*val = etm_read(ETMCNTVR0);
++		return 0;
++	case ETMCNTVRn(1):
++		*val = etm_read(ETMCNTVR1);
++		return 0;
++	case ETMCNTVRn(2):
++		*val = etm_read(ETMCNTVR2);
++		return 0;
++	case ETMCNTVRn(3):
++		*val = etm_read(ETMCNTVR3);
++		return 0;
++	case ETMSQ12EVR:
++		*val = etm_read(ETMSQ12EVR);
++		return 0;
++	case ETMSQ21EVR:
++		*val = etm_read(ETMSQ21EVR);
++		return 0;
++	case ETMSQ23EVR:
++		*val = etm_read(ETMSQ23EVR);
++		return 0;
++	case ETMSQ31EVR:
++		*val = etm_read(ETMSQ31EVR);
++		return 0;
++	case ETMSQ32EVR:
++		*val = etm_read(ETMSQ32EVR);
++		return 0;
++	case ETMSQ13EVR:
++		*val = etm_read(ETMSQ13EVR);
++		return 0;
++	case ETMSQR:
++		*val = etm_read(ETMSQR);
++		return 0;
++	case ETMEXTOUTEVRn(0):
++		*val = etm_read(ETMEXTOUTEVR0);
++		return 0;
++	case ETMEXTOUTEVRn(1):
++		*val = etm_read(ETMEXTOUTEVR1);
++		return 0;
++	case ETMEXTOUTEVRn(2):
++		*val = etm_read(ETMEXTOUTEVR2);
++		return 0;
++	case ETMEXTOUTEVRn(3):
++		*val = etm_read(ETMEXTOUTEVR3);
++		return 0;
++	case ETMCIDCVRn(0):
++		*val = etm_read(ETMCIDCVR0);
++		return 0;
++	case ETMCIDCVRn(1):
++		*val = etm_read(ETMCIDCVR1);
++		return 0;
++	case ETMCIDCVRn(2):
++		*val = etm_read(ETMCIDCVR2);
++		return 0;
++	case ETMCIDCMR:
++		*val = etm_read(ETMCIDCMR);
++		return 0;
++	case ETMIMPSPEC0:
++		*val = etm_read(ETMIMPSPEC0);
++		return 0;
++	case ETMIMPSPEC1:
++		*val = etm_read(ETMIMPSPEC1);
++		return 0;
++	case ETMIMPSPEC2:
++		*val = etm_read(ETMIMPSPEC2);
++		return 0;
++	case ETMIMPSPEC3:
++		*val = etm_read(ETMIMPSPEC3);
++		return 0;
++	case ETMIMPSPEC4:
++		*val = etm_read(ETMIMPSPEC4);
++		return 0;
++	case ETMIMPSPEC5:
++		*val = etm_read(ETMIMPSPEC5);
++		return 0;
++	case ETMIMPSPEC6:
++		*val = etm_read(ETMIMPSPEC6);
++		return 0;
++	case ETMIMPSPEC7:
++		*val = etm_read(ETMIMPSPEC7);
++		return 0;
++	case ETMSYNCFR:
++		*val = etm_read(ETMSYNCFR);
++		return 0;
++	case ETMIDR:
++		*val = etm_read(ETMIDR);
++		return 0;
++	case ETMCCER:
++		*val = etm_read(ETMCCER);
++		return 0;
++	case ETMEXTINSELR:
++		*val = etm_read(ETMEXTINSELR);
++		return 0;
++	case ETMTESSEICR:
++		*val = etm_read(ETMTESSEICR);
++		return 0;
++	case ETMEIBCR:
++		*val = etm_read(ETMEIBCR);
++		return 0;
++	case ETMTSEVR:
++		*val = etm_read(ETMTSEVR);
++		return 0;
++	case ETMAUXCR:
++		*val = etm_read(ETMAUXCR);
++		return 0;
++	case ETMTRACEIDR:
++		*val = etm_read(ETMTRACEIDR);
++		return 0;
++	case ETMVMIDCVR:
++		*val = etm_read(ETMVMIDCVR);
++		return 0;
++	case ETMOSLSR:
++		*val = etm_read(ETMOSLSR);
++		return 0;
++	case ETMOSSRR:
++		*val = etm_read(ETMOSSRR);
++		return 0;
++	case ETMPDCR:
++		*val = etm_read(ETMPDCR);
++		return 0;
++	case ETMPDSR:
++		*val = etm_read(ETMPDSR);
++		return 0;
++	default:
++		*val = 0;
++		return -EINVAL;
++	}
++}
++
++int etm_writel_cp14(u32 reg, u32 val)
++{
++	switch (reg) {
++	case ETMCR:
++		etm_write(val, ETMCR);
++		break;
++	case ETMTRIGGER:
++		etm_write(val, ETMTRIGGER);
++		break;
++	case ETMSR:
++		etm_write(val, ETMSR);
++		break;
++	case ETMTSSCR:
++		etm_write(val, ETMTSSCR);
++		break;
++	case ETMTEEVR:
++		etm_write(val, ETMTEEVR);
++		break;
++	case ETMTECR1:
++		etm_write(val, ETMTECR1);
++		break;
++	case ETMFFLR:
++		etm_write(val, ETMFFLR);
++		break;
++	case ETMACVRn(0):
++		etm_write(val, ETMACVR0);
++		break;
++	case ETMACVRn(1):
++		etm_write(val, ETMACVR1);
++		break;
++	case ETMACVRn(2):
++		etm_write(val, ETMACVR2);
++		break;
++	case ETMACVRn(3):
++		etm_write(val, ETMACVR3);
++		break;
++	case ETMACVRn(4):
++		etm_write(val, ETMACVR4);
++		break;
++	case ETMACVRn(5):
++		etm_write(val, ETMACVR5);
++		break;
++	case ETMACVRn(6):
++		etm_write(val, ETMACVR6);
++		break;
++	case ETMACVRn(7):
++		etm_write(val, ETMACVR7);
++		break;
++	case ETMACVRn(8):
++		etm_write(val, ETMACVR8);
++		break;
++	case ETMACVRn(9):
++		etm_write(val, ETMACVR9);
++		break;
++	case ETMACVRn(10):
++		etm_write(val, ETMACVR10);
++		break;
++	case ETMACVRn(11):
++		etm_write(val, ETMACVR11);
++		break;
++	case ETMACVRn(12):
++		etm_write(val, ETMACVR12);
++		break;
++	case ETMACVRn(13):
++		etm_write(val, ETMACVR13);
++		break;
++	case ETMACVRn(14):
++		etm_write(val, ETMACVR14);
++		break;
++	case ETMACVRn(15):
++		etm_write(val, ETMACVR15);
++		break;
++	case ETMACTRn(0):
++		etm_write(val, ETMACTR0);
++		break;
++	case ETMACTRn(1):
++		etm_write(val, ETMACTR1);
++		break;
++	case ETMACTRn(2):
++		etm_write(val, ETMACTR2);
++		break;
++	case ETMACTRn(3):
++		etm_write(val, ETMACTR3);
++		break;
++	case ETMACTRn(4):
++		etm_write(val, ETMACTR4);
++		break;
++	case ETMACTRn(5):
++		etm_write(val, ETMACTR5);
++		break;
++	case ETMACTRn(6):
++		etm_write(val, ETMACTR6);
++		break;
++	case ETMACTRn(7):
++		etm_write(val, ETMACTR7);
++		break;
++	case ETMACTRn(8):
++		etm_write(val, ETMACTR8);
++		break;
++	case ETMACTRn(9):
++		etm_write(val, ETMACTR9);
++		break;
++	case ETMACTRn(10):
++		etm_write(val, ETMACTR10);
++		break;
++	case ETMACTRn(11):
++		etm_write(val, ETMACTR11);
++		break;
++	case ETMACTRn(12):
++		etm_write(val, ETMACTR12);
++		break;
++	case ETMACTRn(13):
++		etm_write(val, ETMACTR13);
++		break;
++	case ETMACTRn(14):
++		etm_write(val, ETMACTR14);
++		break;
++	case ETMACTRn(15):
++		etm_write(val, ETMACTR15);
++		break;
++	case ETMCNTRLDVRn(0):
++		etm_write(val, ETMCNTRLDVR0);
++		break;
++	case ETMCNTRLDVRn(1):
++		etm_write(val, ETMCNTRLDVR1);
++		break;
++	case ETMCNTRLDVRn(2):
++		etm_write(val, ETMCNTRLDVR2);
++		break;
++	case ETMCNTRLDVRn(3):
++		etm_write(val, ETMCNTRLDVR3);
++		break;
++	case ETMCNTENRn(0):
++		etm_write(val, ETMCNTENR0);
++		break;
++	case ETMCNTENRn(1):
++		etm_write(val, ETMCNTENR1);
++		break;
++	case ETMCNTENRn(2):
++		etm_write(val, ETMCNTENR2);
++		break;
++	case ETMCNTENRn(3):
++		etm_write(val, ETMCNTENR3);
++		break;
++	case ETMCNTRLDEVRn(0):
++		etm_write(val, ETMCNTRLDEVR0);
++		break;
++	case ETMCNTRLDEVRn(1):
++		etm_write(val, ETMCNTRLDEVR1);
++		break;
++	case ETMCNTRLDEVRn(2):
++		etm_write(val, ETMCNTRLDEVR2);
++		break;
++	case ETMCNTRLDEVRn(3):
++		etm_write(val, ETMCNTRLDEVR3);
++		break;
++	case ETMCNTVRn(0):
++		etm_write(val, ETMCNTVR0);
++		break;
++	case ETMCNTVRn(1):
++		etm_write(val, ETMCNTVR1);
++		break;
++	case ETMCNTVRn(2):
++		etm_write(val, ETMCNTVR2);
++		break;
++	case ETMCNTVRn(3):
++		etm_write(val, ETMCNTVR3);
++		break;
++	case ETMSQ12EVR:
++		etm_write(val, ETMSQ12EVR);
++		break;
++	case ETMSQ21EVR:
++		etm_write(val, ETMSQ21EVR);
++		break;
++	case ETMSQ23EVR:
++		etm_write(val, ETMSQ23EVR);
++		break;
++	case ETMSQ31EVR:
++		etm_write(val, ETMSQ31EVR);
++		break;
++	case ETMSQ32EVR:
++		etm_write(val, ETMSQ32EVR);
++		break;
++	case ETMSQ13EVR:
++		etm_write(val, ETMSQ13EVR);
++		break;
++	case ETMSQR:
++		etm_write(val, ETMSQR);
++		break;
++	case ETMEXTOUTEVRn(0):
++		etm_write(val, ETMEXTOUTEVR0);
++		break;
++	case ETMEXTOUTEVRn(1):
++		etm_write(val, ETMEXTOUTEVR1);
++		break;
++	case ETMEXTOUTEVRn(2):
++		etm_write(val, ETMEXTOUTEVR2);
++		break;
++	case ETMEXTOUTEVRn(3):
++		etm_write(val, ETMEXTOUTEVR3);
++		break;
++	case ETMCIDCVRn(0):
++		etm_write(val, ETMCIDCVR0);
++		break;
++	case ETMCIDCVRn(1):
++		etm_write(val, ETMCIDCVR1);
++		break;
++	case ETMCIDCVRn(2):
++		etm_write(val, ETMCIDCVR2);
++		break;
++	case ETMCIDCMR:
++		etm_write(val, ETMCIDCMR);
++		break;
++	case ETMIMPSPEC0:
++		etm_write(val, ETMIMPSPEC0);
++		break;
++	case ETMIMPSPEC1:
++		etm_write(val, ETMIMPSPEC1);
++		break;
++	case ETMIMPSPEC2:
++		etm_write(val, ETMIMPSPEC2);
++		break;
++	case ETMIMPSPEC3:
++		etm_write(val, ETMIMPSPEC3);
++		break;
++	case ETMIMPSPEC4:
++		etm_write(val, ETMIMPSPEC4);
++		break;
++	case ETMIMPSPEC5:
++		etm_write(val, ETMIMPSPEC5);
++		break;
++	case ETMIMPSPEC6:
++		etm_write(val, ETMIMPSPEC6);
++		break;
++	case ETMIMPSPEC7:
++		etm_write(val, ETMIMPSPEC7);
++		break;
++	case ETMSYNCFR:
++		etm_write(val, ETMSYNCFR);
++		break;
++	case ETMEXTINSELR:
++		etm_write(val, ETMEXTINSELR);
++		break;
++	case ETMTESSEICR:
++		etm_write(val, ETMTESSEICR);
++		break;
++	case ETMEIBCR:
++		etm_write(val, ETMEIBCR);
++		break;
++	case ETMTSEVR:
++		etm_write(val, ETMTSEVR);
++		break;
++	case ETMAUXCR:
++		etm_write(val, ETMAUXCR);
++		break;
++	case ETMTRACEIDR:
++		etm_write(val, ETMTRACEIDR);
++		break;
++	case ETMVMIDCVR:
++		etm_write(val, ETMVMIDCVR);
++		break;
++	case ETMOSLAR:
++		etm_write(val, ETMOSLAR);
++		break;
++	case ETMOSSRR:
++		etm_write(val, ETMOSSRR);
++		break;
++	case ETMPDCR:
++		etm_write(val, ETMPDCR);
++		break;
++	case ETMPDSR:
++		etm_write(val, ETMPDSR);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
+diff --git a/drivers/coresight/coresight-etm.h b/drivers/coresight/coresight-etm.h
+new file mode 100644
+index 0000000..a5350a5
+--- /dev/null
++++ b/drivers/coresight/coresight-etm.h
+@@ -0,0 +1,251 @@
++/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _CORESIGHT_CORESIGHT_ETM_H
++#define _CORESIGHT_CORESIGHT_ETM_H
++
++#include <linux/spinlock.h>
++#include "coresight-priv.h"
++
++/*
++ * Device registers:
++ * 0x000 - 0x2FC: Trace         registers
++ * 0x300 - 0x314: Management    registers
++ * 0x318 - 0xEFC: Trace         registers
++ *
++ * Coresight registers
++ * 0xF00 - 0xF9C: Management    registers
++ * 0xFA0 - 0xFA4: Management    registers in PFTv1.0
++ *                Trace         registers in PFTv1.1
++ * 0xFA8 - 0xFFC: Management    registers
++ */
++
++/* Trace registers (0x000-0x2FC) */
++#define ETMCR			0x000
++#define ETMCCR			0x004
++#define ETMTRIGGER		0x008
++#define ETMSR			0x010
++#define ETMSCR			0x014
++#define ETMTSSCR		0x018
++#define ETMTECR2		0x01c
++#define ETMTEEVR		0x020
++#define ETMTECR1		0x024
++#define ETMFFLR			0x02c
++#define ETMACVRn(n)		(0x040 + (n * 4))
++#define ETMACTRn(n)		(0x080 + (n * 4))
++#define ETMCNTRLDVRn(n)		(0x140 + (n * 4))
++#define ETMCNTENRn(n)		(0x150 + (n * 4))
++#define ETMCNTRLDEVRn(n)	(0x160 + (n * 4))
++#define ETMCNTVRn(n)		(0x170 + (n * 4))
++#define ETMSQ12EVR		0x180
++#define ETMSQ21EVR		0x184
++#define ETMSQ23EVR		0x188
++#define ETMSQ31EVR		0x18c
++#define ETMSQ32EVR		0x190
++#define ETMSQ13EVR		0x194
++#define ETMSQR			0x19c
++#define ETMEXTOUTEVRn(n)	(0x1a0 + (n * 4))
++#define ETMCIDCVRn(n)		(0x1b0 + (n * 4))
++#define ETMCIDCMR		0x1bc
++#define ETMIMPSPEC0		0x1c0
++#define ETMIMPSPEC1		0x1c4
++#define ETMIMPSPEC2		0x1c8
++#define ETMIMPSPEC3		0x1cc
++#define ETMIMPSPEC4		0x1d0
++#define ETMIMPSPEC5		0x1d4
++#define ETMIMPSPEC6		0x1d8
++#define ETMIMPSPEC7		0x1dc
++#define ETMSYNCFR		0x1e0
++#define ETMIDR			0x1e4
++#define ETMCCER			0x1e8
++#define ETMEXTINSELR		0x1ec
++#define ETMTESSEICR		0x1f0
++#define ETMEIBCR		0x1f4
++#define ETMTSEVR		0x1f8
++#define ETMAUXCR		0x1fc
++#define ETMTRACEIDR		0x200
++#define ETMVMIDCVR		0x240
++/* Management registers (0x300-0x314) */
++#define ETMOSLAR		0x300
++#define ETMOSLSR		0x304
++#define ETMOSSRR		0x308
++#define ETMPDCR			0x310
++#define ETMPDSR			0x314
++#define ETM_MAX_ADDR_CMP	16
++#define ETM_MAX_CNTR		4
++#define ETM_MAX_CTXID_CMP	3
++
++/* Register definition */
++/* ETMCR - 0x00 */
++#define ETMCR_PWD_DWN		BIT(0)
++#define ETMCR_STALL_MODE	BIT(7)
++#define ETMCR_ETM_PRG		BIT(10)
++#define ETMCR_ETM_EN		BIT(11)
++#define ETMCR_CYC_ACC		BIT(12)
++#define ETMCR_CTXID_SIZE	(BIT(14)|BIT(15))
++#define ETMCR_TIMESTAMP_EN	BIT(28)
++/* ETMCCR - 0x04 */
++#define ETMCCR_FIFOFULL		BIT(23)
++/* ETMPDCR - 0x310 */
++#define ETMPDCR_PWD_UP		BIT(3)
++/* ETMTECR1 - 0x024 */
++#define ETMTECR1_ADDR_COMP_1	BIT(0)
++#define ETMTECR1_INC_EXC	BIT(24)
++#define ETMTECR1_START_STOP	BIT(25)
++/* ETMCCER - 0x1E8 */
++#define ETMCCER_TIMESTAMP	BIT(22)
++
++#define ETM_MODE_EXCLUDE	BIT(0)
++#define ETM_MODE_CYCACC		BIT(1)
++#define ETM_MODE_STALL		BIT(2)
++#define ETM_MODE_TIMESTAMP	BIT(3)
++#define ETM_MODE_CTXID		BIT(4)
++#define ETM_MODE_ALL		0x1f
++
++#define ETM_SQR_MASK		0x3
++#define ETM_TRACEID_MASK	0x3f
++#define ETM_EVENT_MASK		0x1ffff
++#define ETM_SYNC_MASK		0xfff
++#define ETM_ALL_MASK		0xffffffff
++
++#define ETMSR_PROG_BIT		1
++#define ETM_SEQ_STATE_MAX_VAL	(0x2)
++#define PORT_SIZE_MASK		(GENMASK(21, 21) | GENMASK(6, 4))
++
++#define ETM_HARD_WIRE_RES_A	/* Hard wired, always true */	\
++				((0x0f << 0)	|		\
++				/* Resource index A */		\
++				(0x06 << 4))
++
++#define ETM_ADD_COMP_0		/* Single addr comparator 1 */	\
++				((0x00 << 7)	|		\
++				/* Resource index B */		\
++				(0x00 << 11))
++
++#define ETM_EVENT_NOT_A		BIT(14) /* NOT(A) */
++
++#define ETM_DEFAULT_EVENT_VAL	(ETM_HARD_WIRE_RES_A	|	\
++				 ETM_ADD_COMP_0		|	\
++				 ETM_EVENT_NOT_A)
++/**
++ * struct etm_drvdata - specifics associated to an ETM component
++ * @base:	memory mapped base address for this component.
++ * @dev:	the device entity associated to this component.
++ * @csdev:	component vitals needed by the framework.
++ * @clk:	the clock this component is associated to.
++ * @spinlock:	only one at a time pls.
++ * @cpu:	the cpu this component is affined to.
++ * @port_size:	port size as reported by ETMCR bit 4-6 and 21.
++ * @arch:	ETM/PTM version number.
++ * @use_cpu14:	true if management registers need to be accessed via CP14.
++ * @enable:	is this ETM/PTM currently tracing.
++ * @sticky_enable: true if ETM base configuration has been done.
++ * @boot_enable:true if we should start tracing at boot time.
++ * @os_unlock:	true if access to management registers is allowed.
++ * @nr_addr_cmp:Number of pairs of address comparators as found in ETMCCR.
++ * @nr_cntr:	Number of counters as found in ETMCCR bit 13-15.
++ * @nr_ext_inp:	Number of external input as found in ETMCCR bit 17-19.
++ * @nr_ext_out:	Number of external output as found in ETMCCR bit 20-22.
++ * @nr_ctxid_cmp: Number of contextID comparators as found in ETMCCR bit 24-25.
++ * @etmccr:	value of register ETMCCR.
++ * @etmccer:	value of register ETMCCER.
++ * @traceid:	value of the current ID for this component.
++ * @mode:	controls various modes supported by this ETM/PTM.
++ * @ctrl:	used in conjuction with @mode.
++ * @trigger_event: setting for register ETMTRIGGER.
++ * @startstop_ctrl: setting for register ETMTSSCR.
++ * @enable_event: setting for register ETMTEEVR.
++ * @enable_ctrl1: setting for register ETMTECR1.
++ * @fifofull_level: setting for register ETMFFLR.
++ * @addr_idx:	index for the address comparator selection.
++ * @addr_val:	value for address comparator register.
++ * @addr_acctype: access type for address comparator register.
++ * @addr_type:	current status of the comparator register.
++ * @cntr_idx:	index for the counter register selection.
++ * @cntr_rld_val: reload value of a counter register.
++ * @cntr_event:	control for counter enable register.
++ * @cntr_rld_event: value for counter reload event register.
++ * @cntr_val:	counter value register.
++ * @seq_12_event: event causing the transition from 1 to 2.
++ * @seq_21_event: event causing the transition from 2 to 1.
++ * @seq_23_event: event causing the transition from 2 to 3.
++ * @seq_31_event: event causing the transition from 3 to 1.
++ * @seq_32_event: event causing the transition from 3 to 2.
++ * @seq_13_event: event causing the transition from 1 to 3.
++ * @seq_curr_state: current value of the sequencer register.
++ * @ctxid_idx: index for the context ID registers.
++ * @ctxid_val: value for the context ID to trigger on.
++ * @ctxid_mask: mask applicable to all the context IDs.
++ * @sync_freq:	Synchronisation frequency.
++ * @timestamp_event: Defines an event that requests the insertion
++		     of a timestamp into the trace stream.
++ */
++struct etm_drvdata {
++	void __iomem			*base;
++	struct device			*dev;
++	struct coresight_device		*csdev;
++	struct clk			*clk;
++	spinlock_t			spinlock;
++	int				cpu;
++	int				port_size;
++	u8				arch;
++	bool				use_cp14;
++	bool				enable;
++	bool				sticky_enable;
++	bool				boot_enable;
++	bool				os_unlock;
++	u8				nr_addr_cmp;
++	u8				nr_cntr;
++	u8				nr_ext_inp;
++	u8				nr_ext_out;
++	u8				nr_ctxid_cmp;
++	u32				etmccr;
++	u32				etmccer;
++	u32				traceid;
++	u32				mode;
++	u32				ctrl;
++	u32				trigger_event;
++	u32				startstop_ctrl;
++	u32				enable_event;
++	u32				enable_ctrl1;
++	u32				fifofull_level;
++	u8				addr_idx;
++	u32				addr_val[ETM_MAX_ADDR_CMP];
++	u32				addr_acctype[ETM_MAX_ADDR_CMP];
++	u32				addr_type[ETM_MAX_ADDR_CMP];
++	u8				cntr_idx;
++	u32				cntr_rld_val[ETM_MAX_CNTR];
++	u32				cntr_event[ETM_MAX_CNTR];
++	u32				cntr_rld_event[ETM_MAX_CNTR];
++	u32				cntr_val[ETM_MAX_CNTR];
++	u32				seq_12_event;
++	u32				seq_21_event;
++	u32				seq_23_event;
++	u32				seq_31_event;
++	u32				seq_32_event;
++	u32				seq_13_event;
++	u32				seq_curr_state;
++	u8				ctxid_idx;
++	u32				ctxid_val[ETM_MAX_CTXID_CMP];
++	u32				ctxid_mask;
++	u32				sync_freq;
++	u32				timestamp_event;
++};
++
++enum etm_addr_type {
++	ETM_ADDR_TYPE_NONE,
++	ETM_ADDR_TYPE_SINGLE,
++	ETM_ADDR_TYPE_RANGE,
++	ETM_ADDR_TYPE_START,
++	ETM_ADDR_TYPE_STOP,
++};
++#endif
+diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
+new file mode 100644
+index 0000000..b77befd
+--- /dev/null
++++ b/drivers/coresight/coresight-etm3x.c
+@@ -0,0 +1,1926 @@
++/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -212,579 +1501,153 @@ index 0000000..6e0181f
 +#include <linux/device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
-+#include <linux/export.h>
++#include <linux/fs.h>
 +#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/clk.h>
-+#include <linux/coresight.h>
-+#include <linux/of_platform.h>
 +#include <linux/delay.h>
++#include <linux/smp.h>
++#include <linux/sysfs.h>
++#include <linux/stat.h>
++#include <linux/clk.h>
++#include <linux/cpu.h>
++#include <linux/of.h>
++#include <linux/coresight.h>
++#include <linux/amba/bus.h>
++#include <linux/seq_file.h>
++#include <linux/uaccess.h>
++#include <asm/sections.h>
 +
-+#include "coresight-priv.h"
++#include "coresight-etm.h"
 +
-+static DEFINE_MUTEX(coresight_mutex);
++#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
++static int boot_enable = 1;
++#else
++static int boot_enable;
++#endif
++module_param_named(
++	boot_enable, boot_enable, int, S_IRUGO
++);
 +
-+static int coresight_id_match(struct device *dev, void *data)
++/* The number of ETM/PTM currently registered */
++static int etm_count;
++static struct etm_drvdata *etmdrvdata[NR_CPUS];
++
++static inline void etm_writel(struct etm_drvdata *drvdata,
++			      u32 val, u32 off)
 +{
-+	int trace_id, i_trace_id;
-+	struct coresight_device *csdev, *i_csdev;
-+
-+	csdev = data;
-+	i_csdev = to_coresight_device(dev);
-+
-+	/*
-+	 * No need to care about oneself and components that are not
-+	 * sources or not enabled
-+	 */
-+	if (i_csdev == csdev || !i_csdev->enable ||
-+	    i_csdev->type != CORESIGHT_DEV_TYPE_SOURCE)
-+		return 0;
-+
-+	/* Get the source ID for both compoment */
-+	trace_id = source_ops(csdev)->trace_id(csdev);
-+	i_trace_id = source_ops(i_csdev)->trace_id(i_csdev);
-+
-+	/* All you need is one */
-+	if (trace_id == i_trace_id)
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int coresight_source_is_unique(struct coresight_device *csdev)
-+{
-+	int trace_id = source_ops(csdev)->trace_id(csdev);
-+
-+	/* this shouldn't happen */
-+	if (trace_id < 0)
-+		return 0;
-+
-+	return !bus_for_each_dev(&coresight_bustype, NULL,
-+				 csdev, coresight_id_match);
-+}
-+
-+static int coresight_find_link_inport(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *parent;
-+	struct coresight_connection *conn;
-+
-+	parent = container_of(csdev->path_link.next,
-+			      struct coresight_device, path_link);
-+
-+	for (i = 0; i < parent->nr_outport; i++) {
-+		conn = &parent->conns[i];
-+		if (conn->child_dev == csdev)
-+			return conn->child_port;
-+	}
-+
-+	dev_err(&csdev->dev, "couldn't find inport, parent: %s, child: %s\n",
-+		dev_name(&parent->dev), dev_name(&csdev->dev));
-+
-+	return 0;
-+}
-+
-+static int coresight_find_link_outport(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct coresight_device *child;
-+	struct coresight_connection *conn;
-+
-+	child = container_of(csdev->path_link.prev,
-+			     struct coresight_device, path_link);
-+
-+	for (i = 0; i < csdev->nr_outport; i++) {
-+		conn = &csdev->conns[i];
-+		if (conn->child_dev == child)
-+			return conn->outport;
-+	}
-+
-+	dev_err(&csdev->dev, "couldn't find outport, parent: %s, child: %s\n",
-+		dev_name(&csdev->dev), dev_name(&child->dev));
-+
-+	return 0;
-+}
-+
-+static int coresight_enable_sink(struct coresight_device *csdev)
-+{
-+	int ret;
-+
-+	if (!csdev->enable) {
-+		if (sink_ops(csdev)->enable) {
-+			ret = sink_ops(csdev)->enable(csdev);
-+			if (ret)
-+				return ret;
++	if (drvdata->use_cp14) {
++		if (etm_writel_cp14(off, val)) {
++			dev_err(drvdata->dev,
++				"invalid CP14 access to ETM reg: %#x", off);
 +		}
-+		csdev->enable = true;
-+	}
-+
-+	atomic_inc(csdev->refcnt);
-+
-+	return 0;
-+}
-+
-+static void coresight_disable_sink(struct coresight_device *csdev)
-+{
-+	if (atomic_dec_return(csdev->refcnt) == 0) {
-+		if (sink_ops(csdev)->disable) {
-+			sink_ops(csdev)->disable(csdev);
-+			csdev->enable = false;
-+		}
-+	}
-+}
-+
-+static int coresight_enable_link(struct coresight_device *csdev)
-+{
-+	int ret;
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+	link_subtype = csdev->subtype.link_subtype;
-+
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+		refport = inport;
-+	else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+		refport = outport;
-+	else
-+		refport = 0;
-+
-+	if (atomic_inc_return(&csdev->refcnt[refport]) == 1) {
-+		if (link_ops(csdev)->enable) {
-+			ret = link_ops(csdev)->enable(csdev, inport, outport);
-+			if (ret)
-+				return ret;
-+		}
-+	}
-+
-+	csdev->enable = true;
-+
-+	return 0;
-+}
-+
-+static void coresight_disable_link(struct coresight_device *csdev)
-+{
-+	int i, nr_conns;
-+	int link_subtype;
-+	int refport, inport, outport;
-+
-+	inport = coresight_find_link_inport(csdev);
-+	outport = coresight_find_link_outport(csdev);
-+	link_subtype = csdev->subtype.link_subtype;
-+
-+	if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG) {
-+		refport = inport;
-+		nr_conns = csdev->nr_inport;
-+	} else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT) {
-+		refport = outport;
-+		nr_conns = csdev->nr_outport;
 +	} else {
-+		refport = 0;
-+		nr_conns = 1;
-+	}
-+
-+	if (atomic_dec_return(&csdev->refcnt[refport]) == 0) {
-+		if (link_ops(csdev)->disable)
-+			link_ops(csdev)->disable(csdev, inport, outport);
-+	}
-+
-+	for (i = 0; i < nr_conns; i++)
-+		if (atomic_read(&csdev->refcnt[i]) != 0)
-+			return;
-+
-+	csdev->enable = false;
-+}
-+
-+static int coresight_enable_source(struct coresight_device *csdev)
-+{
-+	int ret;
-+
-+	if (!coresight_source_is_unique(csdev)) {
-+		dev_warn(&csdev->dev, "traceID %d not unique\n",
-+			 source_ops(csdev)->trace_id(csdev));
-+		return -EINVAL;
-+	}
-+
-+	if (!csdev->enable) {
-+		if (source_ops(csdev)->enable) {
-+			ret = source_ops(csdev)->enable(csdev);
-+			if (ret)
-+				return ret;
-+		}
-+		csdev->enable = true;
-+	}
-+
-+	atomic_inc(csdev->refcnt);
-+
-+	return 0;
-+}
-+
-+static void coresight_disable_source(struct coresight_device *csdev)
-+{
-+	if (atomic_dec_return(csdev->refcnt) == 0) {
-+		if (source_ops(csdev)->disable) {
-+			source_ops(csdev)->disable(csdev);
-+			csdev->enable = false;
-+		}
++		writel_relaxed(val, drvdata->base + off);
 +	}
 +}
 +
-+static int coresight_enable_path(struct list_head *path)
++static inline unsigned int etm_readl(struct etm_drvdata *drvdata, u32 off)
 +{
-+	int ret = 0;
-+	struct coresight_device *cd;
++	u32 val;
 +
-+	list_for_each_entry(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			ret = coresight_enable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/*
-+			 * Don't enable the source just yet - this needs to
-+			 * happen at the very end when all links and sink
-+			 * along the path have been configured properly.
-+			 */
-+			;
-+		} else {
-+			ret = coresight_enable_link(cd);
++	if (drvdata->use_cp14) {
++		if (etm_readl_cp14(off, &val)) {
++			dev_err(drvdata->dev,
++				"invalid CP14 access to ETM reg: %#x", off);
 +		}
-+		if (ret)
-+			goto err;
-+	}
-+
-+	return 0;
-+err:
-+	list_for_each_entry_continue_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int coresight_disable_path(struct list_head *path)
-+{
-+	struct coresight_device *cd;
-+
-+	list_for_each_entry_reverse(cd, path, path_link) {
-+		if (cd == list_first_entry(path, struct coresight_device,
-+					   path_link)) {
-+			coresight_disable_sink(cd);
-+		} else if (list_is_last(&cd->path_link, path)) {
-+			/*
-+			 * The source has already been stopped, no need
-+			 * to do it again here.
-+			 */
-+			;
-+		} else {
-+			coresight_disable_link(cd);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int coresight_build_paths(struct coresight_device *csdev,
-+				 struct list_head *path,
-+				 bool enable)
-+{
-+	int i, ret = -EINVAL;
-+	struct coresight_connection *conn;
-+
-+	list_add(&csdev->path_link, path);
-+
-+	if (csdev->type == CORESIGHT_DEV_TYPE_SINK && csdev->activated) {
-+		if (enable)
-+			ret = coresight_enable_path(path);
-+		else
-+			ret = coresight_disable_path(path);
 +	} else {
-+		for (i = 0; i < csdev->nr_outport; i++) {
-+			conn = &csdev->conns[i];
-+			if (coresight_build_paths(conn->child_dev,
-+						    path, enable) == 0)
-+				ret = 0;
-+		}
++		val = readl_relaxed(drvdata->base + off);
 +	}
 +
-+	if (list_first_entry(path, struct coresight_device, path_link) != csdev)
-+		dev_err(&csdev->dev, "wrong device in %s\n", __func__);
-+
-+	list_del(&csdev->path_link);
-+
-+	return ret;
++	return val;
 +}
 +
-+int coresight_enable(struct coresight_device *csdev)
++/*
++ * Memory mapped writes to clear os lock are not supported on some processors
++ * and OS lock must be unlocked before any memory mapped access on such
++ * processors, otherwise memory mapped reads/writes will be invalid.
++ */
++static void etm_os_unlock(void *info)
 +{
-+	int ret = 0;
-+	LIST_HEAD(path);
-+
-+	mutex_lock(&coresight_mutex);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		ret = -EINVAL;
-+		dev_err(&csdev->dev, "wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (csdev->enable)
-+		goto out;
-+
-+	if (coresight_build_paths(csdev, &path, true)) {
-+		dev_err(&csdev->dev, "building path(s) failed\n");
-+		goto out;
-+	}
-+
-+	if (coresight_enable_source(csdev))
-+		dev_err(&csdev->dev, "source enable failed\n");
-+out:
-+	mutex_unlock(&coresight_mutex);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(coresight_enable);
-+
-+void coresight_disable(struct coresight_device *csdev)
-+{
-+	LIST_HEAD(path);
-+
-+	mutex_lock(&coresight_mutex);
-+	if (csdev->type != CORESIGHT_DEV_TYPE_SOURCE) {
-+		dev_err(&csdev->dev, "wrong device type in %s\n", __func__);
-+		goto out;
-+	}
-+	if (!csdev->enable)
-+		goto out;
-+
-+	coresight_disable_source(csdev);
-+	if (coresight_build_paths(csdev, &path, false))
-+		dev_err(&csdev->dev, "releasing path(s) failed\n");
-+
-+out:
-+	mutex_unlock(&coresight_mutex);
-+}
-+EXPORT_SYMBOL_GPL(coresight_disable);
-+
-+static ssize_t enable_sink_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct coresight_device *csdev = to_coresight_device(dev);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", (unsigned)csdev->activated);
++	struct etm_drvdata *drvdata = (struct etm_drvdata *)info;
++	/* Writing any value to ETMOSLAR unlocks the trace registers */
++	etm_writel(drvdata, 0x0, ETMOSLAR);
++	isb();
 +}
 +
-+static ssize_t enable_sink_store(struct device *dev,
-+				 struct device_attribute *attr,
-+				 const char *buf, size_t size)
++static void etm_set_pwrdwn(struct etm_drvdata *drvdata)
 +{
-+	int ret;
-+	unsigned long val;
-+	struct coresight_device *csdev = to_coresight_device(dev);
++	u32 etmcr;
 +
-+	ret = kstrtoul(buf, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val)
-+		csdev->activated = true;
-+	else
-+		csdev->activated = false;
-+
-+	return size;
-+
-+}
-+static DEVICE_ATTR_RW(enable_sink);
-+
-+static ssize_t enable_source_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	struct coresight_device *csdev = to_coresight_device(dev);
-+
-+	return scnprintf(buf, PAGE_SIZE, "%u\n", (unsigned)csdev->enable);
++	/* Ensure pending cp14 accesses complete before setting pwrdwn */
++	mb();
++	isb();
++	etmcr = etm_readl(drvdata, ETMCR);
++	etmcr |= ETMCR_PWD_DWN;
++	etm_writel(drvdata, etmcr, ETMCR);
 +}
 +
-+static ssize_t enable_source_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t size)
++static void etm_clr_pwrdwn(struct etm_drvdata *drvdata)
 +{
-+	int ret = 0;
-+	unsigned long val;
-+	struct coresight_device *csdev = to_coresight_device(dev);
++	u32 etmcr;
 +
-+	ret = kstrtoul(buf, 10, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (val) {
-+		ret = coresight_enable(csdev);
-+		if (ret)
-+			return ret;
-+	} else {
-+		coresight_disable(csdev);
-+	}
-+
-+	return size;
-+}
-+static DEVICE_ATTR_RW(enable_source);
-+
-+static struct attribute *coresight_sink_attrs[] = {
-+	&dev_attr_enable_sink.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(coresight_sink);
-+
-+static struct attribute *coresight_source_attrs[] = {
-+	&dev_attr_enable_source.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(coresight_source);
-+
-+static struct device_type coresight_dev_type[] = {
-+	{
-+		.name = "none",
-+	},
-+	{
-+		.name = "sink",
-+		.groups = coresight_sink_groups,
-+	},
-+	{
-+		.name = "link",
-+	},
-+	{
-+		.name = "linksink",
-+		.groups = coresight_sink_groups,
-+	},
-+	{
-+		.name = "source",
-+		.groups = coresight_source_groups,
-+	},
-+};
-+
-+static void coresight_device_release(struct device *dev)
-+{
-+	struct coresight_device *csdev = to_coresight_device(dev);
-+
-+	kfree(csdev);
++	etmcr = etm_readl(drvdata, ETMCR);
++	etmcr &= ~ETMCR_PWD_DWN;
++	etm_writel(drvdata, etmcr, ETMCR);
++	/* Ensure pwrup completes before subsequent cp14 accesses */
++	mb();
++	isb();
 +}
 +
-+static int coresight_orphan_match(struct device *dev, void *data)
++static void etm_set_pwrup(struct etm_drvdata *drvdata)
 +{
-+	int i;
-+	bool still_orphan = false;
-+	struct coresight_device *csdev, *i_csdev;
-+	struct coresight_connection *conn;
++	u32 etmpdcr;
 +
-+	csdev = data;
-+	i_csdev = to_coresight_device(dev);
-+
-+	/* No need to check oneself */
-+	if (csdev == i_csdev)
-+		return 0;
-+
-+	/* Move on to another component if no connection is orphan */
-+	if (!i_csdev->orphan)
-+		return 0;
-+	/*
-+	 * Circle throuch all the connection of that component.  If we find
-+	 * an orphan connection whose name matches @csdev, link it.
-+	 */
-+	for (i = 0; i < i_csdev->nr_outport; i++)	{
-+		conn = &i_csdev->conns[i];
-+
-+		/* We have found at least one orphan connection */
-+		if (conn->child_dev == NULL) {
-+			/* Does it match this newly added device? */
-+			if (!strcmp(dev_name(&csdev->dev), conn->child_name))
-+				conn->child_dev = csdev;
-+		} else {
-+			/* Too bad, this component still has an orphan */
-+			still_orphan = true;
-+		}
-+	}
-+
-+	i_csdev->orphan = still_orphan;
-+
-+	/*
-+	 * Returning '0' ensures that all known component on the
-+	 * bus will be checked.
-+	 */
-+	return 0;
++	etmpdcr = readl_relaxed(drvdata->base + ETMPDCR);
++	etmpdcr |= ETMPDCR_PWD_UP;
++	writel_relaxed(etmpdcr, drvdata->base + ETMPDCR);
++	/* Ensure pwrup completes before subsequent cp14 accesses */
++	mb();
++	isb();
 +}
 +
-+static void coresight_fixup_orphan_conns(struct coresight_device *csdev)
++static void etm_clr_pwrup(struct etm_drvdata *drvdata)
 +{
-+	/*
-+	 * No need to check for a return value as orphan connection(s)
-+	 * are hooked-up with each newly added component.
-+	 */
-+	bus_for_each_dev(&coresight_bustype, NULL,
-+				 csdev, coresight_orphan_match);
-+}
++	u32 etmpdcr;
 +
-+
-+static int coresight_name_match(struct device *dev, void *data)
-+{
-+	char *to_match;
-+	struct coresight_device *i_csdev;
-+
-+	to_match = data;
-+	i_csdev = to_coresight_device(dev);
-+
-+	if (!strcmp(to_match, dev_name(&i_csdev->dev)))
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static void coresight_fixup_device_conns(struct coresight_device *csdev)
-+{
-+	int i;
-+	struct device *dev = NULL;
-+	struct coresight_connection *conn;
-+
-+	for (i = 0; i < csdev->nr_outport; i++) {
-+		conn = &csdev->conns[i];
-+		dev = bus_find_device(&coresight_bustype, NULL,
-+				      (void *)conn->child_name,
-+				      coresight_name_match);
-+
-+		if (dev) {
-+			conn->child_dev = to_coresight_device(dev);
-+		} else {
-+			csdev->orphan = true;
-+			conn->child_dev = NULL;
-+		}
-+	}
++	/* Ensure pending cp14 accesses complete before clearing pwrup */
++	mb();
++	isb();
++	etmpdcr = readl_relaxed(drvdata->base + ETMPDCR);
++	etmpdcr &= ~ETMPDCR_PWD_UP;
++	writel_relaxed(etmpdcr, drvdata->base + ETMPDCR);
 +}
 +
 +/**
-+ * coresight_timeout - loop until a bit has changed to a specific state.
-+ * @addr: base address of the area of interest.
++ * coresight_timeout_etm - loop until a bit has changed to a specific state.
++ * @drvdata: etm's private data structure.
 + * @offset: address of a register, starting from @addr.
 + * @position: the position of the bit of interest.
 + * @value: the value the bit should have.
 + *
++ * Basically the same as @coresight_timeout except for the register access
++ * method where we have to account for CP14 configurations.
++
 + * Return: 0 as soon as the bit has taken the desired state or -EAGAIN if
 + * TIMEOUT_US has elapsed, which ever happens first.
 + */
 +
-+int coresight_timeout(void __iomem *addr, u32 offset, int position, int value)
++static int coresight_timeout_etm(struct etm_drvdata *drvdata, u32 offset,
++				  int position, int value)
 +{
 +	int i;
 +	u32 val;
 +
 +	for (i = TIMEOUT_US; i > 0; i--) {
-+		val = __raw_readl(addr + offset);
-+		/* waiting on the bit to go from 0 to 1 */
++		val = etm_readl(drvdata, offset);
++		/* Waiting on the bit to go from 0 to 1 */
 +		if (value) {
 +			if (val & BIT(position))
 +				return 0;
-+		/* waiting on the bit to go from 1 to 0 */
++		/* Waiting on the bit to go from 1 to 0 */
 +		} else {
 +			if (!(val & BIT(position)))
 +				return 0;
@@ -802,605 +1665,1749 @@ index 0000000..6e0181f
 +	return -EAGAIN;
 +}
 +
-+struct bus_type coresight_bustype = {
-+	.name	= "coresight",
-+};
 +
-+static int __init coresight_init(void)
++static void etm_set_prog(struct etm_drvdata *drvdata)
 +{
-+	return bus_register(&coresight_bustype);
-+}
-+postcore_initcall(coresight_init);
++	u32 etmcr;
 +
-+struct coresight_device *coresight_register(struct coresight_desc *desc)
++	etmcr = etm_readl(drvdata, ETMCR);
++	etmcr |= ETMCR_ETM_PRG;
++	etm_writel(drvdata, etmcr, ETMCR);
++	/*
++	 * Recommended by spec for cp14 accesses to ensure etmcr write is
++	 * complete before polling etmsr
++	 */
++	isb();
++	if (coresight_timeout_etm(drvdata, ETMSR, ETMSR_PROG_BIT, 1)) {
++		dev_err(drvdata->dev,
++			"timeout observed when probing at offset %#x\n", ETMSR);
++	}
++}
++
++static void etm_clr_prog(struct etm_drvdata *drvdata)
++{
++	u32 etmcr;
++
++	etmcr = etm_readl(drvdata, ETMCR);
++	etmcr &= ~ETMCR_ETM_PRG;
++	etm_writel(drvdata, etmcr, ETMCR);
++	/*
++	 * Recommended by spec for cp14 accesses to ensure etmcr write is
++	 * complete before polling etmsr
++	 */
++	isb();
++	if (coresight_timeout_etm(drvdata, ETMSR, ETMSR_PROG_BIT, 0)) {
++		dev_err(drvdata->dev,
++			"timeout observed when probing at offset %#x\n", ETMSR);
++	}
++}
++
++static void etm_set_default(struct etm_drvdata *drvdata)
 +{
 +	int i;
++
++	drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->enable_event = ETM_HARD_WIRE_RES_A;
++
++	drvdata->seq_12_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->seq_21_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->seq_23_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->seq_31_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->seq_32_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->seq_13_event = ETM_DEFAULT_EVENT_VAL;
++	drvdata->timestamp_event = ETM_DEFAULT_EVENT_VAL;
++
++	for (i = 0; i < drvdata->nr_cntr; i++) {
++		drvdata->cntr_rld_val[i] = 0x0;
++		drvdata->cntr_event[i] = ETM_DEFAULT_EVENT_VAL;
++		drvdata->cntr_rld_event[i] = ETM_DEFAULT_EVENT_VAL;
++		drvdata->cntr_val[i] = 0x0;
++	}
++
++	drvdata->seq_curr_state = 0x0;
++	drvdata->ctxid_idx = 0x0;
++	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
++		drvdata->ctxid_val[i] = 0x0;
++	drvdata->ctxid_mask = 0x0;
++}
++
++static void etm_enable_hw(void *info)
++{
++	int i;
++	u32 etmcr;
++	struct etm_drvdata *drvdata = info;
++
++	CS_UNLOCK(drvdata->base);
++
++	/* Turn engine on */
++	etm_clr_pwrdwn(drvdata);
++	/* Apply power to trace registers */
++	etm_set_pwrup(drvdata);
++	/* Make sure all registers are accessible */
++	etm_os_unlock(drvdata);
++
++	etm_set_prog(drvdata);
++
++	etmcr = etm_readl(drvdata, ETMCR);
++	etmcr &= (ETMCR_PWD_DWN | ETMCR_ETM_PRG);
++	etmcr |= drvdata->port_size;
++	etm_writel(drvdata, drvdata->ctrl | etmcr, ETMCR);
++	etm_writel(drvdata, drvdata->trigger_event, ETMTRIGGER);
++	etm_writel(drvdata, drvdata->startstop_ctrl, ETMTSSCR);
++	etm_writel(drvdata, drvdata->enable_event, ETMTEEVR);
++	etm_writel(drvdata, drvdata->enable_ctrl1, ETMTECR1);
++	etm_writel(drvdata, drvdata->fifofull_level, ETMFFLR);
++	for (i = 0; i < drvdata->nr_addr_cmp; i++) {
++		etm_writel(drvdata, drvdata->addr_val[i], ETMACVRn(i));
++		etm_writel(drvdata, drvdata->addr_acctype[i], ETMACTRn(i));
++	}
++	for (i = 0; i < drvdata->nr_cntr; i++) {
++		etm_writel(drvdata, drvdata->cntr_rld_val[i], ETMCNTRLDVRn(i));
++		etm_writel(drvdata, drvdata->cntr_event[i], ETMCNTENRn(i));
++		etm_writel(drvdata, drvdata->cntr_rld_event[i],
++			   ETMCNTRLDEVRn(i));
++		etm_writel(drvdata, drvdata->cntr_val[i], ETMCNTVRn(i));
++	}
++	etm_writel(drvdata, drvdata->seq_12_event, ETMSQ12EVR);
++	etm_writel(drvdata, drvdata->seq_21_event, ETMSQ21EVR);
++	etm_writel(drvdata, drvdata->seq_23_event, ETMSQ23EVR);
++	etm_writel(drvdata, drvdata->seq_31_event, ETMSQ31EVR);
++	etm_writel(drvdata, drvdata->seq_32_event, ETMSQ32EVR);
++	etm_writel(drvdata, drvdata->seq_13_event, ETMSQ13EVR);
++	etm_writel(drvdata, drvdata->seq_curr_state, ETMSQR);
++	for (i = 0; i < drvdata->nr_ext_out; i++)
++		etm_writel(drvdata, ETM_DEFAULT_EVENT_VAL, ETMEXTOUTEVRn(i));
++	for (i = 0; i < drvdata->nr_ctxid_cmp; i++)
++		etm_writel(drvdata, drvdata->ctxid_val[i], ETMCIDCVRn(i));
++	etm_writel(drvdata, drvdata->ctxid_mask, ETMCIDCMR);
++	etm_writel(drvdata, drvdata->sync_freq, ETMSYNCFR);
++	/* No external input selected */
++	etm_writel(drvdata, 0x0, ETMEXTINSELR);
++	etm_writel(drvdata, drvdata->timestamp_event, ETMTSEVR);
++	/* No auxiliary control selected */
++	etm_writel(drvdata, 0x0, ETMAUXCR);
++	etm_writel(drvdata, drvdata->traceid, ETMTRACEIDR);
++	/* No VMID comparator value selected */
++	etm_writel(drvdata, 0x0, ETMVMIDCVR);
++
++	/* Ensures trace output is enabled from this ETM */
++	etm_writel(drvdata, drvdata->ctrl | ETMCR_ETM_EN | etmcr, ETMCR);
++
++	etm_clr_prog(drvdata);
++	CS_LOCK(drvdata->base);
++
++	dev_dbg(drvdata->dev, "cpu: %d enable smp call done\n", drvdata->cpu);
++}
++
++static int etm_trace_id_simple(struct etm_drvdata *drvdata)
++{
++	if (!drvdata->enable)
++		return drvdata->traceid;
++
++	return (etm_readl(drvdata, ETMTRACEIDR) & ETM_TRACEID_MASK);
++}
++
++static int etm_trace_id(struct coresight_device *csdev)
++{
++	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
++	unsigned long flags;
++	int trace_id = -1;
++
++	if (!drvdata->enable)
++		return drvdata->traceid;
++
++	if (clk_prepare_enable(drvdata->clk))
++		goto out;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++
++	CS_UNLOCK(drvdata->base);
++	trace_id = (etm_readl(drvdata, ETMTRACEIDR) & ETM_TRACEID_MASK);
++	CS_LOCK(drvdata->base);
++
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	clk_disable_unprepare(drvdata->clk);
++out:
++	return trace_id;
++}
++
++static int etm_enable(struct coresight_device *csdev)
++{
++	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +	int ret;
-+	int link_subtype;
-+	int nr_refcnts = 1;
-+	atomic_t *refcnts = NULL;
-+	struct coresight_device *csdev;
-+	struct coresight_connection *conns;
 +
-+	csdev = kzalloc(sizeof(*csdev), GFP_KERNEL);
-+	if (!csdev) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_csdev;
-+	}
-+
-+	if (desc->type == CORESIGHT_DEV_TYPE_LINK ||
-+	    desc->type == CORESIGHT_DEV_TYPE_LINKSINK) {
-+		link_subtype = desc->subtype.link_subtype;
-+
-+		if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_MERG)
-+			nr_refcnts = desc->pdata->nr_inport;
-+		else if (link_subtype == CORESIGHT_DEV_SUBTYPE_LINK_SPLIT)
-+			nr_refcnts = desc->pdata->nr_outport;
-+	}
-+
-+	refcnts = kcalloc(nr_refcnts, sizeof(*refcnts), GFP_KERNEL);
-+	if (!refcnts) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_refcnts;
-+	}
-+
-+	csdev->refcnt = refcnts;
-+
-+	csdev->nr_inport = desc->pdata->nr_inport;
-+	csdev->nr_outport = desc->pdata->nr_outport;
-+	conns = kcalloc(csdev->nr_outport, sizeof(*conns), GFP_KERNEL);
-+	if (!conns) {
-+		ret = -ENOMEM;
-+		goto err_kzalloc_conns;
-+	}
-+
-+	for (i = 0; i < csdev->nr_outport; i++) {
-+		conns[i].outport = desc->pdata->outports[i];
-+		conns[i].child_name = desc->pdata->child_names[i];
-+		conns[i].child_port = desc->pdata->child_ports[i];
-+	}
-+
-+	csdev->conns = conns;
-+
-+	csdev->type = desc->type;
-+	csdev->subtype = desc->subtype;
-+	csdev->ops = desc->ops;
-+	csdev->orphan = false;
-+
-+	csdev->dev.type = &coresight_dev_type[desc->type];
-+	csdev->dev.groups = desc->groups;
-+	csdev->dev.parent = desc->dev;
-+	csdev->dev.release = coresight_device_release;
-+	csdev->dev.bus = &coresight_bustype;
-+	dev_set_name(&csdev->dev, "%s", desc->pdata->name);
-+
-+	ret = device_register(&csdev->dev);
++	ret = clk_prepare_enable(drvdata->clk);
 +	if (ret)
-+		goto err_device_register;
++		goto err_clk;
 +
-+	mutex_lock(&coresight_mutex);
-+
-+	coresight_fixup_device_conns(csdev);
-+	coresight_fixup_orphan_conns(csdev);
-+
-+	mutex_unlock(&coresight_mutex);
-+
-+	return csdev;
-+
-+err_device_register:
-+	kfree(conns);
-+err_kzalloc_conns:
-+	kfree(refcnts);
-+err_kzalloc_refcnts:
-+	kfree(csdev);
-+err_kzalloc_csdev:
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL_GPL(coresight_register);
-+
-+void coresight_unregister(struct coresight_device *csdev)
-+{
-+	mutex_lock(&coresight_mutex);
-+
-+	kfree(csdev->conns);
-+	device_unregister(&csdev->dev);
-+
-+	mutex_unlock(&coresight_mutex);
-+}
-+EXPORT_SYMBOL_GPL(coresight_unregister);
-+
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/coresight/of_coresight.c b/drivers/coresight/of_coresight.c
-new file mode 100644
-index 0000000..5030c07
---- /dev/null
-+++ b/drivers/coresight/of_coresight.c
-@@ -0,0 +1,204 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/clk.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_graph.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
-+#include <linux/amba/bus.h>
-+#include <linux/coresight.h>
-+#include <asm/smp_plat.h>
-+
-+
-+static int of_dev_node_match(struct device *dev, void *data)
-+{
-+	return dev->of_node == data;
-+}
-+
-+static struct device *
-+of_coresight_get_endpoint_device(struct device_node *endpoint)
-+{
-+	struct device *dev = NULL;
++	spin_lock(&drvdata->spinlock);
 +
 +	/*
-+	 * If we have a non-configuable replicator, it will be found on the
-+	 * platform bus.
++	 * Configure the ETM only if the CPU is online.  If it isn't online
++	 * hw configuration will take place when 'CPU_STARTING' is received
++	 * in @etm_cpu_callback.
 +	 */
-+	dev = bus_find_device(&platform_bus_type, NULL,
-+			      endpoint, of_dev_node_match);
-+	if (dev)
-+		return dev;
++	if (cpu_online(drvdata->cpu)) {
++		ret = smp_call_function_single(drvdata->cpu,
++					       etm_enable_hw, drvdata, 1);
++		if (ret)
++			goto err;
++	}
++
++	drvdata->enable = true;
++	drvdata->sticky_enable = true;
++
++	spin_unlock(&drvdata->spinlock);
++
++	dev_info(drvdata->dev, "ETM tracing enabled\n");
++	return 0;
++err:
++	spin_unlock(&drvdata->spinlock);
++	clk_disable_unprepare(drvdata->clk);
++err_clk:
++	return ret;
++}
++
++static void etm_disable_hw(void *info)
++{
++	int i;
++	struct etm_drvdata *drvdata = info;
++
++	CS_UNLOCK(drvdata->base);
++	etm_set_prog(drvdata);
++
++	/* Program trace enable to low by using always false event */
++	etm_writel(drvdata, ETM_HARD_WIRE_RES_A | ETM_EVENT_NOT_A, ETMTEEVR);
++
++	/* Read back sequencer and counters for post trace analysis */
++	drvdata->seq_curr_state = (etm_readl(drvdata, ETMSQR) & ETM_SQR_MASK);
++
++	for (i = 0; i < drvdata->nr_cntr; i++)
++		drvdata->cntr_val[i] = etm_readl(drvdata, ETMCNTVRn(i));
++
++	etm_set_pwrdwn(drvdata);
++	CS_LOCK(drvdata->base);
++
++	dev_dbg(drvdata->dev, "cpu: %d disable smp call done\n", drvdata->cpu);
++}
++
++static void etm_disable(struct coresight_device *csdev)
++{
++	struct etm_drvdata *drvdata = dev_get_drvdata(csdev->dev.parent);
 +
 +	/*
-+	 * We have a configurable component - circle through the AMBA bus
-+	 * looking for the device that matches the endpoint node.
++	 * Taking hotplug lock here protects from clocks getting disabled
++	 * with tracing being left on (crash scenario) if user disable occurs
++	 * after cpu online mask indicates the cpu is offline but before the
++	 * DYING hotplug callback is serviced by the ETM driver.
 +	 */
-+	return bus_find_device(&amba_bustype, NULL,
-+			       endpoint, of_dev_node_match);
++	get_online_cpus();
++	spin_lock(&drvdata->spinlock);
++
++	/*
++	 * Executing etm_disable_hw on the cpu whose ETM is being disabled
++	 * ensures that register writes occur when cpu is powered.
++	 */
++	smp_call_function_single(drvdata->cpu, etm_disable_hw, drvdata, 1);
++	drvdata->enable = false;
++
++	spin_unlock(&drvdata->spinlock);
++	put_online_cpus();
++
++	clk_disable_unprepare(drvdata->clk);
++
++	dev_info(drvdata->dev, "ETM tracing disabled\n");
 +}
 +
-+static struct device_node *of_get_coresight_endpoint(
-+		const struct device_node *parent, struct device_node *prev)
-+{
-+	struct device_node *node = of_graph_get_next_endpoint(parent, prev);
++static const struct coresight_ops_source etm_source_ops = {
++	.trace_id	= etm_trace_id,
++	.enable		= etm_enable,
++	.disable	= etm_disable,
++};
 +
-+	of_node_put(prev);
-+	return node;
++static const struct coresight_ops etm_cs_ops = {
++	.source_ops	= &etm_source_ops,
++};
++
++static ssize_t nr_addr_cmp_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->nr_addr_cmp;
++	return sprintf(buf, "%#lx\n", val);
++}
++static DEVICE_ATTR_RO(nr_addr_cmp);
++
++static ssize_t nr_cntr_show(struct device *dev,
++			    struct device_attribute *attr, char *buf)
++{	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->nr_cntr;
++	return sprintf(buf, "%#lx\n", val);
++}
++static DEVICE_ATTR_RO(nr_cntr);
++
++static ssize_t nr_ctxid_cmp_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->nr_ctxid_cmp;
++	return sprintf(buf, "%#lx\n", val);
++}
++static DEVICE_ATTR_RO(nr_ctxid_cmp);
++
++static ssize_t etmsr_show(struct device *dev,
++			  struct device_attribute *attr, char *buf)
++{
++	int ret;
++	unsigned long flags, val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	CS_UNLOCK(drvdata->base);
++
++	val = etm_readl(drvdata, ETMSR);
++
++	CS_LOCK(drvdata->base);
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	clk_disable_unprepare(drvdata->clk);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++static DEVICE_ATTR_RO(etmsr);
++
++static ssize_t reset_store(struct device *dev,
++			   struct device_attribute *attr,
++			   const char *buf, size_t size)
++{
++	int i, ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	if (val) {
++		spin_lock(&drvdata->spinlock);
++		drvdata->mode = ETM_MODE_EXCLUDE;
++		drvdata->ctrl = 0x0;
++		drvdata->trigger_event = ETM_DEFAULT_EVENT_VAL;
++		drvdata->startstop_ctrl = 0x0;
++		drvdata->addr_idx = 0x0;
++		for (i = 0; i < drvdata->nr_addr_cmp; i++) {
++			drvdata->addr_val[i] = 0x0;
++			drvdata->addr_acctype[i] = 0x0;
++			drvdata->addr_type[i] = ETM_ADDR_TYPE_NONE;
++		}
++		drvdata->cntr_idx = 0x0;
++
++		etm_set_default(drvdata);
++		spin_unlock(&drvdata->spinlock);
++	}
++
++	return size;
++}
++static DEVICE_ATTR_WO(reset);
++
++static ssize_t mode_show(struct device *dev,
++			 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->mode;
++	return sprintf(buf, "%#lx\n", val);
 +}
 +
-+static void of_coresight_get_ports(struct device_node *node,
-+				   int *nr_inport, int *nr_outport)
++static ssize_t mode_store(struct device *dev,
++			  struct device_attribute *attr,
++			  const char *buf, size_t size)
 +{
-+	struct device_node *ep = NULL;
-+	int in = 0, out = 0;
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
 +
-+	do {
-+		ep = of_get_coresight_endpoint(node, ep);
-+		if (!ep)
-+			break;
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
 +
-+		if (of_property_read_bool(ep, "slave-mode"))
-+			in++;
-+		else
-+			out++;
++	spin_lock(&drvdata->spinlock);
++	drvdata->mode = val & ETM_MODE_ALL;
 +
-+	} while (ep);
++	if (drvdata->mode & ETM_MODE_EXCLUDE)
++		drvdata->enable_ctrl1 |= ETMTECR1_INC_EXC;
++	else
++		drvdata->enable_ctrl1 &= ~ETMTECR1_INC_EXC;
 +
-+	*nr_inport = in;
-+	*nr_outport = out;
++	if (drvdata->mode & ETM_MODE_CYCACC)
++		drvdata->ctrl |= ETMCR_CYC_ACC;
++	else
++		drvdata->ctrl &= ~ETMCR_CYC_ACC;
++
++	if (drvdata->mode & ETM_MODE_STALL) {
++		if (!(drvdata->etmccr & ETMCCR_FIFOFULL)) {
++			dev_warn(drvdata->dev, "stall mode not supported\n");
++			return -EINVAL;
++		}
++		drvdata->ctrl |= ETMCR_STALL_MODE;
++	 } else
++		drvdata->ctrl &= ~ETMCR_STALL_MODE;
++
++	if (drvdata->mode & ETM_MODE_TIMESTAMP) {
++		if (!(drvdata->etmccer & ETMCCER_TIMESTAMP)) {
++			dev_warn(drvdata->dev, "timestamp not supported\n");
++			return -EINVAL;
++		}
++		drvdata->ctrl |= ETMCR_TIMESTAMP_EN;
++	} else
++		drvdata->ctrl &= ~ETMCR_TIMESTAMP_EN;
++
++	if (drvdata->mode & ETM_MODE_CTXID)
++		drvdata->ctrl |= ETMCR_CTXID_SIZE;
++	else
++		drvdata->ctrl &= ~ETMCR_CTXID_SIZE;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(mode);
++
++static ssize_t trigger_event_show(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->trigger_event;
++	return sprintf(buf, "%#lx\n", val);
 +}
 +
-+static int of_coresight_alloc_memory(struct device *dev,
-+			struct coresight_platform_data *pdata)
++static ssize_t trigger_event_store(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t size)
 +{
-+	/* List of output port on this component */
-+	pdata->outports = devm_kzalloc(dev, pdata->nr_outport *
-+				       sizeof(*pdata->outports),
-+				       GFP_KERNEL);
-+	if (!pdata->outports)
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->trigger_event = val & ETM_EVENT_MASK;
++
++	return size;
++}
++static DEVICE_ATTR_RW(trigger_event);
++
++static ssize_t enable_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->enable_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t enable_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->enable_event = val & ETM_EVENT_MASK;
++
++	return size;
++}
++static DEVICE_ATTR_RW(enable_event);
++
++static ssize_t fifofull_level_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->fifofull_level;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t fifofull_level_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->fifofull_level = val;
++
++	return size;
++}
++static DEVICE_ATTR_RW(fifofull_level);
++
++static ssize_t addr_idx_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->addr_idx;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t addr_idx_store(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	if (val >= drvdata->nr_addr_cmp)
++		return -EINVAL;
++
++	/*
++	 * Use spinlock to ensure index doesn't change while it gets
++	 * dereferenced multiple times within a spinlock block elsewhere.
++	 */
++	spin_lock(&drvdata->spinlock);
++	drvdata->addr_idx = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_idx);
++
++static ssize_t addr_single_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	u8 idx;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EINVAL;
++	}
++
++	val = drvdata->addr_val[idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t addr_single_store(struct device *dev,
++				 struct device_attribute *attr,
++				 const char *buf, size_t size)
++{
++	u8 idx;
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_SINGLE)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EINVAL;
++	}
++
++	drvdata->addr_val[idx] = val;
++	drvdata->addr_type[idx] = ETM_ADDR_TYPE_SINGLE;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_single);
++
++static ssize_t addr_range_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	u8 idx;
++	unsigned long val1, val2;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (idx % 2 != 0) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
++	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
++	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
++	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	val1 = drvdata->addr_val[idx];
++	val2 = drvdata->addr_val[idx + 1];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx %#lx\n", val1, val2);
++}
++
++static ssize_t addr_range_store(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t size)
++{
++	u8 idx;
++	unsigned long val1, val2;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	if (sscanf(buf, "%lx %lx", &val1, &val2) != 2)
++		return -EINVAL;
++	/* Lower address comparator cannot have a higher address value */
++	if (val1 > val2)
++		return -EINVAL;
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (idx % 2 != 0) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++	if (!((drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE &&
++	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_NONE) ||
++	      (drvdata->addr_type[idx] == ETM_ADDR_TYPE_RANGE &&
++	       drvdata->addr_type[idx + 1] == ETM_ADDR_TYPE_RANGE))) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	drvdata->addr_val[idx] = val1;
++	drvdata->addr_type[idx] = ETM_ADDR_TYPE_RANGE;
++	drvdata->addr_val[idx + 1] = val2;
++	drvdata->addr_type[idx + 1] = ETM_ADDR_TYPE_RANGE;
++	drvdata->enable_ctrl1 |= (1 << (idx/2));
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_range);
++
++static ssize_t addr_start_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	u8 idx;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	val = drvdata->addr_val[idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t addr_start_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	u8 idx;
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_START)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	drvdata->addr_val[idx] = val;
++	drvdata->addr_type[idx] = ETM_ADDR_TYPE_START;
++	drvdata->startstop_ctrl |= (1 << idx);
++	drvdata->enable_ctrl1 |= BIT(25);
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_start);
++
++static ssize_t addr_stop_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	u8 idx;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	val = drvdata->addr_val[idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t addr_stop_store(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	u8 idx;
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	idx = drvdata->addr_idx;
++	if (!(drvdata->addr_type[idx] == ETM_ADDR_TYPE_NONE ||
++	      drvdata->addr_type[idx] == ETM_ADDR_TYPE_STOP)) {
++		spin_unlock(&drvdata->spinlock);
++		return -EPERM;
++	}
++
++	drvdata->addr_val[idx] = val;
++	drvdata->addr_type[idx] = ETM_ADDR_TYPE_STOP;
++	drvdata->startstop_ctrl |= (1 << (idx + 16));
++	drvdata->enable_ctrl1 |= ETMTECR1_START_STOP;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_stop);
++
++static ssize_t addr_acctype_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	val = drvdata->addr_acctype[drvdata->addr_idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t addr_acctype_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->addr_acctype[drvdata->addr_idx] = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(addr_acctype);
++
++static ssize_t cntr_idx_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->cntr_idx;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t cntr_idx_store(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	if (val >= drvdata->nr_cntr)
++		return -EINVAL;
++	/*
++	 * Use spinlock to ensure index doesn't change while it gets
++	 * dereferenced multiple times within a spinlock block elsewhere.
++	 */
++	spin_lock(&drvdata->spinlock);
++	drvdata->cntr_idx = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(cntr_idx);
++
++static ssize_t cntr_rld_val_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	val = drvdata->cntr_rld_val[drvdata->cntr_idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t cntr_rld_val_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->cntr_rld_val[drvdata->cntr_idx] = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(cntr_rld_val);
++
++static ssize_t cntr_event_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	val = drvdata->cntr_event[drvdata->cntr_idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t cntr_event_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->cntr_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(cntr_event);
++
++static ssize_t cntr_rld_event_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	val = drvdata->cntr_rld_event[drvdata->cntr_idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t cntr_rld_event_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->cntr_rld_event[drvdata->cntr_idx] = val & ETM_EVENT_MASK;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(cntr_rld_event);
++
++static ssize_t cntr_val_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	int i, ret = 0;
++	u32 val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	if (!drvdata->enable) {
++		spin_lock(&drvdata->spinlock);
++		for (i = 0; i < drvdata->nr_cntr; i++)
++			ret += sprintf(buf, "counter %d: %x\n",
++				       i, drvdata->cntr_val[i]);
++		spin_unlock(&drvdata->spinlock);
++		return ret;
++	}
++
++	for (i = 0; i < drvdata->nr_cntr; i++) {
++		val = etm_readl(drvdata, ETMCNTVRn(i));
++		ret += sprintf(buf, "counter %d: %x\n", i, val);
++	}
++
++	return ret;
++}
++
++static ssize_t cntr_val_store(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->cntr_val[drvdata->cntr_idx] = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(cntr_val);
++
++static ssize_t seq_12_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_12_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_12_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_12_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_12_event);
++
++static ssize_t seq_21_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_21_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_21_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_21_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_21_event);
++
++static ssize_t seq_23_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_23_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_23_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_23_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_23_event);
++
++static ssize_t seq_31_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_31_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_31_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_31_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_31_event);
++
++static ssize_t seq_32_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_32_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_32_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_32_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_32_event);
++
++static ssize_t seq_13_event_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->seq_13_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_13_event_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->seq_13_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(seq_13_event);
++
++static ssize_t seq_curr_state_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	int ret;
++	unsigned long val, flags;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	if (!drvdata->enable) {
++		val = drvdata->seq_curr_state;
++		goto out;
++	}
++
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++
++	CS_UNLOCK(drvdata->base);
++	val = (etm_readl(drvdata, ETMSQR) & ETM_SQR_MASK);
++	CS_LOCK(drvdata->base);
++
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	clk_disable_unprepare(drvdata->clk);
++out:
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t seq_curr_state_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	if (val > ETM_SEQ_STATE_MAX_VAL)
++		return -EINVAL;
++
++	drvdata->seq_curr_state = val;
++
++	return size;
++}
++static DEVICE_ATTR_RW(seq_curr_state);
++
++static ssize_t ctxid_idx_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->ctxid_idx;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t ctxid_idx_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	if (val >= drvdata->nr_ctxid_cmp)
++		return -EINVAL;
++
++	/*
++	 * Use spinlock to ensure index doesn't change while it gets
++	 * dereferenced multiple times within a spinlock block elsewhere.
++	 */
++	spin_lock(&drvdata->spinlock);
++	drvdata->ctxid_idx = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(ctxid_idx);
++
++static ssize_t ctxid_val_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	spin_lock(&drvdata->spinlock);
++	val = drvdata->ctxid_val[drvdata->ctxid_idx];
++	spin_unlock(&drvdata->spinlock);
++
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t ctxid_val_store(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	spin_lock(&drvdata->spinlock);
++	drvdata->ctxid_val[drvdata->ctxid_idx] = val;
++	spin_unlock(&drvdata->spinlock);
++
++	return size;
++}
++static DEVICE_ATTR_RW(ctxid_val);
++
++static ssize_t ctxid_mask_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->ctxid_mask;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t ctxid_mask_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->ctxid_mask = val;
++	return size;
++}
++static DEVICE_ATTR_RW(ctxid_mask);
++
++static ssize_t sync_freq_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->sync_freq;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t sync_freq_store(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->sync_freq = val & ETM_SYNC_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(sync_freq);
++
++static ssize_t timestamp_event_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
++{
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	val = drvdata->timestamp_event;
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t timestamp_event_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->timestamp_event = val & ETM_EVENT_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(timestamp_event);
++
++static ssize_t status_show(struct device *dev,
++			   struct device_attribute *attr, char *buf)
++{
++	int ret;
++	unsigned long flags;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = clk_prepare_enable(drvdata->clk);
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++
++	CS_UNLOCK(drvdata->base);
++	ret = sprintf(buf,
++		      "ETMCCR: 0x%08x\n"
++		      "ETMCCER: 0x%08x\n"
++		      "ETMSCR: 0x%08x\n"
++		      "ETMIDR: 0x%08x\n"
++		      "ETMCR: 0x%08x\n"
++		      "ETMTRACEIDR: 0x%08x\n"
++		      "Enable event: 0x%08x\n"
++		      "Enable start/stop: 0x%08x\n"
++		      "Enable control: CR1 0x%08x CR2 0x%08x\n"
++		      "CPU affinity: %d\n",
++		      drvdata->etmccr, drvdata->etmccer,
++		      etm_readl(drvdata, ETMSCR), etm_readl(drvdata, ETMIDR),
++		      etm_readl(drvdata, ETMCR), etm_trace_id_simple(drvdata),
++		      etm_readl(drvdata, ETMTEEVR),
++		      etm_readl(drvdata, ETMTSSCR),
++		      etm_readl(drvdata, ETMTECR1),
++		      etm_readl(drvdata, ETMTECR2),
++		      drvdata->cpu);
++	CS_LOCK(drvdata->base);
++
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	clk_disable_unprepare(drvdata->clk);
++
++	return ret;
++}
++static DEVICE_ATTR_RO(status);
++
++static ssize_t traceid_show(struct device *dev,
++			    struct device_attribute *attr, char *buf)
++{
++	int ret;
++	unsigned long val, flags;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	if (!drvdata->enable) {
++		val = drvdata->traceid;
++		goto out;
++	}
++
++	ret = clk_prepare_enable(drvdata->clk);
++		return ret;
++
++	spin_lock_irqsave(&drvdata->spinlock, flags);
++	CS_UNLOCK(drvdata->base);
++
++	val = (etm_readl(drvdata, ETMTRACEIDR) & ETM_TRACEID_MASK);
++
++	CS_LOCK(drvdata->base);
++	spin_unlock_irqrestore(&drvdata->spinlock, flags);
++	clk_disable_unprepare(drvdata->clk);
++out:
++	return sprintf(buf, "%#lx\n", val);
++}
++
++static ssize_t traceid_store(struct device *dev,
++			     struct device_attribute *attr,
++			     const char *buf, size_t size)
++{
++	int ret;
++	unsigned long val;
++	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
++
++	ret = kstrtoul(buf, 16, &val);
++	if (ret)
++		return ret;
++
++	drvdata->traceid = val & ETM_TRACEID_MASK;
++	return size;
++}
++static DEVICE_ATTR_RW(traceid);
++
++static struct attribute *coresight_etm_attrs[] = {
++	&dev_attr_nr_addr_cmp.attr,
++	&dev_attr_nr_cntr.attr,
++	&dev_attr_nr_ctxid_cmp.attr,
++	&dev_attr_etmsr.attr,
++	&dev_attr_reset.attr,
++	&dev_attr_mode.attr,
++	&dev_attr_trigger_event.attr,
++	&dev_attr_enable_event.attr,
++	&dev_attr_fifofull_level.attr,
++	&dev_attr_addr_idx.attr,
++	&dev_attr_addr_single.attr,
++	&dev_attr_addr_range.attr,
++	&dev_attr_addr_start.attr,
++	&dev_attr_addr_stop.attr,
++	&dev_attr_addr_acctype.attr,
++	&dev_attr_cntr_idx.attr,
++	&dev_attr_cntr_rld_val.attr,
++	&dev_attr_cntr_event.attr,
++	&dev_attr_cntr_rld_event.attr,
++	&dev_attr_cntr_val.attr,
++	&dev_attr_seq_12_event.attr,
++	&dev_attr_seq_21_event.attr,
++	&dev_attr_seq_23_event.attr,
++	&dev_attr_seq_31_event.attr,
++	&dev_attr_seq_32_event.attr,
++	&dev_attr_seq_13_event.attr,
++	&dev_attr_seq_curr_state.attr,
++	&dev_attr_ctxid_idx.attr,
++	&dev_attr_ctxid_val.attr,
++	&dev_attr_ctxid_mask.attr,
++	&dev_attr_sync_freq.attr,
++	&dev_attr_timestamp_event.attr,
++	&dev_attr_status.attr,
++	&dev_attr_traceid.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(coresight_etm);
++
++static int etm_cpu_callback(struct notifier_block *nfb, unsigned long action,
++			    void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++
++	if (!etmdrvdata[cpu])
++		goto out;
++
++	switch (action & (~CPU_TASKS_FROZEN)) {
++	case CPU_STARTING:
++		spin_lock(&etmdrvdata[cpu]->spinlock);
++		if (!etmdrvdata[cpu]->os_unlock) {
++			etm_os_unlock(etmdrvdata[cpu]);
++			etmdrvdata[cpu]->os_unlock = true;
++		}
++
++		if (etmdrvdata[cpu]->enable)
++			etm_enable_hw(etmdrvdata[cpu]);
++		spin_unlock(&etmdrvdata[cpu]->spinlock);
++		break;
++
++	case CPU_ONLINE:
++		if (etmdrvdata[cpu]->boot_enable &&
++		    !etmdrvdata[cpu]->sticky_enable)
++			coresight_enable(etmdrvdata[cpu]->csdev);
++		break;
++
++	case CPU_DYING:
++		spin_lock(&etmdrvdata[cpu]->spinlock);
++		if (etmdrvdata[cpu]->enable)
++			etm_disable_hw(etmdrvdata[cpu]);
++		spin_unlock(&etmdrvdata[cpu]->spinlock);
++		break;
++	}
++out:
++	return NOTIFY_OK;
++}
++
++static struct notifier_block etm_cpu_notifier = {
++	.notifier_call = etm_cpu_callback,
++};
++
++static bool etm_arch_supported(u8 arch)
++{
++	switch (arch) {
++	case ETM_ARCH_V3_3:
++		break;
++	case ETM_ARCH_V3_5:
++		break;
++	case PFT_ARCH_V1_0:
++		break;
++	case PFT_ARCH_V1_1:
++		break;
++	default:
++		return false;
++	}
++	return true;
++}
++
++static void etm_init_arch_data(void *info)
++{
++	u32 etmidr;
++	u32 etmccr;
++	struct etm_drvdata *drvdata = info;
++
++	CS_UNLOCK(drvdata->base);
++
++	/* First dummy read */
++	(void)etm_readl(drvdata, ETMPDSR);
++	/* Provide power to ETM: ETMPDCR[3] == 1 */
++	etm_set_pwrup(drvdata);
++	/*
++	 * Clear power down bit since when this bit is set writes to
++	 * certain registers might be ignored.
++	 */
++	etm_clr_pwrdwn(drvdata);
++	/*
++	 * Set prog bit. It will be set from reset but this is included to
++	 * ensure it is set
++	 */
++	etm_set_prog(drvdata);
++
++	/* Find all capabilities */
++	etmidr = etm_readl(drvdata, ETMIDR);
++	drvdata->arch = BMVAL(etmidr, 4, 11);
++	drvdata->port_size = etm_readl(drvdata, ETMCR) & PORT_SIZE_MASK;
++
++	drvdata->etmccer = etm_readl(drvdata, ETMCCER);
++	etmccr = etm_readl(drvdata, ETMCCR);
++	drvdata->etmccr = etmccr;
++	drvdata->nr_addr_cmp = BMVAL(etmccr, 0, 3) * 2;
++	drvdata->nr_cntr = BMVAL(etmccr, 13, 15);
++	drvdata->nr_ext_inp = BMVAL(etmccr, 17, 19);
++	drvdata->nr_ext_out = BMVAL(etmccr, 20, 22);
++	drvdata->nr_ctxid_cmp = BMVAL(etmccr, 24, 25);
++
++	etm_set_pwrdwn(drvdata);
++	etm_clr_pwrup(drvdata);
++	CS_LOCK(drvdata->base);
++}
++
++static void etm_init_default_data(struct etm_drvdata *drvdata)
++{
++	static int etm3x_traceid;
++
++	u32 flags = (1 << 0 | /* instruction execute*/
++		     3 << 3 | /* ARM instruction */
++		     0 << 5 | /* No data value comparison */
++		     0 << 7 | /* No exact mach */
++		     0 << 8 | /* Ignore context ID */
++		     0 << 10); /* Security ignored */
++
++	/*
++	 * Initial configuration only - guarantees sources handled by
++	 * this driver have a unique ID at startup time but not between
++	 * all other types of sources.  For that we lean on the core
++	 * framework.
++	 */
++	drvdata->traceid = etm3x_traceid++;
++	drvdata->ctrl = (ETMCR_CYC_ACC | ETMCR_TIMESTAMP_EN);
++	drvdata->enable_ctrl1 = ETMTECR1_ADDR_COMP_1;
++	if (drvdata->nr_addr_cmp >= 2) {
++		drvdata->addr_val[0] = (u32) _stext;
++		drvdata->addr_val[1] = (u32) _etext;
++		drvdata->addr_acctype[0] = flags;
++		drvdata->addr_acctype[1] = flags;
++		drvdata->addr_type[0] = ETM_ADDR_TYPE_RANGE;
++		drvdata->addr_type[1] = ETM_ADDR_TYPE_RANGE;
++	}
++
++	etm_set_default(drvdata);
++}
++
++static int etm_probe(struct amba_device *adev, const struct amba_id *id)
++{
++	int ret;
++	void __iomem *base;
++	struct device *dev = &adev->dev;
++	struct coresight_platform_data *pdata = NULL;
++	struct etm_drvdata *drvdata;
++	struct resource *res = &adev->res;
++	struct coresight_desc *desc;
++	struct device_node *np = adev->dev.of_node;
++
++	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
++	if (!desc)
 +		return -ENOMEM;
 +
-+	/* Children connected to this component via @outport */
-+	 pdata->child_names = devm_kzalloc(dev, pdata->nr_outport *
-+					  sizeof(*pdata->child_names),
-+					  GFP_KERNEL);
-+	if (!pdata->child_names)
++	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
++	if (!drvdata)
 +		return -ENOMEM;
 +
-+	/* Port number on the child this component is connected to */
-+	pdata->child_ports = devm_kzalloc(dev, pdata->nr_outport *
-+					  sizeof(*pdata->child_ports),
-+					  GFP_KERNEL);
-+	if (!pdata->child_ports)
-+		return -ENOMEM;
++	if (np) {
++		pdata = of_get_coresight_platform_data(dev, np);
++		if (IS_ERR(pdata))
++			return PTR_ERR(pdata);
++
++		adev->dev.platform_data = pdata;
++		drvdata->use_cp14 = of_property_read_bool(np, "arm,cp14");
++	}
++
++	drvdata->dev = &adev->dev;
++	dev_set_drvdata(dev, drvdata);
++
++	/* Validity for the resource is already checked by the AMBA core */
++	base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	drvdata->base = base;
++
++	spin_lock_init(&drvdata->spinlock);
++
++	drvdata->clk = adev->pclk;
++	ret = clk_prepare_enable(drvdata->clk);
++	if (ret)
++		return ret;
++
++	drvdata->cpu = pdata ? pdata->cpu : 0;
++
++	get_online_cpus();
++	etmdrvdata[drvdata->cpu] = drvdata;
++
++	if (!smp_call_function_single(drvdata->cpu, etm_os_unlock, drvdata, 1))
++		drvdata->os_unlock = true;
++
++	if (smp_call_function_single(drvdata->cpu,
++				     etm_init_arch_data,  drvdata, 1))
++		dev_err(dev, "ETM arch init failed\n");
++
++	if (!etm_count++)
++		register_hotcpu_notifier(&etm_cpu_notifier);
++
++	put_online_cpus();
++
++	if (etm_arch_supported(drvdata->arch) == false) {
++		ret = -EINVAL;
++		goto err_arch_supported;
++	}
++	etm_init_default_data(drvdata);
++
++	clk_disable_unprepare(drvdata->clk);
++
++	desc->type = CORESIGHT_DEV_TYPE_SOURCE;
++	desc->subtype.source_subtype = CORESIGHT_DEV_SUBTYPE_SOURCE_PROC;
++	desc->ops = &etm_cs_ops;
++	desc->pdata = pdata;
++	desc->dev = dev;
++	desc->groups = coresight_etm_groups;
++	drvdata->csdev = coresight_register(desc);
++	if (IS_ERR(drvdata->csdev)) {
++		ret = PTR_ERR(drvdata->csdev);
++		goto err_arch_supported;
++	}
++
++	dev_info(dev, "ETM initialized\n");
++
++	if (boot_enable) {
++		coresight_enable(drvdata->csdev);
++		drvdata->boot_enable = true;
++	}
++
++	return 0;
++
++err_arch_supported:
++	clk_disable_unprepare(drvdata->clk);
++	if (--etm_count == 0)
++		unregister_hotcpu_notifier(&etm_cpu_notifier);
++	return ret;
++}
++
++static int etm_remove(struct amba_device *adev)
++{
++	struct etm_drvdata *drvdata = amba_get_drvdata(adev);
++
++	coresight_unregister(drvdata->csdev);
++	if (--etm_count == 0)
++		unregister_hotcpu_notifier(&etm_cpu_notifier);
 +
 +	return 0;
 +}
 +
-+struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node)
++static struct amba_id etm_ids[] = {
++	{	/* ETM 3.3 */
++		.id	= 0x0003b921,
++		.mask	= 0x0003ffff,
++	},
++	{	/* ETM 3.5 */
++		.id	= 0x0003b956,
++		.mask	= 0x0003ffff,
++	},
++	{	/* PTM 1.0 */
++		.id	= 0x0003b950,
++		.mask	= 0x0003ffff,
++	},
++	{	/* PTM 1.1 */
++		.id	= 0x0003b95f,
++		.mask	= 0x0003ffff,
++	},
++	{ 0, 0},
++};
++
++static struct amba_driver etm_driver = {
++	.drv = {
++		.name	= "coresight-etm3x",
++		.owner	= THIS_MODULE,
++	},
++	.probe		= etm_probe,
++	.remove		= etm_remove,
++	.id_table	= etm_ids,
++};
++
++int __init etm_init(void)
 +{
-+	int i = 0, ret = 0;
-+	struct coresight_platform_data *pdata;
-+	struct of_endpoint endpoint, rendpoint;
-+	struct device *rdev;
-+	struct device_node *cpu;
-+	struct device_node *ep = NULL;
-+	struct device_node *rparent = NULL;
-+	struct device_node *rport = NULL;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* Use device name as debugfs handle */
-+	pdata->name = dev_name(dev);
-+
-+	/* Get the number of input and output port for this component */
-+	of_coresight_get_ports(node, &pdata->nr_inport, &pdata->nr_outport);
-+
-+	if (pdata->nr_outport) {
-+		ret = of_coresight_alloc_memory(dev, pdata);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		/* Iterate through each port to discover topology */
-+		do {
-+			/* Get a handle on a port */
-+			ep = of_get_coresight_endpoint(node, ep);
-+			if (!ep)
-+				break;
-+
-+			/*
-+			 * No need to deal with input ports, processing for as
-+			 * processing for output ports will deal with them.
-+			 */
-+			if (of_find_property(ep, "slave-mode", NULL))
-+				continue;
-+
-+			/* Get a handle on the local endpoint */
-+			ret = of_graph_parse_endpoint(ep, &endpoint);
-+
-+			if (ret)
-+				continue;
-+
-+			/* The local out port number */
-+			pdata->outports[i] = endpoint.id;
-+
-+			/*
-+			 * Get a handle on the remote port and parent
-+			 * attached to it.
-+			 */
-+			rparent = of_graph_get_remote_port_parent(ep);
-+			rport = of_graph_get_remote_port(ep);
-+
-+			if (!rparent || !rport)
-+				continue;
-+
-+			if (of_graph_parse_endpoint(rport, &rendpoint))
-+				continue;
-+
-+			rdev = of_coresight_get_endpoint_device(rparent);
-+			if (!dev)
-+				continue;
-+
-+			pdata->child_names[i] = dev_name(rdev);
-+			pdata->child_ports[i] = rendpoint.id;
-+
-+			i++;
-+		} while (ep);
-+	}
-+
-+	/* Affinity defaults to CPU0 */
-+	pdata->cpu = 0;
-+	cpu = of_parse_phandle(node, "cpu", 0);
-+	if (cpu) {
-+		const u32 *mpidr;
-+		int len, index;
-+
-+		mpidr = of_get_property(cpu, "reg", &len);
-+		if (mpidr && len == 4) {
-+			index = get_logical_index(be32_to_cpup(mpidr));
-+			if (index != -EINVAL)
-+				pdata->cpu = index;
-+		}
-+	}
-+
-+	return pdata;
++	return amba_driver_register(&etm_driver);
 +}
-+EXPORT_SYMBOL_GPL(of_get_coresight_platform_data);
-diff --git a/include/linux/amba/bus.h b/include/linux/amba/bus.h
-index fdd7e1b..cdddabe 100644
---- a/include/linux/amba/bus.h
-+++ b/include/linux/amba/bus.h
-@@ -23,6 +23,7 @@
- 
- #define AMBA_NR_IRQS	9
- #define AMBA_CID	0xb105f00d
-+#define CORESIGHT_CID	0xb105900d
- 
- struct clk;
- 
-diff --git a/include/linux/coresight.h b/include/linux/coresight.h
-new file mode 100644
-index 0000000..bdde419
---- /dev/null
-+++ b/include/linux/coresight.h
-@@ -0,0 +1,263 @@
-+/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
++module_init(etm_init);
 +
-+#ifndef _LINUX_CORESIGHT_H
-+#define _LINUX_CORESIGHT_H
-+
-+#include <linux/device.h>
-+
-+/* Peripheral id registers (0xFD0-0xFEC) */
-+#define CORESIGHT_PERIPHIDR4	0xfd0
-+#define CORESIGHT_PERIPHIDR5	0xfd4
-+#define CORESIGHT_PERIPHIDR6	0xfd8
-+#define CORESIGHT_PERIPHIDR7	0xfdC
-+#define CORESIGHT_PERIPHIDR0	0xfe0
-+#define CORESIGHT_PERIPHIDR1	0xfe4
-+#define CORESIGHT_PERIPHIDR2	0xfe8
-+#define CORESIGHT_PERIPHIDR3	0xfeC
-+/* Component id registers (0xFF0-0xFFC) */
-+#define CORESIGHT_COMPIDR0	0xff0
-+#define CORESIGHT_COMPIDR1	0xff4
-+#define CORESIGHT_COMPIDR2	0xff8
-+#define CORESIGHT_COMPIDR3	0xffC
-+
-+#define ETM_ARCH_V3_3		0x23
-+#define ETM_ARCH_V3_5		0x25
-+#define PFT_ARCH_V1_0		0x30
-+#define PFT_ARCH_V1_1		0x31
-+
-+#define CORESIGHT_UNLOCK	0xc5acce55
-+
-+extern struct bus_type coresight_bustype;
-+
-+enum coresight_dev_type {
-+	CORESIGHT_DEV_TYPE_NONE,
-+	CORESIGHT_DEV_TYPE_SINK,
-+	CORESIGHT_DEV_TYPE_LINK,
-+	CORESIGHT_DEV_TYPE_LINKSINK,
-+	CORESIGHT_DEV_TYPE_SOURCE,
-+};
-+
-+enum coresight_dev_subtype_sink {
-+	CORESIGHT_DEV_SUBTYPE_SINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SINK_PORT,
-+	CORESIGHT_DEV_SUBTYPE_SINK_BUFFER,
-+};
-+
-+enum coresight_dev_subtype_link {
-+	CORESIGHT_DEV_SUBTYPE_LINK_NONE,
-+	CORESIGHT_DEV_SUBTYPE_LINK_MERG,
-+	CORESIGHT_DEV_SUBTYPE_LINK_SPLIT,
-+	CORESIGHT_DEV_SUBTYPE_LINK_FIFO,
-+};
-+
-+enum coresight_dev_subtype_source {
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_NONE,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_PROC,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_BUS,
-+	CORESIGHT_DEV_SUBTYPE_SOURCE_SOFTWARE,
-+};
-+
-+/**
-+ * struct coresight_dev_subtype - further characterisation of a type
-+ * @sink_subtype:	type of sink this component is, as defined
-+			by @coresight_dev_subtype_sink.
-+ * @link_subtype:	type of link this component is, as defined
-+			by @coresight_dev_subtype_link.
-+ * @source_subtype:	type of source this component is, as defined
-+			by @coresight_dev_subtype_source.
-+ */
-+struct coresight_dev_subtype {
-+	enum coresight_dev_subtype_sink sink_subtype;
-+	enum coresight_dev_subtype_link link_subtype;
-+	enum coresight_dev_subtype_source source_subtype;
-+};
-+
-+/**
-+ * struct coresight_platform_data - data harvested from the DT specification
-+ * @cpu:	the CPU a source belongs to. Only applicable for ETM/PTMs.
-+ * @name:	name of the component as shown under sysfs.
-+ * @nr_inport:	number of input ports for this component.
-+ * @outports:	list of remote enpoint port number.
-+ * @child_names:name of all child components connected to this device.
-+ * @child_ports:child component port number the current component is
-+		connected  to.
-+ * @nr_outport:	number of output ports for this component.
-+ * @clk:	The clock this component is associated to.
-+ */
-+struct coresight_platform_data {
-+	int cpu;
-+	const char *name;
-+	int nr_inport;
-+	int *outports;
-+	const char **child_names;
-+	int *child_ports;
-+	int nr_outport;
-+	struct clk *clk;
-+};
-+
-+/**
-+ * struct coresight_desc - description of a component required from drivers
-+ * @type:	as defined by @coresight_dev_type.
-+ * @subtype:	as defined by @coresight_dev_subtype.
-+ * @ops:	generic operations for this component, as defined
-+		by @coresight_ops.
-+ * @pdata:	platform data collected from DT.
-+ * @dev:	The device entity associated to this component.
-+ * @groups	:operations specific to this component. These will end up
-+		in the component's sysfs sub-directory.
-+ */
-+struct coresight_desc {
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct coresight_platform_data *pdata;
-+	struct device *dev;
-+	const struct attribute_group **groups;
-+};
-+
-+/**
-+ * struct coresight_connection - representation of a single connection
-+ * @ref_count:	keeping count a port' references.
-+ * @outport:	a connection's output port number.
-+ * @chid_name:	remote component's name.
-+ * @child_port:	remote component's port number @output is connected to.
-+ * @child_dev:	a @coresight_device representation of the component
-+		connected to @outport.
-+ */
-+struct coresight_connection {
-+	int outport;
-+	const char *child_name;
-+	int child_port;
-+	struct coresight_device *child_dev;
-+};
-+
-+/**
-+ * struct coresight_device - representation of a device as used by the framework
-+ * @nr_inport:	number of input port associated to this component.
-+ * @nr_outport:	number of output port associated to this component.
-+ * @type:	as defined by @coresight_dev_type.
-+ * @subtype:	as defined by @coresight_dev_subtype.
-+ * @ops:	generic operations for this component, as defined
-+		by @coresight_ops.
-+ * @dev:	The device entity associated to this component.
-+ * @refcnt:	keep track of what is in use.
-+ * @path_link:	link of current component into the path being enabled.
-+ * @orphan:	true if the component has connections that haven't been linked.
-+ * @enable:	'true' if component is currently part of an active path.
-+ * @activated:	'true' only if a _sink_ has been activated.  A sink can be
-+		activated but not yet enabled.  Enabling for a _sink_
-+		happens when a source has been selected for that it.
-+ */
-+struct coresight_device {
-+	struct coresight_connection *conns;
-+	int nr_inport;
-+	int nr_outport;
-+	enum coresight_dev_type type;
-+	struct coresight_dev_subtype subtype;
-+	const struct coresight_ops *ops;
-+	struct device dev;
-+	atomic_t *refcnt;
-+	struct list_head path_link;
-+	bool orphan;
-+	bool enable;	/* true only if configured as part of a path */
-+	bool activated;	/* true only if a sink is part of a path */
-+};
-+
-+#define to_coresight_device(d) container_of(d, struct coresight_device, dev)
-+
-+#define source_ops(csdev)	csdev->ops->source_ops
-+#define sink_ops(csdev)		csdev->ops->sink_ops
-+#define link_ops(csdev)		csdev->ops->link_ops
-+
-+#define CORESIGHT_DEBUGFS_ENTRY(__name, __entry_name,			\
-+				 __mode, __get, __set, __fmt)		\
-+DEFINE_SIMPLE_ATTRIBUTE(__name ## _ops, __get, __set, __fmt);		\
-+static const struct coresight_ops_entry __name ## _entry = {		\
-+	.name = __entry_name,						\
-+	.mode = __mode,							\
-+	.ops  = &__name ## _ops						\
++void __exit etm_exit(void)
++{
++	amba_driver_unregister(&etm_driver);
 +}
++module_exit(etm_exit);
 +
-+/**
-+ * struct coresight_ops_sink - basic operations for a sink
-+ * Operations available for sinks
-+ * @enable:	enables the sink.
-+ * @disable:	disables the sink.
-+ */
-+struct coresight_ops_sink {
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
-+
-+/**
-+ * struct coresight_ops_link - basic operations for a link
-+ * Operations available for links.
-+ * @enable:	enables flow between iport and oport.
-+ * @disable:	disables flow between iport and oport.
-+ */
-+struct coresight_ops_link {
-+	int (*enable)(struct coresight_device *csdev, int iport, int oport);
-+	void (*disable)(struct coresight_device *csdev, int iport, int oport);
-+};
-+
-+/**
-+ * struct coresight_ops_source - basic operations for a source
-+ * Operations available for sources.
-+ * @trace_id:	returns the value of the component's trace ID as known
-+		to the HW.
-+ * @enable:	enables tracing from a source.
-+ * @disable:	disables tracing for a source.
-+ */
-+struct coresight_ops_source {
-+	int (*trace_id)(struct coresight_device *csdev);
-+	int (*enable)(struct coresight_device *csdev);
-+	void (*disable)(struct coresight_device *csdev);
-+};
-+
-+struct coresight_ops {
-+	const struct coresight_ops_sink *sink_ops;
-+	const struct coresight_ops_link *link_ops;
-+	const struct coresight_ops_source *source_ops;
-+};
-+
-+#ifdef CONFIG_CORESIGHT
-+extern struct coresight_device *
-+coresight_register(struct coresight_desc *desc);
-+extern void coresight_unregister(struct coresight_device *csdev);
-+extern int coresight_enable(struct coresight_device *csdev);
-+extern void coresight_disable(struct coresight_device *csdev);
-+extern int coresight_is_bit_set(u32 val, int position, int value);
-+extern int coresight_timeout(void __iomem *addr, u32 offset,
-+			     int position, int value);
-+#ifdef CONFIG_OF
-+extern struct coresight_platform_data *of_get_coresight_platform_data(
-+				struct device *dev, struct device_node *node);
-+#endif
-+#else
-+static inline struct coresight_device *
-+coresight_register(struct coresight_desc *desc) { return NULL; }
-+static inline void coresight_unregister(struct coresight_device *csdev) {}
-+static inline int
-+coresight_enable(struct coresight_device *csdev) { return -ENOSYS; }
-+static inline void coresight_disable(struct coresight_device *csdev) {}
-+static inline int coresight_is_bit_set(u32 val, int position, int value)
-+					 { return 0; }
-+static inline int coresight_timeout(void __iomem *addr, u32 offset,
-+				     int position, int value) { return 1; }
-+#ifdef CONFIG_OF
-+static inline struct coresight_platform_data *of_get_coresight_platform_data(
-+	struct device *dev, struct device_node *node) { return NULL; }
-+#endif
-+#endif
-+
-+#endif
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("CoreSight Program Flow Trace driver");
 -- 
 1.9.1
 
