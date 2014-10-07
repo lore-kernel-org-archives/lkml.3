@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515AbaJGWet (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 18:34:49 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:56282 "EHLO quartz.orcorp.ca"
+	id S1755530AbaJGWfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 18:35:04 -0400
+Received: from know-smtprelay-omc-2.server.virginmedia.net ([80.0.253.66]:47145
+	"EHLO know-smtprelay-omc-2.server.virginmedia.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752353AbaJGWes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 18:34:48 -0400
-Date: Tue, 7 Oct 2014 16:34:42 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH v2 2/7] tpm: two-phase chip management
- functions
-Message-ID: <20141007223442.GA3014@obsidianresearch.com>
-References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1412701277-27794-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141007175017.GA10432@obsidianresearch.com>
- <20141007222814.GA7262@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007222814.GA7262@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1755517AbaJGWe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 18:34:58 -0400
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.1 cv=AoZg3YNP c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+ a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=sl_BgbeAKdICNFk6qqAA:9
+ a=QEXdDO2ut3YA:10 a=tOduzXxj6vwy2j9bMnEA:9 a=m65m9HV2r7MA:10
+Message-ID: <1412720776.2797.8.camel@snewbury.org.uk>
+Subject: Re: [PATCH v9 1/3] drm: rockchip: Add basic drm driver
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Mark yao <mark.yao@rock-chips.com>, heiko@sntech.de,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, linux-doc@vger.kernel.org,
+        kever.yang@rock-chips.com, dri-devel@lists.freedesktop.org,
+        dianders@chromium.org, xjq@rock-chips.com, zyw@rock-chips.com,
+        cym@rock-chips.com, linux-rockchip@lists.infradead.org,
+        kfx@rock-chips.com, wxt@rock-chips.com, huangtao@rock-chips.com,
+        devicetree@vger.kernel.org, dbehr@chromium.org, yxj@rock-chips.com,
+        olof@lixom.net, djkurtz@chromium.org, marcheu@chromium.org,
+        xxm@rock-chips.com, xw@rock-chips.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cf@rock-chips.com
+Date: Tue, 07 Oct 2014 23:26:16 +0100
+In-Reply-To: <54338484.5070809@samsung.com>
+References: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+	 <1412082181-27703-1-git-send-email-mark.yao@rock-chips.com>
+	 <542AB0B2.6000207@samsung.com> <54336474.1010503@rock-chips.com>
+	 <54338484.5070809@samsung.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-3Ej4YuX3v57Rb2M1m87J"
+X-Mailer: Evolution 3.13.7 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 01:28:14AM +0300, Jarkko Sakkinen wrote:
 
-> > > @@ -714,15 +709,10 @@ static int tpm_tis_i2c_remove(struct i2c_client *client)
-> > >  	struct tpm_chip *chip = tpm_dev.chip;
-> > >  	release_locality(chip, chip->vendor.locality, 1);
-> > >  
-> > > -	/* close file handles */
-> > > -	tpm_dev_vendor_release(chip);
-> > > -
-> > >  	/* remove hardware */
-> > >  	tpm_remove_hardware(chip->dev);
-> > 
-> > Wrong ordering here, tpm_remove_hardware should always be first -
-> > drivers should not tear down internal state before calling it, so
-> > release_locality should be second.
-> > 
-> > Noting that since we use devm the kfree will not happen until
-> > remove returns, so the chip pointer is still valid.
-> 
-> Should I fix this ordering? I was thinking to focus putting proper
-> patterns in place only in tpm_tis and tpm_crb because they are the
-> that I'm able to test easily and then they can work as guideline for
-> other drivers.
+--=-3Ej4YuX3v57Rb2M1m87J
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I think since this patch is already touching this function there is
-no reason not to make it be correct (especially since it was noticed)
+I've just been discussing how this relates to rk29xx on #etnaviv.  I=20
+looked through the patch and it's good to see it's not limited to=20
+supporting Mali GPUs.  I see no reason this wouldn't be compatible=20
+with etna_viv for rk29xx (or future Rockchip designs with alternative=20
+GPUs) as long as the rest of the infrastructure to support rk29 is in=20
+place iommu (ARM SMMU?) driver, for example.
 
-The rest can wait till we globally replace tpm_remove_hardware with
-tpm_unregister - at that time the ordering can be audited and
-checked.
+IMHO it's vital to keep a logical separation between the video display=20
+hardware and the graphics processor on SoCs.
 
-Then the drivers will be clean and the core can finally be fixed.
 
-Jason
+--=-3Ej4YuX3v57Rb2M1m87J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iEYEABECAAYFAlQ0aIwACgkQGcb56gMuC61YdQCgroIqzaz6iZoEizQwqvTsmlZd
+1SgAnjRCWI26AASReJl6LwPDw2BmKaIK
+=WXIm
+-----END PGP SIGNATURE-----
+
+--=-3Ej4YuX3v57Rb2M1m87J--
+
