@@ -1,82 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753647AbaJGLMt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 07:12:49 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59731 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbaJGLMs (ORCPT
+	id S1753537AbaJGLQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 07:16:28 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:41566 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194AbaJGLQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 07:12:48 -0400
-Date: Tue, 7 Oct 2014 07:11:02 -0400
-From: Rich Felker <dalias@libc.org>
-To: David Daney <david.s.daney@gmail.com>
-Cc: David Daney <ddaney@caviumnetworks.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Daney <ddaney.cavm@gmail.com>, libc-alpha@sourceware.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-Message-ID: <20141007111102.GH23797@brightrain.aerifal.cx>
-References: <5433071B.4050606@caviumnetworks.com>
- <20141006213101.GA23797@brightrain.aerifal.cx>
- <54330D79.80102@caviumnetworks.com>
- <20141006215813.GB23797@brightrain.aerifal.cx>
- <543327E7.4020608@amacapital.net>
- <54332A64.5020605@caviumnetworks.com>
- <20141007000514.GD23797@brightrain.aerifal.cx>
- <543334CE.8060305@caviumnetworks.com>
- <20141007004915.GF23797@brightrain.aerifal.cx>
- <54337127.40806@gmail.com>
+	Tue, 7 Oct 2014 07:16:26 -0400
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 3/3] perf kvm: Print kvm specific --help output
+References: <1412669432-14833-1-git-send-email-namhyung@kernel.org>
+	<1412669432-14833-3-git-send-email-namhyung@kernel.org>
+Date: Tue, 07 Oct 2014 15:16:19 +0400
+In-Reply-To: <1412669432-14833-3-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 7 Oct 2014 17:10:32 +0900")
+Message-ID: <87sij0f7uk.fsf@linux.vnet.ibm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54337127.40806@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100711-0542-0000-0000-000001165437
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 09:50:47PM -0700, David Daney wrote:
-> >>the out-of-line execution trick, but do it somewhere other than in
-> >>stack memory.
-> >How do you answer Andy Lutomirski's question about what happens when a
-> >signal handler interrupts execution while the program counter is
-> >pointing at this "out-of-line execution" trampoline? This seems like a
-> >show-stopper for using anything other than the stack.
-> It would be nice to support, but not doing so would not be a
-> regression from current behavior.
 
-It's not just "nice" to support, it's mandatory. Otherwise you will
-execute essentially *random instructions* in this case, providing a
-very nice attack vector that can almost certainly be elevated to
-arbitrary code execution via timing of signals during floating point
-code.
+Hello,
 
-The current behavior in regards to this is correct: because you have a
-*stack*, each trampoline is pushed onto the stack in its own context,
-and popped when it's no longer needed. You can have arbitrarily many
-such trampolines up to the stack size. Note that each nested signal
-handler already requires sizeof(ucontext_t) in stack space, so these
-trampolines are a negligible additional cost without major effects on
-the number of signal handlers you can nest without overflowing the
-stack.
+Namhyung Kim <namhyung@kernel.org> writes:
 
-> >>One way of doing this is to have the kernel magically generate
-> >>thread local memory regions.
-> >>
-> >>Another option is to have userspace manage the out-of-line execution areas.
-> >>
-> >>As is often the case, each approach has different pluses and minuses.
-> >Having the kernel magically do it would be better, but I'm doubtful
-> >that solution works anyway due to the above signal handler/nesting
-> >issue.
-> 
-> So the perfect is the enemy of the good?  No non-executable stack
-> for you, MIPS.
+> The 'perf kvm stat record' tool is an alias of 'perf record' with
+> predefined kvm related options. All options that passed to 'perf kvm
+> stat record' are processed by the 'perf record' tool. So, 'perf kvm
+> stat record --help' prints help of usage for the 'perf record'
+> command. There are a few options useful for 'perf kvm stat record',
+> the rest either break kvm related output or don't change it.
+>
+> Let's print safe for 'perf kvm stat record' options in addition to
+> general 'perf record' --help output.
 
-No, regressions that make the situation worse than executable-stack
-are not "good" to begin with, even if it weren't for the other design
-issues and dumping everything on userspace for the sake of being lazy
-in the kernel.
+We probably want s/in addition to general 'perf record' --help output//
 
-Rich
+>
+> With this patch, new output looks like below:
+>
+>   $ perf kvm stat record -h
+>
+>    usage: perf kvm stat record [<options>]
+>
+>       -p, --pid <pid>       record events on existing process id
+>       -t, --tid <tid>       record events on existing thread id
+>       -r, --realtime <n>    collect data with this RT SCHED_FIFO priority
+>           --no-buffering    collect data without buffering
+>       -a, --all-cpus        system-wide collection from all CPUs
+>       -C, --cpu <cpu>       list of cpus to monitor
+>       -c, --count <n>       event period to sample
+>       -o, --output <file>   output file name
+>       -i, --no-inherit      child tasks do not inherit counters
+>       -m, --mmap-pages <pages>
+>                             number of mmap data pages
+>       -v, --verbose         be more verbose (show counter open errors, etc)
+>       -q, --quiet           don't print any message
+>       -s, --stat            per thread counts
+>       -D, --delay <n>       ms to wait before starting measurement after program start
+>       -u, --uid <user>      user to profile
+>           --per-thread      use per-thread mmaps
+>
+>   $ perf kvm stat record -n sleep 1
+>     Error: switch `n' is not usable
+>
+>    usage: perf kvm stat record [<options>]
+>
+> Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>
+> diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+> index 460a4ce9c044..c029d0fdc93e 100644
+> --- a/tools/perf/builtin-kvm.c
+> +++ b/tools/perf/builtin-kvm.c
+> @@ -1132,6 +1132,10 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
+>  		"-m", "1024",
+>  		"-c", "1",
+>  	};
+> +	const char * const kvm_stat_record_usage[] = {
+> +		"perf kvm stat record [<options>]",
+> +		NULL
+> +	};
+>  	const char * const *events_tp;
+>  	events_tp_size = 0;
+>
+> @@ -1159,6 +1163,27 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
+>  	for (j = 1; j < (unsigned int)argc; j++, i++)
+>  		rec_argv[i] = argv[j];
+>
+> +	set_option_flag(record_options, 'e', "event", PARSE_OPT_HIDDEN);
+> +	set_option_flag(record_options, 0, "filter", PARSE_OPT_HIDDEN);
+> +	set_option_flag(record_options, 'R', "raw-samples", PARSE_OPT_HIDDEN);
+> +
+> +	set_option_flag(record_options, 'F', "freq", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 0, "group", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'g', NULL, PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 0, "call-graph", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'd', "data", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'T', "timestamp", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'P', "period", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'n', "no-samples", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'N', "no-buildid-cache", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'B', "no-buildid", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'G', "cgroup", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'b', "branch-any", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'j', "branch-filter", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 'W', "weight", PARSE_OPT_DISABLED);
+> +	set_option_flag(record_options, 0, "transaction", PARSE_OPT_DISABLED);
+> +
+> +	record_usage = kvm_stat_record_usage;
+>  	return cmd_record(i, rec_argv, NULL);
+>  }
+
+
+Otherwise it works for me.
+Thanks!
+
