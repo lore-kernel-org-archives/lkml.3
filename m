@@ -1,162 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144AbaJGQQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 12:16:33 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:35214 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaJGQQb (ORCPT
+	id S1754232AbaJGQRW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 12:17:22 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:34553 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139AbaJGQRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 12:16:31 -0400
+	Tue, 7 Oct 2014 12:17:20 -0400
+Date: Tue, 7 Oct 2014 09:17:16 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: opencores-kbd: Switch to using managed resources
+Message-ID: <20141007161716.GB16469@dtor-ws>
+References: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
+ <20141007133322.GL3279@distanz.ch>
 MIME-Version: 1.0
-In-Reply-To: <20141006181202.GA22781@dtor-ws>
-References: <20141003231109.GA4530@amd>
-	<20141006181202.GA22781@dtor-ws>
-Date: Tue, 7 Oct 2014 18:16:31 +0200
-Message-ID: <CANq1E4RUQnW1qKszt8wJ+xBadHrCjo=J-POL79SbMRAj8v=wjQ@mail.gmail.com>
-Subject: Re: 3.17-rc5: kernel oops when exiting X under heavy load
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Dmitry Torokhov <dtor@mail.ru>
-Cc: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007133322.GL3279@distanz.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Oct 07, 2014 at 03:33:22PM +0200, Tobias Klauser wrote:
+> On 2014-10-07 at 13:31:41 +0200, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
+> > This change switch to managed resources to simplifies error handling
+> > and module unloading and does away with platform_driver remove function.
+> > 
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Cc: linux-input@vger.kernel.org
+> > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> > ---
+> >  drivers/input/keyboard/opencores-kbd.c |   54 ++++++++------------------------
+> >  1 file changed, 13 insertions(+), 41 deletions(-)
+> > 
+> > diff --git a/drivers/input/keyboard/opencores-kbd.c b/drivers/input/keyboard/opencores-kbd.c
+> > index 7b9b441..ecacb87 100644
+> > --- a/drivers/input/keyboard/opencores-kbd.c
+> > +++ b/drivers/input/keyboard/opencores-kbd.c
+> > @@ -56,27 +56,27 @@ static int opencores_kbd_probe(struct platform_device *pdev)
+> >  		return -EINVAL;
+> >  	}
+> >  
+> > -	opencores_kbd = kzalloc(sizeof(*opencores_kbd), GFP_KERNEL);
+> > -	input = input_allocate_device();
+> > +	opencores_kbd = devm_kzalloc(&pdev->dev, sizeof(*opencores_kbd),
+> > +				     GFP_KERNEL);
+> > +	input = devm_input_allocate_device(&pdev->dev);
+> >  	if (!opencores_kbd || !input) {
+> >  		dev_err(&pdev->dev, "failed to allocate device structures\n");
+> > -		error = -ENOMEM;
+> > -		goto err_free_mem;
+> > +		return -ENOMEM;
+> >  	}
+> >  
+> >  	opencores_kbd->addr_res = res;
+> > -	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> > +	res = devm_request_mem_region(&pdev->dev, res->start,
+> > +				      resource_size(res), pdev->name);
+> >  	if (!res) {
+> >  		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> > -		error = -EBUSY;
+> > -		goto err_free_mem;
+> > +		return -EBUSY;
+> >  	}
+> >  
+> > -	opencores_kbd->addr = ioremap(res->start, resource_size(res));
+> > +	opencores_kbd->addr = devm_ioremap(&pdev->dev, res->start,
+> > +					   resource_size(res));
+> 
+> You could use devm_ioremap_resource() here and get rid of the call to
+> devm_request_mem_region() and the check for !res above, i.e. something
+> like:
+> 
+> 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> 	[...]
+> 	opencores_kbd->addr = devm_ioremap_resource(&pdev->dev, res);
+> 	if (!opencores_kbd->addr) {
+> 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> 		return -ENXIO;
+> 	}
 
-On Mon, Oct 6, 2014 at 8:12 PM, Dmitry Torokhov <dtor@mail.ru> wrote:
-> On Sat, Oct 04, 2014 at 01:11:10AM +0200, Pavel Machek wrote:
->> Hi!
->>
->> From the backtrace, it looks evdev related...?
->
-> Hmm, looks like it...
->
->>
->>
->> Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: SME: Trying to authenticate with 00:11:95:05:30:d7 (SSID='pavel' freq=2412 MHz)
->> Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: Trying to associate with 00:11:95:05:30:d7 (SSID='pavel' freq=2412 MHz)
->> Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: scanning -> authenticating
->> Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: Associated with 00:11:95:05:30:d7
->> Oct  4 00:59:47 duo wpa_supplicant[3824]: wlan0: CTRL-EVENT-CONNECTED - Connection to 00:11:95:05:30:d7 completed (reauth) [id=0 id_str=]
->> Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: authenticating -> associating
->> Oct  4 00:59:47 duo NetworkManager[3465]: <info> (wlan0): supplicant interface state: associating -> completed
->> Oct  4 00:59:55 duo kernel: BUG: unable to handle kernel paging request at f47b5000
->> Oct  4 00:59:55 duo kernel: IP: [<c42765ff>] memcpy+0xf/0x20
->> Oct  4 00:59:55 duo kernel: *pde = 373f3067 *pte = 347b5060
->> Oct  4 00:59:55 duo kernel: Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
->> Oct  4 00:59:55 duo kernel: Modules linked in:
->> Oct  4 00:59:55 duo kernel: CPU: 0 PID: 22293 Comm: Xorg Not tainted 3.17.0-rc5+ #399
->> Oct  4 00:59:55 duo kernel: Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD8WW (2.19 ) 03/31/2011
->> Oct  4 00:59:55 duo kernel: task: eb4b1580 ti: ec6a2000 task.ti: ec6a2000
->> Oct  4 00:59:55 duo kernel: EIP: 0060:[<c42765ff>] EFLAGS: 00213006 CPU: 0
->> Oct  4 00:59:55 duo kernel: EIP is at memcpy+0xf/0x20
->> Oct  4 00:59:55 duo kernel: EAX: f5c42000 EBX: 00000bfc ECX: 00000146 EDX: f47b491c
->> Oct  4 00:59:55 duo kernel: ESI: f47b5000 EDI: f5c426e4 EBP: ec6a3e80 ESP: ec6a3e74
->> Oct  4 00:59:55 duo kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->> Oct  4 00:59:55 duo kernel: CR0: 80050033 CR2: f47b5000 CR3: 2c77d000 CR4: 00000710
->> Oct  4 00:59:55 duo kernel: Stack:
->> Oct  4 00:59:55 duo kernel: ec409800 f47b499c 00000bfc ec6a3ec4 c451f154 ec40980c f5c42000 c47ee121
->> Oct  4 00:59:55 duo kernel: 00000001 00000001 00000000 00203246 c47ef168 c451f367 f47cdcb4 eb4b1580
->> Oct  4 00:59:55 duo kernel: 00203246 eab3eec0 ec409800 ec409800 ec6a3f2c c451f468 f47b491c 000002ff
->> Oct  4 00:59:55 duo kernel: Call Trace:
->> Oct  4 00:59:55 duo kernel: [<c451f154>] evdev_handle_get_val.isra.7+0x54/0x240
->> Oct  4 00:59:55 duo kernel: [<c47ee121>] ? mutex_lock_interruptible_nested+0x31/0x330
->> Oct  4 00:59:55 duo kernel: [<c47ef168>] ? mutex_unlock+0x8/0x10
->> Oct  4 00:59:55 duo kernel: [<c451f367>] ? evdev_ioctl+0x27/0x7f0
->> Oct  4 00:59:55 duo kernel: [<c451f468>] evdev_ioctl+0x128/0x7f0
->> Oct  4 00:59:55 duo kernel: [<c40e9c5c>] ? cache_free_debugcheck+0x2ac/0x340
->> Oct  4 00:59:55 duo kernel: [<c451f340>] ? evdev_handle_get_val.isra.7+0x240/0x240
->> Oct  4 00:59:55 duo kernel: [<c40fead2>] do_vfs_ioctl+0x2f2/0x520
->> Oct  4 00:59:55 duo kernel: [<c40f8178>] ? final_putname+0x18/0x40
->> Oct  4 00:59:55 duo kernel: [<c40f8178>] ? final_putname+0x18/0x40
->> Oct  4 00:59:55 duo kernel: [<c40ee12a>] ? do_sys_open+0x17a/0x200
->> Oct  4 00:59:55 duo kernel: [<c40fed36>] SyS_ioctl+0x36/0x70
->> Oct  4 00:59:55 duo kernel: [<c47f105e>] syscall_call+0x7/0x7
->> Oct  4 00:59:55 duo kernel: [<c47f0000>] ? hrtimer_nanosleep_restart+0x60/0xa0
->> Oct  4 00:59:55 duo kernel: Code: fb ff ff 8b 43 54 2b 43 50 88 43 4e 5b 5d f3 c3 90 90 90 90 90 90 90 90 90 90 90 90 55 89 e5 57 89 c7 56 89 d6 53 89 cb c1 e9 02 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 5b 5e 5f 5d c3 90 55 89 e5 57
->> Oct  4 00:59:55 duo kernel: EIP: [<c42765ff>] memcpy+0xf/0x20 SS:ESP 0068:ec6a3e74
->> Oct  4 00:59:55 duo kernel: CR2: 00000000f47b5000
->> Oct  4 00:59:55 duo kernel: ---[ end trace fee349319591dc44 ]---
->> Oct  4 01:04:08 duo rsyslogd: [origin software="rsyslogd" swVersion="8.4.0" x-pid="3490" x-info="http://www.rsyslog.com"] start
->>
->
-> Does the patch below help by any chance?
->
-> Thanks.
->
-> --
-> Dmitry
->
->
-> Input: evdev - fix EVIOCG{type} ioctl
->
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->
-> The 'max' size passed into the function is measured in number of bits
-> (KEY_MAX, LED_MAX, etc) so we nedd to convert it accoidingly before tyring
-> to copy the data out, otherwise we will try copying too much and end up
-> with up with a page fault.
->
-> Reported-by: Pavel Machek <pavel@ucw.cz>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  drivers/input/evdev.c |   13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index de05545..bc20348 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -738,20 +738,23 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
->   */
->  static int evdev_handle_get_val(struct evdev_client *client,
->                                 struct input_dev *dev, unsigned int type,
-> -                               unsigned long *bits, unsigned int max,
-> -                               unsigned int size, void __user *p, int compat)
-> +                               unsigned long *bits, unsigned int maxbit,
-> +                               unsigned int maxlen, void __user *p,
-> +                               int compat)
->  {
->         int ret;
->         unsigned long *mem;
-> +       size_t len;
->
-> -       mem = kmalloc(sizeof(unsigned long) * max, GFP_KERNEL);
-> +       len = BITS_TO_LONGS(maxbit) * sizeof(unsigned long);
-> +       mem = kmalloc(len, GFP_KERNEL);
->         if (!mem)
->                 return -ENOMEM;
->
->         spin_lock_irq(&dev->event_lock);
->         spin_lock(&client->buffer_lock);
->
-> -       memcpy(mem, bits, sizeof(unsigned long) * max);
-> +       memcpy(mem, bits, len);
+You need to be careful with devm_ioremap_resource() ocnversions as it
+returns ERR_PTR-encoded pointer on failures, not NULL.
 
-So this is where it breaks? Because we copy from "bits", which is an
-array in the input-device? Very unlikely to trigger, I guess. Sure, so
-far we overallocate and copy way to much into the array, but the
-bits_to_user() truncates it properly. So afaics, this only fails if
-the kernel memory isn't accessible, and thus faults.
+I adjusted the patch to use devm_ioremap_resource() and applied.
 
-Patch looks good! Nice catch:
+Thanks.
 
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks
-David
-
->
->         spin_unlock(&dev->event_lock);
->
-> @@ -759,7 +762,7 @@ static int evdev_handle_get_val(struct evdev_client *client,
->
->         spin_unlock_irq(&client->buffer_lock);
->
-> -       ret = bits_to_user(mem, max, size, p, compat);
-> +       ret = bits_to_user(mem, maxbit, maxlen, p, compat);
->         if (ret < 0)
->                 evdev_queue_syn_dropped(client);
->
+-- 
+Dmitry
