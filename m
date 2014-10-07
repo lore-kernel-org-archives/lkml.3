@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463AbaJGPwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:52:04 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:35828 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754415AbaJGPv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:51:57 -0400
-Date: Tue, 7 Oct 2014 17:51:24 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-mips@linux-mips.org, linux-efi@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-xtensa@linux-xtensa.org,
-        Mark Rutland <mark.rutland@arm.com>, devel@driverdev.osuosl.org,
-        linux-s390@vger.kernel.org, lguest@lists.ozlabs.org,
-        linux-c6x-dev@linux-c6x.org, linux-hexagon@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, xen-devel@lists.xenproject.org,
-        devicetree@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net, linux-pm@vger.kernel.org,
-        adi-buildroot-devel@lists.sourceforge.net, linux-m68k@vger.kernel.org,
-        linux-am33-list@redhat.com, linux-tegra@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net, linux-metag@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-parisc@vger.kernel.org,
-        linux-cris-kernel@axis.com, Rob Herring <robh+dt@kernel.org>,
-        linux-alpha@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 07/44] qnap-poweroff: Drop reference to pm_power_off from
- devicetree bindings
-Message-ID: <20141007155124.GB19005@lunn.ch>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-8-git-send-email-linux@roeck-us.net>
+	id S1754332AbaJGPxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:53:33 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:33326 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169AbaJGPxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 11:53:31 -0400
+Message-ID: <54340C70.9070505@gmail.com>
+Date: Tue, 07 Oct 2014 17:53:20 +0200
+From: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412659726-29957-8-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCH v3 1/2] staging: gs_fpgaboot: Use print_hex_dump_bytes instead
+ of pr_info
+References: <5433FA93.8000607@gmail.com> <5433FB18.9000009@gmail.com>	 <54340568.7090700@gmail.com> <1412695842.2916.49.camel@joe-AO725>
+In-Reply-To: <1412695842.2916.49.camel@joe-AO725>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 10:28:09PM -0700, Guenter Roeck wrote:
-> Replace reference to pm_power_off (which is an implementation detail)
-> and replace it with a more generic description of the driver's functionality.
+From: Joe Perches <joe@perches.com>
 
-Acked-by: Andrew Lunn <andrew@lunn.ch>
+Use print_hex_dump_bytes instead of pr_info
 
-Thanks
-	Andrew
+Signed-off-by: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+Reviewed-by: Insop Song <insop.song@gainspeed.com>
 
-> 
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt b/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-> index af25e77..1e2260a 100644
-> --- a/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-> +++ b/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-> @@ -3,8 +3,8 @@
->  QNAP NAS devices have a microcontroller controlling the main power
->  supply. This microcontroller is connected to UART1 of the Kirkwood and
->  Orion5x SoCs. Sending the character 'A', at 19200 baud, tells the
-> -microcontroller to turn the power off. This driver adds a handler to
-> -pm_power_off which is called to turn the power off.
-> +microcontroller to turn the power off. This driver installs a handler
-> +to power off the system.
->  
->  Synology NAS devices use a similar scheme, but a different baud rate,
->  9600, and a different character, '1'.
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+---
+ drivers/staging/gs_fpgaboot/gs_fpgaboot.c | 25 ++-----------------------
+ 1 file changed, 2 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+index 6aa9d7c..9764a9a 100644
+--- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
++++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+@@ -46,27 +46,6 @@ static char	*file = "xlinx_fpga_firmware.bit";
+ module_param(file, charp, S_IRUGO);
+ MODULE_PARM_DESC(file, "Xilinx FPGA firmware file.");
+ 
+-#ifdef DEBUG_FPGA
+-static void datadump(char *msg, void *m, int n)
+-{
+-	int i;
+-	unsigned char *c;
+-
+-	pr_info("=== %s ===\n", msg);
+-
+-	c = m;
+-
+-	for (i = 0; i < n; i++) {
+-		if ((i&0xf) == 0)
+-			pr_info(KERN_INFO "\n  0x%4x: ", i);
+-
+-		pr_info("%02X ", c[i]);
+-	}
+-
+-	pr_info("\n");
+-}
+-#endif /* DEBUG_FPGA */
+-
+ static void read_bitstream(char *bitdata, char *buf, int *offset, int rdsize)
+ {
+ 	memcpy(buf, bitdata + *offset, rdsize);
+@@ -220,9 +199,9 @@ static int gs_download_image(struct fpgaimage *fimage, enum wbus bus_bytes)
+ 	size = fimage->lendata;
+ 
+ #ifdef DEBUG_FPGA
+-	datadump("bitfile sample", bitdata, 0x100);
++	print_hex_dump_bytes("bitfile sample: ", DUMP_PREFIX_OFFSET,
++			     bitdata, 0x100);
+ #endif /* DEBUG_FPGA */
+-
+ 	if (!xl_supported_prog_bus_width(bus_bytes)) {
+ 		pr_err("unsupported program bus width %d\n",
+ 				bus_bytes);
+-- 
+2.1.2
+
