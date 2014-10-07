@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827AbaJGXgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 19:36:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39595 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755605AbaJGXTz (ORCPT
+	id S1755895AbaJGXhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 19:37:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57789 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755795AbaJGXhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 19:19:55 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Chuck Ebbert <cebbert.lkml@gmail.com>
-Subject: [PATCH 3.14 01/37] udf: Avoid infinite loop when processing indirect ICBs
-Date: Tue,  7 Oct 2014 16:19:18 -0700
-Message-Id: <20141007231827.088225894@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
-References: <20141007231827.043235686@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 7 Oct 2014 19:37:05 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Darren Hart <dvhart@infradead.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Len Brown <Len.Brown@intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Woodhouse <david.woodhouse@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [RFC PATCH v2 07/16] gpio: Add support for unified device properties interface
+Date: Wed, 08 Oct 2014 01:57:11 +0200
+Message-ID: <2748359.x48UaePcbM@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CACRpkdbehhsDxikCV1bJjBm581MCcu2DRSmiQQXHG09EmjLNBQ@mail.gmail.com>
+References: <1410868367-11056-1-git-send-email-mika.westerberg@linux.intel.com> <20140926032131.GC40523@vmdeb7> <CACRpkdbehhsDxikCV1bJjBm581MCcu2DRSmiQQXHG09EmjLNBQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, October 07, 2014 03:37:04 PM Linus Walleij wrote:
+> On Fri, Sep 26, 2014 at 5:21 AM, Darren Hart <dvhart@infradead.org> wrote:
+> > On Wed, Sep 24, 2014 at 11:12:36AM +0200, Arnd Bergmann wrote:
+> 
+> > So as Mika has pointed out, LEDs aren't the only ones affected. Several drivers
+> > will need to walk through non-device child nodes, and it seems to me that having
+> > a firmware-independent mechanism to do so benefits the drivers by both making
+> > them smaller and by increasing the reusability of new drivers and drivers
+> > updated to use the new API across platforms.
+> 
+> In a recent round of reviews, for the OF case, that led to drivers
+> which used device_initcall() without being a module, getting a match
+> and handle to the parent device, and then walking over the nodes
+> and instantiating child objects (Linux devices usually) in the process.
+> 
+> It was done as a response to the remark from Rob Herring that
+> we were modeling things in the device tree as devices when they
+> really weren't, we were just doing it that way because it fits the
+> Linux device model and it's easier.
+> 
+> So we have that case too.
+> 
+> The question is if it's anything close to generalizable.
 
-------------------
+Well, OK.
 
-From: Jan Kara <jack@suse.cz>
+Can you please have a look at these patchse in v4:
 
-commit c03aa9f6e1f938618e6db2e23afef0574efeeb65 upstream.
+https://patchwork.kernel.org/patch/5040161/
+https://patchwork.kernel.org/patch/5040081/
+https://patchwork.kernel.org/patch/5040061/
 
-We did not implement any bound on number of indirect ICBs we follow when
-loading inode. Thus corrupted medium could cause kernel to go into an
-infinite loop, possibly causing a stack overflow.
+We now have an ACK from Dmitry on the gpio_keys_polled thing and Bryan
+said he was OK with the leds changes already in v2 (IIRC).
 
-Fix the possible stack overflow by removing recursion from
-__udf_read_inode() and limit number of indirect ICBs we follow to avoid
-infinite loops.
+Also Alexandre is saying that he's not opposed to the changes in
+https://patchwork.kernel.org/patch/5040161/, although there may be a better
+way.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Chuck Ebbert <cebbert.lkml@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+And we have AKCs from Greg on the driver core changes, so it looks like
+GPIO really is the only missing thing and we need that code to support
+our hardware.
 
----
- fs/udf/inode.c |   35 +++++++++++++++++++++--------------
- 1 file changed, 21 insertions(+), 14 deletions(-)
-
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1271,13 +1271,22 @@ update_time:
- 	return 0;
- }
- 
-+/*
-+ * Maximum length of linked list formed by ICB hierarchy. The chosen number is
-+ * arbitrary - just that we hopefully don't limit any real use of rewritten
-+ * inode on write-once media but avoid looping for too long on corrupted media.
-+ */
-+#define UDF_MAX_ICB_NESTING 1024
-+
- static void __udf_read_inode(struct inode *inode)
- {
- 	struct buffer_head *bh = NULL;
- 	struct fileEntry *fe;
- 	uint16_t ident;
- 	struct udf_inode_info *iinfo = UDF_I(inode);
-+	unsigned int indirections = 0;
- 
-+reread:
- 	/*
- 	 * Set defaults, but the inode is still incomplete!
- 	 * Note: get_new_inode() sets the following on a new inode:
-@@ -1314,28 +1323,26 @@ static void __udf_read_inode(struct inod
- 		ibh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 1,
- 					&ident);
- 		if (ident == TAG_IDENT_IE && ibh) {
--			struct buffer_head *nbh = NULL;
- 			struct kernel_lb_addr loc;
- 			struct indirectEntry *ie;
- 
- 			ie = (struct indirectEntry *)ibh->b_data;
- 			loc = lelb_to_cpu(ie->indirectICB.extLocation);
- 
--			if (ie->indirectICB.extLength &&
--				(nbh = udf_read_ptagged(inode->i_sb, &loc, 0,
--							&ident))) {
--				if (ident == TAG_IDENT_FE ||
--					ident == TAG_IDENT_EFE) {
--					memcpy(&iinfo->i_location,
--						&loc,
--						sizeof(struct kernel_lb_addr));
--					brelse(bh);
--					brelse(ibh);
--					brelse(nbh);
--					__udf_read_inode(inode);
-+			if (ie->indirectICB.extLength) {
-+				brelse(bh);
-+				brelse(ibh);
-+				memcpy(&iinfo->i_location, &loc,
-+				       sizeof(struct kernel_lb_addr));
-+				if (++indirections > UDF_MAX_ICB_NESTING) {
-+					udf_err(inode->i_sb,
-+						"too many ICBs in ICB hierarchy"
-+						" (max %d supported)\n",
-+						UDF_MAX_ICB_NESTING);
-+					make_bad_inode(inode);
- 					return;
- 				}
--				brelse(nbh);
-+				goto reread;
- 			}
- 		}
- 		brelse(ibh);
-
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
