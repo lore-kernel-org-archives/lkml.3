@@ -1,120 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbaJGKHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 06:07:49 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38521 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaJGKHq convert rfc822-to-8bit (ORCPT
+	id S1753397AbaJGKLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 06:11:55 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:61048 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753276AbaJGKLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 06:07:46 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Robert Baldyga <r.baldyga@samsung.com>, balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrzej.p@samsung.com,
-        k.opasiak@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: Re: [PATCH v2] usb: gadget: f_fs: add "zombie" mode
-In-Reply-To: <1412668742-14831-1-git-send-email-r.baldyga@samsung.com>
-Organization: http://mina86.com/
-References: <1412668742-14831-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:141007:gregkh@linuxfoundation.org::1WQYS5dtxorCEnNa:000000000000000000000000000000000000aNb
-X-Hashcash: 1:20:141007:balbi@ti.com::1IDsSUuMzoBtN3K7:000001SxF
-X-Hashcash: 1:20:141007:r.baldyga@samsung.com::+sby5DA+IHj+8q9y:00000000000000000000000000000000000000002Tpd
-X-Hashcash: 1:20:141007:linux-kernel@vger.kernel.org::QumyhCfqFP3bnltR:0000000000000000000000000000000003AtH
-X-Hashcash: 1:20:141007:k.opasiak@samsung.com::60qrodrSVRgERAmF:000000000000000000000000000000000000000034MM
-X-Hashcash: 1:20:141007:r.baldyga@samsung.com::cxnMz5NtkI7aQkTb:00000000000000000000000000000000000000003V/u
-X-Hashcash: 1:20:141007:andrzej.p@samsung.com::TikIhH/cuymAnhld:0000000000000000000000000000000000000000AXMR
-X-Hashcash: 1:20:141007:linux-usb@vger.kernel.org::u6x71rh+W2NxCSrh:000000000000000000000000000000000000FgZy
-Date: Tue, 07 Oct 2014 12:07:41 +0200
-Message-ID: <xa1t61fwyyz6.fsf@mina86.com>
+	Tue, 7 Oct 2014 06:11:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAL_JsqJ+TCfeHF=Rzec0=-hM6Y_vbijQBvyyvL58E67WMYTxEg@mail.gmail.com>
+References: <1412585954-21172-1-git-send-email-grant.likely@linaro.org> <CAL_JsqJ+TCfeHF=Rzec0=-hM6Y_vbijQBvyyvL58E67WMYTxEg@mail.gmail.com>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Tue, 7 Oct 2014 11:11:31 +0100
+X-Google-Sender-Auth: _TrS7P6jfiWMGKHnmUpTZ0C5uBc
+Message-ID: <CACxGe6ss1y=ee66SVMxFC_Dq0Wi3bx9WRamwkWxCDk8E6QtugA@mail.gmail.com>
+Subject: Re: [PATCH] of: Eliminate of_allnodes list
+To: Rob Herring <robh@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Gaurav Minocha <gaurav.minocha.os@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07 2014, Robert Baldyga <r.baldyga@samsung.com> wrote:
-> @@ -1411,8 +1425,17 @@ static void ffs_data_closed(struct ffs_data *ffs)
->  	ENTER();
->  
->  	if (atomic_dec_and_test(&ffs->opened)) {
-> -		ffs->state = FFS_CLOSING;
-> -		ffs_data_reset(ffs);
-> +		if (ffs->zombie_mode) {
-> +			ffs->state = FFS_ZOMBIE;
-> +			if (ffs->epfiles)
-> +				ffs_epfiles_delete(ffs->epfiles,
-> +						   ffs->eps_count);
+On Mon, Oct 6, 2014 at 2:56 PM, Rob Herring <robh@kernel.org> wrote:
+> On Mon, Oct 6, 2014 at 3:59 AM, Grant Likely <grant.likely@linaro.org> wrote:
+>> The device tree structure is composed of two lists; the 'allnodes' list
+>> which is a singly linked list containing every node in the tree, and the
+>> child->parent structure where each parent node has a singly linked list
+>> of children. All of the data in the allnodes list can be easily
+>> reproduced with the parent-child lists, so of_allnodes is actually
+>> unnecessary. Remove it entirely which saves a bit of memory and
+>> simplifies the data structure quite a lot.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh@kernel.org>
+>> Cc: Gaurav Minocha <gaurav.minocha.os@gmail.com>
+>> ---
+>>
+>> This applies against my current devicetree/next branch on git.secretlab.ca/git/linux
+>>
+>> I'm not going to try and merge this in v3.18. It's too risky a patch and
+>> I only just wrote it. I'll try to get it in for v3.19.
+>
+> Looks good. A few minor things below.
+>
+> [...]
+>
+>> diff --git a/drivers/mfd/vexpress-sysreg.c b/drivers/mfd/vexpress-sysreg.c
+>> index 9e21e4fc9599..8f43ab8fd2d6 100644
+>> --- a/drivers/mfd/vexpress-sysreg.c
+>> +++ b/drivers/mfd/vexpress-sysreg.c
+>> @@ -223,7 +223,7 @@ static int vexpress_sysreg_probe(struct platform_device *pdev)
+>>         vexpress_config_set_master(vexpress_sysreg_get_master());
+>>
+>>         /* Confirm board type against DT property, if available */
+>> -       if (of_property_read_u32(of_allnodes, "arm,hbi", &dt_hbi) == 0) {
+>> +       if (of_property_read_u32(of_root, "arm,hbi", &dt_hbi) == 0) {
+>
+> Given this and selftests are the only users in the whole tree, perhaps
+> this should just use of_find_node_by_path("/") rather than expose this
+> global.
 
-This looks suspicious.  Why isn't it:
+I'll look at doing that with a separate patch. The
+of_have_populated_dt() static inline in of.h uses it, so it needs to
+be exported with the current code. I'd need to create an exported
+version of that function to unexport of_root.
 
-+			if (ffs->epfiles) {
-+				ffs_epfiles_destroy(ffs->epfiles,
-+						   ffs->eps_count);
-+				ffs->epfiles = NULL;
-+			}
+>
+>>                 u32 id = vexpress_get_procid(VEXPRESS_SITE_MASTER);
+>>                 u32 hbi = (id >> SYS_PROCIDx_HBI_SHIFT) & SYS_HBI_MASK;
+>>
+>> diff --git a/drivers/of/base.c b/drivers/of/base.c
+>> index 2305dc0382bc..b86beff7b167 100644
+>> --- a/drivers/of/base.c
+>> +++ b/drivers/of/base.c
+>> @@ -32,8 +32,8 @@
+>>
+>>  LIST_HEAD(aliases_lookup);
+>>
+>> -struct device_node *of_allnodes;
+>> -EXPORT_SYMBOL(of_allnodes);
+>> +struct device_node *of_root;
+>> +EXPORT_SYMBOL(of_root);
+>>  struct device_node *of_chosen;
+>>  struct device_node *of_aliases;
+>>  struct device_node *of_stdout;
+>> @@ -48,7 +48,7 @@ struct kset *of_kset;
+>>   */
+>>  DEFINE_MUTEX(of_mutex);
+>>
+>> -/* use when traversing tree through the allnext, child, sibling,
+>> +/* use when traversing tree through the child, sibling,
+>>   * or parent members of struct device_node.
+>>   */
+>>  DEFINE_RAW_SPINLOCK(devtree_lock);
+>> @@ -204,7 +204,7 @@ static int __init of_init(void)
+>>         mutex_unlock(&of_mutex);
+>>
+>>         /* Symlink in /proc as required by userspace ABI */
+>> -       if (of_allnodes)
+>> +       if (of_root)
+>>                 proc_symlink("device-tree", NULL, "/sys/firmware/devicetree/base");
+>>
+>>         return 0;
+>> @@ -245,6 +245,23 @@ struct property *of_find_property(const struct device_node *np,
+>>  }
+>>  EXPORT_SYMBOL(of_find_property);
+>>
+>> +struct device_node *__of_find_all_nodes(struct device_node *prev)
+>> +{
+>> +       struct device_node *np;
+>> +       if (!prev)
+>> +               np = of_root;
+>> +       else if (prev->child) {
+>> +               np = prev->child;
+>> +       } else {
+>
+> Your braces are inconsistent.
 
-If ffs->epfiles is not NULLed, call to ffs_data_reset in ffs_data_open
-will call ffs_epfiles_destroy which we don't want, do we?
+Fixed.
 
-> +			if (ffs->setup_state == FFS_SETUP_PENDING)
-> +				__ffs_ep0_stall(ffs);
-> +		} else {
-> +			ffs->state = FFS_CLOSING;
-> +			ffs_data_reset(ffs);
-> +		}
->  	}
->  
->  	ffs_data_put(ffs);
+>> @@ -180,12 +172,12 @@ static void __init of_selftest_check_tree_linkage(void)
+>>         struct device_node *np;
+>>         int allnode_count = 0, child_count;
+>>
+>> -       if (!of_allnodes)
+>> +       if (!of_root)
+>
+> This could be !of_have_populated_dt() instead.
 
-> @@ -93,6 +93,26 @@ enum ffs_state {
->  	FFS_ACTIVE,
->  
->  	/*
-> +	 * Function is visible to host, but it's not functional. All
-> +	 * setup requests are stalled and another transfers are refused.
+For internal dt code, I don't mind referencing of_root directly.
 
-“and transfers on other endpoints are refused.”
-
-> +	 * All epfiles, excepting ep0, are deleted so there is no way
-
-s/excepting/except/
-
-> +	 * to perform any operations on them.
-> +	 *
-> +	 * This state is set after closing all functionfs files, when
-> +	 * mount parameter "zombie=1" has been set. Function will remain
-> +	 * in zombie state until filesystem will be umounted or ep0 will
-
-s/will be umounted/is unmounted/
-s/ep0 will be/ep0 is/
-
-> +	 * be opened again. In the second case functionfs state will be
-> +	 * reseted, and it will be ready for descriptors and strings
-
-s/reseted/reset/
-
-> +	 * writing.
-> +	 *
-> +	 * This is useful only when functionfs is composed to gadget
-> +	 * with another function which can perform some critical
-> +	 * operations, and it's strongly desired to have this operations
-> +	 * completed, even after functionfs files closure.
-> +	 */
-> +	FFS_ZOMBIE,
-> +
-> +	/*
->  	 * All endpoints have been closed.  This state is also set if
->  	 * we encounter an unrecoverable error.  The only
->  	 * unrecoverable error is situation when after reading strings
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+Thanks for the review.
