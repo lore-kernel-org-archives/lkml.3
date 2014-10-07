@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaJGPab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 11:30:31 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:56983 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165AbaJGPaa (ORCPT
+	id S1754280AbaJGPas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 11:30:48 -0400
+Received: from smtprelay0047.hostedemail.com ([216.40.44.47]:55425 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753269AbaJGPar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 11:30:30 -0400
-Date: Tue, 7 Oct 2014 17:30:27 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: hrtimer deadlock caused by nohz_full
-Message-ID: <20141007153024.GA14119@lerouge>
-References: <20140925141425.GA21702@redhat.com>
- <alpine.DEB.2.10.1409251630210.4604@nanos>
- <20140925234657.GB14870@lerouge>
- <20141002182409.GA29934@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141002182409.GA29934@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 7 Oct 2014 11:30:47 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:960:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2560:2563:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3770:3868:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6117:7652:7903:9025:9388:10004:10400:10848:11026:11027:11232:11658:11914:12043:12292:12517:12519:12555:12679:12682:12740:12776:13069:13255:13311:13357:13845:14106:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: farm54_7adb7a91ff503
+X-Filterd-Recvd-Size: 1544
+Message-ID: <1412695842.2916.49.camel@joe-AO725>
+Subject: Re: [PATCH v2 1/2] staging: gs_fpgaboot: Fix "Possible unnecessary
+ KERN_INFO" checkpatch.pl warning
+From: Joe Perches <joe@perches.com>
+To: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Date: Tue, 07 Oct 2014 08:30:42 -0700
+In-Reply-To: <54340568.7090700@gmail.com>
+References: <5433FA93.8000607@gmail.com> <5433FB18.9000009@gmail.com>
+	 <54340568.7090700@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 02:24:09PM -0400, Dave Jones wrote:
-> On Fri, Sep 26, 2014 at 01:46:59AM +0200, Frederic Weisbecker wrote:
-> 
->  > > >  [<ffffffffa10f95f8>] hrtimer_try_to_cancel+0x58/0x1f0
->  > > >  [<ffffffffa10f97aa>] hrtimer_cancel+0x1a/0x30
->  > > >  [<ffffffffa110a0e7>] tick_nohz_restart+0x17/0x90
->  > > >  [<ffffffffa110af38>] __tick_nohz_full_check+0xc8/0xe0
->  > > >  [<ffffffffa110af5e>] nohz_full_kick_work_func+0xe/0x10
->  > > >  [<ffffffffa117c9bf>] irq_work_run_list+0x4f/0x70
->  > > >  [<ffffffffa117ca0a>] irq_work_run+0x2a/0x60
->  > > >  [<ffffffffa10f82eb>] update_process_times+0x5b/0x70
->  > > >  [<ffffffffa1109dc5>] tick_sched_handle.isra.21+0x25/0x60
->  > > >  [<ffffffffa110a0b1>] tick_sched_timer+0x41/0x60
->  > > >  [<ffffffffa10f8c71>] __run_hrtimer+0x81/0x480
->  > > >  [<ffffffffa110a070>] ? tick_sched_do_timer+0x90/0x90
->  > > >  [<ffffffffa10f9b27>] hrtimer_interrupt+0x107/0x260
->  > > >  [<ffffffffa10331a4>] local_apic_timer_interrupt+0x34/0x60
->  > > >  [<ffffffffa182734f>] smp_apic_timer_interrupt+0x3f/0x60
->  > > >  [<ffffffffa182576f>] apic_timer_interrupt+0x6f/0x80
->  > > 
->  > > hrtimer_interrupt
->  > >   tick_sched_timer
->  > >     tick_sched_handle
->  > >       update_process_times
->  > >         irq_work_run
->  > > 	  irq_work_run_list
->  > > 	    nohz_full_kick_work_func
->  > > 	      __tick_nohz_full_check
->  > > 	        tick_nohz_restart
->  > >                   hrtimer_cancel
->  > > 
->  > > And that hrtimer_cancel is:
->  > > 
->  > > static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
->  > > {
->  > > 	hrtimer_cancel(&ts->sched_timer);
->  > > 
->  > > Now, that's really bad because we are in the timer callback of
->  > > ts->sched_timer. So hrtimer_cancel will loop forever waiting for the
->  > > callback to complete.
->  > > 
->  > > Frederic !?!?
->  > 
->  > Right, this patchset fixes it: "[PATCH 0/8] nohz: Fix nohz kick irq work on tick v3"
->  > 
->  > I was about to make the pull request, the branch is acked by peterz.
->  > Would you like to pull it? It's all merge window material.
->  > 
->  > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->  > 	nohz/fixes-v3
-> 
-> I'm now hitting this with such regularity that it's preventing me from
-> tracking down other bugs.  Can we get this merged soon please ?
+On Tue, 2014-10-07 at 17:23 +0200, Dzmitry Sledneu wrote:
+> Fix "Possible unnecessary KERN_INFO" checkpatch.pl warning
+[]
+> diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+[]
+> @@ -58,7 +58,7 @@ static void datadump(char *msg, void *m, int n)
+>  
+>  	for (i = 0; i < n; i++) {
+>  		if ((i&0xf) == 0)
+> -			pr_info(KERN_INFO "\n  0x%4x: ", i);
+> +			pr_info("\n  0x%4x: ", i);
+>  
+>  		pr_info("%02X ", c[i]);
+>  	}
 
-I asked Thomas to pull but he probably missed it. So I did a formal pull request
-to Ingo a few days later but he told me that the pull request was made too late
-as the merge window was too close. I told him it fixes annoying bugs but that was on IRC
-so this probably got lost.
+Please fix this by using print_hex_dump (and family) instead
 
-It will probably be delayed to 3.18
-Sorry I don't have much control myself on merging patches upstream.
+Something like:
+http://www.spinics.net/lists/linux-driver-devel/msg55075.html
+
+
