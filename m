@@ -1,194 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999AbaJGRwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 13:52:39 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33643 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaJGRwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 13:52:36 -0400
+	id S1755057AbaJGRxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 13:53:39 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:37383 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402AbaJGRxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 13:53:38 -0400
+Date: Tue, 7 Oct 2014 11:53:26 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>, linux-api@vger.kernel.org,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] [PATCH v2 3/7] tpm: clean up tpm_tis driver
+ life-cycle
+Message-ID: <20141007175326.GB10432@obsidianresearch.com>
+References: <1412701277-27794-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+ <1412701277-27794-4-git-send-email-jarkko.sakkinen@linux.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141007164636.GG5362@localhost>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
-	<1411661254-5204-3-git-send-email-octavian.purdila@intel.com>
-	<20141007164636.GG5362@localhost>
-Date: Tue, 7 Oct 2014 20:52:35 +0300
-Message-ID: <CAE1zotKiYGXDbE0yVOz1ROuTxMf_Sfpn-0ghOM1dLEu1oEGZuw@mail.gmail.com>
-Subject: Re: [PATCH v6 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412701277-27794-4-git-send-email-jarkko.sakkinen@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 7:46 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Thu, Sep 25, 2014 at 07:07:32PM +0300, Octavian Purdila wrote:
->> From: Laurentiu Palcu <laurentiu.palcu@intel.com>
->>
->> This patch adds support for the Diolan DLN-2 I2C master module. Due
->> to hardware limitations it does not support SMBUS quick commands.
->>
->> Information about the USB protocol interface can be found in the
->> Programmer's Reference Manual [1], see section 6.2.2 for the I2C
->> master module commands and responses.
->>
->> [1] https://www.diolan.com/downloads/dln-api-manual.pdf
->>
->> Signed-off-by: Laurentiu Palcu <laurentiu.palcu@intel.com>
->> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->> ---
->
-> [...]
->
->> +#define DLN2_I2C_MAX_XFER_SIZE               256
->> +#define DLN2_I2C_BUF_SIZE            (DLN2_I2C_MAX_XFER_SIZE + 16)
->> +
->> +struct dln2_i2c {
->> +     struct platform_device *pdev;
->> +     struct i2c_adapter adapter;
->> +     u32 freq;
->> +     u32 min_freq;
->> +     u32 max_freq;
->> +     u8 port;
->> +     /*
->> +      * Buffer to hold the packet for read or write transfers. One
->> +      * is enough since we can't have multiple transfers in
->> +      * parallel on the i2c adapter.
->> +      */
->> +     void *buf;
->> +};
->> +
->> +static int dln2_i2c_enable(struct dln2_i2c *dln2, bool enable)
->> +{
->> +     int ret;
->> +     u16 cmd;
->> +
->> +     if (enable)
->> +             cmd = DLN2_I2C_ENABLE;
->> +     else
->> +             cmd = DLN2_I2C_DISABLE;
->> +
->> +     ret = dln2_transfer(dln2->pdev, cmd, &dln2->port, sizeof(dln2->port),
->> +                         NULL, NULL);
->
-> Don't use the port member of dln2 directly here. Encode the protocol in
-> the function as you already do for most other messages (and did in
-> previous versions). You could even declare a
->
->         struct {
->                 u8 port;
->         } tx;
->
-> for consistency.
->
+On Tue, Oct 07, 2014 at 08:01:13PM +0300, Jarkko Sakkinen wrote:
 
-Yes, I think I did this after Arnd's review on the gpio stuff where I
-thought he suggested to remove the structure, when in fact he asked to
-remove the __packed attribute. I will revert it back.
+> +	chip = tpm_chip_alloc(dev, &tpm_tis);
+> +	if (!chip)
+>  		return -ENODEV;
 
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     return 0;
->> +}
->> +
->> +static int dln2_i2c_set_frequency(struct dln2_i2c *dln2, u32 freq)
->> +{
->> +     int ret;
->> +     struct tx_data {
->> +             u8 port;
->> +             __le32 freq;
->> +     } __packed tx;
->> +
->> +     tx.port = dln2->port;
->> +     tx.freq = cpu_to_le32(freq);
->> +
->> +     ret = dln2_transfer(dln2->pdev, DLN2_I2C_SET_FREQUENCY, &tx, sizeof(tx),
->> +                         NULL, NULL);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     dln2->freq = freq;
->> +
->> +     return 0;
->> +}
->> +
->> +static int dln2_i2c_get_freq(struct dln2_i2c *dln2, u16 cmd, u32 *res)
->> +{
->> +     int ret;
->> +     __le32 freq;
->> +     unsigned len = sizeof(freq);
->> +
->> +     ret = dln2_transfer(dln2->pdev, cmd, &dln2->port, sizeof(dln2->port),
->> +                         &freq, &len);
->
-> Same here.
->
+Needs to use ERR_PTR
+  
+> +	rc = tpm_chip_register(chip);
+> +	if (rc)
+> +		return -ENODEV;
 
-OK.
+Wrong ordering, this needs to be last in the probe function
 
->> +     if (ret < 0)
->> +             return ret;
->> +     if (len < sizeof(freq))
->> +             return -EPROTO;
->> +
->> +     *res = le32_to_cpu(freq);
->> +
->> +     return 0;
->> +}
->> +
->
-> [...]
->
->> +static ssize_t dln2_i2c_freq_show(struct device *dev,
->> +                               struct device_attribute *attr, char *buf)
->> +{
->> +     struct dln2_i2c *dln2 = dev_get_drvdata(dev);
->> +
->> +     return snprintf(buf, PAGE_SIZE, "%d\n", dln2->freq);
->> +}
->> +
->> +static ssize_t dln2_i2c_freq_store(struct device *dev,
->> +                                struct device_attribute *attr,
->> +                                const char *buf, size_t count)
->> +{
->> +     struct dln2_i2c *dln2 = dev_get_drvdata(dev);
->> +     unsigned long freq;
->> +     int ret;
->> +
->> +     if (kstrtoul(buf, 0, &freq) || freq < dln2->min_freq ||
->> +         freq > dln2->max_freq)
->> +             return -EINVAL;
->> +
->> +     ret = dln2_i2c_enable(dln2, false);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = dln2_i2c_set_frequency(dln2, freq);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = dln2_i2c_enable(dln2, true);
->> +
->> +     return count;
->> +}
->> +
->> +static DEVICE_ATTR_RW(dln2_i2c_freq);
->
-> You forgot to add the required documentation of the attribute to
-> Documentation/ABI as requested.
->
+Return rc not -ENODEV
+  
+> +static void tpm_tis_chip_remove(struct tpm_chip *chip)
+> +{
+> +	iowrite32(~TPM_GLOBAL_INT_ENABLE &
+> +		  ioread32(chip->vendor.iobase +
+> +			   TPM_INT_ENABLE(chip->vendor.
+> +					  locality)),
+> +		  chip->vendor.iobase +
+> +		  TPM_INT_ENABLE(chip->vendor.locality));
+> +	release_locality(chip, chip->vendor.locality, 1);
+> +	if (chip->vendor.irq)
+> +		free_irq(chip->vendor.irq, chip);
+> +
+> +	tpm_chip_unregister(chip);
+> +}
 
-Hmm, I did add a new entry in Documentation/ABI/ at
-testing/sysfs-bus-i2c-busses-dln2. It should be right at the beginning
-at the patch.
+Wrong ordering, tpm_chip_unregister needs to be first
+
+> +	chip = dev_get_drvdata(&pdev->dev);
+> +	tpm_tis_chip_remove(chip);
+>  	platform_device_unregister(pdev);
+
+I'm under the impression devm does not work outside a device driver
+context, so adding devm breaks force mode in this driver. Do you see
+differently?
+
+AFAIK the two options are to fix force mode so that it attaches the
+dummy platform driver (that is what it is for after all) or remove
+force mode.
+
+Jason
