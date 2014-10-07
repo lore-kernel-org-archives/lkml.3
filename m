@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaJGMBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 08:01:48 -0400
+	id S1753935AbaJGMCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 08:02:32 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:27958 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837AbaJGMBc (ORCPT
+	with ESMTP id S1753710AbaJGMBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 08:01:32 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-bf-5433d61ac233
+	Tue, 7 Oct 2014 08:01:30 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-bd-5433d61929c5
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -19,138 +19,128 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org (open list:DRM DRIVERS FOR E...),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 2/4] drm/exynos/dsi: simplify device pointer evaluation
-Date: Tue, 07 Oct 2014 14:01:09 +0200
-Message-id: <1412683271-15835-3-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 1/4] drm/exynos/dsi: remove global variable exynos_dsi_display
+Date: Tue, 07 Oct 2014 14:01:08 +0200
+Message-id: <1412683271-15835-2-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
 References: <1412683271-15835-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xK7pS14xDDFr7jCxurTvHanHl63s2
-	i0n3J7BYvLh3kcWid8FVNouzTW/YLS7vmsNmMeP8PiaLtUfuslvMmPySzYHL4373cSaPvi2r
-	GD0+b5ILYI7isklJzcksSy3St0vgyujZfYGtYLpcxcLfl1gbGP9JdDFyckgImEjc+dLECGGL
-	SVy4t56ti5GLQ0hgKaPEghc9rBBOH5PEuaV7WECq2AQ0Jf5uvskGYosIKEus2tfODlLELLCD
-	WeLopaNMXYwcHMIC7hJT9uWD1LAIqEo0rV3OCmLzCjhLbDx+iQlim5zEyWOTweKcAi4S8za8
-	ApspBFQz+fRWpgmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihATY1x2MS49ZHWIU
-	4GBU4uFdoWUcIsSaWFZcmXuIUYKDWUmE9/RFoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG7IT5
-	whITgpiUGiZdfva745bN74uLZl+OfGub/D9t5kL2fedObPu8v3A/6yI7zxWc8xcaTZj8ftn8
-	rQ3f9p7VXxJ+7kiaVtR2a3OZzDu9S0IX358gFvq7fvKjTxsFZeXO1ZZOVdz3ufVx1wJO09jJ
-	PvGxGovTFC4u4aubmy6fNV+EJXWx2CZpKyWW4oxEQy3mouJEAIhiMuQOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNJMWRmVeSWpSXmKPExsVy+t/xK7qS14xDDB5+YLG4te4cq8WVr+/Z
+	LCbdn8Bi8eLeRRaL3gVX2SzONr1ht7i8aw6bxYzz+5gs1h65y24xY/JLNgcuj/vdx5k8+ras
+	YvT4vEkugDmKyyYlNSezLLVI3y6BK+Pegf9sBY+lKhbcmsPewNgn1sXIySEhYCLRdWEOI4Qt
+	JnHh3nq2LkYuDiGBpYwSk5ecAksICfQxSXS0WoDYbAKaEn8332QDsUUElCVW7WtnB2lgFtjB
+	LHH00lEmkISwgJ/Eza3rwGwWAVWJb/v3gg3iFXCW2Ph4BjPENjmJk8cms4LYnAIuEvM2vGKD
+	WOYsMfn0VqYJjLwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE2NcdjEuPWR1iFOBg
+	VOLhXaFlHCLEmlhWXJl7iFGCg1lJhPf0RaAQb0piZVVqUX58UWlOavEhRiYOTqkGRvGXpdJx
+	DZofZl9s8H5h/yvNes6N/DTRt680mCu/7JBoYVxfkvF61rz53It6jjf4GnIXnzz1cS373YpV
+	y2XvLk6fnHnL426D5c1G6y+GR3paruY+e6GsaSk15UnzxcLvB8RVN790Cz37dvKptV92zPrz
+	IKBBboqt3Ba22qen0jbz/bikLSCVeUaJpTgj0VCLuag4EQAmagS2DgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch replaces multiple evaluation of device address
-with local variable.
+exynos_dsi_display is used by internal Exynos DRM framework for
+representing pair encoder->connecter. As it should be mapped 1:1 to dsi
+private context it seems more reasonable to embed it directly
+in that context. As a result further code simplification will be possible.
+Moreover it will be possible to handle multiple DSI devices in the system.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 40 ++++++++++++++++-----------------
- 1 file changed, 20 insertions(+), 20 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 38 ++++++++++++++++-----------------
+ 1 file changed, 18 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 84e3808..39ec450 100644
+index acf7e9e..84e3808 100644
 --- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
 +++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -1695,9 +1695,9 @@ static int exynos_dsi_probe(struct platform_device *pdev)
- 	INIT_LIST_HEAD(&dsi->transfer_list);
+@@ -268,6 +268,7 @@ struct exynos_dsi_driver_data {
+ };
  
- 	dsi->dsi_host.ops = &exynos_dsi_ops;
--	dsi->dsi_host.dev = &pdev->dev;
-+	dsi->dsi_host.dev = dev;
+ struct exynos_dsi {
++	struct exynos_drm_display display;
+ 	struct mipi_dsi_host dsi_host;
+ 	struct drm_connector connector;
+ 	struct drm_encoder *encoder;
+@@ -1531,10 +1532,6 @@ static struct exynos_drm_display_ops exynos_dsi_display_ops = {
+ 	.dpms = exynos_dsi_dpms
+ };
  
--	dsi->dev = &pdev->dev;
-+	dsi->dev = dev;
- 	dsi->driver_data = exynos_dsi_get_driver_data(pdev);
+-static struct exynos_drm_display exynos_dsi_display = {
+-	.type = EXYNOS_DISPLAY_TYPE_LCD,
+-	.ops = &exynos_dsi_display_ops,
+-};
+ MODULE_DEVICE_TABLE(of, exynos_dsi_of_match);
  
- 	ret = exynos_dsi_parse_dt(dsi);
-@@ -1706,70 +1706,70 @@ static int exynos_dsi_probe(struct platform_device *pdev)
+ /* of_* functions will be removed after merge of of_graph patches */
+@@ -1640,28 +1637,28 @@ end:
+ static int exynos_dsi_bind(struct device *dev, struct device *master,
+ 				void *data)
+ {
++	struct exynos_drm_display *display = dev_get_drvdata(dev);
++	struct exynos_dsi *dsi = display->ctx;
+ 	struct drm_device *drm_dev = data;
+-	struct exynos_dsi *dsi;
+ 	int ret;
  
- 	dsi->supplies[0].supply = "vddcore";
- 	dsi->supplies[1].supply = "vddio";
--	ret = devm_regulator_bulk_get(&pdev->dev, ARRAY_SIZE(dsi->supplies),
-+	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(dsi->supplies),
- 				      dsi->supplies);
+-	ret = exynos_drm_create_enc_conn(drm_dev, &exynos_dsi_display);
++	ret = exynos_drm_create_enc_conn(drm_dev, display);
  	if (ret) {
--		dev_info(&pdev->dev, "failed to get regulators: %d\n", ret);
-+		dev_info(dev, "failed to get regulators: %d\n", ret);
- 		return -EPROBE_DEFER;
+ 		DRM_ERROR("Encoder create [%d] failed with %d\n",
+-				exynos_dsi_display.type, ret);
++			  display->type, ret);
+ 		return ret;
  	}
  
--	dsi->pll_clk = devm_clk_get(&pdev->dev, "pll_clk");
-+	dsi->pll_clk = devm_clk_get(dev, "pll_clk");
- 	if (IS_ERR(dsi->pll_clk)) {
--		dev_info(&pdev->dev, "failed to get dsi pll input clock\n");
-+		dev_info(dev, "failed to get dsi pll input clock\n");
- 		ret = PTR_ERR(dsi->pll_clk);
- 		goto err_del_component;
- 	}
- 
--	dsi->bus_clk = devm_clk_get(&pdev->dev, "bus_clk");
-+	dsi->bus_clk = devm_clk_get(dev, "bus_clk");
- 	if (IS_ERR(dsi->bus_clk)) {
--		dev_info(&pdev->dev, "failed to get dsi bus clock\n");
-+		dev_info(dev, "failed to get dsi bus clock\n");
- 		ret = PTR_ERR(dsi->bus_clk);
- 		goto err_del_component;
- 	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	dsi->reg_base = devm_ioremap_resource(&pdev->dev, res);
-+	dsi->reg_base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(dsi->reg_base)) {
--		dev_err(&pdev->dev, "failed to remap io region\n");
-+		dev_err(dev, "failed to remap io region\n");
- 		ret = PTR_ERR(dsi->reg_base);
- 		goto err_del_component;
- 	}
- 
--	dsi->phy = devm_phy_get(&pdev->dev, "dsim");
-+	dsi->phy = devm_phy_get(dev, "dsim");
- 	if (IS_ERR(dsi->phy)) {
--		dev_info(&pdev->dev, "failed to get dsim phy\n");
-+		dev_info(dev, "failed to get dsim phy\n");
- 		ret = PTR_ERR(dsi->phy);
- 		goto err_del_component;
- 	}
- 
- 	dsi->irq = platform_get_irq(pdev, 0);
- 	if (dsi->irq < 0) {
--		dev_err(&pdev->dev, "failed to request dsi irq resource\n");
-+		dev_err(dev, "failed to request dsi irq resource\n");
- 		ret = dsi->irq;
- 		goto err_del_component;
- 	}
- 
- 	irq_set_status_flags(dsi->irq, IRQ_NOAUTOEN);
--	ret = devm_request_threaded_irq(&pdev->dev, dsi->irq, NULL,
-+	ret = devm_request_threaded_irq(dev, dsi->irq, NULL,
- 					exynos_dsi_irq, IRQF_ONESHOT,
--					dev_name(&pdev->dev), dsi);
-+					dev_name(dev), dsi);
- 	if (ret) {
--		dev_err(&pdev->dev, "failed to request dsi irq\n");
-+		dev_err(dev, "failed to request dsi irq\n");
- 		goto err_del_component;
- 	}
- 
--	exynos_dsi_display.ctx = dsi;
-+	dsi->display.ctx = dsi;
- 
--	platform_set_drvdata(pdev, &exynos_dsi_display);
-+	platform_set_drvdata(pdev, &dsi->display);
- 
--	ret = component_add(&pdev->dev, &exynos_dsi_component_ops);
-+	ret = component_add(dev, &exynos_dsi_component_ops);
- 	if (ret)
- 		goto err_del_component;
- 
- 	return ret;
- 
- err_del_component:
--	exynos_drm_component_del(&pdev->dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
-+	exynos_drm_component_del(dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
- 	return ret;
+-	dsi = exynos_dsi_display.ctx;
+-
+ 	return mipi_dsi_host_register(&dsi->dsi_host);
  }
+ 
+ static void exynos_dsi_unbind(struct device *dev, struct device *master,
+ 				void *data)
+ {
+-	struct exynos_dsi *dsi = exynos_dsi_display.ctx;
++	struct exynos_drm_display *display = dev_get_drvdata(dev);
++	struct exynos_dsi *dsi = display->ctx;
+ 
+-	exynos_dsi_dpms(&exynos_dsi_display, DRM_MODE_DPMS_OFF);
++	exynos_dsi_dpms(display, DRM_MODE_DPMS_OFF);
+ 
+ 	mipi_dsi_host_unregister(&dsi->dsi_host);
+ }
+@@ -1673,22 +1670,23 @@ static const struct component_ops exynos_dsi_component_ops = {
+ 
+ static int exynos_dsi_probe(struct platform_device *pdev)
+ {
++	struct device *dev = &pdev->dev;
+ 	struct resource *res;
+ 	struct exynos_dsi *dsi;
+ 	int ret;
+ 
+-	ret = exynos_drm_component_add(&pdev->dev, EXYNOS_DEVICE_TYPE_CONNECTOR,
+-					exynos_dsi_display.type);
++	dsi = devm_kzalloc(dev, sizeof(*dsi), GFP_KERNEL);
++	if (!dsi)
++		return -ENOMEM;
++
++	dsi->display.type = EXYNOS_DISPLAY_TYPE_LCD;
++	dsi->display.ops = &exynos_dsi_display_ops;
++
++	ret = exynos_drm_component_add(dev, EXYNOS_DEVICE_TYPE_CONNECTOR,
++				       dsi->display.type);
+ 	if (ret)
+ 		return ret;
+ 
+-	dsi = devm_kzalloc(&pdev->dev, sizeof(*dsi), GFP_KERNEL);
+-	if (!dsi) {
+-		dev_err(&pdev->dev, "failed to allocate dsi object.\n");
+-		ret = -ENOMEM;
+-		goto err_del_component;
+-	}
+-
+ 	/* To be checked as invalid one */
+ 	dsi->te_gpio = -ENOENT;
  
 -- 
 1.9.1
