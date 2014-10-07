@@ -1,140 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaJGAuh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 6 Oct 2014 20:50:37 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:59716 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaJGAug (ORCPT
+	id S1752763AbaJGAwp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 6 Oct 2014 20:52:45 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:63080 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064AbaJGAwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 6 Oct 2014 20:50:36 -0400
-Date: Mon, 6 Oct 2014 20:49:15 -0400
-From: Rich Felker <dalias@libc.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, David Daney <ddaney.cavm@gmail.com>,
-        libc-alpha@sourceware.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
-Message-ID: <20141007004915.GF23797@brightrain.aerifal.cx>
-References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
- <20141006205459.GZ23797@brightrain.aerifal.cx>
- <5433071B.4050606@caviumnetworks.com>
- <20141006213101.GA23797@brightrain.aerifal.cx>
- <54330D79.80102@caviumnetworks.com>
- <20141006215813.GB23797@brightrain.aerifal.cx>
- <543327E7.4020608@amacapital.net>
- <54332A64.5020605@caviumnetworks.com>
- <20141007000514.GD23797@brightrain.aerifal.cx>
- <543334CE.8060305@caviumnetworks.com>
+	Mon, 6 Oct 2014 20:52:43 -0400
+Date: Mon, 6 Oct 2014 19:52:38 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: perf: 3.17 another perf_fuzzer lockup
+Message-ID: <20141006195238.3e9a9203@as>
+In-Reply-To: <alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1410061130100.11293@vincent-weaver-1.umelst.maine.edu>
+	<alpine.DEB.2.11.1410061151400.12313@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543334CE.8060305@caviumnetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 06, 2014 at 05:33:18PM -0700, David Daney wrote:
-> On 10/06/2014 05:05 PM, Rich Felker wrote:
-> >On Mon, Oct 06, 2014 at 04:48:52PM -0700, David Daney wrote:
-> >>On 10/06/2014 04:38 PM, Andy Lutomirski wrote:
-> >>>On 10/06/2014 02:58 PM, Rich Felker wrote:
-> >>>>On Mon, Oct 06, 2014 at 02:45:29PM -0700, David Daney wrote:
-> >>[...]
-> >>>>This is a huge ill-designed mess.
-> >>>
-> >>>Amen.
-> >>>
-> >>>Can the kernel not just emulate the instructions directly?
-> >>
-> >>In theory it could, but since there can be implementation defined
-> >>instructions, there is no way to achieve full instruction set
-> >>coverage for all possible machines.
-> >
-> >Is the issue really implementation-defined instructions with delay
-> >slots?
+On Mon, 6 Oct 2014 11:55:11 -0400 (EDT)
+Vince Weaver <vincent.weaver@maine.edu> wrote:
+
+> On Mon, 6 Oct 2014, Vince Weaver wrote:
 > 
-> It is the instructions in the delay slots, not the branch
-> instructions themselves that are of interest.  But, for the sake of
-> the arguments, this is not a critical point.
-
-I think it's an important distinction. It means the problem domain is
-supporting all possible instructions, not instructions which can
-reasonably have delay slots.
-
-> >If so it sounds like a made-up issue.
+> > [  843.700042] general protection fault: 0000 [#1] SMP 
+> > ...
+> > [  843.704001] task: ffff88011a874000 ti: ffff8800bc0ec000 task.ti: ffff8800bc0ec000
+> > [  843.704001] RIP: 0010:[<ffffffff810cd913>]  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
 > 
-> It is not a made up issue.
+> For what it's worth, this is 
 > 
-> If you want an architecture that has a well defined instruction set,
-> stick with x86, Intel will tell you what is good for you and you
-> will take whatever they give you.
+> kernel/events/core.c:2646
 > 
-> If you want an architecture where you can add implementation defined
-> instructions to do whatever you want, then you use an architecture
-> like MIPS.
-
-The ability to add arbitrary instructions does not mean that arbitrary
-uses of those instructions have to be supported by the ABI. It's
-completely reasonable for the ABI to say they cannot be used in delay
-slots for coprocessor-conditional branches.
-
-And of course once you're in the realm of custom hardware and software
-written to depend on that custom hardware, you know whether you have
-an fpu or not anyway. If you have an fpu, you can ignore the
-restriction. If you don't, you should follow it. Note that "partial
-fpu emulation" (e.g. just denormals) is not relevant here; the issue
-only arises if the coprocessor branch instructions have to be
-emulated, which means "there's no fpu at all".
-
-> >They're not going to
-> >occur in real binaries. Certainly a compiler is not going to generate
-> >implementation-defined instructions,
+>         if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+>                 perf_cgroup_sched_in(prev, task);
 > 
-> Why not?  It will emit any instructions we care to make it emit.  If
-> we want it to emit crypto instructions with patented algorithms,
-> then it will do that.  But we would still like to use a generic
-> kernel with generic FPU support.
 > 
-> The most straight forward way (and the currently implemented way) of
-> doing this is to execute the instructions in question out-of-line
-> (on the userspace stack).
+> ffffffff810cd902:       53                      push   %rbx
+> ffffffff810cd903:       48 8b 07                mov    (%rdi),%rax
+> ffffffff810cd906:       48 8b 58 40             mov    0x40(%rax),%rbx
+> ffffffff810cd90a:       65 48 03 1c 25 08 ce    add    %gs:0xce08,%rbx
+> ffffffff810cd911:       00 00 
+> ffffffff810cd913:       48 39 bb d8 00 00 00    cmp    %rdi,0xd8(%rbx)
+> ffffffff810cd91a:       74 63                   je     ffffffff810cd97f <perf_event_context_sched_in.isra.75+0x8b>
 > 
-> The question here is:  What is the best way to get to a
-> non-executable stack.
+
+Actually it's:
+
+static void perf_event_context_sched_in(struct perf_event_context *ctx,
+					struct task_struct *task)
+{
+	struct perf_cpu_context *cpuctx;
+
+	cpuctx = __get_cpu_context(ctx);
+	if (cpuctx->task_ctx == ctx)      <======= oops
+		return;
+
+cpuctx is in %rbx (=ffff1001e742c000) and that's not even a legal
+address, which is what caused the general protection fault
+
 > 
-> The consensus among MIPS developers is that we should continue using
-
-My experience has been that hardware and software developers focused
-on a particular hardware target are generally unqualified to make
-decisions that affect the design and operation of libc or the kernel.
-They are not experts in these areas. It was apparent early on in this
-thread, when you mentioned the idea that "not all threads would need
-fpu support", that you were thinking from a standpoint of custom
-low-level software and not a general purpose libc that cannot read the
-application author's mind. It seems nobody had thought of the
-impossibility of doing lazy setup (inability to handle failure) and
-the necessity of always initializing this stuff at pthread_create
-time, either. Design issues like this should be run by experts in the
-libc area early on, not as an afterthought.
-
-> the out-of-line execution trick, but do it somewhere other than in
-> stack memory.
-
-How do you answer Andy Lutomirski's question about what happens when a
-signal handler interrupts execution while the program counter is
-pointing at this "out-of-line execution" trampoline? This seems like a
-show-stopper for using anything other than the stack.
-
-> One way of doing this is to have the kernel magically generate
-> thread local memory regions.
-> 
-> Another option is to have userspace manage the out-of-line execution areas.
-> 
-> As is often the case, each approach has different pluses and minuses.
-
-Having the kernel magically do it would be better, but I'm doubtful
-that solution works anyway due to the above signal handler/nesting
-issue.
-
-Rich
+> > [  843.704001] RSP: 0018:ffff8800bc0efd50  EFLAGS: 00010087
+> > [  843.704001] RAX: ffffea0002ba2d68 RBX: ffff1001e742c000 RCX: 000000000000038f
+> > [  843.704001] RDX: ffff88011fc95b30 RSI: ffff880037d0eb00 RDI: ffff880037d0e700
+> > [  843.704001] RBP: ffff8800bc0efd60 R08: ffff8800bc0ec000 R09: 000000000000baff
+> > [  843.704001] R10: 0000000000000006 R11: 00000000000009bc R12: ffff880037d0e700
+> > [  843.704001] R13: ffff8800c944f400 R14: 0000000000000001 R15: ffff88011b340800
+> > [  843.704001] FS:  00007ffc76c17700(0000) GS:ffff88011fc80000(0000) knlGS:0000000000000000
+> > [  843.704001] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [  843.704001] DR0: 0000000001c7b000 DR1: 0000000000000000 DR2: 0000000001c7b000
+> > [  843.704001] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> > [  843.704001] Stack:
+> > [  843.704001]  ffff88011a874000 ffff88011b340800 ffff8800bc0efd90 ffffffff810cd9bb
+> > [  843.704001]  ffff88011a8744e8 ffff88011b340800 ffff88011fc929c0 ffff8800c944f400
+> > [  843.704001]  ffff8800bc0efdc0 ffffffff8105ae62 ffff88011fc929c0 ffff8800c944f400
+> > [  843.704001] Call Trace:
+> > [  843.704001]  [<ffffffff810cd9bb>] __perf_event_task_sched_in+0x37/0xf4
+> > [  843.704001]  [<ffffffff8105ae62>] finish_task_switch+0x9b/0xa6
+> > [  843.704001]  [<ffffffff815209c1>] __schedule+0x309/0x4a5
+> > [  843.704001]  [<ffffffff81520df3>] _cond_resched+0x28/0x3b
+> > [  843.704001]  [<ffffffff815217b5>] mutex_lock+0x12/0x2f
+> > [  843.704001]  [<ffffffff810cb9bb>] find_get_context+0xfc/0x170
+> > [  843.704001]  [<ffffffff810cff77>] SYSC_perf_event_open+0x47b/0x7f5
+> > [  843.704001]  [<ffffffff810d0651>] SyS_perf_event_open+0xe/0x10
+> > [  843.704001]  [<ffffffff81523ad1>] tracesys+0xd4/0xd9
+> > [  843.704001] Code: 89 e7 e8 65 fe ff ff 5b 41 5c 5d c3 e8 c7 7e 45 00 55 48 89 e5 41 54 49 89 fc 53 48 8b 07 48 8b 58 40 65 48 03 1c 25 08 ce 00 00 <48> 39 bb d8 00 00 00 74 63 48 89 fe 48 89 df e8 f0 b4 ff ff 49 
+> > [  843.704001] RIP  [<ffffffff810cd913>] perf_event_context_sched_in.isra.75+0x1f/0x90
+> > [  843.704001]  RSP <ffff8800bc0efd50>
