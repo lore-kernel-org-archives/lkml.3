@@ -1,99 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaJGNFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 09:05:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38003 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831AbaJGNFM (ORCPT
+	id S1753968AbaJGNFl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 09:05:41 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:16570 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285AbaJGNFh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 09:05:12 -0400
-Date: Tue, 7 Oct 2014 15:05:03 +0200
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH 2/5] regulator: Set ena_gpio_valid in regulator drivers
-Message-ID: <20141007130503.GG5042@pengutronix.de>
-References: <1412626635-7404-1-git-send-email-mpa@pengutronix.de>
- <1412626635-7404-3-git-send-email-mpa@pengutronix.de>
- <20141007115817.GX4609@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qftxBdZWiueWNAVY"
-Content-Disposition: inline
-In-Reply-To: <20141007115817.GX4609@sirena.org.uk>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:03:26 up 27 days,  5:50, 82 users,  load average: 0.03, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 7 Oct 2014 09:05:37 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-54-5433e519acfd
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <5433E518.40300@samsung.com>
+Date: Tue, 07 Oct 2014 22:05:28 +0900
+From: jonghwa3.lee@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
+ Thunderbird/11.0.1
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power: charger-manager: Avoid recursive thermal get_temp
+ call
+References: <1412611212-24803-1-git-send-email-k.kozlowski@samsung.com>
+ <54334E00.9030403@samsung.com> <1412665994.11780.3.camel@AMDC1943>
+ <5433BE0D.6000306@samsung.com> <1412686205.15309.1.camel@AMDC1943>
+In-reply-to: <1412686205.15309.1.camel@AMDC1943>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsWyRsSkQFfyqXGIwYmNghYHt2paXP/ynNVi
+	0pP3zBYTV05mtnj9wtDi8q45bBafe48wWtxuXMFmcXp3iQOnx4T+T4weO2fdZffYvELLY9Oq
+	TjaPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyth2cw1bwTapipfHN7I0MJ4Q7WLk5JAQMJHY
+	v/kzO4QtJnHh3nq2LkYuDiGBpYwS87ZNYoIpWjDvFCNEYhGjxMpbL5hBErwCghI/Jt9jAbGZ
+	BdQlJs1bxAxhi0gcXHufHcLWlli28DUzRPNrRonbyxYBTeIAataQuNzDC1LDIqAq8XX3HbB6
+	NgE5ibdN3xhBbFGBMImrE46DzRcRMJQ4uHs7E8gcZoFNTBLrXs4BSwgLhEjsnnkJasFFRolV
+	19eygiQ4BQwkppxdAPXCS3aJFa/kIbYJSHybfIgF5AgJAVmJTQeYIUokJQ6uuMEygVF8FpLf
+	ZiH5bRaS32Yh+W0BI8sqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjMD4Pf3v2cQdjPcPWB9i
+	FOBgVOLhXaFlHCLEmlhWXJl7iNEU6KKJzFKiyfnAJJFXEm9obGZkYWpiamxkbmmmJM6rI/0z
+	WEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAMjv+9rh6Wy9X6PTHIWHN25+33y/MuiN5+8uyCg
+	KdKWnZvBt8ojRV/upEd9xaZaM9Y1r+59Y9i12i33hcTB55sNFvqyyC/gD3p9itviRF3J/XWP
+	34ZvO3YpfuLP4lmytStv/s/ebv79822TTU7Sq2/38pUf4GwSeHT+nlnsIbG7j8IO+Gx7U/5B
+	QomlOCPRUIu5qDgRAH6RTEzaAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t9jAV3Jp8YhBnsXcFoc3Kppcf3Lc1aL
+	SU/eM1tMXDmZ2eL1C0OLy7vmsFl87j3CaHG7cQWbxendJQ6cHhP6PzF67Jx1l91j8wotj02r
+	Otk8+rasYvT4vEkugC2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE3
+	1VbJxSdA1y0zB+gkJYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGp60n
+	WAt+SVZ0/PjB0sDYI9rFyMkhIWAisWDeKUYIW0ziwr31bF2MXBxCAosYJVbeesEMkuAVEJT4
+	MfkeSxcjBwezgLzEkUvZIGFmAXWJSfMWMUPUv2aUuL1sESNIDa+AhsTlHl6QGhYBVYmvu++w
+	g9hsAnISb5u+ge0SFQiTuDrhOAuILSJgKHFw93YmkDnMApuYJNa9nAOWEBYIkdg98xLUgouM
+	Equur2UFSXAKGEhMObuAaQKjwCwk981CuG8WkvsWMDKvYhRNLUguKE5KzzXUK07MLS7NS9dL
+	zs/dxAiO9WdSOxhXNlgcYhTgYFTi4V2hZRwixJpYVlyZe4hRgoNZSYT39EWgEG9KYmVValF+
+	fFFpTmrxIUZToPcmMkuJJucD01BeSbyhsYmZkaWRuaGFkbG5kjjvgVbrQCGB9MSS1OzU1ILU
+	Ipg+Jg5OqQbG7XpSh+e0TC24fyw0Rr3g1vU3obI359jsD1Btvde+I1h3HfOj8Dk3z9xszzRv
+	qWhV45qxXGR/19GihZcO3OXb3xt+yerhiXVLld0LuhTYiv8FK/z6qHQjv+5m655DOm7TzNZG
+	zFl6SGXrz6ZSPsk2Jc0ZjTNE3ob7GKUIKjEGu4dMyjU19lunxFKckWioxVxUnAgAriVZBgsD	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014년 10월 07일 21:50, Krzysztof Kozlowski wrote:
 
---qftxBdZWiueWNAVY
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On wto, 2014-10-07 at 19:18 +0900, jonghwa3.lee@samsung.com wrote:
+>> On 2014년 10월 07일 16:13, Krzysztof Kozlowski wrote:
+>>
+>>>
+>>> On wto, 2014-10-07 at 11:20 +0900, jonghwa3.lee@samsung.com wrote:
+>>>> Hi,
+>>>> On 2014년 10월 07일 01:00, Krzysztof Kozlowski wrote:
+>>>>
+>>>>> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
+>>>>> as a thermal zone if any of these conditions match:
+>>>>> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
+>>>>> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
+>>>>>    the fuel gauge temperature property).
+>>>>>
+>>>>> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
+>>>>> is not set) the charger manager forwards its get_temp calls to fuel
+>>>>> gauge thermal zone.
+>>>>>
+>>>>> This leads to reporting by lockdep a false positive deadlock for thermal
+>>>>> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
+>>>>> false positive because these are different mutexes: one for charger
+>>>>> manager thermal zone and second for fuel gauge thermal zone.
+>>>>>
+>>>>
+>>>>
+>>>> Yes, this happens because power_supply_subsystem automatically creates
+>>>> thermal_zone when POWER_SUPPLY_PROP_TEMP is available at the time of
+>>>> power_supply registering. And as you point out, it makes duplicate thermal_zone
+>>>> when some power_supply references other power_supply's. I hope it would become
+>>>> to be a selectable option or change the manner of charger-manager itself (if the
+>>>> charger-manager is only one who references other power_supply's temperature
+>>>> sensing ability).
+>>>>
+>>>> Anyway, the code looks fine to me.
+>>>>
+>>>> Acked-by : Jonghwa Lee <jonghwa3.lee@samsung.com>
+>>>
+>>> Thank you for looking at patch. However later I started to wonder
+>>> whether my fix is sufficient. For the case when fuel gauge is used as
+>>> source of temperature it is. But for the case when external sensor is
+>>> used it is not - still there will be recursive call and false positive
+>>> from lockdep.
+>>>
+>>> Also minor fix is needed in my patch - s/IS_ENABLED/config_enabled/.
+>>>
+>>> I can send a v2 fixing this but first question - what about second
+>>> recursive issue (when external sensor is used instead of fuel gauge)?
+>>>
+>>
+>>
+>> Yes, you're right, it still had problem for external temperature sensor case.
+>> How about we change the core not to make duplicate thermal zone if it already
+>> existed. It's not the common case, but it looks worthy.
+>>
+>> like as below,
+>>
+>> static int psy_register_thermal(struct power_supply *psy)
+>> {
+>> ...
+>> +	if (psy->tzd)
+>> +		return 0;
+>> ...
+>>
+>> We also needs some modification at charger-manager driver, however we can avoid
+>> recursive call problem with this way :)
+> 
+> Yes, that would remove recursive call but this would also remove thermal
+> zone for charger manager's power supply. Does anyone (user space?)
+> depend and use charger managers thermal zone?
+> 
 
-Hi,
 
-On Tue, Oct 07, 2014 at 12:58:17PM +0100, Mark Brown wrote:
-> On Mon, Oct 06, 2014 at 10:17:12PM +0200, Markus Pargmann wrote:
-> > This patch sets the new field ena_gpio_valid for all drivers which set a
-> > valid ena_gpio.
->=20
-> >  	config.ena_gpio =3D arizona->pdata.ldoena;
-> > +	config.ena_gpio_valid =3D true;
->=20
-> This patch just unconditionally sets the flag in all drivers which will
-> break any system which relies on the existing behaviour that we ignore
-> GPIO 0.  We can definitely set this flag in any DT only system if we get
-> the GPIO from DT but otherwise doing this defeats the point of having
-> the flag in the first place.
-
-Right, I didn't thought about the old platform data which may pass 0
-gpios indicating that there is no gpio.
-I will rework this patch.
+AFAIK, no,, charger manager's thermal zone means nothing but just replica of
+other thermal zone related with battery. It is better to remove it.
 
 Thanks,
+Jonghwa.
 
-Markus
+> Best regards,
+> Krzysztof
+> 
+> 
 
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
---qftxBdZWiueWNAVY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUM+T/AAoJEEpcgKtcEGQQEq0QAKVHO/6r/uJzLh4gKZii/Qsr
-pCVGIx7hSyHZ68tYOIJXtojK8+wgoDjCvC+Tv+hz2n6DMSPcKG5/P16QthdcHrkf
-PHdLQxbEvlXN7d4terQaZBagcpW7O55GaGGocxHO6+t+6E2PcZkrxubexz8yKB4d
-+t8WjwVUAW3RMTNUEOxw+Ckc3cI4pOaLwDScuc5sRsNtq1VmoXxMjk9xlZoFDm79
-90S0FY5AaSTXHQT70KwfOtEVeoJJ0+WZlJYwlsmZwFRngSjO0laYRXbaNmcR9VtO
-5EcnKOYhmNKU9ssYbNmp+xG9h3E66WTCp4mrMXRtqUZQkkVaWbQG53GYfYN7F+o9
-GGfRHhfUR+ccdJiCfXIx4O/O80efBxioieGRR5HFMN8FpxgPNPSCWChzTLaSomQ0
-o+uBNlYsNEX1hkE9D/PVdQrIG+aZPrIl41W5PrOksjeIIezDqTaWiNrxNxXDMbaj
-xjZKibxbBQUaiZPRPvE5x1oGur8Z6hdPO706TfHzg+iTAVFF8UU2IIZLs2TEJCRp
-8wTK1s4c2gIq7/r4S0hoONovTuMscxQb0/4p+apN/aEejp0QwWmUjmfVrNoCxBYC
-Djp5cFruhAl71Ddtc5gipVmeKCYA2BUufdqV6nQbUTb1o1rREvr+fdBvmfLlkank
-NbxmUldZuqdL35aa4t8a
-=kJji
------END PGP SIGNATURE-----
-
---qftxBdZWiueWNAVY--
