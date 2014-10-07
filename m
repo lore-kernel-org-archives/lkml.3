@@ -1,227 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156AbaJGE6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 00:58:33 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:43844 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaJGE6a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 00:58:30 -0400
-From: Gyungoh Yoo <gyungoh@gmail.com>
-X-Google-Original-From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-To: sameo@linux.intel.com, lee.jones@linaro.org
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, jack.yoo@skyworksinc.com
-Subject: [RESUBMIT PATCH v3 1/8] mfd: Add support for Skyworks SKY81452 driver
-Date: Tue,  7 Oct 2014 13:58:21 +0900
-Message-Id: <1412657901-7865-1-git-send-email-jack.yoo@skyworksinc.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
+	id S1753183AbaJGE7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 00:59:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:52742 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656AbaJGE7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 00:59:36 -0400
+Date: Tue, 7 Oct 2014 15:59:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: linux-next: manual merge of the kvm tree with the s390 tree
+Message-ID: <20141007155926.7ac19cdf@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/qh.VIviW9_f=h8Zxi/8=d8R"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
----
- drivers/mfd/Kconfig          |  12 +++++
- drivers/mfd/Makefile         |   1 +
- drivers/mfd/sky81452.c       | 111 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/sky81452.h |  32 +++++++++++++
- 4 files changed, 156 insertions(+)
- create mode 100644 drivers/mfd/sky81452.c
- create mode 100644 include/linux/mfd/sky81452.h
+--Sig_/qh.VIviW9_f=h8Zxi/8=d8R
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index de5abf2..6962b4e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -626,6 +626,18 @@ config MFD_SM501_GPIO
- 	 lines on the SM501. The platform data is used to supply the
- 	 base number for the first GPIO line to register.
- 
-+config MFD_SKY81452
-+	tristate "Skyworks Solutions SKY81452"
-+	select MFD_CORE
-+	select REGMAP_I2C
-+	depends on I2C
-+	help
-+	  This is the core driver for the Skyworks SKY81452 backlight and
-+	  voltage regulator device.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called sky81452.
-+
- config MFD_SMSC
-        bool "SMSC ECE1099 series chips"
-        depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index f001487..6c2f317 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -169,6 +169,7 @@ obj-$(CONFIG_MFD_AS3711)	+= as3711.o
- obj-$(CONFIG_MFD_AS3722)	+= as3722.o
- obj-$(CONFIG_MFD_STW481X)	+= stw481x.o
- obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
-+obj-$(CONFIG_MFD_SKY81452)		+= sky81452.o
- 
- intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
- obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
-diff --git a/drivers/mfd/sky81452.c b/drivers/mfd/sky81452.c
-new file mode 100644
-index 0000000..9130112
---- /dev/null
-+++ b/drivers/mfd/sky81452.c
-@@ -0,0 +1,111 @@
-+/*
-+ * sky81452.c	SKY81452 MFD driver
-+ *
-+ * Copyright 2014 Skyworks Solutions Inc.
-+ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/i2c.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/sky81452.h>
-+
-+static const struct regmap_config sky81452_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int sky81452_probe(struct i2c_client *client,
-+				const struct i2c_device_id *id)
-+{
-+	struct device *dev = &client->dev;
-+	const struct sky81452_platform_data *pdata = dev_get_platdata(dev);
-+	struct mfd_cell cells[2];
-+	struct regmap *regmap;
-+	int ret;
-+
-+	if (!pdata) {
-+		pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+		if (!pdata)
-+			return -ENOMEM;
-+	}
-+
-+	regmap = devm_regmap_init_i2c(client, &sky81452_config);
-+	if (IS_ERR(regmap)) {
-+		dev_err(dev, "failed to initialize. err=%ld", PTR_ERR(regmap));
-+		return PTR_ERR(regmap);
-+	}
-+
-+	i2c_set_clientdata(client, regmap);
-+
-+	memset(cells, 0, sizeof(cells));
-+	cells[0].name = "sky81452-backlight";
-+	cells[0].of_compatible = "skyworks,sky81452-backlight";
-+	cells[0].platform_data = pdata->bl_pdata;
-+	cells[0].pdata_size = sizeof(*pdata->bl_pdata);
-+	cells[1].name = "sky81452-regulator";
-+	cells[1].of_compatible = "skyworks,sky81452-regulator";
-+	cells[1].platform_data = pdata->regulator_init_data;
-+	cells[1].pdata_size = sizeof(*pdata->regulator_init_data);
-+
-+	ret = mfd_add_devices(dev, -1, cells, ARRAY_SIZE(cells), NULL, 0, NULL);
-+	if (ret)
-+		dev_err(dev, "failed to add child devices. err=%d", ret);
-+
-+	return ret;
-+}
-+
-+static int sky81452_remove(struct i2c_client *client)
-+{
-+	mfd_remove_devices(&client->dev);
-+	return 0;
-+}
-+
-+static const struct i2c_device_id sky81452_ids[] = {
-+	{ "sky81452" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, sky81452_ids);
-+
-+#ifdef CONFIG_OF
-+static const struct of_device_id sky81452_of_match[] = {
-+	{ .compatible = "skyworks,sky81452", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, sky81452_of_match);
-+#endif
-+
-+static struct i2c_driver sky81452_driver = {
-+	.driver = {
-+		.name = "sky81452",
-+		.of_match_table = of_match_ptr(sky81452_of_match),
-+	},
-+	.probe = sky81452_probe,
-+	.remove = sky81452_remove,
-+	.id_table = sky81452_ids,
-+};
-+
-+module_i2c_driver(sky81452_driver);
-+
-+MODULE_DESCRIPTION("Skyworks SKY81452 MFD driver");
-+MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION("1.2");
-diff --git a/include/linux/mfd/sky81452.h b/include/linux/mfd/sky81452.h
-new file mode 100644
-index 0000000..142f762
---- /dev/null
-+++ b/include/linux/mfd/sky81452.h
-@@ -0,0 +1,32 @@
-+/*
-+ * sky81452.h	SKY81452 MFD driver
-+ *
-+ * Copyright 2014 Skyworks Solutions Inc.
-+ * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2, or (at your option) any
-+ * later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#ifndef _SKY81452_H
-+#define _SKY81452_H
-+
-+#include <linux/sky81452-backlight.h>
-+#include <linux/regulator/machine.h>
-+
-+struct sky81452_platform_data {
-+	struct sky81452_bl_platform_data *bl_pdata;
-+	struct regulator_init_data *regulator_init_data;
-+};
-+
-+#endif
--- 
-1.9.1
+Hi all,
 
+Today's linux-next merge of the kvm tree got a conflict in
+arch/s390/mm/pgtable.c between commit 9511571c4f0e ("s390: mm: fixing
+calls of pte_unmap_unlock") from the s390 tree and commit dc77d344b41f
+("KVM: s390/mm: fix up indentation of set_guest_storage_key") from the
+kvm tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/s390/mm/pgtable.c
+index a0f934a435e2,296b61a4af59..000000000000
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@@ -644,82 -656,29 +656,29 @@@ void __gmap_zap(struct gmap *gmap, unsi
+  	}
+  	pgste_set_unlock(ptep, pgste);
+  out_pte:
+ -	pte_unmap_unlock(*ptep, ptl);
+ +	pte_unmap_unlock(ptep, ptl);
+  }
+-=20
+- /*
+-  * this function is assumed to be called with mmap_sem held
+-  */
+- void __gmap_zap(unsigned long address, struct gmap *gmap)
+- {
+- 	unsigned long *table, *segment_ptr;
+- 	unsigned long segment, pgstev, ptev;
+- 	struct gmap_pgtable *mp;
+- 	struct page *page;
+-=20
+- 	segment_ptr =3D gmap_table_walk(address, gmap);
+- 	if (IS_ERR(segment_ptr))
+- 		return;
+- 	segment =3D *segment_ptr;
+- 	if (segment & _SEGMENT_ENTRY_INVALID)
+- 		return;
+- 	page =3D pfn_to_page(segment >> PAGE_SHIFT);
+- 	mp =3D (struct gmap_pgtable *) page->index;
+- 	address =3D mp->vmaddr | (address & ~PMD_MASK);
+- 	/* Page table is present */
+- 	table =3D (unsigned long *)(segment & _SEGMENT_ENTRY_ORIGIN);
+- 	table =3D table + ((address >> 12) & 0xff);
+- 	pgstev =3D table[PTRS_PER_PTE];
+- 	ptev =3D table[0];
+- 	/* quick check, checked again with locks held */
+- 	if (((pgstev & _PGSTE_GPS_USAGE_MASK) =3D=3D _PGSTE_GPS_USAGE_UNUSED) ||
+- 	    ((pgstev & _PGSTE_GPS_ZERO) && (ptev & _PAGE_INVALID)))
+- 		gmap_zap_unused(gmap->mm, address);
+- }
+  EXPORT_SYMBOL_GPL(__gmap_zap);
+ =20
+- void gmap_discard(unsigned long from, unsigned long to, struct gmap *gmap)
++ void gmap_discard(struct gmap *gmap, unsigned long from, unsigned long to)
+  {
+-=20
+- 	unsigned long *table, address, size;
++ 	unsigned long gaddr, vmaddr, size;
+  	struct vm_area_struct *vma;
+- 	struct gmap_pgtable *mp;
+- 	struct page *page;
+ =20
+  	down_read(&gmap->mm->mmap_sem);
+- 	address =3D from;
+- 	while (address < to) {
+- 		/* Walk the gmap address space page table */
+- 		table =3D gmap->table + ((address >> 53) & 0x7ff);
+- 		if (unlikely(*table & _REGION_ENTRY_INVALID)) {
+- 			address =3D (address + PMD_SIZE) & PMD_MASK;
+- 			continue;
+- 		}
+- 		table =3D (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+- 		table =3D table + ((address >> 42) & 0x7ff);
+- 		if (unlikely(*table & _REGION_ENTRY_INVALID)) {
+- 			address =3D (address + PMD_SIZE) & PMD_MASK;
++ 	for (gaddr =3D from; gaddr < to;
++ 	     gaddr =3D (gaddr + PMD_SIZE) & PMD_MASK) {
++ 		/* Find the vm address for the guest address */
++ 		vmaddr =3D (unsigned long)
++ 			radix_tree_lookup(&gmap->guest_to_host,
++ 					  gaddr >> PMD_SHIFT);
++ 		if (!vmaddr)
+  			continue;
+- 		}
+- 		table =3D (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+- 		table =3D table + ((address >> 31) & 0x7ff);
+- 		if (unlikely(*table & _REGION_ENTRY_INVALID)) {
+- 			address =3D (address + PMD_SIZE) & PMD_MASK;
+- 			continue;
+- 		}
+- 		table =3D (unsigned long *)(*table & _REGION_ENTRY_ORIGIN);
+- 		table =3D table + ((address >> 20) & 0x7ff);
+- 		if (unlikely(*table & _SEGMENT_ENTRY_INVALID)) {
+- 			address =3D (address + PMD_SIZE) & PMD_MASK;
+- 			continue;
+- 		}
+- 		page =3D pfn_to_page(*table >> PAGE_SHIFT);
+- 		mp =3D (struct gmap_pgtable *) page->index;
+- 		vma =3D find_vma(gmap->mm, mp->vmaddr);
+- 		size =3D min(to - address, PMD_SIZE - (address & ~PMD_MASK));
+- 		zap_page_range(vma, mp->vmaddr | (address & ~PMD_MASK),
+- 			       size, NULL);
+- 		address =3D (address + PMD_SIZE) & PMD_MASK;
++ 		vmaddr |=3D gaddr & ~PMD_MASK;
++ 		/* Find vma in the parent mm */
++ 		vma =3D find_vma(gmap->mm, vmaddr);
++ 		size =3D min(to - gaddr, PMD_SIZE - (gaddr & ~PMD_MASK));
++ 		zap_page_range(vma, vmaddr, size, NULL);
+  	}
+  	up_read(&gmap->mm->mmap_sem);
+  }
+@@@ -994,13 -943,13 +943,13 @@@ retry
+  	}
+  	if (!(pte_val(*ptep) & _PAGE_INVALID) &&
+  	     (pte_val(*ptep) & _PAGE_PROTECT)) {
+- 			pte_unmap_unlock(ptep, ptl);
+- 			if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
+- 				up_read(&mm->mmap_sem);
+- 				return -EFAULT;
+- 			}
+- 			goto retry;
+ -		pte_unmap_unlock(*ptep, ptl);
+++		pte_unmap_unlock(ptep, ptl);
++ 		if (fixup_user_fault(current, mm, addr, FAULT_FLAG_WRITE)) {
++ 			up_read(&mm->mmap_sem);
++ 			return -EFAULT;
+  		}
++ 		goto retry;
++ 	}
+ =20
+  	new =3D old =3D pgste_get_lock(ptep);
+  	pgste_val(new) &=3D ~(PGSTE_GR_BIT | PGSTE_GC_BIT |
+
+--Sig_/qh.VIviW9_f=h8Zxi/8=d8R
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUM3MyAAoJEMDTa8Ir7ZwVWkoP/jgnNohJfMYOk9FkC5ZNnE5j
+G2aKVoXuPIdeatS2y/UPkWB/k4dfdReM5k9qpUXjQ8Ag51s8ez4SIVZg0+NAnkTg
+oOmirTgS5ZB8F82n+p/ywL9AEbtvtDECcMmnKSVpVAF+J8n48rz/HuIcsHP3UvRi
+78vNocm16Je2olcI3++7XTF3ADsfh5m9eWFiIWR4/LxipLYfWvaOC899h2Fm2zJ7
+h2o6RGPZqqNrp2dHW6Hmk3Z0qBGRhePHpPTDRj4B9+klspDQaXH+xnzcRs9hA+lu
+V9Ft7NwXwfBVHfYmRhy9xVfV33lEhjQ8SiewehzwMjmoMquvwJFKuUp75CUosxeq
+DyUt9xDTMkq5qKOCDnVw1ZNoIA6RBNOjTnru3RHGDMaX3KHf4AocMkyXOxkT4uHH
+ykpmo9moymuWC83+S0kx0lXpYDDUboyXPgpWiSWMR6VUFq8mzP6yyHrMyit8UHOf
+xOuYp87qNtDICJJELLxh58J/aBsohIRI7/SuFhAx2EbKGqtrWreVFKDlv6iELyZd
+6IhiRSewZWF47NdtF44cvU5wIAs0hagd3h32bH83KdBtqXXbAtEbJ5BF+bWXaZ/E
+qhsjK2RFhEKjCLmrCwa8TNfLyIKhTZF27id+gVfETUiLHwcdxr7ti8ff+kJLhKfd
+/nQeTFgcwaO2rIvNw3uk
+=YaVE
+-----END PGP SIGNATURE-----
+
+--Sig_/qh.VIviW9_f=h8Zxi/8=d8R--
