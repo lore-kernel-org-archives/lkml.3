@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343AbaJHMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:48:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47202 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932109AbaJHMs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:48:28 -0400
-Date: Wed, 8 Oct 2014 14:48:23 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/3] mm: memcontrol: eliminate charge reparenting
-Message-ID: <20141008124823.GA4592@dhcp22.suse.cz>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
+	id S1756170AbaJHMt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:49:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42031 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753787AbaJHMt5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 08:49:57 -0400
+Date: Wed, 8 Oct 2014 13:49:28 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/3] ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp
+ implementations
+Message-ID: <20141008124927.GK26140@arm.com>
+References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org>
+ <1411076592-6157-3-git-send-email-sboyd@codeaurora.org>
+ <20140918224625.GF5182@n2100.arm.linux.org.uk>
+ <541C74C1.9060504@codeaurora.org>
+ <542C3FCA.2010006@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <542C3FCA.2010006@codeaurora.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20-09-14 16:00:32, Johannes Weiner wrote:
-> Hi,
+Hi all,
+
+On Wed, Oct 01, 2014 at 06:54:18PM +0100, Stephen Boyd wrote:
+> On 09/19/14 11:24, Stephen Boyd wrote:
+> > On 09/18/14 15:46, Russell King - ARM Linux wrote:
+> >> I know that you're changing this to conform with the ARM ARM, but we
+> >> have to consider that before VFP was subsumed into the ARM ARM, this
+> >> register had the format described as per this file, and these other
+> >> bits may be set for an ARM part.  Including these bits in the mask
+> >> means that we will mis-identify these older parts as VFPv3.
+> >>
+> > Do you, or anyone else, know of other implementations? I *hope* that
+> > this same exercise was done by the VFP architects before they
+> > re-purposed bits but who knows. If nobody is actually setting these
+> > higher bits then is there any problem widening the mask (besides it
+> > being slightly confusing)?
+> >
 > 
-> we've come a looong way when it comes to the basic cgroups model, and
-> the recent changes there open up a lot of opportunity to make drastic
-> simplifications to memory cgroups as well.
-> 
-> The decoupling of css from the user-visible cgroup, word-sized per-cpu
-> css reference counters, and css iterators that include offlined groups
-> means we can take per-charge css references, continue to reclaim from
-> offlined groups, and so get rid of the error-prone charge reparenting.
-> 
-> Combined with the higher-order reclaim fixes, lockless page counters,
-> and memcg iterator simplification I sent on Friday, the memory cgroup
-> core code is finally no longer the biggest file in mm/.  Yay!
+> Any thoughts?
 
-Yeah, the code reduction (as per the diffstat - I didn't get to the code
-yet) seems really promising.
+I've spoken to the architects about this, and it seems that you need to
+parse FPSID differently depending upon whether you are a v7 CPU or not.
 
-> These patches are based on mmotm + the above-mentioned changes
+However, as you are well aware, detecting whether or not you are v7 isn't as
+simple as it sounds. cpu_architecture() checks the VMSA/PMSA fields in
+MMFR0, but that's not quite right for 11MPcore (and 1176 iirc), which are
+v6 implementations.
 
-> + Tj's percpu-refcount conversion to atomic_long_t.
+So, it sounds like the scheme is:
 
-This is https://lkml.org/lkml/2014/9/20/11 right?
+  if (revised_cpuid_format()) // i.e. MIDR.Architecture == 0xF
+	determine_vfp_arch_using_mvfr_regs();
+  else
+        determine_vfp_arch_using_fpsid();
 
-> Thanks!
-> 
->  include/linux/cgroup.h          |  26 +++
->  include/linux/percpu-refcount.h |  43 ++++-
->  mm/memcontrol.c                 | 337 ++------------------------------------
->  3 files changed, 75 insertions(+), 331 deletions(-)
-> 
+which in turn means that we probably need to rethink how we want to
+advertise floating point hardware features in the future. ARMv8, for
+example, adds an additional MVFR2 register, which advertises additional
+floating point instructions without explicitly creating something akin to
+VFPv5.
 
--- 
-Michal Hocko
-SUSE Labs
+Will
