@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaJHU6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:58:42 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:55400 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723AbaJHU6l (ORCPT
+	id S1755292AbaJHU7V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:59:21 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:47523 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753776AbaJHU7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:58:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com
-Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
-Date: Wed, 08 Oct 2014 22:58:32 +0200
-Message-ID: <9985506.Mg7cltjCP9@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412801095.32718.13.camel@jarvis>
-References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com> <1412801095.32718.13.camel@jarvis>
+	Wed, 8 Oct 2014 16:59:19 -0400
+X-Originating-IP: 50.43.41.112
+Date: Wed, 8 Oct 2014 13:59:07 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Stefan Berger <stefanb@linux.vnet.ibm.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>, keyrings@linux-nfs.org,
+        jarkko.sakkinnen@linux.intel.com,
+        "ksummit-discuss@lists.linuxfoundation.org" 
+	<ksummit-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        tpmdd-devel@lists.sourceforge.net,
+        James Morris <james.l.morris@oracle.com>,
+        linux-ima-devel@lists.sourceforge.net,
+        trousers-tech@lists.sourceforge.net
+Subject: Re: [Ksummit-discuss] [tpmdd-devel] [TrouSerS-tech] TPM MiniSummit @
+ LinuxCon Europe
+Message-ID: <20141008205907.GA7492@thin>
+References: <trinity-2d36367c-59c5-44af-8737-fb503e10af38-1411376491498@3capp-gmx-bs07>
+ <CALCETrWdPmSCUkb-neH5ssNmxzsqY0rioQq5qMc2ne7J0JxVLg@mail.gmail.com>
+ <543428E1.7050702@linux.vnet.ibm.com>
+ <20141007180209.GD10432@obsidianresearch.com>
+ <5434352A.6080403@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:JZmxlYFpLePcqAnufQrdsLkFSqLmQk8qP4rTciNC5A4
- HtWidR0+PIhS0oon2oS1Q+jWep/sZtPf4z6+bWuxVU0JqHrAr/
- LznDJ4JIKPzAdIQ2lFJTrhhCXFuCXcyCONQx/nuax+CuSK6Ihi
- bWRr3bkfckelFj6U8M8hxZlhZgTFVk/moxxyqHgjUQ/xAFsYsC
- 51vdg1XuUsMTMvXoUrDXfK1FWaAc0CQfpM6NBGvDaIfH2ChBzL
- suLT8vR7WlxJ8aVec5E8aqD2XWyBaEa26oYyoZ8ifj/MrjThur
- YjEsh2GIZ5HMDskl4FihJ8nwweSV55zkODqmjfInyRtrMKmXmI
- vyIHrNFO4RRkwVh7qDwg=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5434352A.6080403@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 October 2014 13:44:55 James Bottomley wrote:
-> > diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
-> > index 45b9566..ff2a0b3 100644
-> > --- a/drivers/scsi/ips.h
-> > +++ b/drivers/scsi/ips.h
-> > @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
-> >     uint8_t            active;
-> >     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
-> >     uint16_t           reset_count;        /* number of resets           */
-> > -   time_t             last_ffdc;          /* last time we sent ffdc info*/
-> > +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
-> >     uint8_t            slot_num;           /* PCI Slot Number            */
-> >     int                ioctl_len;          /* size of ioctl buffer       */
-> >     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
+On Tue, Oct 07, 2014 at 02:47:06PM -0400, Stefan Berger wrote:
+> On 10/07/2014 02:02 PM, Jason Gunthorpe wrote:
+> >On Tue, Oct 07, 2014 at 01:54:41PM -0400, Stefan Berger wrote:
+> >
+> >>Why add the complexity of swapping of authenticated sessions and keys
+> >>into the kernel if you can handle this in userspace? You need a library
+> >>that is aware of the number of key slots and slots for sessions in the
+> >>TPM and swaps them in at out when applications need them. Trousers is
+> >>such a library that was designed to cope with the limitations of the
+> >>device and make its functionality available to all applications that
+> >>want to access it.
+> >How does trousers work with the kernel when the kernel is also using
+> >TPM key slots for IMA/keyring/whatever?
 > 
-> This is completely pointless, isn't it?  All the ips driver cares about
-> is that we send a FFDC time update every eight hours or so, so we can
-> happily truncate the number of seconds to 32 bits for that calculation
-> just keep the variable at 32 bits and do a time_after thing for the
-> comparison.
+> IIRC it only uses a single key slot and swaps all keys in and out of that
+> one. If the kernel was to fill up all key (and sessions) slots, TSS would
+> probably not work anymore.
+> 
+> Another argument for the TSS is that you also wouldn't want applications to
+> swap out each others keys and sessions and leave them out or assume that
+> they would always cleanup if they do not currently need them.
 
-Good point. The same has come up in a few other places, so I wonder if we
-should introduce a proper way to do it that doesn't involve time_t.
+At a minimum, the kernel needs to reserve some number of keys and
+sessions for itself (and we should *not* assume that number must be 1).
+That means we need some level of kernel arbitration to expose the
+remaining items to userspace.  Given that existing level of arbitration,
+we don't necessarily *have* to add support for swapping resources in and
+out between applications, but we *could* support giving individual TPM
+resources to individual userspace processes on an exclusive basis, and
+give an error if we run out.
 
-While the current code works, we will have to audit 2000 other locations
-in which time_t/timespec/timeval are used in the kernel, so we are going
-to need some form of annotation to make sure we don't get everyone to
-look at the driver again just to come to the same conclusion after working
-on a patch first.
+Whether we add dynamic resource management beyond that to userspace or
+the kernel is a good question.
 
-> However, what the code *should* be doing is using jiffies and
-> time_before/after since the interval is so tiny rather than a
-> do_gettimeofday() call in the fast path.
-
-Yes, this would probably be best for this particular driver, it also
-means we end up with a monotonic clock source rather than a wall-clock.
-
-Ebru, when I explained the various data types we have for timekeeping,
-I failed to mention jiffies. That is one that is very fast to access
-and has a resolution between 1 and 10 milliseconds but will overflow
-within a few months, so it can only be used in places where overflow
-is known to be handled safely, as time_before() does.
-
-	Arnd
+- Josh Triplett
