@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365AbaJHL4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:56:34 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48281 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756224AbaJHL4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:56:32 -0400
-Date: Wed, 8 Oct 2014 12:56:29 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Perform rotation on Intel CQM RMIDs
-Message-ID: <20141008115629.GR14343@console-pimps.org>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-12-git-send-email-matt@console-pimps.org>
- <20141008111927.GG4750@worktop.programming.kicks-ass.net>
+	id S1756908AbaJHL6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:58:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49685 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755599AbaJHL6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 07:58:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,677,1406617200"; 
+   d="scan'208";a="585311918"
+Date: Wed, 8 Oct 2014 04:58:12 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lejun Zhu <lejun.zhu@intel.com>,
+        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
+        Daniel =?UTF-8?B?R2zDtmNrbmVy?= <dg@emlix.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH 2/2] PMIC / opregion: support PMIC customized operation
+ region for CrystalCove
+Message-ID: <20141008045812.734a24db@ultegra>
+In-Reply-To: <CACRpkdaPFzq=Qya_UoZpxHom+VcynTwQL9EfdLb_Vpr=g6+Prg@mail.gmail.com>
+References: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+	<1410229968-11638-3-git-send-email-aaron.lu@intel.com>
+	<20141008080515.GC20647@lee--X1>
+	<CACRpkdaPFzq=Qya_UoZpxHom+VcynTwQL9EfdLb_Vpr=g6+Prg@mail.gmail.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008111927.GG4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Oct, at 01:19:27PM, Peter Zijlstra wrote:
-> On Wed, Sep 24, 2014 at 03:04:15PM +0100, Matt Fleming wrote:
-> > This scheme reserves one RMID at all times for rotation. When we need to
-> > schedule a new event we give it the reserved RMID, pick a victim event
-> > from the front of the global CQM list and wait for the victim's RMID to
-> > drop to zero occupancy, before it becomes the new reserved RMID.
+On Wed, 8 Oct 2014 11:16:11 +0200
+Linus Walleij <linus.walleij@linaro.org> wrote:
+
+> On Wed, Oct 8, 2014 at 10:05 AM, Lee Jones <lee.jones@linaro.org>
+> wrote:
 > 
-> > +/*
-> > + * If we fail to assign a new RMID for intel_cqm_rotation_rmid because
-> > + * cachelines are still tagged with RMIDs in limbo, we progressively
-> > + * increment the threshold until we find an RMID in limbo with <=
-> > + * __intel_cqm_threshold lines tagged. This is designed to mitigate the
-> > + * problem where cachelines tagged with an RMID are not steadily being
-> > + * evicted.
-> > + *
-> > + * On successful rotations we decrease the threshold back towards zero.
-> > + */
-> > +static unsigned int __intel_cqm_threshold;
+> > With the influx of new same-chip devices, I think the MFD subsystem
+> > is fast becoming overloaded.  I think all of the PMIC handling
+> > should in fact either live in Regulators or have its own subsystem.
 > 
-> Ah, so I was about to tell you there is the possibiliy we'll never quite
-> reach 0. But it appears you've cured that with this adaptive threshold
-> thing?
- 
-Yeah, that is the idea. There are more games that we can play for
-picking a "good" RMID to reuse, but this threshold provides a final
-guarantee that we will make forward progress.
+> You have a valid point, and it's been raised before that MFD risk
+> being a dumping ground of the same kind that drivers/misc used to be
+> (is?).
+> 
+> PMIC (Power Management Integrated Circuit) is often not even a
+> correct name for the thing if it contains things like audio amplifiers
+> USB PHY intrerfaces or LED boosters as some do.
+> 
+> MSIC (Mixed-Signal Integrated Circuit) is the correct name for
+> silicon that is created as a one-stop shop for anything combining
+> digital and analog constructions, often in a higher micron node
+> (not as densely integrated) as a digital IC (the latter referred to
+> as SoCs, "baseband", "CPU" and whatnot).
+> 
+> If they shall live in MFD the driver there should (IMHO) just be
+> an exchange station, multiplexing messages and spawning
+> MFD cells into platform devices for respective *real* subsystem,
+> various misc stuff should not be allowed to be shoehorned
+> into MFD just because there is no other place to put it.
+> 
+I agree since in most cases there are not much common code to
+consolidate among cell drivers. MFD is convenient as an exchange
+station as you pointed out but the same time, drivers can create their
+own platform devices without MFD. Perhaps we can add a set of MFD
+internal APIs for PMIC for the things are common, e.g.
+- regmap
+- irq chip
 
-It also provides a good indication of how inaccurate you can expect your
-results to be at any given time and for a particular event, but we don't
-expose that currently. It might make sense to print a warning each time
-the threshold reaches a new high.
+> This driver clearly does not qualify, look:
+> 
+ACPI is kind of special since it is already an abstraction of the HW
+making it easy to consolidate code. Perhaps that is why Aaron provides
+the kind of callbacks for each PMIC.
+> > +static int intel_crc_pmic_update_power(struct regmap *regmap,
+> > +                                    struct pmic_pwr_reg *preg,
+> > bool on) +{
+> > +     int data;
+> > +
+> > +     if (regmap_read(regmap, preg->reg, &data))
+> > +             return -EIO;
+> > +
+> > +     if (on) {
+> > +             data |= PWR_SOURCE_SELECT | BIT(preg->bit);
+> > +     } else {
+> > +             data &= ~BIT(preg->bit);
+> > +             data |= PWR_SOURCE_SELECT;
+> > +     }
+> > +
+> > +     if (regmap_write(regmap, preg->reg, data))
+> > +             return -EIO;
+> > +     return 0;
+> > +}
+> 
+> Selecting power source? Isn't that something and MFD cell
+> spawned driver in either drivers/regulator or drivers/power should
+> be doing?
+> 
+The difference in this case is that opregion handler driver does not
+need the interfaces provided by sys/class/power_supply, or regulator
+etc. By moving them away from the opregion common code, you would need
+to export the APIs. I think we can have opregion code under
+drivers/acpi?
+> I know I have sinned in this regard in the past. But let's move
+> forward with defining what this subsystem should *REALLY*
+> be.
+> 
 
-> Is there an upper bound on the threshold after which we'll just wait, or
-> will you keep increasing it until something matches?
+> Yours,
+> Linus Walleij
 
-We'll keep increasing it until something matches, though crucially, we
-will decrease it for every consecutive match thereafter.
-
-A threshold upper bound does seem like a good idea, though. I'm not a
-massive fan of user-configurable knobs, but this does seem like the kind
-of thing where people may want that control.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+[Jacob Pan]
