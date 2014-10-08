@@ -1,131 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419AbaJHMTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:19:18 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:45579 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525AbaJHMTP (ORCPT
+	id S1756992AbaJHMTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:19:45 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:61145 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756112AbaJHMTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:19:15 -0400
+	Wed, 8 Oct 2014 08:19:43 -0400
+Date: Wed, 8 Oct 2014 14:19:37 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Bart Tanghe <bart.tanghe@thomasmore.be>
+Cc: matt.porter@linaro.org, linux-kernel@vger.kernel.org,
+        linux-pwm@vger.kernel.org, linux-rpi-kernel@lists.infradead.org
+Subject: Re: [PATCH v7]pwm: add BCM2835 PWM driver
+Message-ID: <20141008121935.GB7357@ulmo.nvidia.com>
+References: <1412763272-24269-1-git-send-email-bart.tanghe@thomasmore.be>
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:f1a8:15e8:7d5b:8344]
-In-Reply-To: <20140926153751.GW5182@n2100.arm.linux.org.uk>
-References: <1411483586-29304-1-git-send-email-a.motakis@virtualopensystems.com>
- <1411483586-29304-8-git-send-email-a.motakis@virtualopensystems.com> <20140926153751.GW5182@n2100.arm.linux.org.uk>
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-Date: Wed, 8 Oct 2014 14:18:54 +0200
-Message-ID: <CAG8rG2wbhJZiLw+hh_ZhRnMmpNxKWxUaXoU0Tzkpk7ooiUs6mw@mail.gmail.com>
-Subject: Re: [PATCHv7 07/26] driver core: amba: add device binding path 'driver_override'
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
-        KVM devel mailing list <kvm@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Eric Auger <eric.auger@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zx4FCpZtqtKETZ7O"
+Content-Disposition: inline
+In-Reply-To: <1412763272-24269-1-git-send-email-bart.tanghe@thomasmore.be>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 5:37 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> On Tue, Sep 23, 2014 at 04:46:06PM +0200, Antonios Motakis wrote:
-> > As already demonstrated with PCI [1] and the platform bus [2], a
-> > driver_override property in sysfs can be used to bypass the id matching
-> > of a device to a AMBA driver. This can be used by VFIO to bind to any AMBA
-> > device requested by the user.
-> >
-> > [1] http://lists-archives.com/linux-kernel/28030441-pci-introduce-new-device-binding-path-using-pci_dev-driver_override.html
-> > [2] https://www.redhat.com/archives/libvir-list/2014-April/msg00382.html
-> >
-> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
->
-> I have to ask why this is even needed in the first place.  To take the
-> example in [2], what's wrong with:
->
-> echo fff51000.ethernet > /sys/bus/platform/devices/fff51000.ethernet/driver/unbind
-> echo fff51000.ethernet > /sys/bus/platform/drivers/vfio-platform/bind
->
-> and similar for AMBA.
->
-> All we would need to do is to introduce a way of having a driver accept
-> explicit bind requests.
->
-> In any case:
->
-> > +static ssize_t driver_override_store(struct device *_dev,
-> > +                                  struct device_attribute *attr,
-> > +                                  const char *buf, size_t count)
-> > +{
-> > +     struct amba_device *dev = to_amba_device(_dev);
-> > +     char *driver_override, *old = dev->driver_override, *cp;
-> > +
-> > +     if (count > PATH_MAX)
-> > +             return -EINVAL;
-> > +
-> > +     driver_override = kstrndup(buf, count, GFP_KERNEL);
-> > +     if (!driver_override)
-> > +             return -ENOMEM;
-> > +
-> > +     cp = strchr(driver_override, '\n');
-> > +     if (cp)
-> > +             *cp = '\0';
->
-> I hope that is not replicated everywhere.  This allows up to a page to be
-> allocated, even when the first byte may be a newline.  This is wasteful.
->
-> How about:
->
->         if (count > PATH_MAX)
->                 return -EINVAL;
->
->         cp = strnchr(buf, count, '\n');
->         if (cp)
->                 count = cp - buf - 1;
->
->         if (count) {
->                 driver_override = kstrndup(buf, count, GFP_KERNEL);
->                 if (!driver_override)
->                         return -ENOMEM;
->         } else {
->                 driver_override = NULL;
->         }
->
->         kfree(dev->driver_override);
->         dev->driver_override = driver_override;
 
-I implemented something along this lines and tested it a bit. The
-kernel already splits the input by newlines, and the function is being
-called for each one separately; so this change doesn't save any
-memory.
+--zx4FCpZtqtKETZ7O
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
-> Also:
->
-> > +static ssize_t driver_override_show(struct device *_dev,
-> > +                                 struct device_attribute *attr, char *buf)
-> > +{
-> > +     struct amba_device *dev = to_amba_device(_dev);
-> > +
-> > +     return sprintf(buf, "%s\n", dev->driver_override);
-> > +}
->
-> Do we really want to do a NULL pointer dereference here?
->
-> --
-> FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-> according to speedtest.net.
+On Wed, Oct 08, 2014 at 12:14:32PM +0200, Bart Tanghe wrote:
+> Add pwm driver for Broadcom BCM2835 processor (Raspberry Pi)
+>=20
+> Signed-off-by: Bart Tanghe <bart.tanghe@thomasmore.be>
+> ---
+> Changed in v7:
+>  - clean up the shameful clk_enable error handling introduced in v6
+>  - clean up the code nits
+>=20
+> diff --git a/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt b/Docu=
+mentation/devicetree/bindings/pwm/pwm-bcm2835.txt
+> new file mode 100644
+> index 0000000..d5162db
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pwm/pwm-bcm2835.txt
+> @@ -0,0 +1,27 @@
+> +BCM2835 PWM controller (Raspberry Pi controller)
+> +
+> +Required properties:
+> +- compatible: should be "brcm,bcm2835-pwm"
+> +- reg: physical base address and length of the controller's registers
+> +- clock: this clock defines the base clock frequency of the pwm
+> +hardware system, the period and the duty_cycle of the pwm signal is a
+> +multiple of the base period
 
+This needs to document the #pwm-cells property. I can fix that up when
+applying, though.
 
+Let's give Stephen and others a chance to give this another look.
 
+Thierry
 
--- 
-Antonios Motakis
-Virtual Open Systems
+--zx4FCpZtqtKETZ7O
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUNSvXAAoJEN0jrNd/PrOhIKwQAJOKirjXjQqBxSzQ1FTDuJt7
+hX3Pe/rnvUyl5ZE3yQBUBp9sMrhCAaiKl5FPmMkncnDRibqgf0SDPDifA7gbSBIk
+bEAKvCsK694nj7y5HKcZIHrpnRMAD6ORF5yKbnCRHCCR5DvjRWN8YAkstQd+0DRO
+miI6MI4rvVzE5M6BckfFdEeM/ptr3qZPlroN3CZhjwZQhLms9rXJqSBzaVGDfcQ+
+RIqcM+jsu6jMtTUci8FJgfQ4FTox2Fbd+0MK712yi87LM1LPK/67yiDiDZsH7t16
+ennB9MJzK+mJMYMwZtE/Y6UBUxX0LGKn4NjY6Aaop+Qvniwa823I+Crx0k55cR8+
+TzDCI7V6sxEAMqs7zG083T0GtNKnZFSP3wsY1EbrNu4hosZ8AxZV6GZ4Ai4obeZY
+uj+aTus2YEK5ss1NZgcdUN90L6l63Nw8RAlND1+cYar5LYNDMD6gkE4Qrx15NyYx
+Zwxg1RsP5d27yglGwavc74HqrKxHl7AsEGW15iz7DmijzSwbGFQOvI+wECnk4Sjr
+C+EowDgo09zTUzaMh7YbPzjC9rYGOcUlFM986Y7MNDCqLsVQhuU/36kTGNOXGhKZ
+9Aspn+A3LC4+2fr5EZkhnhMPUtXWbocHgVd79I8jwbigej57sLDZiQPxMoRSCA+d
+KQG7qnjplUm4avnlbM/w
+=slUT
+-----END PGP SIGNATURE-----
+
+--zx4FCpZtqtKETZ7O--
