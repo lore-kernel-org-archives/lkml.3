@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620AbaJHJau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:30:50 -0400
-Received: from mail-bl2on0065.outbound.protection.outlook.com ([65.55.169.65]:22779
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	id S1755678AbaJHJa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:30:57 -0400
+Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:24466
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755567AbaJHJaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:30:46 -0400
+	id S1755567AbaJHJaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:30:52 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v4 08/29] nios2: MMU Fault handling
-Date: Wed, 8 Oct 2014 17:29:34 +0800
-Message-ID: <1412760595-3935-9-git-send-email-lftan@altera.com>
+Subject: [PATCH v4 09/29] nios2: Page table management
+Date: Wed, 8 Oct 2014 17:29:35 +0800
+Message-ID: <1412760595-3935-10-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
 References: <1412760595-3935-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(199003)(189002)(19580395003)(68736004)(44976005)(19580405001)(50466002)(46102003)(93916002)(87286001)(21056001)(88136002)(84676001)(64706001)(104166001)(76482002)(86362001)(575784001)(97736003)(102836001)(80022003)(99396003)(87936001)(42186005)(31966008)(85306004)(2201001)(20776003)(76176999)(105596002)(6806004)(62966002)(77096002)(50986999)(33646002)(50226001)(92566001)(4396001)(77156001)(120916001)(92726001)(47776003)(95666004)(48376002)(89996001)(106466001)(107046002)(229853001)(85852003)(36756003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB220;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(97736003)(107046002)(105596002)(229853001)(42186005)(85306004)(120916001)(99396003)(104166001)(106466001)(95666004)(31966008)(50986999)(87286001)(88136002)(76176999)(68736004)(50226001)(4396001)(87936001)(50466002)(36756003)(62966002)(77156001)(19580405001)(19580395003)(44976005)(6806004)(84676001)(33646002)(21056001)(85852003)(20776003)(47776003)(77096002)(102836001)(64706001)(48376002)(2201001)(92566001)(86362001)(93916002)(92726001)(80022003)(46102003)(89996001)(76482002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB213;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB220;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB213;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0358535363
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
@@ -33,304 +33,542 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the handling of the MMU faults (exception
-entry code introduced by a previous patch, kernel/entry.S).
+This patch adds support for page table management.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/mm/extable.c |   25 +++++
- arch/nios2/mm/fault.c   |  251 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 276 insertions(+), 0 deletions(-)
- create mode 100644 arch/nios2/mm/extable.c
- create mode 100644 arch/nios2/mm/fault.c
+ arch/nios2/include/asm/pgalloc.h      |   86 +++++++++
+ arch/nios2/include/asm/pgtable-bits.h |   35 ++++
+ arch/nios2/include/asm/pgtable.h      |  305 +++++++++++++++++++++++++++++++++
+ arch/nios2/mm/pgtable.c               |   73 ++++++++
+ 4 files changed, 499 insertions(+), 0 deletions(-)
+ create mode 100644 arch/nios2/include/asm/pgalloc.h
+ create mode 100644 arch/nios2/include/asm/pgtable-bits.h
+ create mode 100644 arch/nios2/include/asm/pgtable.h
+ create mode 100644 arch/nios2/mm/pgtable.c
 
-diff --git a/arch/nios2/mm/extable.c b/arch/nios2/mm/extable.c
+diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
 new file mode 100644
-index 0000000..4d2fc5a
+index 0000000..6e2985e
 --- /dev/null
-+++ b/arch/nios2/mm/extable.c
-@@ -0,0 +1,25 @@
++++ b/arch/nios2/include/asm/pgalloc.h
+@@ -0,0 +1,86 @@
 +/*
-+ * Copyright (C) 2010, Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ */
++
++#ifndef _ASM_NIOS2_PGALLOC_H
++#define _ASM_NIOS2_PGALLOC_H
++
++#include <linux/mm.h>
++
++static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
++	pte_t *pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)pte));
++}
++
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++	pgtable_t pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
++}
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++/*
++ * Initialize a new pmd table with invalid pointers.
++ */
++extern void pmd_init(unsigned long page, unsigned long pagetable);
++
++extern pgd_t *pgd_alloc(struct mm_struct *mm);
++
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_pages((unsigned long)pgd, PGD_ORDER);
++}
++
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++	unsigned long address)
++{
++	pte_t *pte;
++
++	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
++					PTE_ORDER);
++
++	return pte;
++}
++
++static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
++	unsigned long address)
++{
++	struct page *pte;
++
++	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
++	if (pte) {
++		if (!pgtable_page_ctor(pte)) {
++			__free_page(pte);
++			return NULL;
++		}
++		clear_highpage(pte);
++	}
++	return pte;
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_pages((unsigned long)pte, PTE_ORDER);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_page_dtor(pte);
++	__free_pages(pte, PTE_ORDER);
++}
++
++#define __pte_free_tlb(tlb, pte, addr)				\
++	do {							\
++		pgtable_page_dtor(pte);				\
++		tlb_remove_page((tlb), (pte));			\
++	} while (0)
++
++#define check_pgt_cache()	do { } while (0)
++
++#endif /* _ASM_NIOS2_PGALLOC_H */
+diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
+new file mode 100644
+index 0000000..ce9e706
+--- /dev/null
++++ b/arch/nios2/include/asm/pgtable-bits.h
+@@ -0,0 +1,35 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
++#ifndef _ASM_NIOS2_PGTABLE_BITS_H
++#define _ASM_NIOS2_PGTABLE_BITS_H
 +
-+int fixup_exception(struct pt_regs *regs)
-+{
-+	const struct exception_table_entry *fixup;
++/*
++ * These are actual hardware defined protection bits in the tlbacc register
++ * which looks like this:
++ *
++ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
++ * ignored........  C  R  W  X  G PFN............
++ */
++#define _PAGE_GLOBAL	(1<<20)
++#define _PAGE_EXEC	(1<<21)
++#define _PAGE_WRITE	(1<<22)
++#define _PAGE_READ	(1<<23)
++#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
 +
-+	fixup = search_exception_tables(regs->ea);
-+	if (fixup) {
-+		regs->ea = fixup->fixup;
-+		return 1;
-+	}
++/*
++ * Software defined bits. They are ignored by the hardware and always read back
++ * as zero, but can be written as non-zero.
++ */
++#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
++#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
++#define _PAGE_DIRTY	(1<<27)	/* dirty page */
++#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
 +
-+	return 0;
-+}
-diff --git a/arch/nios2/mm/fault.c b/arch/nios2/mm/fault.c
++#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
+diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
 new file mode 100644
-index 0000000..15a0bb5
+index 0000000..ec85481
 --- /dev/null
-+++ b/arch/nios2/mm/fault.c
-@@ -0,0 +1,251 @@
++++ b/arch/nios2/include/asm/pgtable.h
+@@ -0,0 +1,305 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *
++ * Based on asm/pgtable-32.h from mips which is:
++ *
++ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_PGTABLE_H
++#define _ASM_NIOS2_PGTABLE_H
++
++#include <linux/io.h>
++#include <linux/bug.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++
++#include <asm/pgtable-bits.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++#define FIRST_USER_ADDRESS	0
++
++#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
++#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
++
++struct mm_struct;
++
++/* Helper macro */
++#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
++				((x) ? _PAGE_EXEC : 0) |		\
++				((r) ? _PAGE_READ : 0) |		\
++				((w) ? _PAGE_WRITE : 0))
++/*
++ * These are the macros that generic kernel code needs
++ * (to populate protection_map[])
++ */
++
++/* Remove W bit on private pages for COW support */
++#define __P000	MKP(0, 0, 0)
++#define __P001	MKP(0, 0, 1)
++#define __P010	MKP(0, 0, 0)	/* COW */
++#define __P011	MKP(0, 0, 1)	/* COW */
++#define __P100	MKP(1, 0, 0)
++#define __P101	MKP(1, 0, 1)
++#define __P110	MKP(1, 0, 0)	/* COW */
++#define __P111	MKP(1, 0, 1)	/* COW */
++
++/* Shared pages can have exact HW mapping */
++#define __S000	MKP(0, 0, 0)
++#define __S001	MKP(0, 0, 1)
++#define __S010	MKP(0, 1, 0)
++#define __S011	MKP(0, 1, 1)
++#define __S100	MKP(1, 0, 0)
++#define __S101	MKP(1, 0, 1)
++#define __S110	MKP(1, 1, 0)
++#define __S111	MKP(1, 1, 1)
++
++/* Used all over the kernel */
++#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
++			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
++
++#define PAGE_COPY MKP(0, 0, 1)
++
++#define PGD_ORDER	0
++#define PTE_ORDER	0
++
++#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
++#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
++
++#define USER_PTRS_PER_PGD	\
++	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
++
++#define PGDIR_SHIFT	22
++#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++
++/*
++ * ZERO_PAGE is a global shared page that is always zero: used
++ * for zero-mapped memory areas etc..
++ */
++extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
++#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
++extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
++
++/*
++ * (pmds are folded into puds so this doesn't get actually called,
++ * but the define is needed for a generic inline function.)
++ */
++static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
++{
++	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
++}
++
++/* to find an entry in a page-table-directory */
++#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
++#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
++
++static inline int pte_write(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_WRITE; }
++static inline int pte_dirty(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_DIRTY; }
++static inline int pte_young(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_ACCESSED; }
++static inline int pte_file(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_FILE; }
++static inline int pte_special(pte_t pte)	{ return 0; }
++
++#define pgprot_noncached pgprot_noncached
++
++static inline pgprot_t pgprot_noncached(pgprot_t _prot)
++{
++	unsigned long prot = pgprot_val(_prot);
++
++	prot &= ~_PAGE_CACHED;
++
++	return __pgprot(prot);
++}
++
++static inline int pte_none(pte_t pte)
++{
++	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
++}
++
++static inline int pte_present(pte_t pte)	\
++	{ return pte_val(pte) & _PAGE_PRESENT; }
++
++/*
++ * The following only work if pte_present() is true.
++ * Undefined behaviour if not..
++ */
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
++
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
++	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
++	return pte;
++}
++
++static inline int pmd_present(pmd_t pmd)
++{
++	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
++			&& (pmd_val(pmd) != 0UL);
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
++}
++
++#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
++#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
++#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
++
++/*
++ * Store a linux PTE into the linux page table.
++ */
++static inline void set_pte(pte_t *ptep, pte_t pteval)
++{
++	*ptep = pteval;
++}
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pteval)
++{
++	unsigned long paddr = page_to_virt(pte_page(pteval));
++	flush_dcache_range(paddr, paddr + PAGE_SIZE);
++	set_pte(ptep, pteval);
++}
++
++static inline int pmd_none(pmd_t pmd)
++{
++	return (pmd_val(pmd) ==
++		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
++}
++
++#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
++
++static inline void pte_clear(struct mm_struct *mm,
++				unsigned long addr, pte_t *ptep)
++{
++	pte_t null;
++
++	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
++
++	set_pte_at(mm, addr, ptep, null);
++	flush_tlb_one(addr);
++}
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
++
++#define pte_unmap(pte)	do { } while (0)
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
++#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
++#define pmd_page_vaddr(pmd)	pmd_val(pmd)
++
++#define pte_offset_map(dir, addr)			\
++	((pte_t *) page_address(pmd_page(*dir)) +	\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
++
++/* Get the address to the PTE for a vaddr in specfic directory */
++#define pte_offset_kernel(dir, addr)			\
++	((pte_t *) pmd_page_vaddr(*(dir)) +		\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++#define pte_ERROR(e) \
++	pr_err("%s:%d: bad pte %08lx.\n", \
++		__FILE__, __LINE__, pte_val(e))
++#define pgd_ERROR(e) \
++	pr_err("%s:%d: bad pgd %08lx.\n", \
++		__FILE__, __LINE__, pgd_val(e))
++
++/*
++ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
++ * && !pte_file(pte)):
++ *
++ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
++ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
++ *
++ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
++ *
++ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
++ * true.
++ */
++#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
++#define __swp_offset(swp)	((swp).val & 0xfffff)
++#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
++						 | ((off) & 0xfffff) })
++#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++
++/* Encode and decode a nonlinear file mapping entry */
++#define PTE_FILE_MAX_BITS	25
++#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
++#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
++
++#define kern_addr_valid(addr)		(1)
++
++#include <asm-generic/pgtable.h>
++
++#define pgtable_cache_init()		do { } while (0)
++
++extern void __init paging_init(void);
++extern void __init mmu_init(void);
++
++extern void update_mmu_cache(struct vm_area_struct *vma,
++			     unsigned long address, pte_t *pte);
++
++#endif /* _ASM_NIOS2_PGTABLE_H */
+diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
+new file mode 100644
+index 0000000..21e865f
+--- /dev/null
++++ b/arch/nios2/mm/pgtable.c
+@@ -0,0 +1,73 @@
 +/*
 + * Copyright (C) 2009 Wind River Systems Inc
 + *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
-+ * based on arch/mips/mm/fault.c which is:
-+ *
-+ * Copyright (C) 1995-2000 Ralf Baechle
-+ *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/signal.h>
-+#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <linux/types.h>
-+#include <linux/ptrace.h>
-+#include <linux/mman.h>
 +#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <linux/ptrace.h>
++#include <linux/sched.h>
 +
-+#include <asm/mmu_context.h>
-+#include <asm/traps.h>
++#include <asm/pgtable.h>
++#include <asm/cpuinfo.h>
 +
-+#define EXC_SUPERV_INSN_ACCESS	9  /* Supervisor only instruction address */
-+#define EXC_SUPERV_DATA_ACCESS	11 /* Supervisor only data address */
-+#define EXC_X_PROTECTION_FAULT	13 /* TLB permission violation (x) */
-+#define EXC_R_PROTECTION_FAULT	14 /* TLB permission violation (r) */
-+#define EXC_W_PROTECTION_FAULT	15 /* TLB permission violation (w) */
++/* pteaddr:
++ *   ptbase | vpn* | zero
++ *   31-22  | 21-2 | 1-0
++ *
++ *   *vpn is preserved on double fault
++ *
++ * tlbacc:
++ *   IG   |*flags| pfn
++ *   31-25|24-20 | 19-0
++ *
++ *   *crwxg
++ *
++ * tlbmisc:
++ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
++ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
++ *
++ */
 +
 +/*
-+ * This routine handles page faults.  It determines the address,
-+ * and the problem, and then passes it off to one of the appropriate
-+ * routines.
++ * Initialize a new pgd / pmd table with invalid pointers.
 + */
-+asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long cause,
-+				unsigned long address)
++static void pgd_init(pgd_t *pgd)
 +{
-+	struct vm_area_struct *vma = NULL;
-+	struct task_struct *tsk = current;
-+	struct mm_struct *mm = tsk->mm;
-+	int code = SEGV_MAPERR;
-+	int fault;
-+	unsigned int flags = 0;
++	unsigned long *p = (unsigned long *) pgd;
++	int i;
 +
-+	cause >>= 2;
++	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
++		p[i + 0] = (unsigned long) invalid_pte_table;
++		p[i + 1] = (unsigned long) invalid_pte_table;
++		p[i + 2] = (unsigned long) invalid_pte_table;
++		p[i + 3] = (unsigned long) invalid_pte_table;
++		p[i + 4] = (unsigned long) invalid_pte_table;
++		p[i + 5] = (unsigned long) invalid_pte_table;
++		p[i + 6] = (unsigned long) invalid_pte_table;
++		p[i + 7] = (unsigned long) invalid_pte_table;
++	}
++}
 +
-+	/* Restart the instruction */
-+	regs->ea -= 4;
-+
-+	/*
-+	 * We fault-in kernel-space virtual memory on-demand. The
-+	 * 'reference' page table is init_mm.pgd.
-+	 *
-+	 * NOTE! We MUST NOT take any locks for this case. We may
-+	 * be in an interrupt or a critical region, and should
-+	 * only copy the information from the master page table,
-+	 * nothing more.
-+	 */
-+	if (unlikely(address >= VMALLOC_START && address <= VMALLOC_END)) {
-+		if (user_mode(regs))
-+			goto bad_area_nosemaphore;
-+		else
-+			goto vmalloc_fault;
++pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *ret, *init;
++	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
++	if (ret) {
++		init = pgd_offset(&init_mm, 0UL);
++		pgd_init(ret);
++		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
++		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
 +	}
 +
-+	if (unlikely(address >= TASK_SIZE))
-+		goto bad_area_nosemaphore;
++	return ret;
++}
 +
-+	/*
-+	 * If we're in an interrupt or have no user
-+	 * context, we must not take the fault..
-+	 */
-+	if (in_atomic() || !mm)
-+		goto bad_area_nosemaphore;
-+
-+	if (user_mode(regs))
-+		flags |= FAULT_FLAG_USER;
-+
-+	if (!down_read_trylock(&mm->mmap_sem)) {
-+		if (!user_mode(regs) && !search_exception_tables(regs->ea))
-+			goto bad_area_nosemaphore;
-+		down_read(&mm->mmap_sem);
-+	}
-+
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
-+	if (vma->vm_start <= address)
-+		goto good_area;
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
-+	if (expand_stack(vma, address))
-+		goto bad_area;
-+/*
-+ * Ok, we have a good vm_area for this memory access, so
-+ * we can handle it..
-+ */
-+good_area:
-+	code = SEGV_ACCERR;
-+
-+	switch (cause) {
-+	case EXC_SUPERV_INSN_ACCESS:
-+		goto bad_area;
-+	case EXC_SUPERV_DATA_ACCESS:
-+		goto bad_area;
-+	case EXC_X_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_EXEC))
-+			goto bad_area;
-+		break;
-+	case EXC_R_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_READ))
-+			goto bad_area;
-+		break;
-+	case EXC_W_PROTECTION_FAULT:
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+		flags = FAULT_FLAG_WRITE;
-+		break;
-+	}
-+
-+survive:
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+	if (unlikely(fault & VM_FAULT_ERROR)) {
-+		if (fault & VM_FAULT_OOM)
-+			goto out_of_memory;
-+		else if (fault & VM_FAULT_SIGBUS)
-+			goto do_sigbus;
-+		BUG();
-+	}
-+	if (fault & VM_FAULT_MAJOR)
-+		tsk->maj_flt++;
-+	else
-+		tsk->min_flt++;
-+
-+	up_read(&mm->mmap_sem);
-+	return;
-+
-+/*
-+ * Something tried to access memory that isn't in our memory map..
-+ * Fix it, but check if it's kernel or user first..
-+ */
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+bad_area_nosemaphore:
-+	/* User mode accesses just cause a SIGSEGV */
-+	if (user_mode(regs)) {
-+		pr_alert("%s: unhandled page fault (%d) at 0x%08lx, "
-+			"cause %ld\n", current->comm, SIGSEGV, address, cause);
-+		show_regs(regs);
-+		_exception(SIGSEGV, regs, code, address);
-+		return;
-+	}
-+
-+no_context:
-+	/* Are we prepared to handle this kernel fault? */
-+	if (fixup_exception(regs))
-+		return;
-+
-+	/*
-+	 * Oops. The kernel tried to access some bad page. We'll have to
-+	 * terminate things with extreme prejudice.
-+	 */
-+	bust_spinlocks(1);
-+
-+	pr_alert("Unable to handle kernel %s at virtual address %08lx",
-+		address < PAGE_SIZE ? "NULL pointer dereference" :
-+		"paging request", address);
-+	pr_alert("ea = %08lx, ra = %08lx, cause = %ld\n", regs->ea, regs->ra,
-+		cause);
-+	panic("Oops");
-+	return;
-+
-+/*
-+ * We ran out of memory, or some other thing happened to us that made
-+ * us unable to handle the page fault gracefully.
-+ */
-+out_of_memory:
-+	up_read(&mm->mmap_sem);
-+	if (is_global_init(tsk)) {
-+		yield();
-+		down_read(&mm->mmap_sem);
-+		goto survive;
-+	}
-+	if (!user_mode(regs))
-+		goto no_context;
-+	pagefault_out_of_memory();
-+	return;
-+
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
-+
-+	/* Kernel mode? Handle exceptions or die */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	_exception(SIGBUS, regs, BUS_ADRERR, address);
-+	return;
-+
-+vmalloc_fault:
-+	{
-+		/*
-+		 * Synchronize this task's top level page-table
-+		 * with the 'reference' page table.
-+		 *
-+		 * Do _not_ use "tsk" here. We might be inside
-+		 * an interrupt in the middle of a task switch..
-+		 */
-+		int offset = pgd_index(address);
-+		pgd_t *pgd, *pgd_k;
-+		pud_t *pud, *pud_k;
-+		pmd_t *pmd, *pmd_k;
-+		pte_t *pte_k;
-+
-+		pgd = pgd_current + offset;
-+		pgd_k = init_mm.pgd + offset;
-+
-+		if (!pgd_present(*pgd_k))
-+			goto no_context;
-+		set_pgd(pgd, *pgd_k);
-+
-+		pud = pud_offset(pgd, address);
-+		pud_k = pud_offset(pgd_k, address);
-+		if (!pud_present(*pud_k))
-+			goto no_context;
-+		pmd = pmd_offset(pud, address);
-+		pmd_k = pmd_offset(pud_k, address);
-+		if (!pmd_present(*pmd_k))
-+			goto no_context;
-+		set_pmd(pmd, *pmd_k);
-+
-+		pte_k = pte_offset_kernel(pmd_k, address);
-+		if (!pte_present(*pte_k))
-+			goto no_context;
-+
-+		flush_tlb_one(address);
-+		return;
-+	}
++void __init pagetable_init(void)
++{
++	/* Initialize the entire pgd.  */
++	pgd_init(swapper_pg_dir);
++	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
 +}
 -- 
 1.7.7.4
