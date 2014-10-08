@@ -1,69 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280AbaJHNln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:41:43 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:35816 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119AbaJHNlk (ORCPT
+	id S932143AbaJHNll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:41:41 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57816 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753859AbaJHNlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:41:40 -0400
+	Wed, 8 Oct 2014 09:41:39 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 11/13] gpio: Support for unified device properties interface
+Date: Wed, 08 Oct 2014 16:01:45 +0200
+Message-ID: <2049741.HkpnzptfyW@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAVeFu+MvBUZTrRWB008rcsMzPvEb81TEg=L8RqBz=PJ9J6bwQ@mail.gmail.com>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1693047.RuqBhhrutB@vostro.rjw.lan> <CAAVeFu+MvBUZTrRWB008rcsMzPvEb81TEg=L8RqBz=PJ9J6bwQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <54353CE5.5070808@gmail.com>
-References: <1412773376-25212-1-git-send-email-wens@csie.org>
- <1412773376-25212-4-git-send-email-wens@csie.org> <54353CE5.5070808@gmail.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 8 Oct 2014 21:41:18 +0800
-X-Google-Sender-Auth: iV6RutdT5utW4qxZfKnMr0irQuM
-Message-ID: <CAGb2v65bPWvcs8CkOVgUhRRfhU6dz=WDt98wRMAjD+Hb3wbk8A@mail.gmail.com>
-Subject: Re: [PATCH v3 3/5] ARM: dts: sun9i: Add A80 Optimus Board support
-To: Dinh Nguyen <dinh.linux@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 9:32 PM, Dinh Nguyen <dinh.linux@gmail.com> wrote:
->
->
-> On 10/8/14, 8:02 AM, Chen-Yu Tsai wrote:
->> The A80 Optimus Board is was launched with the Allwinner A80 SoC.
->> It was jointly developed by Allwinner and Merrii.
->>
->> This board has a UART port, a JTAG connector, USB host ports, a USB
->> 3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
->> 4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
->> jack, IR receiver, and additional GPIO headers.
->>
->> This patch adds only basic support.
->>
->> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
->> ---
->>  arch/arm/boot/dts/Makefile              |  2 +
->>  arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
->>  2 files changed, 68 insertions(+)
->>  create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
->>
-> [...]
->> +
->> +/dts-v1/;
->> +/include/ "sun9i-a80.dtsi"
->> +
->> +/ {
->> +     model = "Merrii A80 Optimus Board";
->> +     compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
->
-> "merrii" should be added to vendor-prefixes.txt
+On Wednesday, October 08, 2014 11:55:08 AM Alexandre Courbot wrote:
+> On Wed, Oct 8, 2014 at 9:09 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > On Tuesday, October 07, 2014 07:52:02 PM Alexandre Courbot wrote:
+> >> On Tue, Oct 7, 2014 at 7:40 PM, Mika Westerberg
+> >> <mika.westerberg@linux.intel.com> wrote:
+> >> > On Tue, Oct 07, 2014 at 07:22:13PM +0900, Alexandre Courbot wrote:
+> >> >> On Tue, Oct 7, 2014 at 9:18 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> >> >> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> >> >
+> >> >> > Some drivers need to deal with only firmware representation of its
+> >> >> > GPIOs. An example would be a GPIO button array driver where each button
+> >> >> > is described as a separate firmware node in device tree. Typically these
+> >> >> > child nodes do not have physical representation in the Linux device
+> >> >> > model.
+> >> >> >
+> >> >> > In order to help device drivers to handle such firmware child nodes we
+> >> >> > add dev[m]_get_named_gpiod_from_child() that takes a child firmware
+> >> >> > node pointer as its second argument (the first one is the parent device
+> >> >> > itself), finds the GPIO using whatever is the underlying firmware
+> >> >> > method, and requests the GPIO properly.
+> >> >> >
+> >> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >> >>
+> >> >> ...
+> >> >>
+> >> >> > +/* Child properties interface */
+> >> >> > +struct gpio_desc *dev_get_named_gpiod_from_child(struct device *dev, void *child,
+> >> >> > +                                                const char *propname, int index);
+> >> >> > +struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev, void *child,
+> >> >> > +                                                 const char *propname, int index);
+> >> >>
+> >> >> I see the reason for these functions and am not opposed to them.
+> >> >> However, I wonder if we could not replace propname by a con_id that
+> >> >> would be resolved to one of con_id-gpio for DT and whatever naming
+> >> >> convention ACPI is using?
+> >> >
+> >> > The code in gpio-leds.c and gpio_keys_polled.c refers to "gpios" as the
+> >> > property name. If we can change that somehow to work with con_id-gpio
+> >> > instead without breaking things, then why not.
+> >> >
+> >> >> This would prevent users to name GPIOs outside of the conventions
+> >> >> defined in the bindings and be generally safer. Is there a particular
+> >> >> reason (used by some old code?) for the current direct property
+> >> >> access? If not, maybe we could call a slightly-modified of_find_gpio()
+> >> >> to resolve the GPIO property for DT, and the equivalent function for
+> >> >> ACPI?
+> >> >
+> >> > Only reason I can think of is support for the existing properties that
+> >> > are used directly. Drivers using gpiod_get() and friends do not need
+> >> > dev_get_named_gpiod_from_child() anyway.
+> >>
+> >> Right. Another thing is that the property handling code (active low
+> >> only for now) is duplicated again, but that can be addressed
+> >> separately.
+> >>
+> >> I will have a look at gpio-leds and gpio_keys_polled to see if we
+> >> cannot make this work at a higher level. It's easier to have the
+> >> bindings respected if the code itself enforces them.
+> >
+> > I'm wondering if that can be done after merging the current work?
+> >
+> > We'll be able to use the drivers in question with our hardware in the
+> > meantime then ...
+> 
+> Yeah, that's probably ok. The properties in question already exist so
+> we will have to support them anyway ; it's just a matter of seeing
+> whether we can improve the proposed way.
+> 
+> So for now:
+> 
+> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
 
-A patch for that was already queued by Maxime.
+Thanks!
 
-ChenYu
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
