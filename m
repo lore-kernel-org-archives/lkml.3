@@ -1,168 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915AbaJHNc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:32:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48173 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756244AbaJHNcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:32:54 -0400
-Date: Wed, 8 Oct 2014 15:32:53 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/3] mm: memcontrol: remove obsolete kmemcg pinning tricks
-Message-ID: <20141008133253.GD4592@dhcp22.suse.cz>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
- <1411243235-24680-3-git-send-email-hannes@cmpxchg.org>
+	id S1756960AbaJHNdw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:33:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45853 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756234AbaJHNdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:33:51 -0400
+Date: Wed, 8 Oct 2014 06:32:52 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 00/26] 3.16.5-stable review
+Message-ID: <20141008133252.GD5119@kroah.com>
+References: <20141007231848.487609292@linuxfoundation.org>
+ <5434A5B1.9010408@roeck-us.net>
+ <20141008044803.GC26820@kroah.com>
+ <87r3yihh0p.wl%satoru.takeuchi@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411243235-24680-3-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <87r3yihh0p.wl%satoru.takeuchi@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20-09-14 16:00:34, Johannes Weiner wrote:
-> As charges now pin the css explicitely, there is no more need for
-> kmemcg to acquire a proxy reference for outstanding pages during
-> offlining, or maintain state to identify such "dead" groups.
+On Wed, Oct 08, 2014 at 09:39:50PM +0900, Satoru Takeuchi wrote:
+> At Tue, 7 Oct 2014 21:48:04 -0700,
+> Greg Kroah-Hartman wrote:
+> > 
+> > On Tue, Oct 07, 2014 at 07:47:13PM -0700, Guenter Roeck wrote:
+> > > On 10/07/2014 04:19 PM, Greg Kroah-Hartman wrote:
+> > > >This is the start of the stable review cycle for the 3.16.5 release.
+> > > >There are 26 patches in this series, all will be posted as a response
+> > > >to this one.  If anyone has any issues with these being applied, please
+> > > >let me know.
+> > > >
+> > > >Responses should be made by Thu Oct  9 23:18:40 UTC 2014.
+> > > >Anything received after that time might be too late.
+> > > >
+> > > 
+> > > Build results:
+> > > 	total: 136 pass: 136 fail: 0
+> > > Qemu tests:
+> > > 	total: 30 pass: 30 fail: 0
+> > > 
+> > > Details are available at http://server.roeck-us.net:8010/builders.
+> > 
+> > Wonderful, thanks for testing all 3 of these and letting me know.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-More than happy to get rid of this trickery.
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 74 +--------------------------------------------------------
->  1 file changed, 1 insertion(+), 73 deletions(-)
+> Plus, all these kernels passed my test.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b832c87ec43b..019a44ac25d6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -471,7 +471,6 @@ struct mem_cgroup {
->  /* internal only representation about the status of kmem accounting. */
->  enum {
->  	KMEM_ACCOUNTED_ACTIVE, /* accounted by this cgroup itself */
-> -	KMEM_ACCOUNTED_DEAD, /* dead memcg with pending kmem charges */
->  };
->  
->  #ifdef CONFIG_MEMCG_KMEM
-> @@ -485,22 +484,6 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
->  	return test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags);
->  }
->  
-> -static void memcg_kmem_mark_dead(struct mem_cgroup *memcg)
-> -{
-> -	/*
-> -	 * Our caller must use css_get() first, because memcg_uncharge_kmem()
-> -	 * will call css_put() if it sees the memcg is dead.
-> -	 */
-> -	smp_wmb();
-> -	if (test_bit(KMEM_ACCOUNTED_ACTIVE, &memcg->kmem_account_flags))
-> -		set_bit(KMEM_ACCOUNTED_DEAD, &memcg->kmem_account_flags);
-> -}
-> -
-> -static bool memcg_kmem_test_and_clear_dead(struct mem_cgroup *memcg)
-> -{
-> -	return test_and_clear_bit(KMEM_ACCOUNTED_DEAD,
-> -				  &memcg->kmem_account_flags);
-> -}
->  #endif
->  
->  /* Stuffs for move charges at task migration. */
-> @@ -2807,22 +2790,7 @@ static void memcg_uncharge_kmem(struct mem_cgroup *memcg,
->  	if (do_swap_account)
->  		page_counter_uncharge(&memcg->memsw, nr_pages);
->  
-> -	/* Not down to 0 */
-> -	if (page_counter_uncharge(&memcg->kmem, nr_pages)) {
-> -		css_put_many(&memcg->css, nr_pages);
-> -		return;
-> -	}
-> -
-> -	/*
-> -	 * Releases a reference taken in kmem_cgroup_css_offline in case
-> -	 * this last uncharge is racing with the offlining code or it is
-> -	 * outliving the memcg existence.
-> -	 *
-> -	 * The memory barrier imposed by test&clear is paired with the
-> -	 * explicit one in memcg_kmem_mark_dead().
-> -	 */
-> -	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		css_put(&memcg->css);
-> +	page_counter_uncharge(&memcg->kmem, nr_pages);
->  
->  	css_put_many(&memcg->css, nr_pages);
->  }
-> @@ -4805,40 +4773,6 @@ static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->  {
->  	mem_cgroup_sockets_destroy(memcg);
->  }
-> -
-> -static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
-> -{
-> -	if (!memcg_kmem_is_active(memcg))
-> -		return;
-> -
-> -	/*
-> -	 * kmem charges can outlive the cgroup. In the case of slab
-> -	 * pages, for instance, a page contain objects from various
-> -	 * processes. As we prevent from taking a reference for every
-> -	 * such allocation we have to be careful when doing uncharge
-> -	 * (see memcg_uncharge_kmem) and here during offlining.
-> -	 *
-> -	 * The idea is that that only the _last_ uncharge which sees
-> -	 * the dead memcg will drop the last reference. An additional
-> -	 * reference is taken here before the group is marked dead
-> -	 * which is then paired with css_put during uncharge resp. here.
-> -	 *
-> -	 * Although this might sound strange as this path is called from
-> -	 * css_offline() when the referencemight have dropped down to 0 and
-> -	 * shouldn't be incremented anymore (css_tryget_online() would
-> -	 * fail) we do not have other options because of the kmem
-> -	 * allocations lifetime.
-> -	 */
-> -	css_get(&memcg->css);
-> -
-> -	memcg_kmem_mark_dead(memcg);
-> -
-> -	if (atomic_long_read(&memcg->kmem.count))
-> -		return;
-> -
-> -	if (memcg_kmem_test_and_clear_dead(memcg))
-> -		css_put(&memcg->css);
-> -}
->  #else
->  static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  {
-> @@ -4848,10 +4782,6 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->  static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->  {
->  }
-> -
-> -static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
-> -{
-> -}
->  #endif
->  
->  /*
-> @@ -5443,8 +5373,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  	}
->  	spin_unlock(&memcg->event_list_lock);
->  
-> -	kmem_cgroup_css_offline(memcg);
-> -
->  	/*
->  	 * This requires that offlining is serialized.  Right now that is
->  	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> -- 
-> 2.1.0
+>  - Test Cases:
+>    - Build this kernel.
+>    - Boot this kernel.
+>    - Build the latest mainline kernel with this kernel.
 > 
+>  - Test Tool:
+>    https://github.com/satoru-takeuchi/test-linux-stable
+> 
+>  - Test Result (kernel .config, ktest config and test log):
+>    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
+> 
+>  - Build Environment:
+>    - OS: Debian Jessy x86_64
+>    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
+>    - memory: 8GB
+> 
+>  - Test Target Environment:
+>    - Debian Jessy x86_64 (KVM guest on the Build Environment)
+>    - # of vCPU: 2
+>    - memory: 2GB
 
--- 
-Michal Hocko
-SUSE Labs
+Glad to hear it, I was worried about 3.14, thanks for testing and
+verifying I didn't mess anything up.
+
+greg k-h
