@@ -1,169 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaJHU0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:26:53 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:64646 "EHLO
+	id S1754488AbaJHU1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:27:11 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:52388 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaJHU0v convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754389AbaJHU1J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:26:51 -0400
+	Wed, 8 Oct 2014 16:27:09 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: torvalds@linux-foundation.org
 Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL 0/7] ARM: SoC changes for 3.18
-Date: Wed, 08 Oct 2014 22:23:29 +0200
-Message-ID: <1922034.HH2lvbiFi0@wuerfel>
+Subject: [GIT PULL 2/7] ARM: SoC cleanups for 3.18
+Date: Wed, 08 Oct 2014 22:26:35 +0200
+Message-ID: <5163761.5tLiYXxRSq@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1922034.HH2lvbiFi0@wuerfel>
+References: <1922034.HH2lvbiFi0@wuerfel>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V02:K0:tcFKULP1+0fKv/W6A+R0OReU64UxdC0S/bweqmGEsOG
- n+uGcYnF/R61RniG7JgTtOz+zL/txYAd7H8cvhOsK16PMBFUtG
- fh/C9ba1YFkwhT3MVMG2gF1I4mO3KYprAvS7wb7POvcQIpvrpO
- ljADrje00UPk/e5U/6NKNflTjVRhsh1o6/SH1IQ3Fs4yaG4++o
- 8MsYITYbgzMXyh0AUpxIf8hdoiIrUMt9gJopL3KHIyJHUoGMrO
- PHLyyuDqXaAaaRCPP7g3ir1qTuClucmSDbQ6rDIC4PyLMOfEOJ
- Sh7Wrq4elbioWxPcIZKuVaHC6v49JrLsMdNaaYBS+GSABe9oky
- x/41Pl7iFNrbk3llUyQg=
+X-Provags-ID: V02:K0:ivKIeatLg8FVx7gzt3h5mdBLv0lPhddZVfj6O/YiUWd
+ RRQ0+Qj9V46R2tyzalTQDhTwptHtSXHEaBDcXe5E72RltWR+3w
+ Fr2k9pp+C3et1HrLRPyyHbrQfxYKR7ZUV1RYVEzd4ejJ8LAg3v
+ aqT/n4Lu1FGjkgQP9/MnWuiNyr3JLx+nLEphP1gh2F6ti1pFN1
+ Ody3xxFb1j3/Ij6bO1kPHxpr8BWZihARrFxeOnxtwzYdfS7wWz
+ iw/v1XRsQhueMOlJSUZ4tqxEH2PqNRwLLwRodRORASOal5qXbT
+ 99v+wJh72EsIQlzI2l9th/xb1o9tWgGxuLegC0y1+gVM+5cqfg
+ gV+VyTg0pOdTl7oY8i04=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
-Sending out the main pull requests for arm-soc now. It feels smaller than
-usual, but we also rejected a number of branches late in the cycle after
-you announced that you'd do an early 3.17 release.
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-As usual, DT changes make up the bulk of this, although less so than
-previously. One reason for this is a relatively large driver for the TI
-keystone platform that skews the statistics.
+are available in the git repository at:
 
-The total size of arch/arm/mach-*/ keeps going down (2782 insertions,
-5825 deletions) as we remove files that are obsoleted by the DT
-migration, which is good. Unfortunately, no additional platforms have
-become 'multiplatform' aware this time. I have plans and patches for
-at least five platforms that are still mutually exclusive with all others,
-but it did not work out this time.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup-for-linus
 
-Platform-wise the majority of the patches this time are for shmobile
-and omap, which is fairly common. However, a lot of work is going into
-sunxi as well, which is largely driven by hobbyists and has not
-traditionally seen such a bulk of work going in in the past.
-imx and at91 show up high in the dirstat because of removed code.
-A couple of new platforms have just started appearing, but support
-is very minimal.
+for you to fetch changes up to 05301fe7de11dac87638f1728f8ee8b31bc1cf31:
 
-	Arnd
+  Merge tag 'at91-soc' of git://github.com/at91linux/linux-at91 into next/cleanup (2014-09-26 00:12:30 +0200)
 
-Some brief statistics:
+----------------------------------------------------------------
+ARM: SoC cleanups for 3.18
 
- 702 non-merge changesets
-  98 merges
- 139 individual contributors
- 625 files changed, 26029 insertions(+), 9052 deletions(-)
+This time around, the cleanup branch contains mostly code removal. A number
+of board files for at91, imx and msm have become obsolete because of the
+DT conversion and are now ready to be removed. The OMAP platform has
+traditionally had its own DMA engine abstraction and as this is being
+phased out, a lot of the original code is now unused and can be removed
+as well.
 
-Contributors with 5 patches/merges or more:
-79 Arnd Bergmann  
-40 Magnus Damm 
-39 Felipe Balbi
-37 Geert Uytterhoeven
-36 Maxime Ripard
-25 Olof Johansson
-25 Nishanth Menon
-22 Chen-Yu Tsai 
-19 Fabio Estevam 
-19 Alexandre Belloni
-18 Tony Lindgren
-16 Simon Horman 
-14 Laurent Pinchart
-12 Ulrich Hecht 
-11 Soren Brinkmann
-11 Alexander Shiyan
-10 Shawn Guo 
-10 Nicolas Ferre 
-10 Marek Belisko
-9 Santosh Shilimkar
-9 Heiko Stuebner
-8 Peter Ujfalusi
-8 Matthias Brugger
-8 Doug Anderson
-8 Andrew Lunn 
-7 Tim Harvey 
-7 Stephen Warren
-7 Stefan Agner 
-7 Linus Walleij 
-7 Haojian Zhuang
-7 Dmitry Lifshitz
-7 Carlo Caione
-7 Boris BREZILLON 
-6 Zhangfei Gao 
-6 Thomas Petazzoni
-6 Shengjiu Wang 
-6 Rajendra Nayak
-6 Michal Simek 
-6 Mark Brown 
-6 Grygorii Strashko
-6 Florian Fainelli
-6 Ezequiel Garcia
-6 Emilio L√≥pez 
-6 Bo Shen 
-5 Thierry Reding 
-5 Stephen Boyd 
-5 Krzysztof Ha≈~Basa
-5 Javier Martinez Canillas
-5 Heiko St√ºbner 
-5 Georgi Djakov 
-5 Anson Huang 
+S3C24xx can be simplified now that the restart code is a proper device
+driver.
 
-Dirstat (0.1% cutoff):
+Finally, a number of cleanups in shmobile are done to prepare for
+the addition of new code in other branches.
 
-   0.7% Documentation/devicetree/bindings/arm/
-   0.2% Documentation/devicetree/bindings/leds/
-   0.4% Documentation/devicetree/bindings/mailbox/
-   1.2% Documentation/devicetree/bindings/soc/ti/
-   0.1% Documentation/devicetree/bindings/
-  42.2% arch/arm/boot/dts/
-   0.9% arch/arm/configs/
-   0.1% arch/arm/include/debug/
-   0.3% arch/arm/mach-at91/include/mach/
-   6.1% arch/arm/mach-at91/
-   0.1% arch/arm/mach-bcm/
-   0.6% arch/arm/mach-clps711x/
-   0.2% arch/arm/mach-cns3xxx/
-   1.1% arch/arm/mach-hisi/
-   8.4% arch/arm/mach-imx/
-   0.1% arch/arm/mach-integrator/
-   0.1% arch/arm/mach-meson/
-   0.2% arch/arm/mach-msm/
-   4.1% arch/arm/mach-omap2/
-   0.2% arch/arm/mach-pxa/
-   0.3% arch/arm/mach-s3c24xx/
-   3.5% arch/arm/mach-shmobile/
-   0.2% arch/arm/mach-sunxi/
-   0.1% arch/arm/mach-tegra/
-   0.6% arch/arm/mach-zynq/
-   1.9% arch/arm/plat-omap/
-   2.0% arch/arm/
-   1.3% arch/arm64/boot/dts/
-   0.3% drivers/clk/at91/
-   0.9% drivers/clocksource/
-   1.2% drivers/edac/
-   0.9% drivers/irqchip/
-   0.5% drivers/leds/
-   0.5% drivers/mailbox/
-   0.3% drivers/memory/
-   0.1% drivers/mfd/
-   0.2% drivers/misc/
-   1.6% drivers/power/reset/
-   1.3% drivers/rtc/
-  10.1% drivers/soc/ti/
-   0.4% drivers/soc/versatile/
-   0.1% drivers/
-   0.7% include/dt-bindings/clock/
-   0.1% include/linux/irqchip/
-   0.8% include/linux/soc/ti/
-   0.3% include/linux/
+----------------------------------------------------------------
+Alexander Shiyan (4):
+      ARM: i.MX: Remove mach-cpuimx27sd board file
+      ARM: i.MX: Remove Phytec i.MX27 PCM038/PCM970 board files
+      ARM: i.MX: Remove i.MX1 ADS board support
+      ARM: clps711x: Switch CLPS711X subarch to use clk and clocksource driver
+
+Alexander Stein (1):
+      ARM: imx: iomux: Do not export symbol without public declaration
+
+Arnd Bergmann (8):
+      Merge tag 'msm-cleanup-for-arm-soc' of git://git.kernel.org/.../linusw/linux-stericsson into next/cleanup
+      Merge tag 'renesas-kconfig-cleanups-for-v3.18' of git://git.kernel.org/.../horms/renesas into next/cleanup
+      Merge tag 'at91-cleanup' of git://github.com/at91linux/linux-at91 into next/cleanup
+      Merge tag 'at91-cleanup2' of git://github.com/at91linux/linux-at91 into next/cleanup
+      Merge tag 'renesas-pm-cleanups-for-v3.18' of git://git.kernel.org/.../horms/renesas into next/cleanup
+      Merge tag 'samsung-cleanup' of git://git.kernel.org/.../kgene/linux-samsung into next/cleanup
+      Merge tag 'cleanup-for-v3.18' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
+      Merge tag 'at91-soc' of git://github.com/at91linux/linux-at91 into next/cleanup
+
+Boris BREZILLON (4):
+      ARM: at91: introduce OLD_IRQ_AT91 Kconfig option
+      ARM: at91: enclose at91_aic_xx calls in IS_ENABLED(CONFIG_OLD_IRQ_AT91) blocks
+      ARM: at91: make use of the new AIC driver for dt enabled boards
+      ARM: at91: remove old irq material
+
+Fabio Estevam (1):
+      ARM: imx: Remove mach-mxt_td60 board file
+
+GaÎl PORTAY (4):
+      ARM: at91/tclib: prefer using of devm_* functions
+      ARM: at91/tclib: move initialization from alloc to probe
+      ARM: at91/tclib: mask interruptions at shutdown and probe
+      clocksource: tcb_clksrc: sanitize IRQ request
+
+Geert Uytterhoeven (6):
+      ARM: shmobile: r8a7791 is now called "R-Car M2-W"
+      ARM: shmobile: mackerel: Make domain_devices[] static __initdata
+      ARM: shmobile: sh7372: Make domain_devices[] static __initdata
+      ARM: shmobile: r8a7740: Use rmobile_add_devices_to_domains()
+      ARM: shmobile: r8a7740: Clean up pm domain table
+      ARM: shmobile: armadillo800eva legacy: Use rmobile_add_devices_to_domains()
+
+Georgi Djakov (1):
+      ARM: msm: Update the references to DEBUG_MSM_UARTx
+
+Heiko Stuebner (1):
+      ARM: S3C24XX: remove separate restart code
+
+Joe Perches (2):
+      ARM: orion5x: Convert pr_warning to pr_warn
+      arm: mach-omap2: Convert pr_warning to pr_warn
+
+Josef Holzmayr (1):
+      ARM: at91: Remove the support for the RSI EWS board
+
+Krzysztof Kozlowski (1):
+      ARM: EXYNOS: Do not calculate boot address twice
+
+Kukjin Kim (1):
+      ARM: S5PV210: move <mach/regs-clock.h> into mach-s5pv210/
+
+Linus Walleij (2):
+      ARM: msm: delete dangling mahimahi board file
+      ARM: msm: remove reference to MSM_SERIAL_DEBUGGER
+
+Magnus Damm (8):
+      ARM: shmobile: Introduce a Kconfig entry for R-Mobile
+      ARM: shmobile: Introduce a Kconfig entry for R-Car Gen1
+      ARM: shmobile: Introduce a Kconfig entry for R-Car Gen2
+      ARM: shmobile: Cleanup pm-rcar.o build using Kconfig
+      ARM: shmobile: Cleanup pm-rmobile.o build using Kconfig
+      ARM: shmobile: Only select PM_RMOBILE for legacy case
+      ARM: shmobile: Consolidate Legacy CPU_V7 Kconfig
+      ARM: shmobile: Consolidate Legacy SH_CLK_CPG Kconfig
+
+Maxime Ripard (1):
+      ARM: sunxi: Remove sun4i reboot code from mach directory
+
+Nicolas Ferre (1):
+      ARM: at91: remove board file for Acme Systems Fox G20
+
+Olof Johansson (2):
+      Merge tag 'mvebu-soc-3.18' of git://git.infradead.org/linux-mvebu into next/cleanup
+      Merge tag 'imx-cleanup-3.18' of git://git.kernel.org/.../shawnguo/linux into next/cleanup
+
+Shawn Guo (1):
+      ARM: imx: remove imx_scu_standby_enable()
+
+Tony Lindgren (1):
+      ARM: OMAP: Remove unused pieces of legacy DMA API
+
+Uwe Kleine-Koenig (1):
+      ARM: EXYNOS: remove unused <mach/memory.h>
+
+Xiubo Li (1):
+      ARM: dts: vf610-twr: remove useless property for sound card.
+
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/boot/dts/vf610-twr.dts                    |   1 -
+ arch/arm/configs/imx_v4_v5_defconfig               |   5 -
+ arch/arm/mach-at91/Kconfig                         |  17 +-
+ arch/arm/mach-at91/Kconfig.non_dt                  |  18 +-
+ arch/arm/mach-at91/Makefile                        |   5 +-
+ arch/arm/mach-at91/board-dt-rm9200.c               |  13 -
+ arch/arm/mach-at91/board-dt-sam9.c                 |  13 -
+ arch/arm/mach-at91/board-dt-sama5.c                |  13 -
+ arch/arm/mach-at91/board-foxg20.c                  | 272 --------
+ arch/arm/mach-at91/board-rsi-ews.c                 | 232 -------
+ arch/arm/mach-at91/irq.c                           | 270 +-------
+ arch/arm/mach-at91/pm.c                            |  32 +-
+ arch/arm/mach-at91/setup.c                         |   3 +-
+ arch/arm/mach-clps711x/common.c                    | 138 +---
+ arch/arm/mach-clps711x/common.h                    |   5 +
+ arch/arm/mach-exynos/include/mach/memory.h         |  26 -
+ arch/arm/mach-exynos/platsmp.c                     |   4 +-
+ arch/arm/mach-imx/Kconfig                          | 103 ---
+ arch/arm/mach-imx/Makefile                         |   6 -
+ arch/arm/mach-imx/board-pcm038.h                   |  36 -
+ arch/arm/mach-imx/common.h                         |   2 -
+ arch/arm/mach-imx/cpuidle-imx6q.c                  |   4 -
+ arch/arm/mach-imx/eukrea-baseboards.h              |  10 +-
+ arch/arm/mach-imx/eukrea_mbimx27-baseboard.c       | 351 ----------
+ arch/arm/mach-imx/iomux-imx31.c                    |   7 -
+ arch/arm/mach-imx/iomux-v1.c                       |   2 -
+ arch/arm/mach-imx/iomux-v3.c                       |   2 -
+ arch/arm/mach-imx/mach-cpuimx27.c                  | 321 ---------
+ arch/arm/mach-imx/mach-mx1ads.c                    | 154 -----
+ arch/arm/mach-imx/mach-mxt_td60.c                  | 273 --------
+ arch/arm/mach-imx/mach-pcm038.c                    | 358 ----------
+ arch/arm/mach-imx/pcm970-baseboard.c               | 231 -------
+ arch/arm/mach-imx/platsmp.c                        |  10 -
+ arch/arm/mach-msm/board-mahimahi.c                 |  83 ---
+ arch/arm/mach-msm/board-msm7x30.c                  |   2 +-
+ arch/arm/mach-msm/board-trout-gpio.c               |   2 +-
+ arch/arm/mach-msm/board-trout.c                    |   2 +-
+ arch/arm/mach-msm/io.c                             |   6 +-
+ arch/arm/mach-omap2/display.c                      |   2 +-
+ arch/arm/mach-omap2/hdq1w.c                        |   4 +-
+ arch/arm/mach-omap2/i2c.c                          |   2 +-
+ arch/arm/mach-omap2/msdi.c                         |   4 +-
+ arch/arm/mach-omap2/mux.c                          |   2 +-
+ arch/arm/mach-omap2/omap_hwmod.c                   |  26 +-
+ arch/arm/mach-omap2/pdata-quirks.c                 |   4 +-
+ arch/arm/mach-omap2/pm34xx.c                       |   2 +-
+ arch/arm/mach-omap2/smartreflex-class3.c           |   4 +-
+ arch/arm/mach-omap2/sr_device.c                    |   2 +-
+ arch/arm/mach-omap2/vc.c                           |   2 +-
+ arch/arm/mach-omap2/voltage.c                      |  22 +-
+ arch/arm/mach-omap2/wd_timer.c                     |   4 +-
+ arch/arm/mach-orion5x/dns323-setup.c               |   8 +-
+ arch/arm/mach-orion5x/terastation_pro2-setup.c     |   2 +-
+ arch/arm/mach-orion5x/ts209-setup.c                |   2 +-
+ arch/arm/mach-orion5x/ts409-setup.c                |   2 +-
+ arch/arm/mach-orion5x/ts78xx-setup.c               |   4 +-
+ arch/arm/mach-s3c24xx/Kconfig                      |   2 -
+ arch/arm/mach-s3c24xx/common.c                     |   4 -
+ arch/arm/mach-s3c24xx/common.h                     |   5 -
+ .../mach-s3c24xx/include/mach/regs-s3c2443-clock.h |   2 -
+ arch/arm/mach-s3c24xx/mach-amlm5900.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-anubis.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-at2440evb.c             |   1 -
+ arch/arm/mach-s3c24xx/mach-bast.c                  |   1 -
+ arch/arm/mach-s3c24xx/mach-gta02.c                 |   1 -
+ arch/arm/mach-s3c24xx/mach-h1940.c                 |   1 -
+ arch/arm/mach-s3c24xx/mach-jive.c                  |   1 -
+ arch/arm/mach-s3c24xx/mach-mini2440.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-n30.c                   |   2 -
+ arch/arm/mach-s3c24xx/mach-nexcoder.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-osiris.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-otom.c                  |   1 -
+ arch/arm/mach-s3c24xx/mach-qt2410.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-rx1950.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-rx3715.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-s3c2416-dt.c            |   1 -
+ arch/arm/mach-s3c24xx/mach-smdk2410.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-smdk2413.c              |   3 -
+ arch/arm/mach-s3c24xx/mach-smdk2416.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-smdk2440.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-smdk2443.c              |   1 -
+ arch/arm/mach-s3c24xx/mach-tct_hammer.c            |   1 -
+ arch/arm/mach-s3c24xx/mach-vr1000.c                |   1 -
+ arch/arm/mach-s3c24xx/mach-vstms.c                 |   1 -
+ arch/arm/mach-s3c24xx/s3c2410.c                    |  13 -
+ arch/arm/mach-s3c24xx/s3c2412.c                    |  23 -
+ arch/arm/mach-s3c24xx/s3c2416.c                    |   8 -
+ arch/arm/mach-s3c24xx/s3c2443.c                    |   8 -
+ arch/arm/mach-s3c24xx/s3c244x.c                    |  12 -
+ arch/arm/mach-s5pv210/pm.c                         |   3 +-
+ .../mach-s5pv210/{include/mach => }/regs-clock.h   |   3 +-
+ arch/arm/mach-s5pv210/s5pv210.c                    |   2 +-
+ arch/arm/mach-shmobile/Kconfig                     |  77 ++-
+ arch/arm/mach-shmobile/Makefile                    |  30 +-
+ arch/arm/mach-shmobile/board-armadillo800eva.c     |   8 +-
+ arch/arm/mach-shmobile/board-mackerel.c            |   2 +-
+ arch/arm/mach-shmobile/pm-r8a7740.c                |  10 +-
+ arch/arm/mach-shmobile/pm-rcar.c                   |   4 -
+ arch/arm/mach-shmobile/pm-rmobile.c                |   2 -
+ arch/arm/mach-shmobile/pm-rmobile.h                |   4 +-
+ arch/arm/mach-shmobile/setup-r8a7740.c             |  26 +-
+ arch/arm/mach-shmobile/setup-sh7372.c              |   2 +-
+ arch/arm/mach-sunxi/sunxi.c                        |  76 ---
+ arch/arm/plat-omap/dma.c                           | 737 +--------------------
+ drivers/clocksource/tcb_clksrc.c                   |  15 +-
+ drivers/misc/atmel_tclib.c                         | 101 ++-
+ drivers/pwm/pwm-atmel-tcb.c                        |   2 +-
+ include/linux/atmel_tc.h                           |  13 +-
+ include/linux/omap-dma.h                           |  37 --
+ 110 files changed, 261 insertions(+), 4129 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/board-foxg20.c
+ delete mode 100644 arch/arm/mach-at91/board-rsi-ews.c
+ delete mode 100644 arch/arm/mach-exynos/include/mach/memory.h
+ delete mode 100644 arch/arm/mach-imx/board-pcm038.h
+ delete mode 100644 arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+ delete mode 100644 arch/arm/mach-imx/mach-cpuimx27.c
+ delete mode 100644 arch/arm/mach-imx/mach-mx1ads.c
+ delete mode 100644 arch/arm/mach-imx/mach-mxt_td60.c
+ delete mode 100644 arch/arm/mach-imx/mach-pcm038.c
+ delete mode 100644 arch/arm/mach-imx/pcm970-baseboard.c
+ delete mode 100644 arch/arm/mach-msm/board-mahimahi.c
+ rename arch/arm/mach-s5pv210/{include/mach => }/regs-clock.h (99%)
 
