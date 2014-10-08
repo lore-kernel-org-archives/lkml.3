@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951AbaJHPLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 11:11:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40821 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062AbaJHPK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 11:10:59 -0400
-Message-ID: <543553C7.9010906@zytor.com>
-Date: Wed, 08 Oct 2014 08:09:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S932192AbaJHPLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 11:11:05 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:65474 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936AbaJHPLB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 11:11:01 -0400
+Date: Wed, 8 Oct 2014 11:10:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: [GIT PULL] cgroup changes for v3.18-rc1
+Message-ID: <20141008151058.GC8184@htj.dyndns.org>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        keescook@chromium.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com> <542B1EC1.8090502@zytor.com> <20141001135237.GA13689@redhat.com>
-In-Reply-To: <20141001135237.GA13689@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2014 06:52 AM, Vivek Goyal wrote:
-> 
-> Hi Peter,
-> 
-> I think there is some confusion. I will try to clarify.
-> 
-> If we have 32bit signed overflow, we will not have a functional kernel.
-> And that's the message we get when we try to kexec with
-> CONFIG_RANDOMIZE_BASE=y.
-> 
+Hello, Linus.
 
-And how does that happen?
+Nothing too interesting.  Just a handful of cleanup patches.  The pull
+of for-3.17-fixes was to put follow-up cleanups on top of a fix patch.
 
-> **********************************************************************
-> [  340.709078] kexec: Starting new kernel
-> early console in decompress_kernel
-> KASLR disabled by default...
-> 
-> Decompressing Linux... Parsing ELF...
-> 
-> Performing relocations...
-> 32-bit relocation outside of kernel!
-> 
-> 
->  -- System halted
-> *****************************************************************
-> 
-> We realized that kexec tries to load kernel at higher physical addresses
-> and that can lead to problmes.
-> 
-> Currently for x86_64, handle_relocations() will perform relocations if
-> kernel is not loaded at LOAD_PHYSICAL_ADDR. I think this does not work for
-> all the cases and kerenl can not be loaded anywhere in the physical address
-> space. And that's why we run into issues with kexec.
-> 
-> My understanding is that we introduce handle_relcoations() i386 style
-> because of RANDOMIZE_BASE. If that's the case, one possible solution
-> is that perform relocations only if ranodmize base logic has chosen
-> a different load location for kernel than where boot loader loaded
-> it. Otherwise don't do anything.
-> 
-> In case of kexec/kdump, we will pass "nokaslr" to second kernel forcing
-> it to do nothing and let the kernel run where it was loaded by bootloader.
-> And in that case handle_relocations() should not do any relocations and
-> that should allow kernel to be loaded anywhere in physical memory on
-> x86_64.
-> 
+Thanks.
 
-Sorry... this makes no sense.
+The following changes since commit aa32362f011c6e863132b16c1761487166a4bad2:
 
-For x86-64, there is no direct connection between the physical and
-virtual address spaces that the kernel runs in...
+  cgroup: check cgroup liveliness before unbreaking kernfs (2014-09-05 01:36:19 +0900)
 
-	-hpa
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.18
 
+for you to fetch changes up to e756c7b698604f11a979f2781d06eb7b80aba363:
+
+  Revert "cgroup: remove redundant variable in cgroup_mount()" (2014-09-26 00:16:23 -0400)
+
+----------------------------------------------------------------
+Dongsheng Yang (1):
+      cgroup: fix a typo in comment.
+
+Li Zefan (3):
+      cgroup: remove some useless forward declarations
+      cgroup: remove redundant code in cgroup_rmdir()
+      cgroup: remove bogus comments
+
+Tejun Heo (1):
+      Merge branch 'for-3.17-fixes' of ra.kernel.org:/.../tj/cgroup into for-3.18
+
+Zefan Li (9):
+      cgroup: use a per-cgroup work for release agent
+      cgroup: simplify proc_cgroup_show()
+      cpuset: simplify proc_cpuset_show()
+      cgroup: remove redundant check in cgroup_ino()
+      perf/cgroup: Remove perf_put_cgroup()
+      cgroup: remove CGRP_RELEASABLE flag
+      cgroup: fix missing unlock in cgroup_release_agent()
+      cgroup: remove redundant variable in cgroup_mount()
+      Revert "cgroup: remove redundant variable in cgroup_mount()"
+
+ fs/proc/base.c         |  39 ++---------
+ include/linux/cgroup.h |  26 ++-----
+ include/linux/cpuset.h |   3 +-
+ kernel/cgroup.c        | 184 ++++++++++++++-----------------------------------
+ kernel/cpuset.c        |  15 +---
+ kernel/events/core.c   |   7 +-
+ mm/memory-failure.c    |   2 +-
+ 7 files changed, 71 insertions(+), 205 deletions(-)
+
+-- 
+tejun
