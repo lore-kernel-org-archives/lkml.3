@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaJHJDV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:03:21 -0400
-Received: from ozlabs.org ([103.22.144.67]:46841 "EHLO ozlabs.org"
+	id S1755661AbaJHJD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:03:57 -0400
+Received: from ozlabs.org ([103.22.144.67]:53276 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293AbaJHIzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:55:23 -0400
+	id S1754268AbaJHIzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 04:55:21 -0400
 From: Michael Neuling <mikey@neuling.org>
 To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
         benh@kernel.crashing.org
@@ -13,9 +13,9 @@ Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
         cbe-oss-dev@lists.ozlabs.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v4 03/16] powerpc/cell: Make spu_flush_all_slbs() generic
-Date: Wed,  8 Oct 2014 19:54:52 +1100
-Message-Id: <1412758505-23495-4-git-send-email-mikey@neuling.org>
+Subject: [PATCH v4 01/16] powerpc/cell: Move spu_handle_mm_fault() out of cell platform
+Date: Wed,  8 Oct 2014 19:54:50 +1100
+Message-Id: <1412758505-23495-2-git-send-email-mikey@neuling.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412758505-23495-1-git-send-email-mikey@neuling.org>
 References: <1412758505-23495-1-git-send-email-mikey@neuling.org>
@@ -25,128 +25,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This moves spu_flush_all_slbs() into a generic call copro_flush_all_slbs().
+Currently spu_handle_mm_fault() is in the cell platform.
 
-This will be useful when we add cxl which also needs a similar SLB flush call.
+This code is generically useful for other non-cell co-processors on powerpc.
+
+This patch moves this function out of the cell platform into arch/powerpc/mm so
+that others may use it.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 ---
- arch/powerpc/include/asm/copro.h |  6 ++++++
- arch/powerpc/mm/copro_fault.c    |  9 +++++++++
- arch/powerpc/mm/hash_utils_64.c  | 10 +++-------
- arch/powerpc/mm/slice.c          | 10 +++-------
- 4 files changed, 21 insertions(+), 14 deletions(-)
+ arch/powerpc/Kconfig                                     |  4 ++++
+ arch/powerpc/include/asm/copro.h                         | 16 ++++++++++++++++
+ arch/powerpc/include/asm/spu.h                           |  5 ++---
+ arch/powerpc/mm/Makefile                                 |  1 +
+ .../{platforms/cell/spu_fault.c => mm/copro_fault.c}     | 14 ++++++--------
+ arch/powerpc/platforms/cell/Kconfig                      |  1 +
+ arch/powerpc/platforms/cell/Makefile                     |  2 +-
+ arch/powerpc/platforms/cell/spufs/fault.c                |  4 ++--
+ 8 files changed, 33 insertions(+), 14 deletions(-)
+ create mode 100644 arch/powerpc/include/asm/copro.h
+ rename arch/powerpc/{platforms/cell/spu_fault.c => mm/copro_fault.c} (89%)
 
-diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-index b0e6a18..ce216df 100644
---- a/arch/powerpc/include/asm/copro.h
-+++ b/arch/powerpc/include/asm/copro.h
-@@ -20,4 +20,10 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 4bc7b62..8f094e9 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -603,6 +603,10 @@ config PPC_SUBPAGE_PROT
+ 	  to set access permissions (read/write, readonly, or no access)
+ 	  on the 4k subpages of each 64k page.
  
- int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
- 
++config PPC_COPRO_BASE
++	bool
++	default n
 +
-+#ifdef CONFIG_PPC_COPRO_BASE
-+void copro_flush_all_slbs(struct mm_struct *mm);
-+#else
-+static inline void copro_flush_all_slbs(struct mm_struct *mm) {}
-+#endif
- #endif /* _ASM_POWERPC_COPRO_H */
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index a15a23e..f2aa5a8 100644
---- a/arch/powerpc/mm/copro_fault.c
+ config SCHED_SMT
+ 	bool "SMT (Hyperthreading) scheduler support"
+ 	depends on PPC64 && SMP
+diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
+new file mode 100644
+index 0000000..51cae85
+--- /dev/null
++++ b/arch/powerpc/include/asm/copro.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright 2014 IBM Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#ifndef _ASM_POWERPC_COPRO_H
++#define _ASM_POWERPC_COPRO_H
++
++int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
++			  unsigned long dsisr, unsigned *flt);
++
++#endif /* _ASM_POWERPC_COPRO_H */
+diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
+index 37b7ca3..a6e6e2b 100644
+--- a/arch/powerpc/include/asm/spu.h
++++ b/arch/powerpc/include/asm/spu.h
+@@ -27,6 +27,8 @@
+ #include <linux/workqueue.h>
+ #include <linux/device.h>
+ #include <linux/mutex.h>
++#include <asm/reg.h>
++#include <asm/copro.h>
+ 
+ #define LS_SIZE (256 * 1024)
+ #define LS_ADDR_MASK (LS_SIZE - 1)
+@@ -277,9 +279,6 @@ void spu_remove_dev_attr(struct device_attribute *attr);
+ int spu_add_dev_attr_group(struct attribute_group *attrs);
+ void spu_remove_dev_attr_group(struct attribute_group *attrs);
+ 
+-int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+-		unsigned long dsisr, unsigned *flt);
+-
+ /*
+  * Notifier blocks:
+  *
+diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
+index d0130ff..325e861 100644
+--- a/arch/powerpc/mm/Makefile
++++ b/arch/powerpc/mm/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += hugepage-hash64.o
+ obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
+ obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
+ obj-$(CONFIG_HIGHMEM)		+= highmem.o
++obj-$(CONFIG_PPC_COPRO_BASE)	+= copro_fault.o
+diff --git a/arch/powerpc/platforms/cell/spu_fault.c b/arch/powerpc/mm/copro_fault.c
+similarity index 89%
+rename from arch/powerpc/platforms/cell/spu_fault.c
+rename to arch/powerpc/mm/copro_fault.c
+index 641e727..ba7df14 100644
+--- a/arch/powerpc/platforms/cell/spu_fault.c
 +++ b/arch/powerpc/mm/copro_fault.c
-@@ -25,6 +25,7 @@
+@@ -1,5 +1,5 @@
+ /*
+- * SPU mm fault handler
++ * CoProcessor (SPU/AFU) mm fault handler
+  *
+  * (C) Copyright IBM Deutschland Entwicklung GmbH 2007
+  *
+@@ -23,16 +23,14 @@
+ #include <linux/sched.h>
+ #include <linux/mm.h>
  #include <linux/export.h>
- #include <asm/reg.h>
- #include <asm/copro.h>
-+#include <asm/spu.h>
+-
+-#include <asm/spu.h>
+-#include <asm/spu_csa.h>
++#include <asm/reg.h>
  
  /*
   * This ought to be kept in sync with the powerpc specific do_page_fault
-@@ -136,3 +137,11 @@ int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(copro_calculate_slb);
-+
-+void copro_flush_all_slbs(struct mm_struct *mm)
-+{
-+#ifdef CONFIG_SPU_BASE
-+	spu_flush_all_slbs(mm);
-+#endif
-+}
-+EXPORT_SYMBOL_GPL(copro_flush_all_slbs);
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index daee7f4..5c0738d 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -51,7 +51,7 @@
- #include <asm/cacheflush.h>
- #include <asm/cputable.h>
- #include <asm/sections.h>
--#include <asm/spu.h>
-+#include <asm/copro.h>
- #include <asm/udbg.h>
- #include <asm/code-patching.h>
- #include <asm/fadump.h>
-@@ -901,9 +901,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
- 	if (get_slice_psize(mm, addr) == MMU_PAGE_4K)
- 		return;
- 	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
- 	if (get_paca_psize(addr) != MMU_PAGE_4K) {
- 		get_paca()->context = mm->context;
- 		slb_flush_and_rebolt();
-@@ -1141,9 +1139,7 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
- 			       "to 4kB pages because of "
- 			       "non-cacheable mapping\n");
- 			psize = mmu_vmalloc_psize = MMU_PAGE_4K;
--#ifdef CONFIG_SPU_BASE
--			spu_flush_all_slbs(mm);
--#endif
-+			copro_flush_all_slbs(mm);
- 		}
+  * function. Currently, there are a few corner cases that we haven't had
+  * to handle fortunately.
+  */
+-int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
++int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+ 		unsigned long dsisr, unsigned *flt)
+ {
+ 	struct vm_area_struct *vma;
+@@ -58,12 +56,12 @@ int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+ 			goto out_unlock;
  	}
  
-diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-index b0c75cc..a81791c 100644
---- a/arch/powerpc/mm/slice.c
-+++ b/arch/powerpc/mm/slice.c
-@@ -32,7 +32,7 @@
- #include <linux/export.h>
- #include <asm/mman.h>
- #include <asm/mmu.h>
--#include <asm/spu.h>
-+#include <asm/copro.h>
- 
- /* some sanity checks */
- #if (PGTABLE_RANGE >> 43) > SLICE_MASK_SIZE
-@@ -232,9 +232,7 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
- 
- 	spin_unlock_irqrestore(&slice_convert_lock, flags);
- 
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
+-	is_write = dsisr & MFC_DSISR_ACCESS_PUT;
++	is_write = dsisr & DSISR_ISSTORE;
+ 	if (is_write) {
+ 		if (!(vma->vm_flags & VM_WRITE))
+ 			goto out_unlock;
+ 	} else {
+-		if (dsisr & MFC_DSISR_ACCESS_DENIED)
++		if (dsisr & DSISR_PROTFAULT)
+ 			goto out_unlock;
+ 		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
+ 			goto out_unlock;
+@@ -91,4 +89,4 @@ out_unlock:
+ 	up_read(&mm->mmap_sem);
+ 	return ret;
  }
+-EXPORT_SYMBOL_GPL(spu_handle_mm_fault);
++EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
+index 9978f59..870b6db 100644
+--- a/arch/powerpc/platforms/cell/Kconfig
++++ b/arch/powerpc/platforms/cell/Kconfig
+@@ -86,6 +86,7 @@ config SPU_FS_64K_LS
+ config SPU_BASE
+ 	bool
+ 	default n
++	select PPC_COPRO_BASE
  
- /*
-@@ -671,9 +669,7 @@ void slice_set_psize(struct mm_struct *mm, unsigned long address,
+ config CBE_RAS
+ 	bool "RAS features for bare metal Cell BE"
+diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
+index fe053e7..2d16884 100644
+--- a/arch/powerpc/platforms/cell/Makefile
++++ b/arch/powerpc/platforms/cell/Makefile
+@@ -20,7 +20,7 @@ spu-manage-$(CONFIG_PPC_CELL_COMMON)	+= spu_manage.o
  
- 	spin_unlock_irqrestore(&slice_convert_lock, flags);
+ obj-$(CONFIG_SPU_BASE)			+= spu_callbacks.o spu_base.o \
+ 					   spu_notify.o \
+-					   spu_syscalls.o spu_fault.o \
++					   spu_syscalls.o \
+ 					   $(spu-priv1-y) \
+ 					   $(spu-manage-y) \
+ 					   spufs/
+diff --git a/arch/powerpc/platforms/cell/spufs/fault.c b/arch/powerpc/platforms/cell/spufs/fault.c
+index 8cb6260..e45894a 100644
+--- a/arch/powerpc/platforms/cell/spufs/fault.c
++++ b/arch/powerpc/platforms/cell/spufs/fault.c
+@@ -138,7 +138,7 @@ int spufs_handle_class1(struct spu_context *ctx)
+ 	if (ctx->state == SPU_STATE_RUNNABLE)
+ 		ctx->spu->stats.hash_flt++;
  
--#ifdef CONFIG_SPU_BASE
--	spu_flush_all_slbs(mm);
--#endif
-+	copro_flush_all_slbs(mm);
- }
+-	/* we must not hold the lock when entering spu_handle_mm_fault */
++	/* we must not hold the lock when entering copro_handle_mm_fault */
+ 	spu_release(ctx);
  
- void slice_set_range_psize(struct mm_struct *mm, unsigned long start,
+ 	access = (_PAGE_PRESENT | _PAGE_USER);
+@@ -149,7 +149,7 @@ int spufs_handle_class1(struct spu_context *ctx)
+ 
+ 	/* hashing failed, so try the actual fault handler */
+ 	if (ret)
+-		ret = spu_handle_mm_fault(current->mm, ea, dsisr, &flt);
++		ret = copro_handle_mm_fault(current->mm, ea, dsisr, &flt);
+ 
+ 	/*
+ 	 * This is nasty: we need the state_mutex for all the bookkeeping even
 -- 
 1.9.1
 
