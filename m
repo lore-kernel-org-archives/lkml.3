@@ -1,105 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075AbaJHCze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 22:55:34 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:58415 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753069AbaJHCzb (ORCPT
+	id S1754085AbaJHC6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 22:58:00 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:35855 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657AbaJHC56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 22:55:31 -0400
+	Tue, 7 Oct 2014 22:57:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <1693047.RuqBhhrutB@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <20141007104021.GN1583@lahna.fi.intel.com>
- <CAAVeFuL_fNdavtAnG9fWOo6Qin8YG+f1x1QG-5Z37YRC4nQByQ@mail.gmail.com> <1693047.RuqBhhrutB@vostro.rjw.lan>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 8 Oct 2014 11:55:08 +0900
-Message-ID: <CAAVeFu+MvBUZTrRWB008rcsMzPvEb81TEg=L8RqBz=PJ9J6bwQ@mail.gmail.com>
-Subject: Re: [PATCH 11/13] gpio: Support for unified device properties interface
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
+In-Reply-To: <1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
+References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
+	<1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
+Date: Wed, 8 Oct 2014 08:27:56 +0530
+X-Google-Sender-Auth: -3vgfwmLYcDIEPMYS_Qvo-dzIjI
+Message-ID: <CAFp+6iGaZR+4YQLXe+c2EZ9RwUpX73jr4H_KWyFOvxPWbpAyew@mail.gmail.com>
+Subject: Re: [PATCH 2/3] drm/exynos: dp: Remove support for unused dptx-phy
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: inki.dae@samsung.com, dri-devel@lists.freedesktop.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Sean Paul <seanpaul@google.com>, kishon <kishon@ti.com>,
+        ajaykumar.rs@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 9:09 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, October 07, 2014 07:52:02 PM Alexandre Courbot wrote:
->> On Tue, Oct 7, 2014 at 7:40 PM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->> > On Tue, Oct 07, 2014 at 07:22:13PM +0900, Alexandre Courbot wrote:
->> >> On Tue, Oct 7, 2014 at 9:18 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> >> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
->> >> >
->> >> > Some drivers need to deal with only firmware representation of its
->> >> > GPIOs. An example would be a GPIO button array driver where each button
->> >> > is described as a separate firmware node in device tree. Typically these
->> >> > child nodes do not have physical representation in the Linux device
->> >> > model.
->> >> >
->> >> > In order to help device drivers to handle such firmware child nodes we
->> >> > add dev[m]_get_named_gpiod_from_child() that takes a child firmware
->> >> > node pointer as its second argument (the first one is the parent device
->> >> > itself), finds the GPIO using whatever is the underlying firmware
->> >> > method, and requests the GPIO properly.
->> >> >
->> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >>
->> >> ...
->> >>
->> >> > +/* Child properties interface */
->> >> > +struct gpio_desc *dev_get_named_gpiod_from_child(struct device *dev, void *child,
->> >> > +                                                const char *propname, int index);
->> >> > +struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev, void *child,
->> >> > +                                                 const char *propname, int index);
->> >>
->> >> I see the reason for these functions and am not opposed to them.
->> >> However, I wonder if we could not replace propname by a con_id that
->> >> would be resolved to one of con_id-gpio for DT and whatever naming
->> >> convention ACPI is using?
->> >
->> > The code in gpio-leds.c and gpio_keys_polled.c refers to "gpios" as the
->> > property name. If we can change that somehow to work with con_id-gpio
->> > instead without breaking things, then why not.
->> >
->> >> This would prevent users to name GPIOs outside of the conventions
->> >> defined in the bindings and be generally safer. Is there a particular
->> >> reason (used by some old code?) for the current direct property
->> >> access? If not, maybe we could call a slightly-modified of_find_gpio()
->> >> to resolve the GPIO property for DT, and the equivalent function for
->> >> ACPI?
->> >
->> > Only reason I can think of is support for the existing properties that
->> > are used directly. Drivers using gpiod_get() and friends do not need
->> > dev_get_named_gpiod_from_child() anyway.
->>
->> Right. Another thing is that the property handling code (active low
->> only for now) is duplicated again, but that can be addressed
->> separately.
->>
->> I will have a look at gpio-leds and gpio_keys_polled to see if we
->> cannot make this work at a higher level. It's easier to have the
->> bindings respected if the code itself enforces them.
+Hi,
+
+
+On Mon, Sep 15, 2014 at 6:43 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Now that we have moved to generic phy based bindings,
+> we don't need to have any code related to older dptx-phy.
+> Nobody is using this dptx-phy anymore, so removing the
+> same.
 >
-> I'm wondering if that can be done after merging the current work?
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> ---
+
+Is someone taking care of this patch ? We already have got the corresponsding
+dp-phy patch merged, so we should also get this patch in.
+
+>  drivers/gpu/drm/exynos/exynos_dp_core.c |   58 +++++++------------------------
+>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 --
+>  2 files changed, 13 insertions(+), 47 deletions(-)
 >
-> We'll be able to use the drivers in question with our hardware in the
-> meantime then ...
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> index 4f3c7eb..5ffc1b2 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
+> @@ -1050,28 +1050,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
+>
+>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
+>  {
+> -       if (dp->phy) {
+> +       if (dp->phy)
+>                 phy_power_on(dp->phy);
+> -       } else if (dp->phy_addr) {
+> -               u32 reg;
+> -
+> -               reg = __raw_readl(dp->phy_addr);
+> -               reg |= dp->enable_mask;
+> -               __raw_writel(reg, dp->phy_addr);
+> -       }
+>  }
+>
+>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
+>  {
+> -       if (dp->phy) {
+> +       if (dp->phy)
+>                 phy_power_off(dp->phy);
+> -       } else if (dp->phy_addr) {
+> -               u32 reg;
+> -
+> -               reg = __raw_readl(dp->phy_addr);
+> -               reg &= ~(dp->enable_mask);
+> -               __raw_writel(reg, dp->phy_addr);
+> -       }
+>  }
+>
+>  static void exynos_dp_poweron(struct exynos_drm_display *display)
+> @@ -1210,39 +1196,21 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
+>
+>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
+>  {
+> -       struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
+> -       u32 phy_base;
+>         int ret = 0;
+>
+> -       dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
+> -       if (!dp_phy_node) {
+> -               dp->phy = devm_phy_get(dp->dev, "dp");
+> -               return PTR_ERR_OR_ZERO(dp->phy);
+> -       }
+> -
+> -       if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
+> -               dev_err(dp->dev, "failed to get reg for dptx-phy\n");
+> -               ret = -EINVAL;
+> -               goto err;
+> -       }
+> -
+> -       if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
+> -                               &dp->enable_mask)) {
+> -               dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
+> -               ret = -EINVAL;
+> -               goto err;
+> -       }
+> -
+> -       dp->phy_addr = ioremap(phy_base, SZ_4);
+> -       if (!dp->phy_addr) {
+> -               dev_err(dp->dev, "failed to ioremap dp-phy\n");
+> -               ret = -ENOMEM;
+> -               goto err;
+> +       dp->phy = devm_phy_get(dp->dev, "dp");
+> +       if (IS_ERR(dp->phy)) {
+> +               ret = PTR_ERR(dp->phy);
+> +               if (ret == -ENOSYS || ret == -ENODEV) {
+> +                       dp->phy = NULL;
+> +               } else if (ret == -EPROBE_DEFER) {
+> +                       return ret;
+> +               } else {
+> +                       dev_err(dp->dev, "no DP phy configured\n");
+> +                       return ret;
+> +               }
+>         }
+>
+> -err:
+> -       of_node_put(dp_phy_node);
+> -
+>         return ret;
+>  }
+>
+> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.h b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> index a1aee69..6426201 100644
+> --- a/drivers/gpu/drm/exynos/exynos_dp_core.h
+> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.h
+> @@ -153,8 +153,6 @@ struct exynos_dp_device {
+>         struct clk              *clock;
+>         unsigned int            irq;
+>         void __iomem            *reg_base;
+> -       void __iomem            *phy_addr;
+> -       unsigned int            enable_mask;
+>
+>         struct video_info       *video_info;
+>         struct link_train       link_train;
+> --
+> 1.7.10.4
+>
 
-Yeah, that's probably ok. The properties in question already exist so
-we will have to support them anyway ; it's just a matter of seeing
-whether we can improve the proposed way.
 
-So for now:
 
-Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
