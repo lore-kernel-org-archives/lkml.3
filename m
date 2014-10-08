@@ -1,96 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146AbaJHQT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 12:19:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38518 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752583AbaJHQT5 (ORCPT
+	id S932236AbaJHQUf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:20:35 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:40312 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932186AbaJHQUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:19:57 -0400
-Date: Wed, 8 Oct 2014 18:19:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com, cltang@codesourcery.com
-Subject: Re: [PATCH v4 21/29] nios2: Time keeping
-In-Reply-To: <2785501.FjgXQVl8Ik@wuerfel>
-Message-ID: <alpine.DEB.2.11.1410081814380.4292@nanos>
-References: <1412760595-3935-1-git-send-email-lftan@altera.com> <3820417.zXtDk8QPj1@wuerfel> <alpine.DEB.2.11.1410081719340.4292@nanos> <2785501.FjgXQVl8Ik@wuerfel>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 8 Oct 2014 12:20:33 -0400
+Message-ID: <54356444.1080702@linux.vnet.ibm.com>
+Date: Wed, 08 Oct 2014 21:50:20 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
+        mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
+        Paul.Clothier@imgtec.com, palves@redhat.com, oleg@redhat.com,
+        dhowells@redhat.com, davej@redhat.com, davem@davemloft.net
+Subject: Re: [PATCH V3 3/3] powerpc, ptrace: Enable support for miscellaneous
+ registers
+References: <1400858138-3939-1-git-send-email-khandual@linux.vnet.ibm.com> <1400858138-3939-4-git-send-email-khandual@linux.vnet.ibm.com> <20140827213559.GB11489@us.ibm.com>
+In-Reply-To: <20140827213559.GB11489@us.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100816-0025-0000-0000-0000014102F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014, Arnd Bergmann wrote:
-> On Wednesday 08 October 2014 17:20:44 Thomas Gleixner wrote:
-> > On Wed, 8 Oct 2014, Arnd Bergmann wrote:
-> > > On Wednesday 08 October 2014 12:44:32 Thomas Gleixner wrote:
-> > > > > +static int num_called;
-> > > > > +static void __init nios2_time_init(struct device_node *timer)
-> > > > > +{
-> > > > > +     switch (num_called) {
-> > > > > +     case 0:
-> > > > > +             nios2_clockevent_init(timer);
-> > > > > +             break;
-> > > > > +     case 1:
-> > > > > +             nios2_clocksource_init(timer);
-> > > > > +             break;
-> > > > > +     default:
-> > > > > +             break;
-> > > > > +     }
-> > > > > +
-> > > > > +     num_called++;
-> > > > > +}
-> > > > 
-> > > > Eew. So this depends on the DT ordering. If thats wrong, then stuff
-> > > > will be initialized in the wrong oder. 
-> > > > 
-> > > > > +CLOCKSOURCE_OF_DECLARE(nios2_timer, "altr,timer-1.0", nios2_time_init);
-> > > > 
-> > > > Why can't you have separate match entries with where one calls
-> > > > nios2_clockevent_init and the other nios2_clocksource_init?
-> > > 
-> > > I believe we have the same logic in other drivers as well, the intention
-> > > being that if you have multiple identical timers, the first one will
-> > > be used as clockevent and the second one (if there is more than one)
-> > > becomes the clocksource.
-> > > 
-> > > If the hardware is really identical, I would argue that the comaptible
-> > > string ought to be the same as well, as the DT is not supposed to
-> > > care about what the timers are used for in Linux.
-> > 
-> > So why do we need two calls at all if we have one piece of hardware
-> > which has two functions? We know that already, don't we?
+On 08/28/2014 03:05 AM, Sukadev Bhattiprolu wrote:
 > 
-> It's not one piece of hardware with two functions, but multiple (n >= 1)
-> pieces of identical hardware at different register locations.
+> Anshuman Khandual [khandual@linux.vnet.ibm.com] wrote:
+> | This patch enables get and set of miscellaneous registers through ptrace
+> | PTRACE_GETREGSET/PTRACE_SETREGSET interface by implementing new powerpc
+> | specific register set REGSET_MISC support corresponding to the new ELF
+> | core note NT_PPC_MISC added previously in this regard.
+> | 
+> | Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> | ---
+> |  arch/powerpc/kernel/ptrace.c | 81 ++++++++++++++++++++++++++++++++++++++++++++
+> |  1 file changed, 81 insertions(+)
+> | 
+> | diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
+> | index 17642ef..63b883a 100644
+> | --- a/arch/powerpc/kernel/ptrace.c
+> | +++ b/arch/powerpc/kernel/ptrace.c
+> | @@ -1149,6 +1149,76 @@ static int tm_cvmx_set(struct task_struct *target, const struct user_regset *reg
+> |  #endif	/* CONFIG_PPC_TRANSACTIONAL_MEM */
+> |  
+> |  /*
+> | + * Miscellaneous Registers
+> | + *
+> | + * struct {
+> | + * 	unsigned long dscr;
+> | + *	unsigned long ppr;
+> | + * 	unsigned long tar;
+> | + * };
+> | + */
+> | +static int misc_get(struct task_struct *target, const struct user_regset *regset,
+> | +		   unsigned int pos, unsigned int count,
+> | +		   void *kbuf, void __user *ubuf)
+> | +{
+> | +	int ret;
+> | +
+> | +	/* DSCR register */
+> | +	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+> | +					&target->thread.dscr, 0,
+> | +					sizeof(unsigned long));
+> | +
+> | +	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
+> | +				sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
 > 
-> The usual case is that you have one hardware block that may exist in
-> any number of instances, but each instance can only be used for
-> either clockevent or clocksource but not both.
 > 
-> If we have only one instance in an FPGA, the code above will use
-> it as a clockevent. If there are two or more instances, the second
-> one gets used as clocksource and all others are unused, until we
-> change the kernel to come up with a third use case.
+> I see these in  arch/powerpc/include/asm/processor.h
+> 
+> #ifdef CONFIG_PPC64
+>         unsigned long   dscr;
+>         int             dscr_inherit;
+>         unsigned long   ppr;    /* used to save/restore SMT priority */
+> #endif
+> 
+> where there is an 'int' between ppr and dscr. So, should one of
+> the above sizeof(unsigned long) be changed to sizeof(int) ?
 
-Ok, got it. It does not change the fact that the above function is
-butt ugly and completely non intuitive.
+Right, I understand that but strangely I get this compile time error
+when it is changed to sizeof(int).
 
-I also do not agree, that the DT should not tell which of the timers
-should be used as a clockevent device and which one as a
-clocksource. If you have a better suited clockevent device in your
-FPGA, you cannot use a single instance of the timer thingy as it will
-be registered as a clockevent and not as a clocksource. So explicit
-match values for particular hardware instances would be more flexible,
-but I don't have strong feelings about it either.
+ error: call to ‘__compiletime_assert_1350’ declared with attribute error:
+  BUILD_BUG_ON failed: TSO(dscr) + sizeof(unsigned long) + sizeof(int) != TSO(ppr)
+  BUILD_BUG_ON(TSO(dscr) + sizeof(unsigned long) + sizeof(int) != TSO(ppr));
 
-Thanks,
+may be I am missing something here.
 
-	tglx
+> 
+> Also, since we use offsetof(struct thread_struct, field) heavily, a
+> macro local to the file, may simplify the code.
+
+Right, will do that.
+
+> #define	TSO(f)	(offsetof(struct thread_struct, f))
+> 
+> | +
+> | +	/* PPR register */
+> | +	if (!ret)
+> | +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+> | +					  &target->thread.ppr, sizeof(unsigned long),
+> | +					  2 * sizeof(unsigned long));
+> | +
+> | +	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
+> | +						!= offsetof(struct thread_struct, tar));
+> | +	/* TAR register */
+> | +	if (!ret)
+> | +		ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+> | +					  &target->thread.tar, 2 * sizeof(unsigned long),
+> | +					  3 * sizeof(unsigned long));
+> | +	return ret;
+> | +}
+> | +
+> | +static int misc_set(struct task_struct *target, const struct user_regset *regset,
+> | +		   unsigned int pos, unsigned int count,
+> | +		   const void *kbuf, const void __user *ubuf)
+> | +{
+> | +	int ret;
+> | +
+> | +	/* DSCR register */
+> | +	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+> | +					&target->thread.dscr, 0,
+> | +					sizeof(unsigned long));
+> | +
+> | +	BUILD_BUG_ON(offsetof(struct thread_struct, dscr) + sizeof(unsigned long) +
+> | +			sizeof(unsigned long) != offsetof(struct thread_struct, ppr));
+> | +
+> | +	/* PPR register */
+> | +	if (!ret)
+> | +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+> | +						&target->thread.ppr, sizeof(unsigned long),
+> | +						2 * sizeof(unsigned long));
+> | +
+> | +	BUILD_BUG_ON(offsetof(struct thread_struct, ppr) + sizeof(unsigned long)
+> | +						!= offsetof(struct thread_struct, tar));
+> | +
+> | +	/* TAR register */
+> | +	if (!ret)
+> | +		ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+> | +						&target->thread.tar, 2 * sizeof(unsigned long),
+> | +						3 * sizeof(unsigned long));
+> | +	return ret;
+> | +}
+> | +
+> | +/*
+> |   * These are our native regset flavors.
+> |   */
+> |  enum powerpc_regset {
+> | @@ -1169,6 +1239,7 @@ enum powerpc_regset {
+> |  	REGSET_TM_CFPR,		/* TM checkpointed FPR */
+> |  	REGSET_TM_CVMX,		/* TM checkpointed VMX */
+> |  #endif
+> | +	REGSET_MISC		/* Miscellaneous */
+> |  };
+> |  
+> |  static const struct user_regset native_regsets[] = {
+> | @@ -1225,6 +1296,11 @@ static const struct user_regset native_regsets[] = {
+> |  		.active = tm_cvmx_active, .get = tm_cvmx_get, .set = tm_cvmx_set
+> |  	},
+> |  #endif
+> | +	[REGSET_MISC] = {
+> | +		.core_note_type = NT_PPC_MISC, .n = 3,
+> | +		.size = sizeof(u64), .align = sizeof(u64),
+> | +		.get = misc_get, .set = misc_set
+> | +	},
+> |  };
+> |  
+> |  static const struct user_regset_view user_ppc_native_view = {
+> | @@ -1566,6 +1642,11 @@ static const struct user_regset compat_regsets[] = {
+> |  		.active = tm_cvmx_active, .get = tm_cvmx_get, .set = tm_cvmx_set
+> |  	},
+> |  #endif
+> | +	[REGSET_MISC] = {
+> | +		.core_note_type = NT_PPC_MISC, .n = 3,
+> | +		.size = sizeof(u64), .align = sizeof(u64),
+> | +		.get = misc_get, .set = misc_set
+> | +	},
+> 
+> Since the .n = 3 is used more than once, how about a macro for the
+> number of misc registers ?
+
+Will add it as well. Thanks !
+
