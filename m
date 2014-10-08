@@ -1,166 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446AbaJHOXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:23:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43854 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756227AbaJHOXp (ORCPT
+	id S1756559AbaJHOY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:24:57 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:54872 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859AbaJHOY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:23:45 -0400
-Date: Wed, 8 Oct 2014 15:23:29 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "keescook@chromium.org" <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 2/6] arm64: ptrace: allow tracer to skip a system call
-Message-ID: <20141008142328.GR26140@arm.com>
-References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
- <1412243176-16192-3-git-send-email-takahiro.akashi@linaro.org>
+	Wed, 8 Oct 2014 10:24:56 -0400
+Date: Wed, 8 Oct 2014 22:24:40 +0800
+From: Huang Shijie <shijie8@gmail.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Voytovich <mvoytovich@paypal.com>, Roy Lee <roylee@paypal.com>
+Subject: Re: [PATCH v3 0/3] mtd: nand: gpmi: add proper raw access support
+Message-ID: <20141008142437.GA9912@localhost.localdomain>
+References: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412243176-16192-3-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1411481256-29141-1-git-send-email-boris.brezillon@free-electrons.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 02, 2014 at 10:46:12AM +0100, AKASHI Takahiro wrote:
-> If tracer specifies -1 as a syscall number, this traced system call should
-> be skipped with a value in x0 used as a return value.
-> This patch implements this semantics, but there is one restriction here:
+On Tue, Sep 23, 2014 at 04:07:33PM +0200, Boris BREZILLON wrote:
+> Hello Huang, Brian,
 > 
->    when syscall(-1) is issued by user, tracer cannot skip this system call
->    and modify a return value at syscall entry.
+> This is just a new proposal to support raw accesses in a more standard way
+> in the GPMI driver.
+> This series has been tested on an imx28 board.
 > 
-> In order to ease this flavor, we need to take whatever value x0 has as
-> a return value, but this might result in a bogus value being returned,
-> especially when tracer doesn't do anything against this syscall.
-> So we always return ENOSYS instead, while we still have another chance to
-> change a return value at syscall exit.
+> Any suggestions are welcome.
 > 
-> Please also note:
-> * syscall entry tracing and syscall exit tracing (ftrace tracepoint and
->   audit) are always executed, if enabled, even when skipping a system call
->   (that is, -1).
->   In this way, we can avoid a potential bug where audit_syscall_entry()
->   might be called without audit_syscall_exit() at the previous system call
->   being called, that would cause OOPs in audit_syscall_entry().
+> Best Regards,
 > 
-> * syscallno may also be set to -1 if a fatal signal (SIGKILL) is detected
->   in tracehook_report_syscall_entry(), but since a value set to x0 (ENOSYS)
->   is not used in this case, we may neglect the case.
+> Boris
 > 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
->  arch/arm64/include/asm/ptrace.h |    8 ++++++++
->  arch/arm64/kernel/entry.S       |    4 ++++
->  arch/arm64/kernel/ptrace.c      |   23 ++++++++++++++++++++++-
->  3 files changed, 34 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-> index 41ed9e1..736ebc3 100644
-> --- a/arch/arm64/include/asm/ptrace.h
-> +++ b/arch/arm64/include/asm/ptrace.h
-> @@ -65,6 +65,14 @@
->  #define COMPAT_PT_TEXT_ADDR		0x10000
->  #define COMPAT_PT_DATA_ADDR		0x10004
->  #define COMPAT_PT_TEXT_END_ADDR		0x10008
-> +
-> +/*
-> + * System call will be skipped if a syscall number is changed to -1
-> + * with ptrace(PTRACE_SET_SYSCALL).
-> + * Upper 32-bit should be ignored for safe check.
-> + */
-> +#define IS_SKIP_SYSCALL(no)	((int)(no & 0xffffffff) == -1)
+> Changes since v2:
+>  - fixed a bug in gpmi_move_bits
+>  - add a raw_buffer field to be used when using raw access methods
+>    (experienced memory corruptions when directly using page_buffer_virt
+>    buffer)
+>  - add raw OOB access functions
 
-I don't think this macro is very useful, especially considering that we
-already use ~0UL explicitly in other places. Just move the comment into
-syscall_trace_enter and be done with it. I also don't think you need the
-mask (the cast is enough).
+I tested this patch set today with the imx6dl-sabreauto board.
 
-> +
->  #ifndef __ASSEMBLY__
->  
->  /* sizeof(struct user) for AArch32 */
-> diff --git a/arch/arm64/kernel/entry.S b/arch/arm64/kernel/entry.S
-> index f0b5e51..b53a1c5 100644
-> --- a/arch/arm64/kernel/entry.S
-> +++ b/arch/arm64/kernel/entry.S
-> @@ -25,6 +25,7 @@
->  #include <asm/asm-offsets.h>
->  #include <asm/errno.h>
->  #include <asm/esr.h>
-> +#include <asm/ptrace.h>
->  #include <asm/thread_info.h>
->  #include <asm/unistd.h>
->  
-> @@ -671,6 +672,8 @@ ENDPROC(el0_svc)
->  __sys_trace:
->  	mov	x0, sp
->  	bl	syscall_trace_enter
-> +	cmp	w0, #-1				// skip the syscall?
-> +	b.eq	__sys_trace_return_skipped
->  	adr	lr, __sys_trace_return		// return address
->  	uxtw	scno, w0			// syscall number (possibly new)
->  	mov	x1, sp				// pointer to regs
-> @@ -685,6 +688,7 @@ __sys_trace:
->  
->  __sys_trace_return:
->  	str	x0, [sp]			// save returned x0
-> +__sys_trace_return_skipped:
->  	mov	x0, sp
->  	bl	syscall_trace_exit
->  	b	ret_to_user
-> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-> index 2842f9f..6b11c6a 100644
-> --- a/arch/arm64/kernel/ptrace.c
-> +++ b/arch/arm64/kernel/ptrace.c
-> @@ -1126,6 +1126,8 @@ static void tracehook_report_syscall(struct pt_regs *regs,
->  
->  asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->  {
-> +	unsigned int orig_syscallno = regs->syscallno;
-> +
->  	if (test_thread_flag(TIF_SYSCALL_TRACE))
->  		tracehook_report_syscall(regs, PTRACE_SYSCALL_ENTER);
->  
-> @@ -1133,7 +1135,26 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
->  		trace_sys_enter(regs, regs->syscallno);
->  
->  	audit_syscall_entry(syscall_get_arch(), regs->syscallno,
-> -		regs->orig_x0, regs->regs[1], regs->regs[2], regs->regs[3]);
-> +			regs->orig_x0, regs->regs[1],
-> +			regs->regs[2], regs->regs[3]);
-> +
-> +	if (IS_SKIP_SYSCALL(regs->syscallno) &&
-> +			IS_SKIP_SYSCALL(orig_syscallno)) {
-> +		/*
-> +		 * For compatibility, we handles user-issued syscall(-1).
+    NAND: Micron MT29F64G08CBABAWP
+	8192MiB, MLC, page size: 8192, OOB size: 744
 
-Compatibility with what? arch/arm/?
+    ECC: 40bit
 
-> +		 *
-> +		 * RESTRICTION: we can't modify a return value here in this
-> +		 * specific case. In order to ease this flavor, we have to
-> +		 * take whatever value x0 has as a return value, but this
-> +		 * might result in a bogus value being returned.
+The result:
 
-This comment isn't helping me. Are we returning a bogus value or not? If so,
-why is that acceptable?
+[ 3672.779009] ==================================================
+[ 3672.784974] mtd_nandbiterrs: MTD device: 0
+[ 3672.789480] mtd_nandbiterrs: MTD device size 16777216, eraseblock=2097152, page=8192, oob=744
+[ 3672.798169] mtd_nandbiterrs: Device uses 1 subpages of 8192 bytes
+[ 3672.804554] mtd_nandbiterrs: Using page=0, offset=0, eraseblock=0
+[ 3672.812497] mtd_nandbiterrs: incremental biterrors test
+[ 3672.818688] mtd_nandbiterrs: write_page
+[ 3672.825529] mtd_nandbiterrs: rewrite page
+[ 3672.837290] mtd_nandbiterrs: read_page
+[ 3672.848407] mtd_nandbiterrs: error: read failed at 0x0
+[ 3672.853644] mtd_nandbiterrs: After 0 biterrors per subpage, read reported error -74
+[ 3672.862932] mtd_nandbiterrs: finished successfully.
+[ 3672.867837] ==================================================
 
-> +		 * NOTE: syscallno may also be set to -1 if fatal signal
-> +		 * is detected in tracehook_report_syscall(ENTRY),
-> +		 * but since a value set to x0 here is not used in this
-> +		 * case, we may neglect the case.
-> +		 */
+[ 3745.282368] ==================================================
+[ 3745.288227] mtd_nandbiterrs: MTD device: 0
+[ 3745.292913] mtd_nandbiterrs: MTD device size 16777216, eraseblock=2097152, page=8192, oob=744
+[ 3745.301897] mtd_nandbiterrs: Device uses 1 subpages of 8192 bytes
+[ 3745.308023] mtd_nandbiterrs: Using page=1, offset=8192, eraseblock=0
+[ 3745.316778] mtd_nandbiterrs: incremental biterrors test
+[ 3745.323017] mtd_nandbiterrs: write_page
+[ 3745.328616] mtd_nandbiterrs: rewrite page
+[ 3745.334191] mtd_nandbiterrs: read_page
+[ 3745.346878] mtd_nandbiterrs: error: read failed at 0x2000
+[ 3745.352352] mtd_nandbiterrs: After 0 biterrors per subpage, read reported error -74
+[ 3745.361281] mtd_nandbiterrs: finished successfully.
+[ 3745.366173] ==================================================
 
-I think can you remove thise NOTE, it's not very informative.
 
-Will
+Is this okay? 
+
+thanks
+Huang Shijie
