@@ -1,100 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756310AbaJHPI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 11:08:29 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:59935 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752503AbaJHPI2 (ORCPT
+	id S1756907AbaJHPJu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 11:09:50 -0400
+Received: from smtp97.iad3a.emailsrvr.com ([173.203.187.97]:57577 "EHLO
+	smtp97.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752915AbaJHPJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 11:08:28 -0400
-Date: Wed, 8 Oct 2014 11:08:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
-Subject: Re: [trace events] WARNING: CPU: 0 PID: 91 at
- kernel/sched/core.c:7253 __might_sleep()
-Message-ID: <20141008110825.58bdb51d@gandalf.local.home>
-In-Reply-To: <20141008104120.GH10832@worktop.programming.kicks-ass.net>
-References: <20141008100613.GA17869@wfg-t540p.sh.intel.com>
-	<20141008104120.GH10832@worktop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	Wed, 8 Oct 2014 11:09:49 -0400
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>, Bernd Porr <mail@berndporr.me.uk>,
+        <stable@vger.kernel.org>
+Subject: [PATCH] staging: comedi: (regression) channel list must be set for COMEDI_CMD ioctl
+Date: Wed,  8 Oct 2014 16:09:14 +0100
+Message-Id: <1412780954-11299-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014 12:41:20 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+`do_cmd_ioctl()`, the handler for the `COMEDI_CMD` ioctl can incorrectly
+call the Comedi subdevice's `do_cmd()` handler with a NULL channel list
+pointer.  This is a regression as the `do_cmd()` handler has never been
+expected to deal with that, leading to a kernel OOPS when it tries to
+dereference it.
 
-> On Wed, Oct 08, 2014 at 06:06:13PM +0800, Fengguang Wu wrote:
-> > [    8.867644] WARNING: CPU: 0 PID: 91 at kernel/sched/core.c:7253 __might_sleep+0x9a/0x378()
-> > [    8.869031] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff8d79b511>] event_test_thread+0x48/0x93
+A NULL channel list pointer is allowed for the `COMEDI_CMDTEST` ioctl,
+handled by `do_cmdtest_ioctl()` and the subdevice's `do_cmdtest()`
+handler, but not for the `COMEDI_CMD` ioctl and its handlers.
 
-I'm curious, what blocking ops was called?
+Both `do_cmd_ioctl()` and `do_cmdtest_ioctl()` call
+`__comedi_get_user_chanlist()` to copy the channel list from user memory
+into dynamically allocated kernel memory and check it for consistency.
+That function currently returns 0 if the `user_chanlist` parameter
+(pointing to the channel list in user memory) is NULL.  That's fine for
+`do_cmdtest_ioctl()`, but `do_cmd_ioctl()` incorrectly assumes the
+kernel copy of the channel list has been set-up correctly.
 
-> > [    8.870533] Modules linked in:
-> > [    8.870979] CPU: 0 PID: 91 Comm: test-events Not tainted 3.17.0-rc7-00109-g2f85d18 #37
-> > [    8.872061] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-> > [    8.873428]  0000000000000000 ffff880010ec3c80 ffffffff8c696943 ffff880010ec3cb8
-> > [    8.874503]  ffffffff8be7cae5 ffffffff8bead236 0000000000000001 ffff88001161fa01
-> > [    8.888390]  0000000000000001 0000000000000000 ffff880010ec3d20 ffffffff8be7cb46
-> > [    8.890628] Call Trace:
-> > [    8.890978]  [<ffffffff8c696943>] dump_stack+0x19/0x1b
-> > [    8.891689]  [<ffffffff8be7cae5>] warn_slowpath_common+0x8f/0xa8
-> > [    8.892535]  [<ffffffff8bead236>] ? __might_sleep+0x9a/0x378
-> > [    8.893307]  [<ffffffff8be7cb46>] warn_slowpath_fmt+0x48/0x50
-> > [    8.894083]  [<ffffffff8be0dd55>] ? sched_clock+0x9/0xd
-> > [    8.894797]  [<ffffffff8d79b511>] ? event_test_thread+0x48/0x93
-> > [    8.895602]  [<ffffffff8d79b511>] ? event_test_thread+0x48/0x93
-> > [    8.896421]  [<ffffffff8bead236>] __might_sleep+0x9a/0x378
-> > [    8.897164]  [<ffffffff8c6a0227>] down_read+0x26/0x98
-> > [    8.897855]  [<ffffffff8be8f503>] exit_signals+0x27/0x1c2
-> > [    8.898598]  [<ffffffff8be7fedd>] do_exit+0x193/0x10bd
-> > [    8.899298]  [<ffffffff8bfd1969>] ? kfree+0x4a0/0x4d7
-> > [    8.900028]  [<ffffffff8d79b4c9>] ? event_trace_self_tests+0x6d7/0x6d7
-> > [    8.900946]  [<ffffffff8d79b4c9>] ? event_trace_self_tests+0x6d7/0x6d7
-> > [    8.914871]  [<ffffffff8bea4b65>] kthread+0x156/0x156
-> > [    8.915571]  [<ffffffff8c69c0f8>] ? wait_for_common+0x3e/0x224
-> > [    8.916381]  [<ffffffff8bea4a0f>] ? insert_kthread_work+0xe7/0xe7
-> > [    8.917203]  [<ffffffff8c6a353a>] ret_from_fork+0x7a/0xb0
-> > [    8.917937]  [<ffffffff8bea4a0f>] ? insert_kthread_work+0xe7/0xe7
-> > [    8.918800] ---[ end trace 14d02ef17adbc114 ]---
-> 
-> 
-> Steve, wth is that thing supposed to do?
-> 
-> 	set_current_state(TASK_INTERRUPTIBLE);
-> 	while (!kthread_should_stop())
-> 		schedule();
-> 
-> That looks broken alright. It'll revert to a yield() 'spin' loop if it
-> ever gets a wakeup for anything other than the kthread_stop().
-> 
-> Did you mean to write something like:
-> 
-> 	set_current_state(TASK_INTERRUPTIBLE);
-> 	while (!kthread_should_stop()) {
-> 		schedule();
-> 		set_current_state(TASK_INTERRUPTIBLE);
-> 	}
-> 	__set_current_state(TASK_RUNNING);
-> 
-> ?
+Fix it by not allowing the `user_chanlist` parameter to be NULL in
+`__comedi_get_user_chanlist()`, and only calling it from
+`do_cmdtest_ioctl()` if the parameter is non-NULL.
 
-Wow, what a blast from the past. That code hasn't been touched since
-2009!
+Thanks to Bernd Porr for reporting the bug via an initial patch sent
+privately.
 
-Anyway, all that thread did was call test work on each cpu, and then
-waits to be killed. It should only get a single wake up and that should
-be from the kthread_stop() call. IOW, that loop should never be
-executed more than once.
+Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
+Reported-by: Bernd Porr <mail@berndporr.me.uk>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: Bernd Porr <mail@berndporr.me.uk>
+Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y
+---
+ drivers/staging/comedi/comedi_fops.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-What exactly is the bug here?
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 495969f..a9b7fe5 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1462,10 +1462,6 @@ static int __comedi_get_user_chanlist(struct comedi_device *dev,
+ 	unsigned int *chanlist;
+ 	int ret;
+ 
+-	/* user_chanlist could be NULL for do_cmdtest ioctls */
+-	if (!user_chanlist)
+-		return 0;
+-
+ 	chanlist = memdup_user(user_chanlist,
+ 			       cmd->chanlist_len * sizeof(unsigned int));
+ 	if (IS_ERR(chanlist))
+@@ -1609,10 +1605,13 @@ static int do_cmdtest_ioctl(struct comedi_device *dev,
+ 
+ 	s = &dev->subdevices[cmd.subdev];
+ 
+-	/* load channel/gain list */
+-	ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
+-	if (ret)
+-		return ret;
++	/* user_chanlist can be NULL for COMEDI_CMDTEST ioctl */
++	if (user_chanlist) {
++		/* load channel/gain list */
++		ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
++		if (ret)
++			return ret;
++	}
+ 
+ 	ret = s->do_cmdtest(dev, s, &cmd);
+ 
+-- 
+2.1.1
 
--- Steve
