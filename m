@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaJHShG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:37:06 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:46604 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751253AbaJHShD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:37:03 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApgSAGODNVRbsGtC/2dsb2JhbABfgw65BwUBc5oCBAKBCxcBe4RgI4EaN4hCAbcFjmqGIIokHYQ1BZ1FjFqJM4NlOy+CSgEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Paul Moore <paul@paul-moore.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] netlabel: directly return netlbl_unlabel_genl_init()
-Date: Wed,  8 Oct 2014 20:37:01 +0200
-Message-Id: <1412793421-9914-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	id S1754634AbaJHShL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:37:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253AbaJHShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 14:37:07 -0400
+Date: Wed, 8 Oct 2014 20:33:48 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, Kirill Tkhai <tkhai@yandex.ru>
+Subject: [PATCH 2/2] sched: kill task_preempt_count()
+Message-ID: <20141008183348.GC17495@redhat.com>
+References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008183302.GA17495@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to store netlbl_unlabel_genl_init result and test it before returning.
+task_preempt_count() is pointless if preemption counter is per-cpu,
+currently this is x86 only. It is only valid if the task is not
+running, and even in this case the only info it can provide is the
+state of PREEMPT_ACTIVE bit.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Change its single caller to check p->on_rq instead, this should be
+the same if p->state != TASK_RUNNING, and kill this helper.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- net/netlabel/netlabel_user.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ arch/x86/include/asm/preempt.h |    3 ---
+ include/asm-generic/preempt.h  |    3 ---
+ kernel/sched/core.c            |    2 +-
+ 3 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/net/netlabel/netlabel_user.c b/net/netlabel/netlabel_user.c
-index 1e779bb..adf8b79 100644
---- a/net/netlabel/netlabel_user.c
-+++ b/net/netlabel/netlabel_user.c
-@@ -71,11 +71,7 @@ int __init netlbl_netlink_init(void)
- 	if (ret_val != 0)
- 		return ret_val;
- 
--	ret_val = netlbl_unlabel_genl_init();
--	if (ret_val != 0)
--		return ret_val;
--
--	return 0;
-+	return netlbl_unlabel_genl_init();
- }
- 
+diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
+index 4008734..8f32718 100644
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -30,9 +30,6 @@ static __always_inline void preempt_count_set(int pc)
  /*
+  * must be macros to avoid header recursion hell
+  */
+-#define task_preempt_count(p) \
+-	(task_thread_info(p)->saved_preempt_count & ~PREEMPT_NEED_RESCHED)
+-
+ #define init_task_preempt_count(p) do { \
+ 	task_thread_info(p)->saved_preempt_count = PREEMPT_DISABLED; \
+ } while (0)
+diff --git a/include/asm-generic/preempt.h b/include/asm-generic/preempt.h
+index 1cd3f5d..eb6f9e6 100644
+--- a/include/asm-generic/preempt.h
++++ b/include/asm-generic/preempt.h
+@@ -23,9 +23,6 @@ static __always_inline void preempt_count_set(int pc)
+ /*
+  * must be macros to avoid header recursion hell
+  */
+-#define task_preempt_count(p) \
+-	(task_thread_info(p)->preempt_count & ~PREEMPT_NEED_RESCHED)
+-
+ #define init_task_preempt_count(p) do { \
+ 	task_thread_info(p)->preempt_count = PREEMPT_DISABLED; \
+ } while (0)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3f267e8..cfe9905 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1056,7 +1056,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	 * ttwu() will sort out the placement.
+ 	 */
+ 	WARN_ON_ONCE(p->state != TASK_RUNNING && p->state != TASK_WAKING &&
+-			!(task_preempt_count(p) & PREEMPT_ACTIVE));
++			!p->on_rq);
+ 
+ #ifdef CONFIG_LOCKDEP
+ 	/*
 -- 
-1.9.1
+1.5.5.1
+
 
