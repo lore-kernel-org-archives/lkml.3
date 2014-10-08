@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaJHXYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:24:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34881 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677AbaJHXYD (ORCPT
+	id S1754416AbaJHX1V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:27:21 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33666 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbaJHX1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:24:03 -0400
-Message-ID: <5435C77E.5030104@ti.com>
-Date: Wed, 8 Oct 2014 18:23:42 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Jassi Brar <jaswinder.singh@linaro.org>, <torvalds@linux-foundation.org>
-CC: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>, Bjorn Andersson <bjorn@kryo.se>,
-        Mark Brown <broonie@linaro.org>, Kevin Hilman <khilman@linaro.org>,
-        Andy Green <andy.green@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Alexandre Torgue <alexandre.torgue@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] New Mailbox framework for 3.18
-References: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
-In-Reply-To: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Oct 2014 19:27:15 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@fedoraproject.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Subject: [GIT PULL] restart handler infrastructure
+Date: Wed,  8 Oct 2014 16:27:09 -0700
+Message-Id: <1412810829-26414-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.5435C852.00A9,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 12:39 AM, Jassi Brar wrote:
-> Hi Linus,
-> 
-> A framework for Mailbox controllers and clients have been cooking for
-> more than a year now. Everybody in the CC list had been copied on
-> patchset revisions and most of them have made sounds of approval,
-> though just one concrete Reviewed-by. The patchset has also been in
-> linux-next for a couple of weeks now and no conflict has been
-> reported. The framework has the backing of at least 5 platforms,
-> though I can't say if/when they upstream their drivers (some
-> businesses have 'changed').
+Hi Linus,
 
-Thanks Jassi. OMAP is ready, and because of merge order dependencies is
-held back. We should be able to have the framework adaptation merged on
-the next kernel version once this is in.
+this series was supposed to be pulled through various trees using it,
+and I did not plan to send a separate pull request. As it turns out,
+the pinctrl tree did not merge with it, is now upstream, and uses
+it, meaning there are now build failures.
 
-regards
-Suman
+Please consider pulling this series directly to fix those build failures.
+If you don't want to pull it directly, you should also get it through
+the clk, power/reboot, and watchdog pull requests.
 
-> 
-> 
-> The following changes since commit 9a50aaefc1b896e734bf7faf3d085f71a360ce97:
-> 
->   Merge tag 'scsi-for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2014-10-07
-> 21:29:18 -0400)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.linaro.org/landing-teams/working/fujitsu/integration.git
-> mailbox-for-linus
-> 
-> for you to fetch changes up to 9f3e3cacb2ffdefe28c7cf490bf543e4dcb2770a:
-> 
->   dt: mailbox: add generic bindings (2014-10-08 10:39:42 +0530)
-> 
-> ----------------------------------------------------------------
-> Jassi Brar (3):
->       mailbox: Introduce framework for mailbox
->       doc: add documentation for mailbox framework
->       dt: mailbox: add generic bindings
-> 
-> Suman Anna (1):
->       mailbox: rename pl320-ipc specific mailbox.h
-> 
->  .../devicetree/bindings/mailbox/mailbox.txt        |  38 ++
->  Documentation/mailbox.txt                          | 122 ++++++
->  MAINTAINERS                                        |   8 +
->  arch/arm/mach-highbank/highbank.c                  |   2 +-
->  drivers/cpufreq/highbank-cpufreq.c                 |   2 +-
->  drivers/mailbox/Makefile                           |   4 +
->  drivers/mailbox/mailbox.c                          | 465 +++++++++++++++++++++
->  drivers/mailbox/pl320-ipc.c                        |   2 +-
->  include/linux/mailbox_client.h                     |  46 ++
->  include/linux/mailbox_controller.h                 | 133 ++++++
->  include/linux/{mailbox.h => pl320-ipc.h}           |   0
->  11 files changed, 819 insertions(+), 3 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mailbox/mailbox.txt
->  create mode 100644 Documentation/mailbox.txt
->  create mode 100644 drivers/mailbox/mailbox.c
->  create mode 100644 include/linux/mailbox_client.h
->  create mode 100644 include/linux/mailbox_controller.h
->  rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
-> 
-> 
+Thanks,
+Guenter
+------
 
+The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/restart-handler-for-v3.18
+
+for you to fetch changes up to 6cd6d94d96d9b1cd8a62da91aac44cf56e301e75:
+
+  arm/arm64: unexport restart handlers (2014-09-26 00:00:48 -0700)
+
+----------------------------------------------------------------
+Immutable branch with restart handler patches for v3.18
+
+----------------------------------------------------------------
+Guenter Roeck (8):
+      kernel: add support for kernel restart handler call chain
+      power/restart: call machine_restart instead of arm_pm_restart
+      arm64: support restart through restart handler call chain
+      arm: support restart through restart handler call chain
+      watchdog: moxart: register restart handler with kernel restart handler
+      watchdog: alim7101: register restart handler with kernel restart handler
+      watchdog: sunxi: register restart handler with kernel restart handler
+      arm/arm64: unexport restart handlers
+
+ arch/arm/kernel/process.c              | 12 +++--
+ arch/arm64/kernel/process.c            |  3 +-
+ drivers/power/reset/restart-poweroff.c |  3 +-
+ drivers/watchdog/alim7101_wdt.c        | 42 +++++++++++++-----
+ drivers/watchdog/moxart_wdt.c          | 32 +++++++++-----
+ drivers/watchdog/sunxi_wdt.c           | 31 ++++++++-----
+ include/linux/reboot.h                 |  3 ++
+ kernel/reboot.c                        | 81 ++++++++++++++++++++++++++++++++++
+ 8 files changed, 165 insertions(+), 42 deletions(-)
