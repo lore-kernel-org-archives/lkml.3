@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630AbaJHW7W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:59:22 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:59955 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaJHW7T (ORCPT
+	id S1754252AbaJHXIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:08:14 -0400
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:54928 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaJHXIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:59:19 -0400
-Date: Wed, 8 Oct 2014 15:59:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
-Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
- container
-Message-ID: <20141008225912.GA25134@roeck-us.net>
-References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
- <20141008223403.GA24828@roeck-us.net>
- <20141008223601.GP4609@sirena.org.uk>
+	Wed, 8 Oct 2014 19:08:13 -0400
+Date: Wed, 8 Oct 2014 18:08:07 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
+Message-ID: <20141008180807.276dbf7c@as>
+In-Reply-To: <5435AABC.2010902@zytor.com>
+References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
+	<CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
+	<20141008154659.31f46436@as>
+	<5435A4A4.1070101@zytor.com>
+	<20141008160956.7584d303@as>
+	<5435AABC.2010902@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008223601.GP4609@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.5435C1C7.00C4,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:36:01PM +0100, Mark Brown wrote:
-> On Wed, Oct 08, 2014 at 03:34:03PM -0700, Guenter Roeck wrote:
+On Wed, 08 Oct 2014 14:21:00 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 10/08/2014 02:09 PM, Chuck Ebbert wrote:
+> >>
+> >> Breaking cross-compilation is not okay, though, regardless of what
+> >> Fedora does.  It should be okay to, for example, build an i386 kernel on
+> >> an ARM box.
+> >>
+> > 
+> > I think they tried that for a while, and ended up chasing compiler
+> > and makefile bugs all day. And then there's the software that wants
+> > to run self-tests as part of its build...
+> > 
 > 
-> > Would it also be possible to lower the severity of the "no parameters"
-> > message ?
+> That we can't solve, but it is not okay to break the kernel build.
 > 
-> Could you be more specific please?
 
-There is a log message "no parameters" for each regulator. This is printed
-unconditionally from print_constraints().
-
-Looking through the code again, looks like this is on purpose. It is just a bit
-annoying to get lots of those messages. One of the systems I am dealing with has
-17 LTC2978 chips in it, with 8 channels each. That results in 136 times "no
-parameters" in the boot log. And that is not even a fully populated system;
-if fully populated, there can be more than 60 of those chips. 500+ lines of 
-similar log messages is really a bit on the high side.
-
-It might help if there was a way to silence the messages, ie to make
-"print_constraints" optional. 
-
-Thanks,
-Guenter
+Also, as Andy pointed out, when building for x86_64 we probably want
+to build both 32-bit and 64-bit versions of most test programs like
+this one.
