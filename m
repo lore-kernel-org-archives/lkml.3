@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135AbaJHLZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:25:16 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63569 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755492AbaJHLZO (ORCPT
+	id S1756153AbaJHLZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:25:29 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:64088 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaJHLZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:25:14 -0400
+	Wed, 8 Oct 2014 07:25:24 -0400
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 To: linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [RFC PATCH 1/2] mmc: core: fix prepared requests while doing bkops
-Date: Wed,  8 Oct 2014 12:24:24 +0100
-Message-Id: <1412767464-6677-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [RFC PATCH 2/2] mmc: mmci: fix mmci_post_request
+Date: Wed,  8 Oct 2014 12:25:17 +0100
+Message-Id: <1412767517-6784-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412767415-6624-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1412767415-6624-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -22,23 +22,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While starting the bkops the previously prepared request should be canceled
-and restarted after the bkops. As the prepared resource might already
-setup the dma channels and ready to be started. Now with the arrival of bkops
-request this prepared request can be serviced ONLY after the bkops. So
-holding on to the prepared request in the host driver is confusing at
-this point in time, so it makes sense to cleanup such dangling requests and
-reissue this request once bkops is done.
-Canceling the prepared request would give opportunity to the host drivers
-to perform cleanup on the prepared request.
+If the post request is cancelling the channel and descriptor and which are
+equal to host->dma_current and host->dma_desc_current respectively, then it
+makes sense to reset these pointers to NULL, so that the driver does not
+reference it.
 
-Without this patch host drivers like mmci gets confused when a blocking
-request like send_ext_csd(CMD8) is issued while there is already a prepared
-request. With the help of this patch, the driver can better manage such
-blocking requests and cleanup the prepared requests which are not started yet.
+Also the host_cookie can be reset to 0 in cases of error, so that the
+core could reissue the same mmc_request.
 
-Without this patch I hit below crash on Qualcomm APQ8064 based IFC6410 board
-with mmci host driver.
+This patch was tested with 'mmc: core: fix prepared requests while doing
+bkops' to fix the below issue.
 
 mmci-pl18x 12400000.sdcc: error during DMA transfer!
 Unable to handle kernel paging request at virtual address 40000000
@@ -99,36 +92,31 @@ Code: 1e070f3e e1110003 e1c11003 1e071f3e (ee070f36)
 ---[ end trace cf6cb3f6432c9834 ]---
 Kernel panic - not syncing: Fatal exception in interrup
 
-Reported-by: Nicolas Dechesne <nicolas.dechesne@linaro.org>
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/core/core.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/mmc/host/mmci.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index d03a080..4d9b142 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -538,8 +538,18 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
- 		if (host->card && mmc_card_mmc(host->card) &&
- 		    ((mmc_resp_type(host->areq->mrq->cmd) == MMC_RSP_R1) ||
- 		     (mmc_resp_type(host->areq->mrq->cmd) == MMC_RSP_R1B)) &&
--		    (host->areq->mrq->cmd->resp[0] & R1_EXCEPTION_EVENT))
-+		    (host->areq->mrq->cmd->resp[0] & R1_EXCEPTION_EVENT)) {
-+
-+			/* Cancel the prepared request */
-+			if (areq)
-+				mmc_post_req(host, areq->mrq, -EINVAL);
-+
- 			mmc_start_bkops(host->card, true);
-+
-+			/* prepare the request again */
-+			if (areq)
-+				mmc_pre_req(host, areq->mrq, !host->areq);
-+		}
- 	}
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 264c947..84f4a91 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -741,8 +741,15 @@ static void mmci_post_request(struct mmc_host *mmc, struct mmc_request *mrq,
+ 			chan = host->dma_tx_channel;
+ 		dmaengine_terminate_all(chan);
  
- 	if (!err && areq)
++		if (host->dma_desc_current == next->dma_desc)
++			host->dma_desc_current = NULL;
++
++		if (host->dma_current == next->dma_chan)
++			host->dma_current = NULL;
++
+ 		next->dma_desc = NULL;
+ 		next->dma_chan = NULL;
++		data->host_cookie = 0;
+ 	}
+ }
+ 
 -- 
 1.9.1
 
