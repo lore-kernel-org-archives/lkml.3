@@ -1,185 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaJHKrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:47:11 -0400
-Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:50593 "EHLO
-	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932106AbaJHKqz (ORCPT
+	id S932212AbaJHKr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:47:27 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:53965 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106AbaJHKrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:46:55 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Subject: [PATCH] Input: nomadik-ske-keypad: Switch to using managed resources
-Date: Wed,  8 Oct 2014 16:20:28 +0530
-Message-Id: <1412765428-6517-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 8 Oct 2014 06:47:23 -0400
+Date: Wed, 8 Oct 2014 11:47:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Johannes Pointner <johannes.pointner@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
+ for subnodes
+Message-ID: <20141008104717.GG20647@lee--X1>
+References: <1660410.j399mvljTo@lenovobook>
+ <20141006212232.GF18035@lee--X1>
+ <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change switches to using devm_* APIs to allocate  resources.
-This helps to simplify failure path in probe function as well as
-remove function.
+On Wed, 08 Oct 2014, Johannes Pointner wrote:
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
----
- drivers/input/keyboard/nomadik-ske-keypad.c |   63 +++++++++------------------
- 1 file changed, 20 insertions(+), 43 deletions(-)
+> 2014-10-06 23:22 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
+> > On Thu, 25 Sep 2014, Johannes Pointner wrote:
+> >
+> >> Add documentation for compatible property of subnodes.
+> >>
+> >> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+> >> ---
+> >>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
+> >>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
+> >>  2 files changed, 12 insertions(+), 4 deletions(-)
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
+> >> index 4f05d20..8ae3a3b 100644
+> >> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
+> >> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
+> >> @@ -14,6 +14,9 @@ Required properties:
+> >>  Optional properties:
+> >>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
+> >>
+> >> +Required subnode properties:
+> >> +- compatible: "ti,tps65217-pmic"
+> >> +
+> >>    The valid names for regulators are:
+> >>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
+> >>
+> >> @@ -23,9 +26,11 @@ Example:
+> >>
+> >>       tps: tps@24 {
+> >>               compatible = "ti,tps65217";
+> >> +             reg = <0x24>;
+> >>               ti,pmic-shutdown-controller;
+> >>
+> >> -             regulators {
+> >> +             tps_pmic: regulators {
+> >
+> > How is the tps_pmic label used?
+> >
+> >> +                     compatible = "ti,tps65217-pmic";
+> >
+> > I'd like to see a '\n' here.
+> I will add a newline here.
+> >
+> >>                       dcdc1_reg: dcdc1 {
+> >>                               regulator-min-microvolt = <900000>;
+> >>                               regulator-max-microvolt = <1800000>;
+> >> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> >> index 5fb9279..f92f154 100644
+> >> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> >> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+> >> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
+> >>  Required properties:
+> >>  - compatible: "ti,tps65217"
+> >>  - reg: I2C slave address
+> >> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+> >> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
+> >> +
+> >> +Required subnode properties:
+> >> +- compatible: "ti,tps65217-bl"
+> >>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+> >>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+> >>  - default-brightness: valid values: 0-100
+> >>
+> >> -Each regulator is defined using the standard binding for regulators.
+> >>
+> >>  Example:
+> >>
+> >>       tps: tps@24 {
+> >>               reg = <0x24>;
+> >>               compatible = "ti,tps65217";
+> >
+> > I'd like to see a '\n' here.
+> I will add a newline here.
+> >
+> >> -             backlight {
+> >> +             tps_bl: backlight {
+> >
+> > Same here.  Is this label used?
+> >
+> >> +                     compatible = "ti,tps65217-bl";
+> >>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+> >>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+> >>                       default-brightness = <50>;
+> >
+> 
+> Regarding the labels: The backlight label could be used like the
+> following. I use it like this in my tests with the tilcdc panel driver
+> which has a backlight support.
+> 
+>     panel {
+>         backlight = <&tps_bl>;
+> 
+>         panel-info {
+>             ac-bias        = <255>;
+>             ac-bias-intrpt    = <0>;
+>             dma-burst-sz    = <16>;
+>             bpp        = <32>;
+>             fdd        = <0x80>;
+>             sync-edge    = <0>;
+>             sync-ctrl    = <1>;
+>             .
+>             .
+>             .
+> 
+> I'm not sure if there could be actual use for the pmic label, but I
+> thought if I add a label to backlight, I have to add one to the pmic
+> too to keep it similar.
 
-diff --git a/drivers/input/keyboard/nomadik-ske-keypad.c b/drivers/input/keyboard/nomadik-ske-keypad.c
-index 63332e2..95ac317 100644
---- a/drivers/input/keyboard/nomadik-ske-keypad.c
-+++ b/drivers/input/keyboard/nomadik-ske-keypad.c
-@@ -247,12 +247,11 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	keypad = kzalloc(sizeof(struct ske_keypad), GFP_KERNEL);
-+	keypad = devm_kzalloc(&pdev->dev, sizeof(*keypad), GFP_KERNEL);
- 	input = input_allocate_device();
- 	if (!keypad || !input) {
- 		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
--		error = -ENOMEM;
--		goto err_free_mem;
-+		return -ENOMEM;
- 	}
- 
- 	keypad->irq = irq;
-@@ -260,31 +259,29 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 	keypad->input = input;
- 	spin_lock_init(&keypad->ske_keypad_lock);
- 
--	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
-+	if (!devm_request_mem_region(&pdev->dev, res->start,
-+				     resource_size(res), pdev->name)) {
- 		dev_err(&pdev->dev, "failed to request I/O memory\n");
--		error = -EBUSY;
--		goto err_free_mem;
-+		return -EBUSY;
- 	}
- 
--	keypad->reg_base = ioremap(res->start, resource_size(res));
-+	keypad->reg_base = devm_ioremap(&pdev->dev, res->start,
-+					resource_size(res));
- 	if (!keypad->reg_base) {
- 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
--		error = -ENXIO;
--		goto err_free_mem_region;
-+		return -ENXIO;
- 	}
- 
--	keypad->pclk = clk_get(&pdev->dev, "apb_pclk");
-+	keypad->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
- 	if (IS_ERR(keypad->pclk)) {
- 		dev_err(&pdev->dev, "failed to get pclk\n");
--		error = PTR_ERR(keypad->pclk);
--		goto err_iounmap;
-+		return PTR_ERR(keypad->pclk);
- 	}
- 
--	keypad->clk = clk_get(&pdev->dev, NULL);
-+	keypad->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(keypad->clk)) {
- 		dev_err(&pdev->dev, "failed to get clk\n");
--		error = PTR_ERR(keypad->clk);
--		goto err_pclk;
-+		return PTR_ERR(keypad->clk);
- 	}
- 
- 	input->id.bustype = BUS_HOST;
-@@ -296,7 +293,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 					   keypad->keymap, input);
- 	if (error) {
- 		dev_err(&pdev->dev, "Failed to build keymap\n");
--		goto err_clk;
-+		return error;
- 	}
- 
- 	input_set_capability(input, EV_MSC, MSC_SCAN);
-@@ -306,7 +303,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 	error = clk_prepare_enable(keypad->pclk);
- 	if (error) {
- 		dev_err(&pdev->dev, "Failed to prepare/enable pclk\n");
--		goto err_clk;
-+		return error;
- 	}
- 
- 	error = clk_prepare_enable(keypad->clk);
-@@ -326,8 +323,9 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 		goto err_clk_disable;
- 	}
- 
--	error = request_threaded_irq(keypad->irq, NULL, ske_keypad_irq,
--				     IRQF_ONESHOT, "ske-keypad", keypad);
-+	error = devm_request_threaded_irq(&pdev->dev, keypad->irq, NULL,
-+					  ske_keypad_irq, IRQF_ONESHOT,
-+					  "ske-keypad", keypad);
- 	if (error) {
- 		dev_err(&pdev->dev, "allocate irq %d failed\n", keypad->irq);
- 		goto err_clk_disable;
-@@ -337,7 +335,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 	if (error) {
- 		dev_err(&pdev->dev,
- 				"unable to register input device: %d\n", error);
--		goto err_free_irq;
-+		goto err_clk_disable;
- 	}
- 
- 	if (plat->wakeup_enable)
-@@ -347,45 +345,24 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
- 
- 	return 0;
- 
--err_free_irq:
--	free_irq(keypad->irq, keypad);
- err_clk_disable:
- 	clk_disable_unprepare(keypad->clk);
- err_pclk_disable:
- 	clk_disable_unprepare(keypad->pclk);
--err_clk:
--	clk_put(keypad->clk);
--err_pclk:
--	clk_put(keypad->pclk);
--err_iounmap:
--	iounmap(keypad->reg_base);
--err_free_mem_region:
--	release_mem_region(res->start, resource_size(res));
--err_free_mem:
--	input_free_device(input);
--	kfree(keypad);
-+
- 	return error;
- }
- 
- static int ske_keypad_remove(struct platform_device *pdev)
- {
- 	struct ske_keypad *keypad = platform_get_drvdata(pdev);
--	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--
--	free_irq(keypad->irq, keypad);
--
--	input_unregister_device(keypad->input);
- 
- 	clk_disable_unprepare(keypad->clk);
--	clk_put(keypad->clk);
-+	clk_disable_unprepare(keypad->pclk);
- 
- 	if (keypad->board->exit)
- 		keypad->board->exit();
- 
--	iounmap(keypad->reg_base);
--	release_mem_region(res->start, resource_size(res));
--	kfree(keypad);
--
- 	return 0;
- }
- 
+No, not at all.  If it's not used, you should remove it.
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
