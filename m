@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939AbaJHKuN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:50:13 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50859 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaJHKuL (ORCPT
+	id S1755856AbaJHKxH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:53:07 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:55895 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474AbaJHKxF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:50:11 -0400
-Date: Wed, 8 Oct 2014 11:50:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
- NAND controller
-Message-ID: <20141008105005.GH20647@lee--X1>
-References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
- <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
- <20141006064030.GA20598@norris-Latitude-E6410>
+	Wed, 8 Oct 2014 06:53:05 -0400
+Date: Wed, 8 Oct 2014 11:53:01 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 09/11] perf/x86/intel: Implement LRU monitoring ID
+ allocation for CQM
+Message-ID: <20141008105301.GQ14343@console-pimps.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-10-git-send-email-matt@console-pimps.org>
+ <20141008095109.GD4750@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141006064030.GA20598@norris-Latitude-E6410>
+In-Reply-To: <20141008095109.GD4750@worktop.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 05 Oct 2014, Brian Norris wrote:
-
-> On Wed, Aug 27, 2014 at 01:42:23PM +0100, Lee Jones wrote:
-> > Reviewed-By: Pekon Gupta <pekon@pek-sem.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/mtd/nand/Kconfig        |    7 +
-> >  drivers/mtd/nand/Makefile       |    1 +
-> >  drivers/mtd/nand/stm_nand_bch.c | 1616 +++++++++++++++++++++++++++++++++++++++
-> >  drivers/mtd/nand/stm_nand_dt.c  |  110 +++
-> >  drivers/mtd/nand/stm_nand_dt.h  |   24 +
-> >  include/linux/mtd/stm_nand.h    |  147 ++++
-> >  6 files changed, 1905 insertions(+)
-> >  create mode 100644 drivers/mtd/nand/stm_nand_bch.c
-> >  create mode 100644 drivers/mtd/nand/stm_nand_dt.c
-> >  create mode 100644 drivers/mtd/nand/stm_nand_dt.h
-> >  create mode 100644 include/linux/mtd/stm_nand.h
+On Wed, 08 Oct, at 11:51:09AM, Peter Zijlstra wrote:
+> On Wed, Sep 24, 2014 at 03:04:13PM +0100, Matt Fleming wrote:
+> > From: Matt Fleming <matt.fleming@intel.com>
+> > 
+> > It's possible to run into issues with re-using unused monitoring IDs
+> > because there may be stale cachelines associated with that ID from a
+> > previous allocation. This can cause the LLC occupancy values to be
+> > inaccurate.
+> > 
+> > To attempt to mitigate this problem we place the IDs on a least recently
+> > used list, essentially a FIFO. The basic idea is that the longer the
+> > time period between ID re-use the lower the probability that stale
+> > cachelines exist in the cache.
 > 
-> One more thing: you never answered my question from [1]: 
-> 
-> Does your driver pass the MTD tests? (drivers/mtd/tests/)
+> Do we want to provide a user configurable minumum guaranteed queue time?
 
-It does.  Apart from the ones which insist on reading the OOB area,
-which isn't allowed via the normal call-backs supplied.
+Potentially, yeah. That might be better suited as part of the final
+patch that includes the rotation code, which already has a delayed
+workqueue.
 
-> [1] http://lists.infradead.org/pipermail/linux-mtd/2014-August/055084.html
+We could add a minimum queue time before we start querying whether the
+data occupancy value for an RMID has dropped to zero on all sockets.
+
+That'd save us from an expensive smp_call_function_many() when we're
+unlikely to succeed anyway.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Matt Fleming, Intel Open Source Technology Center
