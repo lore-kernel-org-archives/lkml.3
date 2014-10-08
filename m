@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865AbaJHAdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 20:33:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58263 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755459AbaJHAdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 20:33:05 -0400
-Date: Tue, 7 Oct 2014 19:32:56 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <mina86@mina86.com>,
-        <r.baldyga@samsung.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Qiuxu Zhuo <qiuxu.zhuo@intel.com>
-Subject: Re: [PATCH] usb: ffs: fix regression when quirk_ep_out_aligned_size
- flag is set
-Message-ID: <20141008003256.GB9957@saruman>
-Reply-To: <balbi@ti.com>
-References: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1755652AbaJHAfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 20:35:13 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:43770 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754820AbaJHAfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 20:35:10 -0400
+X-IronPort-AV: E=Sophos;i="5.04,674,1406617200"; 
+   d="scan'208";a="47511224"
+From: Ray Jui <rjui@broadcom.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Heikki Krogerus" <heikki.krogerus@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Chen-Yu Tsai <wens@csie.org>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+        Loic Poulain <loic.poulain@intel.com>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>
+Subject: [PATCH] serial: 8250_dw: Add DMA support for non-ACPI platforms
+Date: Tue, 7 Oct 2014 17:35:47 -0700
+Message-ID: <1412728547-4126-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WhfpMioaduB5tiZL"
-Content-Disposition: inline
-In-Reply-To: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WhfpMioaduB5tiZL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The dma pointer under struct uart_8250_port is currently left
+unassigned for non-ACPI platforms. It should be pointing to the dma
+member in struct dw8250_data like how it was done for ACPI, so the core
+8250 code will try to request for DMA when registering the port
 
-Hi again,
+If DMA is not enabled in device tree, request DMA will fail and the
+driver will fall back to PIO
 
-On Tue, Oct 07, 2014 at 05:18:06PM -0700, David Cohen wrote:
-> The commit '2e4c7553cd usb: gadget: f_fs: add aio support' broke the
-> quirk implemented to align buffer size to maxpacketsize on out endpoint.
-> As result, functionfs does not work on Intel platforms using dwc3 driver
-> (i.e. Bay Trail and Merrifield). This patch fixes the issue.
->=20
-> This code is based on a previous Qiuxu's patch.
->=20
+Signed-off-by: Ray Jui <rjui@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+Reviewed-by: Scott Branden <sbranden@broadcom.com>
+Tested-by: Scott Branden <sbranden@broadcom.com>
+---
+ drivers/tty/serial/8250/8250_dw.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-btw, please resend and add below right here:
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index 4db7987..1038ea8 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -293,6 +293,14 @@ static int dw8250_probe_of(struct uart_port *p,
+ 	if (has_ucv)
+ 		dw8250_setup_port(up);
+ 
++	/* if we have a valid fifosize, try hooking up DMA here */
++	if (p->fifosize) {
++		up->dma = &data->dma;
++
++		up->dma->rxconf.src_maxburst = p->fifosize / 4;
++		up->dma->txconf.dst_maxburst = p->fifosize / 4;
++	}
++
+ 	if (!of_property_read_u32(np, "reg-shift", &val))
+ 		p->regshift = val;
+ 
+-- 
+1.7.9.5
 
-Fixes: 2e4c7553cd (usb: gadget: f_fs: add aio support)
-Cc: <stable@vger.kernel.org> # v3.16+
-
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> Signed-off-by: Qiuxu Zhuo <qiuxu.zhuo@intel.com>
-
---=20
-balbi
-
---WhfpMioaduB5tiZL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUNIY4AAoJEIaOsuA1yqRETZUP/ifHVFUy6P8yOwgYm1Wrzppc
-ahlFpBnLA7E36rxwSC4cvKfaYF98OmGxl5G/EMwtdm13zjRhZskVzIWncVkB44Cb
-0I89HEJMSsscIKD/5Vnw9wyvd2DGej9d4Dob3AKcu0RiwzJO2y1sQn4emsGweOul
-h5fji6T+/9I2sKjqkDexPaItjGcrIiPmyTJ8WrB5vc1TdvDafIeH4NwALO/IZ7U9
-fT4upfYbrZyFVxBDbMLvF4ePsjUnombmZtlaKmABVbeh8mtpI4eLGEihixWIwiax
-07buEoS8J3ZjGgHxnHQnq6bztbhD4AcNW8Fh7BQqym/ypq59At/VWlNLXpHAaG1d
-3pbfsOIHJE5NqOgKyG5Op5NTZqVyPTAK4BbCpxlYjhiYnnOADCVw+nMjyEre7eNs
-MxY2Qlsl6rSO/vF4tIekcqOkO2eu45iGhfFeel2wzbR0O1D1gReaQTHhnw8l8Gsb
-DGhSnGzf4882AzD1CBajxTFgWa+SxalNIW9bxDuFrhFYrS7025BnuSSEt+RgPo5N
-SBWxk2Vq58ev3bqXUXXkaX9IBgZxDtxZGMa92NA2gJRne9VlOJNvEhrGLF5h+wEX
-cK543xDOKYl2WDbsmEYkOooY7IlzMJvDQMeIxueZndqf+lZ8y2fB2h1OKll8m9fE
-G6ohi4aQu4X6SA6BWbjC
-=oWXR
------END PGP SIGNATURE-----
-
---WhfpMioaduB5tiZL--
