@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531AbaJHNg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:36:26 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:63890 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235AbaJHNgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:36:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Scott Branden <sbranden@broadcom.com>
-Cc: linux-arm-kernel@lists.infradead.org, Christian Daudt <bcm@fixthebug.org>,
-        Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+	id S1756566AbaJHNhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:37:12 -0400
+Received: from ozlabs.org ([103.22.144.67]:40221 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753159AbaJHNhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:37:10 -0400
+Date: Thu, 9 Oct 2014 00:36:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, devicetree@vger.kernel.org,
-        Ray Jui <rjui@broadcom.com>, linux-kernel@vger.kernel.org,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        JD Zheng <jdzheng@broadcom.com>
-Subject: Re: [PATCH 3/6] dt-bindings: Document Broadcom Cygnus SoC and clock driver
-Date: Wed, 08 Oct 2014 15:35:27 +0200
-Message-ID: <2797894.oaYXOOJrDl@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <543518C7.9070809@broadcom.com>
-References: <1412746025-11998-4-git-send-email-sbranden@broadcom.com> <2480056.Cs3dr8EM2e@wuerfel> <543518C7.9070809@broadcom.com>
+        David Miller <davem@davemloft.net>, Vinod Koul <vinod.koul@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] dmaengine-3.17, close my dmaengine tree
+Message-ID: <20141009003655.5489501a@canb.auug.org.au>
+In-Reply-To: <1411922704.3156.40.camel@dwillia2-mobl2.amr.corp.intel.com>
+References: <1411922704.3156.40.camel@dwillia2-mobl2.amr.corp.intel.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:8tadGmAJvUjgZUddziU0VHVfWBpvMQKmSX0vdc7qv7f
- 2jDZGkdHtLRGpG0gbRXTisHCog6A+nOIlNkdZMcYPCc4v0Bd9S
- oixJJInuOsv+KwZ67NxpwmJu85QIOA+/NPStH4eHMoHL1m9eXf
- q/e/HcjadLl/wsILQ0uOTFOkjDJkijmgim3h1EcsPfuB95AxZx
- zeInE2jY8xkbxawOsnfu/QTjVABuy0WKmRVq9O9Mii/Xw6tDjT
- vfok2r7KRM9LtJW+beL2OI1qNblvKg7Qg4DbhrVcMDckXt2t2R
- EdXCxOQjy9sdJLNeMT8icLFUPpaGgSRIKzJvgxfHNiS0Fc0NZE
- XWvl1Jy6DIATZnFLXvw8=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/wB7uWC=j12.Gc4=u6tp6JC5"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 October 2014 03:58:15 Scott Branden wrote:
-> On 14-10-08 12:57 AM, Arnd Bergmann wrote:
-> > On Tuesday 07 October 2014 22:27:02 Scott Branden wrote:
-> >> diff --git a/Documentation/devicetree/bindings/arm/cygnus.txt b/Documentation/devicetree/bindings/arm/cygnus.txt
-> >> new file mode 100644
-> >> index 0000000..a210377
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/arm/cygnus.txt
-> >> @@ -0,0 +1,12 @@
-> >> +Broadcom Cygnus device tree bindings
-> >> +------------------------------------
-> >> +
-> >> +All Cygnus boards shall have the following properties:
-> >> +
-> >> +Required root node property:
-> >> +       - compatible = "brcm,cygnus";
-> >
-> > Can you add a more specific model number for the soc as well?
-> > I assume that cygnus refers to more than one model, so you
-> > should probably list both the family and the individual
-> > SoC type here.
-> Add specific model numbers does not seem necessary because they are not 
-> needed to be specified in the device tree for compatible purposes for 
-> the kernel to work.  Plus, the list of model numbers will continue to 
-> grow over time and compatible strings would need to be added to the 
-> kernel for no apparent reason?
+--Sig_/wB7uWC=j12.Gc4=u6tp6JC5
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It's always helpful to have them in the DT though, in case you ever
-need to add a workaround for one of the SoCs.
+Hi Dan,
 
-You can change the description to just state the format of the
-more specific model number so you don't need to add the particular
-type to the binding, but I'd definitely recommend listing both
-a generic and a more specific name here, such as
+On Sun, 28 Sep 2014 09:45:04 -0700 Dan Williams <dan.j.williams@intel.com> =
+wrote:
+>
+> Stephen: please remove the dmaengine tree from -next:
 
-	compatible = "brcm,bcm123456", "brcm,cygnus";
+I have done that now that Linus has merged it.
 
-> >> +Boards variants shall have the following additional properties:
-> >> +
-> >> +Required root node property for the BCM911360_ENTPHN board:
-> >> +       - compatible = "brcm,bcm911360_entphn";
-> >>
-> >
-> > We normally don't list specific boards here, since it's hard to
-> > keep up.
-> Thanks - removed specific boards from file and moved the cygnus.txt file 
-> to devicetree/bindings/arm/bcm/cygnus.txt in next version.  This seems 
-> to be like the appropriate place to put this document. We will need to 
-> add back in board specific bindings when ALSA support is added.  But 
-> that will be a later commit to deal with.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I believe most new alsa drivers can now use the binding from
-Documentation/devicetree/bindings/sound/simple-card.txt
-so you should no longer need a board specific driver or binding
-for those.
+--Sig_/wB7uWC=j12.Gc4=u6tp6JC5
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-	Arnd
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUNT4DAAoJEMDTa8Ir7ZwV3/UP/1ekMQKQjNAWcU2ZXzItdyCA
+tPD4wctqBYM3wO7IN3LA0nua7eKDaFUtOh4Ui91RaoONaYLzIfNQ0W3rQMTwBvFj
+Koqb0VWmcJgJ6Y2pL6gxDm59nb1U4cfyBX5Bxbj3rAX6yPWPMfMAy8sipqF9uQ4i
+ugciIKD04jEMViDAb4yxFlmN1C2iYCnhWJrhiMSdM+XHfR6D7emvmSVDak5Iou3P
+90FDB1oG6oimtQ92xgv2kaoAeGzhpzXS5iSo2XQmIQJTAFqIqGkNstFWTzM6J6QP
+ES9jHApz8kGba7X6X/qzzJ3qD15kH04NDHUNInl+fp3msiXQ7QQRH82cHiwADtC0
+KIVpRS0cLmQE6E2652wqi3UP045ZH6c+CfUrWw19OBQ18FGZg9BG00F78+OY51Oq
+zxUez70ZCMe0fxPib94IfOFx+CJX3MVU1RI3IT1zhD5S1OO6rgZZqOv5Rv5gsQn5
+RcYVt+CbAtJS+byWA0hCrddAkhv4m/dRarB2rx53kxA3O7jfLVTxIfGicThiChtH
+O88xQkZnuLvALsG7vAgKV7XOcLUNG+Z8cOpqKFek6D7rse8RTHC5t9AnHcBqC5k+
+OsbDAfvBfhlPWQl8Q8hGniOveUEHhP7gIt/p5YhZex4Ph8zEiVgw/mgk7HcwpqCS
++RzSSggnEXrAcOTOjR+a
+=fDEa
+-----END PGP SIGNATURE-----
+
+--Sig_/wB7uWC=j12.Gc4=u6tp6JC5--
