@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944AbaJHOtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:49:12 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:60454 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035AbaJHOtK (ORCPT
+	id S1756996AbaJHOuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:50:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33758 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756227AbaJHOuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:49:10 -0400
-Message-ID: <1412779746.11091.176.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: randconfig build error with next-20141008, in
- drivers/net/ethernet/mellanox/mlx4/en_tx.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, amirv@mellanox.com,
-        netdev <netdev@vger.kernel.org>
-Date: Wed, 08 Oct 2014 07:49:06 -0700
-In-Reply-To: <CA+r1ZhiU6uzE-CQcTJoH2JxrS06H+5Paaofz+3Ugzon02mxD8Q@mail.gmail.com>
-References: <CA+r1ZhiU6uzE-CQcTJoH2JxrS06H+5Paaofz+3Ugzon02mxD8Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 8 Oct 2014 10:50:04 -0400
+Date: Wed, 8 Oct 2014 16:49:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 10/11] perf/x86/intel: Support task events with Intel CQM
+Message-ID: <20141008144957.GK10832@worktop.programming.kicks-ass.net>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-11-git-send-email-matt@console-pimps.org>
+ <20141008110743.GF4750@worktop.programming.kicks-ass.net>
+ <20141008121044.GS14343@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008121044.GS14343@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-08 at 07:42 -0700, Jim Davis wrote:
-> Building with the attached random configuration file,
+On Wed, Oct 08, 2014 at 01:10:44PM +0100, Matt Fleming wrote:
+> Ah, interesting.
 > 
-> drivers/net/ethernet/mellanox/mlx4/en_tx.c: In function ‘mlx4_en_process_tx_cq’:
-> drivers/net/ethernet/mellanox/mlx4/en_tx.c:395:27: error: ‘struct netdev_queue’
-> has no member named ‘dql’
->   prefetchw(&ring->tx_queue->dql.limit);
->                            ^
-> drivers/net/ethernet/mellanox/mlx4/en_tx.c: In function ‘mlx4_en_xmit’:
-> drivers/net/ethernet/mellanox/mlx4/en_tx.c:740:27: error: ‘struct netdev_queue’
-> has no member named ‘dql’
->   prefetchw(&ring->tx_queue->dql);
->                            ^
-> make[5]: *** [drivers/net/ethernet/mellanox/mlx4/en_tx.o] Error 1
+> I dropped the internal scheduling because I preferred the idea of
+> "failing fast", in the sense that if we can't schedule multiple events
+> simultaneously because they conflict, we should report that to the user
+> at event init time, rather than trying to manage the conflict ourselves,
+> with the resultant loss of accuracy.
 
-Thanks for the report, I'll take care of this.
+The thing is, with multiplexing you cannot fail at event creation time
+anyhow. The only time where you can 'fail' is when programming the PMU,
+when its full its full.
 
-
-
-
+Those that don't fit, get to wait their turn.
