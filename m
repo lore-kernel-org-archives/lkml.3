@@ -1,79 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738AbaJHIH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 04:07:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:58462 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688AbaJHIHQ (ORCPT
+	id S1754826AbaJHIKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 04:10:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34824 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439AbaJHIKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:07:16 -0400
-Date: Wed, 8 Oct 2014 10:07:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: svaidy@linux.vnet.ibm.com, rjw@rjwysocki.net, lizefan@huawei.com,
-        anton@samba.org, tj@kernel.org, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks
- hotplug invariant
-Message-ID: <20141008080706.GC10832@worktop.programming.kicks-ass.net>
-References: <20141008070739.1170.33313.stgit@preeti.in.ibm.com>
+	Wed, 8 Oct 2014 04:10:14 -0400
+Date: Wed, 8 Oct 2014 01:09:48 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-5f1d919a8ca15f450c749227bc5e2e18f3cbfdb4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <5422917E0200007800038081@mail.emea.novell.com>
+References: <5422917E0200007800038081@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Improve cmpxchg8b_emu.S
+Git-Commit-ID: 5f1d919a8ca15f450c749227bc5e2e18f3cbfdb4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20141008070739.1170.33313.stgit@preeti.in.ibm.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 12:37:40PM +0530, Preeti U Murthy wrote:
-> There are two masks associated with cpusets. The cpus/mems_allowed
-> and effective_cpus/mems. On the legacy hierarchy both these masks
-> are consistent with each other. This is the intersection of their
-> value and the currently active cpus. This means that we destroy the
-> original values set in these masks on each cpu/mem hot unplug operation.
-> 	As a consequence when we hot plug back the cpus/mems, the tasks
-> no longer run on them and performance degrades, inspite of having
-> resources to run on.
-> 
-> This effect is not seen in the default hierarchy since the
-> allowed and effective masks are distinctly maintained.
-> allowed masks are never touched once configured and effective masks
-> alone are hotplug variant.
-> 
-> This patch replicates the above design even for the legacy hierarchy,
-> so that:
-> 
-> 1. Tasks always run on the cpus/memory nodes that they are allowed to run on
-> as long as they are online. The allowed masks are hotplug invariant.
-> 
-> 2. When all cpus/memory nodes in a cpuset are hot unplugged out, the tasks
-> are moved to their nearest ancestor which has resources to run on.
-> 
-> There were discussions earlier around this issue:
-> https://lkml.org/lkml/2012/5/4/265
-> http://thread.gmane.org/gmane.linux.kernel/1250097/focus=1252133
-> 
-> The argument against making the allowed masks hotplug invariant was that
-> hotplug is destructive and hence cpusets cannot expect to regain resources
-> that have gone through a hotplug operation by the user.
-> 
-> But on powerpc we do smt mode switch to suit the workload running.
-> We therefore need to keep track of the original cpuset configuration
-> so as to make use of them when they are back online due to a mode switch.
-> Moreover there is no real harm in keeping the allowed masks invariant
-> on hotplug since the effective masks will anyway keep track of the
-> online cpus. In fact there are use cases which need the cpuset's
-> original configuration to be retained. The v2 of cgroup design therefore
-> does not overwrite this configuration.
-> 
+Commit-ID:  5f1d919a8ca15f450c749227bc5e2e18f3cbfdb4
+Gitweb:     http://git.kernel.org/tip/5f1d919a8ca15f450c749227bc5e2e18f3cbfdb4
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 24 Sep 2014 08:40:14 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 8 Oct 2014 10:05:49 +0200
 
-I still completely hate all that.. It basically makes cpusets useless,
-they no longer guarantee anything, it makes then an optional placement
-hint instead.
+x86: Improve cmpxchg8b_emu.S
 
-You also break long standing behaviour.
+- don't include unneeded headers
+- drop redundant entry point label
+- complete unwind annotations
+- use .L prefix on local labels to not clutter the symbol table
 
-Also, power is insane if it needs/uses hotplug for operational crap
-like that.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/5422917E0200007800038081@mail.emea.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/lib/cmpxchg8b_emu.S | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/lib/cmpxchg8b_emu.S b/arch/x86/lib/cmpxchg8b_emu.S
+index 828cb71..b4807fce 100644
+--- a/arch/x86/lib/cmpxchg8b_emu.S
++++ b/arch/x86/lib/cmpxchg8b_emu.S
+@@ -7,11 +7,8 @@
+  */
+ 
+ #include <linux/linkage.h>
+-#include <asm/alternative-asm.h>
+-#include <asm/frame.h>
+ #include <asm/dwarf2.h>
+ 
+-
+ .text
+ 
+ /*
+@@ -30,27 +27,28 @@ CFI_STARTPROC
+ # set the whole ZF thing (caller will just compare
+ # eax:edx with the expected value)
+ #
+-cmpxchg8b_emu:
+-	pushfl
++	pushfl_cfi
+ 	cli
+ 
+ 	cmpl  (%esi), %eax
+-	jne not_same
++	jne .Lnot_same
+ 	cmpl 4(%esi), %edx
+-	jne half_same
++	jne .Lhalf_same
+ 
+ 	movl %ebx,  (%esi)
+ 	movl %ecx, 4(%esi)
+ 
+-	popfl
++	CFI_REMEMBER_STATE
++	popfl_cfi
+ 	ret
+ 
+- not_same:
++	CFI_RESTORE_STATE
++.Lnot_same:
+ 	movl  (%esi), %eax
+- half_same:
++.Lhalf_same:
+ 	movl 4(%esi), %edx
+ 
+-	popfl
++	popfl_cfi
+ 	ret
+ 
+ CFI_ENDPROC
