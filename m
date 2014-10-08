@@ -1,54 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084AbaJHVyg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:54:36 -0400
-Received: from relay02.alfahosting-server.de ([109.237.142.238]:39120 "EHLO
-	relay02.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753782AbaJHVyf (ORCPT
+	id S1756203AbaJHVym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:54:42 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:40784 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756107AbaJHVyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:54:35 -0400
-X-Spam-DCC: : 
-Date: Wed, 8 Oct 2014 23:54:27 +0200
-From: Richard Leitner <me@g0hl1n.net>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        richard.leitner@skidata.com
-Subject: [PATCH] serio: avoid negative serio device numbers
-Message-ID: <20141008235427.55d0963f@frodo>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19486/Wed Oct  8 18:37:03 2014
+	Wed, 8 Oct 2014 17:54:38 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Cc: thierry.reding@gmail.com, Mark Brown <broonie@kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] drivers/pinctrl: Add the concept of an "init" state
+Date: Wed,  8 Oct 2014 14:54:14 -0700
+Message-Id: <1412805254-18099-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Leitner <richard.leitner@skidata.com>
+For pinctrl the "default" state is applied to pins before the driver's
+probe function is called.  This is normally a sensible thing to do,
+but in some cases can cause problems.  That's because the pins will
+change state before the driver is given a chance to program how those
+pins should behave.
 
-Fix the format string for serio device name generation to avoid negative
-device numbers when the id exceeds the maximum signed integer value.
+As an example you might have a regulator that is controlled by a PWM
+(output high = high voltage, output low = low voltage).  The firmware
+might leave this pin as driven high.  If we allow the driver core to
+reconfigure this pin as a PWM pin before the PWM's probe function runs
+then you might end up running at too low of a voltage while we probe.
 
-Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+Let's introudce a new "init" state.  If this is defined we'll set
+pinctrl to this state before probe and then "default" after probe
+(unless the driver explicitly changed states already).
+
+An alternative idea that was thought of was to use the pre-existing
+"sleep" or "idle" states and add a boolean property that we should
+start in that mode.  This was not done because the "init" state is
+needed for correctness and those other states are only present (and
+only transitioned in to and out of) when (optional) power management
+is enabled.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/input/serio/serio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Changes in v2:
+- Added comment to pinctrl_init_done() as per Linus W.
 
-diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
-index b29134d..d399b8b 100644
---- a/drivers/input/serio/serio.c
-+++ b/drivers/input/serio/serio.c
-@@ -524,8 +524,8 @@ static void serio_init_port(struct serio *serio)
- 	spin_lock_init(&serio->lock);
- 	mutex_init(&serio->drv_mutex);
- 	device_initialize(&serio->dev);
--	dev_set_name(&serio->dev, "serio%ld",
--			(long)atomic_inc_return(&serio_no) - 1);
-+	dev_set_name(&serio->dev, "serio%lu",
-+		     (unsigned long)atomic_inc_return(&serio_no) - 1);
- 	serio->dev.bus = &serio_bus;
- 	serio->dev.release = serio_release_port;
- 	serio->dev.groups = serio_device_attr_groups;
+ drivers/base/dd.c                     |  2 ++
+ drivers/base/pinctrl.c                | 15 +++++++++++++--
+ drivers/pinctrl/core.c                | 32 ++++++++++++++++++++++++++++++++
+ include/linux/pinctrl/consumer.h      |  6 ++++++
+ include/linux/pinctrl/devinfo.h       |  4 ++++
+ include/linux/pinctrl/pinctrl-state.h |  8 ++++++++
+ 6 files changed, 65 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index cdc779c..e2a15b2 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -308,6 +308,8 @@ static int really_probe(struct device *dev, struct device_driver *drv)
+ 			goto probe_failed;
+ 	}
+ 
++	pinctrl_init_done(dev);
++
+ 	driver_bound(dev);
+ 	ret = 1;
+ 	pr_debug("bus: '%s': %s: bound device %s to driver %s\n",
+diff --git a/drivers/base/pinctrl.c b/drivers/base/pinctrl.c
+index 5fb74b4..0762975 100644
+--- a/drivers/base/pinctrl.c
++++ b/drivers/base/pinctrl.c
+@@ -42,9 +42,20 @@ int pinctrl_bind_pins(struct device *dev)
+ 		goto cleanup_get;
+ 	}
+ 
+-	ret = pinctrl_select_state(dev->pins->p, dev->pins->default_state);
++	dev->pins->init_state = pinctrl_lookup_state(dev->pins->p,
++					PINCTRL_STATE_INIT);
++	if (IS_ERR(dev->pins->init_state)) {
++		/* Not supplying this state is perfectly legal */
++		dev_dbg(dev, "no init pinctrl state\n");
++
++		ret = pinctrl_select_state(dev->pins->p,
++					   dev->pins->default_state);
++	} else {
++		ret = pinctrl_select_state(dev->pins->p, dev->pins->init_state);
++	}
++
+ 	if (ret) {
+-		dev_dbg(dev, "failed to activate default pinctrl state\n");
++		dev_dbg(dev, "failed to activate initial pinctrl state\n");
+ 		goto cleanup_get;
+ 	}
+ 
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index e4f6551..48cd3fc 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -1240,6 +1240,38 @@ int pinctrl_force_default(struct pinctrl_dev *pctldev)
+ }
+ EXPORT_SYMBOL_GPL(pinctrl_force_default);
+ 
++/**
++ * pinctrl_init_done() - tell pinctrl probe is done
++ *
++ * We'll use this time to switch the pins from "init" to "default" unless the
++ * driver selected some other state.
++ *
++ * @dev: device to that's done probing
++ */
++int pinctrl_init_done(struct device *dev)
++{
++	struct dev_pin_info *pins = dev->pins;
++	int ret;
++
++	if (!pins)
++		return 0;
++
++	if (IS_ERR(pins->init_state))
++		return 0; /* No such state */
++
++	if (pins->p->state != pins->init_state)
++		return 0; /* Not at init anyway */
++
++	if (IS_ERR(pins->default_state))
++		return 0; /* No default state */
++
++	ret = pinctrl_select_state(pins->p, pins->default_state);
++	if (ret)
++		dev_err(dev, "failed to activate default pinctrl state\n");
++
++	return ret;
++}
++
+ #ifdef CONFIG_PM
+ 
+ /**
+diff --git a/include/linux/pinctrl/consumer.h b/include/linux/pinctrl/consumer.h
+index 18eccef..b3bf5785 100644
+--- a/include/linux/pinctrl/consumer.h
++++ b/include/linux/pinctrl/consumer.h
+@@ -39,6 +39,7 @@ extern int pinctrl_select_state(struct pinctrl *p, struct pinctrl_state *s);
+ 
+ extern struct pinctrl * __must_check devm_pinctrl_get(struct device *dev);
+ extern void devm_pinctrl_put(struct pinctrl *p);
++extern int pinctrl_init_done(struct device *dev);
+ 
+ #ifdef CONFIG_PM
+ extern int pinctrl_pm_select_default_state(struct device *dev);
+@@ -111,6 +112,11 @@ static inline void devm_pinctrl_put(struct pinctrl *p)
+ {
+ }
+ 
++static inline int pinctrl_init_done(struct device *dev)
++{
++	return 0;
++}
++
+ static inline int pinctrl_pm_select_default_state(struct device *dev)
+ {
+ 	return 0;
+diff --git a/include/linux/pinctrl/devinfo.h b/include/linux/pinctrl/devinfo.h
+index 281cb91..200c9d1 100644
+--- a/include/linux/pinctrl/devinfo.h
++++ b/include/linux/pinctrl/devinfo.h
+@@ -24,10 +24,14 @@
+  * struct dev_pin_info - pin state container for devices
+  * @p: pinctrl handle for the containing device
+  * @default_state: the default state for the handle, if found
++ * @init_state: the state at probe time, if found
++ * @sleep_state: the state at suspend time, if found
++ * @idle_state: the state at idle (runtime suspend) time, if found
+  */
+ struct dev_pin_info {
+ 	struct pinctrl *p;
+ 	struct pinctrl_state *default_state;
++	struct pinctrl_state *init_state;
+ #ifdef CONFIG_PM
+ 	struct pinctrl_state *sleep_state;
+ 	struct pinctrl_state *idle_state;
+diff --git a/include/linux/pinctrl/pinctrl-state.h b/include/linux/pinctrl/pinctrl-state.h
+index b5919f8..2307351 100644
+--- a/include/linux/pinctrl/pinctrl-state.h
++++ b/include/linux/pinctrl/pinctrl-state.h
+@@ -9,6 +9,13 @@
+  *	hogs to configure muxing and pins at boot, and also as a state
+  *	to go into when returning from sleep and idle in
+  *	.pm_runtime_resume() or ordinary .resume() for example.
++ * @PINCTRL_STATE_INIT: normally the pinctrl will be set to "default"
++ *	before the driver's probe() function is called.  There are some
++ *	drivers where that is not appropriate becausing doing so would
++ *	glitch the pins.  In those cases you can add an "init" pinctrl
++ *	which is the state of the pins before drive probe.  After probe
++ *	if the pins are still in "init" state they'll be moved to
++ *	"default".
+  * @PINCTRL_STATE_IDLE: the state the pinctrl handle shall be put into
+  *	when the pins are idle. This is a state where the system is relaxed
+  *	but not fully sleeping - some power may be on but clocks gated for
+@@ -20,5 +27,6 @@
+  *	ordinary .suspend() function.
+  */
+ #define PINCTRL_STATE_DEFAULT "default"
++#define PINCTRL_STATE_INIT "init"
+ #define PINCTRL_STATE_IDLE "idle"
+ #define PINCTRL_STATE_SLEEP "sleep"
 -- 
-2.1.1
+2.1.0.rc2.206.gedb03e5
 
