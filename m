@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022AbaJHQOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 12:14:32 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:50284 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbaJHQO3 (ORCPT
+	id S1751304AbaJHQPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:15:41 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:40738 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJHQPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:14:29 -0400
-X-IronPort-AV: E=Sophos;i="5.04,678,1406617200"; 
-   d="scan'208";a="47723715"
-Message-ID: <543562EB.8060300@broadcom.com>
-Date: Wed, 8 Oct 2014 09:14:35 -0700
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>
-Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
-References: <rjui@broadcom.com> <1412743127-4523-1-git-send-email-rjui@broadcom.com> <20141008112143.GT4609@sirena.org.uk>
-In-Reply-To: <20141008112143.GT4609@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 8 Oct 2014 12:15:40 -0400
+Message-ID: <1412784937.11091.185.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net: description of dma_cookie cause make xmldocs
+ warning
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Masanari Iida <standby24x7@gmail.com>, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org, dan.j.williams@intel.com
+Date: Wed, 08 Oct 2014 09:15:37 -0700
+In-Reply-To: <54355F66.6060204@cogentembedded.com>
+References: <1412780019-32475-1-git-send-email-standby24x7@gmail.com>
+	 <54355F66.6060204@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-10-08 at 19:59 +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 10/08/2014 06:53 PM, Masanari Iida wrote:
+> 
+> > In commit 7bced397510ab569d31de4c70b39e13355046387,
+> 
+>     Please also specify that commit's summary line in parens.
+
+Note that this information is useful for backports and bug fixes.
+
+In this particular case (documentation), there is no chance we'll
+backport this patch to any prior stable kernel
 
 
-On 10/8/2014 4:21 AM, Mark Brown wrote:
-> On Tue, Oct 07, 2014 at 09:38:47PM -0700, Ray Jui wrote:
->
->> The PL022 SPI driver maps the DMA RX buffer before the DMA TX buffer. In
->> most cases, the sequence of the mapping does not matter. But in cases
->> where TX and RX happen to use the same buffer, e.g., spidev, it causes
->> the cached TX data not written to memory, because the same memory has
->> been marked invalid when dma_map_sg on the RX buffer is called
->
-> This seems like it is a bug in spidev, using the same buffer simultaneously
-> for both directions isn't something I'd think would be expected to work
-> reliably unless it was explicitly mapped as bidirectional.
->
-Hi Mark,
-
-Thanks for the reply. It looks like you are also the maintainer of 
-spidev. In this case, could you please help to confirm that you expect 
-spidev to use separate buffers for TX and RX? If so, I can go ahead and 
-make the change in spidev.
-
-+ Grant
-
-Thanks,
-
-Ray
