@@ -1,138 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaJHTuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:50:46 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:59015 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754121AbaJHTup (ORCPT
+	id S1754783AbaJHTvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:51:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38370 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150AbaJHTve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:50:45 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Wed, 8 Oct 2014 20:49:55 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        x86@kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: i915.ko WC writes are slow after ea8596bb2d8d379
-Message-ID: <20141008194955.GF12897@nuc-i3427.alporthouse.com>
-References: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
- <20141008051059.65566251@as>
+	Wed, 8 Oct 2014 15:51:34 -0400
+Date: Wed, 8 Oct 2014 14:45:41 -0500
+From: Josh Cartwright <joshc@codeaurora.org>
+To: Nicolas Dechesne <nicolas.dechesne@linaro.org>
+Cc: Georgi Djakov <gdjakov@mm-sol.com>, Kumar Gala <galak@codeaurora.org>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, linux@arm.linux.org.uk,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        iivanov@mm-sol.com
+Subject: Re: [PATCH v2 3/3] ARM: dts: qcom: Add SDHC nodes for APQ8084
+ platform
+Message-ID: <20141008194541.GV868@joshc.qualcomm.com>
+References: <1409672443-4289-1-git-send-email-gdjakov@mm-sol.com>
+ <1409672443-4289-4-git-send-email-gdjakov@mm-sol.com>
+ <CAP71WjxYibPGBC=x4eA-Lmjg_Mc7cCB20VSvf59C_AW7PYNE=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141008051059.65566251@as>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAP71WjxYibPGBC=x4eA-Lmjg_Mc7cCB20VSvf59C_AW7PYNE=A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 05:10:59AM -0500, Chuck Ebbert wrote:
-> On Wed, 8 Oct 2014 10:03:36 +0100
-> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On Wed, Oct 08, 2014 at 09:18:44PM +0200, Nicolas Dechesne wrote:
+> Georgi,
 > 
-> > 
-> > I ran into a problem on a Sandybridge i5-2500s whilst measuring the
-> > performance of GTT write-combining access. I found subsequent runs were
-> > about 10-40x slower than the first. For example,
-> > 
-> > igt/gem_gtt_speed:
-> > 
-> > Time to read 16k through a GTT map:             325.285탎
-> > Time to write 16k through a GTT map:              4.729탎
-> > Time to clear 16k through a GTT map:              4.584탎
-> > Time to clear 16k through a cached GTT map:       1.342탎
-> > 
-> > on the second run became:
-> > 
-> > Time to read 16k through a GTT map:             332.148탎
-> > Time to write 16k through a GTT map:            209.411탎
-> > Time to clear 16k through a GTT map:             56.460탎
-> > Time to clear 16k through a cached GTT map:      50.897탎
-> > 
-> > Naively I would say that we lost the wc on our ioremap.
-> > /sys/kernel/debug/x86/pat_memtype_list remained the same across repeated
-> > runs.
-> > 
-> > A bisection pointed to 
-> > 
-> > commit ea8596bb2d8d37957f3e92db9511c50801689180
-> > Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > Date:   Thu Jul 18 20:47:53 2013 +0900
-> > 
-> >     kprobes/x86: Remove unused text_poke_smp() and text_poke_smp_batch() functions
-> > 
-> > of which the active ingredient was just
-> > 
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index b32ebf9..f4001e0 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -2334,7 +2334,6 @@ config HAVE_ATOMIC_IOMAP
-> >  
-> >  config HAVE_TEXT_POKE_SMP
-> >         bool
-> > -       select STOP_MACHINE if SMP
-> >  
-> >  config X86_DEV_DMA_OPS
-> >         bool
-> > 
-> > and adding that back into the current build, e.g.
+> On Tue, Sep 2, 2014 at 5:40 PM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+> > Enable support for the two SD host controllers on the APQ8084 platform
+> > by adding the required nodes to the DT files.
+> > On the IFC6540 board, the first controller is connected to the onboard
+> > eMMC and the second is connected to a micro-SD card slot.
 > 
-> Hmm, set_mtrr() uses stop_machine(). I wonder if your MTRRs are out of
-> sync and your results depend on which CPU the test runs on?
+> testing this set of patch on IFC6540, i noticed that not all
+> partitions from the eMMC are detected. booting [1] which is basically
+> 3.17-rc7 with a few additional patches, i can see the following
+> relevant mmc traces:
+> 
+> [    1.162587] mmc0: BKOPS_EN bit is not set
+> [    1.315357] mmc0: new HS200 MMC card at address 0001
+> [    1.318098] mmcblk0: mmc0:0001 SEM16G 14.6 GiB
+> [    1.330377] mmcblk0boot0: mmc0:0001 SEM16G partition 1 4.00 MiB
+> [    1.333652] mmcblk0boot1: mmc0:0001 SEM16G partition 2 4.00 MiB
+> [    1.345424] mmcblk0rpmb: mmc0:0001 SEM16G partition 3 4.00 MiB
+> [    1.358135]  mmcblk0: p1 p2 p3 p4 p5 p6 p7 p8 p9 p10 p11 p12 p13 p14 p15
+> [    1.365902]  mmcblk0boot1: p1
+> [    1.367833]  mmcblk0boot0: unknown partition table
 
-Indeed, this appears to be the explanation. (And here I thought PAT
-superseded mtrrs - i915.ko stopped trying to use assign an mtrr for its
-GTT quite a while ago.)
-
-Replacing the stop_machine there with on_each_cpu does the trick:
-
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index f961de9..c0e37d5 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -151,7 +151,7 @@ struct set_mtrr_data {
-  *
-  * Returns nothing.
-  */
--static int mtrr_rendezvous_handler(void *info)
-+static void mtrr_rendezvous_handler(void *info)
- {
-        struct set_mtrr_data *data = info;
- 
-@@ -174,7 +174,6 @@ static int mtrr_rendezvous_handler(void *info)
-        } else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
-                mtrr_if->set_all();
-        }
--       return 0;
- }
- 
- static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-@@ -228,7 +227,7 @@ set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type typ
-                                      .smp_type = type
-                                    };
- 
--       stop_machine(mtrr_rendezvous_handler, &data, cpu_online_mask);
-+       on_each_cpu_mask(cpu_online_mask, mtrr_rendezvous_handler, &data, true);
- }
- 
- static void set_mtrr_from_inactive_cpu(unsigned int reg, unsigned long base,
-@@ -240,8 +239,7 @@ static void set_mtrr_from_inactive_cpu(unsigned int reg, unsigned long base,
-                                      .smp_type = type
-                                    };
- 
--       stop_machine_from_inactive_cpu(mtrr_rendezvous_handler, &data,
--                                      cpu_callout_mask);
-+       on_each_cpu_mask(cpu_callout_mask, mtrr_rendezvous_handler, &data, true);
- }
- 
- /**
+This has bitten me more times than I care to admit, but have you checked
+that you've set CONFIG_MMC_BLOCK_MINORS higher than 16?  Perhaps we
+should be doing that in qcom_defconfig if we aren't already.
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
