@@ -1,131 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190AbaJHMlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:41:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43608 "EHLO mga09.intel.com"
+	id S1756343AbaJHMmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:42:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47887 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753800AbaJHMlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:41:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,677,1406617200"; 
-   d="asc'?scan'208";a="585329610"
-Date: Wed, 8 Oct 2014 17:37:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation
- for the dma controller API
-Message-ID: <20141008120757.GT1638@intel.com>
-References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>
- <1411746035-15882-2-git-send-email-maxime.ripard@free-electrons.com>
- <7725507.nuHj4C7OxF@avalon>
- <5433D9AF.8020508@atmel.com>
- <20141007145226.GA17925@lukather>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cW+P/jduATWpL925"
-Content-Disposition: inline
-In-Reply-To: <20141007145226.GA17925@lukather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753509AbaJHMmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 08:42:13 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] modules, lock around setting of MODULE_STATE_UNFORMED
+Date: Wed,  8 Oct 2014 08:42:03 -0400
+Message-Id: <1412772123-18522-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+A panic was seen in the following sitation.
 
---cW+P/jduATWpL925
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There are two threads running on the system. The first thread is a system
+monitoring thread that is reading /proc/modules. The second thread is
+loading and unloading a module (in this example I'm using my simple
+dummy-module.ko).  Note, in the "real world" this occurred with the qlogic
+driver module.
 
-On Tue, Oct 07, 2014 at 04:52:26PM +0200, Maxime Ripard wrote:
-> > >> +Moreover, some DMA controllers, whenever the RAM is involved, can
-> > >=20
-> > > s/the RAM is involved/RAM is used as a source or destination/ ?
-> > >=20
-> > >> +group the reads or writes in memory into a buffer, so instead of
-> > >> +having a lot of small memory accesses, which is not really efficien=
-t,
-> > >> +you'll get several bigger transfers. This is done using a parameter
-> > >> +called the burst size, that defines how many single reads/writes it=
-'s
-> > >> +allowed to do in a single clock cycle.
-> >=20
-> > Yes, here "single" word is used for different concepts and can have
-> > several meanings. We usually make the difference between "single"
-> > accesses and "burst" accesses.
->=20
-> Which was kind of what I was explaining, but it was probably not clear
-> enough.
-The burst can be in multiple clock cycles as well, so any reference to
-clocks may not be right across various dma controllers.
+When doing this, the following panic occurred:
 
-Generically burst size is defined as a chunk of data transfer dma
-controller would perform in single shot (may happen in 1 or multiple clock
-cycles). The dma controller won't break this.
+ ------------[ cut here ]------------
+ kernel BUG at kernel/module.c:3739!
+ invalid opcode: 0000 [#1] SMP
+ Modules linked in: binfmt_misc sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw igb gf128mul glue_helper iTCO_wdt iTCO_vendor_support ablk_helper ptp sb_edac cryptd pps_core edac_core shpchp i2c_i801 pcspkr wmi lpc_ich ioatdma mfd_core dca ipmi_si nfsd ipmi_msghandler auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm isci drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod [last unloaded: dummy_module]
+ CPU: 37 PID: 186343 Comm: cat Tainted: GF          O--------------   3.10.0+ #7
+ Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
+ task: ffff8807fd2d8000 ti: ffff88080fa7c000 task.ti: ffff88080fa7c000
+ RIP: 0010:[<ffffffff810d64c5>]  [<ffffffff810d64c5>] module_flags+0xb5/0xc0
+ RSP: 0018:ffff88080fa7fe18  EFLAGS: 00010246
+ RAX: 0000000000000003 RBX: ffffffffa03b5200 RCX: 0000000000000000
+ RDX: 0000000000001000 RSI: ffff88080fa7fe38 RDI: ffffffffa03b5000
+ RBP: ffff88080fa7fe28 R08: 0000000000000010 R09: 0000000000000000
+ R10: 0000000000000000 R11: 000000000000000f R12: ffffffffa03b5000
+ R13: ffffffffa03b5008 R14: ffffffffa03b5200 R15: ffffffffa03b5000
+ FS:  00007f6ae57ef740(0000) GS:ffff88101e7a0000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000404f70 CR3: 0000000ffed48000 CR4: 00000000001407e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  ffffffffa03b5200 ffff8810101e4800 ffff88080fa7fe70 ffffffff810d666c
+  ffff88081e807300 000000002e0f2fbf 0000000000000000 ffff88100f257b00
+  ffffffffa03b5008 ffff88080fa7ff48 ffff8810101e4800 ffff88080fa7fee0
+ Call Trace:
+  [<ffffffff810d666c>] m_show+0x19c/0x1e0
+  [<ffffffff811e4d7e>] seq_read+0x16e/0x3b0
+  [<ffffffff812281ed>] proc_reg_read+0x3d/0x80
+  [<ffffffff811c0f2c>] vfs_read+0x9c/0x170
+  [<ffffffff811c1a58>] SyS_read+0x58/0xb0
+  [<ffffffff81605829>] system_call_fastpath+0x16/0x1b
+ Code: 48 63 c2 83 c2 01 c6 04 03 29 48 63 d2 eb d9 0f 1f 80 00 00 00 00 48 63 d2 c6 04 13 2d 41 8b 0c 24 8d 50 02 83 f9 01 75 b2 eb cb <0f> 0b 66 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 e5 41
+ RIP  [<ffffffff810d64c5>] module_flags+0xb5/0xc0
+  RSP <ffff88080fa7fe18>
 
-This has a very special meaning wrt slave usages as it involves FIFO (not
-much of importance in memory copy ops where you want max burst for
-performance). DMA transfer should not push data more than FIFO capacity,
-ditto for pull as well.
+    Consider the two processes running on the system.
 
-Consider FIFO of 16 data items (beware not bytes), and burst being 8 and
-watermark 8. So we will transfer 8 then 8 and so on.. ensures FIFO is
-typically full or half.
+    CPU 0 (/proc/modules reader)
+    CPU 1 (loading/unloading module)
 
-> > >> +         + DMA_TERMINATE_ALL
-> > >> +           + Aborts all the pending and ongoing transfers on the
-> > >> +             channel
-> > >> +           + This command should operate synchronously on the chann=
-el,
-> > >> +             terminating right away all the channels
-> >=20
-> > Is it a strong requirement to "terminate right away" all the transfers
-> > on the channel? Must the ongoing transfer be stopped of can it ends its
-> > current chunk?
->=20
-> Since it's blocking, I guess it's fine to wait for the current chunk
-> to end as long as you block. But I'm not 100% sure on that. Russell? Vino=
-d?
-Typically terminate_all would be called in error or timeout scenario. So
-current transfer may not complete, so aborting right away would be the right
-approach
+    CPU 0 opens /proc/modules, and starts displaying data for each module by
+    traversing the modules list via fs/seq_file.c:seq_open() and
+    fs/seq_file.c:seq_read().  For each module in the modules list, seq_read
+    does
 
+            op->start()  <-- this is a pointer to m_start()
+            op->show()   <- this is a pointer to m_show()
+            op->stop()   <-- this is a pointer to m_stop()
 
---=20
-~Vinod
+    The m_start(), m_show(), and m_stop() module functions are defined in
+    kernel/module.c. The m_start() and m_stop() functions acquire and release
+    the module_mutex respectively.
 
---cW+P/jduATWpL925
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+    ie) When reading /proc/modules, the module_mutex is acquired and released
+    for each module.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+    m_show() is called with the module_mutex held.  It accesses the module
+    struct data and attempts to write out module data.  It is in this code
+    path that the above BUG_ON() warning is encountered, specifically m_show()
+    calls
 
-iQIcBAEBAgAGBQJUNSkdAAoJEHwUBw8lI4NHsHIP/0gbHJDsIFWy6rnnwCCbMLSf
-45NGuufD0gVXild03f6psY9J5wGO00vRWsmqEE7ICgHxfsdbdojM8qzyQoltu8aI
-K6YuTMh77D+S18F1m5XW1Ay45uZ3WZFFpma/1WzKJK5KRbNTZYCecUlEbW0FjqeT
-amurJRnAY4nWttGZML7XCFQ5FMKY3em4T8RAZsDQQlRXqqEkE7ummVBIabzyp/0+
-Yx0RMW9VpuYJ5WhgYulBxlINS4Bki94lDvuQasfBFHOwoJC8GVUd0qBIDRE2Zy1t
-NsUF7+8CYMqGQ3CY/st6yVhmE3ok/aaOrG/uU4Hd/Vnr1/fhaTeElcVhm+r/bHLK
-fKyeTW/yOYs+vd2aybuqat37ETBVMjd4ArTh2ZmmxB/UsRVTxizbkps3nbNUAJID
-8KBIG0r1rbHzggfv2VCGF3OiPpmeIiHe8eCnhwRayF/IwI0SJQW/qw3duMbLVqLy
-ZAbZ5FW7Fz1CBKUmn1CfWG/HnpHN8TT43mIOLSsi6Qw+iA4zcKdaUZ1hPdTSj3Wp
-ji5Kq6Se4rmNtChAw97an+ANIqKWlIXieLgY47wK2mykKqcg1kTDgpB1qAytQ/on
-oSpqZG1t75StfCZ/DaK4wKem6ibJ9xJJiNqJ3D7FJEPpBTBPTl8gHpncDUMOiuts
-bGBd+sxGEy2Pgu0yW9ij
-=piAP
------END PGP SIGNATURE-----
+    static char *module_flags(struct module *mod, char *buf)
+    {
+            int bx = 0;
 
---cW+P/jduATWpL925--
+            BUG_ON(mod->state == MODULE_STATE_UNFORMED);
+    ...
+
+    The other thread, CPU 1, in unloading the module calls the syscall
+    delete_module() defined in kernel/module.c.  The module_mutex is acquired
+    for a short time, and then released.  free_module() is called without the
+    module_mutex.  free_module() then sets mod->state = MODULE_STATE_UNFORMED,
+    also without the module_mutex.  Some additional code is called and then the
+    module_mutex is reacquired to remove the module from the modules list:
+
+        /* Now we can delete it from the lists */
+        mutex_lock(&module_mutex);
+        stop_machine(__unlink_module, mod, NULL);
+        mutex_unlock(&module_mutex);
+
+This is the sequence of events that leads to the panic.
+
+CPU 1 is removing dummy_module via delete_module().  It acquires the
+module_mutex, and then releases it.  CPU 1 has NOT set dummy_module->state to
+MODULE_STATE_UNFORMED yet.
+
+CPU 0, which is reading the /proc/modules, acquires the module_mutex and
+acquires a pointer to the dummy_module which is still in the modules list.
+CPU 0 calls m_show for dummy_module.  The check in m_show() for
+MODULE_STATE_UNFORMED passed for dummy_module even though it is being
+torn down.
+
+Meanwhile CPU 1, which has been continuing to remove dummy_module without
+holding the module_mutex, now calls free_module() and sets
+dummy_module->state to MODULE_STATE_UNFORMED.
+
+CPU 0 now calls module_flags() with dummy_module and ...
+
+static char *module_flags(struct module *mod, char *buf)
+{
+        int bx = 0;
+
+        BUG_ON(mod->state == MODULE_STATE_UNFORMED);
+
+and BOOM.
+
+Acquire and release the module_mutex lock around the setting of
+MODULE_STATE_UNFORMED in the teardown path, which should resolve the
+problem.
+
+Testing: In the unpatched kernel I can panic the system within 1 minute by
+doing
+
+while (true) do insmod dummy_module.ko; rmmod dummy_module.ko; done
+
+and
+
+while (true) do cat /proc/modules; done
+
+in separate terminals.
+
+In the patched kernel I was able to run just over one hour without seeing
+any issues.  I also verified the output of panic via sysrq-c and the output
+of /proc/modules looks correct for all three states for the dummy_module.
+
+        dummy_module 12661 0 - Unloading 0xffffffffa03a5000 (OE-)
+        dummy_module 12661 0 - Live 0xffffffffa03bb000 (OE)
+        dummy_module 14015 1 - Loading 0xffffffffa03a5000 (OE+)
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+---
+ kernel/module.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 65586ff..88cec1d 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1842,7 +1842,9 @@ static void free_module(struct module *mod)
+ 
+ 	/* We leave it in list to prevent duplicate loads, but make sure
+ 	 * that noone uses it while it's being deconstructed. */
++	mutex_lock(&module_mutex);
+ 	mod->state = MODULE_STATE_UNFORMED;
++	mutex_unlock(&module_mutex);
+ 
+ 	/* Remove dynamic debug info */
+ 	ddebug_remove_module(mod->name);
+-- 
+1.7.9.3
+
