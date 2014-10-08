@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaJHSGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:06:41 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:57050 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752504AbaJHSFT (ORCPT
+	id S1754321AbaJHSIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:08:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34772 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614AbaJHSIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:05:19 -0400
-Message-Id: <20141008180517.956366561@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Wed, 08 Oct 2014 14:03:43 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 2/5] ftracetest: Add ftrace basic testcases
-References: <20141008180341.252728944@goodmis.org>
+	Wed, 8 Oct 2014 14:08:20 -0400
+Date: Wed, 8 Oct 2014 20:08:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 11/11] perf/x86/intel: Perform rotation on Intel CQM RMIDs
+Message-ID: <20141008180814.GH4750@worktop.programming.kicks-ass.net>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-12-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftracetest-Add-ftrace-basic-testcases.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1411567455-31264-12-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+On Wed, Sep 24, 2014 at 03:04:15PM +0100, Matt Fleming wrote:
+> +	preempt_disable();
+> +	list_for_each_entry(entry, &cqm_rmid_limbo_lru, list) {
+> +		for_each_cpu(cpu, &cqm_cpumask) {
+> +			unsigned long *map;
+> +
+> +			map = &limbo_bitmap[cpu * BITS_TO_LONGS(nr_bits)];
+> +			set_bit(entry->rmid, map);
+> +		}
+> +	}
+> +
+> +	/*
+> +	 * Test whether an RMID is free for each package.
+> +	 */
+> +	smp_call_function_many(&cqm_cpumask, intel_cqm_stable, &info, true);
+> +
+> +	/*
+> +	 * Convert all cpu bitmaps into a single bitmap by ANDing all of
+> +	 * them together. If we've still got any bits set that indicates
+> +	 * an RMID is now unused on all cpus.
+> +	 */
+> +	bitmap_fill(free_bitmap, nr_bits);
+> +	for_each_cpu(cpu, &cqm_cpumask) {
+> +		unsigned long *map;
+> +
+> +		map = &limbo_bitmap[cpu * BITS_TO_LONGS(nr_bits)];
+> +		bitmap_and(free_bitmap, free_bitmap, map, nr_bits);
+> +	}
+> +
+> +	if (!bitmap_empty(free_bitmap, nr_bits)) {
+> +		int i = -1;
+> +
+> +		for (; i = find_next_bit(free_bitmap, nr_bits, i+1),
+> +			i < nr_bits;) {
+> +			entry = __rmid_entry(i);
+> +
+> +			list_del(&entry->list);	/* remove from limbo */
+> +
+> +			/*
+> +			 * The rotation RMID gets priority if it's
+> +			 * currently invalid. In which case, skip adding
+> +			 * the RMID to the the free lru.
+> +			 */
+> +			if (!__rmid_valid(intel_cqm_rotation_rmid)) {
+> +				intel_cqm_rotation_rmid = i;
+> +				continue;
+> +			}
+> +
+> +			/*
+> +			 * If we have groups waiting for RMIDs, hand
+> +			 * them one now.
+> +			 */
+> +			raw_spin_lock_irq(&cache_lock);
+> +			list_for_each_entry(event, &cache_groups,
+> +					    hw.cqm_groups_entry) {
+> +				if (__rmid_valid(event->hw.cqm_rmid))
+> +					continue;
+> +
+> +				intel_cqm_xchg_rmid(event, i);
+> +				entry = NULL;
+> +				break;
+> +			}
+> +			raw_spin_unlock_irq(&cache_lock);
+> +
+> +			if (!entry)
+> +				continue;
+> +
+> +			/*
+> +			 * Otherwise place it onto the free list.
+> +			 */
+> +			list_add_tail(&entry->list, &cqm_rmid_free_lru);
+> +		}
+> +	}
+> +
+> +	preempt_enable();
 
-Add ftrace basic testcases. This just checks ftrace debugfs
-interface works as it is designed.
-
-Link: http://lkml.kernel.org/p/20140922234252.23415.62897.stgit@kbuild-f20.novalocal
-
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- tools/testing/selftests/ftrace/test.d/00basic/basic1.tc | 3 +++
- tools/testing/selftests/ftrace/test.d/00basic/basic2.tc | 6 ++++++
- tools/testing/selftests/ftrace/test.d/00basic/basic3.tc | 8 ++++++++
- 3 files changed, 17 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
-new file mode 100644
-index 000000000000..9980ff14ae44
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic1.tc
-@@ -0,0 +1,3 @@
-+#!/bin/sh
-+# description: Basic trace file check
-+test -f README -a -f trace -a -f tracing_on -a -f trace_pipe
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-new file mode 100644
-index 000000000000..b04f30df0db3
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic2.tc
-@@ -0,0 +1,6 @@
-+#!/bin/sh
-+# description: Basic test for tracers
-+for t in `cat available_tracers`; do
-+  echo $t > current_tracer || exit 1
-+done
-+echo nop > current_tracer
-diff --git a/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-new file mode 100644
-index 000000000000..0c1a3a207636
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/00basic/basic3.tc
-@@ -0,0 +1,8 @@
-+#!/bin/sh
-+# description: Basic trace clock test
-+[ -f trace_clock ] || exit 1
-+for c in `cat trace_clock | tr  -d \[\]`; do
-+  echo $c > trace_clock || exit 1
-+  grep '\['$c'\]' trace_clock || exit 1
-+done
-+echo local > trace_clock
--- 
-2.0.1
-
-
+Why is all that under preempt_disable()?
