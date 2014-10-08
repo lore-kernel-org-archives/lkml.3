@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542AbaJHJN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:13:56 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:34535 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754434AbaJHJNa (ORCPT
+	id S1755582AbaJHJOz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:14:55 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:59113 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaJHJOw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:13:30 -0400
-X-IronPort-AV: E=Sophos;i="5.04,676,1406563200"; 
-   d="scan'208";a="36951470"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>
-Subject: [PATCH RFC] setns: return 0 directly if try to reassociate with current namespace
-Date: Wed, 8 Oct 2014 17:13:07 +0800
-Message-ID: <1412759587-21320-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.0
+	Wed, 8 Oct 2014 05:14:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.237]
+In-Reply-To: <20141006212232.GF18035@lee--X1>
+References: <1660410.j399mvljTo@lenovobook>
+	<20141006212232.GF18035@lee--X1>
+Date: Wed, 8 Oct 2014 11:14:50 +0200
+Message-ID: <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
+ for subnodes
+From: Johannes Pointner <johannes.pointner@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We could use setns to join the current ns,
-which did a lot of unnecessary work.
-This patch will check this senario and
-return 0 directly.
+2014-10-06 23:22 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
+> On Thu, 25 Sep 2014, Johannes Pointner wrote:
+>
+>> Add documentation for compatible property of subnodes.
+>>
+>> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
+>> ---
+>>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
+>>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
+>>  2 files changed, 12 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
+>> index 4f05d20..8ae3a3b 100644
+>> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
+>> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
+>> @@ -14,6 +14,9 @@ Required properties:
+>>  Optional properties:
+>>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
+>>
+>> +Required subnode properties:
+>> +- compatible: "ti,tps65217-pmic"
+>> +
+>>    The valid names for regulators are:
+>>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
+>>
+>> @@ -23,9 +26,11 @@ Example:
+>>
+>>       tps: tps@24 {
+>>               compatible = "ti,tps65217";
+>> +             reg = <0x24>;
+>>               ti,pmic-shutdown-controller;
+>>
+>> -             regulators {
+>> +             tps_pmic: regulators {
+>
+> How is the tps_pmic label used?
+>
+>> +                     compatible = "ti,tps65217-pmic";
+>
+> I'd like to see a '\n' here.
+I will add a newline here.
+>
+>>                       dcdc1_reg: dcdc1 {
+>>                               regulator-min-microvolt = <900000>;
+>>                               regulator-max-microvolt = <1800000>;
+>> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> index 5fb9279..f92f154 100644
+>> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
+>> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
+>>  Required properties:
+>>  - compatible: "ti,tps65217"
+>>  - reg: I2C slave address
+>> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
+>> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
+>> +
+>> +Required subnode properties:
+>> +- compatible: "ti,tps65217-bl"
+>>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
+>>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
+>>  - default-brightness: valid values: 0-100
+>>
+>> -Each regulator is defined using the standard binding for regulators.
+>>
+>>  Example:
+>>
+>>       tps: tps@24 {
+>>               reg = <0x24>;
+>>               compatible = "ti,tps65217";
+>
+> I'd like to see a '\n' here.
+I will add a newline here.
+>
+>> -             backlight {
+>> +             tps_bl: backlight {
+>
+> Same here.  Is this label used?
+>
+>> +                     compatible = "ti,tps65217-bl";
+>>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
+>>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
+>>                       default-brightness = <50>;
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
 
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
- kernel/nsproxy.c | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+Regarding the labels: The backlight label could be used like the
+following. I use it like this in my tests with the tilcdc panel driver
+which has a backlight support.
 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index ef42d0a..66eea63 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -236,6 +236,34 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
- 	ops = ei->ns_ops;
- 	if (nstype && (ops->type != nstype))
- 		goto out;
-+	switch (ops->type) {
-+	case CLONE_NEWIPC:
-+		if (ei->ns == tsk->nsproxy->ipc_ns)
-+			return 0;
-+		break;
-+	case CLONE_NEWNET:
-+		if (ei->ns == tsk->nsproxy->net_ns)
-+			return 0;
-+		break;
-+	case CLONE_NEWNS:
-+		if (ei->ns == tsk->nsproxy->mnt_ns)
-+			return 0;
-+		break;
-+	case CLONE_NEWPID:
-+		if (ei->ns == tsk->nsproxy->pid_ns_for_children)
-+			return 0;
-+		break;
-+	case CLONE_NEWUSER:
-+		if (ei->ns == current_user_ns())
-+			return 0;
-+		break;
-+	case CLONE_NEWUTS:
-+		if (ei->ns == tsk->nsproxy->uts_ns)
-+			return 0;
-+		break;
-+	default:
-+		goto out;
-+	}
- 
- 	new_nsproxy = create_new_namespaces(0, tsk, current_user_ns(), tsk->fs);
- 	if (IS_ERR(new_nsproxy)) {
--- 
-1.9.0
+    panel {
+        backlight = <&tps_bl>;
 
+        panel-info {
+            ac-bias        = <255>;
+            ac-bias-intrpt    = <0>;
+            dma-burst-sz    = <16>;
+            bpp        = <32>;
+            fdd        = <0x80>;
+            sync-edge    = <0>;
+            sync-ctrl    = <1>;
+            .
+            .
+            .
+
+I'm not sure if there could be actual use for the pmic label, but I
+thought if I add a label to backlight, I have to add one to the pmic
+too to keep it similar.
