@@ -1,39 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaJHHKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:10:17 -0400
-Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:39432 "EHLO
-	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753868AbaJHHKP (ORCPT
+	id S1753889AbaJHHQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:16:31 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:53100 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaJHHQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:10:15 -0400
-Date: Wed, 8 Oct 2014 02:10:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        mgorman@suse.de
-Subject: Re: [PATCH 5/5] mm: poison page struct
-In-Reply-To: <5434630C.3070006@intel.com>
-Message-ID: <alpine.DEB.2.11.1410080208410.9795@gentwo.org>
-References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com> <1412041639-23617-6-git-send-email-sasha.levin@oracle.com> <5434630C.3070006@intel.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 8 Oct 2014 03:16:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <xm26oatnk55g.fsf@sword-of-the-dawn.mtv.corp.google.com>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-5-git-send-email-vincent.guittot@linaro.org> <xm26oatnk55g.fsf@sword-of-the-dawn.mtv.corp.google.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 8 Oct 2014 09:16:09 +0200
+Message-ID: <CAKfTPtC5qf=zC-SP8dRV+o_KJoh8zgSSX=07D3r0MB6n2BgfFA@mail.gmail.com>
+Subject: Re: [PATCH 4/7] sched: Track group sched_entity usage contributions
+To: Benjamin Segall <bsegall@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 7 Oct 2014, Dave Hansen wrote:
+On 7 October 2014 22:15,  <bsegall@google.com> wrote:
+> Vincent Guittot <vincent.guittot@linaro.org> writes:
+>
+>> From: Morten Rasmussen <morten.rasmussen@arm.com>
+>>
+>> Adds usage contribution tracking for group entities. Unlike
+>> se->avg.load_avg_contrib, se->avg.utilization_avg_contrib for group
+>> entities is the sum of se->avg.utilization_avg_contrib for all entities on the
+>> group runqueue. It is _not_ influenced in any way by the task group
+>> h_load. Hence it is representing the actual cpu usage of the group, not
+>> its intended load contribution which may differ significantly from the
+>> utilization on lightly utilized systems.
+>
+>
+> Just noting that this version also has usage disappear immediately when
+> a task blocks, although it does what you probably want on migration.
 
-> Does this break slub's __cmpxchg_double_slab trick?  I thought it
-> required page->freelist and page->counters to be doubleword-aligned.
+Yes. For this patchset, we prefer to stay aligned with current
+implementation which only take into account runnable tasks in order
+cap the change of the behavior.
 
-Sure that would be required for it to work.
+IMHO, the use of blocked task in utilization_avg_contrib should be
+part of a dedicated patchset with dedicated non regression test
 
-> It's not like we really require this optimization when we're debugging,
-> but trying to use it will unnecessarily slow things down.
-
-Debugging by inserting more data into the page struct will already cause a
-significant slow down because the cache footprint of key functions will
-increase significantly. I would think that using the fallback functions
-is reasonable in this scenario,
+>
+> Also, group-ses don't ever use their running_avg_sum so it's kinda a
+> waste, but I'm not sure it's worth doing anything about.
+>
+>>
