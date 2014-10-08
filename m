@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaJHEtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 00:49:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41997 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaJHEtB (ORCPT
+	id S1754906AbaJHE71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 00:59:27 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51594 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539AbaJHE70 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 00:49:01 -0400
-Date: Tue, 7 Oct 2014 21:48:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 00/26] 3.16.5-stable review
-Message-ID: <20141008044803.GC26820@kroah.com>
-References: <20141007231848.487609292@linuxfoundation.org>
- <5434A5B1.9010408@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5434A5B1.9010408@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 8 Oct 2014 00:59:26 -0400
+Date: Wed, 8 Oct 2014 06:59:21 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Message-ID: <20141008065921.068385a6@ipc1.ka-ro>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C60B1@AcuExch.aculab.com>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+	<063D6719AE5E284EB5DD2968C1650D6D174C6025@AcuExch.aculab.com>
+	<20141007161702.7cd1e800@ipc1.ka-ro>
+	<063D6719AE5E284EB5DD2968C1650D6D174C60B1@AcuExch.aculab.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 07:47:13PM -0700, Guenter Roeck wrote:
-> On 10/07/2014 04:19 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.16.5 release.
-> >There are 26 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Thu Oct  9 23:18:40 UTC 2014.
-> >Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 136 pass: 136 fail: 0
-> Qemu tests:
-> 	total: 30 pass: 30 fail: 0
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
+Hi,
 
-Wonderful, thanks for testing all 3 of these and letting me know.
+David Laight wrote:
+> From: Lothar
+> > David Laight wrote:
+> > > From: Lothar Waßmann
+> > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> > > > introduced a regression for i.MX28. The swap_buffer() function doing
+> > > > the endian conversion of the received data on i.MX28 may access memory
+> > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> > > > does not copy those bytes, so that the last bytes of a packet may be
+> > > > filled with invalid data after swapping.
+> > > > This will likely lead to checksum errors on received packets.
+> > > > E.g. when trying to mount an NFS rootfs:
+> > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+> > > >
+> > > > Do the byte swapping and copying to the new skb in one go if
+> > > > necessary.
+> > >
+> > > ISTM that if you need to do the 'swap' you should copy the data regardless
+> > > of the length.
+> > >
+> > The swap function has to look at at most 3 bytes beyond the actual
+> > packet length. That is what the original swap_buffer() function does and
+> > what the new function swap_buffer2(), that does the endian swapping
+> > while copying to the new buffer, also does.
+> 
+> I understood the bug.
+> 
+> The point I was making is that if you have to do a read-write of the received
+> data (to byteswap it) then you might as well always copy it into a new skb that
+> is just big enough for the actual receive frame.
+> 
+I wanted to use the least intrusive solution.
 
-greg k-h
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
