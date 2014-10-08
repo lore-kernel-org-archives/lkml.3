@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763AbaJHWRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:17:01 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:14340 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228AbaJHWQ5 (ORCPT
+	id S1755362AbaJHWWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:22:12 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:40540 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829AbaJHWWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:16:57 -0400
-X-IronPort-AV: E=Sophos;i="5.04,680,1406617200"; 
-   d="scan'208";a="47604710"
-Message-ID: <5435B7D7.1030904@broadcom.com>
-Date: Wed, 8 Oct 2014 15:16:55 -0700
-From: Scott Branden <sbranden@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Wed, 8 Oct 2014 18:22:07 -0400
+Date: Wed, 8 Oct 2014 15:22:00 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Richard Leitner <me@g0hl1n.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        richard.leitner@skidata.com
+Subject: Re: [PATCH] serio: avoid negative serio device numbers
+Message-ID: <20141008222200.GH15198@dtor-ws>
+References: <20141008235427.55d0963f@frodo>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        "Mike Turquette" <mturquette@linaro.org>,
-        Alex Elder <elder@linaro.org>, "Rob Herring" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, <devicetree@vger.kernel.org>,
-        Ray Jui <rjui@broadcom.com>, <linux-kernel@vger.kernel.org>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        JD Zheng <jdzheng@broadcom.com>
-Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
- SoC
-References: <1412746025-11998-2-git-send-email-sbranden@broadcom.com> <10762659.VISiZ3vSSN@wuerfel> <543565DC.8010704@broadcom.com> <34012512.W8VifyXY4H@wuerfel>
-In-Reply-To: <34012512.W8VifyXY4H@wuerfel>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008235427.55d0963f@frodo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-10-08 11:12 AM, Arnd Bergmann wrote:
-> On Wednesday 08 October 2014 09:27:08 Scott Branden wrote:
->> On 14-10-08 06:28 AM, Arnd Bergmann wrote:
->>> On Wednesday 08 October 2014 05:27:24 Scott Branden wrote:
->>>>>
->>>>> I don't think you need per-board config options. The main option
->>>>> above should be enough.
->>>> This is not a per-board config option.  This is actually a per-SoC
->>>> uArchtecture selection.  More major uArchectures will be added to the
->>>> IPROC.  Will Change comment to "Support Broadcom Cygnus SoC"
->>>
->>> Ok, sounds fine, but remove ARCH_BCM_IPROC then. There should be
->>> no need for a three-level deep hierarchy (BCM -> IPROC -> CYGNUS)
->>>
->> I do not need a 3-deep hierarchy, I need a 2-deep hierarchy for IPROC
->> and CYGNUS (and future SoCs that have IPROC Architecture in common).  I
->> can move IPROC out of the mach-bcm directory if you like a create a new
->> directory?  But it looks like the purpose of mach-bcm is to consolidate
->> all Broadcom chipsets in it?
->
-> Yes, better leave it all in mach-bcm. You really shouldn't need much
-> code at all that is soc specific, so adding new directories is not
-> encouraged. We have some platforms that need no code at all, and on
-> arm64 that is required.
->
-> Isn't Northstar also IPROC? That one didn't seem to need the symbol.
->
-> Could you make ARCH_BCM_IPROC a silent symbol that is just selected
-> by each SoC family specific symbol?
-It looks like I will also be able to add Northstar under the 
-ARCH_BCM_IPROC.  This will be good momentum to cleaning up and 
-consolidate support going forward.
-I will change the Kconfig such that ARCH_BCM_5301X selects ARCH_BCM_IPROC.
+On Wed, Oct 08, 2014 at 11:54:27PM +0200, Richard Leitner wrote:
+> From: Richard Leitner <richard.leitner@skidata.com>
+> 
+> Fix the format string for serio device name generation to avoid negative
+> device numbers when the id exceeds the maximum signed integer value.
+> 
+> Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
 
-Thanks.
->
-> 	Arnd
->
+Applied, thank you.
 
+> ---
+>  drivers/input/serio/serio.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+> index b29134d..d399b8b 100644
+> --- a/drivers/input/serio/serio.c
+> +++ b/drivers/input/serio/serio.c
+> @@ -524,8 +524,8 @@ static void serio_init_port(struct serio *serio)
+>  	spin_lock_init(&serio->lock);
+>  	mutex_init(&serio->drv_mutex);
+>  	device_initialize(&serio->dev);
+> -	dev_set_name(&serio->dev, "serio%ld",
+> -			(long)atomic_inc_return(&serio_no) - 1);
+> +	dev_set_name(&serio->dev, "serio%lu",
+> +		     (unsigned long)atomic_inc_return(&serio_no) - 1);
+>  	serio->dev.bus = &serio_bus;
+>  	serio->dev.release = serio_release_port;
+>  	serio->dev.groups = serio_device_attr_groups;
+> -- 
+> 2.1.1
+> 
+
+-- 
+Dmitry
