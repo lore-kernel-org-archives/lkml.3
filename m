@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911AbaJHNDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:03:11 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:55420 "EHLO
+	id S1757095AbaJHNDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:03:54 -0400
+Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:55451 "EHLO
 	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144AbaJHNDH (ORCPT
+	with ESMTP id S1756520AbaJHNDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:03:07 -0400
+	Wed, 8 Oct 2014 09:03:11 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Maxime Ripard <maxime.ripard@free-electrons.com>,
         Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
@@ -17,9 +17,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
         Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v3 1/5] ARM: sunxi: Introduce Allwinner A80 support
-Date: Wed,  8 Oct 2014 21:02:52 +0800
-Message-Id: <1412773376-25212-2-git-send-email-wens@csie.org>
+Subject: [PATCH v3 3/5] ARM: dts: sun9i: Add A80 Optimus Board support
+Date: Wed,  8 Oct 2014 21:02:54 +0800
+Message-Id: <1412773376-25212-4-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1412773376-25212-1-git-send-email-wens@csie.org>
 References: <1412773376-25212-1-git-send-email-wens@csie.org>
@@ -27,47 +27,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A80 is a new Cortex octo-core A7/A15 big.LITTLE SoC.
-While it's processor cores and interconnecting bus are new, it
-re-uses many peripherals found in earlier Allwinner SoCs.
+The A80 Optimus Board is was launched with the Allwinner A80 SoC.
+It was jointly developed by Allwinner and Merrii.
+
+This board has a UART port, a JTAG connector, USB host ports, a USB
+3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
+4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
+jack, IR receiver, and additional GPIO headers.
+
+This patch adds only basic support.
 
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- arch/arm/mach-sunxi/Kconfig | 5 +++++
- arch/arm/mach-sunxi/sunxi.c | 9 +++++++++
- 2 files changed, 14 insertions(+)
+ arch/arm/boot/dts/Makefile              |  2 +
+ arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+)
+ create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 1aaa1e1..d04f84b 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -42,4 +42,9 @@ config MACH_SUN8I
- 	select MFD_SUN6I_PRCM
- 	select RESET_CONTROLLER
- 
-+config MACH_SUN9I
-+	bool "Allwinner (sun9i) SoCs support"
-+	default ARCH_SUNXI
-+	select ARM_GIC
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 14dbc6c..6e5474c 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -426,6 +426,8 @@ dtb-$(CONFIG_MACH_SUN7I) += \
+ 	sun7i-a20-pcduino3.dtb
+ dtb-$(CONFIG_MACH_SUN8I) += \
+ 	sun8i-a23-ippo-q8h-v5.dtb
++dtb-$(CONFIG_MACH_SUN9I) += \
++	sun9i-a80-optimus.dtb
+ dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
+ 	tegra20-iris-512.dtb \
+ 	tegra20-medcom-wide.dtb \
+diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+new file mode 100644
+index 0000000..f83abab
+--- /dev/null
++++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
+@@ -0,0 +1,66 @@
++/*
++ * Copyright 2014 Chen-Yu Tsai
++ *
++ * Chen-Yu Tsai <wens@csie.org>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This library is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This library is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ *     You should have received a copy of the GNU General Public
++ *     License along with this library; if not, write to the Free
++ *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
++ *     MA 02110-1301 USA
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
 +
- endif
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 42d4753..ba926b5 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -139,3 +139,12 @@ static const char * const sun8i_board_dt_compat[] = {
- DT_MACHINE_START(SUN8I_DT, "Allwinner sun8i (A23) Family")
- 	.dt_compat	= sun8i_board_dt_compat,
- MACHINE_END
++/dts-v1/;
++/include/ "sun9i-a80.dtsi"
 +
-+static const char * const sun9i_board_dt_compat[] = {
-+	"allwinner,sun9i-a80",
-+	NULL,
++/ {
++	model = "Merrii A80 Optimus Board";
++	compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
++
++	chosen {
++		bootargs = "earlyprintk console=ttyS0,115200";
++	};
++
++	soc {
++		uart0: serial@07000000 {
++			status = "okay";
++		};
++	};
 +};
-+
-+DT_MACHINE_START(SUN9I_DT, "Allwinner sun9i Family")
-+	.dt_compat	= sun9i_board_dt_compat,
-+MACHINE_END
 -- 
 2.1.1
 
