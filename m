@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaJHWrU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:47:20 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:12375 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751504AbaJHWrR (ORCPT
+	id S1755392AbaJHWsR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:48:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51522 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719AbaJHWsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:47:17 -0400
-From: Jerry Hoemann <jerry.hoemann@hp.com>
-To: akpm@linux-foundation.org, jeffrey.t.kirsher@intel.com,
-        kenhelias@firemail.de
-Cc: linux-kernel@vger.kernel.org, tmak@hp.com,
-        Jerry Hoemann <jerry.hoemann@hp.com>
-Subject: [RFC 0/1] fsnotify: next_i is freed during fsnotify_unmount_inodes.
-Date: Wed,  8 Oct 2014 16:47:13 -0600
-Message-Id: <1412808434-36030-1-git-send-email-jerry.hoemann@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <y>
-References: <y>
+	Wed, 8 Oct 2014 18:48:16 -0400
+Date: Wed, 8 Oct 2014 15:48:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] staging: gs_fpgaboot: Fix "Possible unnecessary
+ 'out of memory' message" checkpatch.pl warning
+Message-ID: <20141008224816.GA3583@kroah.com>
+References: <5433FA93.8000607@gmail.com>
+ <5433FB18.9000009@gmail.com>
+ <54340568.7090700@gmail.com>
+ <1412695842.2916.49.camel@joe-AO725>
+ <54340C70.9070505@gmail.com>
+ <54340CC8.8070903@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54340CC8.8070903@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 07, 2014 at 05:54:48PM +0200, Dzmitry Sledneu wrote:
+> Fix "Possible unnecessary 'out of memory' message" checkpatch.pl warning
+> 
+> Signed-off-by: Dzmitry Sledneu <dzmitry.sledneu@gmail.com>
+> 
+> ---
+>  drivers/staging/gs_fpgaboot/gs_fpgaboot.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+> index 9764a9a..0c18c4c 100644
+> --- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+> +++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+> @@ -295,10 +295,8 @@ static int gs_fpgaboot(void)
+>  	struct fpgaimage	*fimage;
+>  
+>  	fimage = kmalloc(sizeof(struct fpgaimage), GFP_KERNEL);
+> -	if (fimage == NULL) {
+> -		pr_err("No memory is available\n");
+> -		goto err_out;
+> -	}
+> +	if (!fimage)
+> +		return -ENOMEM;
+>  
+>  	err = gs_load_image(fimage, file);
+>  	if (err) {
+> @@ -340,7 +338,6 @@ err_out2:
+>  err_out1:
+>  	kfree(fimage);
+>  
+> -err_out:
+>  	return -1;
+>  
+>  }
 
-During file system stress testing on 3.10 and 3.12 based kernels,
-the umount command occasionally hung in fsnotify_unmount_inodes
-in the section of code:
-
-                spin_lock(&inode->i_lock);
-                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-                        spin_unlock(&inode->i_lock);
-                        continue;
-                }
-
-As this section of code holds the global inode_sb_list_lock, eventually
-the system hangs trying to acquire the lock.
-
-Multiple crash dumps showed:
-
-The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
-back at itself.  As this is not the value of list upon entry to the
-function, the kernel never exits the loop.
-
-To help narrow down problem, the call to list_del_init in inode_sb_list_del
-was changed to list_del.  This poisons the pointers in the i_sb_list
-and causes a kernel to panic if it transverse a freed inode.
-
-Subsequent stress testing paniced in fsnotify_unmount_inodes at the bottom
-of the list_for_each_entry_safe loop showing next_i had become free.
-
-We believe the root cause of the problem is that next_i is being freed during
-the window of time that the list_for_each_entry_safe loop temporarily releases
-inode_sb_list_lock to call fsnotify and fsnotify_inode_delete.
-
-The code in fsnotify_unmount_inodes attempts to prevent the freeing
-of inode and next_i by calling __iget.  However, the code doesn't
-do the __iget call on next_i
-	if i_count == 0 or
-	if i_state & (I_FREEING | I_WILL_FREE)
-
-
-The patch addresses this issue by advancing next_i in the above two
-cases until we either find a next_i which we can __iget or we reach
-the end of the list.  This makes the handling of next_i more closely
-match the handling of the variable "inode."
-
-The time to reproduce the hang is highly variable (from hours to days.)
-We ran the stress test on a 3.10 kernel with the proposed patch for a
-week without failure.
-
-
-
-Jerry Hoemann (1):
-  fsnotify: next_i is freed during fsnotify_unmount_inodes.
-
- fs/notify/inode_mark.c | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
-
--- 
-1.7.11.3
-
+Doesn't apply to my tree properly :(
