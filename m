@@ -1,67 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573AbaJHNiY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:38:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42897 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754812AbaJHNiX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:38:23 -0400
-Date: Wed, 8 Oct 2014 14:38:03 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
-Message-ID: <20141008133802.GO26140@arm.com>
-References: <5434AA24.7010600@huawei.com>
- <20141008091741.GC26140@arm.com>
- <20141008133147.GC5119@kroah.com>
+	id S1756608AbaJHNjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:39:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48333 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754367AbaJHNjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:39:33 -0400
+Message-ID: <54353E91.1040209@suse.cz>
+Date: Wed, 08 Oct 2014 15:39:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008133147.GC5119@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Valentin Rothberg <valentinrothberg@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kbuild@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        Stefan Hengelein <stefan.hengelein@fau.de>
+Subject: Re: [PATCH v8] checkkconfigsymbols.sh: reimplementation in python
+References: <1411222524-7850-1-git-send-email-valentinrothberg@gmail.com> <1412010341-13902-1-git-send-email-valentinrothberg@gmail.com> <542C1692.5060007@suse.cz> <CAD3Xx4Kg82ugtN0RHOQNeDPW5Y7ymzm03NycmESztsVA4bJy8w@mail.gmail.com>
+In-Reply-To: <CAD3Xx4Kg82ugtN0RHOQNeDPW5Y7ymzm03NycmESztsVA4bJy8w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
-> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
-> > On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
-> > > hi all,
-> > > ----------------------------------------
-> > > 
-> > > ref-cycles event is specially to Intel core, but can still used in arm architecture
-> > > with the wrong return value with 3.10 stable. for instance:
-> > > 
-> > >  perf stat -e ref-cycles sleep 1
-> > > 
-> > >  Performance counter stats for 'sleep 1':
-> > > 
-> > >   	0 ref-cycles
-> > > 
-> > >        1.002381916 seconds time elapsed
-> > > 
-> > > this patch fix the bug and make it return NOT SUPPORTED
-> > > distinctly.
-> > > 
-> > > In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
-> > > and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
-> > > besides we can not simply cherry-pick.
-> > 
-> > I thought I saw Greg pick this up the other day?
+On 2014-10-04 11:29, Valentin Rothberg wrote:
+> On Wed, Oct 1, 2014 at 4:58 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> On 2014-09-29 19:05, Valentin Rothberg wrote:
+>>> The scripts/checkkconfigsymbols.sh script searches Kconfig features
+>>> in the source code that are not defined in Kconfig. Such identifiers
+>>> always evaluate to false and are the source of various kinds of bugs.
+>>> However, the shell script is slow and it does not detect such broken
+>>> references in Kbuild and Kconfig files (e.g., ``depends on UNDEFINED´´).
+>>> Furthermore, it generates false positives. The script is also hard to
+>>> read and understand, and is thereby difficult to maintain.
+>>>
+>>> This patch replaces the shell script with an implementation in Python,
+>>> which:
+>>>     (a) detects the same bugs, but does not report previous false positives
+>>>     (b) additionally detects broken references in Kconfig and all
+>>>         non-Kconfig files, such as Kbuild, .[cSh], .txt, .sh, defconfig, etc.
+>>>     (c) is up to 75 times faster than the shell script
+>>>     (d) only checks files under version control ('git ls-files')
+>>>
+>>> The new script reduces the runtime on my machine (i7-2620M, 8GB RAM, SSD)
+>>> from 3m47s to 0m3s, and reports 912 broken references in Linux v3.17-rc1;
+>>> 424 additional reports of which 16 are located in Kconfig files,
+>>> 287 in defconfigs, 63 in ./Documentation, 1 in Kbuild.
+>>>
+>>> Moreover, we intentionally include references in comments, which have been
+>>> ignored until now. Such comments may be leftovers of features that have
+>>> been removed or renamed in Kconfig (e.g., ``#endif /* CONFIG_MPC52xx */´´).
+>>> These references can be misleading and should be removed or replaced.
+>>>
+>>> Note that the output format changed from (file list <tab> feature) to
+>>> (feature <tab> file list) as it simplifies the detection of the Kconfig
+>>> feature for long file lists.
+>>>
+>>> Signed-off-by: Valentin Rothberg <valentinrothberg@gmail.com>
+>>> Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+>>> Acked-by: Paul Bolle <pebolle@tiscali.nl>
+>>> ---
+>>> Changelog:
+>>> v2: Fix of regular expressions
+>>> v3: Changelog replacement, and add changes of v2
+>>> v4: Based on comments from Paul Bolle <pebolle@tiscali.nl>
+>>>   - Inclusion of all non-Kconfig files, such as .txt, .sh, etc.
+>>>   - Changes of regular expressions
+>>>   - Increases additional reports from 49 to 229 compared to v3
+>>>   - Change of output format from (file list <tab> feature) to
+>>>         (feature <tab> file list)
+>>> v5: Only analyze files under version control ('git ls-files')
+>>> v6: Cover features with numbers and small letters (e.g., 4xx)
+>>> v7: Add changes of v6 (lost 'git add') and filter FOO/BAR features
+>>> v8: Based on comments from Paul Bolle <pebolle@tiscali.nl>
+>>>   - Fix of [D]{,1}CONFIG_ regex to exclude false positives
+>>>   - Exclude ".log" files of analysis
+>>>   - Filter "XXX" feature
+>>> ---
+>>>  scripts/checkkconfigsymbols.py | 139 +++++++++++++++++++++++++++++++++++++++++
+>>>  scripts/checkkconfigsymbols.sh |  59 -----------------
+>>>  2 files changed, 139 insertions(+), 59 deletions(-)
+>>>  create mode 100644 scripts/checkkconfigsymbols.py
+>>>  delete mode 100755 scripts/checkkconfigsymbols.sh
+>>
+>> Please make the new file executable as well.
+>>
+>>
+>>> +    for gitfile in stdout.rsplit("\n"):
+>>> +        if ".git" in gitfile or "ChangeLog" in gitfile or \
+>>> +                ".log" in gitfile or os.path.isdir(gitfile):
+>>> +            continue
+>>
+>> Can you also skip arch/*/configs? A significant part of the output are
+>> defconfig files, but there is little value in reporting them. The stale
+>> options will go away automatically as soon as the defconfig is refreshed.
 > 
-> Yes, it's in 3.16.4, did I do something wrong by accepting it?
+> What do you mean by "refreshed"?
 
-Nah, it's a trivial patch that I struggle to get excited about. I'm just not
-sure why it's being sent again, after you already accepted it.
+Generated again with new Kconfig data.
 
-Will
+
+> And how often are they refreshed? I
+> think that reporting defconfigs helps to point to a problem, namely
+> that features are just not present anymore.
+
+Any given defconfig is outdated most of the time, so you could as well
+list them all :). In most of the cases, it does not matter though,
+thanks to the defaults in Kconfig files.
+
+Michal
