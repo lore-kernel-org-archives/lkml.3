@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaJHXMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:12:23 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:60708 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979AbaJHXMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:12:22 -0400
-Date: Wed, 8 Oct 2014 16:12:08 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Josh Boyer <jwboyer@fedoraproject.org>, torvalds@linuxfoundation.org
-Cc: Josh Cartwright <joshc@codeaurora.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: pinctrl-msm build error on Linus' tree
-Message-ID: <20141008231208.GB25134@roeck-us.net>
-References: <CA+5PVA4mO+BiTGvrRb7-MLZRV1iQKsmvaDifFLQiqZN1-b88RQ@mail.gmail.com>
+	id S1754984AbaJHXNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:13:37 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:50227
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754352AbaJHXNf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 19:13:35 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bernd Porr <mail@berndporr.me.uk>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: RE: [PATCH] staging: comedi: (regression) channel list must be set
+ for COMEDI_CMD ioctl
+Thread-Topic: [PATCH] staging: comedi: (regression) channel list must be set
+ for COMEDI_CMD ioctl
+Thread-Index: AQHP4wnpNYH9+4ZdNEyejQppx5vVCpwmzf7g
+Date: Wed, 8 Oct 2014 23:13:33 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825FDD84E@P3PWEX4MB008.ex4.secureserver.net>
+References: <1412780954-11299-1-git-send-email-abbotti@mev.co.uk>
+In-Reply-To: <1412780954-11299-1-git-send-email-abbotti@mev.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA4mO+BiTGvrRb7-MLZRV1iQKsmvaDifFLQiqZN1-b88RQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.5435C4D6.000A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 7
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 06:42:55PM -0400, Josh Boyer wrote:
-> We're hitting a build error on ARM with Linus' tree as of Linux
-> v3.17-2860-gef0625b70dac :
-> 
-> drivers/pinctrl/qcom/pinctrl-msm.c: In function 'msm_pinctrl_setup_pm_reset':
-> drivers/pinctrl/qcom/pinctrl-msm.c:875:4: error: implicit declaration
-> of function 'register_restart_handler'
-> [-Werror=implicit-function-declaration]
->     if (register_restart_handler(&pctrl->restart_nb))
->     ^
-> drivers/pinctrl/qcom/pinctrl-msm.c: In function 'msm_pinctrl_remove':
-> drivers/pinctrl/qcom/pinctrl-msm.c:949:2: error: implicit declaration
-> of function 'unregister_restart_handler'
-> [-Werror=implicit-function-declaration]
->   unregister_restart_handler(&pctrl->restart_nb);
->   ^
-> cc1: some warnings being treated as errors
-> 
-> Looking at the git logs it seems this was added via:
-> 
-> commit cf1fc187628913070c3e418ce0e205732435aa2f
-> Author: Josh Cartwright <joshc@codeaurora.org>
-> Date:   Tue Sep 23 15:59:53 2014 -0500
-> 
->     pinctrl: qcom: use restart_notifier mechanism for ps_hold
-> 
-> 
-> However, there is literally nothing else in the tree that calls or
-> provides those functions:
-> 
-> [jwboyer@vader linux]$ git grep unregister_restart_handler
-> drivers/pinctrl/qcom/pinctrl-msm.c:     unregister_restart_handler(&pctrl->resta
-> [jwboyer@vader linux]$
-> 
-> 
-> I'm rather confused.  How was this commit built and tested?
-> 
+On Wednesday, October 08, 2014 8:09 AM, Ian Abbott wrote:
+> `do_cmd_ioctl()`, the handler for the `COMEDI_CMD` ioctl can incorrectly
+> call the Comedi subdevice's `do_cmd()` handler with a NULL channel list
+> pointer.  This is a regression as the `do_cmd()` handler has never been
+> expected to deal with that, leading to a kernel OOPS when it tries to
+> dereference it.
+>
+> A NULL channel list pointer is allowed for the `COMEDI_CMDTEST` ioctl,
+> handled by `do_cmdtest_ioctl()` and the subdevice's `do_cmdtest()`
+> handler, but not for the `COMEDI_CMD` ioctl and its handlers.
+>
+> Both `do_cmd_ioctl()` and `do_cmdtest_ioctl()` call
+> `__comedi_get_user_chanlist()` to copy the channel list from user memory
+> into dynamically allocated kernel memory and check it for consistency.
+> That function currently returns 0 if the `user_chanlist` parameter
+> (pointing to the channel list in user memory) is NULL.  That's fine for
+> `do_cmdtest_ioctl()`, but `do_cmd_ioctl()` incorrectly assumes the
+> kernel copy of the channel list has been set-up correctly.
+>
+> Fix it by not allowing the `user_chanlist` parameter to be NULL in
+> `__comedi_get_user_chanlist()`, and only calling it from
+> `do_cmdtest_ioctl()` if the parameter is non-NULL.
+>
+> Thanks to Bernd Porr for reporting the bug via an initial patch sent
+> privately.
+>
+> Fixes: c6cd0eefb27b ("staging: comedi: comedi_fops: introduce __comedi_get_user_chanlist()")
+> Reported-by: Bernd Porr <mail@berndporr.me.uk>
+> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+> Cc: Bernd Porr <mail@berndporr.me.uk>
+> Cc: <stable@vger.kernel.org> # 3.15.y 3.16.y 3.17.y
+> ---
+>  drivers/staging/comedi/comedi_fops.c | 15 +++++++--------
+>  1 file changed, 7 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+> index 495969f..a9b7fe5 100644
+> --- a/drivers/staging/comedi/comedi_fops.c
+> +++ b/drivers/staging/comedi/comedi_fops.c
+> @@ -1462,10 +1462,6 @@ static int __comedi_get_user_chanlist(struct comedi_device *dev,
+>  	unsigned int *chanlist;
+>  	int ret;
+>  
+> -	/* user_chanlist could be NULL for do_cmdtest ioctls */
+> -	if (!user_chanlist)
+> -		return 0;
+> -
 
-Looks like the pinctrl tree did not include the merge with the immutable
-branch with the necessary infrastructure in its pull request to Linus :-(.
-As for how it was tested in the pinctrl tree, no idea. Maybe pinctrl-msm has
-some dependency which was missing in the pinctrl tree and came in through
-a different pull request.
+I think you need a check here to avoid a NULL pointer getting
+passed to the  memdup_user().
 
-For this to build, you'll need to merge
+	If (!user_chanlist || cmd->chanlist_len == 0)
+		return -EINVAL;
 
-git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git restart-handler-for-v3.18
+>  	chanlist = memdup_user(user_chanlist,
+>  			       cmd->chanlist_len * sizeof(unsigned int));
+>  	if (IS_ERR(chanlist))
+> @@ -1609,10 +1605,13 @@ static int do_cmdtest_ioctl(struct comedi_device *dev,
+>  
+>  	s = &dev->subdevices[cmd.subdev];
+>  
+> -	/* load channel/gain list */
+> -	ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
+> -	if (ret)
+> -		return ret;
+> +	/* user_chanlist can be NULL for COMEDI_CMDTEST ioctl */
+> +	if (user_chanlist) {
+> +		/* load channel/gain list */
+> +		ret = __comedi_get_user_chanlist(dev, s, user_chanlist, &cmd);
+> +		if (ret)
+> +			return ret;
+> +	}
+>
+>  	ret = s->do_cmdtest(dev, s, &cmd);
+ 
+The reset looks ok.
 
-which was supposed to be merged by all trees using it, to avoid exactly
-this problem (clk, power/restart, and watchdog are the other trees I am
-aware of).
 
-Best solution might be for Linus to pull the above tag directly, after
-screaming at me appropriately. Sorry, I thought we had this well covered.
+Side-note on mem_dupuser(). That function does a kmalloc to copy the
+user data to the kernel. Shouldn't we be freeing it when we are done with
+it?
 
-Guenter
+do_become_nonbusy() does a kfree(async->cmd.chanlist) which will free
+the memory for do_cmd_ioctl().
+
+But, do_cmdtest_ioctl() actually copies the user data into a local variable.
+I think we are missing a kfree() there.
+
+Regards,
+Hartley
+
