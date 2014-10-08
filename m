@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326AbaJHHS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:18:59 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:62655 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604AbaJHHS5 (ORCPT
+	id S1754296AbaJHHX6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:23:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59700 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaJHHX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:18:57 -0400
+	Wed, 8 Oct 2014 03:23:57 -0400
+Date: Wed, 8 Oct 2014 09:23:55 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@kernel.org>
+Subject: Re: PERF_EVENT_IOC_SET_FILTER has different values based on bitness
+Message-ID: <20141008072355.GA10832@worktop.programming.kicks-ass.net>
+References: <54347238.2060908@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
-References: <1412606822-3406-1-git-send-email-muth@cypress.com>
- <CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com> <405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 8 Oct 2014 16:18:36 +0900
-Message-ID: <CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
-To: Muthu Mani <muth@cypress.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54347238.2060908@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
->> -----Original Message-----
->> From: Alexandre Courbot [mailto:gnurou@gmail.com]
->> Sent: Tuesday, October 07, 2014 3:34 PM
->> To: Muthu Mani
->> Cc: Samuel Ortiz; Lee Jones; Wolfram Sang; Linus Walleij; Greg Kroah-
->> Hartman; linux-i2c@vger.kernel.org; linux-gpio@vger.kernel.org; linux-
->> usb@vger.kernel.org; Linux Kernel Mailing List; Rajaram Regupathy; Johan
->> Hovold
->> Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-
->> GPIO adapter
->>
->> On Mon, Oct 6, 2014 at 11:47 PM, Muthu Mani <muth@cypress.com> wrote:
->> > +
->> > +static int cy_gpio_direction_input(struct gpio_chip *chip,
->> > +                                       unsigned offset) {
->> > +       return 0;
->> > +}
->> > +
->> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
->> > +                                       unsigned offset, int value) {
->> > +       return 0;
->> > +}
->>
->> If that chip is capable of both output and input, shouldn't these functions be
->> implemented? I think this has already been pointed out in a previous version
->> but you did not reply.
->
-> Thanks for your inputs.
->
-> Only the GPIOs which are configured to be output GPIO can be set.
+On Tue, Oct 07, 2014 at 05:07:36PM -0600, David Ahern wrote:
+> 
+> 32-bit perf binaries are not able to set filters on 64-bit kernels.
+> 
+>    $ perf record -e  net:netif_receive_skb --filter 'name == "eth1"
+>    Error: failed to set filter with 25 (Inappropriate ioctl for device)
+> 
+> The reason is that the definition of PERF_EVENT_IOC_SET_FILTER contains a
+> pointer:
+> 
+> #define PERF_EVENT_IOC_SET_FILTER       _IOW('$', 6, char *)
+> 
+> the size of which of course differs for 32-bit and 64-bit. This has been
+> there since the original commit (6fb2915df7f07) back in 2009.
+> 
 
-In that case cy_gpio_set() should return an error for GPIOs which are
-not configured as outputs. Is that guaranteed by the current
-implementation?
+Should be fixed for a while now
 
-> The set operation would fail trying to set the input or unconfigured GPIOs.
-> In this version of driver, this support is not added, it can be introduced in future versions.
-> I will add a TODO note in the code.
+---
+commit b3f207855f57b9c8f43a547a801340bb5cbc59e5
+Author: Pawel Moll <pawel.moll@arm.com>
+Date:   Fri Jun 13 16:03:32 2014 +0100
 
-Argh, no TODO please. Actual code that will turn this code into a
-solid driver that can be merged.
+    perf: Handle compat ioctl
+    
+    When running a 32-bit userspace on a 64-bit kernel (eg. i386
+    application on x86_64 kernel or 32-bit arm userspace on arm64
+    kernel) some of the perf ioctls must be treated with special
+    care, as they have a pointer size encoded in the command.
+    
+    For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+    as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+    result the ioctl will fail returning -ENOTTY.
+    
+    This patch solves the problem by adding code fixing up the
+    size as compat_ioctl file operation.
+    
+    Reported-by: Drew Richardson <drew.richardson@arm.com>
+    Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+    Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+    Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+    Cc: Jiri Olsa <jolsa@redhat.com>
+    Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
+    Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-Can all GPIOs be set as input or output? If so, please implement
-cy_gpio_direction_*() and make sure that cy_gpio_set() behaves
-properly if a GPIO is not an output. If the input/output GPIOs are
-fixed, please make cy_gpio_direction_*() return an error if the GPIO
-capabilities does not correspond to what is asked, and again ensure
-that cy_gpio_set() works as expected.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1cf24b3e42ec..f9c1ed002dbc 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -41,6 +41,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/module.h>
+ #include <linux/mman.h>
++#include <linux/compat.h>
+ 
+ #include "internal.h"
+ 
+@@ -3717,6 +3718,26 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++	case _IOC_NR(PERF_EVENT_IOC_ID):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
++}
++#else
++# define perf_compat_ioctl NULL
++#endif
++
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -4222,7 +4243,7 @@ static const struct file_operations perf_fops = {
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
+ };
