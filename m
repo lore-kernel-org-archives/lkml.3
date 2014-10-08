@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbaJHJSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:18:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38537 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754565AbaJHJSB (ORCPT
+	id S1754918AbaJHJVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:21:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35513 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913AbaJHJVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:18:01 -0400
-Date: Wed, 8 Oct 2014 10:17:41 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
-Message-ID: <20141008091741.GC26140@arm.com>
-References: <5434AA24.7010600@huawei.com>
+	Wed, 8 Oct 2014 05:21:53 -0400
+Date: Wed, 8 Oct 2014 02:21:29 -0700
+From: tip-bot for Ben Hutchings <tipbot@zytor.com>
+Message-ID: <tip-0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, ben@decadent.org.uk
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, ben@decadent.org.uk
+In-Reply-To: <1410120305.6822.9.camel@decadent.org.uk>
+References: <1410120305.6822.9.camel@decadent.org.uk>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86:
+  Reject x32 executables if x32 ABI not supported
+Git-Commit-ID: 0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <5434AA24.7010600@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
-> hi all,
-> ----------------------------------------
-> 
-> ref-cycles event is specially to Intel core, but can still used in arm architecture
-> with the wrong return value with 3.10 stable. for instance:
-> 
->  perf stat -e ref-cycles sleep 1
-> 
->  Performance counter stats for 'sleep 1':
-> 
->   	0 ref-cycles
-> 
->        1.002381916 seconds time elapsed
-> 
-> this patch fix the bug and make it return NOT SUPPORTED
-> distinctly.
-> 
-> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
-> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
-> besides we can not simply cherry-pick.
+Commit-ID:  0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1
+Gitweb:     http://git.kernel.org/tip/0e6d3112a4e95d55cf6dca88f298d5f4b8f29bd1
+Author:     Ben Hutchings <ben@decadent.org.uk>
+AuthorDate: Sun, 7 Sep 2014 21:05:05 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 8 Oct 2014 11:17:42 +0200
 
-I thought I saw Greg pick this up the other day?
+x86: Reject x32 executables if x32 ABI not supported
 
-Will
+It is currently possible to execve() an x32 executable on an x86_64
+kernel that has only ia32 compat enabled.  However all its syscalls
+will fail, even _exit().  This usually causes it to segfault.
+
+Change the ELF compat architecture check so that x32 executables are
+rejected if we don't support the x32 ABI.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Link: http://lkml.kernel.org/r/1410120305.6822.9.camel@decadent.org.uk
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/elf.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 1a055c8..ca3347a 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -160,8 +160,9 @@ do {						\
+ #define elf_check_arch(x)			\
+ 	((x)->e_machine == EM_X86_64)
+ 
+-#define compat_elf_check_arch(x)		\
+-	(elf_check_arch_ia32(x) || (x)->e_machine == EM_X86_64)
++#define compat_elf_check_arch(x)					\
++	(elf_check_arch_ia32(x) ||					\
++	 (IS_ENABLED(CONFIG_X86_X32_ABI) && (x)->e_machine == EM_X86_64))
+ 
+ #if __USER32_DS != __USER_DS
+ # error "The following code assumes __USER32_DS == __USER_DS"
