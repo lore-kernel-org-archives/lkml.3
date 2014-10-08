@@ -1,152 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaJHEYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 00:24:46 -0400
-Received: from regular1.263xmail.com ([211.150.99.137]:44356 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaJHEYo (ORCPT
+	id S1754735AbaJHEiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 00:38:12 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:29304 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547AbaJHEiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 00:24:44 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <79526978edfc6d2de1d3437d44b18b04>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v10 3/3] dt-bindings: video: Add documentation for rockchip vop
-Date: Wed,  8 Oct 2014 12:24:30 +0800
-Message-Id: <1412742270-436-1-git-send-email-mark.yao@rock-chips.com>
+	Wed, 8 Oct 2014 00:38:10 -0400
+X-IronPort-AV: E=Sophos;i="5.04,674,1406617200"; 
+   d="scan'208";a="47521092"
+From: Ray Jui <rjui@broadcom.com>
+To: Mark Brown <broonie@kernel.org>
+CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>
+Subject: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
+Date: Tue, 7 Oct 2014 21:38:47 -0700
+Message-ID: <1412743127-4523-1-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412742179-32761-1-git-send-email-mark.yao@rock-chips.com>
-References: <1412742179-32761-1-git-send-email-mark.yao@rock-chips.com>
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark yao <mark.yao@rock-chips.com>
+The PL022 SPI driver maps the DMA RX buffer before the DMA TX buffer. In
+most cases, the sequence of the mapping does not matter. But in cases
+where TX and RX happen to use the same buffer, e.g., spidev, it causes
+the cached TX data not written to memory, because the same memory has
+been marked invalid when dma_map_sg on the RX buffer is called
 
-This adds binding documentation for Rockchip SoC VOP driver.
+The solution is to reverse the sequence so it maps the TX buffer before
+the RX buffer
 
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
+Signed-off-by: Ray Jui <rjui@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+Tested-by: Scott Branden <sbranden@broadcom.com>
+Reviewed-by: Scott Branden <sbranden@broadcom.com>
 ---
-Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
-- add port for display-subsystem
+ drivers/spi/spi-pl022.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-Changes in v3: None
-
-Changes in v4: None
-
-Changes in v5: None
-
-Changes in v6: None
-
-Changes in v7: None
-
-Changes in v8: None
-
-Changes in v9: None
-
-Changes in v10: None
-
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-new file mode 100644
-index 0000000..d15351f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
+diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
+index 1189cfd..edb7298 100644
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -773,10 +773,10 @@ static void *next_transfer(struct pl022 *pl022)
+ static void unmap_free_dma_scatter(struct pl022 *pl022)
+ {
+ 	/* Unmap and free the SG tables */
+-	dma_unmap_sg(pl022->dma_tx_channel->device->dev, pl022->sgt_tx.sgl,
+-		     pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ 	dma_unmap_sg(pl022->dma_rx_channel->device->dev, pl022->sgt_rx.sgl,
+ 		     pl022->sgt_rx.nents, DMA_FROM_DEVICE);
++	dma_unmap_sg(pl022->dma_tx_channel->device->dev, pl022->sgt_tx.sgl,
++		     pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ 	sg_free_table(&pl022->sgt_rx);
+ 	sg_free_table(&pl022->sgt_tx);
+ }
+@@ -1026,16 +1026,16 @@ static int configure_dma(struct pl022 *pl022)
+ 			  pl022->cur_transfer->len, &pl022->sgt_tx);
+ 
+ 	/* Map DMA buffers */
+-	rx_sglen = dma_map_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+-			   pl022->sgt_rx.nents, DMA_FROM_DEVICE);
+-	if (!rx_sglen)
+-		goto err_rx_sgmap;
+-
+ 	tx_sglen = dma_map_sg(txchan->device->dev, pl022->sgt_tx.sgl,
+ 			   pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ 	if (!tx_sglen)
+ 		goto err_tx_sgmap;
+ 
++	rx_sglen = dma_map_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
++			   pl022->sgt_rx.nents, DMA_FROM_DEVICE);
++	if (!rx_sglen)
++		goto err_rx_sgmap;
 +
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
-+
-+Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
-+
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
-+- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
-+
-+- iommus: required a iommu node
-+
-+- port: A port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
-+			};
-+		};
-+	};
+ 	/* Send both scatterlists */
+ 	rxdesc = dmaengine_prep_slave_sg(rxchan,
+ 				      pl022->sgt_rx.sgl,
+@@ -1070,12 +1070,12 @@ err_txdesc:
+ 	dmaengine_terminate_all(txchan);
+ err_rxdesc:
+ 	dmaengine_terminate_all(rxchan);
++	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
++		     pl022->sgt_rx.nents, DMA_FROM_DEVICE);
++err_rx_sgmap:
+ 	dma_unmap_sg(txchan->device->dev, pl022->sgt_tx.sgl,
+ 		     pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ err_tx_sgmap:
+-	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+-		     pl022->sgt_tx.nents, DMA_FROM_DEVICE);
+-err_rx_sgmap:
+ 	sg_free_table(&pl022->sgt_tx);
+ err_alloc_tx_sg:
+ 	sg_free_table(&pl022->sgt_rx);
 -- 
 1.7.9.5
-
 
