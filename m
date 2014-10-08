@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaJHTeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:34:07 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:57786 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753049AbaJHTeF (ORCPT
+	id S1754681AbaJHTiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:38:08 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:34528 "EHLO
+	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898AbaJHTiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:34:05 -0400
-From: Dmitry Osipenko <digetx@gmail.com>
-To: swarren@wwwdotorg.org, josephl@nvidia.com, thierry.reding@gmail.com,
-        balbi@ti.com, digetx@gmail.com
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH V2] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
-Date: Wed,  8 Oct 2014 23:24:15 +0400
-Message-Id: <1412796255-10589-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <20141008190432.GN22688@saruman>
-References: <20141008190432.GN22688@saruman>
+	Wed, 8 Oct 2014 15:38:03 -0400
+From: riel@redhat.com
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mgorman@suse.de, chegu_vinod@hp.com,
+        mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
+Subject: [PATCH RFC 0/5] sched,numa: task placement with complex NUMA topologies
+Date: Wed,  8 Oct 2014 15:37:25 -0400
+Message-Id: <1412797050-8903-1-git-send-email-riel@redhat.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit d127e9c5c5bc1ee22a7b1fe804397cddd132f756 ("ARM: tegra: make tegra_resume
-can work with current and later chips") removed tegra_get_soc_id macro leaving
-used cpu register unassigned and as result causing execution of unintended code
-on tegra20. Fix it by re-adding macro.
+This patch set integrates two algorithms I have previously tested,
+one for glueless mesh NUMA topologies, where NUMA nodes communicate
+with far-away nodes through intermediary nodes, and backplane
+topologies, where communication with far-away NUMA nodes happens
+through backplane controllers (which cannot run tasks).
 
-Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
-Cc: <stable@vger.kernel.org> # v3.13+
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
----
-V2: added Cc's for lakml and stable, added "Reviewed-by:" Felipe Balbi
+Due to the inavailability of 8 node systems, and the fact that I
+am flying out to Linuxcon Europe / Plumbers / KVM Forum on Friday,
+I have not tested these patches yet. However, with a conference (and
+many familiar faces) coming up, it seemed like a good idea to get
+the code out there, anyway.
 
- arch/arm/mach-tegra/reset-handler.S | 1 +
- 1 file changed, 1 insertion(+)
+The algorithms have been tested before, on both kinds of system.
+The new thing about this series is that both algorithms have been
+integrated into the same code base, and new code to select the
+preferred_nid for tasks in numa groups.
 
-diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
-index 7b2baab..71be4af 100644
---- a/arch/arm/mach-tegra/reset-handler.S
-+++ b/arch/arm/mach-tegra/reset-handler.S
-@@ -51,6 +51,7 @@ ENTRY(tegra_resume)
-  THUMB(	it	ne )
- 	bne	cpu_resume			@ no
- 
-+	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
- 	/* Are we on Tegra20? */
- 	cmp	r6, #TEGRA20
- 	beq	1f				@ Yes
--- 
-2.1.1
+Placement of tasks on smaller, directly connected, NUMA systems
+should not be affected at all by this patch series.
+
+I am interested in reviews, as well as test results on larger
+NUMA systems :)
 
