@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980AbaJHMdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:33:31 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:54491 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaJHMd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:33:29 -0400
+	id S932265AbaJHMjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:39:48 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:41372 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753800AbaJHMjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 08:39:47 -0400
+Date: Wed, 8 Oct 2014 08:39:38 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, Dave Hansen <dave@sr71.net>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/3] mm: hugetlb_controller: convert to lockless page
+ counters
+Message-ID: <20141008123938.GB14361@cmpxchg.org>
+References: <1411573390-9601-1-git-send-email-hannes@cmpxchg.org>
+ <1411573390-9601-3-git-send-email-hannes@cmpxchg.org>
+ <20141007152149.GF14243@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20141008120410.GE1990@localhost>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
-	<1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
-	<20141008092347.GB1990@localhost>
-	<CAE1zotKHq1Fj_AqKzfnBHoypetb6Yz3OsHnqfeHN5PrVJtuHVw@mail.gmail.com>
-	<20141008120410.GE1990@localhost>
-Date: Wed, 8 Oct 2014 15:33:28 +0300
-Message-ID: <CAE1zot+muJn5ngxpq8LeF9J+7kZqCiStzvcxLLP0wf08TjWG4A@mail.gmail.com>
-Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007152149.GF14243@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 3:04 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Wed, Oct 08, 2014 at 01:54:07PM +0300, Octavian Purdila wrote:
->> On Wed, Oct 8, 2014 at 12:23 PM, Johan Hovold <johan@kernel.org> wrote:
->> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
->> >
->> >> +static void dln2_rx_transfer(struct dln2_dev *dln2, struct urb *urb,
->> >> +                          u16 handle, u16 rx_slot)
->> >> +{
->> >> +     struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
->> >> +     struct dln2_rx_context *rxc;
->> >> +     struct device *dev = &dln2->interface->dev;
->> >> +
->> >> +     spin_lock(&rxs->lock);
->> >
->> > You must use spin_lock_irqsave here as you call it from the completion
->> > handler.
->>
->> Why? AFAICS the completion handler gets called from the HCD irq handler:
->
-> The completion handler is currently called with local interrupts
-> disabled but that is about to change once all drivers have been updated:
->
->         http://marc.info/?l=linux-usb&m=137353360511003&w=2
->
-> In this case you could probably get away with not disabling interrupts
-> anyway, but using the irqsave versions would make it obvious.
->
+On Tue, Oct 07, 2014 at 05:21:49PM +0200, Michal Hocko wrote:
+> On Wed 24-09-14 11:43:09, Johannes Weiner wrote:
+> > Abandon the spinlock-protected byte counters in favor of the unlocked
+> > page counters in the hugetlb controller as well.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> One minor thing below:
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-I was not assuming that interrupts are disabled while running the
-completion handler. Since that spinlock is not touched by any other
-interrupt context code I don't think irqsave is necessary.
+Thank you!
+
+> >  static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
+> >  				    char *buf, size_t nbytes, loff_t off)
+> >  {
+> > -	int idx, name, ret;
+> > -	unsigned long long val;
+> > +	int ret, idx;
+> > +	unsigned long nr_pages;
+> >  	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_css(of_css(of));
+> >  
+> > +	if (hugetlb_cgroup_is_root(h_cg)) /* Can't set limit on root */
+> > +		return -EINVAL;
+> > +
+> >  	buf = strstrip(buf);
+> > +	ret = page_counter_memparse(buf, &nr_pages);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> >  	idx = MEMFILE_IDX(of_cft(of)->private);
+> > -	name = MEMFILE_ATTR(of_cft(of)->private);
+> >  
+> > -	switch (name) {
+> > +	switch (MEMFILE_ATTR(of_cft(of)->private)) {
+> >  	case RES_LIMIT:
+> > -		if (hugetlb_cgroup_is_root(h_cg)) {
+> > -			/* Can't set limit on root */
+> > -			ret = -EINVAL;
+> > -			break;
+> > -		}
+> > -		/* This function does all necessary parse...reuse it */
+> > -		ret = res_counter_memparse_write_strategy(buf, &val);
+> > -		if (ret)
+> > -			break;
+> > -		val = ALIGN(val, 1ULL << huge_page_shift(&hstates[idx]));
+> > -		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
+> > +		nr_pages = ALIGN(nr_pages, 1UL<<huge_page_order(&hstates[idx]));
+> 
+> memcg doesn't round up to the next page so I guess we do not have to do
+> it here as well.
+
+That rounding was introduced very recently and for no good reason
+except that "memcg rounds up too".  Meh.  I'll remove it.
+
+Thanks!
