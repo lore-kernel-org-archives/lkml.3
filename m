@@ -1,266 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637AbaJHJDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:03:55 -0400
-Received: from ozlabs.org ([103.22.144.67]:41408 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282AbaJHIzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:55:22 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v4 02/16] powerpc/cell: Move data segment faulting code out of cell platform
-Date: Wed,  8 Oct 2014 19:54:51 +1100
-Message-Id: <1412758505-23495-3-git-send-email-mikey@neuling.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412758505-23495-1-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org>
+	id S1755703AbaJHJEc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:04:32 -0400
+Received: from mail.fireflyinternet.com ([87.106.93.118]:51045 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755684AbaJHJE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:04:26 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Wed, 8 Oct 2014 10:03:36 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
+        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: i915.ko WC writes are slow after ea8596bb2d8d379
+Message-ID: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
 
-__spu_trap_data_seg() currently contains code to determine the VSID and ESID
-required for a particular EA and mm struct.
+I ran into a problem on a Sandybridge i5-2500s whilst measuring the
+performance of GTT write-combining access. I found subsequent runs were
+about 10-40x slower than the first. For example,
 
-This code is generically useful for other co-processors. This moves the code of
-the cell platform so it can be used by other powerpc code. It also adds 1TB
-segment handling which Cell didn't support.  The new function is called
-copro_calculate_slb().
+igt/gem_gtt_speed:
 
-This also moves the internal struct spu_slb to a generic struct copro_slb which
-is now used in the Cell and copro code.  We use this new struct instead of
-passing around esid and vsid parameters.
+Time to read 16k through a GTT map:             325.285탎
+Time to write 16k through a GTT map:              4.729탎
+Time to clear 16k through a GTT map:              4.584탎
+Time to clear 16k through a cached GTT map:       1.342탎
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
----
- arch/powerpc/include/asm/copro.h       |  7 +++++
- arch/powerpc/include/asm/mmu-hash64.h  |  7 +++++
- arch/powerpc/mm/copro_fault.c          | 46 ++++++++++++++++++++++++++++
- arch/powerpc/mm/slb.c                  |  3 --
- arch/powerpc/platforms/cell/spu_base.c | 55 ++++++----------------------------
- 5 files changed, 69 insertions(+), 49 deletions(-)
+on the second run became:
 
-diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-index 51cae85..b0e6a18 100644
---- a/arch/powerpc/include/asm/copro.h
-+++ b/arch/powerpc/include/asm/copro.h
-@@ -10,7 +10,14 @@
- #ifndef _ASM_POWERPC_COPRO_H
- #define _ASM_POWERPC_COPRO_H
+Time to read 16k through a GTT map:             332.148탎
+Time to write 16k through a GTT map:            209.411탎
+Time to clear 16k through a GTT map:             56.460탎
+Time to clear 16k through a cached GTT map:      50.897탎
+
+Naively I would say that we lost the wc on our ioremap.
+/sys/kernel/debug/x86/pat_memtype_list remained the same across repeated
+runs.
+
+A bisection pointed to 
+
+commit ea8596bb2d8d37957f3e92db9511c50801689180
+Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date:   Thu Jul 18 20:47:53 2013 +0900
+
+    kprobes/x86: Remove unused text_poke_smp() and text_poke_smp_batch() functions
+
+of which the active ingredient was just
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..f4001e0 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2334,7 +2334,6 @@ config HAVE_ATOMIC_IOMAP
  
-+struct copro_slb
-+{
-+	u64 esid, vsid;
-+};
-+
- int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
- 			  unsigned long dsisr, unsigned *flt);
+ config HAVE_TEXT_POKE_SMP
+        bool
+-       select STOP_MACHINE if SMP
  
-+int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
-+
- #endif /* _ASM_POWERPC_COPRO_H */
-diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-index d765144..aeabd02 100644
---- a/arch/powerpc/include/asm/mmu-hash64.h
-+++ b/arch/powerpc/include/asm/mmu-hash64.h
-@@ -190,6 +190,13 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
- 
- #ifndef __ASSEMBLY__
- 
-+static inline int slb_vsid_shift(int ssize)
-+{
-+	if (ssize == MMU_SEGSIZE_256M)
-+		return SLB_VSID_SHIFT;
-+	return SLB_VSID_SHIFT_1T;
-+}
-+
- static inline int segment_shift(int ssize)
- {
- 	if (ssize == MMU_SEGSIZE_256M)
-diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-index ba7df14..a15a23e 100644
---- a/arch/powerpc/mm/copro_fault.c
-+++ b/arch/powerpc/mm/copro_fault.c
-@@ -24,6 +24,7 @@
- #include <linux/mm.h>
- #include <linux/export.h>
- #include <asm/reg.h>
-+#include <asm/copro.h>
- 
- /*
-  * This ought to be kept in sync with the powerpc specific do_page_fault
-@@ -90,3 +91,48 @@ out_unlock:
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-+
-+int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
-+{
-+	u64 vsid;
-+	int psize, ssize;
-+
-+	slb->esid = (ea & ESID_MASK) | SLB_ESID_V;
-+
-+	switch (REGION_ID(ea)) {
-+	case USER_REGION_ID:
-+		pr_devel("%s: 0x%llx -- USER_REGION_ID\n", __func__, ea);
-+		psize = get_slice_psize(mm, ea);
-+		ssize = user_segment_size(ea);
-+		vsid = get_vsid(mm->context.id, ea, ssize);
-+		break;
-+	case VMALLOC_REGION_ID:
-+		pr_devel("%s: 0x%llx -- VMALLOC_REGION_ID\n", __func__, ea);
-+		if (ea < VMALLOC_END)
-+			psize = mmu_vmalloc_psize;
-+		else
-+			psize = mmu_io_psize;
-+		ssize = mmu_kernel_ssize;
-+		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
-+		break;
-+	case KERNEL_REGION_ID:
-+		pr_devel("%s: 0x%llx -- KERNEL_REGION_ID\n", __func__, ea);
-+		psize = mmu_linear_psize;
-+		ssize = mmu_kernel_ssize;
-+		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
-+		break;
-+	default:
-+		pr_debug("%s: invalid region access at %016llx\n", __func__, ea);
-+		return 1;
-+	}
-+
-+	vsid = (vsid << slb_vsid_shift(ssize)) | SLB_VSID_USER;
-+
-+	vsid |= mmu_psize_defs[psize].sllp |
-+		((ssize == MMU_SEGSIZE_1T) ? SLB_VSID_B_1T : 0);
-+
-+	slb->vsid = vsid;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(copro_calculate_slb);
-diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
-index 0399a67..6e450ca 100644
---- a/arch/powerpc/mm/slb.c
-+++ b/arch/powerpc/mm/slb.c
-@@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
- 	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
- }
- 
--#define slb_vsid_shift(ssize)	\
--	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
--
- static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
- 					 unsigned long flags)
- {
-diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
-index 2930d1e..ffcbd24 100644
---- a/arch/powerpc/platforms/cell/spu_base.c
-+++ b/arch/powerpc/platforms/cell/spu_base.c
-@@ -76,10 +76,6 @@ static LIST_HEAD(spu_full_list);
- static DEFINE_SPINLOCK(spu_full_list_lock);
- static DEFINE_MUTEX(spu_full_list_mutex);
- 
--struct spu_slb {
--	u64 esid, vsid;
--};
--
- void spu_invalidate_slbs(struct spu *spu)
- {
- 	struct spu_priv2 __iomem *priv2 = spu->priv2;
-@@ -149,7 +145,7 @@ static void spu_restart_dma(struct spu *spu)
- 	}
- }
- 
--static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
-+static inline void spu_load_slb(struct spu *spu, int slbe, struct copro_slb *slb)
- {
- 	struct spu_priv2 __iomem *priv2 = spu->priv2;
- 
-@@ -167,45 +163,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
- 
- static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
- {
--	struct mm_struct *mm = spu->mm;
--	struct spu_slb slb;
--	int psize;
--
--	pr_debug("%s\n", __func__);
--
--	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
-+	struct copro_slb slb;
-+	int ret;
- 
--	switch(REGION_ID(ea)) {
--	case USER_REGION_ID:
--#ifdef CONFIG_PPC_MM_SLICES
--		psize = get_slice_psize(mm, ea);
--#else
--		psize = mm->context.user_psize;
--#endif
--		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
--		break;
--	case VMALLOC_REGION_ID:
--		if (ea < VMALLOC_END)
--			psize = mmu_vmalloc_psize;
--		else
--			psize = mmu_io_psize;
--		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
--		break;
--	case KERNEL_REGION_ID:
--		psize = mmu_linear_psize;
--		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
--				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
--		break;
--	default:
--		/* Future: support kernel segments so that drivers
--		 * can use SPUs.
--		 */
--		pr_debug("invalid region access at %016lx\n", ea);
--		return 1;
--	}
--	slb.vsid |= mmu_psize_defs[psize].sllp;
-+	ret = copro_calculate_slb(spu->mm, ea, &slb);
-+	if (ret)
-+		return ret;
- 
- 	spu_load_slb(spu, spu->slb_replace, &slb);
- 
-@@ -253,7 +216,7 @@ static int __spu_trap_data_map(struct spu *spu, unsigned long ea, u64 dsisr)
- 	return 0;
- }
- 
--static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
-+static void __spu_kernel_slb(void *addr, struct copro_slb *slb)
- {
- 	unsigned long ea = (unsigned long)addr;
- 	u64 llp;
-@@ -272,7 +235,7 @@ static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
-  * Given an array of @nr_slbs SLB entries, @slbs, return non-zero if the
-  * address @new_addr is present.
-  */
--static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
-+static inline int __slb_present(struct copro_slb *slbs, int nr_slbs,
- 		void *new_addr)
- {
- 	unsigned long ea = (unsigned long)new_addr;
-@@ -297,7 +260,7 @@ static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
- void spu_setup_kernel_slbs(struct spu *spu, struct spu_lscsa *lscsa,
- 		void *code, int code_size)
- {
--	struct spu_slb slbs[4];
-+	struct copro_slb slbs[4];
- 	int i, nr_slbs = 0;
- 	/* start and end addresses of both mappings */
- 	void *addrs[] = {
+ config X86_DEV_DMA_OPS
+        bool
+
+and adding that back into the current build, e.g.
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 3632743..48a8a69 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -87,6 +87,7 @@ config X86
+        select HAVE_USER_RETURN_NOTIFIER
+        select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+        select HAVE_ARCH_JUMP_LABEL
++       select STOP_MACHINE
+        select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
+        select SPARSE_IRQ
+        select GENERIC_FIND_FIRST_BIT
+
+fixes the regression.
+
+For the record, this kernel build doesn't use modules, which seems relevant
+in light of ea8596bb2 "fixes a Kconfig dependency issue on STOP_MACHINE
+in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD".
+-Chris
+
 -- 
-1.9.1
-
+Chris Wilson, Intel Open Source Technology Centre
