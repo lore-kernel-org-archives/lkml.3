@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574AbaJHR7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 13:59:50 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:34269 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608AbaJHR7s (ORCPT
+	id S1754605AbaJHSAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:00:11 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59040 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709AbaJHSAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 13:59:48 -0400
-Message-ID: <1412791184.5173.11.camel@marge.simpson.net>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 08 Oct 2014 19:59:44 +0200
-In-Reply-To: <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com>
-References: <20141003194428.GA27084@sesse.net>
-	 <1412782664.5179.75.camel@marge.simpson.net>
-	 <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Wed, 8 Oct 2014 14:00:09 -0400
+Message-ID: <54357BA7.3010609@codeaurora.org>
+Date: Wed, 08 Oct 2014 11:00:07 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for register
+ access
+References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>  <1412675448-11990-3-git-send-email-iivanov@mm-sol.com>  <20141007172606.GG16469@dtor-ws> <1412759584.13569.0.camel@iivanov-dev> <1412760633.13569.4.camel@iivanov-dev>
+In-Reply-To: <1412760633.13569.4.camel@iivanov-dev>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-08 at 13:04 -0400, Linus Torvalds wrote: 
-> On Wed, Oct 8, 2014 at 11:37 AM, Mike Galbraith
-> <umgwanakikbuti@gmail.com> wrote:
-> >
-> > 11d4616bd07f38d496bd489ed8fad1dc4d928823 is the first bad commit
-> > commit 11d4616bd07f38d496bd489ed8fad1dc4d928823
-> > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > Date:   Thu Mar 20 22:11:17 2014 -0700
-> >
-> >     futex: revert back to the explicit waiter counting code
-> 
-> While that revert might make things a tiny bit slower (I hated doing
-> it, but the clever approach sadly didn't work on powerpc and depended
-> on x86 locking semantics), I seriously doubt it's really relevant.
-> It's more likely that the *real* problem itself is very
-> timing-dependent, and the subtle synchronization changes here then
-> expose it or hide it, rather than really fixing anything.
-> 
-> So like Thomas, I would suspect a race condition in the futex use, and
-> then the exact futex implementation details are just exposing it
-> incidentally.
+On 10/08/2014 02:30 AM, Ivan T. Ivanov wrote:
+> On Wed, 2014-10-08 at 12:13 +0300, Ivan T. Ivanov wrote:
+>> On Tue, 2014-10-07 at 10:26 -0700, Dmitry Torokhov wrote:
+>>> Hi Ivan,
+>>>
+>>> On Tue, Oct 07, 2014 at 12:50:46PM +0300, Ivan T. Ivanov wrote:
+>>>> @@ -527,10 +538,55 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+>>>>   
+>>>> +
+>>>> +	kp->row_hold = devm_regmap_field_alloc(kp->dev, kp->regmap,
+>>>> +					       info->row_hold);
+>>>> +	if (IS_ERR(kp->row_hold))
+>>>> +		return PTR_ERR(kp->row_hold);
+>>> Why do we have to allocate all regmap fields separately instead of
+>>> embedding them into keypad structure?
+>>>
+>> No particular reason. Will rework it.
+>>
+> Oops. struct regmap_field is opaque. It seems that the allocation
+> is the only way that I could have instance of it.
+>
 
-Whew, good, futex.c is hard.  Heads up chess guys <punt>. 
+Maybe we can add an API to allocate an array of fields?
 
--Mike
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
