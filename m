@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332AbaJHOSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:18:09 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:41402 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078AbaJHOSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:18:08 -0400
-Date: Wed, 8 Oct 2014 10:17:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/3] mm: memcontrol: eliminate charge reparenting
-Message-ID: <20141008141754.GD15948@cmpxchg.org>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
- <20141008124823.GA4592@dhcp22.suse.cz>
+	id S1754899AbaJHOUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:20:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38080 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaJHOUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 10:20:40 -0400
+Date: Wed, 8 Oct 2014 16:20:28 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Kevin Hilman <khilman@kernel.org>, ulf.hansson@linaro.org,
+        linux-pm@vger.kernel.org, daniel.lezcano@linaro.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, Lina Iyer <lina.iyer@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 3/4] irq: Allow multiple clients to register for irq
+ affinity notification
+In-Reply-To: <20140926094003.GL5182@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.11.1410081607510.4292@nanos>
+References: <1409170479-29955-1-git-send-email-lina.iyer@linaro.org> <1409170479-29955-4-git-send-email-lina.iyer@linaro.org> <alpine.DEB.2.10.1408272239190.3323@nanos> <20140902184305.GB91995@ilina-mac.local> <alpine.DEB.2.10.1409022109050.3333@nanos>
+ <7htx3vbfqr.fsf@deeprootsystems.com> <alpine.DEB.2.11.1409261129220.4567@nanos> <20140926094003.GL5182@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008124823.GA4592@dhcp22.suse.cz>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 02:48:23PM +0200, Michal Hocko wrote:
-> On Sat 20-09-14 16:00:32, Johannes Weiner wrote:
-> > Hi,
+On Fri, 26 Sep 2014, Russell King - ARM Linux wrote:
+> On Fri, Sep 26, 2014 at 11:29:56AM +0200, Thomas Gleixner wrote:
+> > On Thu, 25 Sep 2014, Kevin Hilman wrote:
+> > > Maybe I'm missing something, or maybe we're just lucky and nobody uses
+> > > them together, but irq_set_affinity_notifier() only allows a single
+> > > notifier to be registered at any given time.  So if you had a system
 > > 
-> > we've come a looong way when it comes to the basic cgroups model, and
-> > the recent changes there open up a lot of opportunity to make drastic
-> > simplifications to memory cgroups as well.
-> > 
-> > The decoupling of css from the user-visible cgroup, word-sized per-cpu
-> > css reference counters, and css iterators that include offlined groups
-> > means we can take per-charge css references, continue to reclaim from
-> > offlined groups, and so get rid of the error-prone charge reparenting.
-> > 
-> > Combined with the higher-order reclaim fixes, lockless page counters,
-> > and memcg iterator simplification I sent on Friday, the memory cgroup
-> > core code is finally no longer the biggest file in mm/.  Yay!
+> > A single notifier per irq .....
 > 
-> Yeah, the code reduction (as per the diffstat - I didn't get to the code
-> yet) seems really promising.
-
-:)
-
-> > These patches are based on mmotm + the above-mentioned changes
+> So what about two drivers wanting to use this notifier, but sharing an
+> interrupt?
 > 
-> > + Tj's percpu-refcount conversion to atomic_long_t.
-> 
-> This is https://lkml.org/lkml/2014/9/20/11 right?
+> It sounds to me like this notifier was misdesigned from the very start,
+> and it should always have supported multiple notifiers.
 
-Yep, exactly.  All these moving parts are now in -next, though, so as
-soon as Andrew flushes his tree for 3.18, I'll rebase and resubmit.
+Well, it was designed for a particular usecase which does not require
+multiple notifiers. And we wanted it as simple as possible.
 
-Thanks!
+So while we could make it take multiple notifiers, it's just wrong for
+the use case in question. QoS wants a system wide overview and not a
+gazillion notifiers with life time issues etc.
+
+So the proper solution is a general notifier, which gets called if any
+interrupt affinity changes. That allows the QoS code or any other
+interested party to gain a coherent per CPU knowledge.
+
+That also avoid the whole lifetime issues of notifiers on interrupts,
+when they are teared down and the descriptor gets freed. Of course
+such a teardown or a simple disable_irq should inform the QoS code as
+well so it knows that the CPU is not longer targeted by this
+interrupt. Nothing we want to whack into a per irq notifier, really.
+
+Thoughts?
+
+	tglx
