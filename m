@@ -1,119 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbaJHVgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:36:08 -0400
-Received: from mail-oi0-f42.google.com ([209.85.218.42]:63750 "EHLO
-	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754470AbaJHVgG (ORCPT
+	id S1755759AbaJHVhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:37:35 -0400
+Received: from forward5l.mail.yandex.net ([84.201.143.138]:45214 "EHLO
+	forward5l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717AbaJHVhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:36:06 -0400
-Message-ID: <5435AE41.20105@landley.net>
-Date: Wed, 08 Oct 2014 16:36:01 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
- current root
-References: <1412683977-29543-1-git-send-email-avagin@openvz.org> <87mw97wqvx.fsf@x220.int.ebiederm.org> <20141008110829.GC24908@paralelels.com> <CALCETrX4XrgbQNZZa7=1009KqhJ2gT+VBUkC15+59K9yEiTSbQ@mail.gmail.com> <87vbnue56f.fsf@x220.int.ebiederm.org> <CALCETrVSxYr=Oa29qHNL-GoifS26U8TfpreGY+KN7g926YgHUw@mail.gmail.com>
-In-Reply-To: <CALCETrVSxYr=Oa29qHNL-GoifS26U8TfpreGY+KN7g926YgHUw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Oct 2014 17:37:32 -0400
+X-Yandex-Uniq: b6e15004-4fe0-4a95-8801-f3ef86277d25
+Authentication-Results: smtp1h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1412804248.24248.1.camel@yandex.ru>
+Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Date: Thu, 09 Oct 2014 01:37:28 +0400
+In-Reply-To: <20141008193644.GA32055@redhat.com>
+References: <20141007195046.GA28002@redhat.com>
+	 <20141008080016.GB10832@worktop.programming.kicks-ass.net>
+	 <20141008183302.GA17495@redhat.com> <20141008183326.GB17495@redhat.com>
+	 <20141008193644.GA32055@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/14 14:31, Andy Lutomirski wrote:
-> On Wed, Oct 8, 2014 at 12:23 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>>> Maybe we want to say that rootfs should not be used if we are going to
->>>> create containers...
->>
->> Today it is an assumption of the vfs that rootfs is mounted.  With
->> rootfs mounted and pivot_root at the base of the mount stack you can
->> make as minimal of a set of mounts as the vfs allows.
->>
->> Removing rootfs from the vfs requires an audit of everything that
->> manipulates mounts.  It is not remotely a local excercise.
+В Ср, 08/10/2014 в 21:36 +0200, Oleg Nesterov пишет:
+> On 10/08, Oleg Nesterov wrote:
+> >
+> > Another problem is that finish_task_switch() itself runs with preempt
+> > enabled after finish_lock_switch(). If nothing else this means that
+> > ->sched_in() notifier can't trust its "cpu" arg.
 > 
-> Would it be a less invasive audit to allow different mount namespaces
-> to have different rootfses?
-
-I.E. The same way different namespaces have different init tasks?
-
-The abstraction containers has implemented here should be logically
-consistent.
-
->>> Could we have an extra rootfs-like fs that is always completely empty,
->>> doesn't allow any writes, and can sit at the bottom of container
->>> namespace hierarchies?  If so, and if we add a new syscall that's like
->>> pivot_root (or unshare) but prunes the hierarchy, then we could switch
->>> to that rootfs then.
->>
->> Or equally have something that guarantees that rootfs is empty and
->> read-only at the time the normal root filesystem is mounted.  That is
->> certainly a much more localized change if we want to go there.
->>
->> I am half tempted to suggest that mount --move /some/path / be updated
->> to make the old / just go away (perhaps to be replaced with a read-only
->> empty rootfs).  That gets us into figuring out if we break userspace
->> which is a big challenge.
+> OOPS, this obviously can't happen, ->preempt_notifiers must be empty.
+> Remove this part from the changelog, please see v2.
 > 
-> Hence my argument for a new syscall or entirely new operation.
-
-I'm still waiting for somebody to explain to my why chroot() shouldn't
-be changed to do this instead of adding a new syscall. (At least when
-mount namespace support is enabled.)
-
-> mount(2) and friends are way too multiplexed right now.  I just found
-> yet another security bug due to the insanely complicated semantics of
-> the vfs syscalls.  (Yes, a different one from the one yesterday.)
-
-As the guy who rewrote busybox mount 3 times, and who just implemented a
-brand new one (toybox) from scratch:
-
-It's a bit fiddly, yes.
-
-> A new operation kills several birds with one stone.  It could look like:
+> I am not sure about finish_arch_post_lock_switch() ... but probably
+> it should be fine without preempt_disable.
 > 
-> int mntns_change_root(int dfd, const char *path, int flags);
+> -------------------------------------------------------------------------------
+> Subject: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
 > 
-> return -EPERM if chrooted.
+> finish_task_switch() enables preemption, so post_schedule(rq) can be
+> called on the wrong (and even dead) CPU. Afaics, nothing really bad
+> can happen, but in this case we can wrongly clear rq->post_schedule
+> on that CPU. And this simply looks wrong in any case.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/sched/core.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 703c7e6..3f267e8 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2277,15 +2277,14 @@ static inline void post_schedule(struct rq *rq)
+>  asmlinkage __visible void schedule_tail(struct task_struct *prev)
+>  	__releases(rq->lock)
+>  {
+> -	struct rq *rq = this_rq();
+> +	struct rq *rq;
+>  
+> +	/* finish_task_switch() drops rq->lock and enables preemtion */
+> +	preempt_disable();
 
-Really?
+Maybe, the code would look simpler if we change
+init_task_preempt_count() and create new tasks
+with preempt_count() == 2, so this preempt_disable()
+won't be necessary. But it's more or less subjectively.
 
->  Returns -EINVAL if path (relative to dfd) isn't a mountmount.
+Reviewed-by: Kirill Tkhai <ktkhai@parallels.com>
 
-Requiring that chroot() only be called on mountpoints would break
-existing semantics, which gets us back to new systemcall instead of
-changing behavior of existing one.
+> +	rq = this_rq();
+>  	finish_task_switch(rq, prev);
+> -
+> -	/*
+> -	 * FIXME: do we need to worry about rq being invalidated by the
+> -	 * task_switch?
+> -	 */
+>  	post_schedule(rq);
+> +	preempt_enable();
+>  
+>  	if (current->set_child_tid)
+>  		put_user(task_pid_vnr(current), current->set_child_tid);
 
-If I recall, the first line of pushback against merging the openvz code
-as is was "buckets of new syscalls". Pushback against adding a new
-system call is understandable. Why can't we fix chroot() now that we
-have the tools to do so?
 
->  Otherwise it disconnects path from the existing
-> hierarchy, attaches a permanently-empty read-only rootfs under it,
-> makes it the root of the mntns, and does the root refs fixup.  The old
-> hierarchy gets thrown out.
 
-We have a chroot() syscall. We don't use it for containers because it
-doesn't do what we want. Does it currently do what _anybody_ wants?
 
-> Systemd could use this, too.
-
-While that's a strong argument against it, I'm willing to overlook it.
-
-Rob
