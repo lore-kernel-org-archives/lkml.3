@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaJHUBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:01:40 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:45671 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121AbaJHT6T (ORCPT
+	id S1755527AbaJHUDH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:03:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57209 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516AbaJHUDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:58:19 -0400
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] 8250/fintek: Use rs485 handler from serial_core
-Date: Wed,  8 Oct 2014 21:57:31 +0200
-Message-Id: <1412798258-23655-6-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
+	Wed, 8 Oct 2014 16:03:05 -0400
+Date: Wed, 08 Oct 2014 16:03:01 -0400 (EDT)
+Message-Id: <20141008.160301.394010995208640934.davem@davemloft.net>
+To: christophe.leroy@c-s.fr
+Cc: pantelis.antoniou@gmail.com, vbordug@ru.mvista.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/2] net: fs_enet: Remove non NAPI RX and add NAPI for
+ TX
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141007130454.13EF21AB266@localhost.localdomain>
+References: <20141007130454.13EF21AB266@localhost.localdomain>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 08 Oct 2014 13:03:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to remove the handler for rs485 ioctls on serial_8250, all the
-drivers must use the implementation on serial_core.
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+Date: Tue,  7 Oct 2014 15:04:53 +0200 (CEST)
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/tty/serial/8250/8250_fintek.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+> When using a MPC8xx as a router, 'perf' shows a significant time spent in 
+> fs_enet_interrupt() and fs_enet_start_xmit().
+> 'perf annotate' shows that the time spent in fs_enet_start_xmit is indeed spent
+> between spin_unlock_irqrestore() and the following instruction, hence in
+> interrupt handling. This is due to the TX complete interrupt that fires after
+> each transmitted packet.
+> This patchset first remove all non NAPI handling as NAPI has become the only
+> mode for RX, then adds NAPI for handling TX complete.
+> This improves NAT TCP throughput by 21% on MPC885 with FEC.
+> 
+> Tested on MPC885 with FEC.
+> 
+> [PATCH 1/2] net: fs_enet: Remove non NAPI RX
+> [PATCH 2/2] net: fs_enet: Add NAPI TX
+> 
+> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-diff --git a/drivers/tty/serial/8250/8250_fintek.c b/drivers/tty/serial/8250/8250_fintek.c
-index 1bb28cb..1e6899bc 100644
---- a/drivers/tty/serial/8250/8250_fintek.c
-+++ b/drivers/tty/serial/8250/8250_fintek.c
-@@ -89,11 +89,11 @@ static int fintek_8250_check_id(void)
- 	return 0;
- }
- 
--static int fintek_8250_rs4850_config(struct uart_8250_port *uart,
-+static int fintek_8250_rs485_config(struct uart_port *port,
- 			      struct serial_rs485 *rs485)
- {
- 	uint8_t config = 0;
--	int index = fintek_8250_get_index(uart->port.iobase);
-+	int index = fintek_8250_get_index(port->iobase);
- 
- 	if (index < 0)
- 		return -EINVAL;
-@@ -134,6 +134,8 @@ static int fintek_8250_rs4850_config(struct uart_8250_port *uart,
- 	outb(config, DATA_PORT);
- 	fintek_8250_exit_key();
- 
-+	port->rs485 = *rs485;
-+
- 	return 0;
- }
- 
-@@ -166,7 +168,7 @@ fintek_8250_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	uart.port.irq = pnp_irq(dev, 0);
- 	uart.port.iobase = pnp_port_start(dev, 0);
- 	uart.port.iotype = UPIO_PORT;
--	uart.rs485_config = fintek_8250_rs4850_config;
-+	uart.port.rs485_config = fintek_8250_rs485_config;
- 
- 	uart.port.flags |= UPF_SKIP_TEST | UPF_BOOT_AUTOCONF;
- 	if (pnp_irq_flags(dev, 0) & IORESOURCE_IRQ_SHAREABLE)
--- 
-2.1.1
+Series applied, thanks.
+
+Any particular reason you didn't just put the TX reclaim calls into
+the existing NAPI handler?
+
+That's what other drivers do, because TX reclaim can make SKBs
+available for RX packet receive on the local cpu.  So generally you
+have one NAPI context that first does any pending TX reclaim, then
+polls the RX ring for new packets.
 
