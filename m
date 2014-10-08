@@ -1,198 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493AbaJHNoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:44:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62144 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932326AbaJHNoI (ORCPT
+	id S932564AbaJHNpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:45:52 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:52414 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaJHNpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:44:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 12/13] leds: leds-gpio: Make use of device property API
-Date: Wed, 08 Oct 2014 16:04:13 +0200
-Message-ID: <2960802.kPr8UT7PvT@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1997643.hzLDnYTZoH@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1997643.hzLDnYTZoH@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Wed, 8 Oct 2014 09:45:51 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 0/5] regulator: Add support for initial operating modes
+Date: Wed,  8 Oct 2014 15:44:02 +0200
+Message-Id: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 07, 2014 02:18:45 AM Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Make use of device property API in this driver so that both OF and ACPI
-> based system can use the same driver.
-> 
-> This change contains material from Max Eliaser and Mika Westerberg.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hello Mark,
 
-Bryan, can you please tell me if you are OK with this patch?
+This series add support to setup an initial operating mode for regulators.
 
-You said you were for one of the previous versions if I remember correctly,
-but it's changed quite a bit since then, so can you please check this new
-version too?
+There were previous attempts to solve the same issue by adding DT bindings
+that were driver-specific like Abhilash Kesavan's "Add MAX77686 Operating
+mode support" [0] or Krzysztof Kozlowski's "regulator: s2mps11: Add opmode
+for S2MPS14 regulators" [1] series.
 
-> ---
->  drivers/leds/leds-gpio.c |   67 +++++++++++++++++++++--------------------------
->  1 file changed, 30 insertions(+), 37 deletions(-)
-> 
-> Index: linux-pm/drivers/leds/leds-gpio.c
-> ===================================================================
-> --- linux-pm.orig/drivers/leds/leds-gpio.c
-> +++ linux-pm/drivers/leds/leds-gpio.c
-> @@ -15,13 +15,11 @@
->  #include <linux/gpio.h>
->  #include <linux/gpio/consumer.h>
->  #include <linux/leds.h>
-> -#include <linux/of.h>
-> -#include <linux/of_platform.h>
-> -#include <linux/of_gpio.h>
->  #include <linux/slab.h>
->  #include <linux/workqueue.h>
->  #include <linux/module.h>
->  #include <linux/err.h>
-> +#include <linux/property.h>
->  
->  struct gpio_led_data {
->  	struct led_classdev cdev;
-> @@ -171,40 +169,41 @@ static inline int sizeof_gpio_leds_priv(
->  		(sizeof(struct gpio_led_data) * num_leds);
->  }
->  
-> -/* Code to create from OpenFirmware platform devices */
-> -#ifdef CONFIG_OF_GPIO
-> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
-> +static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
->  {
-> -	struct device_node *np = pdev->dev.of_node, *child;
-> +	struct device *dev = &pdev->dev;
->  	struct gpio_leds_priv *priv;
->  	int count, ret;
-> +	void *child;
->  
-> -	/* count LEDs in this device, so we know how much to allocate */
-> -	count = of_get_available_child_count(np);
-> +	count = device_get_child_node_count(dev);
->  	if (!count)
->  		return ERR_PTR(-ENODEV);
->  
-> -	for_each_available_child_of_node(np, child)
-> -		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
-> -			return ERR_PTR(-EPROBE_DEFER);
-> -
-> -	priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
-> -			GFP_KERNEL);
-> +	priv = devm_kzalloc(dev, sizeof_gpio_leds_priv(count), GFP_KERNEL);
->  	if (!priv)
->  		return ERR_PTR(-ENOMEM);
->  
-> -	for_each_available_child_of_node(np, child) {
-> +	device_for_each_child_node(dev, child) {
->  		struct gpio_led led = {};
-> -		enum of_gpio_flags flags;
-> -		const char *state;
-> +		const char *state = NULL;
-> +
-> +		led.gpiod = devm_get_named_gpiod_from_child(dev, child,
-> +							    "gpios", 0);
-> +		if (IS_ERR(led.gpiod)) {
-> +			device_put_child_node(dev, child);
-> +			goto err;
-> +		}
->  
-> -		led.gpio = of_get_gpio_flags(child, 0, &flags);
-> -		led.active_low = flags & OF_GPIO_ACTIVE_LOW;
-> -		led.name = of_get_property(child, "label", NULL) ? : child->name;
-> -		led.default_trigger =
-> -			of_get_property(child, "linux,default-trigger", NULL);
-> -		state = of_get_property(child, "default-state", NULL);
-> -		if (state) {
-> +		device_child_property_read_string(dev, child,
-> +						  "label", &led.name);
-> +		device_child_property_read_string(dev, child,
-> +						  "linux,default-trigger",
-> +						  &led.default_trigger);
-> +
-> +		if (!device_child_property_read_string(dev, child,
-> +						       "linux,default_state",
-> +						       &state)) {
->  			if (!strcmp(state, "keep"))
->  				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
->  			else if (!strcmp(state, "on"))
-> @@ -213,13 +212,14 @@ static struct gpio_leds_priv *gpio_leds_
->  				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
->  		}
->  
-> -		if (of_get_property(child, "retain-state-suspended", NULL))
-> +		if (!device_get_child_property(dev, child,
-> +					       "retain-state-suspended", NULL))
->  			led.retain_state_suspended = 1;
->  
->  		ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
-> -				      &pdev->dev, NULL);
-> +				      dev, NULL);
->  		if (ret < 0) {
-> -			of_node_put(child);
-> +			device_put_child_node(dev, child);
->  			goto err;
->  		}
->  	}
-> @@ -238,13 +238,6 @@ static const struct of_device_id of_gpio
->  };
->  
->  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
-> -#else /* CONFIG_OF_GPIO */
-> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
-> -{
-> -	return ERR_PTR(-ENODEV);
-> -}
-> -#endif /* CONFIG_OF_GPIO */
-> -
->  
->  static int gpio_led_probe(struct platform_device *pdev)
->  {
-> @@ -273,7 +266,7 @@ static int gpio_led_probe(struct platfor
->  			}
->  		}
->  	} else {
-> -		priv = gpio_leds_create_of(pdev);
-> +		priv = gpio_leds_create(pdev);
->  		if (IS_ERR(priv))
->  			return PTR_ERR(priv);
->  	}
-> @@ -300,7 +293,7 @@ static struct platform_driver gpio_led_d
->  	.driver		= {
->  		.name	= "leds-gpio",
->  		.owner	= THIS_MODULE,
-> -		.of_match_table = of_match_ptr(of_gpio_leds_match),
-> +		.of_match_table = of_gpio_leds_match,
->  	},
->  };
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But there are many IC with regulators that can be configured with different
+operating modes so this is a problem that has to be solved generically and
+in fact the regulator core already has a .initial_mode field in the struct
+regulation_constraints that is used to call the regulator driver .set_mode
+function handler with an initial mode, when regulator constraints are set.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+So with the old days of platform data, board files could fill this but with
+Device Trees is not possible. The same issue happens with suspend states
+since there isn't currently a way to fill this information on DT booting.
+That's why there were also different attempts to solve the suspend states
+issue like [2] and [3]. Chanwoo's series [4] seems to be close to finally
+fix the suspend states issue by filling this data from DT but it does not
+support the initial regulator operating mode so this series do that on top
+of Chanwoo's work.
+
+Possible use cases for default operating mode support in DT are:
+
+a) Boards wants to set different operating modes for regulators in order to
+   lower power at suspend time. For example some SoCs have a dedicated pin
+   that is pulled high during normal operation and is pulled down when the
+   system enters in sleep mode. A PMIC may support automatically disabling
+   a regulator, put it in low power mode or changing the voltage when is
+   signalled by the SoC that has entered in sleep mode. Each regulator could
+   have different constraints so being able to choose the mode is useful.
+
+b) Regulator drivers that read the operating mode from a HW register may be
+   reading OFF if the regulator was disabled and the PMIC is not reset on
+   warm reboot. In this case the .enable function may set OFF as the default
+   mode thus the regulator failing to be enabled. This can be worked around
+   by setting the mode to NORMAL if OFF is read from a hardware register but
+   is more robust to explicitly configure that from the DT.
+
+These patches do not really depend on Chanwoo's series but are based on top
+since both series are complementary to solve the same general issue and to
+avoid merge conflicts. But I can resend to just base on top of the regulator
+for-next branch if that is easier for you.
+
+The series is composed of the following patches:
+
+Javier Martinez Canillas (5):
+  regulator: of: Add regulator-initial-mode parse support
+  regulator: dt-bindings: Add DT include for constants
+  regulator: dt-bindings: Add regulator-initial-mode support
+  regulator: max77802: Add regulator operating mode set support
+  ARM: dts: Add initial regulator mode on exynos Peach boards
+
+ .../devicetree/bindings/regulator/regulator.txt    |  8 ++++++
+ arch/arm/boot/dts/exynos5420-peach-pit.dts         | 26 ++++++++++++++++++
+ arch/arm/boot/dts/exynos5800-peach-pi.dts          | 26 ++++++++++++++++++
+ drivers/regulator/max77802.c                       | 32 ++++++++++++++++++++++
+ drivers/regulator/of_regulator.c                   |  3 ++
+ include/dt-bindings/regulator/regulator.h          | 16 +++++++++++
+ 6 files changed, 111 insertions(+)
+ create mode 100644 include/dt-bindings/regulator/regulator.h
+
+Patch #1 adds support to set the .initial_mode from DT, patch #2 adds a
+include header to avoid DTS using magic numbers for the regulator modes,
+patch #3 describes the new "regulator-initial-mode" property in the DT
+binding doc, patch #4 adds supports to the max77802 for setting modes
+and finally patch #5 adds the initial regulator modes for the regulators
+in the max77802 PMIC of the Exynos Peach Chromebooks.
+
+Thanks a lot and best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2012/12/10/18
+[1]: https://lkml.org/lkml/2014/2/13/82
+[2]: https://lkml.org/lkml/2012/12/10/434
+[3]: https://lkml.org/lkml/2013/7/25/592
+[4]: https://lkml.org/lkml/2014/7/9/16
