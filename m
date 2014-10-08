@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaJHSAL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:00:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59040 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaJHSAJ (ORCPT
+	id S1753382AbaJHSFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:05:21 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:14662 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751046AbaJHSFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:00:09 -0400
-Message-ID: <54357BA7.3010609@codeaurora.org>
-Date: Wed, 08 Oct 2014 11:00:07 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 8 Oct 2014 14:05:19 -0400
+Message-Id: <20141008180518.092891251@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Wed, 08 Oct 2014 14:03:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 3/5] ftracetest: Add kprobe basic testcases
+References: <20141008180341.252728944@goodmis.org>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for register
- access
-References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>  <1412675448-11990-3-git-send-email-iivanov@mm-sol.com>  <20141007172606.GG16469@dtor-ws> <1412759584.13569.0.camel@iivanov-dev> <1412760633.13569.4.camel@iivanov-dev>
-In-Reply-To: <1412760633.13569.4.camel@iivanov-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0003-ftracetest-Add-kprobe-basic-testcases.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 02:30 AM, Ivan T. Ivanov wrote:
-> On Wed, 2014-10-08 at 12:13 +0300, Ivan T. Ivanov wrote:
->> On Tue, 2014-10-07 at 10:26 -0700, Dmitry Torokhov wrote:
->>> Hi Ivan,
->>>
->>> On Tue, Oct 07, 2014 at 12:50:46PM +0300, Ivan T. Ivanov wrote:
->>>> @@ -527,10 +538,55 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
->>>>   
->>>> +
->>>> +	kp->row_hold = devm_regmap_field_alloc(kp->dev, kp->regmap,
->>>> +					       info->row_hold);
->>>> +	if (IS_ERR(kp->row_hold))
->>>> +		return PTR_ERR(kp->row_hold);
->>> Why do we have to allocate all regmap fields separately instead of
->>> embedding them into keypad structure?
->>>
->> No particular reason. Will rework it.
->>
-> Oops. struct regmap_field is opaque. It seems that the allocation
-> is the only way that I could have instance of it.
->
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Maybe we can add an API to allocate an array of fields?
+Add basic testcases for kprobe dynamic events.
+This also shows that the ftracetest accepts sub-directory
+for new testcases.
 
+Link: http://lkml.kernel.org/p/20140922234254.23415.46964.stgit@kbuild-f20.novalocal
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ .../selftests/ftrace/test.d/kprobe/add_and_remove.tc       | 11 +++++++++++
+ tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc | 14 ++++++++++++++
+ 2 files changed, 25 insertions(+)
+ create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+ create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+new file mode 100644
+index 000000000000..5ddfb476eceb
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/add_and_remove.tc
+@@ -0,0 +1,11 @@
++#!/bin/sh
++# description: Kprobe dynamic event - adding and removing
++
++[ -f kprobe_events ] || exit 1
++
++echo 0 > events/enable || exit 1
++echo > kprobe_events || exit 1
++echo p:myevent do_fork > kprobe_events || exit 1
++grep myevent kprobe_events || exit 1
++[ -d events/kprobes/myevent ] || exit 1
++echo > kprobe_events
+diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+new file mode 100644
+index 000000000000..588fde97e93f
+--- /dev/null
++++ b/tools/testing/selftests/ftrace/test.d/kprobe/busy_check.tc
+@@ -0,0 +1,14 @@
++#!/bin/sh
++# description: Kprobe dynamic event - busy event check
++
++[ -f kprobe_events ] || exit 1
++
++echo 0 > events/enable || exit 1
++echo > kprobe_events || exit 1
++echo p:myevent do_fork > kprobe_events || exit 1
++[ -d events/kprobes/myevent ] || exit 1
++echo 1 > events/kprobes/myevent/enable || exit 1
++echo > kprobe_events && exit 1 # this must fail
++echo 0 > events/kprobes/myevent/enable || exit 1
++echo > kprobe_events # this must succeed
++
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+2.0.1
+
 
