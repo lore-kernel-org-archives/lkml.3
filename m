@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208AbaJHVVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:21:55 -0400
-Received: from mail-oi0-f47.google.com ([209.85.218.47]:60230 "EHLO
-	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149AbaJHVVy (ORCPT
+	id S1755329AbaJHVXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:23:24 -0400
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:58380 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280AbaJHVXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:21:54 -0400
+	Wed, 8 Oct 2014 17:23:20 -0400
+Message-ID: <5435AB3D.3040407@landley.net>
+Date: Wed, 08 Oct 2014 16:23:09 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141008160956.7584d303@as>
-References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
-	<CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
-	<20141008154659.31f46436@as>
-	<5435A4A4.1070101@zytor.com>
-	<20141008160956.7584d303@as>
-Date: Wed, 8 Oct 2014 17:21:53 -0400
-X-Google-Sender-Auth: PmKkHwmr1uZmDCFgef7HD-nPfxA
-Message-ID: <CA+5PVA6VuODM1q5AH_-ZeKnzzsmjquY7ykbHow=aWQAXc38bPg@mail.gmail.com>
-Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
+ current root
+References: <1412683977-29543-1-git-send-email-avagin@openvz.org>	<87mw97wqvx.fsf@x220.int.ebiederm.org>	<20141008110829.GC24908@paralelels.com>	<CALCETrX4XrgbQNZZa7=1009KqhJ2gT+VBUkC15+59K9yEiTSbQ@mail.gmail.com> <87vbnue56f.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87vbnue56f.fsf@x220.int.ebiederm.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 5:09 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> On Wed, 08 Oct 2014 13:55:00 -0700
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
->
->> On 10/08/2014 01:46 PM, Chuck Ebbert wrote:
->> >
->> > Fedora doesn't cross-compile i686 builds because of problems like
->> > this. It sets up an i386 chroot and runs all native tools inside of
->> > it.
->> >
->>
->> Breaking cross-compilation is not okay, though, regardless of what
->> Fedora does.  It should be okay to, for example, build an i386 kernel on
->> an ARM box.
->>
->
-> I think they tried that for a while, and ended up chasing compiler
-> and makefile bugs all day. And then there's the software that wants
-> to run self-tests as part of its build...
+On 10/08/14 14:23, Eric W. Biederman wrote:
+>> Could we have an extra rootfs-like fs that is always completely empty,
+>> doesn't allow any writes, and can sit at the bottom of container
+>> namespace hierarchies?  If so, and if we add a new syscall that's like
+>> pivot_root (or unshare) but prunes the hierarchy, then we could switch
+>> to that rootfs then.
+> 
+> Or equally have something that guarantees that rootfs is empty and
+> read-only at the time the normal root filesystem is mounted.  That is
+> certainly a much more localized change if we want to go there.
 
-The Fedora kernel package cross builds the other way (ARM on i386)
-just fine.  It might build ARM->i386 as well, but that's less useful.
-At any rate, Peter is talking about the kernel, not software in
-general.
+What do you mean "normal" root filesystem? It is entirely possible (and
+in fact common in the embedded world) to run from rootfs. I pushed my
+old inittmpfs patches (at the request of cray) last year because being
+able to take down the system with "cat /dev/zero > /blah" (as rootfs
+allows and tmpfs doesn't) is a bad thing.
 
-josh
+Rootfs is about as special as PID 1 is. We don't filter out PID 1 from
+"ps" to avoid confusing people, but for some reason whoever did
+/proc/$PID/mountinfo decided that rootfs shouldn't show up because magic
+magic specialness.
+
+We show /run, which is a tmpfs instance. If I mount two different
+filesystems on top of each other on /mnt, it shows both. (Overmounts
+were not invented by rootfs.) But no, mountinfo filters out rootfs
+because magic magic specialness.
+
+It makes me sad that this kind of special-case thinking is allowed in
+the kernel.
+
+> I am half tempted to suggest that mount --move /some/path / be updated
+> to make the old / just go away (perhaps to be replaced with a read-only
+> empty rootfs).  That gets us into figuring out if we break userspace
+> which is a big challenge.
+
+My concern was that chroot() moving a magic "/" pointer that you can
+trivially escape from with x=open("."); chroot("sub"); fdchdir(".");
+chdir("../../../../../../../../.."); is having extra code in the kernel
+to do it _wrong_.
+
+We have per-process namespaces now. We can actually adjust the mount
+tree (inserting a new bind mount if the directory we're changing to is
+not already a mount point). If a per-process namespace needs to be
+anchored by a tmpfs, fine. But requiring that to be teh SAME instance
+globally for the entire system is not what containers is _about_. It's
+not true for PID 1 and it shouldn't be true for rootfs.
+
+By all means, if a filesystem is no longer accessable in a namespace,
+decrement its reference count. (Keeping in mind that a bind mount should
+count as a reference, and rootfs should always have a nonzero reference
+count.) But "/" is not special in this regard. If you want to make all
+overmounts vanish (which seems like a really bad idea and breaks 40
+years of unix semantics), argue for that. Please stop treating rootfs
+like it isn't potentialy usable as a full-fledged filesystem.
+
+(Pet peeve of mine.)
+
+> Eric
+
+Rob
