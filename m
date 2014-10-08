@@ -1,116 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaJHLYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:24:16 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:64199 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931AbaJHLYN (ORCPT
+	id S1756135AbaJHLZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:25:16 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63569 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492AbaJHLZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:24:13 -0400
+	Wed, 8 Oct 2014 07:25:14 -0400
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 To: linux-mmc@vger.kernel.org
 Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
         Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [RFC PATCH 0/2] mmc: Fix prepared resource handling at bkops
-Date: Wed,  8 Oct 2014 12:23:35 +0100
-Message-Id: <1412767415-6624-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [RFC PATCH 1/2] mmc: core: fix prepared requests while doing bkops
+Date: Wed,  8 Oct 2014 12:24:24 +0100
+Message-Id: <1412767464-6677-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412767415-6624-1-git-send-email-srinivas.kandagatla@linaro.org>
+References: <1412767415-6624-1-git-send-email-srinivas.kandagatla@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+While starting the bkops the previously prepared request should be canceled
+and restarted after the bkops. As the prepared resource might already
+setup the dma channels and ready to be started. Now with the arrival of bkops
+request this prepared request can be serviced ONLY after the bkops. So
+holding on to the prepared request in the host driver is confusing at
+this point in time, so it makes sense to cleanup such dangling requests and
+reissue this request once bkops is done.
+Canceling the prepared request would give opportunity to the host drivers
+to perform cleanup on the prepared request.
 
-During recent eMMC stress testing on IFC6410 board we always hit below crash in few mins.
+Without this patch host drivers like mmci gets confused when a blocking
+request like send_ext_csd(CMD8) is issued while there is already a prepared
+request. With the help of this patch, the driver can better manage such
+blocking requests and cleanup the prepared requests which are not started yet.
 
-Initial investigations showed that the mmci driver gets confused sometimes when
-handling CMD8 as part of blkops request. The reason looks straight forward,
-mmci driver caches the dma descriptor and channel for the prepared request,
-so if a new blocking request like CMD8 arrives, it would think that the request
-is already prepared as dma_desc_current and dma_current looks valid. As a result
-the driver does not prepare the dma channel for CMD8, so at the end the driver
-notices that fifo has still some bytes and driver crashes. 
+Without this patch I hit below crash on Qualcomm APQ8064 based IFC6410 board
+with mmci host driver.
 
-Also the problem seems to be partly in the core as well, which is sending a
-blocking command after preparing another request.
+mmci-pl18x 12400000.sdcc: error during DMA transfer!
+Unable to handle kernel paging request at virtual address 40000000
+pgd = c0204000
+[40000000] *pgd=00000000
+Internal error: Oops: 805 [#1] SMP ARM
+Modules linked in: ipv6 ath6kl_sdio ath6kl_core
+CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.17.0-rc7-linaro-multi-v7 #1
+task: c0c9d7e0 ti: c0c92000 task.ti: c0c92000
+PC is at v7_dma_inv_range+0x34/0x4c
+LR is at __dma_page_dev_to_cpu+0x80/0x100
+pc : [<c021efc0>]    lr : [<c021af18>]    psr: 400f0193
+sp : c0c93e20  ip : c0c9a478  fp : c08ea538
+r10: c0c9f548  r9 : 00000002  r8 : e97d9000
+r7 : 00000200  r6 : c0c9d504  r5 : c0db0880  r4 : 00000000
+r3 : 0000003f  r2 : 00000040  r1 : 40000200  r0 : 40000000
+Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5787d  Table: a9ef406a  DAC: 00000015
+Process swapper/0 (pid: 0, stack limit = 0xc0c92250)
+Stack: (0xc0c93e20 to 0xc0c94000)
+3e20: c021f058 e9a17178 e9a171bc e99dfd6c 00000001 00000001 e995de10 00000002
+3e40: 00000000 c021b574 00000000 c04bc4a4 00000000 e9b49ac0 c0ce6e6c e99dfda4
+3e60: 00000088 e9810780 c0d8291c c072ea58 00000000 c072d3fc 00000000 c072f534
+3e80: 00000000 e9b49ac0 00000100 c0c9a444 00000088 c072f6b4 c072f5d4 e9d40080
+3ea0: e98107dc 00000000 00000000 c0280a60 00000000 7d55bf61 e9810780 e98107dc
+3ec0: 00000000 f0002000 c0d460e8 c0d460e8 c0c92000 c0280b60 e9810780 c0ce7190
+3ee0: 00000000 c028369c c02835f4 00000088 00000088 c0280278 c0c8ec70 c020f080
+3f00: f000200c c0c9a958 c0c93f28 c02088e4 c04bd630 c04bd5bc 200f0013 ffffffff
+3f20: c0c93f5c c0212800 00000001 a987c000 c0c93f3c c04bd574 00000000 0000015b
+3f40: ea7a0e40 00000000 c0d460e8 c0d460e8 c0c92000 c08ea538 29b12000 c0c93f70
+3f60: c04bd630 c04bd5bc 200f0013 ffffffff c04bd574 c071bd24 7d50c9b4 c0719a44
+3f80: 7d50c9b4 0000015b c0c9a498 c0c92028 c0c9a498 c0c9a4fc ea7a0e40 c0c8ee38
+3fa0: c0d460e8 c0276198 00000000 c0d8291a 00000000 c0c9a400 00000000 c0be0bc4
+3fc0: ffffffff ffffffff c0be05f8 00000000 00000000 c0c533d8 c0d82ed4 c0c9a47c
+3fe0: c0c533d4 c0c9e870 8020406a 511f06f0 00000000 80208074 00000000 00000000
+[<c021efc0>] (v7_dma_inv_range) from [<c021af18>] (__dma_page_dev_to_cpu+0x80/0x100)
+[<c021af18>] (__dma_page_dev_to_cpu) from [<c021b574>] (arm_dma_unmap_sg+0x5c/0x84)
+[<c021b574>] (arm_dma_unmap_sg) from [<c072ea58>] (mmci_dma_unmap.isra.16+0x60/0x74)
+[<c072ea58>] (mmci_dma_unmap.isra.16) from [<c072f534>] (mmci_data_irq+0x1fc/0x29c)
+[<c072f534>] (mmci_data_irq) from [<c072f6b4>] (mmci_irq+0xe0/0x114)
+[<c072f6b4>] (mmci_irq) from [<c0280a60>] (handle_irq_event_percpu+0x78/0x134)
+[<c0280a60>] (handle_irq_event_percpu) from [<c0280b60>] (handle_irq_event+0x44/0x64)
+[<c0280b60>] (handle_irq_event) from [<c028369c>] (handle_fasteoi_irq+0xa8/0x1a8)
+[<c028369c>] (handle_fasteoi_irq) from [<c0280278>] (generic_handle_irq+0x2c/0x3c)
+[<c0280278>] (generic_handle_irq) from [<c020f080>] (handle_IRQ+0x40/0x90)
+[<c020f080>] (handle_IRQ) from [<c02088e4>] (gic_handle_irq+0x38/0x68)
+[<c02088e4>] (gic_handle_irq) from [<c0212800>] (__irq_svc+0x40/0x54)
+Exception stack(0xc0c93f28 to 0xc0c93f70)
+3f20:                   00000001 a987c000 c0c93f3c c04bd574 00000000 0000015b
+3f40: ea7a0e40 00000000 c0d460e8 c0d460e8 c0c92000 c08ea538 29b12000 c0c93f70
+3f60: c04bd630 c04bd5bc 200f0013 ffffffff
+[<c0212800>] (__irq_svc) from [<c04bd5bc>] (msm_cpu_pm_enter_sleep+0x48/0x4c)
+[<c04bd5bc>] (msm_cpu_pm_enter_sleep) from [<c071bd24>] (qcom_lpm_enter_spc+0x20/0x2c)
+[<c071bd24>] (qcom_lpm_enter_spc) from [<c0719a44>] (cpuidle_enter_state+0x44/0xf0)
+[<c0719a44>] (cpuidle_enter_state) from [<c0276198>] (cpu_startup_entry+0x1f4/0x238)
+[<c0276198>] (cpu_startup_entry) from [<c0be0bc4>] (start_kernel+0x384/0x390)
+Code: 1e070f3e e1110003 e1c11003 1e071f3e (ee070f36)
+---[ end trace cf6cb3f6432c9834 ]---
+Kernel panic - not syncing: Fatal exception in interrup
 
-These two patches changes the way the prepared request is handled in the core during bkops.
-After applying these two patches I see no crashes.
-
-Am not sure if someone else encountered such issue, also I would like to know your opinion
-on the overall approach of fixing this issue.
-
-  
-    mmci-pl18x 12400000.sdcc: error during DMA transfer!
-    Unable to handle kernel paging request at virtual address 40000000
-    pgd = c0204000
-    [40000000] *pgd=00000000
-    Internal error: Oops: 805 [#1] SMP ARM
-    Modules linked in: ipv6 ath6kl_sdio ath6kl_core
-    CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W      3.17.0-rc7-linaro-multi-v7 #1
-    task: c0c9d7e0 ti: c0c92000 task.ti: c0c92000
-    PC is at v7_dma_inv_range+0x34/0x4c
-    LR is at __dma_page_dev_to_cpu+0x80/0x100
-    pc : [<c021efc0>]    lr : [<c021af18>]    psr: 400f0193
-    sp : c0c93e20  ip : c0c9a478  fp : c08ea538
-    r10: c0c9f548  r9 : 00000002  r8 : e97d9000
-    r7 : 00000200  r6 : c0c9d504  r5 : c0db0880  r4 : 00000000
-    r3 : 0000003f  r2 : 00000040  r1 : 40000200  r0 : 40000000
-    Flags: nZcv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-    Control: 10c5787d  Table: a9ef406a  DAC: 00000015
-    Process swapper/0 (pid: 0, stack limit = 0xc0c92250)
-    Stack: (0xc0c93e20 to 0xc0c94000)
-    3e20: c021f058 e9a17178 e9a171bc e99dfd6c 00000001 00000001 e995de10 00000002
-    3e40: 00000000 c021b574 00000000 c04bc4a4 00000000 e9b49ac0 c0ce6e6c e99dfda4
-    3e60: 00000088 e9810780 c0d8291c c072ea58 00000000 c072d3fc 00000000 c072f534
-    3e80: 00000000 e9b49ac0 00000100 c0c9a444 00000088 c072f6b4 c072f5d4 e9d40080
-    3ea0: e98107dc 00000000 00000000 c0280a60 00000000 7d55bf61 e9810780 e98107dc
-    3ec0: 00000000 f0002000 c0d460e8 c0d460e8 c0c92000 c0280b60 e9810780 c0ce7190
-    3ee0: 00000000 c028369c c02835f4 00000088 00000088 c0280278 c0c8ec70 c020f080
-    3f00: f000200c c0c9a958 c0c93f28 c02088e4 c04bd630 c04bd5bc 200f0013 ffffffff
-    3f20: c0c93f5c c0212800 00000001 a987c000 c0c93f3c c04bd574 00000000 0000015b
-    3f40: ea7a0e40 00000000 c0d460e8 c0d460e8 c0c92000 c08ea538 29b12000 c0c93f70
-    3f60: c04bd630 c04bd5bc 200f0013 ffffffff c04bd574 c071bd24 7d50c9b4 c0719a44
-    3f80: 7d50c9b4 0000015b c0c9a498 c0c92028 c0c9a498 c0c9a4fc ea7a0e40 c0c8ee38
-    3fa0: c0d460e8 c0276198 00000000 c0d8291a 00000000 c0c9a400 00000000 c0be0bc4
-    3fc0: ffffffff ffffffff c0be05f8 00000000 00000000 c0c533d8 c0d82ed4 c0c9a47c
-    3fe0: c0c533d4 c0c9e870 8020406a 511f06f0 00000000 80208074 00000000 00000000
-    [<c021efc0>] (v7_dma_inv_range) from [<c021af18>] (__dma_page_dev_to_cpu+0x80/0x100)
-    [<c021af18>] (__dma_page_dev_to_cpu) from [<c021b574>] (arm_dma_unmap_sg+0x5c/0x84)
-    [<c021b574>] (arm_dma_unmap_sg) from [<c072ea58>] (mmci_dma_unmap.isra.16+0x60/0x74)
-    [<c072ea58>] (mmci_dma_unmap.isra.16) from [<c072f534>] (mmci_data_irq+0x1fc/0x29c)
-    [<c072f534>] (mmci_data_irq) from [<c072f6b4>] (mmci_irq+0xe0/0x114)
-    [<c072f6b4>] (mmci_irq) from [<c0280a60>] (handle_irq_event_percpu+0x78/0x134)
-    [<c0280a60>] (handle_irq_event_percpu) from [<c0280b60>] (handle_irq_event+0x44/0x64)
-    [<c0280b60>] (handle_irq_event) from [<c028369c>] (handle_fasteoi_irq+0xa8/0x1a8)
-    [<c028369c>] (handle_fasteoi_irq) from [<c0280278>] (generic_handle_irq+0x2c/0x3c)
-    [<c0280278>] (generic_handle_irq) from [<c020f080>] (handle_IRQ+0x40/0x90)
-    [<c020f080>] (handle_IRQ) from [<c02088e4>] (gic_handle_irq+0x38/0x68)
-    [<c02088e4>] (gic_handle_irq) from [<c0212800>] (__irq_svc+0x40/0x54)
-    Exception stack(0xc0c93f28 to 0xc0c93f70)
-    3f20:                   00000001 a987c000 c0c93f3c c04bd574 00000000 0000015b
-    3f40: ea7a0e40 00000000 c0d460e8 c0d460e8 c0c92000 c08ea538 29b12000 c0c93f70
-    3f60: c04bd630 c04bd5bc 200f0013 ffffffff
-    [<c0212800>] (__irq_svc) from [<c04bd5bc>] (msm_cpu_pm_enter_sleep+0x48/0x4c)
-    [<c04bd5bc>] (msm_cpu_pm_enter_sleep) from [<c071bd24>] (qcom_lpm_enter_spc+0x20/0x2c)
-    [<c071bd24>] (qcom_lpm_enter_spc) from [<c0719a44>] (cpuidle_enter_state+0x44/0xf0)
-    [<c0719a44>] (cpuidle_enter_state) from [<c0276198>] (cpu_startup_entry+0x1f4/0x238)
-    [<c0276198>] (cpu_startup_entry) from [<c0be0bc4>] (start_kernel+0x384/0x390)
-    Code: 1e070f3e e1110003 e1c11003 1e071f3e (ee070f36)
-    ---[ end trace cf6cb3f6432c9834 ]---
-    Kernel panic - not syncing: Fatal exception in interrup
-
---srini
-
-Srinivas Kandagatla (2):
-  mmc: core: fix prepared requests while doing bkops
-  mmc: mmci: fix mmci_post_request
-
+Reported-by: Nicolas Dechesne <nicolas.dechesne@linaro.org>
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+---
  drivers/mmc/core/core.c | 12 +++++++++++-
- drivers/mmc/host/mmci.c |  7 +++++++
- 2 files changed, 18 insertions(+), 1 deletion(-)
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index d03a080..4d9b142 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -538,8 +538,18 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
+ 		if (host->card && mmc_card_mmc(host->card) &&
+ 		    ((mmc_resp_type(host->areq->mrq->cmd) == MMC_RSP_R1) ||
+ 		     (mmc_resp_type(host->areq->mrq->cmd) == MMC_RSP_R1B)) &&
+-		    (host->areq->mrq->cmd->resp[0] & R1_EXCEPTION_EVENT))
++		    (host->areq->mrq->cmd->resp[0] & R1_EXCEPTION_EVENT)) {
++
++			/* Cancel the prepared request */
++			if (areq)
++				mmc_post_req(host, areq->mrq, -EINVAL);
++
+ 			mmc_start_bkops(host->card, true);
++
++			/* prepare the request again */
++			if (areq)
++				mmc_pre_req(host, areq->mrq, !host->areq);
++		}
+ 	}
+ 
+ 	if (!err && areq)
 -- 
 1.9.1
 
