@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864AbaJHKlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:41:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60679 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831AbaJHKlX (ORCPT
+	id S1755967AbaJHKlr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:41:47 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:40841 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755908AbaJHKlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:41:23 -0400
-Date: Wed, 8 Oct 2014 12:41:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jet Chen <jet.chen@intel.com>,
-        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
-        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
-Subject: Re: [trace events] WARNING: CPU: 0 PID: 91 at
- kernel/sched/core.c:7253 __might_sleep()
-Message-ID: <20141008104120.GH10832@worktop.programming.kicks-ass.net>
-References: <20141008100613.GA17869@wfg-t540p.sh.intel.com>
+	Wed, 8 Oct 2014 06:41:45 -0400
+Date: Wed, 8 Oct 2014 11:41:39 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v2 0/8] mtd: nand: Support for new DT NAND driver
+Message-ID: <20141008104139.GF20647@lee--X1>
+References: <1408357919-19793-1-git-send-email-lee.jones@linaro.org>
+ <20140819013729.GP18411@ld-irv-0074>
+ <20140820065744.GE4266@lee--X1>
+ <20141002061841.GE3248@norris-Latitude-E6410>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141008100613.GA17869@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141002061841.GE3248@norris-Latitude-E6410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 06:06:13PM +0800, Fengguang Wu wrote:
-> [    8.867644] WARNING: CPU: 0 PID: 91 at kernel/sched/core.c:7253 __might_sleep+0x9a/0x378()
-> [    8.869031] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff8d79b511>] event_test_thread+0x48/0x93
-> [    8.870533] Modules linked in:
-> [    8.870979] CPU: 0 PID: 91 Comm: test-events Not tainted 3.17.0-rc7-00109-g2f85d18 #37
-> [    8.872061] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-> [    8.873428]  0000000000000000 ffff880010ec3c80 ffffffff8c696943 ffff880010ec3cb8
-> [    8.874503]  ffffffff8be7cae5 ffffffff8bead236 0000000000000001 ffff88001161fa01
-> [    8.888390]  0000000000000001 0000000000000000 ffff880010ec3d20 ffffffff8be7cb46
-> [    8.890628] Call Trace:
-> [    8.890978]  [<ffffffff8c696943>] dump_stack+0x19/0x1b
-> [    8.891689]  [<ffffffff8be7cae5>] warn_slowpath_common+0x8f/0xa8
-> [    8.892535]  [<ffffffff8bead236>] ? __might_sleep+0x9a/0x378
-> [    8.893307]  [<ffffffff8be7cb46>] warn_slowpath_fmt+0x48/0x50
-> [    8.894083]  [<ffffffff8be0dd55>] ? sched_clock+0x9/0xd
-> [    8.894797]  [<ffffffff8d79b511>] ? event_test_thread+0x48/0x93
-> [    8.895602]  [<ffffffff8d79b511>] ? event_test_thread+0x48/0x93
-> [    8.896421]  [<ffffffff8bead236>] __might_sleep+0x9a/0x378
-> [    8.897164]  [<ffffffff8c6a0227>] down_read+0x26/0x98
-> [    8.897855]  [<ffffffff8be8f503>] exit_signals+0x27/0x1c2
-> [    8.898598]  [<ffffffff8be7fedd>] do_exit+0x193/0x10bd
-> [    8.899298]  [<ffffffff8bfd1969>] ? kfree+0x4a0/0x4d7
-> [    8.900028]  [<ffffffff8d79b4c9>] ? event_trace_self_tests+0x6d7/0x6d7
-> [    8.900946]  [<ffffffff8d79b4c9>] ? event_trace_self_tests+0x6d7/0x6d7
-> [    8.914871]  [<ffffffff8bea4b65>] kthread+0x156/0x156
-> [    8.915571]  [<ffffffff8c69c0f8>] ? wait_for_common+0x3e/0x224
-> [    8.916381]  [<ffffffff8bea4a0f>] ? insert_kthread_work+0xe7/0xe7
-> [    8.917203]  [<ffffffff8c6a353a>] ret_from_fork+0x7a/0xb0
-> [    8.917937]  [<ffffffff8bea4a0f>] ? insert_kthread_work+0xe7/0xe7
-> [    8.918800] ---[ end trace 14d02ef17adbc114 ]---
+On Wed, 01 Oct 2014, Brian Norris wrote:
 
+> I guess I never answered this one:
+> 
+> On Wed, Aug 20, 2014 at 07:57:44AM +0100, Lee Jones wrote:
+> > On Mon, 18 Aug 2014, Brian Norris wrote:
+> > > Bisectability test results for configuration
+> > > "arm-multi_v7_defconfig,arm,arm-unknown-linux-gnueabi-" 
+> > > 
+> > > Failed to build patch #7: 5936df30f5e1 mtd: nand: stm_nand_bch: add
+> > > support for ST's BCH NAND controller 
+> > > Configuration: "arm-multi_v7_defconfig, architecture arm".
+> > 
+> > How do _you_ test for bisectability?  Do you have a script?
+> > 
+> > What outputs "Failed to build patch #7: ..."?
+> 
+> 	#!/bin/sh
+> 	for c in `git rev-list origin/master..HEAD`
+> 	do
+> 		git checkout $c
+> 		make || break
+> 	done
 
-Steve, wth is that thing supposed to do?
+Yes, I have done similar things with `git log --format=%H` and/or `git
+rebase --exec=build-script`
 
-	set_current_state(TASK_INTERRUPTIBLE);
-	while (!kthread_should_stop())
-		schedule();
+> I use aiaiai [1]. But you could easily test bisectability without it.
+> [1] http://lwn.net/Articles/488992/
+>     http://git.infradead.org/aiaiai.git
 
-That looks broken alright. It'll revert to a yield() 'spin' loop if it
-ever gets a wakeup for anything other than the kthread_stop().
+This is what I was really after, thanks.
 
-Did you mean to write something like:
-
-	set_current_state(TASK_INTERRUPTIBLE);
-	while (!kthread_should_stop()) {
-		schedule();
-		set_current_state(TASK_INTERRUPTIBLE);
-	}
-	__set_current_state(TASK_RUNNING);
-
-?
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
