@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbaJHMPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:15:07 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:53226 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaJHMPF (ORCPT
+	id S1756967AbaJHMPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:15:39 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:50159 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250AbaJHMPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:15:05 -0400
-Date: Wed, 8 Oct 2014 08:15:02 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Arun KS <getarunks@gmail.com>
-Cc: Arun KS <arunks.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        laijs@cn.fujitsu.com, Silesh C V <saileshcv@gmail.com>
-Subject: Re: [Workqueue] crash in process_one_work
-Message-ID: <20141008121502.GA8184@htj.dyndns.org>
-References: <CAKZGPAPS+x2V3Ajj323EUStpWGmZ6taOuovjqA3_kaYXA3T_Ag@mail.gmail.com>
- <20141006153224.GC18303@htj.dyndns.org>
- <CABOM9ZpEhh7PnJT0hRa=Jx1CfYTU0QTG_71Qz-iB3VxygsYgzw@mail.gmail.com>
+	Wed, 8 Oct 2014 08:15:38 -0400
+Date: Wed, 8 Oct 2014 13:15:35 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring
+ support
+Message-ID: <20141008121535.GT14343@console-pimps.org>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-9-git-send-email-matt@console-pimps.org>
+ <20141007194310.GC4750@worktop.programming.kicks-ass.net>
+ <20141008103658.GP14343@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABOM9ZpEhh7PnJT0hRa=Jx1CfYTU0QTG_71Qz-iB3VxygsYgzw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141008103658.GP14343@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Arun.
-
-On Wed, Oct 08, 2014 at 05:30:20PM +0530, Arun KS wrote:
-> > I sure hope not.  How reproducible is the issue?  Can you try w/
-> > CONFIG_DEBUG_OBJECTS_WORK enabled?
+On Wed, 08 Oct, at 11:36:58AM, Matt Fleming wrote:
+> On Tue, 07 Oct, at 09:43:10PM, Peter Zijlstra wrote:
+> > On Wed, Sep 24, 2014 at 03:04:12PM +0100, Matt Fleming wrote:
+> > > +/*
+> > > + * Determine if @a and @b measure the same set of tasks.
+> > > + */
+> > > +static bool __match_event(struct perf_event *a, struct perf_event *b)
+> > > +{
+> > > +	if ((a->attach_state & PERF_ATTACH_TASK) !=
+> > > +	    (b->attach_state & PERF_ATTACH_TASK))
+> > > +		return false;
+> > > +
+> > > +	/* not task */
+> > > +
+> > > +	return true; /* if not task, we're machine wide */
+> > > +}
+> > 
+> > You cut too much out there. That first test checks weather the two
+> > events are of the same type; ie. both tasks or both cpu. After that you
+> > still need to verify that they are indeed the same target.
 > 
-> Thanks for replying.
-> That was a problem with one of our driver. It was freeing the
-> memory(struct work) without flushing workqueue.
-> We caught faulty driver by adding a BUG_ON() in INIT_WORK and looking
-> at the func pointer in work_struct( which will be pointing to the
-> faulty driver work function)
-> 
-> 1) faulty driver queue_work to system_unbownded_wq
-> 2) free work_struct memory, but it is still queued in the work queue.
-> 3) another driver request the memory from SLAB, go the same memory, it INIT_WORK
-> 4) process work try to execute the work queued by the faulty driver,
-> result in a crash.
+> This gets fixed in PATCH 10 where we actually implement monitoring of
+> task events. At this point in the series, we'll return -EINVAL from
+> intel_cqm_event_init() for anything other than a cpu event.
 
-Ah, good to hear.  I think bugs like the above should be detectable
-with CONFIG_DEBUG_OBJECTS_WORK, so if you see something similar next
-time, please try it out.
+I was having an interesting discussion with one of the teams using this
+stuff at Intel and they made the suggestion that when using,
 
-Thanks.
+  perf stat -p <pid>
+
+we should by default opt for sharing an RMID between all tasks in that
+thread group, rather that assigning a new RMID for each task, which is
+what we do currently.
+
+Right now, it's like the Oprah Winfrey of RMID assignment, "You get an
+RMID, and you get an RMID!"
+
+Which means we'll run out of RMIDs quicker, and enable the rotation code
+sooner.
+
+I'm wondering whether we should require that the user specify whether
+they want per-thread monitoring if using -p, via some perf tools event
+modifier, and make the record-per-thread-data scenario the exceptional
+case, rather than the default?
 
 -- 
-tejun
+Matt Fleming, Intel Open Source Technology Center
