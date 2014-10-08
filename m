@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaJHG0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:26:42 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:39412 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaJHG0i (ORCPT
+	id S1754424AbaJHG05 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:26:57 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:37962 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754285AbaJHG0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:26:38 -0400
+	Wed, 8 Oct 2014 02:26:40 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: Morten Rasmussen <morten.rasmussen@arm.com>, peterz@infradead.org,
         mingo@redhat.com
@@ -14,9 +14,9 @@ Cc: dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
         vincent.guittot@linaro.org, nicolas.pitre@linaro.org,
         rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
         tuukka.tikkanen@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH RFC 1/2] sched: cfs: introduce capacity_ops
-Date: Tue,  7 Oct 2014 23:26:11 -0700
-Message-Id: <1412749572-29449-2-git-send-email-mturquette@linaro.org>
+Subject: [PATCH RFC 2/2] cpufreq: arm_big_little: provide cpu capacity
+Date: Tue,  7 Oct 2014 23:26:12 -0700
+Message-Id: <1412749572-29449-3-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412749572-29449-1-git-send-email-mturquette@linaro.org>
 References: <20141008060712.4379.42509@quantum>
@@ -25,156 +25,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scheduler needs to know the current capacity of a cpu taking into
-account micro-architectural differences as well as current cpu
-frequency. The method for determining this may vary not only from
-architecture to architecture, but also within differnt platforms of the
-same architectures.
+Move the cpu capacity bits out of arch/arm/ and into the CPUfreq driver.
+Not all ARM devices will use CPUfreq and it is unsafe to assume as such
+in topology.c.
 
-struct capacity_ops allows for a machine-specific backend to provide
-this data. Access to the ops is protected by rcu_read_lock(). This is to
-prevent a loadable module that provides capacity_ops callbacks from
-pulling the rug out from under us while the scheduler is still using the
-function.
-
-A weak arch function used to be responsible for this, but that approach
-is too limiting. For example various ARM SoCs may have wildly different
-methods for determining the current cpu capacity. capacity_ops allows
-many methods to be compiled into the kernel and then selects one at
-run-time.
-
-The default ops require no knowledge of hardware and do nothing. This
-patch only includes .get_capacity, but future ops for updating and
-setting the capacity in the works.
+Instead, use the new capacity_ops introduced into CFS. If this code is
+generic enough then it could be factored and shared via a header to make
+it easier for other CPUfreq drivers to take advantage of it.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
-Note that struct capacity_ops should have other members in it in the
-future. I have an additional patch that I plan to post soon which adds
-.eval_capacity as a way to for the scheduler to initiate a change in cpu
-capacity (e.g. scale cpu frequency).
+This approach simply builds on top of Morten's series. I am not sure
+that the per-cpu method is the best way to go in the future. And if so I
+imagine that the CPUfreq core could provide everything except for the
+cpu_eff part.
 
- include/linux/sched.h | 28 ++++++++++++++++++++++++++++
- kernel/sched/fair.c   | 41 +++++++++++++++++++++++++++++++++++------
- 2 files changed, 63 insertions(+), 6 deletions(-)
+In general I think that the overlap between CPUfreq drivers and
+arch/arm/kernel/topology.c is something that needs to addresssed soon,
+as both pieces of code are re-inventing parts of each other.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index fa0b121..4b69000 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -846,6 +846,34 @@ enum cpu_idle_type {
- 	CPU_MAX_IDLE_TYPES
+ arch/arm/include/asm/topology.h  |  2 ++
+ arch/arm/kernel/topology.c       | 42 ++-------------------------------
+ drivers/cpufreq/arm_big_little.c | 51 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+index 2fe85ff..3951232 100644
+--- a/arch/arm/include/asm/topology.h
++++ b/arch/arm/include/asm/topology.h
+@@ -14,6 +14,8 @@ struct cputopo_arm {
  };
  
-+/**
-+ * capacity_ops -  helpers for understanding and changing scalable cpu capacity
-+ * @get_capacity:  returns current capacity of cpu, accounting for
-+ * 		   micro-architecture and frequency variability
-+ *
-+ * capacity_ops contains machine-specific callbacks for retreiving
-+ * power-adjusted capacity and updating capacity on a set of cpus.
-+ *
-+ * The default ops do not interact with hardware.
-+ *
-+ * Using these ops requires holding rcu_read_lock() across the function call to
-+ * protect against function pointers disappearing during use. This can happen
-+ * if a loadable module provides the callbacks and is unloaded during execution
-+ * of the callback.
-+ *
-+ * Updates to the ops (such as implementations based on a CPUfreq backend)
-+ * requires acquring capacity_ops.lock during the change, followed by a call to
-+ * synchronize_rcu().
-+ */
-+struct capacity_ops {
-+	unsigned long (*get_capacity)(int cpu);
-+	spinlock_t lock;
-+};
-+
-+extern struct capacity_ops cfs_capacity_ops;
-+
-+unsigned long default_scale_load_capacity(int cpu);
-+
+ extern struct cputopo_arm cpu_topology[NR_CPUS];
++extern unsigned long max_raw_capacity;
++DECLARE_PER_CPU(unsigned long, cpu_raw_capacity);
+ 
+ #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
+ #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+index 5f049ec..a2c9b5f 100644
+--- a/arch/arm/kernel/topology.c
++++ b/arch/arm/kernel/topology.c
+@@ -79,8 +79,8 @@ static unsigned long *__cpu_capacity;
+ 
+ static unsigned long middle_capacity = 1;
+ 
+-static unsigned long max_raw_capacity = 1;
+-static DEFINE_PER_CPU(unsigned long, cpu_raw_capacity);
++unsigned long max_raw_capacity = 1;
++DEFINE_PER_CPU(unsigned long, cpu_raw_capacity);
+ 
  /*
-  * Increase resolution of cpu_capacity calculations
-  */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 025bf3c..8124c7b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2264,8 +2264,6 @@ static u32 __compute_runnable_contrib(u64 n)
- 	return contrib + runnable_avg_yN_sum[n];
+  * Iterate all CPUs' descriptor in DT and compute the efficiency
+@@ -175,44 +175,6 @@ static void update_cpu_capacity(unsigned int cpu)
+ 		cpu, arch_scale_freq_capacity(NULL, cpu));
  }
  
--unsigned long arch_scale_load_capacity(int cpu);
+-/*
+- * Scheduler load-tracking scale-invariance
+- *
+- * Provides the scheduler with a scale-invariance correction factor that
+- * compensates for frequency scaling and micro-architecture differences between
+- * cpus.
+- */
 -
- /*
-  * We can represent the historical contribution to runnable average as the
-  * coefficients of a geometric series.  To do this we sub-divide our runnable
-@@ -2302,7 +2300,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
- 	u64 delta, periods;
- 	u32 runnable_contrib;
- 	int delta_w, decayed = 0;
--	u32 scale_cap = arch_scale_load_capacity(cpu);
-+	u32 scale_cap = cfs_get_capacity(cpu);
+-static DEFINE_PER_CPU(atomic_long_t, cpu_curr_freq);
+-static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
+-
+-/* cpufreq callback function setting current cpu frequency */
+-void arch_scale_set_curr_freq(int cpu, unsigned long freq)
+-{
+-	atomic_long_set(&per_cpu(cpu_curr_freq, cpu), freq);
+-}
+-
+-/* cpufreq callback function setting max cpu frequency */
+-void arch_scale_set_max_freq(int cpu, unsigned long freq)
+-{
+-	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
+-}
+-
+-unsigned long arch_scale_load_capacity(int cpu)
+-{
+-	unsigned long curr = atomic_long_read(&per_cpu(cpu_curr_freq, cpu));
+-	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
+-	unsigned long ret;
+-
+-	if (!max || !per_cpu(cpu_raw_capacity, cpu))
+-		return SCHED_CAPACITY_SCALE;
+-
+-	ret = (curr * SCHED_CAPACITY_SCALE) / max;
+-	ret = (ret * per_cpu(cpu_raw_capacity, cpu)) / max_raw_capacity;
+-
+-	return ret;
+-}
+-
+ #else
+ static inline void parse_dt_topology(void) {}
+ static inline void update_cpu_capacity(unsigned int cpuid) {}
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index a46c223..5baffbd 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -31,7 +31,10 @@
+ #include <linux/slab.h>
+ #include <linux/topology.h>
+ #include <linux/types.h>
++#include <linux/sched.h>
++#include <linux/rcupdate.h>
+ #include <asm/bL_switcher.h>
++#include <asm/topology.h>
  
- 	delta = now - sa->last_runnable_update;
- 	/*
-@@ -5795,14 +5793,44 @@ unsigned long __weak arch_scale_smt_capacity(struct sched_domain *sd, int cpu)
- 	return default_scale_smt_capacity(sd, cpu);
- }
+ #include "arm_big_little.h"
  
--static unsigned long default_scale_load_capacity(int cpu)
-+unsigned long default_scale_load_capacity(int cpu)
- {
- 	return SCHED_CAPACITY_SCALE;
- }
+@@ -533,9 +536,52 @@ static struct notifier_block bL_switcher_notifier = {
+ 	.notifier_call = bL_cpufreq_switcher_notifier,
+ };
  
--unsigned long __weak arch_scale_load_capacity(int cpu)
-+struct capacity_ops cfs_capacity_ops = {
-+	.get_capacity = default_scale_load_capacity,
-+};
++/*
++ * Scheduler load-tracking scale-invariance
++ *
++ * Provides the scheduler with a scale-invariance correction factor that
++ * compensates for frequency scaling and micro-architecture differences between
++ * cpus.
++ */
 +
-+static unsigned long cfs_get_capacity(int cpu)
- {
--	return default_scale_load_capacity(cpu);
++static DEFINE_PER_CPU(atomic_long_t, cpu_curr_freq);
++static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
++
++/* cpufreq callback function setting current cpu frequency */
++void arch_scale_set_curr_freq(int cpu, unsigned long freq)
++{
++	atomic_long_set(&per_cpu(cpu_curr_freq, cpu), freq);
++}
++
++/* cpufreq callback function setting max cpu frequency */
++void arch_scale_set_max_freq(int cpu, unsigned long freq)
++{
++	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
++}
++
++/*
++ * scale_load_capacity returns the current capacity for a given cpu, adjusted
++ * for micro-architectural differences and taking into accout cpu frequency
++ */
++unsigned long scale_load_capacity(int cpu)
++{
++	unsigned long curr = atomic_long_read(&per_cpu(cpu_curr_freq, cpu));
++	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
 +	unsigned long ret;
 +
-+	rcu_read_lock();
-+	ret = cfs_capacity_ops.get_capacity(cpu);
-+	rcu_read_unlock();
++	if (!max || !per_cpu(cpu_raw_capacity, cpu))
++		return SCHED_CAPACITY_SCALE;
++
++	ret = (curr * SCHED_CAPACITY_SCALE) / max;
++	ret = (ret * per_cpu(cpu_raw_capacity, cpu)) / max_raw_capacity;
 +
 +	return ret;
 +}
 +
-+/**
-+ * set_default_capacity_ops - reset capacity ops to their default
-+ * @eops - capacity_ops we are reseting
-+ *
-+ * Useful for loadable modules that supply custom capacity_ops callbacks.  When
-+ * unloading these modules need to restore the originals before the custom
-+ * callbacks disappear.
-+ *
-+ * FIXME - belongs in kernel/sched/core.c?
-+ */
-+void set_default_capacity_ops(struct capacity_ops *eops)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&eops->lock, flags);
-+	eops->get_capacity = default_scale_load_capacity;
-+	spin_unlock_irqrestore(&eops->lock, flags);
-+	synchronize_rcu();
- }
- 
- static unsigned long scale_rt_capacity(int cpu)
-@@ -8026,6 +8054,7 @@ void print_cfs_stats(struct seq_file *m, int cpu)
- __init void init_sched_fair_class(void)
+ int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
  {
- #ifdef CONFIG_SMP
-+	spin_lock_init(&cfs_capacity_ops.lock);
- 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+ 	int ret, i;
++	unsigned long flags;
  
- #ifdef CONFIG_NO_HZ_COMMON
+ 	if (arm_bL_ops) {
+ 		pr_debug("%s: Already registered: %s, exiting\n", __func__,
+@@ -550,6 +596,11 @@ int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
+ 
+ 	arm_bL_ops = ops;
+ 
++	spin_lock_irqsave(&cfs_capacity_ops.lock, flags);
++	cfs_capacity_ops.get_capacity = scale_load_capacity;
++	spin_unlock_irqrestore(&cfs_capacity_ops.lock, flags);
++	synchronize_rcu();
++
+ 	ret = bL_switcher_get_enabled();
+ 	set_switching_enabled(ret);
+ 
 -- 
 1.8.3.2
 
