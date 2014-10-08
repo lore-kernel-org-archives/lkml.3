@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944AbaJHJdk (ORCPT <rfc822;w@1wt.eu>);
+	id S1755964AbaJHJdp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:33:45 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:40502 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938AbaJHJdk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Oct 2014 05:33:40 -0400
-Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:5888
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755839AbaJHJcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:32:12 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
-        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v4 27/29] MAINTAINERS: Add nios2 maintainer
-Date: Wed, 8 Oct 2014 17:29:53 +0800
-Message-ID: <1412760595-3935-28-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
-References: <1412760595-3935-1-git-send-email-lftan@altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(31966008)(76482002)(120916001)(77156001)(36756003)(50986999)(102836001)(44976005)(20776003)(104166001)(6806004)(47776003)(19580405001)(64706001)(85306004)(85852003)(42186005)(99396003)(19580395003)(68736004)(92566001)(33646002)(86362001)(93916002)(92726001)(2201001)(84676001)(77096002)(229853001)(97736003)(48376002)(50466002)(107046002)(88136002)(62966002)(89996001)(21056001)(46102003)(87286001)(87936001)(4396001)(80022003)(95666004)(76176999)(50226001)(105596002)(106466001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0358535363
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB211;
-X-OriginatorOrg: altera.com
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
+        linux-watchdog@vger.kernel.org, linux@roeck-us.net,
+        David Paris <david.paris@st.com>
+Subject: [PATCH 1/4] ARM: STi: DT: STiH407: Add Device Tree node for LPC Watchdog
+Date: Wed,  8 Oct 2014 10:33:27 +0100
+Message-Id: <1412760810-23199-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
+References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
+Signed-off-by: David Paris <david.paris@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- MAINTAINERS |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ arch/arm/boot/dts/stih407.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index a12edf2..580499e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6421,6 +6421,13 @@ S:	Maintained
- F:	Documentation/scsi/NinjaSCSI.txt
- F:	drivers/scsi/nsp32*
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index f539627a..303df6c 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -259,5 +259,15 @@
  
-+NIOS2 ARCHITECTURE
-+M:	Ley Foon Tan <lftan@altera.com>
-+L:	nios2-dev@lists.rocketboards.org (moderated for non-subscribers)
-+T:	git git://git.rocketboards.org/linux-socfpga.git
-+S:	Maintained
-+F:	arch/nios2/
+ 			status = "disabled";
+ 		};
 +
- NTB DRIVER
- M:	Jon Mason <jdmason@kudzu.us>
- M:	Dave Jiang <dave.jiang@intel.com>
++		watchdog@0x8787000 {
++			compatible = "st,stih407-watchdog";
++			reg = <0x8787000 0x1000>, <0x204 0x4>;
++			reg-names = "base", "syscfg-en";
++			clock-names = "st_wdog";
++			clocks = <&clk_s_d3_flexgen CLK_LPC_0>;
++			timeout-sec = <600>;
++			st,syscfg = <&syscfg_core>;
++		};
+ 	};
+ };
 -- 
-1.7.7.4
+1.9.1
 
