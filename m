@@ -1,141 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582AbaJHJOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:14:55 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:59113 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaJHJOw convert rfc822-to-8bit (ORCPT
+	id S1755606AbaJHJQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:16:15 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:65533 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755085AbaJHJQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:14:52 -0400
+	Wed, 8 Oct 2014 05:16:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141006212232.GF18035@lee--X1>
-References: <1660410.j399mvljTo@lenovobook>
-	<20141006212232.GF18035@lee--X1>
-Date: Wed, 8 Oct 2014 11:14:50 +0200
-Message-ID: <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
- for subnodes
-From: Johannes Pointner <johannes.pointner@gmail.com>
+In-Reply-To: <20141008080515.GC20647@lee--X1>
+References: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
+	<1410229968-11638-3-git-send-email-aaron.lu@intel.com>
+	<20141008080515.GC20647@lee--X1>
+Date: Wed, 8 Oct 2014 11:16:11 +0200
+Message-ID: <CACRpkdaPFzq=Qya_UoZpxHom+VcynTwQL9EfdLb_Vpr=g6+Prg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PMIC / opregion: support PMIC customized operation
+ region for CrystalCove
+From: Linus Walleij <linus.walleij@linaro.org>
 To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+Cc: Aaron Lu <aaron.lu@intel.com>, Alexandre Courbot <gnurou@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        Lejun Zhu <lejun.zhu@intel.com>,
+        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
+        =?UTF-8?Q?Daniel_Gl=C3=B6ckner?= <dg@emlix.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Brown <broonie@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-06 23:22 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
-> On Thu, 25 Sep 2014, Johannes Pointner wrote:
->
->> Add documentation for compatible property of subnodes.
->>
->> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
->> ---
->>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
->>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
->>  2 files changed, 12 insertions(+), 4 deletions(-)
->>
->> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
->> index 4f05d20..8ae3a3b 100644
->> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
->> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
->> @@ -14,6 +14,9 @@ Required properties:
->>  Optional properties:
->>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
->>
->> +Required subnode properties:
->> +- compatible: "ti,tps65217-pmic"
->> +
->>    The valid names for regulators are:
->>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
->>
->> @@ -23,9 +26,11 @@ Example:
->>
->>       tps: tps@24 {
->>               compatible = "ti,tps65217";
->> +             reg = <0x24>;
->>               ti,pmic-shutdown-controller;
->>
->> -             regulators {
->> +             tps_pmic: regulators {
->
-> How is the tps_pmic label used?
->
->> +                     compatible = "ti,tps65217-pmic";
->
-> I'd like to see a '\n' here.
-I will add a newline here.
->
->>                       dcdc1_reg: dcdc1 {
->>                               regulator-min-microvolt = <900000>;
->>                               regulator-max-microvolt = <1800000>;
->> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> index 5fb9279..f92f154 100644
->> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
->> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
->>  Required properties:
->>  - compatible: "ti,tps65217"
->>  - reg: I2C slave address
->> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
->> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
->> +
->> +Required subnode properties:
->> +- compatible: "ti,tps65217-bl"
->>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
->>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
->>  - default-brightness: valid values: 0-100
->>
->> -Each regulator is defined using the standard binding for regulators.
->>
->>  Example:
->>
->>       tps: tps@24 {
->>               reg = <0x24>;
->>               compatible = "ti,tps65217";
->
-> I'd like to see a '\n' here.
-I will add a newline here.
->
->> -             backlight {
->> +             tps_bl: backlight {
->
-> Same here.  Is this label used?
->
->> +                     compatible = "ti,tps65217-bl";
->>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
->>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
->>                       default-brightness = <50>;
->
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+On Wed, Oct 8, 2014 at 10:05 AM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Regarding the labels: The backlight label could be used like the
-following. I use it like this in my tests with the tilcdc panel driver
-which has a backlight support.
+> With the influx of new same-chip devices, I think the MFD subsystem is
+> fast becoming overloaded.  I think all of the PMIC handling should in
+> fact either live in Regulators or have its own subsystem.
 
-    panel {
-        backlight = <&tps_bl>;
+You have a valid point, and it's been raised before that MFD risk being
+a dumping ground of the same kind that drivers/misc used to be (is?).
 
-        panel-info {
-            ac-bias        = <255>;
-            ac-bias-intrpt    = <0>;
-            dma-burst-sz    = <16>;
-            bpp        = <32>;
-            fdd        = <0x80>;
-            sync-edge    = <0>;
-            sync-ctrl    = <1>;
-            .
-            .
-            .
+PMIC (Power Management Integrated Circuit) is often not even a
+correct name for the thing if it contains things like audio amplifiers
+USB PHY intrerfaces or LED boosters as some do.
 
-I'm not sure if there could be actual use for the pmic label, but I
-thought if I add a label to backlight, I have to add one to the pmic
-too to keep it similar.
+MSIC (Mixed-Signal Integrated Circuit) is the correct name for
+silicon that is created as a one-stop shop for anything combining
+digital and analog constructions, often in a higher micron node
+(not as densely integrated) as a digital IC (the latter referred to
+as SoCs, "baseband", "CPU" and whatnot).
+
+If they shall live in MFD the driver there should (IMHO) just be
+an exchange station, multiplexing messages and spawning
+MFD cells into platform devices for respective *real* subsystem,
+various misc stuff should not be allowed to be shoehorned
+into MFD just because there is no other place to put it.
+
+This driver clearly does not qualify, look:
+
+> +static int intel_crc_pmic_update_power(struct regmap *regmap,
+> +                                    struct pmic_pwr_reg *preg, bool on)
+> +{
+> +     int data;
+> +
+> +     if (regmap_read(regmap, preg->reg, &data))
+> +             return -EIO;
+> +
+> +     if (on) {
+> +             data |= PWR_SOURCE_SELECT | BIT(preg->bit);
+> +     } else {
+> +             data &= ~BIT(preg->bit);
+> +             data |= PWR_SOURCE_SELECT;
+> +     }
+> +
+> +     if (regmap_write(regmap, preg->reg, data))
+> +             return -EIO;
+> +     return 0;
+> +}
+
+Selecting power source? Isn't that something and MFD cell
+spawned driver in either drivers/regulator or drivers/power should
+be doing?
+
+I know I have sinned in this regard in the past. But let's move
+forward with defining what this subsystem should *REALLY*
+be.
+
+Yours,
+Linus Walleij
