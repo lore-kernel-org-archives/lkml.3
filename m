@@ -1,90 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723AbaJHJEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:04:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755413AbaJHJEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:04:39 -0400
-Message-ID: <5434FE21.2090701@redhat.com>
-Date: Wed, 08 Oct 2014 10:04:33 +0100
-From: Steven Whitehouse <swhiteho@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
-CC: cluster-devel@redhat.com
-Subject: Re: [PATCH 1/1] GFS2: use _RET_IP_ instead of (unsigned long)__builtin_return_address(0)
-References: <1412360137-12492-1-git-send-email-fabf@skynet.be>
-In-Reply-To: <1412360137-12492-1-git-send-email-fabf@skynet.be>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754959AbaJHJLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:11:51 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:52741 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122AbaJHJLr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:11:47 -0400
+Date: Wed, 8 Oct 2014 10:55:54 +0200
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        "Fabio Estevam" <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Message-ID: <20141008105554.2af97be9@ipc1.ka-ro>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+	<1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
+	<063D6719AE5E284EB5DD2968C1650D6D174C6116@AcuExch.aculab.com>
+	<20141008070147.2f3b5319@ipc1.ka-ro>
+	<063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-Apologies for taking so long - I've added this into the -nmw tree now. 
-Thanks,
+David Laight wrote:
+> From: Lothar Waßmann
+> > David Laight wrote:
+> > > From: Eric Dumazet
+> > > > On Tue, 2014-10-07 at 15:19 +0200, Lothar Wamann wrote:
+> > > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> > > > > introduced a regression for i.MX28. The swap_buffer() function doing
+> > > > > the endian conversion of the received data on i.MX28 may access memory
+> > > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> > > > > does not copy those bytes, so that the last bytes of a packet may be
+> > > > > filled with invalid data after swapping.
+> > > > > This will likely lead to checksum errors on received packets.
+> > > > > E.g. when trying to mount an NFS rootfs:
+> > > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+> > > > >
+> > > > > Do the byte swapping and copying to the new skb in one go if
+> > > > > necessary.
+> > > > >
+> > > > > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
+> > > > > ---
+> > > > >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
+> > > > >  1 file changed, 21 insertions(+), 4 deletions(-)
+> > > > >
+> > > > > diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+> > > > > index 87975b5..eaaebad 100644
+> > > > > --- a/drivers/net/ethernet/freescale/fec_main.c
+> > > > > +++ b/drivers/net/ethernet/freescale/fec_main.c
+> > > > > @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
+> > > > >  	return bufaddr;
+> > > > >  }
+> > > > >
+> > > > > +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
+> > > > > +{
+> > > > > +	int i;
+> > > > > +	unsigned int *src = src_buf;
+> > > > > +	unsigned int *dst = dst_buf;
+> > > > > +
+> > > > > +	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
+> > > > > +		*dst = cpu_to_be32(*src);
+> > > >
+> > > > No need for the DIV :
+> > > >
+> > > > 	for (i = 0; i < len; i += sizeof(*dst), src++, dst++)
+> > > > 		*dst = cpu_to_be32(*src);
+> > > >
+> > > > Also are you sure both src/dst are aligned to word boundaries, or is
+> > > > this architecture OK with possible misalignment ?
+> > >
+> > > I wondered about that as well.
+> > > I wouldn't have expected ppc to support misaligned transfers, and you'd also
+> > > want to make sure that cpu_to_be(*src) was using a byte-swapping instruction.
+> > > Hmmm... cpu_to_be() doesn't sound like the right 'swap' macro name.
+> > >
+> > ??? So what is cpu_to_be32() then?
+> > The new swap function is an exact copy of the original one already in
+> > use except for the fact that it uses distinct source and destination
+> > buffers.
+> 
+> cpu_to_be32() is for converting a 'cpu' endianness value to 'big-endian'.
+> Here you are processing receive data - so you probably want be32_to_cpu().
+> (Yes, I know they are functionally identical....)
+> 
+> Alternatively, since these aren't actually 32bit numbers and you know
+> whether you want to swap, something like the __swab32p() from swab.h
+> - but I'm not entirely sure that one is expected to be used.
+> 
+OK, but that should probably be a separate patch to fix the original
+swap_buffer() function as well.
 
-Steve.
-
-On 03/10/14 19:15, Fabian Frederick wrote:
-> use macro definition
+> Clearly you are well inside the ppc 'endianness' hell.
 >
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->   fs/gfs2/glock.c | 4 ++--
->   fs/gfs2/glops.c | 2 +-
->   fs/gfs2/trans.c | 2 +-
->   3 files changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-> index 7f513b1..8f0c19d 100644
-> --- a/fs/gfs2/glock.c
-> +++ b/fs/gfs2/glock.c
-> @@ -811,7 +811,7 @@ void gfs2_holder_init(struct gfs2_glock *gl, unsigned int state, unsigned flags,
->   {
->   	INIT_LIST_HEAD(&gh->gh_list);
->   	gh->gh_gl = gl;
-> -	gh->gh_ip = (unsigned long)__builtin_return_address(0);
-> +	gh->gh_ip = _RET_IP_;
->   	gh->gh_owner_pid = get_pid(task_pid(current));
->   	gh->gh_state = state;
->   	gh->gh_flags = flags;
-> @@ -835,7 +835,7 @@ void gfs2_holder_reinit(unsigned int state, unsigned flags, struct gfs2_holder *
->   	gh->gh_state = state;
->   	gh->gh_flags = flags;
->   	gh->gh_iflags = 0;
-> -	gh->gh_ip = (unsigned long)__builtin_return_address(0);
-> +	gh->gh_ip = _RET_IP_;
->   	if (gh->gh_owner_pid)
->   		put_pid(gh->gh_owner_pid);
->   	gh->gh_owner_pid = get_pid(task_pid(current));
-> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
-> index 2ffc67d..1cc0bba 100644
-> --- a/fs/gfs2/glops.c
-> +++ b/fs/gfs2/glops.c
-> @@ -93,7 +93,7 @@ static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
->            * tr->alloced is not set since the transaction structure is
->            * on the stack */
->   	tr.tr_reserved = 1 + gfs2_struct2blk(sdp, tr.tr_revokes, sizeof(u64));
-> -	tr.tr_ip = (unsigned long)__builtin_return_address(0);
-> +	tr.tr_ip = _RET_IP_;
->   	sb_start_intwrite(sdp->sd_vfs);
->   	if (gfs2_log_reserve(sdp, tr.tr_reserved) < 0) {
->   		sb_end_intwrite(sdp->sd_vfs);
-> diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
-> index 0546ab4..42bfd336 100644
-> --- a/fs/gfs2/trans.c
-> +++ b/fs/gfs2/trans.c
-> @@ -44,7 +44,7 @@ int gfs2_trans_begin(struct gfs2_sbd *sdp, unsigned int blocks,
->   	if (!tr)
->   		return -ENOMEM;
->   
-> -	tr->tr_ip = (unsigned long)__builtin_return_address(0);
-> +	tr->tr_ip = _RET_IP_;
->   	tr->tr_blocks = blocks;
->   	tr->tr_revokes = revokes;
->   	tr->tr_reserved = 1;
+No. i.MX28 is not PPC. It only has a "feature" in the ethernet
+controller that stores all data in big endian format.
 
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
