@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274AbaJHKru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:47:50 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39821 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106AbaJHKrs (ORCPT
+	id S1755534AbaJHKtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:49:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60720 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805AbaJHKtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:47:48 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] mm/numa balancing: Rearrange Kconfig entry
-Date: Wed,  8 Oct 2014 16:17:28 +0530
-Message-Id: <1412765248-31614-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100810-7014-0000-0000-0000004C1D6A
+	Wed, 8 Oct 2014 06:49:23 -0400
+Date: Wed, 8 Oct 2014 12:49:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 06/11] perf: Move cgroup init before PMU ->event_init()
+Message-ID: <20141008104920.GI10832@worktop.programming.kicks-ass.net>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-7-git-send-email-matt@console-pimps.org>
+ <20141007193424.GB4750@worktop.programming.kicks-ass.net>
+ <20141008103250.GO14343@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008103250.GO14343@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the default enable config option after the NUMA_BALANCING option
-so that it appears related in the nconfig interface.
+On Wed, Oct 08, 2014 at 11:32:50AM +0100, Matt Fleming wrote:
+> On Tue, 07 Oct, at 09:34:24PM, Peter Zijlstra wrote:
+> > On Wed, Sep 24, 2014 at 03:04:10PM +0100, Matt Fleming wrote:
+> > > +++ b/kernel/events/core.c
+> > > @@ -6859,7 +6859,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+> > >  		 struct perf_event *group_leader,
+> > >  		 struct perf_event *parent_event,
+> > >  		 perf_overflow_handler_t overflow_handler,
+> > > -		 void *context)
+> > > +		 void *context, bool cgroup, pid_t pid)
+> > >  {
+> > >  	struct pmu *pmu;
+> > >  	struct perf_event *event;
+> > 
+> > I don't get this extension, why a bool and pid_t ?
+> 
+> So that it's possible to figure out whether we need to call
+> perf_cgroup_connect(). 
+> 
+> Oh, why not just 'int fd', you mean? Ermm... yeah that would be better.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- init/Kconfig | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 5a5613ed49bc..d73c934f9e77 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -889,14 +889,6 @@ config ARCH_SUPPORTS_INT128
- config ARCH_WANT_NUMA_VARIABLE_LOCALITY
- 	bool
- 
--config NUMA_BALANCING_DEFAULT_ENABLED
--	bool "Automatically enable NUMA aware memory/task placement"
--	default y
--	depends on NUMA_BALANCING
--	help
--	  If set, automatic NUMA balancing will be enabled if running on a NUMA
--	  machine.
--
- config NUMA_BALANCING
- 	bool "Memory placement aware NUMA scheduler"
- 	depends on ARCH_SUPPORTS_NUMA_BALANCING
-@@ -909,6 +901,14 @@ config NUMA_BALANCING
- 
- 	  This system will be inactive on UMA systems.
- 
-+config NUMA_BALANCING_DEFAULT_ENABLED
-+	bool "Automatically enable NUMA aware memory/task placement"
-+	default y
-+	depends on NUMA_BALANCING
-+	help
-+	  If set, automatic NUMA balancing will be enabled if running on a NUMA
-+	  machine.
-+
- menuconfig CGROUPS
- 	boolean "Control Group support"
- 	select KERNFS
--- 
-1.9.1
-
+Jah ;-)
