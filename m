@@ -1,160 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560AbaJHNag (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:30:36 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:43015 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755870AbaJHNae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:30:34 -0400
-Date: Wed, 8 Oct 2014 14:30:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johannes Pointner <johannes.pointner@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
+	id S1756583AbaJHNbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:31:41 -0400
+Received: from know-smtprelay-omc-3.server.virginmedia.net ([80.0.253.67]:42747
+	"EHLO know-smtprelay-omc-3.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756347AbaJHNbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:31:38 -0400
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.1 cv=N7qnFgNB c=1 sm=1 tr=0 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+ a=rTb9Q+mClrhkGV9Ah9iRIA==:17 a=N1CowNylAAAA:8 a=3FMK0p1cVuKbq0TN6BsA:9
+ a=QEXdDO2ut3YA:10 a=ZbphizX4KjIA:10 a=tZi1akKXmSzKDDD5L3IA:9 a=C2F9r2UhgvoA:10
+Message-ID: <1412775085.2797.10.camel@snewbury.org.uk>
+Subject: Re: [PATCH v9 1/3] drm: rockchip: Add basic drm driver
+From: Steven Newbury <steve@snewbury.org.uk>
+To: Mark yao <mark.yao@rock-chips.com>
+Cc: Andrzej Hajda <a.hajda@samsung.com>, heiko@sntech.de,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
- for subnodes
-Message-ID: <20141008133028.GI20647@lee--X1>
-References: <1660410.j399mvljTo@lenovobook>
- <20141006212232.GF18035@lee--X1>
- <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
- <20141008104717.GG20647@lee--X1>
- <CAJKbBDArOMRTBAEiEFZyNbJvhAj9722c_0zvaYN+AhF3Lb-ybQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJKbBDArOMRTBAEiEFZyNbJvhAj9722c_0zvaYN+AhF3Lb-ybQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>, linux-doc@vger.kernel.org,
+        kever.yang@rock-chips.com, dri-devel@lists.freedesktop.org,
+        dianders@chromium.org, xjq@rock-chips.com, zyw@rock-chips.com,
+        cym@rock-chips.com, linux-rockchip@lists.infradead.org,
+        kfx@rock-chips.com, wxt@rock-chips.com, huangtao@rock-chips.com,
+        devicetree@vger.kernel.org, dbehr@chromium.org, yxj@rock-chips.com,
+        olof@lixom.net, djkurtz@chromium.org, marcheu@chromium.org,
+        xxm@rock-chips.com, xw@rock-chips.com, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cf@rock-chips.com
+Date: Wed, 08 Oct 2014 14:31:25 +0100
+In-Reply-To: <543490A8.7030807@rock-chips.com>
+References: <1412081870-27535-1-git-send-email-mark.yao@rock-chips.com>
+		 <1412082181-27703-1-git-send-email-mark.yao@rock-chips.com>
+		 <542AB0B2.6000207@samsung.com> <54336474.1010503@rock-chips.com>
+		 <54338484.5070809@samsung.com> <1412720776.2797.8.camel@snewbury.org.uk>
+	 <543490A8.7030807@rock-chips.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-X3UhQ3efMecwITDeaM/h"
+X-Mailer: Evolution 3.13.7 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Oct 2014, Johannes Pointner wrote:
 
-> 2014-10-08 12:47 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
-> > On Wed, 08 Oct 2014, Johannes Pointner wrote:
-> >
-> >> 2014-10-06 23:22 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
-> >> > On Thu, 25 Sep 2014, Johannes Pointner wrote:
-> >> >
-> >> >> Add documentation for compatible property of subnodes.
-> >> >>
-> >> >> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-> >> >> ---
-> >> >>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
-> >> >>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
-> >> >>  2 files changed, 12 insertions(+), 4 deletions(-)
-> >> >>
-> >> >> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> >> index 4f05d20..8ae3a3b 100644
-> >> >> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> >> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> >> @@ -14,6 +14,9 @@ Required properties:
-> >> >>  Optional properties:
-> >> >>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
-> >> >>
-> >> >> +Required subnode properties:
-> >> >> +- compatible: "ti,tps65217-pmic"
-> >> >> +
-> >> >>    The valid names for regulators are:
-> >> >>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
-> >> >>
-> >> >> @@ -23,9 +26,11 @@ Example:
-> >> >>
-> >> >>       tps: tps@24 {
-> >> >>               compatible = "ti,tps65217";
-> >> >> +             reg = <0x24>;
-> >> >>               ti,pmic-shutdown-controller;
-> >> >>
-> >> >> -             regulators {
-> >> >> +             tps_pmic: regulators {
-> >> >
-> >> > How is the tps_pmic label used?
-> >> >
-> >> >> +                     compatible = "ti,tps65217-pmic";
-> >> >
-> >> > I'd like to see a '\n' here.
-> >> I will add a newline here.
-> >> >
-> >> >>                       dcdc1_reg: dcdc1 {
-> >> >>                               regulator-min-microvolt = <900000>;
-> >> >>                               regulator-max-microvolt = <1800000>;
-> >> >> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> >> index 5fb9279..f92f154 100644
-> >> >> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> >> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> >> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
-> >> >>  Required properties:
-> >> >>  - compatible: "ti,tps65217"
-> >> >>  - reg: I2C slave address
-> >> >> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-> >> >> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
-> >> >> +
-> >> >> +Required subnode properties:
-> >> >> +- compatible: "ti,tps65217-bl"
-> >> >>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
-> >> >>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
-> >> >>  - default-brightness: valid values: 0-100
-> >> >>
-> >> >> -Each regulator is defined using the standard binding for regulators.
-> >> >>
-> >> >>  Example:
-> >> >>
-> >> >>       tps: tps@24 {
-> >> >>               reg = <0x24>;
-> >> >>               compatible = "ti,tps65217";
-> >> >
-> >> > I'd like to see a '\n' here.
-> >> I will add a newline here.
-> >> >
-> >> >> -             backlight {
-> >> >> +             tps_bl: backlight {
-> >> >
-> >> > Same here.  Is this label used?
-> >> >
-> >> >> +                     compatible = "ti,tps65217-bl";
-> >> >>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
-> >> >>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
-> >> >>                       default-brightness = <50>;
-> >> >
-> >>
-> >> Regarding the labels: The backlight label could be used like the
-> >> following. I use it like this in my tests with the tilcdc panel driver
-> >> which has a backlight support.
-> >>
-> >>     panel {
-> >>         backlight = <&tps_bl>;
-> >>
-> >>         panel-info {
-> >>             ac-bias        = <255>;
-> >>             ac-bias-intrpt    = <0>;
-> >>             dma-burst-sz    = <16>;
-> >>             bpp        = <32>;
-> >>             fdd        = <0x80>;
-> >>             sync-edge    = <0>;
-> >>             sync-ctrl    = <1>;
-> >>             .
-> >>             .
-> >>             .
-> >>
-> >> I'm not sure if there could be actual use for the pmic label, but I
-> >> thought if I add a label to backlight, I have to add one to the pmic
-> >> too to keep it similar.
-> >
-> > No, not at all.  If it's not used, you should remove it.
-> 
-> OK, my mistake, sorry.
-> I'll remove the pmic part of the patch and add the newline to the
-> backlight documentation and resend the patch, if this is OK for you?
+--=-X3UhQ3efMecwITDeaM/h
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes, fine.
+On Wed, 2014-10-08 at 09:17 +0800, Mark yao wrote:
+> Hi Steven
+>      I'm glad to see you to discuss about rk29xx.
+>=20
+> On 2014=E5=B9=B410=E6=9C=8808=E6=97=A5 06:26, Steven Newbury wrote:
+> > I've just been discussing how this relates to rk29xx on #etnaviv. =20
+> > I
+> > looked through the patch and it's good to see it's not limited to
+> > supporting Mali GPUs.  I see no reason this wouldn't be compatible
+> > with etna_viv for rk29xx (or future Rockchip designs with=20
+> > alternative
+> > GPUs) as long as the rest of the infrastructure to support rk29 is=20
+> > in
+> > place iommu (ARM SMMU?) driver, for example.
+> Now the drm driver only test on rk3288, and future when we add
+> compatible for rk29xx, we
+> would consider to add a non-iommu path for it.
+That's great! I'm working on trying to update the rk29 driver support.=20
+ Getting it supported where possible with the new drivers would make=20
+it much easier, hopefully such that simply creating a new dts file=20
+would produce a working kernel for any useful hardware out there.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> > IMHO it's vital to keep a logical separation between the video=20
+> > display
+> > hardware and the graphics processor on SoCs.
+> Sure, the graphics processor maybe change in different solutions,
+> logical separation is that we
+> try to keep.
+
+--=-X3UhQ3efMecwITDeaM/h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iEYEABECAAYFAlQ1PLEACgkQGcb56gMuC63rJwCfRFIwyIj6FOSIqULpaJIrWWl9
+MioAnj0lnUS5+25TZ24KHThJQOk68I8v
+=FDMG
+-----END PGP SIGNATURE-----
+
+--=-X3UhQ3efMecwITDeaM/h--
+
