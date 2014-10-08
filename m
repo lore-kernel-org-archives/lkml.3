@@ -1,93 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaJHT6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:58:24 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28874 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754851AbaJHT6Q (ORCPT
+	id S1755107AbaJHT62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:58:28 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:42019 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857AbaJHT6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:58:16 -0400
-Message-ID: <54359749.7010208@oracle.com>
-Date: Wed, 08 Oct 2014 15:58:01 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, adilger.kernel@dilger.ca
-CC: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>
-Subject: ext4: kernel BUG at fs/ext4/inode.c:2959!
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 8 Oct 2014 15:58:24 -0400
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 08/12] serial/mcf: Use the rs485 functions on serial_core
+Date: Wed,  8 Oct 2014 21:57:34 +0200
+Message-Id: <1412798258-23655-9-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+In order to unify all the rs485 ioctl handling.
+Use the implementation of TIOC[GS]RS485 ioctl handling on serial_core.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/tty/serial/mcf.c | 37 +++++++------------------------------
+ 1 file changed, 7 insertions(+), 30 deletions(-)
 
-[  409.233952] kernel BUG at fs/ext4/inode.c:2959!
-[  409.234761] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC KASAN
-[  409.237192] Dumping ftrace buffer:
-[  409.238424]    (ftrace buffer empty)
-[  409.239664] Modules linked in:
-[  409.240706] CPU: 18 PID: 14016 Comm: trinity-c27 Not tainted 3.17.0-next-20141008-sasha-00051-g78b3c93-dirty #1364
-[  409.242724] task: ffff88032bb00000 ti: ffff8802e78f8000 task.ti: ffff8802e78f8000
-[  409.242724] RIP: ext4_direct_IO (fs/ext4/inode.c:2959 fs/ext4/inode.c:3098)
-[  409.242724] RSP: 0018:ffff8802e78fbb98  EFLAGS: 00010246
-[  409.242724] RAX: ffffda005cf1f7cf RBX: ffff88015f72f2f0 RCX: 0000000000000007
-[  409.242724] RDX: dfffe90000000000 RSI: 1ffff1002e58c5ef RDI: ffff8802e78fbe78
-[  409.242724] RBP: ffff8802e78fbc28 R08: dfffe90000000001 R09: ffff8802e78fbe5f
-[  409.242724] R10: 1ffff1005cf1f7cb R11: 0000000000000001 R12: ffff8802e78fbe60
-[  409.242724] R13: 000000000000000d R14: ffff8802e78fbc60 R15: ffff88015f72f2f0
-[  409.242724] FS:  0000000000798860(0063) GS:ffff880851c00000(0000) knlGS:0000000000000000
-[  409.242724] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  409.242724] CR2: 0000000002bd70f8 CR3: 000000032b542000 CR4: 00000000000006a0
-[  409.242724] Stack:
-[  409.242724]  ffff88017380a1e8 0000000000000000 ffff8802e78fbbf8 ffffffff9937c5ff
-[  409.242724]  ffff88015f72f318 7fffffffffffffff 0000000000000000 ffff8802e78fbe78
-[  409.242724]  ffff88015f72f2f0 0000000000000000 000000000000000d 000000015f72f2f0
-[  409.242724] Call Trace:
-[  409.242724] ? __filemap_fdatawrite_range (mm/filemap.c:288)
-[  409.242724] generic_file_direct_write (mm/filemap.c:2413)
-[  409.242724] __generic_file_write_iter (mm/filemap.c:2595)
-[  409.242724] ext4_file_write_iter (fs/ext4/file.c:176)
-[  409.242724] ? get_parent_ip (kernel/sched/core.c:2606)
-[  409.242724] ? iov_iter_init (mm/iov_iter.c:442)
-[  409.242724] new_sync_write (fs/read_write.c:478)
-[  409.242724] vfs_write (fs/read_write.c:534)
-[  409.242724] SyS_pwrite64 (fs/read_write.c:627 fs/read_write.c:614)
-[  409.242724] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
-[ 409.242724] Code: 00 00 65 8b 04 25 58 cb 00 00 a9 ff ff ff 7f 0f 85 94 fb ff ff e8 c1 cf ff ff f6 c4 02 0f 84 86 fb ff ff e9 5d fd ff ff 0f 1f 00 <0f> 0b e8 c9 4c c9 ff 84 c0 0f 84 85 fc ff ff 48 c7 c7 80 63 58
-All code
-========
-   0:	00 00                	add    %al,(%rax)
-   2:	65 8b 04 25 58 cb 00 	mov    %gs:0xcb58,%eax
-   9:	00
-   a:	a9 ff ff ff 7f       	test   $0x7fffffff,%eax
-   f:	0f 85 94 fb ff ff    	jne    0xfffffffffffffba9
-  15:	e8 c1 cf ff ff       	callq  0xffffffffffffcfdb
-  1a:	f6 c4 02             	test   $0x2,%ah
-  1d:	0f 84 86 fb ff ff    	je     0xfffffffffffffba9
-  23:	e9 5d fd ff ff       	jmpq   0xfffffffffffffd85
-  28:	0f 1f 00             	nopl   (%rax)
-  2b:*	0f 0b                	ud2    		<-- trapping instruction
-  2d:	e8 c9 4c c9 ff       	callq  0xffffffffffc94cfb
-  32:	84 c0                	test   %al,%al
-  34:	0f 84 85 fc ff ff    	je     0xfffffffffffffcbf
-  3a:	48 c7 c7 80 63 58 00 	mov    $0x586380,%rdi
+diff --git a/drivers/tty/serial/mcf.c b/drivers/tty/serial/mcf.c
+index bc896dc..d7be1f1 100644
+--- a/drivers/tty/serial/mcf.c
++++ b/drivers/tty/serial/mcf.c
+@@ -57,7 +57,6 @@ struct mcf_uart {
+ 	struct uart_port	port;
+ 	unsigned int		sigs;		/* Local copy of line sigs */
+ 	unsigned char		imr;		/* Local IMR mirror */
+-	struct serial_rs485	rs485;		/* RS485 settings */
+ };
+ 
+ /****************************************************************************/
+@@ -104,7 +103,7 @@ static void mcf_start_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+ 
+-	if (pp->rs485.flags & SER_RS485_ENABLED) {
++	if (port->rs485.flags & SER_RS485_ENABLED) {
+ 		/* Enable Transmitter */
+ 		writeb(MCFUART_UCR_TXENABLE, port->membase + MCFUART_UCR);
+ 		/* Manually assert RTS */
+@@ -258,7 +257,7 @@ static void mcf_set_termios(struct uart_port *port, struct ktermios *termios,
+ 		mr2 |= MCFUART_MR2_TXCTS;
+ 	}
+ 
+-	if (pp->rs485.flags & SER_RS485_ENABLED) {
++	if (port->rs485.flags & SER_RS485_ENABLED) {
+ 		dev_dbg(port->dev, "Setting UART to RS485\n");
+ 		mr2 |= MCFUART_MR2_TXRTS;
+ 	}
+@@ -360,7 +359,7 @@ static void mcf_tx_chars(struct mcf_uart *pp)
+ 		pp->imr &= ~MCFUART_UIR_TXREADY;
+ 		writeb(pp->imr, port->membase + MCFUART_UIMR);
+ 		/* Disable TX to negate RTS automatically */
+-		if (pp->rs485.flags & SER_RS485_ENABLED)
++		if (port->rs485.flags & SER_RS485_ENABLED)
+ 			writeb(MCFUART_UCR_TXDISABLE,
+ 				port->membase + MCFUART_UCR);
+ 	}
+@@ -440,7 +439,7 @@ static int mcf_verify_port(struct uart_port *port, struct serial_struct *ser)
+ /****************************************************************************/
+ 
+ /* Enable or disable the RS485 support */
+-static void mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
++static int mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+ 	unsigned long flags;
+@@ -460,32 +459,9 @@ static void mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
+ 	}
+ 	writeb(mr1, port->membase + MCFUART_UMR);
+ 	writeb(mr2, port->membase + MCFUART_UMR);
+-	pp->rs485 = *rs485;
++	port->rs485 = *rs485;
+ 	spin_unlock_irqrestore(&port->lock, flags);
+-}
+ 
+-static int mcf_ioctl(struct uart_port *port, unsigned int cmd,
+-		unsigned long arg)
+-{
+-	switch (cmd) {
+-	case TIOCSRS485: {
+-		struct serial_rs485 rs485;
+-		if (copy_from_user(&rs485, (struct serial_rs485 *)arg,
+-				sizeof(struct serial_rs485)))
+-			return -EFAULT;
+-		mcf_config_rs485(port, &rs485);
+-		break;
+-	}
+-	case TIOCGRS485: {
+-		struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-		if (copy_to_user((struct serial_rs485 *)arg, &pp->rs485,
+-				sizeof(struct serial_rs485)))
+-			return -EFAULT;
+-		break;
+-	}
+-	default:
+-		return -ENOIOCTLCMD;
+-	}
+ 	return 0;
+ }
+ 
+@@ -510,7 +486,6 @@ static const struct uart_ops mcf_uart_ops = {
+ 	.release_port	= mcf_release_port,
+ 	.config_port	= mcf_config_port,
+ 	.verify_port	= mcf_verify_port,
+-	.ioctl		= mcf_ioctl,
+ };
+ 
+ static struct mcf_uart mcf_ports[4];
+@@ -538,6 +513,7 @@ int __init early_mcf_setup(struct mcf_platform_uart *platp)
+ 		port->irq = platp[i].irq;
+ 		port->uartclk = MCF_BUSCLK;
+ 		port->flags = UPF_BOOT_AUTOCONF;
++		port->rs485_config = mcf_config_rs485;
+ 		port->ops = &mcf_uart_ops;
+ 	}
+ 
+@@ -663,6 +639,7 @@ static int mcf_probe(struct platform_device *pdev)
+ 		port->uartclk = MCF_BUSCLK;
+ 		port->ops = &mcf_uart_ops;
+ 		port->flags = UPF_BOOT_AUTOCONF;
++		port->rs485_config = mcf_config_rs485;
+ 
+ 		uart_add_one_port(&mcf_driver, port);
+ 	}
+-- 
+2.1.1
 
-Code starting with the faulting instruction
-===========================================
-   0:	0f 0b                	ud2
-   2:	e8 c9 4c c9 ff       	callq  0xffffffffffc94cd0
-   7:	84 c0                	test   %al,%al
-   9:	0f 84 85 fc ff ff    	je     0xfffffffffffffc94
-   f:	48 c7 c7 80 63 58 00 	mov    $0x586380,%rdi
-[  409.242724] RIP ext4_direct_IO (fs/ext4/inode.c:2959 fs/ext4/inode.c:3098)
-[  409.242724]  RSP <ffff8802e78fbb98>
-
-Thanks,
-Sasha
