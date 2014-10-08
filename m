@@ -1,135 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948AbaJHMCQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:02:16 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:6022 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755556AbaJHMCP (ORCPT
+	id S1756810AbaJHMHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:07:05 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:56111 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750AbaJHMHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:02:15 -0400
-Date: Wed, 8 Oct 2014 19:58:32 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
-Message-ID: <20141008195832.1fb16337@xhacker>
-In-Reply-To: <20141008195053.0e8aeaf0@xhacker>
-References: <1411454100-6814-1-git-send-email-jszhang@marvell.com>
-	<1411454100-6814-4-git-send-email-jszhang@marvell.com>
-	<542AA336.6070206@gmail.com>
-	<alpine.DEB.2.11.1409302351500.4455@nanos>
-	<20141008193123.11f42bb0@xhacker>
-	<543523B1.1060002@gmail.com>
-	<20141008195053.0e8aeaf0@xhacker>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 8 Oct 2014 08:07:02 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Wed, 8 Oct 2014 14:04:10 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: Johan Hovold <johan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
+Message-ID: <20141008120410.GE1990@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+ <1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
+ <20141008092347.GB1990@localhost>
+ <CAE1zotKHq1Fj_AqKzfnBHoypetb6Yz3OsHnqfeHN5PrVJtuHVw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-08_06:2014-10-08,2014-10-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410080111
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE1zotKHq1Fj_AqKzfnBHoypetb6Yz3OsHnqfeHN5PrVJtuHVw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-
-On Wed, 8 Oct 2014 04:50:53 -0700
-Jisheng Zhang <jszhang@marvell.com> wrote:
-
-> Hi Sebastian,
+On Wed, Oct 08, 2014 at 01:54:07PM +0300, Octavian Purdila wrote:
+> On Wed, Oct 8, 2014 at 12:23 PM, Johan Hovold <johan@kernel.org> wrote:
+> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
+> >
+> >> +static void dln2_rx_transfer(struct dln2_dev *dln2, struct urb *urb,
+> >> +                          u16 handle, u16 rx_slot)
+> >> +{
+> >> +     struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
+> >> +     struct dln2_rx_context *rxc;
+> >> +     struct device *dev = &dln2->interface->dev;
+> >> +
+> >> +     spin_lock(&rxs->lock);
+> >
+> > You must use spin_lock_irqsave here as you call it from the completion
+> > handler.
 > 
-> On Wed, 8 Oct 2014 04:44:49 -0700
-> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
-> 
-> > On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
-> > > Hi Thomas, Sebastian,
-> > >
-> > > On Tue, 30 Sep 2014 14:52:54 -0700
-> > > Thomas Gleixner <tglx@linutronix.de> wrote:
-> > >
-> > >> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
-> > >>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
-> > >>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
-> > >>>>
-> > >>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > >>>> ---
-> > >>>>    drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
-> > >>>>    1 file changed, 19 insertions(+)
-> > >>>>
-> > >>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
-> > >>>> b/drivers/irqchip/irq-dw-apb-ictl.c
-> > >>>> index c136b67..53bb732 100644
-> > >>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
-> > >>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
-> > >>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
-> > >>>> struct irq_desc *desc)
-> > >>>>    	chained_irq_exit(chip, desc);
-> > >>>>    }
-> > >>>>
-> > >>>> +#ifdef CONFIG_PM
-> > >>>> +static void dw_apb_ictl_resume(struct irq_data *d)
-> > >>>> +{
-> > >>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> > >>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
-> > >>>> +
-> > >>>> +	irq_gc_lock(gc);
-> > >>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
-> > >>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base +
-> > >>>> ct->regs.mask);
-> > >>>> +	irq_gc_unlock(gc);
-> > >>>> +}
-> > >>>
-> > >>> I agree with the overall change, but may this also be suited for a
-> > >>> generic irq_chip helper instead of being a driver specific one?
-> > >>>
-> > >>> Maybe Thomas or Jason can comment on this.
-> > >>
-> > >> If we have enough similar resume callbacks, yes.
-> > >>
-> > >>> Also, now that you are using writel_relaxed, I understand that both
-> > >>> writes above can happen in any order? Are there any implication we
-> > >>> have to consider, i.e. do we require any of the registers above to
-> > >>> be written first?
-> > >
-> > > The registers sits at device type memory, the writes should happen in
-> > > the same order as before.
-> > 
-> > Jisheng,
-> > 
-> > it is not about the location of the register but, as far as I
-> > understand, when using {readl,writel}_relaxed the compiler is
-> > free to reorder the calls. So, if there is a strict order we
-> 
-> The "volatile" in readl/writel relaxed implementations should prevent the
-> compiler to do reorder. Or I misunderstand something?
+> Why? AFAICS the completion handler gets called from the HCD irq handler:
 
-My understanding is that the relaxed version imply compiler barriers.
-I'm not sure I understand the real/writel relaxed implementations correctly. But
-one obvious example which shows the relaxed version won't have the compiler
-reorder issue is drivers/irqchip/irq-gic.c, all the configurations must be done
-before enable the GIC which is done by "writel_relaxed(1, cpu_base + GIC_CPU_CTRL);"
-However, we didn't see any explicit compiler barriers.
+The completion handler is currently called with local interrupts
+disabled but that is about to change once all drivers have been updated: 
 
-Thanks,
-Jisheng
+	http://marc.info/?l=linux-usb&m=137353360511003&w=2
 
+In this case you could probably get away with not disabling interrupts
+anyway, but using the irqsave versions would make it obvious.
 
+> >> +static void dln2_disconnect(struct usb_interface *interface)
+> >> +{
+> >> +     struct dln2_dev *dln2 = usb_get_intfdata(interface);
+> >> +     int i, j;
+> >> +
+> >> +     /* don't allow starting new transfers */
+> >> +     spin_lock(&dln2->disconnect_lock);
+> >> +     dln2->disconnect = true;
+> >> +     spin_unlock(&dln2->disconnect_lock);
+> >> +
+> >> +     /* cancel in progress transfers */
+> >> +     for (i = 0; i < DLN2_HANDLES; i++) {
+> >> +             struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[i];
+> >> +             unsigned long flags;
+> >> +
+> >> +             spin_lock_irqsave(&rxs->lock, flags);
+> >
+> > Just stick to spin_lock in this function.
 > 
-> Thanks,
-> Jisheng
-> 
-> > want to ensure, we have to use non-relaxed {readl,writel}.
-> > 
-> > The performance penalty of non-relaxed calls can be ignored anyway
-> > as it is done only once after resume.
-> > 
-> > Sebastian
-> 
+> AFAICS disconnect is called from a kernel thread. Are there guarantees
+> that we can't get a call to the completion routine while we are
+> running it?
 
+Brain fart, nevermind.
+
+Johan
