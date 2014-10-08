@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463AbaJHP6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 11:58:33 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:42475 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324AbaJHP61 (ORCPT
+	id S932381AbaJHP62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 11:58:28 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:60773 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754430AbaJHP5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 11:58:27 -0400
-Date: Wed, 8 Oct 2014 08:57:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
-        David Paris <david.paris@st.com>
-Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC
- Watchdog
-Message-ID: <20141008155756.GA17676@roeck-us.net>
-References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
- <1412760810-23199-5-git-send-email-lee.jones@linaro.org>
+	Wed, 8 Oct 2014 11:57:06 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: thornber@redhat.com, snitzer@redhat.com, hch@infradead.org,
+        hayakawa@valinux.co.jp, axboe@fb.com, andy@rudoff.com,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bvanassche@acm.org,
+        linux-nvme@lists.infradead.org
+Cc: jmad@itu.dk, =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH 2/5] block: extend rq_flag_bits
+Date: Wed,  8 Oct 2014 17:55:33 +0200
+Message-Id: <1412783736-18115-3-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412783736-18115-1-git-send-email-m@bjorling.me>
+References: <1412783736-18115-1-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412760810-23199-5-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020206.54355F23.0028,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 2
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 3
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 10:33:30AM +0100, Lee Jones wrote:
-> Signed-off-by: David Paris <david.paris@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/watchdog/Kconfig  |  16 +++
->  drivers/watchdog/Makefile |   1 +
->  drivers/watchdog/st_wdt.c | 317 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 334 insertions(+)
->  create mode 100644 drivers/watchdog/st_wdt.c
-> 
+From: Jesper Madsen <jmad@itu.dk>
 
-Unfortunately (built with W=1):
+The rq_flag_bits is extended by REQ_NVM and REQ_NVM_MAPPED
 
-drivers/watchdog/st_wdt.c: In function 'st_wdog_load_timer':
-drivers/watchdog/st_wdt.c:114:14: warning: comparison between signed and
-unsigned integer expressions [-Wsign-compare]
-drivers/watchdog/st_wdt.c: In function 'st_wdog_remove':
-drivers/watchdog/st_wdt.c:273:24: error: 'clk' undeclared (first use in this
-function)
+REQ_NVM is used to detect request have through LightNVM on submission, and can
+be detected on completion.
 
-and checkpatch complains a bit: 
+REQ_NVM_MAPPED is used to detect if request have mapped appropriately through
+LightNVM.
 
-WARNING: please, no space before tabs
-#303: FILE: drivers/watchdog/st_wdt.c:236:
-+^Ist_wdog->dev ^I^I= &pdev->dev;$
+The latter is added temponarily to debug the LightNVM key-value target and will
+be removed later.
 
-WARNING: please, no space before tabs
-#304: FILE: drivers/watchdog/st_wdt.c:237:
-+^Ist_wdog->base ^I^I= base;$
+Signed-off-by: Matias Bjørling <m@bjorling.me>
+---
+ include/linux/blk_types.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-WARNING: please, no space before tabs
-#306: FILE: drivers/watchdog/st_wdt.c:239:
-+^Ist_wdog->warm_reset ^I= of_property_read_bool(np, "st,warm_reset");$
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index 66c2167..b1d2f4d 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -191,6 +191,8 @@ enum rq_flag_bits {
+ 	__REQ_END,		/* last of chain of requests */
+ 	__REQ_HASHED,		/* on IO scheduler merge hash */
+ 	__REQ_MQ_INFLIGHT,	/* track inflight for MQ */
++	__REQ_NVM,		/* request is queued via lightnvm */
++	__REQ_NVM_MAPPED,	/* lightnvm mapped this request */
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+@@ -245,5 +247,7 @@ enum rq_flag_bits {
+ #define REQ_END			(1ULL << __REQ_END)
+ #define REQ_HASHED		(1ULL << __REQ_HASHED)
+ #define REQ_MQ_INFLIGHT		(1ULL << __REQ_MQ_INFLIGHT)
++#define REQ_NVM			(1ULL << __REQ_NVM)
++#define REQ_NVM_MAPPED		(1ULL << __REQ_NVM_MAPPED)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+-- 
+1.9.1
 
-Guenter
