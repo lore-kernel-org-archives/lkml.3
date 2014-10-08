@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159AbaJHX6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:58:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60069 "EHLO mx2.suse.de"
+	id S1755202AbaJHX63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:58:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60072 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979AbaJHX6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:58:09 -0400
+	id S1754673AbaJHX6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 19:58:16 -0400
 From: NeilBrown <neilb@suse.de>
 To: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Date: Thu, 09 Oct 2014 10:57:06 +1100
-Subject: [PATCH 0/2 V2] Allow access to sysfs attributes without mem
- allocations.
+Subject: [PATCH 1/2] sysfs/kernfs: allow attributes to request write buffer
+ be pre-allocated.
 Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>
-Message-ID: <20141008234119.19126.4182.stgit@notabene.brown>
+Message-ID: <20141008235706.19126.68493.stgit@notabene.brown>
+In-Reply-To: <20141008234119.19126.4182.stgit@notabene.brown>
+References: <20141008234119.19126.4182.stgit@notabene.brown>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,43 +23,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
- thanks for the review.  This version incorporates your suggestions.
+md/raid allows metadata management to be performed in user-space.
+A various times, particularly on device failure, the metadata needs
+to be updated before further writes can be permitted.
+This means that the user-space program which updates metadata much
+not block on writeout, and so must not allocate memory.
 
- You are certainly right about there being issues deeper than just the
- sysfs/kernfs level - I've been cleaning up the locking in md to avoid
- the "reconfig_mutex" as much as possible.  It is something that has
- been at the back of my mind for a while, but this need has pushed it
- to the fore-front.  All the attributes that mdmon needs to touch will
- soon only take a spinlock or nothing.
+mlockall(MCL_CURRENT|MCL_FUTURE) and pre-allocation can avoid all
+memory allocation issues for user-memory, but that does not help
+kernel memory.
+Several kernel objects can be pre-allocated.  e.g. files opened before
+any writes to the array are permitted.
+However some kernel allocation happens in places that cannot be
+pre-allocated.
+In particular, writes to sysfs files (to tell md that it can now
+allow writes to the array) allocate a buffer using GFP_KERNEL.
 
- On the topic of inadvertently locking in semantics, I noticed that
- prior to kernfs, sysfs would allocate a buffer on first read or
- write, and continue to use that buffer.  I could try to argue that I
- was using those semantics, which have now changed ... though I wasn't
- doing it consciously...  Certainly this is a thorny issue.
+This patch allows attributes to be marked as "PREALLOC".  In that case
+the maximal buffer is allocated when the file is opened, and then used
+on each write instead of allocating a new buffer.
 
- As well as checking that ->seq_show isn't used with ->prealloc,
- I've also made sure that sysfs_kf_read() doesn't call the attribute
- ->show() function unless it is certain it has a preallocated (and
- hence >= PAGE_SIZE) buffer.
+As the same buffer is now shared for all writes on the same file
+description, the mutex is extended to cover full use of the buffer
+including the copy_from_user().
 
-Thanks,
-NeilBrown
+The new __ATTR_PREALLOC() 'or's a new flag in to the 'mode', which is
+inspected by sysfs_add_file_mode_ns() to determine if the file should be
+marked as requiring prealloc.
 
+Signed-off-by: NeilBrown  <neilb@suse.de>
 ---
+ fs/kernfs/file.c       |   44 +++++++++++++++++++++++++++++---------------
+ fs/sysfs/file.c        |   31 ++++++++++++++++++++++++-------
+ include/linux/kernfs.h |    2 ++
+ include/linux/sysfs.h  |    9 +++++++++
+ 4 files changed, 64 insertions(+), 22 deletions(-)
 
-NeilBrown (2):
-      sysfs/kernfs: allow attributes to request write buffer be pre-allocated.
-      sysfs/kernfs: make read requests on pre-alloc files use the buffer.
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 4429d6d9217f..137c172bccc5 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -106,7 +106,7 @@ static void *kernfs_seq_start(struct seq_file *sf, loff_t *ppos)
+ 	const struct kernfs_ops *ops;
+ 
+ 	/*
+-	 * @of->mutex nests outside active ref and is just to ensure that
++	 * @of->mutex nests outside active ref and is primarily to ensure that
+ 	 * the ops aren't called concurrently for the same open file.
+ 	 */
+ 	mutex_lock(&of->mutex);
+@@ -194,7 +194,7 @@ static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
+ 		return -ENOMEM;
+ 
+ 	/*
+-	 * @of->mutex nests outside active ref and is just to ensure that
++	 * @of->mutex nests outside active ref and is primarily to ensure that
+ 	 * the ops aren't called concurrently for the same open file.
+ 	 */
+ 	mutex_lock(&of->mutex);
+@@ -278,19 +278,16 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
+ 		len = min_t(size_t, count, PAGE_SIZE);
+ 	}
+ 
+-	buf = kmalloc(len + 1, GFP_KERNEL);
++	buf = of->prealloc_buf;
++	if (!buf)
++		buf = kmalloc(len + 1, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
+-	if (copy_from_user(buf, user_buf, len)) {
+-		len = -EFAULT;
+-		goto out_free;
+-	}
+-	buf[len] = '\0';	/* guarantee string termination */
+-
+ 	/*
+-	 * @of->mutex nests outside active ref and is just to ensure that
+-	 * the ops aren't called concurrently for the same open file.
++	 * @of->mutex nests outside active ref and is used both to ensure that
++	 * the ops aren't called concurrently for the same open file, and
++	 * to provide exclusive access to ->prealloc_buf (when that exists).
+ 	 */
+ 	mutex_lock(&of->mutex);
+ 	if (!kernfs_get_active(of->kn)) {
+@@ -299,19 +296,27 @@ static ssize_t kernfs_fop_write(struct file *file, const char __user *user_buf,
+ 		goto out_free;
+ 	}
+ 
++	if (copy_from_user(buf, user_buf, len)) {
++		len = -EFAULT;
++		goto out_unlock;
++	}
++	buf[len] = '\0';	/* guarantee string termination */
++
+ 	ops = kernfs_ops(of->kn);
+ 	if (ops->write)
+ 		len = ops->write(of, buf, len, *ppos);
+ 	else
+ 		len = -EINVAL;
+ 
+-	kernfs_put_active(of->kn);
+-	mutex_unlock(&of->mutex);
+-
+ 	if (len > 0)
+ 		*ppos += len;
++
++out_unlock:
++	kernfs_put_active(of->kn);
++	mutex_unlock(&of->mutex);
+ out_free:
+-	kfree(buf);
++	if (buf != of->prealloc_buf)
++		kfree(buf);
+ 	return len;
+ }
+ 
+@@ -685,6 +690,13 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
+ 	 */
+ 	of->atomic_write_len = ops->atomic_write_len;
+ 
++	if (ops->prealloc) {
++		int len = of->atomic_write_len ?: PAGE_SIZE;
++		of->prealloc_buf = kmalloc(len + 1, GFP_KERNEL);
++		error = -ENOMEM;
++		if (!of->prealloc_buf)
++			goto err_free;
++	}
+ 	/*
+ 	 * Always instantiate seq_file even if read access doesn't use
+ 	 * seq_file or is not requested.  This unifies private data access
+@@ -715,6 +727,7 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
+ err_close:
+ 	seq_release(inode, file);
+ err_free:
++	kfree(of->prealloc_buf);
+ 	kfree(of);
+ err_out:
+ 	kernfs_put_active(kn);
+@@ -728,6 +741,7 @@ static int kernfs_fop_release(struct inode *inode, struct file *filp)
+ 
+ 	kernfs_put_open_node(kn, of);
+ 	seq_release(inode, filp);
++	kfree(of->prealloc_buf);
+ 	kfree(of);
+ 
+ 	return 0;
+diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
+index e9ef59b3abb1..4a959d231b43 100644
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -184,6 +184,17 @@ static const struct kernfs_ops sysfs_file_kfops_rw = {
+ 	.write		= sysfs_kf_write,
+ };
+ 
++static const struct kernfs_ops sysfs_prealloc_kfops_wo = {
++	.write		= sysfs_kf_write,
++	.prealloc	= true,
++};
++
++static const struct kernfs_ops sysfs_prealloc_kfops_rw = {
++	.seq_show	= sysfs_kf_seq_show,
++	.write		= sysfs_kf_write,
++	.prealloc	= true,
++};
++
+ static const struct kernfs_ops sysfs_bin_kfops_ro = {
+ 	.read		= sysfs_kf_bin_read,
+ };
+@@ -222,13 +233,19 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
+ 			 kobject_name(kobj)))
+ 			return -EINVAL;
+ 
+-		if (sysfs_ops->show && sysfs_ops->store)
+-			ops = &sysfs_file_kfops_rw;
+-		else if (sysfs_ops->show)
++		if (sysfs_ops->show && sysfs_ops->store) {
++			if (mode & SYSFS_PREALLOC)
++				ops = &sysfs_prealloc_kfops_rw;
++			else
++				ops = &sysfs_file_kfops_rw;
++		} else if (sysfs_ops->show)
+ 			ops = &sysfs_file_kfops_ro;
+-		else if (sysfs_ops->store)
+-			ops = &sysfs_file_kfops_wo;
+-		else
++		else if (sysfs_ops->store) {
++			if (mode & SYSFS_PREALLOC)
++				ops = &sysfs_prealloc_kfops_wo;
++			else
++				ops = &sysfs_file_kfops_wo;
++		} else
+ 			ops = &sysfs_file_kfops_empty;
+ 
+ 		size = PAGE_SIZE;
+@@ -253,7 +270,7 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
+ 	if (!attr->ignore_lockdep)
+ 		key = attr->key ?: (struct lock_class_key *)&attr->skey;
+ #endif
+-	kn = __kernfs_create_file(parent, attr->name, mode, size, ops,
++	kn = __kernfs_create_file(parent, attr->name, mode & 0777, size, ops,
+ 				  (void *)attr, ns, true, key);
+ 	if (IS_ERR(kn)) {
+ 		if (PTR_ERR(kn) == -EEXIST)
+diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
+index 30faf797c2c3..e6dfbc0615f6 100644
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -179,6 +179,7 @@ struct kernfs_open_file {
+ 	struct mutex		mutex;
+ 	int			event;
+ 	struct list_head	list;
++	char			*prealloc_buf;
+ 
+ 	size_t			atomic_write_len;
+ 	bool			mmapped;
+@@ -214,6 +215,7 @@ struct kernfs_ops {
+ 	 * larger ones are rejected with -E2BIG.
+ 	 */
+ 	size_t atomic_write_len;
++	bool prealloc;
+ 	ssize_t (*write)(struct kernfs_open_file *of, char *buf, size_t bytes,
+ 			 loff_t off);
+ 
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index f97d0dbb59fa..ddad16148bd6 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -70,6 +70,8 @@ struct attribute_group {
+  * for examples..
+  */
+ 
++#define SYSFS_PREALLOC 010000
++
+ #define __ATTR(_name, _mode, _show, _store) {				\
+ 	.attr = {.name = __stringify(_name),				\
+ 		 .mode = VERIFY_OCTAL_PERMISSIONS(_mode) },		\
+@@ -77,6 +79,13 @@ struct attribute_group {
+ 	.store	= _store,						\
+ }
+ 
++#define __ATTR_PREALLOC(_name, _mode, _show, _store) {			\
++	.attr = {.name = __stringify(_name),				\
++		 .mode = SYSFS_PREALLOC | VERIFY_OCTAL_PERMISSIONS(_mode) },\
++	.show	= _show,						\
++	.store	= _store,						\
++}
++
+ #define __ATTR_RO(_name) {						\
+ 	.attr	= { .name = __stringify(_name), .mode = S_IRUGO },	\
+ 	.show	= _name##_show,						\
 
-
- fs/kernfs/file.c       |   70 ++++++++++++++++++++++++++++++++----------------
- fs/sysfs/file.c        |   53 +++++++++++++++++++++++++++++++-----
- include/linux/kernfs.h |    2 +
- include/linux/sysfs.h  |    9 ++++++
- 4 files changed, 103 insertions(+), 31 deletions(-)
-
--- 
-Signature
 
