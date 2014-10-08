@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaJHSwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:52:41 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:48785 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555AbaJHSwk (ORCPT
+	id S1753646AbaJHS5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:57:24 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:33454 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaJHS5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:52:40 -0400
-MIME-Version: 1.0
-Date: Wed, 8 Oct 2014 14:52:39 -0400
-X-Google-Sender-Auth: AROEeO6u-KZVBeHBFZn44dwEosQ
-Message-ID: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
-Subject: vdso_standalone_test_x86.c build failure on Linus' tree
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Peter Foley <pefoley2@pefoley.com>, Randy Dunlap <rdunlap@infradead.org>,
-        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 8 Oct 2014 14:57:23 -0400
+From: Dmitry Osipenko <digetx@gmail.com>
+To: swarren@wwwdotorg.org, josephl@nvidia.com, thierry.reding@gmail.com,
+        digetx@gmail.com
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
+Date: Wed,  8 Oct 2014 22:54:10 +0400
+Message-Id: <1412794450-9060-1-git-send-email-digetx@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm seeing the following build failure on a 32-bit x86 build in Fedora
-based on Linux v3.17-2860-gef0625b70dac:
+Commit d127e9c5c5bc1ee22a7b1fe804397cddd132f756 ("ARM: tegra: make tegra_resume
+can work with current and later chips") removed tegra_get_soc_id macro leaving
+used cpu register unassigned and as result causing execution of unintended code
+on tegra20. Fix it by re-adding macro.
 
-Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
-vdso_standalone_test_x86.c:(.text+0xcc): undefined reference to `__umoddi3'
-vdso_standalone_test_x86.c:(.text+0xea): undefined reference to `__udivdi3'
-collect2: error: ld returned 1 exit status
-scripts/Makefile.host:100: recipe for target
-'Documentation/vDSO/vdso_standalone_test_x86' failed
-make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
-scripts/Makefile.build:404: recipe for target 'Documentation/vDSO' failed
-make[1]: *** [Documentation/vDSO] Error 2
-make[1]: *** Waiting for unfinished jobs....
-Makefile:922: recipe for target 'vmlinux' failed
-make: *** [vmlinux] Error 2
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+---
+ arch/arm/mach-tegra/reset-handler.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-Looking at some of the git logs around this, it seems that
-vdso_standalone_test_x86.c is 64-bit specific, so I was curious why it
-was even being built on a 32-bit build.  Seems this commit:
+diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
+index 7b2baab..71be4af 100644
+--- a/arch/arm/mach-tegra/reset-handler.S
++++ b/arch/arm/mach-tegra/reset-handler.S
+@@ -51,6 +51,7 @@ ENTRY(tegra_resume)
+  THUMB(	it	ne )
+ 	bne	cpu_resume			@ no
+ 
++	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
+ 	/* Are we on Tegra20? */
+ 	cmp	r6, #TEGRA20
+ 	beq	1f				@ Yes
+-- 
+2.1.1
 
-commit adb19fb66eeebac07fe37d968725bb8906dadb8e
-Author: Peter Foley <pefoley2@pefoley.com>
-Date:   Thu Sep 25 11:23:09 2014 -0700
-
-    Documentation: add makefiles for more targets
-
-    Add a bunch of previously unbuilt source files to the Documentation build
-    machinery.
-
-    Signed-off-by: Peter Foley <pefoley2@pefoley.com>
-    Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-
-
-blindly added it to the build target.
-
-So is vdso_standalone_test_x86.c really 64-bit specific?  If so,
-should that commit be reverted (or a hunk of it anyway), should there
-be some mechanism to not build it on 32-bit, or should there be some
-additional CFLAGS passed?
-
-josh
-
-Full build log here:
-http://koji.fedoraproject.org/koji/getfile?taskID=7802438&name=build.log
