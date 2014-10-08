@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037AbaJHWxT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:53:19 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42026 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaJHWxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:53:15 -0400
+	id S1754754AbaJHWyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:54:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751347AbaJHWyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 18:54:15 -0400
+Message-ID: <5435C093.5070405@suse.com>
+Date: Wed, 08 Oct 2014 18:54:11 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-X-Originating-IP: [2001:470:8:ee7:91a6:e9a:69b6:c0e5]
-In-Reply-To: <28BDD8F7-F896-4A3E-AED8-593737A39877@zytor.com>
-References: <1412797764-11466-1-git-send-email-pefoley2@pefoley.com> <28BDD8F7-F896-4A3E-AED8-593737A39877@zytor.com>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Wed, 8 Oct 2014 18:52:53 -0400
-Message-ID: <CAOFdcFNH99kgWv08r2rB-fKKoQcY6JD1i2AZBAC2d3jnb=zhCA@mail.gmail.com>
-Subject: Re: [PATCH] Documentation: fix vdso_standalone_test_x86 on 32-bit
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        jkosina@suse.cz, luto@amacapital.net, jwboyer@fedoraproject.org,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] block: copy bi_vcnt in __bio_clone_fast
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 3:54 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> This still has the cross-build problems, no?
->
+Commit 05f1dd53152173 (block: add queue flag for disabling SG merging) uses
+bi_vcnt to assign bio->bi_phys_segments if sg merging is disabled. When
+using device mapper on top of a blk-mq device (virtio_blk in my test),
+we'd end up overflowing the scatterlist in __blk_bios_map_sg.
 
-Yes, but that issue is more general to CONFIG_BUILD_DOCSRC.
-This is just a build failure on x86-32.
+__bio_clone_fast copies bi_iter and bi_io_vec but not bi_vcnt, so
+blk_recount_segments would report bi_phys_segments as 0. Since
+rq->nr_phys_segments is 0 as well, the checks to ensure that we don't
+exceed the queue's segment limit end up allowing more bios (and segments) to
+attach the a request until we finally map it. That also means we
+pass the BUG_ON at the beginning of virtio_queue_rq, ultimately causing
+memory corruption and a crash.
+
+If we copy bi_vcnt in __bio_clone_fast, the bios and requests properly
+report the number of segments and everything works as expected.
+
+Originally reported at http://bugzilla.opensuse.org/show_bug.cgi?id=888259
+
+Reported-by: Stephen Kulow <coolo@suse.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
+
+ block/bio.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -564,6 +564,7 @@ void __bio_clone_fast(struct bio *bio, s
+ 	bio->bi_rw = bio_src->bi_rw;
+ 	bio->bi_iter = bio_src->bi_iter;
+ 	bio->bi_io_vec = bio_src->bi_io_vec;
++	bio->bi_vcnt = bio_src->bi_vcnt;
+ }
+ EXPORT_SYMBOL(__bio_clone_fast);
+ 
+
+-- 
+Jeff Mahoney
+SUSE Labs
+
