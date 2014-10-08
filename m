@@ -1,53 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaJHTap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:30:45 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:51564 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaJHTan (ORCPT
+	id S1754495AbaJHTcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:32:16 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:48122 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181AbaJHTcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:30:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Carlo Caione <carlo@caione.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
-Subject: Re: [PATCH v2 0/7] ARM: meson: add support for Meson8
-Date: Wed, 08 Oct 2014 21:30:09 +0200
-Message-ID: <59241134.gsbhNQV8Wa@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412546359-15062-1-git-send-email-b.galvani@gmail.com>
-References: <1412546359-15062-1-git-send-email-b.galvani@gmail.com>
+	Wed, 8 Oct 2014 15:32:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:ewQFHNer0NuPWATSf2B2ZL4IINW1FQqLuCZ7wT0OQye
- Vp/YjCDvGFpvCEsJkJYiNt56LWUdO0JYZ91WkvC1tvYxrtW8I5
- HOGbbf+boyO/raq8b/K5MLk0UKFc6Aybq+yBLAH2iX4c2hPsr9
- mNGX0D7Es2JlXyAFu8yZguJTKBtmcr3M5zIbT5D0mh+xrKzTH7
- ACJ3aLLcGGJ9r4oLNpHqvbW8fIgXq62XA5cOEenn42yZV50UNr
- n4mQ858oNtYHAfsfIlOotl+xTjghwqAEWjMtSmRVR8WbjbAbkH
- xixgKgSBWIefWq90aA7GVvgi5KMRUNAZwEi8P3d1mVQ/V19LTl
- 6NRvGRjBBZkeX6o5HWFE=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <87vbnue56f.fsf@x220.int.ebiederm.org>
+References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
+ <87mw97wqvx.fsf@x220.int.ebiederm.org> <20141008110829.GC24908@paralelels.com>
+ <CALCETrX4XrgbQNZZa7=1009KqhJ2gT+VBUkC15+59K9yEiTSbQ@mail.gmail.com> <87vbnue56f.fsf@x220.int.ebiederm.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 8 Oct 2014 12:31:50 -0700
+Message-ID: <CALCETrVSxYr=Oa29qHNL-GoifS26U8TfpreGY+KN7g926YgHUw@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
+ current root
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Rob Landley <rob@landley.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 05 October 2014 23:59:12 Beniamino Galvani wrote:
-> 
-> this patchset introduces support for Amlogic Meson8, which is a family
-> of quad-core Cortex-A9 SoCs used in tablets and set-top boxes.
-> 
-> Changes since v1:
->  - reused the existing DT machine definition and renamed it to be more
->    generic
->  - added L2 cache support
+On Wed, Oct 8, 2014 at 12:23 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
+>
+>> On Wed, Oct 8, 2014 at 4:08 AM, Andrew Vagin <avagin@parallels.com> wrote:
+>>> On Tue, Oct 07, 2014 at 01:45:22PM -0700, Eric W. Biederman wrote:
+>>>> Andrey Vagin <avagin@openvz.org> writes:
+>>>>
+>>>> > From: Andrey Vagin <avagin@gmail.com>
+>>>> >
+>>>> > Currently when we create a new container with a separate root,
+>>>> > we need to clone the current mount namespace with all mounts and then
+>>>> > clean up it by using pivot_root(). A big part of mountpoints are cloned
+>>>> > only to be umounted.
+>>>>
+>>>> Is the motivation performance?  Because if that is the motivation we
+>>>> need numbers.
+>>>
+>>> The major motivation to create a clean mount namespace which contains
+>>> only required mounts.
+>>>
+>>> Now you want to convince us that there is nothing wrong if we use
+>>> userns, because all inherited mounts are locked. My point is that all
+>>> useless mounts should be umounted.  If the current root isn't on rootfs,
+>>> pivot_root() allows us to umount all useless points. But pivot_root()
+>>> doesn't work, if the current root is on rootfs. How can we umount
+>>> useless points in this case?
+>
+> One of your justifications for a new system call was so you could do
+> less.  Doing less to get to where you want to go is only justified when
+> your doing less to get better performance.
+>
+> It sounds like your actual concern is about sandboxing and security
+> audits.  That is a very legitimate concern.  That isn't however the core
+> concern of containers, so it was not clear that is what you meant.
+>
+>>> Maybe we want to say that rootfs should not be used if we are going to
+>>> create containers...
+>
+> Today it is an assumption of the vfs that rootfs is mounted.  With
+> rootfs mounted and pivot_root at the base of the mount stack you can
+> make as minimal of a set of mounts as the vfs allows.
+>
+> Removing rootfs from the vfs requires an audit of everything that
+> manipulates mounts.  It is not remotely a local excercise.
 
-Looks all good to me
+Would it be a less invasive audit to allow different mount namespaces
+to have different rootfses?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>
+> One of the things that needs to be considered is that if you really want
+> to audit mounts is the code that needs manipulates them needs to be
+> audited every bit as much as the mounts themselves.
+>
+>> Could we have an extra rootfs-like fs that is always completely empty,
+>> doesn't allow any writes, and can sit at the bottom of container
+>> namespace hierarchies?  If so, and if we add a new syscall that's like
+>> pivot_root (or unshare) but prunes the hierarchy, then we could switch
+>> to that rootfs then.
+>
+> Or equally have something that guarantees that rootfs is empty and
+> read-only at the time the normal root filesystem is mounted.  That is
+> certainly a much more localized change if we want to go there.
+>
+> I am half tempted to suggest that mount --move /some/path / be updated
+> to make the old / just go away (perhaps to be replaced with a read-only
+> empty rootfs).  That gets us into figuring out if we break userspace
+> which is a big challenge.
+
+Hence my argument for a new syscall or entirely new operation.
+mount(2) and friends are way too multiplexed right now.  I just found
+yet another security bug due to the insanely complicated semantics of
+the vfs syscalls.  (Yes, a different one from the one yesterday.)
+
+A new operation kills several birds with one stone.  It could look like:
+
+int mntns_change_root(int dfd, const char *path, int flags);
+
+return -EPERM if chrooted.  Returns -EINVAL if path (relative to dfd)
+isn't a mountmount.  Otherwise it disconnects path from the existing
+hierarchy, attaches a permanently-empty read-only rootfs under it,
+makes it the root of the mntns, and does the root refs fixup.  The old
+hierarchy gets thrown out.
+
+Benefits:
+ - Plausibly slightly faster.  (Especially if we add the trivial
+optimization that, if the caller holds the only reference to the
+mntns, then changing root refs can avoid the big loop, but maybe
+pivot_root could do that, too.)
+ - Sidesteps the whole rootfs mess.
+ - Much easier to use than pivot_root.
+ - No userspace breakage.
+
+Heck, it could be even simpler: it could just unconditionally skip the
+fs struct walk.  Just require callers to make sure that everyone else
+chroots into the new root.
+
+Systemd could use this, too.  If it wants to keep a reference to the
+initramfs, it can use a file descriptor.
+
+--Andy
