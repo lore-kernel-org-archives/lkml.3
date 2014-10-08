@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275AbaJHVXJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:23:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43997 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755149AbaJHVXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:23:07 -0400
-Message-ID: <5435AABC.2010902@zytor.com>
-Date: Wed, 08 Oct 2014 14:21:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1755379AbaJHVZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:25:45 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:43836 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471AbaJHVZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 17:25:44 -0400
+Date: Wed, 8 Oct 2014 14:25:38 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Richard Leitner <me@g0hl1n.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        richard.leitner@skidata.com
+Subject: Re: [PATCH] input: avoid negative input device numbers
+Message-ID: <20141008212538.GB15198@dtor-ws>
+References: <20141008224245.601a1339@frodo>
 MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
-References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>	<CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>	<20141008154659.31f46436@as>	<5435A4A4.1070101@zytor.com> <20141008160956.7584d303@as>
-In-Reply-To: <20141008160956.7584d303@as>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008224245.601a1339@frodo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 02:09 PM, Chuck Ebbert wrote:
->>
->> Breaking cross-compilation is not okay, though, regardless of what
->> Fedora does.  It should be okay to, for example, build an i386 kernel on
->> an ARM box.
->>
+On Wed, Oct 08, 2014 at 10:42:45PM +0200, Richard Leitner wrote:
+> From: Richard Leitner <richard.leitner@skidata.com>
 > 
-> I think they tried that for a while, and ended up chasing compiler
-> and makefile bugs all day. And then there's the software that wants
-> to run self-tests as part of its build...
+> Fix the format string for input device name generation to avoid negative
+> device numbers when the id exceeds the maximum signed integer value.
+
+Well, it is going to take us a while to get there :)
+
+Applied, thank you.
+
+
+> 
+> Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+> ---
+>  drivers/input/input.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index 236bc56..6be6982 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -1791,7 +1791,7 @@ struct input_dev *input_allocate_device(void)
+>  		INIT_LIST_HEAD(&dev->h_list);
+>  		INIT_LIST_HEAD(&dev->node);
+>  
+> -		dev_set_name(&dev->dev, "input%ld",
+> +		dev_set_name(&dev->dev, "input%lu",
+>  			     (unsigned long) atomic_inc_return(&input_no) - 1);
+>  
+>  		__module_get(THIS_MODULE);
+> -- 
+> 2.1.1
 > 
 
-That we can't solve, but it is not okay to break the kernel build.
-
-	-hpa
-
+-- 
+Dmitry
