@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbaJHPaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 11:30:21 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:54093 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaJHPaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 11:30:19 -0400
+	id S1754565AbaJHPdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 11:33:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51264 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280AbaJHPdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 11:33:33 -0400
+Date: Wed, 8 Oct 2014 17:33:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memcontrol: fix transparent huge page
+ allocations under pressure
+Message-ID: <20141008153329.GF4592@dhcp22.suse.cz>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+ <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
+ <20140929135707.GA25956@dhcp22.suse.cz>
+ <20140929175700.GA20053@cmpxchg.org>
+ <20141007135950.GD14243@dhcp22.suse.cz>
+ <20141008011106.GA12339@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20141008141306.GQ26140@arm.com>
-References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
-	<1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org>
-	<20141008141306.GQ26140@arm.com>
-Date: Wed, 8 Oct 2014 10:30:18 -0500
-X-Google-Sender-Auth: NsnkgF0xV8CcTTfUCGCD8K4_mM4
-Message-ID: <CAGXu5jJkP_fg1Ck+rj1nn7tK=ckuMk5ObvgCOJLNhb3cHb3D-Q@mail.gmail.com>
-Subject: Re: [PATCH v7 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
-From: Kees Cook <keescook@chromium.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008011106.GA12339@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 9:13 AM, Will Deacon <will.deacon@arm.com> wrote:
-> Hi Akashi,
->
-> On Thu, Oct 02, 2014 at 10:46:11AM +0100, AKASHI Takahiro wrote:
->> To allow tracer to be able to change/skip a system call by re-writing
->> a syscall number, there are several approaches:
->>
->> (1) modify x8 register with ptrace(PTRACE_SETREGSET), and handle this case
->>     later on in syscall_trace_enter(), or
->> (2) support ptrace(PTRACE_SET_SYSCALL) as on arm
->>
->> Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
->> tracer as well as that secure_computing() expects a changed syscall number
->> to be visible, especially case of -1, before this function returns in
->> syscall_trace_enter(), we'd better take (2).
->>
->> Reviewed-by: Kees Cook <keescook@chromium.org>
->> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
->> ---
->>  arch/arm64/include/uapi/asm/ptrace.h |    1 +
->>  arch/arm64/kernel/ptrace.c           |   14 +++++++++++++-
->>  2 files changed, 14 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
->> index 6913643..49c6174 100644
->> --- a/arch/arm64/include/uapi/asm/ptrace.h
->> +++ b/arch/arm64/include/uapi/asm/ptrace.h
->> @@ -23,6 +23,7 @@
->>
->>  #include <asm/hwcap.h>
->>
->> +#define PTRACE_SET_SYSCALL   23
->>
->>  /*
->>   * PSR bits
->> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
->> index fe63ac5..2842f9f 100644
->> --- a/arch/arm64/kernel/ptrace.c
->> +++ b/arch/arm64/kernel/ptrace.c
->> @@ -1082,7 +1082,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
->>  long arch_ptrace(struct task_struct *child, long request,
->>                unsigned long addr, unsigned long data)
->>  {
->> -     return ptrace_request(child, request, addr, data);
->> +     int ret;
->> +
->> +     switch (request) {
->> +             case PTRACE_SET_SYSCALL:
->> +                     task_pt_regs(child)->syscallno = data;
->> +                     ret = 0;
->> +                     break;
->> +             default:
->> +                     ret = ptrace_request(child, request, addr, data);
->> +                     break;
->> +     }
->> +
->> +     return ret;
->>  }
->
-> I still don't understand why this needs to be in arch-specific code. Can't
-> we implement this in generic code and get architectures to implement
-> something like syscall_set_nr if they want the generic interface?
+[I do not have time to get over all points here and will be offline
+until Monday - will get back to the rest then]
 
-Personally, I'd rather see this land as-is in the arm64 tree, and then
-later optimize PTRACE_SET_SYSCALL out of arm/ and arm64/, especially
-since only these architectures implement this at the moment.
+On Tue 07-10-14 21:11:06, Johannes Weiner wrote:
+> On Tue, Oct 07, 2014 at 03:59:50PM +0200, Michal Hocko wrote:
+[...]
+> > I am completely missing any notes about potential excessive
+> > swapouts or longer reclaim stalls which are a natural side effect of direct
+> > reclaim with a larger target (or is this something we do not agree on?).
+> 
+> Yes, we disagree here.  Why is reclaiming 2MB once worse than entering
+> reclaim 16 times to reclaim SWAP_CLUSTER_MAX?
 
-This is my plan for the asm-generic seccomp.h too -- I'd rather avoid
-touching other architectures in this series, as it's easier to review
-this way. Then we can optimize the code in a separate series, which
-will have those changes isolated, etc.
+You can enter DEF_PRIORITY reclaim 16 times and reclaim your target but
+you need at least 512<<DEF_PRIORITY pages on your LRUs to do it in a
+single run on that priority. So especially small groups will pay more
+and would be subject to mentioned problems (e.g. over-reclaim).
 
--Kees
+> There is no inherent difference in reclaiming a big chunk and
+> reclaiming many small chunks that add up to the same size.
+ 
+[...]
 
+> > Another part that matters is the size. Memcgs might be really small and
+> > that changes the math. Large reclaim target will get to low prio reclaim
+> > and thus the excessive reclaim.
+> 
+> I already addressed page size vs. memcg size before.
+> 
+> However, low priority reclaim does not result in excessive reclaim.
+> The reclaim goal is checked every time it scanned SWAP_CLUSTER_MAX
+> pages, and it exits if the goal has been met.  See shrink_lruvec(),
+> shrink_zone() etc.
+
+Now I am confused. shrink_zone will bail out but shrink_lruvec will loop
+over nr[...] until they are empty and only updates the numbers to be
+roughly proportional once:
+
+                if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+                        continue;
+
+                /*
+                 * For kswapd and memcg, reclaim at least the number of pages
+                 * requested. Ensure that the anon and file LRUs are scanned
+                 * proportionally what was requested by get_scan_count(). We
+                 * stop reclaiming one LRU and reduce the amount scanning
+                 * proportional to the original scan target.
+                 */
+		[...]
+		scan_adjusted = true;
+
+Or do you rely on
+                /*
+                 * It's just vindictive to attack the larger once the smaller
+                 * has gone to zero.  And given the way we stop scanning the
+                 * smaller below, this makes sure that we only make one nudge
+                 * towards proportionality once we've got nr_to_reclaim.
+                 */
+                if (!nr_file || !nr_anon)
+                        break;
+
+and SCAN_FILE because !inactive_file_is_low?
+
+[...]
 -- 
-Kees Cook
-Chrome OS Security
+Michal Hocko
+SUSE Labs
