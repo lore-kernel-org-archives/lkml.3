@@ -1,46 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722AbaJHJvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:51:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60428 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaJHJvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:51:12 -0400
-Date: Wed, 8 Oct 2014 11:51:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 09/11] perf/x86/intel: Implement LRU monitoring ID
- allocation for CQM
-Message-ID: <20141008095109.GD4750@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-10-git-send-email-matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411567455-31264-10-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1755684AbaJHJxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:53:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbaJHJxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:53:44 -0400
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Subject: GFS2: Pre-pull patch posting (merge window)
+Date: Wed,  8 Oct 2014 10:53:09 +0100
+Message-Id: <1412761993-5982-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:04:13PM +0100, Matt Fleming wrote:
-> From: Matt Fleming <matt.fleming@intel.com>
-> 
-> It's possible to run into issues with re-using unused monitoring IDs
-> because there may be stale cachelines associated with that ID from a
-> previous allocation. This can cause the LLC occupancy values to be
-> inaccurate.
-> 
-> To attempt to mitigate this problem we place the IDs on a least recently
-> used list, essentially a FIFO. The basic idea is that the longer the
-> time period between ID re-use the lower the probability that stale
-> cachelines exist in the cache.
+Hi,
 
-Do we want to provide a user configurable minumum guaranteed queue time?
+Not a huge amount this time... just four patches. This time we have a couple
+of bug fixes, one relating to bad i_goal values which are now ignored (i_goal
+is basically a hint so it is safe to so this) and another relating to the
+saving of the dirent location during rename. There is one performance
+improvement, which is an optimisation in rgblk_free so that multiple block
+deallocations will now be more efficient, and one clean up patch to use
+_RET_IP_ rather than writing it out longhand,
+
+Steve.
+
+
