@@ -1,172 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaJHDAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 23:00:42 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45165 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051AbaJHDAk (ORCPT
+	id S1754171AbaJHDBW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 23:01:22 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:45298 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592AbaJHDBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 23:00:40 -0400
+	Tue, 7 Oct 2014 23:01:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iGaZR+4YQLXe+c2EZ9RwUpX73jr4H_KWyFOvxPWbpAyew@mail.gmail.com>
-References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
-	<1410786785-9838-3-git-send-email-gautam.vivek@samsung.com>
-	<CAFp+6iGaZR+4YQLXe+c2EZ9RwUpX73jr4H_KWyFOvxPWbpAyew@mail.gmail.com>
-Date: Wed, 8 Oct 2014 08:30:39 +0530
-X-Google-Sender-Auth: iqoyzGwGxNRQ8SpXa3F7sYZXt9s
-Message-ID: <CAFp+6iGAdWNo0xT_061LtsuhD_C756pvu7g98sXnM4+Gy1LFXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] drm/exynos: dp: Remove support for unused dptx-phy
+In-Reply-To: <20141007141118.GD24720@saruman>
+References: <1412677176-3850-1-git-send-email-gautam.vivek@samsung.com>
+	<1412677176-3850-2-git-send-email-gautam.vivek@samsung.com>
+	<20141007141118.GD24720@saruman>
+Date: Wed, 8 Oct 2014 08:31:19 +0530
+X-Google-Sender-Auth: bYW2QH6c97AbP7pb_Da2wMSRD9E
+Message-ID: <CAFp+6iF9ttEGSVc9p+YSXFxKnVTGK5aqyT0nEiFXbpoXj8aW+w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] dwc3: exynos: Add support for SCLK present on Exynos7
 From: Vivek Gautam <gautam.vivek@samsung.com>
-To: inki.dae@samsung.com, dri-devel@lists.freedesktop.org,
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Sean Paul <seanpaul@google.com>, kishon <kishon@ti.com>,
-        ajaykumar.rs@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        "robh+dt" <robh+dt@kernel.org>, kishon <kishon@ti.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-
-CC'ing Kukjin,
-my bad, missed him while sending the patch. :-(
-
-On Wed, Oct 8, 2014 at 8:27 AM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
-> Hi,
->
->
-> On Mon, Sep 15, 2014 at 6:43 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->> Now that we have moved to generic phy based bindings,
->> we don't need to have any code related to older dptx-phy.
->> Nobody is using this dptx-phy anymore, so removing the
->> same.
+On Tue, Oct 7, 2014 at 7:41 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Tue, Oct 07, 2014 at 03:49:33PM +0530, Vivek Gautam wrote:
+>> Exynos7 also has a separate special gate clock going to the IP
+>> apart from the usual AHB clock. So add support for the same.
 >>
 >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> Cc: Jingoo Han <jg1.han@samsung.com>
->> ---
 >
-> Is someone taking care of this patch ? We already have got the corresponsding
-> dp-phy patch merged, so we should also get this patch in.
->
->>  drivers/gpu/drm/exynos/exynos_dp_core.c |   58 +++++++------------------------
->>  drivers/gpu/drm/exynos/exynos_dp_core.h |    2 --
->>  2 files changed, 13 insertions(+), 47 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.c b/drivers/gpu/drm/exynos/exynos_dp_core.c
->> index 4f3c7eb..5ffc1b2 100644
->> --- a/drivers/gpu/drm/exynos/exynos_dp_core.c
->> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.c
->> @@ -1050,28 +1050,14 @@ static int exynos_dp_create_connector(struct exynos_drm_display *display,
->>
->>  static void exynos_dp_phy_init(struct exynos_dp_device *dp)
->>  {
->> -       if (dp->phy) {
->> +       if (dp->phy)
->>                 phy_power_on(dp->phy);
->> -       } else if (dp->phy_addr) {
->> -               u32 reg;
->> -
->> -               reg = __raw_readl(dp->phy_addr);
->> -               reg |= dp->enable_mask;
->> -               __raw_writel(reg, dp->phy_addr);
->> -       }
->>  }
->>
->>  static void exynos_dp_phy_exit(struct exynos_dp_device *dp)
->>  {
->> -       if (dp->phy) {
->> +       if (dp->phy)
->>                 phy_power_off(dp->phy);
->> -       } else if (dp->phy_addr) {
->> -               u32 reg;
->> -
->> -               reg = __raw_readl(dp->phy_addr);
->> -               reg &= ~(dp->enable_mask);
->> -               __raw_writel(reg, dp->phy_addr);
->> -       }
->>  }
->>
->>  static void exynos_dp_poweron(struct exynos_drm_display *display)
->> @@ -1210,39 +1196,21 @@ static struct video_info *exynos_dp_dt_parse_pdata(struct device *dev)
->>
->>  static int exynos_dp_dt_parse_phydata(struct exynos_dp_device *dp)
->>  {
->> -       struct device_node *dp_phy_node = of_node_get(dp->dev->of_node);
->> -       u32 phy_base;
->>         int ret = 0;
->>
->> -       dp_phy_node = of_find_node_by_name(dp_phy_node, "dptx-phy");
->> -       if (!dp_phy_node) {
->> -               dp->phy = devm_phy_get(dp->dev, "dp");
->> -               return PTR_ERR_OR_ZERO(dp->phy);
->> -       }
->> -
->> -       if (of_property_read_u32(dp_phy_node, "reg", &phy_base)) {
->> -               dev_err(dp->dev, "failed to get reg for dptx-phy\n");
->> -               ret = -EINVAL;
->> -               goto err;
->> -       }
->> -
->> -       if (of_property_read_u32(dp_phy_node, "samsung,enable-mask",
->> -                               &dp->enable_mask)) {
->> -               dev_err(dp->dev, "failed to get enable-mask for dptx-phy\n");
->> -               ret = -EINVAL;
->> -               goto err;
->> -       }
->> -
->> -       dp->phy_addr = ioremap(phy_base, SZ_4);
->> -       if (!dp->phy_addr) {
->> -               dev_err(dp->dev, "failed to ioremap dp-phy\n");
->> -               ret = -ENOMEM;
->> -               goto err;
->> +       dp->phy = devm_phy_get(dp->dev, "dp");
->> +       if (IS_ERR(dp->phy)) {
->> +               ret = PTR_ERR(dp->phy);
->> +               if (ret == -ENOSYS || ret == -ENODEV) {
->> +                       dp->phy = NULL;
->> +               } else if (ret == -EPROBE_DEFER) {
->> +                       return ret;
->> +               } else {
->> +                       dev_err(dp->dev, "no DP phy configured\n");
->> +                       return ret;
->> +               }
->>         }
->>
->> -err:
->> -       of_node_put(dp_phy_node);
->> -
->>         return ret;
->>  }
->>
->> diff --git a/drivers/gpu/drm/exynos/exynos_dp_core.h b/drivers/gpu/drm/exynos/exynos_dp_core.h
->> index a1aee69..6426201 100644
->> --- a/drivers/gpu/drm/exynos/exynos_dp_core.h
->> +++ b/drivers/gpu/drm/exynos/exynos_dp_core.h
->> @@ -153,8 +153,6 @@ struct exynos_dp_device {
->>         struct clk              *clock;
->>         unsigned int            irq;
->>         void __iomem            *reg_base;
->> -       void __iomem            *phy_addr;
->> -       unsigned int            enable_mask;
->>
->>         struct video_info       *video_info;
->>         struct link_train       link_train;
->> --
->> 1.7.10.4
->>
->
->
->
-> --
-> Best Regards
-> Vivek Gautam
-> Samsung R&D Institute, Bangalore
-> India
+> I'll take this one once -rc1 is tagged. The others have no direct
+> dependency on this so I'll leave them to Kishon.
+
+Thanks Felipe !
 
 
 
