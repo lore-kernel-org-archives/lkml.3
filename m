@@ -1,207 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbaJHG05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:26:57 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:37962 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754285AbaJHG0k (ORCPT
+	id S1754479AbaJHGaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:30:20 -0400
+Received: from mail-bn1on0131.outbound.protection.outlook.com ([157.56.110.131]:14272
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750705AbaJHGaS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:26:40 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>, peterz@infradead.org,
-        mingo@redhat.com
-Cc: dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
-        vincent.guittot@linaro.org, nicolas.pitre@linaro.org,
-        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
-        tuukka.tikkanen@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH RFC 2/2] cpufreq: arm_big_little: provide cpu capacity
-Date: Tue,  7 Oct 2014 23:26:12 -0700
-Message-Id: <1412749572-29449-3-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412749572-29449-1-git-send-email-mturquette@linaro.org>
-References: <20141008060712.4379.42509@quantum>
- <1412749572-29449-1-git-send-email-mturquette@linaro.org>
+	Wed, 8 Oct 2014 02:30:18 -0400
+From: Yao Yuan <yao.yuan@freescale.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: "marex@denx.de" <marex@denx.de>,
+        "LW@KARO-electronics.de" <LW@KARO-electronics.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "fugang.duan@freescale.com" <fugang.duan@freescale.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: RE: [PATCH v8 1/2] i2c: imx: add DMA support for freescale i2c driver
+Thread-Topic: [PATCH v8 1/2] i2c: imx: add DMA support for freescale i2c
+ driver
+Thread-Index: AQHP2J/6bTKAgO1WJ0e+ynaEgW5au5weDVOAgAeH1DA=
+Date: Wed, 8 Oct 2014 06:30:14 +0000
+Message-ID: <3cd0b028391140b9a75cddf58dbe40b8@DM2PR03MB349.namprd03.prod.outlook.com>
+References: <1411632689-31531-1-git-send-email-yao.yuan@freescale.com>
+ <1411632689-31531-2-git-send-email-yao.yuan@freescale.com>
+ <20141003075441.GA1349@katana>
+In-Reply-To: <20141003075441.GA1349@katana>
+Accept-Language: en-US, zh-CN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.50]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB381;
+x-forefront-prvs: 0358535363
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(51704005)(377454003)(13464003)(199003)(106116001)(2656002)(21056001)(106356001)(87936001)(74316001)(66066001)(108616004)(110136001)(120916001)(31966008)(76482002)(40100002)(95666004)(85306004)(105586002)(122556002)(97736003)(4396001)(50986999)(20776003)(33646002)(19580405001)(19580395003)(76176999)(86362001)(107046002)(64706001)(85852003)(46102003)(80022003)(99396003)(92566001)(101416001)(54356999)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB381;H:DM2PR03MB349.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the cpu capacity bits out of arch/arm/ and into the CPUfreq driver.
-Not all ARM devices will use CPUfreq and it is unsafe to assume as such
-in topology.c.
+> -----Original Message-----
+> From: Wolfram Sang [mailto:wsa@the-dreams.de]
+> Sent: Friday, October 03, 2014 3:55 PM
+> To: Yuan Yao-B46683
+> Cc: marex@denx.de; LW@KARO-electronics.de; mark.rutland@arm.com; Duan
+> Fugang-B38611; shawn.guo@linaro.org; linux-kernel@vger.kernel.org; linux-
+> arm-kernel@lists.infradead.org; linux-i2c@vger.kernel.org
+> Subject: Re: [PATCH v8 1/2] i2c: imx: add DMA support for freescale i2c
+> driver
+> > -#include <linux/init.h>
+> > -#include <linux/kernel.h>
+> > -#include <linux/module.h>
+> > +#include <linux/clk.h>
+> > +#include <linux/completion.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/dma-mapping.h>
+> > +#include <linux/dmaengine.h>
+> > +#include <linux/dmapool.h>
+> >  #include <linux/errno.h>
+> >  #include <linux/err.h>
+> >  #include <linux/interrupt.h>
+> > -#include <linux/delay.h>
+> >  #include <linux/i2c.h>
+> > +#include <linux/init.h>
+> >  #include <linux/io.h>
+> > -#include <linux/sched.h>
+> > -#include <linux/platform_device.h>
+> > -#include <linux/clk.h>
+> > -#include <linux/slab.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> >  #include <linux/of.h>
+> >  #include <linux/of_device.h>
+> > +#include <linux/of_dma.h>
+> >  #include <linux/platform_data/i2c-imx.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/slab.h>
+> 
+> This is a seperate patch.
 
-Instead, use the new capacity_ops introduced into CFS. If this code is
-generic enough then it could be factored and shared via a header to make
-it easier for other CPUfreq drivers to take advantage of it.
+[Yuan Yao] 
+Here I just adjust the order of the include file as alphabetical order.
+If it looks strange I can only add the include files about DMA.
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
-This approach simply builds on top of Morten's series. I am not sure
-that the per-cpu method is the best way to go in the future. And if so I
-imagine that the CPUfreq core could provide everything except for the
-cpu_eff part.
+> 
+> 
+> > +	while (1) {
+> > +		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
+> > +		if (temp & I2SR_ICF)
+> > +			break;
+> > +		if (time_after(jiffies, orig_jiffies +
+> > +				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
+> > +			dev_dbg(dev, "<%s> Timeout\n", __func__);
+> > +			return -ETIMEDOUT;
+> > +		}
+> > +		schedule();
+> 
+> That might have been asked before. Is there no interrupt for this?
+> 
 
-In general I think that the overlap between CPUfreq drivers and
-arch/arm/kernel/topology.c is something that needs to addresssed soon,
-as both pieces of code are re-inventing parts of each other.
+[Yuan Yao] No, there is no interrupt.
+After DMA callback, I must wait until the last byte transfer completely.
+It's a very short time which less than 10us.
+By the way, how about use udelay(10) instead of schedule()?
+udelay(10) is waiting a appropriate time.
+schedule() is waiting too long for i2c but may be good for whole system.
+Can you give me some suggestion?
 
- arch/arm/include/asm/topology.h  |  2 ++
- arch/arm/kernel/topology.c       | 42 ++-------------------------------
- drivers/cpufreq/arm_big_little.c | 51 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 55 insertions(+), 40 deletions(-)
+Thanks for your review.
 
-diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
-index 2fe85ff..3951232 100644
---- a/arch/arm/include/asm/topology.h
-+++ b/arch/arm/include/asm/topology.h
-@@ -14,6 +14,8 @@ struct cputopo_arm {
- };
- 
- extern struct cputopo_arm cpu_topology[NR_CPUS];
-+extern unsigned long max_raw_capacity;
-+DECLARE_PER_CPU(unsigned long, cpu_raw_capacity);
- 
- #define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
- #define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 5f049ec..a2c9b5f 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -79,8 +79,8 @@ static unsigned long *__cpu_capacity;
- 
- static unsigned long middle_capacity = 1;
- 
--static unsigned long max_raw_capacity = 1;
--static DEFINE_PER_CPU(unsigned long, cpu_raw_capacity);
-+unsigned long max_raw_capacity = 1;
-+DEFINE_PER_CPU(unsigned long, cpu_raw_capacity);
- 
- /*
-  * Iterate all CPUs' descriptor in DT and compute the efficiency
-@@ -175,44 +175,6 @@ static void update_cpu_capacity(unsigned int cpu)
- 		cpu, arch_scale_freq_capacity(NULL, cpu));
- }
- 
--/*
-- * Scheduler load-tracking scale-invariance
-- *
-- * Provides the scheduler with a scale-invariance correction factor that
-- * compensates for frequency scaling and micro-architecture differences between
-- * cpus.
-- */
--
--static DEFINE_PER_CPU(atomic_long_t, cpu_curr_freq);
--static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
--
--/* cpufreq callback function setting current cpu frequency */
--void arch_scale_set_curr_freq(int cpu, unsigned long freq)
--{
--	atomic_long_set(&per_cpu(cpu_curr_freq, cpu), freq);
--}
--
--/* cpufreq callback function setting max cpu frequency */
--void arch_scale_set_max_freq(int cpu, unsigned long freq)
--{
--	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
--}
--
--unsigned long arch_scale_load_capacity(int cpu)
--{
--	unsigned long curr = atomic_long_read(&per_cpu(cpu_curr_freq, cpu));
--	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
--	unsigned long ret;
--
--	if (!max || !per_cpu(cpu_raw_capacity, cpu))
--		return SCHED_CAPACITY_SCALE;
--
--	ret = (curr * SCHED_CAPACITY_SCALE) / max;
--	ret = (ret * per_cpu(cpu_raw_capacity, cpu)) / max_raw_capacity;
--
--	return ret;
--}
--
- #else
- static inline void parse_dt_topology(void) {}
- static inline void update_cpu_capacity(unsigned int cpuid) {}
-diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
-index a46c223..5baffbd 100644
---- a/drivers/cpufreq/arm_big_little.c
-+++ b/drivers/cpufreq/arm_big_little.c
-@@ -31,7 +31,10 @@
- #include <linux/slab.h>
- #include <linux/topology.h>
- #include <linux/types.h>
-+#include <linux/sched.h>
-+#include <linux/rcupdate.h>
- #include <asm/bL_switcher.h>
-+#include <asm/topology.h>
- 
- #include "arm_big_little.h"
- 
-@@ -533,9 +536,52 @@ static struct notifier_block bL_switcher_notifier = {
- 	.notifier_call = bL_cpufreq_switcher_notifier,
- };
- 
-+/*
-+ * Scheduler load-tracking scale-invariance
-+ *
-+ * Provides the scheduler with a scale-invariance correction factor that
-+ * compensates for frequency scaling and micro-architecture differences between
-+ * cpus.
-+ */
-+
-+static DEFINE_PER_CPU(atomic_long_t, cpu_curr_freq);
-+static DEFINE_PER_CPU(atomic_long_t, cpu_max_freq);
-+
-+/* cpufreq callback function setting current cpu frequency */
-+void arch_scale_set_curr_freq(int cpu, unsigned long freq)
-+{
-+	atomic_long_set(&per_cpu(cpu_curr_freq, cpu), freq);
-+}
-+
-+/* cpufreq callback function setting max cpu frequency */
-+void arch_scale_set_max_freq(int cpu, unsigned long freq)
-+{
-+	atomic_long_set(&per_cpu(cpu_max_freq, cpu), freq);
-+}
-+
-+/*
-+ * scale_load_capacity returns the current capacity for a given cpu, adjusted
-+ * for micro-architectural differences and taking into accout cpu frequency
-+ */
-+unsigned long scale_load_capacity(int cpu)
-+{
-+	unsigned long curr = atomic_long_read(&per_cpu(cpu_curr_freq, cpu));
-+	unsigned long max = atomic_long_read(&per_cpu(cpu_max_freq, cpu));
-+	unsigned long ret;
-+
-+	if (!max || !per_cpu(cpu_raw_capacity, cpu))
-+		return SCHED_CAPACITY_SCALE;
-+
-+	ret = (curr * SCHED_CAPACITY_SCALE) / max;
-+	ret = (ret * per_cpu(cpu_raw_capacity, cpu)) / max_raw_capacity;
-+
-+	return ret;
-+}
-+
- int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
- {
- 	int ret, i;
-+	unsigned long flags;
- 
- 	if (arm_bL_ops) {
- 		pr_debug("%s: Already registered: %s, exiting\n", __func__,
-@@ -550,6 +596,11 @@ int bL_cpufreq_register(struct cpufreq_arm_bL_ops *ops)
- 
- 	arm_bL_ops = ops;
- 
-+	spin_lock_irqsave(&cfs_capacity_ops.lock, flags);
-+	cfs_capacity_ops.get_capacity = scale_load_capacity;
-+	spin_unlock_irqrestore(&cfs_capacity_ops.lock, flags);
-+	synchronize_rcu();
-+
- 	ret = bL_switcher_get_enabled();
- 	set_switching_enabled(ret);
- 
--- 
-1.8.3.2
-
+Best Regards,
+Yuan Yao
