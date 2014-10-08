@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048AbaJHNsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:48:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60166 "EHLO
+	id S1757083AbaJHNsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:48:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60177 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011AbaJHNsA (ORCPT
+	with ESMTP id S1757056AbaJHNsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:48:00 -0400
+	Wed, 8 Oct 2014 09:48:08 -0400
 From: Markus Pargmann <mpa@pengutronix.de>
 To: Mark Brown <broonie@kernel.org>
 Cc: Liam Girdwood <lgirdwood@gmail.com>,
         =?UTF-8?q?Krzysztof=20Koz=C5=82owski?= <k.kozlowski@samsung.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         kernel@pengutronix.de, Markus Pargmann <mpa@pengutronix.de>
-Subject: [PATCH v2 1/4] regulator: Add ena_gpio_initialized to regulator_config
-Date: Wed,  8 Oct 2014 15:47:05 +0200
-Message-Id: <1412776028-15655-2-git-send-email-mpa@pengutronix.de>
+Subject: [PATCH v2 2/4] regulator: Set ena_gpio_initialized in regulator drivers
+Date: Wed,  8 Oct 2014 15:47:06 +0200
+Message-Id: <1412776028-15655-3-git-send-email-mpa@pengutronix.de>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1412776028-15655-1-git-send-email-mpa@pengutronix.de>
 References: <1412776028-15655-1-git-send-email-mpa@pengutronix.de>
@@ -27,67 +27,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most drivers do not set the ena_gpio field of struct regulator_config
-before passing it to the regulator core. This is fine as long as the
-gpio identifier that is passed is a positive integer. But the gpio
-identifier 0 is also valid. So we are not able to decide wether we got a
-real gpio identifier or not based on a 0 in ena_gpio.
-
-To be able to decide if it is a valid gpio that got passed, this patch
-adds a ena_gpio_initialized field that should be set if was initialized
-with a correct value, either a gpio >= 0 or a negative error number. The
-core then checks if ena_gpio or ena_gpio_initialized before handling it
-as a gpio. This way we maintain backwards compatibility and fix the
-behaviour for gpio number 0.
+This patch sets ena_gpio_initialized for all drivers which set a
+ena_gpio from parsed DT properties. Drivers using pdata may get zero
+initialized pdata and therefore copy a 0 into the regulator_config
+ena_gpio field.
 
 Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
 ---
+ drivers/regulator/arizona-ldo1.c       | 1 +
+ drivers/regulator/fixed.c              | 4 +++-
+ drivers/regulator/gpio-regulator.c     | 4 +++-
+ drivers/regulator/max8952.c            | 2 ++
+ drivers/regulator/s2mps11.c            | 1 +
+ drivers/regulator/s5m8767.c            | 1 +
+ drivers/regulator/tps65090-regulator.c | 1 +
+ drivers/regulator/wm8994-regulator.c   | 6 ++++--
+ 8 files changed, 16 insertions(+), 4 deletions(-)
 
-Notes:
-    Changes in v2:
-     - Squash all regulator core changes into one patch
-     - Fix the ena_gpio check to be backwards compatible
-
- drivers/regulator/core.c         | 3 ++-
- include/linux/regulator/driver.h | 4 ++++
- 2 files changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index cd87c0c37034..55a87a2722d8 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3650,7 +3650,8 @@ regulator_register(const struct regulator_desc *regulator_desc,
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 4c9db589f6c1..f4ecf18222d3 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -260,6 +260,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 			ret = arizona_ldo1_of_get_pdata(arizona, &config);
+ 			if (ret < 0)
+ 				return ret;
++			config.ena_gpio_initialized = true;
+ 		}
+ 	}
  
- 	dev_set_drvdata(&rdev->dev, rdev);
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index 354105eff1f8..441a3e90e266 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -157,8 +157,10 @@ static int reg_fixed_voltage_probe(struct platform_device *pdev)
  
--	if (config->ena_gpio && gpio_is_valid(config->ena_gpio)) {
-+	if ((config->ena_gpio || config->ena_gpio_initialized) &&
-+	    gpio_is_valid(config->ena_gpio)) {
- 		ret = regulator_ena_gpio_request(rdev, config);
- 		if (ret != 0) {
- 			rdev_err(rdev, "Failed to request enable GPIO%d: %d\n",
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index fc0ee0ce8325..28da08e4671f 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -301,6 +301,9 @@ struct regulator_desc {
-  *           NULL).
-  * @regmap: regmap to use for core regmap helpers if dev_get_regulator() is
-  *          insufficient.
-+ * @ena_gpio_initialized: GPIO controlling regulator enable was properly
-+ *                        initialized, meaning that >= 0 is a valid gpio
-+ *                        identifier and < 0 is a non existent gpio.
-  * @ena_gpio: GPIO controlling regulator enable.
-  * @ena_gpio_invert: Sense for GPIO enable control.
-  * @ena_gpio_flags: Flags to use when calling gpio_request_one()
-@@ -312,6 +315,7 @@ struct regulator_config {
- 	struct device_node *of_node;
- 	struct regmap *regmap;
+ 	drvdata->desc.fixed_uV = config->microvolts;
  
-+	bool ena_gpio_initialized;
- 	int ena_gpio;
- 	unsigned int ena_gpio_invert:1;
- 	unsigned int ena_gpio_flags;
+-	if (config->gpio >= 0)
++	if (config->gpio >= 0) {
+ 		cfg.ena_gpio = config->gpio;
++		cfg.ena_gpio_initialized = true;
++	}
+ 	cfg.ena_gpio_invert = !config->enable_high;
+ 	if (config->enabled_at_boot) {
+ 		if (config->enable_high)
+diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
+index 989b23b377c0..5da0125fac6a 100644
+--- a/drivers/regulator/gpio-regulator.c
++++ b/drivers/regulator/gpio-regulator.c
+@@ -322,8 +322,10 @@ static int gpio_regulator_probe(struct platform_device *pdev)
+ 	cfg.driver_data = drvdata;
+ 	cfg.of_node = np;
+ 
+-	if (config->enable_gpio >= 0)
++	if (config->enable_gpio >= 0) {
+ 		cfg.ena_gpio = config->enable_gpio;
++		cfg.ena_gpio_initialized = true;
++	}
+ 	cfg.ena_gpio_invert = !config->enable_high;
+ 	if (config->enabled_at_boot) {
+ 		if (config->enable_high)
+diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+index f7f9efcfedb7..6d1802b596ec 100644
+--- a/drivers/regulator/max8952.c
++++ b/drivers/regulator/max8952.c
+@@ -225,6 +225,8 @@ static int max8952_pmic_probe(struct i2c_client *client,
+ 	config.of_node = client->dev.of_node;
+ 
+ 	config.ena_gpio = pdata->gpio_en;
++	if (!pdata)
++		config.ena_gpio_initialized = true;
+ 	if (pdata->reg_data->constraints.boot_on)
+ 		config.ena_gpio_flags |= GPIOF_OUT_INIT_HIGH;
+ 
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index adab82d5279f..49b9e1ddc87e 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -897,6 +897,7 @@ common_reg:
+ 			config.of_node = rdata[i].of_node;
+ 		}
+ 		config.ena_gpio = s2mps11->ext_control_gpio[i];
++		config.ena_gpio_initialized = true;
+ 
+ 		regulator = devm_regulator_register(&pdev->dev,
+ 						&regulators[i], &config);
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 0ab5cbeeb797..7f176cdb7e37 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -466,6 +466,7 @@ static void s5m8767_regulator_config_ext_control(struct s5m8767_info *s5m8767,
+ 	}
+ 
+ 	config->ena_gpio = rdata->ext_control_gpio;
++	config->ena_gpio_initialized = true;
+ 	config->ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
+ }
+ 
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index d5df1e9ad1da..2e92aa8718cc 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -312,6 +312,7 @@ static void tps65090_configure_regulator_config(
+ 			gpio_flag = GPIOF_OUT_INIT_HIGH;
+ 
+ 		config->ena_gpio = tps_pdata->gpio;
++		config->ena_gpio_initialized = true;
+ 		config->ena_gpio_flags = gpio_flag;
+ 	}
+ }
+diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
+index c24346db8a71..88f5064e412b 100644
+--- a/drivers/regulator/wm8994-regulator.c
++++ b/drivers/regulator/wm8994-regulator.c
+@@ -145,10 +145,12 @@ static int wm8994_ldo_probe(struct platform_device *pdev)
+ 	config.driver_data = ldo;
+ 	config.regmap = wm8994->regmap;
+ 	config.init_data = &ldo->init_data;
+-	if (pdata)
++	if (pdata) {
+ 		config.ena_gpio = pdata->ldo[id].enable;
+-	else if (wm8994->dev->of_node)
++	} else if (wm8994->dev->of_node) {
+ 		config.ena_gpio = wm8994->pdata.ldo[id].enable;
++		config.ena_gpio_initialized = true;
++	}
+ 
+ 	/* Use default constraints if none set up */
+ 	if (!pdata || !pdata->ldo[id].init_data || wm8994->dev->of_node) {
 -- 
 2.1.0
 
