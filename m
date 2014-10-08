@@ -1,78 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294AbaJHUVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:21:55 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41265 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678AbaJHUVx (ORCPT
+	id S1754136AbaJHUZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:25:46 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:52487 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172AbaJHUZp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:21:53 -0400
-Date: Wed, 8 Oct 2014 21:21:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: atull <atull@opensource.altera.com>, jdelvare@suse.de,
-        lm-sensors@lm-sensors.org, lgirdwood@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Message-ID: <20141008202117.GN4609@sirena.org.uk>
-References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
- <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
- <20141006172845.GA21902@roeck-us.net>
- <alpine.DEB.2.02.1410081103110.18439@atx-linux-37>
- <20141008201254.GA21065@roeck-us.net>
+	Wed, 8 Oct 2014 16:25:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: torvalds@linux-foundation.org
+Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL 1/7] ARM: SoC non-critical bug fixes for 3.18
+Date: Wed, 08 Oct 2014 22:25:06 +0200
+Message-ID: <11860787.2HyTs6YqEL@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1922034.HH2lvbiFi0@wuerfel>
+References: <1922034.HH2lvbiFi0@wuerfel>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AS/cuf48TUvH8DlA"
-Content-Disposition: inline
-In-Reply-To: <20141008201254.GA21065@roeck-us.net>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:eWFHAp1XwcoQIOqWUncJZXzjS2KU1EYt8JZEJ3QbteU
+ KxgdGHQHO3Q6kQLk0YdP2oRB9T0YrPaZldCqzfySCGVftdEzZL
+ 8RP9g7xV/53KSp+OFzKTJ8riRZFoShoWiG1alaFFC/j4jjWs5n
+ jSgtfclFzXhnBDPxwqybmINWjES/D1nxbCfHS6une8ubq00KMe
+ xKtoilAYD0lneagnTp7oZdx2eZwCkbA2P58jFj/hXYCsyhf3f/
+ I8jGN9R/8Xhox+rI7q1pBI3yLEUfCKmUkDcLizgjFdZ+vxGgCi
+ POX/CGadeDE2G29OfiqIMma3wOKszTDoZzw+NlV8310HSUryFx
+ cYnj2PKVVuZPLqiyLtDU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
 
---AS/cuf48TUvH8DlA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
 
-On Wed, Oct 08, 2014 at 01:12:54PM -0700, Guenter Roeck wrote:
-> On Wed, Oct 08, 2014 at 11:12:29AM -0500, atull wrote:
+are available in the git repository at:
 
-> > > if not specified. We'll have to sort out with the regulator core how this should
-> > > be handled.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-nc-for-linus
 
-> Followup on this: Since the regulator core considers the property to be
-> mandatory (which I guess makes some sense for a presumed regulator),
-> you'll have to check in the calling code and ensure that a 'regulators'
-> entry is there prior to calling the regulator code.
+for you to fetch changes up to 5df27823b5552e885e02c1ea0d2f52326d7d710c:
 
-We could just lower the severity of the message, it's not mandatory at
-all but rather there so that users can figure out what's going wrong if
-we fail to parse.
+  MAINTAINERS: update Shawn's email address (2014-10-08 21:30:56 +0200)
 
---AS/cuf48TUvH8DlA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+----------------------------------------------------------------
+ARM: SoC non-critical bug fixes for 3.18
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+These are bug fixes for harmless problems that were not important
+enough to get fixed in 3.17. The majority of these are OMAP specific,
+but there are also a couple for Marvell mvebu, cns3xxx, and others,
+as well as some updates for the MAINTAINERS file.
 
-iQEcBAEBAgAGBQJUNZy8AAoJECTWi3JdVIfQT5EH/j3iZPvZxXMCDdVD8lbUegvx
-/DQN/OfQ6ObVZJ/O4449Dcm1N2SowEhR+nJ+pLOaKSmMYfN9OcWBbTbF0WjRvkLD
-OxjPfEQOQBhgtSDN9PBa18GM+LSVVV25T5o1qiNcEy+2ZW2kZg6Co5ojsyRS3wrk
-LfxGR4XmmeaYFKDYkjfWK4TM2eGAppK+Rc85kbZJ2gvZHSU2DmSmA9UARMxNjm1W
-MDy62VrioRJAGdJmvQhzFidY1s8bs0ZxgRgQ+YvsrWNFWxG0+0+2IHhnxKpV6TLw
-dvTi8LSVV7qhpE53nHd8KVVLxdcGm4t0WCSTTheV/srxO9G0Sg8w7pY9/ksB5VU=
-=jWVj
------END PGP SIGNATURE-----
+In particular, Robert Jarzmik and Daniel Mack now volunteered to help
+out maintaining the PXA platform, Krzysztof Halasa took over the
+cns3xxx platform, Carlo Caione is the maintainer for the new Amlogic
+meson platform, and Matthias Brugger is now listed for the mediatek
+platform he recently contributed.
 
---AS/cuf48TUvH8DlA--
+----------------------------------------------------------------
+Andreas Henriksson (1):
+      ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
+
+Andrew Lunn (8):
+      cpuidle: kirkwood: Remove ARCH_KIRKWOOD dependency
+      ata: Remove ARCH_KIRKWOOD dependency
+      thermal: Remove ARCH_KIRKWOOD dependency
+      leds: Remove ARCH_KIRKWOOD dependency
+      rtc: Remove ARCH_KIRKWOOD dependency
+      watchdog: Remove ARCH_KIRKWOOD dependency
+      cpufreq: Remove ARCH_KIRKWOOD dependency
+      ARM: Kirkwood: Fix DT based DSA.
+
+Arnaud Ebalard (2):
+      ARM: mvebu: Netgear RN104: Use Hardware BCH ECC
+      ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
+
+Arnd Bergmann (3):
+      Merge tag 'davinci-for-v3.18/board' of git://git.kernel.org/.../nsekhar/linux-davinci into next/fixes-non-critical
+      Merge tag 'renesas-maintainers-for-v3.18' of git://git.kernel.org/.../horms/renesas into next/fixes-non-critical
+      Merge tag 'at91-fixes-non-critical' of git://github.com/at91linux/linux-at91 into next/fixes-non-critical
+
+Behan Webster (1):
+      arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for mach-vt8500
+
+Carlo Caione (1):
+      MAINTAINERS: Add entry for the Amlogic MesonX SoCs
+
+Florian Fainelli (1):
+      MAINTAINERS: add a third maintainer to mach-bcm
+
+Krzysztof Hałasa (4):
+      CNS3xxx: Fix debug UART.
+      CNS3xxx: Fix logical PCIe topology.
+      CNS3xxx: Fix PCIe read size limit.
+      MAINTAINERS: CNS3xxx and IXP4xx update.
+
+Ludovic Desroches (1):
+      ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks
+
+Matthias Brugger (1):
+      MAINTAINERS: Add maintainers entry for Mediatek SoCs
+
+Nishanth Menon (9):
+      ARM: dts: omap4-panda: Fix model and SoC family details
+      ARM: dts: am335x-bone*: Fix model name and update compatibility information
+      ARM: OMAP: DRA7: powerdomain data: fix powerdomain powerstate
+      ARM: OMAP5: powerdomain data: fix powerdomain powerstate
+      ARM: OMAP2+: powerdomain: pwrdm_for_each_clkdm iterate only valid clkdms
+      ARM: OMAP2+: powerdomain: introduce logic for finding valid power domain
+      ARM: OMAP4+: PM: Make logic state programmable
+      ARM: OMAP4+: PM: use only valid low power state for suspend
+      ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug
+
+Olof Johansson (2):
+      Merge tag 'fixes-v3.18-not-urgent' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
+      Merge tag 'mvebu-fixes-3.17' of git://git.infradead.org/linux-mvebu into next/fixes-non-critical
+
+Paul Bolle (1):
+      ARM: spear: Remove references to PLAT_SPEAR_SINGLE
+
+Peter Ujfalusi (2):
+      ARM: davinci: board-da850-evm: Mark dcdc2 of TPS65070 as always_on
+      ARM: davinci: board-da850-evm: Add needed regulators for tlv320aic3106 codec
+
+Robert Jarzmik (1):
+      MAINTAINERS: update ARM pxa maintainers
+
+Roland Stigge (1):
+      ARM: LPC32xx: Fix reset function
+
+Shawn Guo (1):
+      MAINTAINERS: update Shawn's email address
+
+Simon Horman (1):
+      ARM: shmobile: Remove genmai_defconfig from MAINTAINERS
+
+Stephen Warren (2):
+      MAINTAINERS: add Alexandre Courbot for Tegra
+      MAINTAINERS: condense some Tegra related entries
+
+Tony Lindgren (1):
+      Merge branch 'pull/v3.18/powerdomain-fixes' of https://github.com/nmenon/linux-2.6-playground into omap-for-v3.18/fixes-not-urgent
+
+Uwe Kleine-König (2):
+      ARM: omap2: make arrays containing machine compatible strings const
+      ARM: OMAP2+: make of_device_ids const
+
+Xia Kaixu (1):
+      ARM: cns3xxx: fix allmodconfig panic in pci driver
+
+klightspeed@killerwolves.net (1):
+      ARM: mvebu: Netgear RN102: Use Hardware BCH ECC
+
+ MAINTAINERS                                        | 49 +++++++-------
+ arch/arm/Kconfig.debug                             |  7 +-
+ arch/arm/boot/dts/Makefile                         |  4 +-
+ arch/arm/boot/dts/am335x-bone-common.dtsi          |  3 -
+ arch/arm/boot/dts/am335x-bone.dts                  |  5 ++
+ arch/arm/boot/dts/am335x-boneblack.dts             |  5 ++
+ arch/arm/boot/dts/armada-370-netgear-rn102.dts     |  4 ++
+ arch/arm/boot/dts/armada-370-netgear-rn104.dts     |  4 ++
+ arch/arm/boot/dts/armada-xp-netgear-rn2120.dts     |  4 ++
+ arch/arm/boot/dts/at91sam9263.dtsi                 |  2 +
+ arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts     | 16 ++---
+ arch/arm/boot/dts/kirkwood-rd88f6281-a.dts         | 43 ++++++++++++
+ arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts        | 26 -------
+ ...-rd88f6281-a1.dts => kirkwood-rd88f6281-z0.dts} | 18 +++--
+ arch/arm/boot/dts/kirkwood-rd88f6281.dtsi          | 27 ++------
+ arch/arm/boot/dts/kirkwood.dtsi                    |  4 +-
+ arch/arm/boot/dts/omap4-panda-common.dtsi          |  3 -
+ arch/arm/boot/dts/omap4-panda-es.dts               |  5 ++
+ arch/arm/boot/dts/omap4-panda.dts                  |  5 ++
+ arch/arm/mach-at91/clock.c                         |  1 +
+ arch/arm/mach-cns3xxx/cns3420vb.c                  |  1 +
+ arch/arm/mach-cns3xxx/core.c                       |  1 +
+ arch/arm/mach-cns3xxx/core.h                       |  6 ++
+ arch/arm/mach-cns3xxx/pcie.c                       | 49 +++++++-------
+ arch/arm/mach-davinci/board-da850-evm.c            | 15 ++++
+ arch/arm/mach-lpc32xx/common.c                     | 29 ++------
+ arch/arm/mach-omap2/board-generic.c                | 26 +++----
+ arch/arm/mach-omap2/common.h                       |  2 +-
+ arch/arm/mach-omap2/gpmc.c                         |  2 +-
+ arch/arm/mach-omap2/irq.c                          |  2 +-
+ arch/arm/mach-omap2/omap-mpuss-lowpower.c          |  4 ++
+ arch/arm/mach-omap2/pdata-quirks.c                 |  2 +-
+ arch/arm/mach-omap2/pm44xx.c                       |  9 ++-
+ arch/arm/mach-omap2/powerdomain.c                  | 79 +++++++++++++++++++++-
+ arch/arm/mach-omap2/powerdomain.h                  |  4 ++
+ arch/arm/mach-omap2/powerdomains54xx_data.c        | 12 ++--
+ arch/arm/mach-omap2/powerdomains7xx_data.c         | 14 ++--
+ arch/arm/mach-omap2/prm_common.c                   |  2 +-
+ arch/arm/mach-omap2/timer.c                        |  6 +-
+ arch/arm/mach-spear/Kconfig                        |  9 ++-
+ arch/arm/mach-vt8500/vt8500.c                      |  2 +-
+ drivers/ata/Kconfig                                |  2 +-
+ drivers/cpufreq/Kconfig.arm                        |  4 +-
+ drivers/cpuidle/Kconfig.arm                        |  2 +-
+ drivers/leds/Kconfig                               |  4 +-
+ drivers/rtc/Kconfig                                |  2 +-
+ drivers/thermal/Kconfig                            |  2 +-
+ drivers/watchdog/Kconfig                           |  2 +-
+ 48 files changed, 327 insertions(+), 202 deletions(-)
+ create mode 100644 arch/arm/boot/dts/kirkwood-rd88f6281-a.dts
+ delete mode 100644 arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts
+ rename arch/arm/boot/dts/{kirkwood-rd88f6281-a1.dts => kirkwood-rd88f6281-z0.dts} (57%)
+
