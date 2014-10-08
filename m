@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703AbaJHJEc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:04:32 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:51045 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755684AbaJHJE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:04:26 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Wed, 8 Oct 2014 10:03:36 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: i915.ko WC writes are slow after ea8596bb2d8d379
-Message-ID: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
+	id S1755723AbaJHJEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:04:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27618 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755413AbaJHJEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:04:39 -0400
+Message-ID: <5434FE21.2090701@redhat.com>
+Date: Wed, 08 Oct 2014 10:04:33 +0100
+From: Steven Whitehouse <swhiteho@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+CC: cluster-devel@redhat.com
+Subject: Re: [PATCH 1/1] GFS2: use _RET_IP_ instead of (unsigned long)__builtin_return_address(0)
+References: <1412360137-12492-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1412360137-12492-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-I ran into a problem on a Sandybridge i5-2500s whilst measuring the
-performance of GTT write-combining access. I found subsequent runs were
-about 10-40x slower than the first. For example,
+Apologies for taking so long - I've added this into the -nmw tree now. 
+Thanks,
 
-igt/gem_gtt_speed:
+Steve.
 
-Time to read 16k through a GTT map:             325.285탎
-Time to write 16k through a GTT map:              4.729탎
-Time to clear 16k through a GTT map:              4.584탎
-Time to clear 16k through a cached GTT map:       1.342탎
+On 03/10/14 19:15, Fabian Frederick wrote:
+> use macro definition
+>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>   fs/gfs2/glock.c | 4 ++--
+>   fs/gfs2/glops.c | 2 +-
+>   fs/gfs2/trans.c | 2 +-
+>   3 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+> index 7f513b1..8f0c19d 100644
+> --- a/fs/gfs2/glock.c
+> +++ b/fs/gfs2/glock.c
+> @@ -811,7 +811,7 @@ void gfs2_holder_init(struct gfs2_glock *gl, unsigned int state, unsigned flags,
+>   {
+>   	INIT_LIST_HEAD(&gh->gh_list);
+>   	gh->gh_gl = gl;
+> -	gh->gh_ip = (unsigned long)__builtin_return_address(0);
+> +	gh->gh_ip = _RET_IP_;
+>   	gh->gh_owner_pid = get_pid(task_pid(current));
+>   	gh->gh_state = state;
+>   	gh->gh_flags = flags;
+> @@ -835,7 +835,7 @@ void gfs2_holder_reinit(unsigned int state, unsigned flags, struct gfs2_holder *
+>   	gh->gh_state = state;
+>   	gh->gh_flags = flags;
+>   	gh->gh_iflags = 0;
+> -	gh->gh_ip = (unsigned long)__builtin_return_address(0);
+> +	gh->gh_ip = _RET_IP_;
+>   	if (gh->gh_owner_pid)
+>   		put_pid(gh->gh_owner_pid);
+>   	gh->gh_owner_pid = get_pid(task_pid(current));
+> diff --git a/fs/gfs2/glops.c b/fs/gfs2/glops.c
+> index 2ffc67d..1cc0bba 100644
+> --- a/fs/gfs2/glops.c
+> +++ b/fs/gfs2/glops.c
+> @@ -93,7 +93,7 @@ static void gfs2_ail_empty_gl(struct gfs2_glock *gl)
+>            * tr->alloced is not set since the transaction structure is
+>            * on the stack */
+>   	tr.tr_reserved = 1 + gfs2_struct2blk(sdp, tr.tr_revokes, sizeof(u64));
+> -	tr.tr_ip = (unsigned long)__builtin_return_address(0);
+> +	tr.tr_ip = _RET_IP_;
+>   	sb_start_intwrite(sdp->sd_vfs);
+>   	if (gfs2_log_reserve(sdp, tr.tr_reserved) < 0) {
+>   		sb_end_intwrite(sdp->sd_vfs);
+> diff --git a/fs/gfs2/trans.c b/fs/gfs2/trans.c
+> index 0546ab4..42bfd336 100644
+> --- a/fs/gfs2/trans.c
+> +++ b/fs/gfs2/trans.c
+> @@ -44,7 +44,7 @@ int gfs2_trans_begin(struct gfs2_sbd *sdp, unsigned int blocks,
+>   	if (!tr)
+>   		return -ENOMEM;
+>   
+> -	tr->tr_ip = (unsigned long)__builtin_return_address(0);
+> +	tr->tr_ip = _RET_IP_;
+>   	tr->tr_blocks = blocks;
+>   	tr->tr_revokes = revokes;
+>   	tr->tr_reserved = 1;
 
-on the second run became:
-
-Time to read 16k through a GTT map:             332.148탎
-Time to write 16k through a GTT map:            209.411탎
-Time to clear 16k through a GTT map:             56.460탎
-Time to clear 16k through a cached GTT map:      50.897탎
-
-Naively I would say that we lost the wc on our ioremap.
-/sys/kernel/debug/x86/pat_memtype_list remained the same across repeated
-runs.
-
-A bisection pointed to 
-
-commit ea8596bb2d8d37957f3e92db9511c50801689180
-Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date:   Thu Jul 18 20:47:53 2013 +0900
-
-    kprobes/x86: Remove unused text_poke_smp() and text_poke_smp_batch() functions
-
-of which the active ingredient was just
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..f4001e0 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2334,7 +2334,6 @@ config HAVE_ATOMIC_IOMAP
- 
- config HAVE_TEXT_POKE_SMP
-        bool
--       select STOP_MACHINE if SMP
- 
- config X86_DEV_DMA_OPS
-        bool
-
-and adding that back into the current build, e.g.
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 3632743..48a8a69 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -87,6 +87,7 @@ config X86
-        select HAVE_USER_RETURN_NOTIFIER
-        select ARCH_BINFMT_ELF_RANDOMIZE_PIE
-        select HAVE_ARCH_JUMP_LABEL
-+       select STOP_MACHINE
-        select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
-        select SPARSE_IRQ
-        select GENERIC_FIND_FIRST_BIT
-
-fixes the regression.
-
-For the record, this kernel build doesn't use modules, which seems relevant
-in light of ea8596bb2 "fixes a Kconfig dependency issue on STOP_MACHINE
-in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD".
--Chris
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
