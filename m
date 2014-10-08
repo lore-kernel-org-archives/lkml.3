@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755241AbaJHJMB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:12:01 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:36609 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754992AbaJHJLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:11:55 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
-        Fabian Frederick <fabf@skynet.be>
-CC: Guenter Roeck <linux@roeck-us.net>, David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
-Thread-Topic: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
-Thread-Index: AQHP4nDaY/3w3KaSUkWpLu0HQtjtIJwl6V3A
-Date: Wed, 8 Oct 2014 09:10:23 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
-References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
-	 <20141007.161832.453892039501955243.davem@davemloft.net>
-	 <20141007203344.GA4748@roeck-us.net>
-	 <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
- <1412715283.11600.11.camel@localhost>
-In-Reply-To: <1412715283.11600.11.camel@localhost>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1755323AbaJHJNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:13:05 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:41948 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754151AbaJHJM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:12:59 -0400
+Message-ID: <1412759584.13569.0.camel@iivanov-dev>
+Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for
+ register access
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Wed, 08 Oct 2014 12:13:04 +0300
+In-Reply-To: <20141007172606.GG16469@dtor-ws>
+References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>
+	 <1412675448-11990-3-git-send-email-iivanov@mm-sol.com>
+	 <20141007172606.GG16469@dtor-ws>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s989C9Wg023285
 
-From: Hannes Frederic Sowa
-> I think David's concern was whether if 0 == false in all situations. It
-> is pretty clear that static memory is initialized to 0.
+On Tue, 2014-10-07 at 10:26 -0700, Dmitry Torokhov wrote:
+> Hi Ivan,
+> 
+> On Tue, Oct 07, 2014 at 12:50:46PM +0300, Ivan T. Ivanov wrote:
+> > @@ -527,10 +538,55 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
+> >  
 
-I'm not 100% sure about that.
-static pointers may be required to be initialised to NULL.
-If NULL isn't the 'all 0 bit pattern' then the memory would need
-to be initialised to a different pattern.
-Not that anyone is likely to implement such a system because far too
-much code will break.
+> > +
+> > +	kp->row_hold = devm_regmap_field_alloc(kp->dev, kp->regmap,
+> > +					       info->row_hold);
+> > +	if (IS_ERR(kp->row_hold))
+> > +		return PTR_ERR(kp->row_hold);
+> 
+> Why do we have to allocate all regmap fields separately instead of
+> embedding them into keypad structure?
+> 
 
-The only system I knew where 'native' NULL pointers were 'all 1s'
-used 0 in its C compiler.
+No particular reason. Will rework it.
 
-	David
+Thank you,
+Ivan
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Thanks.
+> 
+
+
