@@ -1,102 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543AbaJHKLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:11:07 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:58779 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749AbaJHKLF convert rfc822-to-8bit (ORCPT
+	id S1755654AbaJHKMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:12:19 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39424 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755288AbaJHKMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:11:05 -0400
-Date: Wed, 8 Oct 2014 05:10:59 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: i915.ko WC writes are slow after ea8596bb2d8d379
-Message-ID: <20141008051059.65566251@as>
-In-Reply-To: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
-References: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
+	Wed, 8 Oct 2014 06:12:17 -0400
+Date: Wed, 8 Oct 2014 11:11:44 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Feng Kan <fkan@apm.com>
+Cc: "patches@apm.com" <patches@apm.com>,
+        "jassisingbrar@gmail.com" <jassisingbrar@gmail.com>,
+        "=devicetree@vger.kernel.org" <=devicetree@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hieu Le <hnle@apm.com>
+Subject: Re: [PATCH 5/6] Documentation: i2c: Add APM X-Gene platform SLIMpro
+ I2C driver documentation
+Message-ID: <20141008101144.GJ27216@leverpostej>
+References: <1412726809-7525-1-git-send-email-fkan@apm.com>
+ <1412726809-7525-6-git-send-email-fkan@apm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412726809-7525-6-git-send-email-fkan@apm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014 10:03:36 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On Wed, Oct 08, 2014 at 01:06:48AM +0100, Feng Kan wrote:
+> Add APM X-Gene platform SLIMpro I2C driver documentation.
+> 
+> Signed-off-by: Feng Kan <fkan@apm.com>
+> Signed-off-by: Hieu Le <hnle@apm.com>
+> ---
+>  .../devicetree/bindings/i2c/i2c-xgene-slimpro.txt    | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
+> new file mode 100644
+> index 0000000..1a79d53
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/i2c-xgene-slimpro.txt
+> @@ -0,0 +1,20 @@
+> +APM X-Gene SLIMpro Mailbox I2C Driver
+> +
+> +This is a I2C driver that access the I2C bus through the mailbox mechanism.
+> +There is documentation of the mailbox driver in the
+> +Documentation/devicetree/binding/mailbox/xgene-slimpro-mbox.txt
 
-> 
-> I ran into a problem on a Sandybridge i5-2500s whilst measuring the
-> performance of GTT write-combining access. I found subsequent runs were
-> about 10-40x slower than the first. For example,
-> 
-> igt/gem_gtt_speed:
-> 
-> Time to read 16k through a GTT map:             325.285µs
-> Time to write 16k through a GTT map:              4.729µs
-> Time to clear 16k through a GTT map:              4.584µs
-> Time to clear 16k through a cached GTT map:       1.342µs
-> 
-> on the second run became:
-> 
-> Time to read 16k through a GTT map:             332.148µs
-> Time to write 16k through a GTT map:            209.411µs
-> Time to clear 16k through a GTT map:             56.460µs
-> Time to clear 16k through a cached GTT map:      50.897µs
-> 
-> Naively I would say that we lost the wc on our ioremap.
-> /sys/kernel/debug/x86/pat_memtype_list remained the same across repeated
-> runs.
-> 
-> A bisection pointed to 
-> 
-> commit ea8596bb2d8d37957f3e92db9511c50801689180
-> Author: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Date:   Thu Jul 18 20:47:53 2013 +0900
-> 
->     kprobes/x86: Remove unused text_poke_smp() and text_poke_smp_batch() functions
-> 
-> of which the active ingredient was just
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index b32ebf9..f4001e0 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2334,7 +2334,6 @@ config HAVE_ATOMIC_IOMAP
->  
->  config HAVE_TEXT_POKE_SMP
->         bool
-> -       select STOP_MACHINE if SMP
->  
->  config X86_DEV_DMA_OPS
->         bool
-> 
-> and adding that back into the current build, e.g.
+This should not describe the driver. It should describe the hardware (an
+I2C controller accessed over the "slimpro" mailbox).
 
-Hmm, set_mtrr() uses stop_machine(). I wonder if your MTRRs are out of
-sync and your results depend on which CPU the test runs on?
+> +
+> +Required properties :
+> +
+> + - compatible : should be "apm,xgene-slimpro-i2c"
+> + - mbox : ptr to the mailbox dts node, use the name of the mailbox as the
+> +	  first parameter. The second parameter is the channel number.
 
+This is a phandle + specificer pair, the "name" you mention is a label
+reference (which generates a phandle).
+
+> +	  The APM X-Gene SLIMpro mailbox has 8 channels.
+
+Does it really make sense to model the slimpro in this way if all the
+clients are going to rely on the particulars of this mailbox?
+
+Either this is somewhat generic and the mailbox details are
+unimportant, or it is not and the entire device would be better modelled
+as an MFD.
+
+> + - mbox-names : the name of the mailbox channel.
+
+For any *-names property, you must define the _exact_ names you expect,
+or you shouldn't use the property. The entire point of the property is
+to disambiguate entries, and this is _more_ ambiguous than without the
+property.
+
+Mark.
+
+> +
+> +Example :
+> +	i2cslimpro {
+> +		compatible = "apm,xgene-slimpro-i2c";
+> +		mbox = <&mailbox 0>;
+> +		mbox-names = "i2c-slimpro";
+> +	};
+> -- 
+> 1.9.1
 > 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 3632743..48a8a69 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -87,6 +87,7 @@ config X86
->         select HAVE_USER_RETURN_NOTIFIER
->         select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->         select HAVE_ARCH_JUMP_LABEL
-> +       select STOP_MACHINE
->         select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->         select SPARSE_IRQ
->         select GENERIC_FIND_FIRST_BIT
 > 
-> fixes the regression.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-> For the record, this kernel build doesn't use modules, which seems relevant
-> in light of ea8596bb2 "fixes a Kconfig dependency issue on STOP_MACHINE
-> in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD".
