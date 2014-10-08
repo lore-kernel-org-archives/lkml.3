@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534AbaJHKtY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:49:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60720 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805AbaJHKtX (ORCPT
+	id S1755939AbaJHKuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:50:13 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50859 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaJHKuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:49:23 -0400
-Date: Wed, 8 Oct 2014 12:49:20 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 06/11] perf: Move cgroup init before PMU ->event_init()
-Message-ID: <20141008104920.GI10832@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-7-git-send-email-matt@console-pimps.org>
- <20141007193424.GB4750@worktop.programming.kicks-ass.net>
- <20141008103250.GO14343@console-pimps.org>
+	Wed, 8 Oct 2014 06:50:11 -0400
+Date: Wed, 8 Oct 2014 11:50:05 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
+Subject: Re: [PATCH 8/9] mtd: nand: stm_nand_bch: add support for ST's BCH
+ NAND controller
+Message-ID: <20141008105005.GH20647@lee--X1>
+References: <1409143344-22458-1-git-send-email-lee.jones@linaro.org>
+ <1409143344-22458-9-git-send-email-lee.jones@linaro.org>
+ <20141006064030.GA20598@norris-Latitude-E6410>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141008103250.GO14343@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141006064030.GA20598@norris-Latitude-E6410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:32:50AM +0100, Matt Fleming wrote:
-> On Tue, 07 Oct, at 09:34:24PM, Peter Zijlstra wrote:
-> > On Wed, Sep 24, 2014 at 03:04:10PM +0100, Matt Fleming wrote:
-> > > +++ b/kernel/events/core.c
-> > > @@ -6859,7 +6859,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
-> > >  		 struct perf_event *group_leader,
-> > >  		 struct perf_event *parent_event,
-> > >  		 perf_overflow_handler_t overflow_handler,
-> > > -		 void *context)
-> > > +		 void *context, bool cgroup, pid_t pid)
-> > >  {
-> > >  	struct pmu *pmu;
-> > >  	struct perf_event *event;
-> > 
-> > I don't get this extension, why a bool and pid_t ?
-> 
-> So that it's possible to figure out whether we need to call
-> perf_cgroup_connect(). 
-> 
-> Oh, why not just 'int fd', you mean? Ermm... yeah that would be better.
+On Sun, 05 Oct 2014, Brian Norris wrote:
 
-Jah ;-)
+> On Wed, Aug 27, 2014 at 01:42:23PM +0100, Lee Jones wrote:
+> > Reviewed-By: Pekon Gupta <pekon@pek-sem.com>
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  drivers/mtd/nand/Kconfig        |    7 +
+> >  drivers/mtd/nand/Makefile       |    1 +
+> >  drivers/mtd/nand/stm_nand_bch.c | 1616 +++++++++++++++++++++++++++++++++++++++
+> >  drivers/mtd/nand/stm_nand_dt.c  |  110 +++
+> >  drivers/mtd/nand/stm_nand_dt.h  |   24 +
+> >  include/linux/mtd/stm_nand.h    |  147 ++++
+> >  6 files changed, 1905 insertions(+)
+> >  create mode 100644 drivers/mtd/nand/stm_nand_bch.c
+> >  create mode 100644 drivers/mtd/nand/stm_nand_dt.c
+> >  create mode 100644 drivers/mtd/nand/stm_nand_dt.h
+> >  create mode 100644 include/linux/mtd/stm_nand.h
+> 
+> One more thing: you never answered my question from [1]: 
+> 
+> Does your driver pass the MTD tests? (drivers/mtd/tests/)
+
+It does.  Apart from the ones which insist on reading the OOB area,
+which isn't allowed via the normal call-backs supplied.
+
+> [1] http://lists.infradead.org/pipermail/linux-mtd/2014-August/055084.html
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
