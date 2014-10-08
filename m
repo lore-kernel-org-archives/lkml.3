@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137AbaJHSVD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:21:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:33244 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaJHSVA (ORCPT
+	id S1754200AbaJHSVi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:21:38 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41093 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730AbaJHSVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:21:00 -0400
-Message-ID: <5435808A.7070203@codeaurora.org>
-Date: Wed, 08 Oct 2014 11:20:58 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 8 Oct 2014 14:21:37 -0400
+Date: Wed, 8 Oct 2014 19:21:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, JD Zheng <jdzheng@broadcom.com>,
+        Scott Branden <sbranden@broadcom.com>
+Message-ID: <20141008182123.GH4609@sirena.org.uk>
+References: <rjui@broadcom.com>
+ <1412743127-4523-1-git-send-email-rjui@broadcom.com>
+ <20141008112143.GT4609@sirena.org.uk>
+ <543562EB.8060300@broadcom.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for register
- access
-References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com> <1412675448-11990-3-git-send-email-iivanov@mm-sol.com> <20141007172606.GG16469@dtor-ws> <1412759584.13569.0.camel@iivanov-dev> <1412760633.13569.4.camel@iivanov-dev> <54357BA7.3010609@codeaurora.org> <20141008181314.GC14423@dtor-ws>
-In-Reply-To: <20141008181314.GC14423@dtor-ws>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SOtBRHVUTiB0e0Vw"
+Content-Disposition: inline
+In-Reply-To: <543562EB.8060300@broadcom.com>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Mark and Srini
 
-On 10/08/2014 11:13 AM, Dmitry Torokhov wrote:
-> On Wed, Oct 08, 2014 at 11:00:07AM -0700, Stephen Boyd wrote:
->> On 10/08/2014 02:30 AM, Ivan T. Ivanov wrote:
->>> On Wed, 2014-10-08 at 12:13 +0300, Ivan T. Ivanov wrote:
->>>> On Tue, 2014-10-07 at 10:26 -0700, Dmitry Torokhov wrote:
->>>>> Hi Ivan,
->>>>>
->>>>> On Tue, Oct 07, 2014 at 12:50:46PM +0300, Ivan T. Ivanov wrote:
->>>>>> @@ -527,10 +538,55 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
->>>>>> +
->>>>>> +	kp->row_hold = devm_regmap_field_alloc(kp->dev, kp->regmap,
->>>>>> +					       info->row_hold);
->>>>>> +	if (IS_ERR(kp->row_hold))
->>>>>> +		return PTR_ERR(kp->row_hold);
->>>>> Why do we have to allocate all regmap fields separately instead of
->>>>> embedding them into keypad structure?
->>>>>
->>>> No particular reason. Will rework it.
->>>>
->>> Oops. struct regmap_field is opaque. It seems that the allocation
->>> is the only way that I could have instance of it.
->>>
->> Maybe we can add an API to allocate an array of fields?
-> Maybe we could make the structure public instead? I do not see any
-> reason for allocating something separately that has exactly the same
-> lifetime as owning structure.
->
+--SOtBRHVUTiB0e0Vw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Srini/Mark, any reason why the regmap_field structure is opaque?
+On Wed, Oct 08, 2014 at 09:14:35AM -0700, Ray Jui wrote:
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+> Thanks for the reply. It looks like you are also the maintainer of spidev.
+> In this case, could you please help to confirm that you expect spidev to use
+> separate buffers for TX and RX? If so, I can go ahead and make the change in
+> spidev.
 
+Yes, that would be my expectation for maximum robustness (or if it is
+going to use one buffer it explicitly maps it for mixed use but I'd
+expect that to be asking for trouble).
+
+--SOtBRHVUTiB0e0Vw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNYCiAAoJECTWi3JdVIfQB0EH/j/kNQG1QgTj6zKBsCfVYKBy
+Zlyampo/pqtrRqo3+PSiEv4Kq6vV+VazJUgypVacC5LLFeiWTl1qQ4G6n8x345oT
+SklY3cjCZkduKMsBOrPIzcUnP0CZYqVps/fl4nIf3rXjloed8Ch3V4+7ewDFyFH7
+Q28NkW3bH3wvl83oGdKD4peh3M2N62lFKyNexebXYLv8vTDJb1U+WiMZvDkORA7W
+FstTWQaWzOSM554SKE++BqJ+IWPKTZ8MYw8RHW7GdvSiy9gsnECS2z/YAfhXypIF
+LE7/UY3peQlD432gCiJa9gyv+cDaL/HJLOURuimE25JPa1Ea2ZDuYvp0xFx2Awk=
+=JBXg
+-----END PGP SIGNATURE-----
+
+--SOtBRHVUTiB0e0Vw--
