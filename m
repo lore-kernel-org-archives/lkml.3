@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036AbaJHUTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:19:21 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:59336 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbaJHUTT (ORCPT
+	id S1754294AbaJHUVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:21:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41265 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678AbaJHUVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:19:19 -0400
-Date: Wed, 8 Oct 2014 22:19:06 +0200
-From: Marc Burkhardt <marc@osknowledge.org>
-To: linux-kernel@vger.kernel.org
-Subject: WARNING: CPU: 0 PID: 3666 at net/wireless/reg.c:1806
- reg_process_hint+0x3b0/0x3c0 [cfg80211]()
-Message-ID: <20141008201905.GA6904@localhost>
+	Wed, 8 Oct 2014 16:21:53 -0400
+Date: Wed, 8 Oct 2014 21:21:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: atull <atull@opensource.altera.com>, jdelvare@suse.de,
+        lm-sensors@lm-sensors.org, lgirdwood@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Message-ID: <20141008202117.GN4609@sirena.org.uk>
+References: <1412275071-6417-1-git-send-email-atull@opensource.altera.com>
+ <1412275071-6417-2-git-send-email-atull@opensource.altera.com>
+ <20141006172845.GA21902@roeck-us.net>
+ <alpine.DEB.2.02.1410081103110.18439@atx-linux-37>
+ <20141008201254.GA21065@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AS/cuf48TUvH8DlA"
 Content-Disposition: inline
-X-Operating-System: Linux marc 3.17.0-desper
+In-Reply-To: <20141008201254.GA21065@roeck-us.net>
+X-Cookie: Everything you know is wrong!
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 1/4] hwmon: ltc2978: device tree bindings documentation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
 
-just upgraded a box (that has no CRD agent installed) from a 3.10 kernel to the
-just released 3.17 kernel an noticed the following when connecting to a HTC One
-device:
+--AS/cuf48TUvH8DlA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-[59168.564525] cfg80211: Calling CRDA for country: DE
-[59169.263781] ------------[ cut here ]------------
-[59169.263812] WARNING: CPU: 0 PID: 3666 at net/wireless/reg.c:1806 reg_process_hint+0x3b0/0x3c0 [cfg80211]()
-[59169.263815] Modules linked in: ctr ccm sdhci_pci sdhci mmc_core ehci_pci ehci_hcd acpi_power_meter acpi_pad fuse tp_smapi(O) nf_log_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 nf_log_ipv6 nf_log_common xt_LOG xt_tcpudp nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack af_packet dm_mod ip6table_filter ip6_tables iptable_filter joydev ip_tables x_tables hdaps(O) thinkpad_ec(O) msr ipv6 usbhid btusb bluetooth iwldvm mac80211 nvidia(PO) snd_hda_codec_conexant snd_hda_codec_generic usbcore mxm_wmi coretemp iwlwifi snd_hda_intel snd_hda_controller snd_hda_codec kvm_intel cfg80211 battery snd_hwdep snd_pcm kvm thinkpad_acpi snd_timer snd lpc_ich crc32_pclmul crc32c_intel thermal ac evdev rtc_cmos mfd_core i2c_i801 usb_common 8250 acpi_cpufreq wmi serial_core button soundcore processor [last unloaded: microcode]
+On Wed, Oct 08, 2014 at 01:12:54PM -0700, Guenter Roeck wrote:
+> On Wed, Oct 08, 2014 at 11:12:29AM -0500, atull wrote:
 
-[59169.263877] CPU: 0 PID: 3666 Comm: kworker/0:2 Tainted: P        W  O   3.17.0-desper #1
-[59169.263879] Hardware name: LENOVO 43495KG/43495KG, BIOS 6MET92WW (1.52 ) 09/26/2012
-[59169.263890] Workqueue: events reg_todo [cfg80211]
-[59169.263893]  00000009 c138d40c 00000000 c1035c79 c14ba460 00000000 00000e52 e2f8196e
-[59169.263899]  0000070e e2f62900 e2f62900 d01d2640 d9224140 d01d2654 dafc4100 c1035d2b
-[59169.263904]  00000009 00000000 e2f62900 00000000 daa11900 c15af000 6811e7b4 000035d0
-[59169.263910] Call Trace:
-[59169.263919]  [<c138d40c>] ? dump_stack+0x45/0x65
-[59169.263926]  [<c1035c79>] ? warn_slowpath_common+0x79/0x90
-[59169.263938]  [<e2f62900>] ? reg_process_hint+0x3b0/0x3c0 [cfg80211]
-[59169.263948]  [<e2f62900>] ? reg_process_hint+0x3b0/0x3c0 [cfg80211]
-[59169.263952]  [<c1035d2b>] ? warn_slowpath_null+0x1b/0x20
-[59169.263963]  [<e2f62900>] ? reg_process_hint+0x3b0/0x3c0 [cfg80211]
-[59169.263974]  [<e2f6296a>] ? reg_todo+0x5a/0x170 [cfg80211]
-[59169.263979]  [<c1047ebc>] ? process_one_work+0xec/0x2b0
-[59169.263984]  [<c10798fe>] ? internal_add_timer+0x1e/0x70
-[59169.263987]  [<c1079e8c>] ? mod_timer+0xbc/0x130
-[59169.263990]  [<c104865c>] ? worker_thread+0xec/0x400
-[59169.263994]  [<c1048570>] ? cancel_delayed_work_sync+0x10/0x10
-[59169.263998]  [<c104bec8>] ? kthread+0x98/0xb0
-[59169.264002]  [<c1391c01>] ? ret_from_kernel_thread+0x21/0x30
-[59169.264006]  [<c104be30>] ? kthread_create_on_node+0x110/0x110
-[59169.264009] ---[ end trace ab379192b30946cf ]---
-[59169.264012] cfg80211: Calling CRDA for country: DE
+> > > if not specified. We'll have to sort out with the regulator core how this should
+> > > be handled.
 
-The kernel is tainted, yes. But maybe someone could take a look.
+> Followup on this: Since the regulator core considers the property to be
+> mandatory (which I guess makes some sense for a presumed regulator),
+> you'll have to check in the calling code and ensure that a 'regulators'
+> entry is there prior to calling the regulator code.
 
-Thanks,
-Marc
+We could just lower the severity of the message, it's not mandatory at
+all but rather there so that users can figure out what's going wrong if
+we fail to parse.
 
--- 
-Marc Burkhardt
+--AS/cuf48TUvH8DlA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNZy8AAoJECTWi3JdVIfQT5EH/j3iZPvZxXMCDdVD8lbUegvx
+/DQN/OfQ6ObVZJ/O4449Dcm1N2SowEhR+nJ+pLOaKSmMYfN9OcWBbTbF0WjRvkLD
+OxjPfEQOQBhgtSDN9PBa18GM+LSVVV25T5o1qiNcEy+2ZW2kZg6Co5ojsyRS3wrk
+LfxGR4XmmeaYFKDYkjfWK4TM2eGAppK+Rc85kbZJ2gvZHSU2DmSmA9UARMxNjm1W
+MDy62VrioRJAGdJmvQhzFidY1s8bs0ZxgRgQ+YvsrWNFWxG0+0+2IHhnxKpV6TLw
+dvTi8LSVV7qhpE53nHd8KVVLxdcGm4t0WCSTTheV/srxO9G0Sg8w7pY9/ksB5VU=
+=jWVj
+-----END PGP SIGNATURE-----
+
+--AS/cuf48TUvH8DlA--
