@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796AbaJHLTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:19:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60858 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755085AbaJHLTa (ORCPT
+	id S1756003AbaJHLWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:22:12 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40383 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052AbaJHLWI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:19:30 -0400
-Date: Wed, 8 Oct 2014 13:19:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Perform rotation on Intel CQM RMIDs
-Message-ID: <20141008111927.GG4750@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-12-git-send-email-matt@console-pimps.org>
+	Wed, 8 Oct 2014 07:22:08 -0400
+Date: Wed, 8 Oct 2014 12:21:43 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ray Jui <rjui@broadcom.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>
+Message-ID: <20141008112143.GT4609@sirena.org.uk>
+References: <rjui@broadcom.com>
+ <1412743127-4523-1-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LXsBfGm2MIDJcXyT"
 Content-Disposition: inline
-In-Reply-To: <1411567455-31264-12-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1412743127-4523-1-git-send-email-rjui@broadcom.com>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:04:15PM +0100, Matt Fleming wrote:
-> This scheme reserves one RMID at all times for rotation. When we need to
-> schedule a new event we give it the reserved RMID, pick a victim event
-> from the front of the global CQM list and wait for the victim's RMID to
-> drop to zero occupancy, before it becomes the new reserved RMID.
 
-> +/*
-> + * If we fail to assign a new RMID for intel_cqm_rotation_rmid because
-> + * cachelines are still tagged with RMIDs in limbo, we progressively
-> + * increment the threshold until we find an RMID in limbo with <=
-> + * __intel_cqm_threshold lines tagged. This is designed to mitigate the
-> + * problem where cachelines tagged with an RMID are not steadily being
-> + * evicted.
-> + *
-> + * On successful rotations we decrease the threshold back towards zero.
-> + */
-> +static unsigned int __intel_cqm_threshold;
+--LXsBfGm2MIDJcXyT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Ah, so I was about to tell you there is the possibiliy we'll never quite
-reach 0. But it appears you've cured that with this adaptive threshold
-thing?
+On Tue, Oct 07, 2014 at 09:38:47PM -0700, Ray Jui wrote:
 
-Is there an upper bound on the threshold after which we'll just wait, or
-will you keep increasing it until something matches?
+> The PL022 SPI driver maps the DMA RX buffer before the DMA TX buffer. In
+> most cases, the sequence of the mapping does not matter. But in cases
+> where TX and RX happen to use the same buffer, e.g., spidev, it causes
+> the cached TX data not written to memory, because the same memory has
+> been marked invalid when dma_map_sg on the RX buffer is called
+
+This seems like it is a bug in spidev, using the same buffer simultaneously
+for both directions isn't something I'd think would be expected to work
+reliably unless it was explicitly mapped as bidirectional.
+
+--LXsBfGm2MIDJcXyT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNR5GAAoJECTWi3JdVIfQhUgH/0zt4qPnCGtU0caRZuqNqHFr
+BWm3LT2azuJqwdN0ET+Q2Vitd3AdKgLKV8FdKest5CP8xFCXRnCmeRhjDmNm5vrV
+UlzSic2DgvT8Eylv2jexXSXlUseG87tQffFRkuxlyZsochTBv9oAU7B+tJ4MjPlH
+7WeUbMoIgdpLiNzmPq6NK7FltT8heMv2TCHR2xIcYvY5+C0AT/cQAh0nvB+2YGaw
+KX+t8j5wmeal03/PfRP8mhjTg1TE+GYWEHyTTldcxVdt3ogUhino+8GAaeqFeMdW
+zgeWTNrfj3d1HF6NQXhC/CZ9ij+Hu8FcyNwX1gZY1XXHMwktQmWAVguZH2wYLHY=
+=sGCg
+-----END PGP SIGNATURE-----
+
+--LXsBfGm2MIDJcXyT--
