@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739AbaJHWPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:15:01 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:29500 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933687AbaJHWO5 (ORCPT
+	id S933763AbaJHWRB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:17:01 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:14340 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932228AbaJHWQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:14:57 -0400
-Message-ID: <1412806493.2908.7.camel@u64>
-Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
-From: Tuan Bui <tuan.d.bui@hp.com>
-To: Davidlohr Bueso <dbueso@suse.de>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
-Date: Wed, 08 Oct 2014 15:14:53 -0700
-In-Reply-To: <1412312253.27162.5.camel@linux-t7sj.site>
-References: <1412120999.2941.11.camel@u64>
-	 <20141001052832.GA32248@gmail.com> <20141001171226.GF2799@kernel.org>
-	 <1412312253.27162.5.camel@linux-t7sj.site>
-Organization: HP
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 8 Oct 2014 18:16:57 -0400
+X-IronPort-AV: E=Sophos;i="5.04,680,1406617200"; 
+   d="scan'208";a="47604710"
+Message-ID: <5435B7D7.1030904@broadcom.com>
+Date: Wed, 8 Oct 2014 15:16:55 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        "Mike Turquette" <mturquette@linaro.org>,
+        Alex Elder <elder@linaro.org>, "Rob Herring" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, <devicetree@vger.kernel.org>,
+        Ray Jui <rjui@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        Jonathan Richardson <jonathar@broadcom.com>,
+        JD Zheng <jdzheng@broadcom.com>
+Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
+ SoC
+References: <1412746025-11998-2-git-send-email-sbranden@broadcom.com> <10762659.VISiZ3vSSN@wuerfel> <543565DC.8010704@broadcom.com> <34012512.W8VifyXY4H@wuerfel>
+In-Reply-To: <34012512.W8VifyXY4H@wuerfel>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-02 at 21:57 -0700, Davidlohr Bueso wrote:
-> On Wed, 2014-10-01 at 14:12 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Oct 01, 2014 at 07:28:32AM +0200, Ingo Molnar escreveu:
-> > > If you compare an strace of AIM7 steady state and 'perf bench 
-> > > lock' steady state, is it comparable, i.e. do the syscalls and 
-> > 
-> > Isn't "lock" too generic? Isn't this stressing some specific lock and if
-> > so shouldn't that be made abundantly clear in the 'perf bench' test name
-> > and in the docs?
-> 
-> yeah, and 'perf bench locking creat' just doesn't sound right.
-> 
+On 14-10-08 11:12 AM, Arnd Bergmann wrote:
+> On Wednesday 08 October 2014 09:27:08 Scott Branden wrote:
+>> On 14-10-08 06:28 AM, Arnd Bergmann wrote:
+>>> On Wednesday 08 October 2014 05:27:24 Scott Branden wrote:
+>>>>>
+>>>>> I don't think you need per-board config options. The main option
+>>>>> above should be enough.
+>>>> This is not a per-board config option.  This is actually a per-SoC
+>>>> uArchtecture selection.  More major uArchectures will be added to the
+>>>> IPROC.  Will Change comment to "Support Broadcom Cygnus SoC"
+>>>
+>>> Ok, sounds fine, but remove ARCH_BCM_IPROC then. There should be
+>>> no need for a three-level deep hierarchy (BCM -> IPROC -> CYGNUS)
+>>>
+>> I do not need a 3-deep hierarchy, I need a 2-deep hierarchy for IPROC
+>> and CYGNUS (and future SoCs that have IPROC Architecture in common).  I
+>> can move IPROC out of the mach-bcm directory if you like a create a new
+>> directory?  But it looks like the purpose of mach-bcm is to consolidate
+>> all Broadcom chipsets in it?
+>
+> Yes, better leave it all in mach-bcm. You really shouldn't need much
+> code at all that is soc specific, so adding new directories is not
+> encouraged. We have some platforms that need no code at all, and on
+> arm64 that is required.
+>
+> Isn't Northstar also IPROC? That one didn't seem to need the symbol.
+>
+> Could you make ARCH_BCM_IPROC a silent symbol that is just selected
+> by each SoC family specific symbol?
+It looks like I will also be able to add Northstar under the 
+ARCH_BCM_IPROC.  This will be good momentum to cleaning up and 
+consolidate support going forward.
+I will change the Kconfig such that ARCH_BCM_5301X selects ARCH_BCM_IPROC.
 
-Do you have any suggestion on how i should name it?
+Thanks.
+>
+> 	Arnd
+>
 
