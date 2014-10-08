@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaJHGxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:53:05 -0400
-Received: from mga03.intel.com ([134.134.136.65]:45220 "EHLO mga03.intel.com"
+	id S1754152AbaJHG74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:59:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858AbaJHGxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:53:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,675,1406617200"; 
-   d="scan'208";a="585193307"
-Message-ID: <5434DE4A.60604@intel.com>
-Date: Wed, 08 Oct 2014 14:48:42 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1753868AbaJHG7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 02:59:55 -0400
+Date: Wed, 8 Oct 2014 08:59:31 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Borislav Petkov <bp@alien8.de>, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
+        David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: perf & rasd integration plan
+Message-ID: <20141008065930.GA1778@krava.redhat.com>
+References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
+ <20140930132416.GB2799@kernel.org>
+ <20141005174801.GD9377@pd.tnic>
+ <20141005182442.GA1934@krava.redhat.com>
+ <CAFrcx1=73idqC9DTx9f6H4sRo0CMTzMewv28usDWk8wKmdAgaA@mail.gmail.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>
-Subject: Re: [PATCH 1/1] Cpufreq: Keep cpufreq sysfs nodes across S2RAM/S2DISK
- when using intel_pstate driver.
-References: <1411023787-11458-1-git-send-email-tianyu.lan@intel.com> <CAKohpokht4=7XCftPYa5PqpPMN-O-5b_RjJ3BgHnxjYV4VzyTg@mail.gmail.com>
-In-Reply-To: <CAKohpokht4=7XCftPYa5PqpPMN-O-5b_RjJ3BgHnxjYV4VzyTg@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFrcx1=73idqC9DTx9f6H4sRo0CMTzMewv28usDWk8wKmdAgaA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry later response and just back from vacation.
+On Mon, Oct 06, 2014 at 08:53:51AM +0200, Jean Pihet wrote:
+> Hi Jiri,
+> 
+> 
+> On 5 October 2014 20:24, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Sun, Oct 05, 2014 at 07:48:01PM +0200, Borislav Petkov wrote:
+> >> Top-posting on purpose:
+> >>
+> >> Btw, jolsa, if you get your LCE proposal for the perf splitting
+> >> approved, please post the time here so people can come.
+> >
+> > yep, it got accepted, ther schedule is:
+> >   Friday, October 17, 2014 from 9:00am – Noon
+> >   Room 2
+> >
+> > https://pdxplumbers.osuosl.org/2014/ocw/events/LPC2014/tracks/351
+> Great! Are there slides that we can download?
 
-On 2014年09月29日 16:20, Viresh Kumar wrote:
-> But this change is buggy.. Because you are updating 'cpufreq_suspended'
-> before actually stopping the governor, any calls to __cpufreq_governor()
-> will be converted to NO-operations because of this in __cpufreq_governor():
-> 
-> /* Don't start any governor operations if we are entering suspend */
-> if (cpufreq_suspended)
->     return 0;
-> 
-> And so the governor's will never stop :(
-> 
-> So you need to keep the above line where it was :)
-> 
+there'll be just one.. I'm on vacation this week,
+so I'll try send some till end of the week
 
-Yes, you are right. Thanks for fixing it.
--- 
-Best regards
-Tianyu Lan
+jirka
