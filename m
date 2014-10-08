@@ -1,90 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502AbaJHJNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:13:32 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37620 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaJHJN1 convert rfc822-to-8bit (ORCPT
+	id S1755542AbaJHJN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:13:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:34535 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754434AbaJHJNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:13:27 -0400
-Date: Wed, 8 Oct 2014 10:13:21 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Robert Richter <rric@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Device Tree ML <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: [PATCH v13 00/12] Support for creating generic PCI host bridges
- from DT
-Message-ID: <20141008091321.GC4652@e106497-lin.cambridge.arm.com>
-References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
- <20140929194335.GA13747@google.com>
- <20140930103942.GO841@e106497-lin.cambridge.arm.com>
- <20140930161805.GB5625@google.com>
- <20140930165431.GV841@e106497-lin.cambridge.arm.com>
- <20141008074428.GD20256@rric.localhost>
+	Wed, 8 Oct 2014 05:13:30 -0400
+X-IronPort-AV: E=Sophos;i="5.04,676,1406563200"; 
+   d="scan'208";a="36951470"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: [PATCH RFC] setns: return 0 directly if try to reassociate with current namespace
+Date: Wed, 8 Oct 2014 17:13:07 +0800
+Message-ID: <1412759587-21320-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-In-Reply-To: <20141008074428.GD20256@rric.localhost>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 08 Oct 2014 09:13:22.0685 (UTC) FILETIME=[1BF46AD0:01CFE2D8]
-X-MC-Unique: 114100810132402801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 08:44:28AM +0100, Robert Richter wrote:
-> Liviu, Bjorn,
-> 
-> On 30.09.14 17:54:31, Liviu Dudau wrote:
-> > On Tue, Sep 30, 2014 at 05:18:05PM +0100, Bjorn Helgaas wrote:
-> > > OK, I rebuilt pci/host-generic from scratch.  It consists of your v13
-> > > patches + Arnd's build fix for pci_pio_to_address() in !CONFIG_OF configs.
-> > 
-> > Something went wrong with the integration, patch 02 adds another definition of 
-> > of_pci_range_to_resource() before it is moved out of the header file for some reason.
-> 
-> I assume pci/host-generic is the latest now with this issue fixed as
-> the commit date is 2014-10-01 past you message above, right? So is it
-> ok to rebase our host controller driver onto pci/host-generic or will
-> there be further updates or any other branch that is newer?
+We could use setns to join the current ns,
+which did a lot of unnecessary work.
+This patch will check this senario and
+return 0 directly.
 
-You can rebase either on top of Bjorn's next branch or use linux-next. Hope to
-see it in v3.18 soon.
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+---
+ kernel/nsproxy.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-Best regards,
-Liviu
-
-> 
-> Thanks,
-> 
-> -Robert
-> 
-
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index ef42d0a..66eea63 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -236,6 +236,34 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 	ops = ei->ns_ops;
+ 	if (nstype && (ops->type != nstype))
+ 		goto out;
++	switch (ops->type) {
++	case CLONE_NEWIPC:
++		if (ei->ns == tsk->nsproxy->ipc_ns)
++			return 0;
++		break;
++	case CLONE_NEWNET:
++		if (ei->ns == tsk->nsproxy->net_ns)
++			return 0;
++		break;
++	case CLONE_NEWNS:
++		if (ei->ns == tsk->nsproxy->mnt_ns)
++			return 0;
++		break;
++	case CLONE_NEWPID:
++		if (ei->ns == tsk->nsproxy->pid_ns_for_children)
++			return 0;
++		break;
++	case CLONE_NEWUSER:
++		if (ei->ns == current_user_ns())
++			return 0;
++		break;
++	case CLONE_NEWUTS:
++		if (ei->ns == tsk->nsproxy->uts_ns)
++			return 0;
++		break;
++	default:
++		goto out;
++	}
+ 
+ 	new_nsproxy = create_new_namespaces(0, tsk, current_user_ns(), tsk->fs);
+ 	if (IS_ERR(new_nsproxy)) {
 -- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
+1.9.0
 
