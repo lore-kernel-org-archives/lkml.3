@@ -1,94 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904AbaJHFjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 01:39:32 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:38305 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaJHFjb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 01:39:31 -0400
+	id S1752217AbaJHF5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 01:57:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53118 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750705AbaJHF5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 01:57:04 -0400
+Date: Tue, 7 Oct 2014 22:57:18 -0700
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux FS Dev Mailing List <linux-fsdevel@vger.kernel.org>,
+        Linux F2FS Dev Mailing List 
+	<linux-f2fs-devel@lists.sourceforge.net>
+Subject: [GIT PULL] f2fs updates for v3.18
+Message-ID: <20141008055718.GA68158@jaegeuk-mac02.hsd1.ca.comcast.net>
 MIME-Version: 1.0
-Date: Wed, 8 Oct 2014 11:09:30 +0530
-Message-ID: <CAJe_Zhf73TXxAjBq_cCJB_oBC1Ff_ErN7TP4HsO-_BzhiPZkGQ@mail.gmail.com>
-Subject: [GIT PULL] New Mailbox framework for 3.18
-From: Jassi Brar <jaswinder.singh@linaro.org>
-To: torvalds@linux-foundation.org
-Cc: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "ks.giri@samsung.com" <ks.giri@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Matt Porter <mporter@linaro.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>, "Anna, Suman" <s-anna@ti.com>,
-        Bjorn Andersson <bjorn@kryo.se>, Mark Brown <broonie@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>, Andy Green <andy.green@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Sudeep Holla <sudeep.holla@arm.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Alexandre Torgue <alexandre.torgue@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-A framework for Mailbox controllers and clients have been cooking for
-more than a year now. Everybody in the CC list had been copied on
-patchset revisions and most of them have made sounds of approval,
-though just one concrete Reviewed-by. The patchset has also been in
-linux-next for a couple of weeks now and no conflict has been
-reported. The framework has the backing of at least 5 platforms,
-though I can't say if/when they upstream their drivers (some
-businesses have 'changed').
+This patch-set introduces a couple of new features such as large sector size,
+FITRIM, and atomic/volatile writes.
+Several patches enhance power-off recovery and checkpoint routines.
+The fsck.f2fs starts to support fixing corrupted partitions with recovery hints
+provided by this patch-set.
 
+Thank you very much.
 
-The following changes since commit 9a50aaefc1b896e734bf7faf3d085f71a360ce97:
+The following changes since commit 70c8038dd698b44daf7c8fc7e2eca142bec694c4:
 
-  Merge tag 'scsi-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi (2014-10-07
-21:29:18 -0400)
+  Merge tag 'for-f2fs-3.17-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs (2014-09-03 10:10:28 -0700)
 
 are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/f2fs-for-3.18
 
-  git://git.linaro.org/landing-teams/working/fujitsu/integration.git
-mailbox-for-linus
+for you to fetch changes up to 02a1335f25a386db9afc68f8315162f862aac93f:
 
-for you to fetch changes up to 9f3e3cacb2ffdefe28c7cf490bf543e4dcb2770a:
-
-  dt: mailbox: add generic bindings (2014-10-08 10:39:42 +0530)
+  f2fs: support volatile operations for transient data (2014-10-07 11:54:41 -0700)
 
 ----------------------------------------------------------------
-Jassi Brar (3):
-      mailbox: Introduce framework for mailbox
-      doc: add documentation for mailbox framework
-      dt: mailbox: add generic bindings
+f2fs updates for v3.18
 
-Suman Anna (1):
-      mailbox: rename pl320-ipc specific mailbox.h
+This series includes patches to:
+ o retain some recovery information for fsck.f2fs
+ o enhance checkpoint speed
+ o enhance flush command management
+ o bug fix for lseek
+ o tune in-place-update policies
+ o enhance roll-forward speed
+ o revisit all the roll-forward and fsync rules
+ o support large sector size
+ o support FITRIM
+ o support atomic and volatile writes
 
- .../devicetree/bindings/mailbox/mailbox.txt        |  38 ++
- Documentation/mailbox.txt                          | 122 ++++++
- MAINTAINERS                                        |   8 +
- arch/arm/mach-highbank/highbank.c                  |   2 +-
- drivers/cpufreq/highbank-cpufreq.c                 |   2 +-
- drivers/mailbox/Makefile                           |   4 +
- drivers/mailbox/mailbox.c                          | 465 +++++++++++++++++++++
- drivers/mailbox/pl320-ipc.c                        |   2 +-
- include/linux/mailbox_client.h                     |  46 ++
- include/linux/mailbox_controller.h                 | 133 ++++++
- include/linux/{mailbox.h => pl320-ipc.h}           |   0
- 11 files changed, 819 insertions(+), 3 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mailbox/mailbox.txt
- create mode 100644 Documentation/mailbox.txt
- create mode 100644 drivers/mailbox/mailbox.c
- create mode 100644 include/linux/mailbox_client.h
- create mode 100644 include/linux/mailbox_controller.h
- rename include/linux/{mailbox.h => pl320-ipc.h} (100%)
+And several clean-ups and bug fixes are included.
 
+----------------------------------------------------------------
+Chao Yu (7):
+      f2fs: remove unneeded sit_i in macro SIT_BLOCK_OFFSET/START_SEGNO
+      f2fs: refactor flush_sit_entries codes for reducing SIT writes
+      f2fs: fix to truncate blocks past EOF in ->setattr
+      f2fs: support large sector size
+      f2fs: skip punching hole in special condition
+      f2fs: fix to clean previous mount option when remount_fs
+      f2fs: fix to search whole dirty segmap when get_victim
 
--- 
-Linaro.org │ Open source software for ARM SoCs | Follow Linaro
-http://facebook.com/pages/Linaro/155974581091106  -
-http://twitter.com/#!/linaroorg - http://linaro.org/linaro-blog
+Dan Carpenter (1):
+      f2fs: potential shift wrapping buf in f2fs_trim_fs()
+
+Gu Zheng (1):
+      f2fs: use lock-less list(llist) to simplify the flush cmd management
+
+Huang Ying (3):
+      f2fs: avoid node page to be written twice in gc_node_segment
+      f2fs: use nm_i->next_scan_nid as default for next_free_nid
+      f2fs: fix a race condition in next_free_nid
+
+Jaegeuk Kim (30):
+      f2fs: introduce F2FS_I_SB, F2FS_M_SB, and F2FS_P_SB
+      f2fs: retain inconsistency information to initiate fsck.f2fs
+      f2fs: need fsck.f2fs when f2fs_bug_on is triggered
+      f2fs: add BUG cases to initiate fsck.f2fs
+      f2fs: handle bug cases by letting fsck.f2fs initiate
+      f2fs: need fsck.f2fs if the recovery was failed
+      f2fs: fix negative value for lseek offset
+      f2fs: remove lengthy inode->i_ino
+      f2fs: expand counting dirty pages in the inode page cache
+      f2fs: give an option to enable in-place-updates during fsync to users
+      f2fs: fix double lock for inode page during roll-foward recovery
+      f2fs: use meta_inode cache to improve roll-forward speed
+      f2fs: introduce a flag to represent each nat entry information
+      f2fs: fix conditions to remain recovery information in f2fs_sync_file
+      f2fs: fix roll-forward missing scenarios
+      f2fs: do not skip latest inode information
+      f2fs: remove redundant operation during roll-forward recovery
+      f2fs: use MAX_BIO_BLOCKS(sbi)
+      f2fs: update i_size when __allocate_data_block
+      f2fs: change the ipu_policy option to enable combinations
+      f2fs: use more free segments until SSR is activated
+      f2fs: introduce cp_control structure
+      f2fs: introduce FITRIM in f2fs_ioctl
+      f2fs: refactor flush_nat_entries to remove costly reorganizing ops
+      f2fs: check the use of macros on block counts and addresses
+      f2fs: call f2fs_unlock_op after error was handled
+      f2fs: clean up f2fs_ioctl functions
+      f2fs: remove unused return value
+      f2fs: support atomic writes
+      f2fs: support volatile operations for transient data
+
+ Documentation/ABI/testing/sysfs-fs-f2fs |   7 +
+ Documentation/filesystems/f2fs.txt      |  13 +-
+ fs/f2fs/checkpoint.c                    |  97 +++---
+ fs/f2fs/data.c                          |  69 +++--
+ fs/f2fs/debug.c                         |  20 +-
+ fs/f2fs/dir.c                           |  19 +-
+ fs/f2fs/f2fs.h                          | 163 +++++++---
+ fs/f2fs/file.c                          | 257 ++++++++++++----
+ fs/f2fs/gc.c                            |  26 +-
+ fs/f2fs/inline.c                        |  20 +-
+ fs/f2fs/inode.c                         |  37 ++-
+ fs/f2fs/namei.c                         |  53 ++--
+ fs/f2fs/node.c                          | 460 ++++++++++++++--------------
+ fs/f2fs/node.h                          |  60 ++--
+ fs/f2fs/recovery.c                      | 191 +++++++-----
+ fs/f2fs/segment.c                       | 520 +++++++++++++++++++++++---------
+ fs/f2fs/segment.h                       | 160 ++++++----
+ fs/f2fs/super.c                         |  47 ++-
+ fs/f2fs/xattr.c                         |   8 +-
+ include/linux/f2fs_fs.h                 |   6 +-
+ include/trace/events/f2fs.h             |  16 +-
+ 21 files changed, 1453 insertions(+), 796 deletions(-)
+
