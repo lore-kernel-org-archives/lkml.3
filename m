@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443AbaJHQag (ORCPT <rfc822;w@1wt.eu>);
+	id S1755681AbaJHQam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:30:42 -0400
+Received: from mail-bl2on0140.outbound.protection.outlook.com ([65.55.169.140]:60764
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751829AbaJHQag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 8 Oct 2014 12:30:36 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:55290 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaJHQae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:30:34 -0400
+Message-ID: <1412785827.13320.532.camel@snotra.buserror.net>
+Subject: Re: [PATCH v2 1/2] spi: fsl-spi: Fix parameter ram offset setup for
+ CPM1
+From: Scott Wood <scottwood@freescale.com>
+To: leroy christophe <christophe.leroy@c-s.fr>
+CC: Mark Brown <broonie@kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-spi@vger.kernel.org>
+Date: Wed, 8 Oct 2014 11:30:27 -0500
+In-Reply-To: <5435649F.5070908@c-s.fr>
+References: <20141003164916.DBD631AAFA2@localhost.localdomain>
+	 <1412368198.13320.434.camel@snotra.buserror.net> <542FE1C4.7000403@c-s.fr>
+	 <1412640953.13320.502.camel@snotra.buserror.net> <5435649F.5070908@c-s.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
 MIME-Version: 1.0
-In-Reply-To: <5434F9E4.7020109@collabora.co.uk>
-References: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
-	<CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
-	<5434F9E4.7020109@collabora.co.uk>
-Date: Wed, 8 Oct 2014 09:30:33 -0700
-X-Google-Sender-Auth: YfdWqptClgzayqKzsT2qyLPhV2g
-Message-ID: <CAD=FV=V7p8h-x3b7m8MB4oT=X=HnFijjmao_V3tVE21BkNgdPw@mail.gmail.com>
-Subject: Re: [PATCH] regulator: rk808: Add support setting suspend voltage
-From: Doug Anderson <dianders@chromium.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Chris Zhong <zyw@rock-chips.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [2601:2:5800:3f7:8d24:400:3af9:c4bd]
+X-ClientProxiedBy: BLUPR08CA0039.namprd08.prod.outlook.com (10.141.200.19) To
+ CY1PR0301MB0731.namprd03.prod.outlook.com (25.160.159.149)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0731;
+X-Forefront-PRVS: 0358535363
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(189002)(479174003)(199003)(24454002)(377424004)(77096002)(50986999)(104166001)(93916002)(46102003)(80022003)(42186005)(85852003)(110136001)(47776003)(97736003)(33646002)(76176999)(62966002)(40100002)(86362001)(92726001)(31966008)(87976001)(87286001)(89996001)(101416001)(88136002)(102836001)(103116003)(120916001)(122386002)(4396001)(50226001)(23676002)(106356001)(21056001)(92566001)(77156001)(64706001)(105586002)(20776003)(19580405001)(76482002)(85306004)(50466002)(99396003)(107046002)(95666004)(93886004)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0731;H:[IPv6:2601:2:5800:3f7:8d24:400:3af9:c4bd];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Javier,
+On Wed, 2014-10-08 at 18:21 +0200, leroy christophe wrote:
+> Le 07/10/2014 02:15, Scott Wood a écrit :
+> > On Sat, 2014-10-04 at 14:02 +0200, christophe leroy wrote:
+> >> What should it look like if that offset had to be in the device tree ?
+> > If the offset is not relocatable or discoverable, it should stay in the
+> > device tree.  If you have an old chip you wouldn't have
+> > fsl,cpm1-spi-reloc and thus you'd still have "0x3d80 0x30" in reg.
+> This index is from the start of the dual port RAM. It is 0x2000 above 
+> the start of the CPM area.
+> In the DTS, we have:
+> 
+>      soc@ff000000 {
+>          compatible = "fsl,mpc885", "fsl,pq1-soc";
+>          #address-cells = <1>;
+>          #size-cells = <1>;
+>          device_type = "soc";
+>          ranges = <0x0 0xff000000 0x28000>;
+>          bus-frequency = <0>;
+>          clock-frequency = <0>;
+> 
+>          cpm@9c0 {
+>              #address-cells = <1>;
+>              #size-cells = <1>;
+>              compatible = "fsl,mpc885-cpm", "fsl,cpm1";
+>              ranges;
+>              reg = <0x9c0 0x40>;
+>              brg-frequency = <0>;
+>              interrupts = <0>;    // cpm error interrupt
+>              interrupt-parent = <&CPM_PIC>;
+> 
+>              muram@2000 {
+>                  #address-cells = <1>;
+>                  #size-cells = <1>;
+>                  ranges = <0x0 0x2000 0x2000>;
+> 
+>                  data@0 {
+>                      compatible = "fsl,cpm-muram-data";
+>                      reg = <0x0 0x1c00>;
+>                  };
+>              };
+> 
+>              spi: spi@a80 {
+>                  #address-cells = <1>;
+>                  #size-cells = <0>;
+>                  cell-index = <0>;
+>                  compatible = "fsl,spi", "fsl,cpm1-spi";
+>                  reg = <0xa80 0x30 0x3d80 0x30>;
+>                  interrupts = <5>;
+>                  interrupt-parent = <&CPM_PIC>;
+>                  mode = "cpu";
+> 
+> 
+> The binding allows me to do an of_iomap() on the parameter RAM, hence to 
+> get access to the relocation index which is inside it.
+> But if the relocation index is 0, I have to calculate it by myself 
+> because the calling function expects it in return.
+> The binding is also supposed to tell that the muram is at 0xff002000. 
+> But I don't know how I can get this info and use it to calculate the 
+> index of my param RAM ? I need to calculate the index which is 1d80 
+> (0x3d80 - 0x2000)
 
-On Wed, Oct 8, 2014 at 1:46 AM, Javier Martinez Canillas
-<javier.martinez@collabora.co.uk> wrote:
-> Yes, you will need Chanwoo's series in order to use this. If also the
-> driver needs to set a default initial regulator operating mode, it will
-> need the series I'll post today but in that case also a .set_mode handler
-> is needed.
+What binding are you talking about?  There is no published binding for
+this yet.
 
-In rk808 the mode isn't as complicated as the Maxim PMICs.  There's
-only a "on in sleep" vs "off in sleep", not different sleep modes.
-Also the "on" vs "off" isn't mixed up with the sleep mode setting.
+As for what the driver should do, it should do an of_iomap(), but what
+it does with the resulting memory depends on the compatible.  For
+fsl,cpm1-spi, the result would be the parameter RAM for the device.  For
+fsl,cpm1-spi-reloc and fsl,cpm2-spi, it would be the relocation
+register.  The driver would either read the contents of the register, or
+write a different offset.
 
-...so I think that the "mode" stuff isn't needed for rk808.
+My understanding is that the relocation register would only be zero on
+the chips where we'd use fsl,cpm1-spi, not fsl,cpm1-spi-reloc.
 
--Doug
+-Scott
+
+
