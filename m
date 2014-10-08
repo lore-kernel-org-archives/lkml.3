@@ -1,406 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479AbaJHODc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:03:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48889 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515AbaJHODa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:03:30 -0400
-Date: Wed, 8 Oct 2014 16:03:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-mm@kvack.org, Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, Tejun Heo <tj@kernel.org>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: memcontrol: continue cache reclaim from offlined
- groups
-Message-ID: <20141008140327.GE4592@dhcp22.suse.cz>
-References: <1411243235-24680-1-git-send-email-hannes@cmpxchg.org>
- <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
+	id S1756588AbaJHOFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:05:52 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42502 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755681AbaJHOFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 10:05:50 -0400
+Date: Wed, 8 Oct 2014 15:05:47 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
+Message-ID: <20141008140547.GD1788@e105550-lin.cambridge.arm.com>
+References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
+ <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com>
+ <CAKfTPtBXP7HQBHL_Z3aAfdsuLP44_0x_e_LmzEw8qVC-2g=M-w@mail.gmail.com>
+ <20140925172343.GX23693@e103034-lin>
+ <20141002203428.GI2849@worktop.programming.kicks-ass.net>
+ <CAKfTPtC0vNpg6vKoR_zUCF+ENOmRNDfZDAonSmL23ZYFA=AKNg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411243235-24680-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKfTPtC0vNpg6vKoR_zUCF+ENOmRNDfZDAonSmL23ZYFA=AKNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 20-09-14 16:00:35, Johannes Weiner wrote:
-> On cgroup deletion, outstanding page cache charges are moved to the
-> parent group so that they're not lost and can be reclaimed during
-> pressure on/inside said parent.  But this reparenting is fairly tricky
-> and its synchroneous nature has led to several lock-ups in the past.
+On Wed, Oct 08, 2014 at 12:38:40PM +0100, Vincent Guittot wrote:
+> On 2 October 2014 22:34, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Thu, Sep 25, 2014 at 06:23:43PM +0100, Morten Rasmussen wrote:
+> >
+> >> > Why haven't you used arch_scale_freq_capacity which has a similar
+> >> > purpose in scaling the CPU capacity except the additional sched_domain
+> >> > pointer argument ?
+> >>
+> >> To be honest I'm not happy with introducing another arch-function
+> >> either and I'm happy to change that. It wasn't really clear to me which
+> >> functions that would remain after your cpu_capacity rework patches, so I
+> >> added this one. Now that we have most of the patches for capacity
+> >> scaling and scale-invariant load-tracking on the table I think we have a
+> >> better chance of figuring out which ones are needed and exactly how they
+> >> are supposed to work.
+> >>
+> >> arch_scale_load_capacity() compensates for both frequency scaling and
+> >> micro-architectural differences, while arch_scale_freq_capacity() only
+> >> for frequency. As long as we can use arch_scale_cpu_capacity() to
+> >> provide the micro-architecture scaling we can just do the scaling in two
+> >> operations rather than one similar to how it is done for capacity in
+> >> update_cpu_capacity(). I can fix that in the next version. It will cost
+> >> an extra function call and multiplication though.
+> >>
+> >> To make sure that runnable_avg_{sum, period} are still bounded by
+> >> LOAD_AVG_MAX, arch_scale_{cpu,freq}_capacity() must both return a factor
+> >> in the range 0..SCHED_CAPACITY_SCALE.
+> >
+> > I would certainly like some words in the Changelog on how and that the
+> > math is still free of overflows. Clearly you've thought about it, so
+> > please feel free to elucidate the rest of us :-)
+> >
+> >> > If we take the example of an always running task, its runnable_avg_sum
+> >> > should stay at the LOAD_AVG_MAX value whatever the frequency of the
+> >> > CPU on which it runs. But your change links the max value of
+> >> > runnable_avg_sum with the current frequency of the CPU so an always
+> >> > running task will have a load contribution of 25%
+> >> > your proposed scaling is fine with usage_avg_sum which reflects the
+> >> > effective running time on the CPU but the runnable_avg_sum should be
+> >> > able to reach LOAD_AVG_MAX whatever the current frequency is
+> >>
+> >> I don't think it makes sense to scale one metric and not the other. You
+> >> will end up with two very different (potentially opposite) views of the
+> >> cpu load/utilization situation in many scenarios. As I see it,
+> >> scale-invariance and load-balancing with scale-invariance present can be
+> >> done in two ways:
+> >>
+> >> 1. Leave runnable_avg_sum unscaled and scale running_avg_sum.
+> >> se->avg.load_avg_contrib will remain unscaled and so will
+> >> cfs_rq->runnable_load_avg, cfs_rq->blocked_load_avg, and
+> >> weighted_cpuload(). Essentially all the existing load-balancing code
+> >> will continue to use unscaled load. When we want to improve cpu
+> >> utilization and energy-awareness we will have to bypass most of this
+> >> code as it is likely to lead us on the wrong direction since it has a
+> >> potentially wrong view of the cpu load due to the lack of
+> >> scale-invariance.
+> >>
+> >> 2. Scale both runnable_avg_sum and running_avg_sum. All existing load
+> >> metrics including weighted_cpuload() are scaled and thus more accurate.
+> >> The difference between se->avg.load_avg_contrib and
+> >> se->avg.usage_avg_contrib is the priority scaling and whether or not
+> >> runqueue waiting time is counted. se->avg.load_avg_contrib can only
+> >> reach se->load.weight when running on the fastest cpu at the highest
+> >> frequency, but it is now scale-invariant so we have much better idea
+> >> about how much load we are pulling when load-balancing two cpus running
+> >> at different frequencies. The load-balance code-path still has to be
+> >> audited to see if anything blows up due to the scaling. I haven't
+> >> finished doing that yet. This patch set doesn't include patches to
+> >> address such issues (yet). IMHO, by scaling runnable_avg_sum we can more
+> >> easily make the existing load-balancing code do the right thing.
+> >>
+> >> For both options we have to go through the existing load-balancing code
+> >> to either change it to use the scale-invariant metric (running_avg_sum)
+> >> when appropriate or to fix bits that don't work properly with a
+> >> scale-invariant runnable_avg_sum and reuse the existing code. I think
+> >> the latter is less intrusive, but I might be wrong.
+> >>
+> >> Opinions?
+> >
+> > /me votes #2, I think the example in the reply is a false one, an always
+> > running task will/should ramp up the cpufreq and get us at full speed
 > 
-> Since css iterators now also include offlined css, memcg iterators can
+> I have in mind some system where the max achievable freq of a core
+> depends of how many cores are running simultaneously because of some
+> HW constraint like max current. In this case, the CPU might not reach
+> max frequency even with an always running task.
 
-This is since 3.16 and the closest match seems to be c2931b70a32c
-(cgroup: iterate cgroup_subsys_states directly) right?
+If we compare scale-invariant task load to the current frequency scaled
+compute capacity of the cpu when making load-balancing decisions as I
+described in my other reply that shouldn't be a problem.
 
-> be changed to include offlined children during reclaim of a group, and
-> leftover cache can just stay put.
-> 
-> There is a slight change of behavior in that charges of deleted groups
-> no longer show up as local charges in the parent.  But they are still
-> included in the parent's hierarchical statistics.
+> Then, beside frequency scaling, their is the uarch invariance that is
+> introduced by patch 4 that will generate similar behavior of the load.
 
-This also addresses http://marc.info/?l=linux-mm&m=140027762114865&w=2
-after force_empty is gone.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-I would prefer if the drain_stock code cleanup was in a separate patch
-to make this one smaller and easier to review.
-
-Anyway
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  mm/memcontrol.c | 260 ++------------------------------------------------------
->  1 file changed, 5 insertions(+), 255 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 019a44ac25d6..48531433a2fc 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -736,8 +736,6 @@ static void disarm_static_keys(struct mem_cgroup *memcg)
->  	disarm_kmem_keys(memcg);
->  }
->  
-> -static void drain_all_stock_async(struct mem_cgroup *memcg);
-> -
->  static struct mem_cgroup_per_zone *
->  mem_cgroup_zone_zoneinfo(struct mem_cgroup *memcg, struct zone *zone)
->  {
-> @@ -1208,7 +1206,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
->  				goto out_unlock;
->  			continue;
->  		}
-> -		if (css == &root->css || css_tryget_online(css)) {
-> +		if (css == &root->css || css_tryget(css)) {
->  			memcg = mem_cgroup_from_css(css);
->  			break;
->  		}
-> @@ -2349,10 +2347,12 @@ static void refill_stock(struct mem_cgroup *memcg, unsigned int nr_pages)
->   * of the hierarchy under it. sync flag says whether we should block
->   * until the work is done.
->   */
-> -static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
-> +static void drain_all_stock(struct mem_cgroup *root_memcg)
->  {
->  	int cpu, curcpu;
->  
-> +	if (!mutex_trylock(&percpu_charge_mutex))
-> +		return;
->  	/* Notify other cpus that system-wide "drain" is running */
->  	get_online_cpus();
->  	curcpu = get_cpu();
-> @@ -2373,41 +2373,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg, bool sync)
->  		}
->  	}
->  	put_cpu();
-> -
-> -	if (!sync)
-> -		goto out;
-> -
-> -	for_each_online_cpu(cpu) {
-> -		struct memcg_stock_pcp *stock = &per_cpu(memcg_stock, cpu);
-> -		if (test_bit(FLUSHING_CACHED_CHARGE, &stock->flags))
-> -			flush_work(&stock->work);
-> -	}
-> -out:
->  	put_online_cpus();
-> -}
-> -
-> -/*
-> - * Tries to drain stocked charges in other cpus. This function is asynchronous
-> - * and just put a work per cpu for draining localy on each cpu. Caller can
-> - * expects some charges will be back later but cannot wait for it.
-> - */
-> -static void drain_all_stock_async(struct mem_cgroup *root_memcg)
-> -{
-> -	/*
-> -	 * If someone calls draining, avoid adding more kworker runs.
-> -	 */
-> -	if (!mutex_trylock(&percpu_charge_mutex))
-> -		return;
-> -	drain_all_stock(root_memcg, false);
-> -	mutex_unlock(&percpu_charge_mutex);
-> -}
-> -
-> -/* This is a synchronous drain interface. */
-> -static void drain_all_stock_sync(struct mem_cgroup *root_memcg)
-> -{
-> -	/* called when force_empty is called */
-> -	mutex_lock(&percpu_charge_mutex);
-> -	drain_all_stock(root_memcg, true);
->  	mutex_unlock(&percpu_charge_mutex);
->  }
->  
-> @@ -2515,7 +2481,7 @@ retry:
->  		goto retry;
->  
->  	if (!drained) {
-> -		drain_all_stock_async(mem_over_limit);
-> +		drain_all_stock(mem_over_limit);
->  		drained = true;
->  		goto retry;
->  	}
-> @@ -3366,79 +3332,6 @@ out:
->  	return ret;
->  }
->  
-> -/**
-> - * mem_cgroup_move_parent - moves page to the parent group
-> - * @page: the page to move
-> - * @pc: page_cgroup of the page
-> - * @child: page's cgroup
-> - *
-> - * move charges to its parent or the root cgroup if the group has no
-> - * parent (aka use_hierarchy==0).
-> - * Although this might fail (get_page_unless_zero, isolate_lru_page or
-> - * mem_cgroup_move_account fails) the failure is always temporary and
-> - * it signals a race with a page removal/uncharge or migration. In the
-> - * first case the page is on the way out and it will vanish from the LRU
-> - * on the next attempt and the call should be retried later.
-> - * Isolation from the LRU fails only if page has been isolated from
-> - * the LRU since we looked at it and that usually means either global
-> - * reclaim or migration going on. The page will either get back to the
-> - * LRU or vanish.
-> - * Finaly mem_cgroup_move_account fails only if the page got uncharged
-> - * (!PageCgroupUsed) or moved to a different group. The page will
-> - * disappear in the next attempt.
-> - */
-> -static int mem_cgroup_move_parent(struct page *page,
-> -				  struct page_cgroup *pc,
-> -				  struct mem_cgroup *child)
-> -{
-> -	struct mem_cgroup *parent;
-> -	unsigned int nr_pages;
-> -	unsigned long uninitialized_var(flags);
-> -	int ret;
-> -
-> -	VM_BUG_ON(mem_cgroup_is_root(child));
-> -
-> -	ret = -EBUSY;
-> -	if (!get_page_unless_zero(page))
-> -		goto out;
-> -	if (isolate_lru_page(page))
-> -		goto put;
-> -
-> -	nr_pages = hpage_nr_pages(page);
-> -
-> -	parent = parent_mem_cgroup(child);
-> -	/*
-> -	 * If no parent, move charges to root cgroup.
-> -	 */
-> -	if (!parent)
-> -		parent = root_mem_cgroup;
-> -
-> -	if (nr_pages > 1) {
-> -		VM_BUG_ON_PAGE(!PageTransHuge(page), page);
-> -		flags = compound_lock_irqsave(page);
-> -	}
-> -
-> -	ret = mem_cgroup_move_account(page, nr_pages,
-> -				pc, child, parent);
-> -	if (!ret) {
-> -		if (!mem_cgroup_is_root(parent))
-> -			css_get_many(&parent->css, nr_pages);
-> -		/* Take charge off the local counters */
-> -		page_counter_cancel(&child->memory, nr_pages);
-> -		if (do_swap_account)
-> -			page_counter_cancel(&child->memsw, nr_pages);
-> -		css_put_many(&child->css, nr_pages);
-> -	}
-> -
-> -	if (nr_pages > 1)
-> -		compound_unlock_irqrestore(page, flags);
-> -	putback_lru_page(page);
-> -put:
-> -	put_page(page);
-> -out:
-> -	return ret;
-> -}
-> -
->  #ifdef CONFIG_MEMCG_SWAP
->  static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
->  					 bool charge)
-> @@ -3732,105 +3625,6 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  	return nr_reclaimed;
->  }
->  
-> -/**
-> - * mem_cgroup_force_empty_list - clears LRU of a group
-> - * @memcg: group to clear
-> - * @node: NUMA node
-> - * @zid: zone id
-> - * @lru: lru to to clear
-> - *
-> - * Traverse a specified page_cgroup list and try to drop them all.  This doesn't
-> - * reclaim the pages page themselves - pages are moved to the parent (or root)
-> - * group.
-> - */
-> -static void mem_cgroup_force_empty_list(struct mem_cgroup *memcg,
-> -				int node, int zid, enum lru_list lru)
-> -{
-> -	struct lruvec *lruvec;
-> -	unsigned long flags;
-> -	struct list_head *list;
-> -	struct page *busy;
-> -	struct zone *zone;
-> -
-> -	zone = &NODE_DATA(node)->node_zones[zid];
-> -	lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> -	list = &lruvec->lists[lru];
-> -
-> -	busy = NULL;
-> -	do {
-> -		struct page_cgroup *pc;
-> -		struct page *page;
-> -
-> -		spin_lock_irqsave(&zone->lru_lock, flags);
-> -		if (list_empty(list)) {
-> -			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> -			break;
-> -		}
-> -		page = list_entry(list->prev, struct page, lru);
-> -		if (busy == page) {
-> -			list_move(&page->lru, list);
-> -			busy = NULL;
-> -			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> -			continue;
-> -		}
-> -		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> -
-> -		pc = lookup_page_cgroup(page);
-> -
-> -		if (mem_cgroup_move_parent(page, pc, memcg)) {
-> -			/* found lock contention or "pc" is obsolete. */
-> -			busy = page;
-> -		} else
-> -			busy = NULL;
-> -		cond_resched();
-> -	} while (!list_empty(list));
-> -}
-> -
-> -/*
-> - * make mem_cgroup's charge to be 0 if there is no task by moving
-> - * all the charges and pages to the parent.
-> - * This enables deleting this mem_cgroup.
-> - *
-> - * Caller is responsible for holding css reference on the memcg.
-> - */
-> -static void mem_cgroup_reparent_charges(struct mem_cgroup *memcg)
-> -{
-> -	int node, zid;
-> -
-> -	do {
-> -		/* This is for making all *used* pages to be on LRU. */
-> -		lru_add_drain_all();
-> -		drain_all_stock_sync(memcg);
-> -		mem_cgroup_start_move(memcg);
-> -		for_each_node_state(node, N_MEMORY) {
-> -			for (zid = 0; zid < MAX_NR_ZONES; zid++) {
-> -				enum lru_list lru;
-> -				for_each_lru(lru) {
-> -					mem_cgroup_force_empty_list(memcg,
-> -							node, zid, lru);
-> -				}
-> -			}
-> -		}
-> -		mem_cgroup_end_move(memcg);
-> -		memcg_oom_recover(memcg);
-> -		cond_resched();
-> -
-> -		/*
-> -		 * Kernel memory may not necessarily be trackable to a specific
-> -		 * process. So they are not migrated, and therefore we can't
-> -		 * expect their value to drop to 0 here.
-> -		 * Having res filled up with kmem only is enough.
-> -		 *
-> -		 * This is a safety check because mem_cgroup_force_empty_list
-> -		 * could have raced with mem_cgroup_replace_page_cache callers
-> -		 * so the lru seemed empty but the page could have been added
-> -		 * right after the check. RES_USAGE should be safe as we always
-> -		 * charge before adding to the LRU.
-> -		 */
-> -	} while (atomic_long_read(&memcg->memory.count) -
-> -		 atomic_long_read(&memcg->kmem.count) > 0);
-> -}
-> -
->  /*
->   * Test whether @memcg has children, dead or alive.  Note that this
->   * function doesn't care whether @memcg has use_hierarchy enabled and
-> @@ -5359,7 +5153,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
->  	struct mem_cgroup_event *event, *tmp;
-> -	struct cgroup_subsys_state *iter;
->  
->  	/*
->  	 * Unregister events and notify userspace.
-> @@ -5373,13 +5166,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  	}
->  	spin_unlock(&memcg->event_list_lock);
->  
-> -	/*
-> -	 * This requires that offlining is serialized.  Right now that is
-> -	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-> -	 */
-> -	css_for_each_descendant_post(iter, css)
-> -		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-> -
->  	memcg_unregister_all_caches(memcg);
->  	vmpressure_cleanup(&memcg->vmpressure);
->  }
-> @@ -5387,42 +5173,6 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
->  static void mem_cgroup_css_free(struct cgroup_subsys_state *css)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-> -	/*
-> -	 * XXX: css_offline() would be where we should reparent all
-> -	 * memory to prepare the cgroup for destruction.  However,
-> -	 * memcg does not do css_tryget_online() and page_counter charging
-> -	 * under the same RCU lock region, which means that charging
-> -	 * could race with offlining.  Offlining only happens to
-> -	 * cgroups with no tasks in them but charges can show up
-> -	 * without any tasks from the swapin path when the target
-> -	 * memcg is looked up from the swapout record and not from the
-> -	 * current task as it usually is.  A race like this can leak
-> -	 * charges and put pages with stale cgroup pointers into
-> -	 * circulation:
-> -	 *
-> -	 * #0                        #1
-> -	 *                           lookup_swap_cgroup_id()
-> -	 *                           rcu_read_lock()
-> -	 *                           mem_cgroup_lookup()
-> -	 *                           css_tryget_online()
-> -	 *                           rcu_read_unlock()
-> -	 * disable css_tryget_online()
-> -	 * call_rcu()
-> -	 *   offline_css()
-> -	 *     reparent_charges()
-> -	 *                           page_counter_charge()
-> -	 *                           css_put()
-> -	 *                             css_free()
-> -	 *                           pc->mem_cgroup = dead memcg
-> -	 *                           add page to lru
-> -	 *
-> -	 * The bulk of the charges are still moved in offline_css() to
-> -	 * avoid pinning a lot of pages in case a long-term reference
-> -	 * like a swapout record is deferring the css_free() to long
-> -	 * after offlining.  But this makes sure we catch any charges
-> -	 * made after offlining:
-> -	 */
-> -	mem_cgroup_reparent_charges(memcg);
->  
->  	memcg_destroy_kmem(memcg);
->  	__mem_cgroup_free(memcg);
-> -- 
-> 2.1.0
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+I don't quite follow. When we make task load frequency and uarch
+invariant, we must scale compute capacity accordingly. So compute
+capacity is bigger for big cores and smaller for little cores.
