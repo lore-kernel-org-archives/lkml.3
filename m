@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667AbaJHT6M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:58:12 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:56215 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaJHT6K (ORCPT
+	id S1754863AbaJHT6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:58:16 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:53225 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691AbaJHT6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:58:10 -0400
+	Wed, 8 Oct 2014 15:58:13 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/12] serial/max310x: Remove obsolete #ifset TIOC[SG]RS485
-Date: Wed,  8 Oct 2014 21:57:27 +0200
-Message-Id: <1412798258-23655-2-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 02/12] serial/sc16is7xx: Remove obsolete #ifset TIOC[SG]RS485
+Date: Wed,  8 Oct 2014 21:57:28 +0200
+Message-Id: <1412798258-23655-3-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -35,22 +35,35 @@ Cc: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/tty/serial/max310x.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/tty/serial/sc16is7xx.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
-index 82573dc..670aba4 100644
---- a/drivers/tty/serial/max310x.c
-+++ b/drivers/tty/serial/max310x.c
-@@ -877,7 +877,6 @@ static void max310x_set_termios(struct uart_port *port,
- static int max310x_ioctl(struct uart_port *port, unsigned int cmd,
- 			 unsigned long arg)
+diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
+index 3284c31..3ab5d1b 100644
+--- a/drivers/tty/serial/sc16is7xx.c
++++ b/drivers/tty/serial/sc16is7xx.c
+@@ -830,7 +830,6 @@ static void sc16is7xx_set_termios(struct uart_port *port,
+ 	uart_update_timeout(port, termios->c_cflag, baud);
+ }
+ 
+-#if defined(TIOCSRS485) && defined(TIOCGRS485)
+ static void sc16is7xx_config_rs485(struct uart_port *port,
+ 				   struct serial_rs485 *rs485)
+ {
+@@ -848,12 +847,10 @@ static void sc16is7xx_config_rs485(struct uart_port *port,
+ 				      0);
+ 	}
+ }
+-#endif
+ 
+ static int sc16is7xx_ioctl(struct uart_port *port, unsigned int cmd,
+ 			   unsigned long arg)
  {
 -#if defined(TIOCSRS485) && defined(TIOCGRS485)
  	struct serial_rs485 rs485;
- 	unsigned int val;
  
-@@ -920,7 +919,6 @@ static int max310x_ioctl(struct uart_port *port, unsigned int cmd,
+ 	switch (cmd) {
+@@ -872,7 +869,6 @@ static int sc16is7xx_ioctl(struct uart_port *port, unsigned int cmd,
  	default:
  		break;
  	}
