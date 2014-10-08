@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096AbaJHILv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 04:11:51 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56654 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755051AbaJHILq (ORCPT
+	id S1754778AbaJHIKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 04:10:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34822 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503AbaJHIKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:11:46 -0400
-Date: Wed, 8 Oct 2014 09:11:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Scott Branden <sbranden@broadcom.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
-        Ray Jui <rjui@broadcom.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Jonathan Richardson <jonathar@broadcom.com>
-Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
-	SoC
-Message-ID: <20141008081112.GB5182@n2100.arm.linux.org.uk>
-References: <sbranden@broadcom.com> <1412746025-11998-1-git-send-email-sbranden@broadcom.com> <1412746025-11998-2-git-send-email-sbranden@broadcom.com>
+	Wed, 8 Oct 2014 04:10:12 -0400
+Date: Wed, 8 Oct 2014 01:09:34 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-3f63572187f5ae6a0a9e5ebee88b57e6f71c3cd4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <542290BC020000780003807D@mail.emea.novell.com>
+References: <542290BC020000780003807D@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Improve cmpxchg16b_emu.S
+Git-Commit-ID: 3f63572187f5ae6a0a9e5ebee88b57e6f71c3cd4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1412746025-11998-2-git-send-email-sbranden@broadcom.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 10:27:00PM -0700, Scott Branden wrote:
-> +static void __init bcm_cygnus_init(void)
-> +{
-> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> +
-> +	l2x0_of_init(0, ~0UL);
+Commit-ID:  3f63572187f5ae6a0a9e5ebee88b57e6f71c3cd4
+Gitweb:     http://git.kernel.org/tip/3f63572187f5ae6a0a9e5ebee88b57e6f71c3cd4
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 24 Sep 2014 08:37:00 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 8 Oct 2014 10:05:49 +0200
 
-Please don't explicitly call l2x0 initialisation.  Instead, set the
-appropriate l2c members here:
+x86: Improve cmpxchg16b_emu.S
 
-> +DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-> +	.init_machine = bcm_cygnus_init,
-> +	.map_io = debug_ll_io_init,
-> +	.dt_compat = bcm_cygnus_dt_compat,
-> +	.restart   = bcm_cygnus_restart
-> +MACHINE_END
+- don't include unneeded headers
+- don't open-code PER_CPU_VAR()
+- drop redundant entry point label
+- complete unwind annotations
+- use .L prefix on local label to not clutter the symbol table
 
-and let the core code call it at the appropriate time.  Thanks.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/542290BC020000780003807D@mail.emea.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/lib/cmpxchg16b_emu.S | 32 +++++++++++++-------------------
+ 1 file changed, 13 insertions(+), 19 deletions(-)
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+diff --git a/arch/x86/lib/cmpxchg16b_emu.S b/arch/x86/lib/cmpxchg16b_emu.S
+index 1e572c5..40a1725 100644
+--- a/arch/x86/lib/cmpxchg16b_emu.S
++++ b/arch/x86/lib/cmpxchg16b_emu.S
+@@ -6,15 +6,8 @@
+  *
+  */
+ #include <linux/linkage.h>
+-#include <asm/alternative-asm.h>
+-#include <asm/frame.h>
+ #include <asm/dwarf2.h>
+-
+-#ifdef CONFIG_SMP
+-#define SEG_PREFIX %gs:
+-#else
+-#define SEG_PREFIX
+-#endif
++#include <asm/percpu.h>
+ 
+ .text
+ 
+@@ -39,24 +32,25 @@ CFI_STARTPROC
+ # *atomic* on a single cpu (as provided by the this_cpu_xx class of
+ # macros).
+ #
+-this_cpu_cmpxchg16b_emu:
+-	pushf
++	pushfq_cfi
+ 	cli
+ 
+-	cmpq SEG_PREFIX(%rsi), %rax
+-	jne not_same
+-	cmpq SEG_PREFIX 8(%rsi), %rdx
+-	jne not_same
++	cmpq PER_CPU_VAR((%rsi)), %rax
++	jne .Lnot_same
++	cmpq PER_CPU_VAR(8(%rsi)), %rdx
++	jne .Lnot_same
+ 
+-	movq %rbx, SEG_PREFIX(%rsi)
+-	movq %rcx, SEG_PREFIX 8(%rsi)
++	movq %rbx, PER_CPU_VAR((%rsi))
++	movq %rcx, PER_CPU_VAR(8(%rsi))
+ 
+-	popf
++	CFI_REMEMBER_STATE
++	popfq_cfi
+ 	mov $1, %al
+ 	ret
+ 
+- not_same:
+-	popf
++	CFI_RESTORE_STATE
++.Lnot_same:
++	popfq_cfi
+ 	xor %al,%al
+ 	ret
+ 
