@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433AbaJHUo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:44:58 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58119 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752961AbaJHUo5 (ORCPT
+	id S1754729AbaJHUrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:47:07 -0400
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:48387 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471AbaJHUrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:44:57 -0400
-Message-ID: <1412801095.32718.13.camel@jarvis>
-Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Cc: arnd@arndb.de, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        opw-kernel@googlegroups.com
-Date: Wed, 08 Oct 2014 13:44:55 -0700
-In-Reply-To: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
-References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	Wed, 8 Oct 2014 16:47:05 -0400
+Date: Wed, 8 Oct 2014 15:46:59 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>, Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
+Message-ID: <20141008154659.31f46436@as>
+In-Reply-To: <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
+References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
+	<CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-08 at 23:14 +0300, Ebru Akagunduz wrote:
-> This patch changes 32-bit time types to 64-bit in
-> ips.c
+On Wed, 8 Oct 2014 12:16:11 -0700
+Andy Lutomirski <luto@amacapital.net> wrote:
+
+> On Wed, Oct 8, 2014 at 11:52 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> > I'm seeing the following build failure on a 32-bit x86 build in Fedora
+> > based on Linux v3.17-2860-gef0625b70dac:
+> >
+> > Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
+> > vdso_standalone_test_x86.c:(.text+0xcc): undefined reference to `__umoddi3'
+> > vdso_standalone_test_x86.c:(.text+0xea): undefined reference to `__udivdi3'
+> > collect2: error: ld returned 1 exit status
+> > scripts/Makefile.host:100: recipe for target
+> > 'Documentation/vDSO/vdso_standalone_test_x86' failed
+> > make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
+> > scripts/Makefile.build:404: recipe for target 'Documentation/vDSO' failed
+> > make[1]: *** [Documentation/vDSO] Error 2
+> > make[1]: *** Waiting for unfinished jobs....
+> > Makefile:922: recipe for target 'vmlinux' failed
+> > make: *** [vmlinux] Error 2
+> >
+> It should build and work on 32-bit.
 > 
-> time_t can only represent signed 32-bit dates but
-> the driver should represent dates that are after
-> January 2038.
+> Except that the makefile is totally bogus.  vdso_standalone_test isn't
+> a hostprog at all.  It's a target prog.  But kbuild doesn't understand
+> that, so I have no idea what, if anything, that makefile is supposed
+> to do.
+
+Heh, I was wondering why I got a 64-bit program with ARCH=i386
+ 
+> I would argue that the whole documentation build system should be
+> fixed to cross-compile or should just be disabled for cross-builds if
+> glibc isn't available.
 > 
-> Use time64_t type instead of time_t.
-> 
-> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-> ---
->  drivers/scsi/ips.c | 6 ++++--
->  drivers/scsi/ips.h | 2 +-
->  2 files changed, 5 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
-> index 52a216f..8a2cf68 100644
-> --- a/drivers/scsi/ips.c
-> +++ b/drivers/scsi/ips.c
-> @@ -195,6 +195,8 @@
->  
->  #include <linux/smp.h>
->  
-> +#include <linux/time64.h>
-> +
->  #ifdef MODULE
->  static char *ips = NULL;
->  module_param(ips, charp, 0);
-> @@ -297,7 +299,7 @@ static void ips_freescb(ips_ha_t *, ips_scb_t *);
->  static void ips_setup_funclist(ips_ha_t *);
->  static void ips_statinit(ips_ha_t *);
->  static void ips_statinit_memio(ips_ha_t *);
-> -static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time_t);
-> +static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time64_t);
->  static void ips_ffdc_reset(ips_ha_t *, int);
->  static void ips_ffdc_time(ips_ha_t *);
->  static uint32_t ips_statupd_copperhead(ips_ha_t *);
-> @@ -6000,7 +6002,7 @@ ips_ffdc_time(ips_ha_t * ha)
->  /*                                                                          */
->  /****************************************************************************/
->  static void
-> -ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
-> +ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time64_t current_time)
->  {
->  	long days;
->  	long rem;
-> diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
-> index 45b9566..ff2a0b3 100644
-> --- a/drivers/scsi/ips.h
-> +++ b/drivers/scsi/ips.h
-> @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
->     uint8_t            active;
->     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
->     uint16_t           reset_count;        /* number of resets           */
-> -   time_t             last_ffdc;          /* last time we sent ffdc info*/
-> +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
->     uint8_t            slot_num;           /* PCI Slot Number            */
->     int                ioctl_len;          /* size of ioctl buffer       */
->     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
 
-This is completely pointless, isn't it?  All the ips driver cares about
-is that we send a FFDC time update every eight hours or so, so we can
-happily truncate the number of seconds to 32 bits for that calculation
-just keep the variable at 32 bits and do a time_after thing for the
-comparison.
-
-However, what the code *should* be doing is using jiffies and
-time_before/after since the interval is so tiny rather than a
-do_gettimeofday() call in the fast path.
-
-James
-
-
-
+Fedora doesn't cross-compile i686 builds because of problems like
+this. It sets up an i386 chroot and runs all native tools inside of
+it.
 
