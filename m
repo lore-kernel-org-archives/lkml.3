@@ -1,188 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932469AbaJHNHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:07:31 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7340 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932396AbaJHNHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:07:30 -0400
-X-IronPort-AV: E=Sophos;i="5.04,677,1406592000"; 
-   d="scan'208";a="179348838"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 1/2] xen/arm: remove handling of XENFEAT_grant_map_identity
-Date: Wed, 8 Oct 2014 14:04:55 +0100
-Message-ID: <1412773496-15364-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410081400520.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410081400520.17038@kaball.uk.xensource.com>
+	id S1756168AbaJHNKu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:10:50 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36722 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159AbaJHNKs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:10:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <1412746025-11998-2-git-send-email-sbranden@broadcom.com>
+References: <sbranden@broadcom.com> <1412746025-11998-1-git-send-email-sbranden@broadcom.com>
+ <1412746025-11998-2-git-send-email-sbranden@broadcom.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Wed, 8 Oct 2014 08:10:25 -0500
+Message-ID: <CAL_JsqKD6F5xcUQx8T++uDK2zaqTneRwU+2yR7RMj==ArwcLcA@mail.gmail.com>
+Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus SoC
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jonathan Richardson <jonathar@broadcom.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Wed, Oct 8, 2014 at 12:27 AM, Scott Branden <sbranden@broadcom.com> wrote:
+> From: Jonathan Richardson <jonathar@broadcom.com>
+>
+> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+>
+> Reviewed-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
+> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  arch/arm/mach-bcm/Kconfig      |   31 ++++++++
+>  arch/arm/mach-bcm/Makefile     |    3 +
+>  arch/arm/mach-bcm/bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 200 insertions(+)
+>  create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+>
+> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> index fc93800..2dd3f78 100644
+> --- a/arch/arm/mach-bcm/Kconfig
+> +++ b/arch/arm/mach-bcm/Kconfig
+> @@ -5,6 +5,37 @@ menuconfig ARCH_BCM
+>
+>  if ARCH_BCM
+>
+> +config ARCH_BCM_IPROC
+> +       bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
+> +       select ARM_GIC
+> +       select CACHE_L2X0
+> +       select HAVE_ARM_TWD if LOCAL_TIMERS
 
----
-Changes in v2:
+LOCAL_TIMERS does not exist anymore.
 
-- remove the definition of XENFEAT_grant_map_identity.
----
- arch/arm/xen/enlighten.c         |    5 ---
- arch/arm/xen/mm32.c              |   85 +-------------------------------------
- include/xen/interface/features.h |    3 --
- 3 files changed, 1 insertion(+), 92 deletions(-)
+> +       select HAVE_CLK
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 0e15f01..c7ca936 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -261,11 +261,6 @@ static int __init xen_guest_init(void)
- 
- 	xen_setup_features();
- 
--	if (!xen_feature(XENFEAT_grant_map_identity)) {
--		pr_warn("Please upgrade your Xen.\n"
--				"If your platform has any non-coherent DMA devices, they won't work properly.\n");
--	}
--
- 	if (xen_feature(XENFEAT_dom0))
- 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
- 	else
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-index 3b99860..a5a93fc 100644
---- a/arch/arm/xen/mm32.c
-+++ b/arch/arm/xen/mm32.c
-@@ -5,70 +5,6 @@
- 
- #include <xen/features.h>
- 
--static DEFINE_PER_CPU(unsigned long, xen_mm32_scratch_virt);
--static DEFINE_PER_CPU(pte_t *, xen_mm32_scratch_ptep);
--
--static int alloc_xen_mm32_scratch_page(int cpu)
--{
--	struct page *page;
--	unsigned long virt;
--	pmd_t *pmdp;
--	pte_t *ptep;
--
--	if (per_cpu(xen_mm32_scratch_ptep, cpu) != NULL)
--		return 0;
--
--	page = alloc_page(GFP_KERNEL);
--	if (page == NULL) {
--		pr_warn("Failed to allocate xen_mm32_scratch_page for cpu %d\n", cpu);
--		return -ENOMEM;
--	}
--
--	virt = (unsigned long)__va(page_to_phys(page));
--	pmdp = pmd_offset(pud_offset(pgd_offset_k(virt), virt), virt);
--	ptep = pte_offset_kernel(pmdp, virt);
--
--	per_cpu(xen_mm32_scratch_virt, cpu) = virt;
--	per_cpu(xen_mm32_scratch_ptep, cpu) = ptep;
--
--	return 0;
--}
--
--static int xen_mm32_cpu_notify(struct notifier_block *self,
--				    unsigned long action, void *hcpu)
--{
--	int cpu = (long)hcpu;
--	switch (action) {
--	case CPU_UP_PREPARE:
--		if (alloc_xen_mm32_scratch_page(cpu))
--			return NOTIFY_BAD;
--		break;
--	default:
--		break;
--	}
--	return NOTIFY_OK;
--}
--
--static struct notifier_block xen_mm32_cpu_notifier = {
--	.notifier_call	= xen_mm32_cpu_notify,
--};
--
--static void* xen_mm32_remap_page(dma_addr_t handle)
--{
--	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
--	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
--
--	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
--	local_flush_tlb_kernel_page(virt);
--
--	return (void*)virt;
--}
--
--static void xen_mm32_unmap(void *vaddr)
--{
--	put_cpu_var(xen_mm32_scratch_virt);
--}
--
- 
- /* functions called by SWIOTLB */
- 
-@@ -88,13 +24,7 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	
- 		if (!pfn_valid(pfn))
- 		{
--			/* Cannot map the page, we don't know its physical address.
--			 * Return and hope for the best */
--			if (!xen_feature(XENFEAT_grant_map_identity))
--				return;
--			vaddr = xen_mm32_remap_page(handle) + offset;
--			op(vaddr, len, dir);
--			xen_mm32_unmap(vaddr - offset);
-+			/* TODO: cache flush */
- 		} else {
- 			struct page *page = pfn_to_page(pfn);
- 
-@@ -181,22 +111,9 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
- 
- int __init xen_mm32_init(void)
- {
--	int cpu;
--
- 	if (!xen_initial_domain())
- 		return 0;
- 
--	register_cpu_notifier(&xen_mm32_cpu_notifier);
--	get_online_cpus();
--	for_each_online_cpu(cpu) {
--		if (alloc_xen_mm32_scratch_page(cpu)) {
--			put_online_cpus();
--			unregister_cpu_notifier(&xen_mm32_cpu_notifier);
--			return -ENOMEM;
--		}
--	}
--	put_online_cpus();
--
- 	return 0;
- }
- arch_initcall(xen_mm32_init);
-diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-index 14334d0..131a6cc 100644
---- a/include/xen/interface/features.h
-+++ b/include/xen/interface/features.h
-@@ -53,9 +53,6 @@
- /* operation as Dom0 is supported */
- #define XENFEAT_dom0                      11
- 
--/* Xen also maps grant references at pfn = mfn */
--#define XENFEAT_grant_map_identity        12
--
- #define XENFEAT_NR_SUBMAPS 1
- 
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
--- 
-1.7.10.4
+Selected already by multi-platform.
 
+> +       select CLKSRC_OF
+> +       select CLKSRC_MMIO
+
+These should be selected by the timers that need these rather than the platform.
+
+> +       select GENERIC_CLOCKEVENTS
+
+Selected already by multi-platform.
+
+> +       select ARM_GLOBAL_TIMER
+> +       select ARCH_REQUIRE_GPIOLIB
+> +       select ARM_AMBA
+> +       select PINCTRL
+> +       select DEBUG_UART_8250
+
+This entry should not be a select. It will break multi-platform.
+
+Sort the select entries alphabetically.
+
+> +       help
+> +         This enables support for systems based on Broadcom IPROC architected SoCs.
+> +         The IPROC complex contains one or more ARM CPUs along with common
+> +         core periperals. Application specific SoCs are created by adding a
+> +         uArchitecture containing peripherals outside of the IPROC complex.
+> +         Currently supported SoCs are Cygnus.
+> +
+> +menu "iProc SoC based Machine types"
+> +       depends on ARCH_BCM_IPROC
+> +
+> +       config ARCH_BCM_CYGNUS
+> +               bool "Support Broadcom Cygnus board"
+> +               select USB_ARCH_HAS_EHCI if USB_SUPPORT
+> +               help
+> +                 Support for Broadcom Cygnus SoC.
+> +endmenu
+> +
+>  config ARCH_BCM_MOBILE
+>         bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
+>         select ARCH_REQUIRE_GPIOLIB
+> diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
+> index b19a396..46e092a 100644
+> --- a/arch/arm/mach-bcm/Makefile
+> +++ b/arch/arm/mach-bcm/Makefile
+> @@ -10,6 +10,9 @@
+>  # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>  # GNU General Public License for more details.
+>
+> +# Cygnus
+> +obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  bcm_cygnus.o
+> +
+>  # BCM281XX
+>  obj-$(CONFIG_ARCH_BCM_281XX)   += board_bcm281xx.o
+>
+> diff --git a/arch/arm/mach-bcm/bcm_cygnus.c b/arch/arm/mach-bcm/bcm_cygnus.c
+> new file mode 100644
+> index 0000000..8e430ed
+> --- /dev/null
+> +++ b/arch/arm/mach-bcm/bcm_cygnus.c
+> @@ -0,0 +1,166 @@
+> +/*
+> + * Copyright 2014 Broadcom Corporation.  All rights reserved.
+> + *
+> + * Unless you and Broadcom execute a separate written software license
+> + * agreement governing use of this software, this software is licensed to you
+> + * under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation version 2.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/of_address.h>
+> +#include <linux/of_platform.h>
+> +#include <linux/clocksource.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/delay.h>
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+> +#include <asm/proc-fns.h>
+> +#include <asm/hardware/cache-l2x0.h>
+> +
+> +#define CRMU_MAIL_BOX1      0x03024028
+> +#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
+> +
+> +/* CRU_RESET register */
+> +static void * __iomem crmu_mail_box1_reg;
+> +
+> +#ifdef CONFIG_NEON
+> +
+> +#define CRU_BASE                  0x1800e000
+> +#define CRU_SIZE                  0x34
+> +#define CRU_CONTROL_OFFSET        0x0
+> +#define CRU_PWRDWN_EN_OFFSET      0x4
+> +#define CRU_PWRDWN_STATUS_OFFSET  0x8
+> +#define CRU_NEON0_HW_RESET  6
+> +#define CRU_CLAMP_ON_NEON0  20
+> +#define CRU_PWRONIN_NEON0   21
+> +#define CRU_PWRONOUT_NEON0  21
+> +#define CRU_PWROKIN_NEON0   22
+> +#define CRU_PWROKOUT_NEON0  22
+> +#define CRU_STATUS_DELAY_NS 500
+> +#define CRU_MAX_RETRY_COUNT 10
+> +#define CRU_RETRY_INTVL_US  1
+> +
+> +/* Power up the NEON/VFPv3 block. */
+> +static void bcm_cygnus_powerup_neon(void)
+> +{
+> +       void * __iomem cru_base = ioremap(CRU_BASE, CRU_SIZE);
+> +       u32 reg, i;
+> +
+> +       if (WARN_ON(!cru_base))
+> +               return;
+> +
+> +       /* De-assert the neon hardware block reset */
+> +       reg = readl(cru_base + CRU_CONTROL_OFFSET);
+> +       reg &= ~(1 << CRU_NEON0_HW_RESET);
+> +       writel(reg, cru_base + CRU_CONTROL_OFFSET);
+> +
+> +       /* Assert the power ON register bit */
+> +       reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
+> +       reg |= (1 << CRU_PWRONIN_NEON0);
+> +       writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
+> +
+> +       /*
+> +        * Wait up to 10 usec in 1 usec increments for the
+> +        * status register to acknowledge the power ON assert
+> +        */
+> +       for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
+> +               reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
+> +               if (reg & CRU_PWRONOUT_NEON0)
+> +                       break;
+> +
+> +               udelay(CRU_RETRY_INTVL_US);
+> +       }
+> +
+> +       if (WARN_ON(i == CRU_MAX_RETRY_COUNT))
+> +               goto neon_unmap;
+> +
+> +       /* Wait 0.5 usec = 500 nsec */
+> +       ndelay(CRU_STATUS_DELAY_NS);
+> +
+> +       /* Assert the power OK register bit */
+> +       reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
+> +       reg |= (1 << CRU_PWROKIN_NEON0);
+> +       writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
+> +
+> +       /*
+> +        * Wait up to 10 usec in 1 usec increments for the
+> +        * status register to acknowledge the power OK assert
+> +        */
+> +       for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
+> +               reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
+> +               if (reg & CRU_PWROKOUT_NEON0)
+> +                       break;
+> +
+> +               udelay(CRU_RETRY_INTVL_US);
+> +       }
+> +
+> +       if (WARN_ON(i == CRU_MAX_RETRY_COUNT))
+> +               goto neon_unmap;
+> +
+> +       /* Wait 0.5 usec = 500 nsec */
+> +       ndelay(CRU_STATUS_DELAY_NS);
+> +
+> +       /* Set the logic clamp for the neon block */
+> +       reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
+> +       reg &= ~(1 << CRU_CLAMP_ON_NEON0);
+> +       writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
+> +
+> +       /* Wait 0.5 usec = 500 nsec */
+> +       ndelay(CRU_STATUS_DELAY_NS);
+> +
+> +       /* Reset the neon hardware block */
+> +       reg = readl(cru_base + CRU_CONTROL_OFFSET);
+> +       reg |= (1 << CRU_NEON0_HW_RESET);
+> +       writel(reg, cru_base + CRU_CONTROL_OFFSET);
+> +
+> +neon_unmap:
+> +       iounmap(cru_base);
+> +}
+> +#endif /* CONFIG_NEON */
+
+Is this a single core chip? If not, it seems like all this would
+change when you add SMP support.
+
+Rob
