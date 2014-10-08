@@ -1,485 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498AbaJHJae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:30:34 -0400
-Received: from mail-by2on0059.outbound.protection.outlook.com ([207.46.100.59]:63326
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1755620AbaJHJau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:30:50 -0400
+Received: from mail-bl2on0065.outbound.protection.outlook.com ([65.55.169.65]:22779
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932125AbaJHJaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:30:22 -0400
+	id S1755567AbaJHJaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:30:46 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v4 02/29] nios2: Assembly macros and definitions
-Date: Wed, 8 Oct 2014 17:29:28 +0800
-Message-ID: <1412760595-3935-3-git-send-email-lftan@altera.com>
+Subject: [PATCH v4 08/29] nios2: MMU Fault handling
+Date: Wed, 8 Oct 2014 17:29:34 +0800
+Message-ID: <1412760595-3935-9-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
 References: <1412760595-3935-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(87936001)(31966008)(120916001)(80022003)(77096002)(89996001)(48376002)(92566001)(42186005)(62966002)(77156001)(88136002)(84676001)(85306004)(105596002)(68736004)(21056001)(50466002)(99396003)(95666004)(46102003)(87286001)(93916002)(97736003)(92726001)(33646002)(15202345003)(76176999)(50986999)(50226001)(4396001)(229853001)(76482002)(102836001)(86362001)(20776003)(2201001)(85852003)(15975445006)(36756003)(64706001)(6806004)(19580405001)(44976005)(104166001)(19580395003)(107046002)(47776003)(106466001)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB1023;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB1023;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(199003)(189002)(19580395003)(68736004)(44976005)(19580405001)(50466002)(46102003)(93916002)(87286001)(21056001)(88136002)(84676001)(64706001)(104166001)(76482002)(86362001)(575784001)(97736003)(102836001)(80022003)(99396003)(87936001)(42186005)(31966008)(85306004)(2201001)(20776003)(76176999)(105596002)(6806004)(62966002)(77096002)(50986999)(33646002)(50226001)(92566001)(4396001)(77156001)(120916001)(92726001)(47776003)(95666004)(48376002)(89996001)(106466001)(107046002)(229853001)(85852003)(36756003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB220;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB220;
+X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0358535363
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB365;
 X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add assembly macros and definitions used in
-the .S files across arch/nios2/ and together with asm-offsets.c.
+This patch adds support for the handling of the MMU faults (exception
+entry code introduced by a previous patch, kernel/entry.S).
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/asm-macros.h  |  309 ++++++++++++++++++++++++++++++++++
- arch/nios2/include/asm/asm-offsets.h |   20 +++
- arch/nios2/kernel/asm-offsets.c      |   88 ++++++++++
- 3 files changed, 417 insertions(+), 0 deletions(-)
- create mode 100644 arch/nios2/include/asm/asm-macros.h
- create mode 100644 arch/nios2/include/asm/asm-offsets.h
- create mode 100644 arch/nios2/kernel/asm-offsets.c
+ arch/nios2/mm/extable.c |   25 +++++
+ arch/nios2/mm/fault.c   |  251 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 276 insertions(+), 0 deletions(-)
+ create mode 100644 arch/nios2/mm/extable.c
+ create mode 100644 arch/nios2/mm/fault.c
 
-diff --git a/arch/nios2/include/asm/asm-macros.h b/arch/nios2/include/asm/asm-macros.h
+diff --git a/arch/nios2/mm/extable.c b/arch/nios2/mm/extable.c
 new file mode 100644
-index 0000000..29fa2e4
+index 0000000..4d2fc5a
 --- /dev/null
-+++ b/arch/nios2/include/asm/asm-macros.h
-@@ -0,0 +1,309 @@
++++ b/arch/nios2/mm/extable.c
+@@ -0,0 +1,25 @@
 +/*
-+ * Macro used to simplify coding multi-line assembler.
-+ * Some of the bit test macro can simplify down to one line
-+ * depending on the mask value.
++ * Copyright (C) 2010, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
-+ *
-+ */
-+#ifndef _ASM_NIOS2_ASMMACROS_H
-+#define _ASM_NIOS2_ASMMACROS_H
-+/*
-+ * ANDs reg2 with mask and places the result in reg1.
-+ *
-+ * You cannnot use the same register for reg1 & reg2.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+.macro ANDI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		movhi	\reg1, %hi(\mask)
-+		movui	\reg1, %lo(\mask)
-+		and	\reg1, \reg1, \reg2
-+	.else
-+		andi	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	andhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
++#include <linux/module.h>
++#include <linux/uaccess.h>
 +
-+/*
-+ * ORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro ORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		orhi	\reg1, \reg2, %hi(\mask)
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.else
-+		ori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	orhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
-+
-+/*
-+ * XORs reg2 with mask and places the result in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro XORI32	reg1, reg2, mask
-+.if \mask & 0xffff
-+	.if \mask & 0xffff0000
-+		xorhi	\reg1, \reg2, %hi(\mask)
-+		xori	\reg1, \reg1, %lo(\mask)
-+	.else
-+		xori	\reg1, \reg2, %lo(\mask)
-+	.endif
-+.else
-+	xorhi	\reg1, \reg2, %hi(\mask)
-+.endif
-+.endm
-+
-+/*
-+ * This is a support macro for BTBZ & BTBNZ.  It checks
-+ * the bit to make sure it is valid 32 value.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BT	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTBZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and branches to label if the
-+ * bit is non-zero.  The result of the bit test is stored in reg1.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTBNZ	reg1, reg2, bit, label
-+	BT	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTC	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		xori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		xorhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTS	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		ori	\reg2, \reg2, (1 << \bit)
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		orhi	\reg2, \reg2, (1 << (\bit - 16))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTR	reg1, reg2, bit
-+.if \bit > 31
-+	.err
-+.else
-+	.if \bit < 16
-+		andi	\reg1, \reg2, (1 << \bit)
-+		andi	\reg2, \reg2, %lo(~(1 << \bit))
-+	.else
-+		andhi	\reg1, \reg2, (1 << (\bit - 16))
-+		andhi	\reg2, \reg2, %lo(~(1 << (\bit - 16)))
-+	.endif
-+.endif
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then compliments the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTCBNZ	reg1, reg2, bit, label
-+	BTC	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then sets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTSBNZ	reg1, reg2, bit, label
-+	BTS	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bit in reg2 and then resets the bit in reg2.
-+ * The result of the bit test is stored in reg1.  If the
-+ * original bit was non-zero it branches to label.
-+ *
-+ * It is NOT safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro BTRBNZ	reg1, reg2, bit, label
-+	BTR	\reg1, \reg2, \bit
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the all the bits in the mask are zero it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	beq	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Tests the bits in mask against reg2 stores the result in reg1.
-+ * If the any of the bits in the mask are 1 it branches to label.
-+ *
-+ * It is safe to use the same register for reg1 & reg2.
-+ */
-+
-+.macro TSTBNZ	reg1, reg2, mask, label
-+	ANDI32	\reg1, \reg2, \mask
-+	bne	\reg1, r0, \label
-+.endm
-+
-+/*
-+ * Pushes reg onto the stack.
-+ */
-+
-+.macro PUSH	reg
-+	addi	sp, sp, -4
-+	stw	\reg, 0(sp)
-+.endm
-+
-+/*
-+ * Pops the top of the stack into reg.
-+ */
-+
-+.macro POP	reg
-+	ldw	\reg, 0(sp)
-+	addi	sp, sp, 4
-+.endm
-+
-+
-+#endif /* _ASM_NIOS2_ASMMACROS_H */
-diff --git a/arch/nios2/include/asm/asm-offsets.h b/arch/nios2/include/asm/asm-offsets.h
-new file mode 100644
-index 0000000..5b9f5e0
---- /dev/null
-+++ b/arch/nios2/include/asm/asm-offsets.h
-@@ -0,0 +1,20 @@
-+/*
-+ *  Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ *  Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <generated/asm-offsets.h>
-diff --git a/arch/nios2/kernel/asm-offsets.c b/arch/nios2/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..3852f5c
---- /dev/null
-+++ b/arch/nios2/kernel/asm-offsets.c
-@@ -0,0 +1,88 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/stddef.h>
-+#include <linux/sched.h>
-+#include <linux/kernel_stat.h>
-+#include <linux/ptrace.h>
-+#include <linux/hardirq.h>
-+#include <linux/thread_info.h>
-+#include <linux/kbuild.h>
-+
-+int main(void)
++int fixup_exception(struct pt_regs *regs)
 +{
-+	/* struct task_struct */
-+	OFFSET(TASK_THREAD, task_struct, thread);
-+	BLANK();
++	const struct exception_table_entry *fixup;
 +
-+	/* struct thread_struct */
-+	OFFSET(THREAD_KSP, thread_struct, ksp);
-+	OFFSET(THREAD_KPSR, thread_struct, kpsr);
-+	BLANK();
-+
-+	/* struct pt_regs */
-+	OFFSET(PT_ORIG_R2, pt_regs, orig_r2);
-+	OFFSET(PT_ORIG_R7, pt_regs, orig_r7);
-+
-+	OFFSET(PT_R1, pt_regs, r1);
-+	OFFSET(PT_R2, pt_regs, r2);
-+	OFFSET(PT_R3, pt_regs, r3);
-+	OFFSET(PT_R4, pt_regs, r4);
-+	OFFSET(PT_R5, pt_regs, r5);
-+	OFFSET(PT_R6, pt_regs, r6);
-+	OFFSET(PT_R7, pt_regs, r7);
-+	OFFSET(PT_R8, pt_regs, r8);
-+	OFFSET(PT_R9, pt_regs, r9);
-+	OFFSET(PT_R10, pt_regs, r10);
-+	OFFSET(PT_R11, pt_regs, r11);
-+	OFFSET(PT_R12, pt_regs, r12);
-+	OFFSET(PT_R13, pt_regs, r13);
-+	OFFSET(PT_R14, pt_regs, r14);
-+	OFFSET(PT_R15, pt_regs, r15);
-+	OFFSET(PT_EA, pt_regs, ea);
-+	OFFSET(PT_RA, pt_regs, ra);
-+	OFFSET(PT_FP, pt_regs, fp);
-+	OFFSET(PT_SP, pt_regs, sp);
-+	OFFSET(PT_GP, pt_regs, gp);
-+	OFFSET(PT_ESTATUS, pt_regs, estatus);
-+	DEFINE(PT_REGS_SIZE, sizeof(struct pt_regs));
-+	BLANK();
-+
-+	/* struct switch_stack */
-+	OFFSET(SW_R16, switch_stack, r16);
-+	OFFSET(SW_R17, switch_stack, r17);
-+	OFFSET(SW_R18, switch_stack, r18);
-+	OFFSET(SW_R19, switch_stack, r19);
-+	OFFSET(SW_R20, switch_stack, r20);
-+	OFFSET(SW_R21, switch_stack, r21);
-+	OFFSET(SW_R22, switch_stack, r22);
-+	OFFSET(SW_R23, switch_stack, r23);
-+	OFFSET(SW_FP, switch_stack, fp);
-+	OFFSET(SW_GP, switch_stack, gp);
-+	OFFSET(SW_RA, switch_stack, ra);
-+	DEFINE(SWITCH_STACK_SIZE, sizeof(struct switch_stack));
-+	BLANK();
-+
-+	/* struct thread_info */
-+	OFFSET(TI_TASK, thread_info, task);
-+	OFFSET(TI_FLAGS, thread_info, flags);
-+	OFFSET(TI_PREEMPT_COUNT, thread_info, preempt_count);
-+	BLANK();
++	fixup = search_exception_tables(regs->ea);
++	if (fixup) {
++		regs->ea = fixup->fixup;
++		return 1;
++	}
 +
 +	return 0;
++}
+diff --git a/arch/nios2/mm/fault.c b/arch/nios2/mm/fault.c
+new file mode 100644
+index 0000000..15a0bb5
+--- /dev/null
++++ b/arch/nios2/mm/fault.c
+@@ -0,0 +1,251 @@
++/*
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * based on arch/mips/mm/fault.c which is:
++ *
++ * Copyright (C) 1995-2000 Ralf Baechle
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/signal.h>
++#include <linux/sched.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <linux/ptrace.h>
++
++#include <asm/mmu_context.h>
++#include <asm/traps.h>
++
++#define EXC_SUPERV_INSN_ACCESS	9  /* Supervisor only instruction address */
++#define EXC_SUPERV_DATA_ACCESS	11 /* Supervisor only data address */
++#define EXC_X_PROTECTION_FAULT	13 /* TLB permission violation (x) */
++#define EXC_R_PROTECTION_FAULT	14 /* TLB permission violation (r) */
++#define EXC_W_PROTECTION_FAULT	15 /* TLB permission violation (w) */
++
++/*
++ * This routine handles page faults.  It determines the address,
++ * and the problem, and then passes it off to one of the appropriate
++ * routines.
++ */
++asmlinkage void do_page_fault(struct pt_regs *regs, unsigned long cause,
++				unsigned long address)
++{
++	struct vm_area_struct *vma = NULL;
++	struct task_struct *tsk = current;
++	struct mm_struct *mm = tsk->mm;
++	int code = SEGV_MAPERR;
++	int fault;
++	unsigned int flags = 0;
++
++	cause >>= 2;
++
++	/* Restart the instruction */
++	regs->ea -= 4;
++
++	/*
++	 * We fault-in kernel-space virtual memory on-demand. The
++	 * 'reference' page table is init_mm.pgd.
++	 *
++	 * NOTE! We MUST NOT take any locks for this case. We may
++	 * be in an interrupt or a critical region, and should
++	 * only copy the information from the master page table,
++	 * nothing more.
++	 */
++	if (unlikely(address >= VMALLOC_START && address <= VMALLOC_END)) {
++		if (user_mode(regs))
++			goto bad_area_nosemaphore;
++		else
++			goto vmalloc_fault;
++	}
++
++	if (unlikely(address >= TASK_SIZE))
++		goto bad_area_nosemaphore;
++
++	/*
++	 * If we're in an interrupt or have no user
++	 * context, we must not take the fault..
++	 */
++	if (in_atomic() || !mm)
++		goto bad_area_nosemaphore;
++
++	if (user_mode(regs))
++		flags |= FAULT_FLAG_USER;
++
++	if (!down_read_trylock(&mm->mmap_sem)) {
++		if (!user_mode(regs) && !search_exception_tables(regs->ea))
++			goto bad_area_nosemaphore;
++		down_read(&mm->mmap_sem);
++	}
++
++	vma = find_vma(mm, address);
++	if (!vma)
++		goto bad_area;
++	if (vma->vm_start <= address)
++		goto good_area;
++	if (!(vma->vm_flags & VM_GROWSDOWN))
++		goto bad_area;
++	if (expand_stack(vma, address))
++		goto bad_area;
++/*
++ * Ok, we have a good vm_area for this memory access, so
++ * we can handle it..
++ */
++good_area:
++	code = SEGV_ACCERR;
++
++	switch (cause) {
++	case EXC_SUPERV_INSN_ACCESS:
++		goto bad_area;
++	case EXC_SUPERV_DATA_ACCESS:
++		goto bad_area;
++	case EXC_X_PROTECTION_FAULT:
++		if (!(vma->vm_flags & VM_EXEC))
++			goto bad_area;
++		break;
++	case EXC_R_PROTECTION_FAULT:
++		if (!(vma->vm_flags & VM_READ))
++			goto bad_area;
++		break;
++	case EXC_W_PROTECTION_FAULT:
++		if (!(vma->vm_flags & VM_WRITE))
++			goto bad_area;
++		flags = FAULT_FLAG_WRITE;
++		break;
++	}
++
++survive:
++	/*
++	 * If for any reason at all we couldn't handle the fault,
++	 * make sure we exit gracefully rather than endlessly redo
++	 * the fault.
++	 */
++	fault = handle_mm_fault(mm, vma, address, flags);
++	if (unlikely(fault & VM_FAULT_ERROR)) {
++		if (fault & VM_FAULT_OOM)
++			goto out_of_memory;
++		else if (fault & VM_FAULT_SIGBUS)
++			goto do_sigbus;
++		BUG();
++	}
++	if (fault & VM_FAULT_MAJOR)
++		tsk->maj_flt++;
++	else
++		tsk->min_flt++;
++
++	up_read(&mm->mmap_sem);
++	return;
++
++/*
++ * Something tried to access memory that isn't in our memory map..
++ * Fix it, but check if it's kernel or user first..
++ */
++bad_area:
++	up_read(&mm->mmap_sem);
++
++bad_area_nosemaphore:
++	/* User mode accesses just cause a SIGSEGV */
++	if (user_mode(regs)) {
++		pr_alert("%s: unhandled page fault (%d) at 0x%08lx, "
++			"cause %ld\n", current->comm, SIGSEGV, address, cause);
++		show_regs(regs);
++		_exception(SIGSEGV, regs, code, address);
++		return;
++	}
++
++no_context:
++	/* Are we prepared to handle this kernel fault? */
++	if (fixup_exception(regs))
++		return;
++
++	/*
++	 * Oops. The kernel tried to access some bad page. We'll have to
++	 * terminate things with extreme prejudice.
++	 */
++	bust_spinlocks(1);
++
++	pr_alert("Unable to handle kernel %s at virtual address %08lx",
++		address < PAGE_SIZE ? "NULL pointer dereference" :
++		"paging request", address);
++	pr_alert("ea = %08lx, ra = %08lx, cause = %ld\n", regs->ea, regs->ra,
++		cause);
++	panic("Oops");
++	return;
++
++/*
++ * We ran out of memory, or some other thing happened to us that made
++ * us unable to handle the page fault gracefully.
++ */
++out_of_memory:
++	up_read(&mm->mmap_sem);
++	if (is_global_init(tsk)) {
++		yield();
++		down_read(&mm->mmap_sem);
++		goto survive;
++	}
++	if (!user_mode(regs))
++		goto no_context;
++	pagefault_out_of_memory();
++	return;
++
++do_sigbus:
++	up_read(&mm->mmap_sem);
++
++	/* Kernel mode? Handle exceptions or die */
++	if (!user_mode(regs))
++		goto no_context;
++
++	_exception(SIGBUS, regs, BUS_ADRERR, address);
++	return;
++
++vmalloc_fault:
++	{
++		/*
++		 * Synchronize this task's top level page-table
++		 * with the 'reference' page table.
++		 *
++		 * Do _not_ use "tsk" here. We might be inside
++		 * an interrupt in the middle of a task switch..
++		 */
++		int offset = pgd_index(address);
++		pgd_t *pgd, *pgd_k;
++		pud_t *pud, *pud_k;
++		pmd_t *pmd, *pmd_k;
++		pte_t *pte_k;
++
++		pgd = pgd_current + offset;
++		pgd_k = init_mm.pgd + offset;
++
++		if (!pgd_present(*pgd_k))
++			goto no_context;
++		set_pgd(pgd, *pgd_k);
++
++		pud = pud_offset(pgd, address);
++		pud_k = pud_offset(pgd_k, address);
++		if (!pud_present(*pud_k))
++			goto no_context;
++		pmd = pmd_offset(pud, address);
++		pmd_k = pmd_offset(pud_k, address);
++		if (!pmd_present(*pmd_k))
++			goto no_context;
++		set_pmd(pmd, *pmd_k);
++
++		pte_k = pte_offset_kernel(pmd_k, address);
++		if (!pte_present(*pte_k))
++			goto no_context;
++
++		flush_tlb_one(address);
++		return;
++	}
 +}
 -- 
 1.7.7.4
