@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821AbaJHTkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:40:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34362 "EHLO mx1.redhat.com"
+	id S1754548AbaJHTns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:43:48 -0400
+Received: from mta-out1.inet.fi ([62.71.2.234]:33380 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150AbaJHTkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:40:03 -0400
-Date: Wed, 8 Oct 2014 21:36:44 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Kirill Tkhai <tkhai@yandex.ru>
-Subject: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
-Message-ID: <20141008193644.GA32055@redhat.com>
-References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com> <20141008183326.GB17495@redhat.com>
+	id S1753035AbaJHTnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 15:43:47 -0400
+Date: Wed, 8 Oct 2014 22:43:35 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v1 2/7] mm: Prepare for DAX huge pages
+Message-ID: <20141008194335.GA9232@node.dhcp.inet.fi>
+References: <1412774729-23956-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1412774729-23956-3-git-send-email-matthew.r.wilcox@intel.com>
+ <20141008152124.GA7288@node.dhcp.inet.fi>
+ <20141008155758.GK5098@wil.cx>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141008183326.GB17495@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20141008155758.GK5098@wil.cx>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08, Oleg Nesterov wrote:
->
-> Another problem is that finish_task_switch() itself runs with preempt
-> enabled after finish_lock_switch(). If nothing else this means that
-> ->sched_in() notifier can't trust its "cpu" arg.
+On Wed, Oct 08, 2014 at 11:57:58AM -0400, Matthew Wilcox wrote:
+> On Wed, Oct 08, 2014 at 06:21:24PM +0300, Kirill A. Shutemov wrote:
+> > On Wed, Oct 08, 2014 at 09:25:24AM -0400, Matthew Wilcox wrote:
+> > > From: Matthew Wilcox <willy@linux.intel.com>
+> > > 
+> > > DAX wants to use the 'special' bit to mark PMD entries that are not backed
+> > > by struct page, just as for PTEs. 
+> > 
+> > Hm. I don't see where you use PMD without special set.
+> 
+> Right ... I don't currently insert PMDs that point to huge pages of DRAM,
+> only to huge pages of PMEM.
 
-OOPS, this obviously can't happen, ->preempt_notifiers must be empty.
-Remove this part from the changelog, please see v2.
+Looks like you don't need pmd_{mk,}special() then. It seems you have all
+inforamtion you need -- vma -- to find out what's going on. Right?
 
-I am not sure about finish_arch_post_lock_switch() ... but probably
-it should be fine without preempt_disable.
+PMD bits is not something we can assigning to a feature without a need.
 
--------------------------------------------------------------------------------
-Subject: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
+> > > @@ -1104,9 +1103,20 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+> > >  	if (unlikely(!pmd_same(*pmd, orig_pmd)))
+> > >  		goto out_unlock;
+> > >  
+> > > -	page = pmd_page(orig_pmd);
+> > > -	VM_BUG_ON_PAGE(!PageCompound(page) || !PageHead(page), page);
+> > > -	if (page_mapcount(page) == 1) {
+> > > +	if (pmd_special(orig_pmd)) {
+> > > +		/* VM_MIXEDMAP !pfn_valid() case */
+> > > +		if ((vma->vm_flags & (VM_WRITE|VM_SHARED)) !=
+> > > +				     (VM_WRITE|VM_SHARED)) {
+> > > +			pmdp_clear_flush(vma, haddr, pmd);
+> > > +			ret = VM_FAULT_FALLBACK;
+> > 
+> > No private THP pages with THP? Why?
+> > It should be trivial: we already have a code path for !page case for zero
+> > page and it shouldn't be too hard to modify do_dax_pmd_fault() to support
+> > COW.
+> > 
+> > I remeber I've mentioned that you don't think it's reasonable to allocate
+> > 2M page on COW, but that's what we do for anon memory...
+> 
+> I agree that it shouldn't be too hard, but I have no evidence that it'll
+> be a performance win to COW 2MB pages for MAP_PRIVATE.  I'd rather be
+> cautious for now and we can explore COWing 2MB chunks in a future patch.
 
-finish_task_switch() enables preemption, so post_schedule(rq) can be
-called on the wrong (and even dead) CPU. Afaics, nothing really bad
-can happen, but in this case we can wrongly clear rq->post_schedule
-on that CPU. And this simply looks wrong in any case.
+I would rather make it other way around: use the same apporoach as for
+anon memory until data shows it's doesn't make any good. Then consider
+switching COW for *both* anon and file THP to fallback path.
+This way we will get consistent behaviour for both types of mappings.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/sched/core.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 703c7e6..3f267e8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2277,15 +2277,14 @@ static inline void post_schedule(struct rq *rq)
- asmlinkage __visible void schedule_tail(struct task_struct *prev)
- 	__releases(rq->lock)
- {
--	struct rq *rq = this_rq();
-+	struct rq *rq;
- 
-+	/* finish_task_switch() drops rq->lock and enables preemtion */
-+	preempt_disable();
-+	rq = this_rq();
- 	finish_task_switch(rq, prev);
--
--	/*
--	 * FIXME: do we need to worry about rq being invalidated by the
--	 * task_switch?
--	 */
- 	post_schedule(rq);
-+	preempt_enable();
- 
- 	if (current->set_child_tid)
- 		put_user(task_pid_vnr(current), current->set_child_tid);
 -- 
-1.5.5.1
-
-
+ Kirill A. Shutemov
