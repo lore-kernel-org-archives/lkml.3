@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaJHNll (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:41:41 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57816 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753859AbaJHNlj (ORCPT
+	id S932415AbaJHNoI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:44:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45995 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322AbaJHNoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:41:39 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 11/13] gpio: Support for unified device properties interface
-Date: Wed, 08 Oct 2014 16:01:45 +0200
-Message-ID: <2049741.HkpnzptfyW@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAVeFu+MvBUZTrRWB008rcsMzPvEb81TEg=L8RqBz=PJ9J6bwQ@mail.gmail.com>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1693047.RuqBhhrutB@vostro.rjw.lan> <CAAVeFu+MvBUZTrRWB008rcsMzPvEb81TEg=L8RqBz=PJ9J6bwQ@mail.gmail.com>
+	Wed, 8 Oct 2014 09:44:05 -0400
+Date: Wed, 8 Oct 2014 06:43:07 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: arnd@arndb.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] misc: always assign miscdevice to file->private_data in
+ open()
+Message-ID: <20141008134307.GA6099@kroah.com>
+References: <1412758074-7882-1-git-send-email-martink@posteo.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412758074-7882-1-git-send-email-martink@posteo.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 08, 2014 11:55:08 AM Alexandre Courbot wrote:
-> On Wed, Oct 8, 2014 at 9:09 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Tuesday, October 07, 2014 07:52:02 PM Alexandre Courbot wrote:
-> >> On Tue, Oct 7, 2014 at 7:40 PM, Mika Westerberg
-> >> <mika.westerberg@linux.intel.com> wrote:
-> >> > On Tue, Oct 07, 2014 at 07:22:13PM +0900, Alexandre Courbot wrote:
-> >> >> On Tue, Oct 7, 2014 at 9:18 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> >> >> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> >> >
-> >> >> > Some drivers need to deal with only firmware representation of its
-> >> >> > GPIOs. An example would be a GPIO button array driver where each button
-> >> >> > is described as a separate firmware node in device tree. Typically these
-> >> >> > child nodes do not have physical representation in the Linux device
-> >> >> > model.
-> >> >> >
-> >> >> > In order to help device drivers to handle such firmware child nodes we
-> >> >> > add dev[m]_get_named_gpiod_from_child() that takes a child firmware
-> >> >> > node pointer as its second argument (the first one is the parent device
-> >> >> > itself), finds the GPIO using whatever is the underlying firmware
-> >> >> > method, and requests the GPIO properly.
-> >> >> >
-> >> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> >> >> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >>
-> >> >> ...
-> >> >>
-> >> >> > +/* Child properties interface */
-> >> >> > +struct gpio_desc *dev_get_named_gpiod_from_child(struct device *dev, void *child,
-> >> >> > +                                                const char *propname, int index);
-> >> >> > +struct gpio_desc *devm_get_named_gpiod_from_child(struct device *dev, void *child,
-> >> >> > +                                                 const char *propname, int index);
-> >> >>
-> >> >> I see the reason for these functions and am not opposed to them.
-> >> >> However, I wonder if we could not replace propname by a con_id that
-> >> >> would be resolved to one of con_id-gpio for DT and whatever naming
-> >> >> convention ACPI is using?
-> >> >
-> >> > The code in gpio-leds.c and gpio_keys_polled.c refers to "gpios" as the
-> >> > property name. If we can change that somehow to work with con_id-gpio
-> >> > instead without breaking things, then why not.
-> >> >
-> >> >> This would prevent users to name GPIOs outside of the conventions
-> >> >> defined in the bindings and be generally safer. Is there a particular
-> >> >> reason (used by some old code?) for the current direct property
-> >> >> access? If not, maybe we could call a slightly-modified of_find_gpio()
-> >> >> to resolve the GPIO property for DT, and the equivalent function for
-> >> >> ACPI?
-> >> >
-> >> > Only reason I can think of is support for the existing properties that
-> >> > are used directly. Drivers using gpiod_get() and friends do not need
-> >> > dev_get_named_gpiod_from_child() anyway.
-> >>
-> >> Right. Another thing is that the property handling code (active low
-> >> only for now) is duplicated again, but that can be addressed
-> >> separately.
-> >>
-> >> I will have a look at gpio-leds and gpio_keys_polled to see if we
-> >> cannot make this work at a higher level. It's easier to have the
-> >> bindings respected if the code itself enforces them.
-> >
-> > I'm wondering if that can be done after merging the current work?
-> >
-> > We'll be able to use the drivers in question with our hardware in the
-> > meantime then ...
+On Wed, Oct 08, 2014 at 10:47:54AM +0200, Martin Kepplinger wrote:
+> As of now, a miscdevice driver has to provide an implementation of
+> the open() file operation if it wants to have misc_open() assign a
+> pointer to struct miscdevice to file->private_data for other file
+> operations to use (given the user calls open()).
 > 
-> Yeah, that's probably ok. The properties in question already exist so
-> we will have to support them anyway ; it's just a matter of seeing
-> whether we can improve the proposed way.
-> 
-> So for now:
-> 
-> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+> This leads to situations where a miscdevice driver that doesn't need
+> internal operations during open() has to implement open() that only
+> returns immediately, in order to use the data in private_data in other
+> fops.
 
-Thanks!
+Yeah, that's messy, do we have any in-kernel misc drivers that do this?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> This change provides consistent behaviour for miscdevice developers by
+> always providing the pointer in private_data. A driver's open() fop would,
+> of course, just overwrite it, when using private_data itself.
+> 
+> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+> ---
+> This is really only a question: Do I understand this correctly, and,
+> could this change then hurt any existing driver?
+
+I don't know, take a look at the existing ones and see please.
+
+> As a driver developer it took me a while to figure out what happens here,
+> and in my situation it would have been nice to just have this feature as
+> part of the miscdevice API. Possibly documented somewhere?
+
+Patches always accepted for documentation :)
+
+> misc_open() is called in any case, on open(). As long as miscdevice drivers
+> don't explicitly rely on private_data being NULL exactly IF they don't
+> implement an open() fop (which I wouldn't imagine), this would make things
+> even more convenient.
+
+I agree, but it would be great if you can audit the existing misc
+drivers to ensure we don't break anything with this change.  Can you do
+that please?
+
+thanks,
+
+greg k-h
