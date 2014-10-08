@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaJHOI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:08:28 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:56771 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932361AbaJHOIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:08:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141008135339.GC1788@e105550-lin.cambridge.arm.com>
-References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
- <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com>
- <CAKfTPtBXP7HQBHL_Z3aAfdsuLP44_0x_e_LmzEw8qVC-2g=M-w@mail.gmail.com>
- <20140925172343.GX23693@e103034-lin> <20141002203428.GI2849@worktop.programming.kicks-ass.net>
- <20141008110054.GA1788@e105550-lin.cambridge.arm.com> <CAKfTPtAQ5FqHqdqDHDKg11XOHt_i0EsQFTuKg4OpreYA9a74Gg@mail.gmail.com>
- <20141008135339.GC1788@e105550-lin.cambridge.arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 8 Oct 2014 16:08:04 +0200
-Message-ID: <CAKfTPtAefmLDsEhWgri=urSmHQ-sydqcYDGX08dN982Lav1sGw@mail.gmail.com>
-Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932322AbaJHOIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:08:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932205AbaJHOIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 10:08:12 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "\\\"Rafael J. Wysocki\\\"" <rjw@rjwysocki.net>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, David Rientjes <rientjes@google.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH 2/3] freezer: remove obsolete comments in __thaw_task()
+Date: Wed,  8 Oct 2014 16:07:45 +0200
+Message-Id: <1412777266-8251-3-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1412777266-8251-1-git-send-email-mhocko@suse.cz>
+References: <1412777266-8251-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 October 2014 15:53, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> On Wed, Oct 08, 2014 at 12:21:45PM +0100, Vincent Guittot wrote:
->> On 8 October 2014 13:00, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+From: Cong Wang <xiyou.wangcong@gmail.com>
 
->> >
->> > Sure. The easiest way to avoid introducing overflows is to ensure that
->> > we always scale by a factor >= 1.0. That should be true as long as
->> > arch_scale_{cpu,freq}_capacity() never returns anything greater than
->> > SCHED_CAPACITY_SCALE (= 1024 = 1.0).
->>
->> the current ARM arch_scale_cpu is in the range [1536..0] which is free
->> of overflow AFAICT
->
-> If I'm not mistaken, that will cause an overflow in
-> __update_task_entity_contrib():
->
-> static inline void __update_task_entity_contrib(struct sched_entity *se)
-> {
->         u32 contrib;
->         /* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
->         contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
->         contrib /= (se->avg.avg_period + 1);
->         se->avg.load_avg_contrib = scale_load(contrib);
-> }
->
-> With arch_scale_cpu_capacity() > 1024 se->avg.runnable_avg_sum is no
-> longer bounded by LOAD_AVG_MAX = 47742. scale_load_down(se->load.weight)
-> == se->load.weight =< 88761.
->
->         47742 * 88761 = 4237627662 (2^32 = 4294967296)
->
-> To avoid overflow se->avg.runnable_avg_sum must be less than 2^32/88761
-> = 48388, which means that arch_scale_cpu_capacity() must be in the range
-> 0..48388*1024/47742 = 0..1037.
->
-> I also think it is easier to have a fixed defined max scaling factor,
-> but that might just be me.
+__thaw_task() no longer clears frozen flag since commit a3201227f803
+(freezer: make freezing() test freeze conditions in effect instead of TIF_FREEZE).
 
-OK,  overflow comes with adding uarch invariance into runnable load average
+Cc: David Rientjes <rientjes@google.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
+---
+ kernel/freezer.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
->
-> Regarding the ARM arch_scale_cpu_capacity() implementation, I think that
-> can be changed to fit the 0..1024 range easily. Currently, it will only
-> report a non-default (1024) capacity for big.LITTLE systems and actually
-> enabling it (requires a certain property to be set in device tree) leads
-> to broken load-balancing decisions. We have discussed that several times
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 77ad6794b610..190d667f4e12 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -161,12 +161,6 @@ void __thaw_task(struct task_struct *p)
+ {
+ 	unsigned long flags;
+ 
+-	/*
+-	 * Clear freezing and kick @p if FROZEN.  Clearing is guaranteed to
+-	 * be visible to @p as waking up implies wmb.  Waking up inside
+-	 * freezer_lock also prevents wakeups from leaking outside
+-	 * refrigerator.
+-	 */
+ 	spin_lock_irqsave(&freezer_lock, flags);
+ 	if (frozen(p))
+ 		wake_up_process(p);
+-- 
+2.1.1
 
-Only the 1 task per CPU is broken but in the other hand, it better
-handles the overload use case where we have more tasks than CPU and
-other middle range use case by putting more task on big cluster.
-
-> in the past. I wouldn't recommend enabling it until the load-balance
-> code can deal with big.LITTLE compute capacities correctly. This is also
-> why it isn't implemented by ARM64.
