@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbaJHX1V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:27:21 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:33666 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaJHX1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:27:15 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@fedoraproject.org>,
-        Josh Cartwright <joshc@codeaurora.org>
-Subject: [GIT PULL] restart handler infrastructure
-Date: Wed,  8 Oct 2014 16:27:09 -0700
-Message-Id: <1412810829-26414-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.5435C852.00A9,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1754767AbaJHX3n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:29:43 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47501 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748AbaJHX3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 19:29:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,681,1406617200"; 
+   d="scan'208";a="611610730"
+Message-ID: <1412810962.28467.69.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: [PATCH 03/12] serial_core: Handle TIOC[GS]RS485 ioctls.
+From: Alan Cox <alan@linux.intel.com>
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 09 Oct 2014 00:29:22 +0100
+In-Reply-To: <CAPybu_1vXc+=dVbradArvFYiFBy2c=0tTM7RAHDhycCkQQv_5g@mail.gmail.com>
+References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
+	 <1412798258-23655-4-git-send-email-ricardo.ribalda@gmail.com>
+	 <1412799101.28467.68.camel@acox1-desk.ger.corp.intel.com>
+	 <CAPybu_1vXc+=dVbradArvFYiFBy2c=0tTM7RAHDhycCkQQv_5g@mail.gmail.com>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2014-10-08 at 22:43 +0200, Ricardo Ribalda Delgado wrote:
+> Hello Alan
+> 
+> This patchset adds no extra locking features, if the drivers did not
+> implement a locking mechanism (and none did) there is chance of
+> conflict.
+> 
+> I can add a call to lock/unlock around uart_[gs]et_rs485_config. And
+> then, inside the drivers, use the lock when the structure is used.
+> 
+> I would prefer to add it as new patches in the patchset, so in case
+> this adds some bugs they can be bisected easily.
 
-this series was supposed to be pulled through various trees using it,
-and I did not plan to send a separate pull request. As it turns out,
-the pinctrl tree did not merge with it, is now upstream, and uses
-it, meaning there are now build failures.
 
-Please consider pulling this series directly to fix those build failures.
-If you don't want to pull it directly, you should also get it through
-the clk, power/reboot, and watchdog pull requests.
+Makes sense.
 
-Thanks,
-Guenter
-------
 
-The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
-
-  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/restart-handler-for-v3.18
-
-for you to fetch changes up to 6cd6d94d96d9b1cd8a62da91aac44cf56e301e75:
-
-  arm/arm64: unexport restart handlers (2014-09-26 00:00:48 -0700)
-
-----------------------------------------------------------------
-Immutable branch with restart handler patches for v3.18
-
-----------------------------------------------------------------
-Guenter Roeck (8):
-      kernel: add support for kernel restart handler call chain
-      power/restart: call machine_restart instead of arm_pm_restart
-      arm64: support restart through restart handler call chain
-      arm: support restart through restart handler call chain
-      watchdog: moxart: register restart handler with kernel restart handler
-      watchdog: alim7101: register restart handler with kernel restart handler
-      watchdog: sunxi: register restart handler with kernel restart handler
-      arm/arm64: unexport restart handlers
-
- arch/arm/kernel/process.c              | 12 +++--
- arch/arm64/kernel/process.c            |  3 +-
- drivers/power/reset/restart-poweroff.c |  3 +-
- drivers/watchdog/alim7101_wdt.c        | 42 +++++++++++++-----
- drivers/watchdog/moxart_wdt.c          | 32 +++++++++-----
- drivers/watchdog/sunxi_wdt.c           | 31 ++++++++-----
- include/linux/reboot.h                 |  3 ++
- kernel/reboot.c                        | 81 ++++++++++++++++++++++++++++++++++
- 8 files changed, 165 insertions(+), 42 deletions(-)
