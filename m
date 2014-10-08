@@ -1,134 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095AbaJHNDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:03:54 -0400
-Received: from smtp.csie.ntu.edu.tw ([140.112.30.61]:55451 "EHLO
-	smtp.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520AbaJHNDL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:03:11 -0400
-From: Chen-Yu Tsai <wens@csie.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v3 3/5] ARM: dts: sun9i: Add A80 Optimus Board support
-Date: Wed,  8 Oct 2014 21:02:54 +0800
-Message-Id: <1412773376-25212-4-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1412773376-25212-1-git-send-email-wens@csie.org>
-References: <1412773376-25212-1-git-send-email-wens@csie.org>
+	id S1757106AbaJHNEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:04:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47577 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757099AbaJHNEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 09:04:00 -0400
+From: Michal Marek <mmarek@suse.cz>
+To: David Howells <dhowells@redhat.com>, keyrings@linux-nfs.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] X.509: Fix certificate gathering again
+Date: Wed,  8 Oct 2014 15:03:29 +0200
+Message-Id: <1412773409-29102-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A80 Optimus Board is was launched with the Allwinner A80 SoC.
-It was jointly developed by Allwinner and Merrii.
+Commit d7ec435f (X.509: Fix certificate gathering) fixed the issue of
+changing .x509.list, but in the CONFIG_MODULE_SIG=y case, it assumed
+that $(objtree) is an absolute path. Commit 7e1c0477 (kbuild: Use
+relative path for $(objtree)) broke this assumption and we get
+uncecessary rebuilds again. Instead of prepending the absolute path and
+stripping it again, just check if $(srctree) and $(objtree) are
+different directories and add $(srctree)/*.x509 only in such case.
 
-This board has a UART port, a JTAG connector, USB host ports, a USB
-3.0 OTG connector, an HDMI output, a micro SD slot, 8G NAND flash,
-4G DRAM, a camera sensor interface, a WiFi/BT combo chip, a headphone
-jack, IR receiver, and additional GPIO headers.
-
-This patch adds only basic support.
-
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+Fixes: 7e1c047 (kbuild: Use relative path for $(objtree))
+Cc: stable@vger.kernel.org
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- arch/arm/boot/dts/Makefile              |  2 +
- arch/arm/boot/dts/sun9i-a80-optimus.dts | 66 +++++++++++++++++++++++++++++++++
- 2 files changed, 68 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun9i-a80-optimus.dts
+ kernel/Makefile | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 14dbc6c..6e5474c 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -426,6 +426,8 @@ dtb-$(CONFIG_MACH_SUN7I) += \
- 	sun7i-a20-pcduino3.dtb
- dtb-$(CONFIG_MACH_SUN8I) += \
- 	sun8i-a23-ippo-q8h-v5.dtb
-+dtb-$(CONFIG_MACH_SUN9I) += \
-+	sun9i-a80-optimus.dtb
- dtb-$(CONFIG_ARCH_TEGRA) += tegra20-harmony.dtb \
- 	tegra20-iris-512.dtb \
- 	tegra20-medcom-wide.dtb \
-diff --git a/arch/arm/boot/dts/sun9i-a80-optimus.dts b/arch/arm/boot/dts/sun9i-a80-optimus.dts
-new file mode 100644
-index 0000000..f83abab
---- /dev/null
-+++ b/arch/arm/boot/dts/sun9i-a80-optimus.dts
-@@ -0,0 +1,66 @@
-+/*
-+ * Copyright 2014 Chen-Yu Tsai
-+ *
-+ * Chen-Yu Tsai <wens@csie.org>
-+ *
-+ * This file is dual-licensed: you can use it either under the terms
-+ * of the GPL or the X11 license, at your option. Note that this dual
-+ * licensing only applies to this file, and not this project as a
-+ * whole.
-+ *
-+ *  a) This library is free software; you can redistribute it and/or
-+ *     modify it under the terms of the GNU General Public License as
-+ *     published by the Free Software Foundation; either version 2 of the
-+ *     License, or (at your option) any later version.
-+ *
-+ *     This library is distributed in the hope that it will be useful,
-+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *     GNU General Public License for more details.
-+ *
-+ *     You should have received a copy of the GNU General Public
-+ *     License along with this library; if not, write to the Free
-+ *     Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-+ *     MA 02110-1301 USA
-+ *
-+ * Or, alternatively,
-+ *
-+ *  b) Permission is hereby granted, free of charge, to any person
-+ *     obtaining a copy of this software and associated documentation
-+ *     files (the "Software"), to deal in the Software without
-+ *     restriction, including without limitation the rights to use,
-+ *     copy, modify, merge, publish, distribute, sublicense, and/or
-+ *     sell copies of the Software, and to permit persons to whom the
-+ *     Software is furnished to do so, subject to the following
-+ *     conditions:
-+ *
-+ *     The above copyright notice and this permission notice shall be
-+ *     included in all copies or substantial portions of the Software.
-+ *
-+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-+ *     OTHER DEALINGS IN THE SOFTWARE.
-+ */
-+
-+/dts-v1/;
-+/include/ "sun9i-a80.dtsi"
-+
-+/ {
-+	model = "Merrii A80 Optimus Board";
-+	compatible = "merrii,a80-optimus", "allwinner,sun9i-a80";
-+
-+	chosen {
-+		bootargs = "earlyprintk console=ttyS0,115200";
-+	};
-+
-+	soc {
-+		uart0: serial@07000000 {
-+			status = "okay";
-+		};
-+	};
-+};
+diff --git a/kernel/Makefile b/kernel/Makefile
+index dc5c775..7cf32cf 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -123,11 +123,12 @@ $(obj)/config_data.h: $(obj)/config_data.gz FORCE
+ #
+ ###############################################################################
+ ifeq ($(CONFIG_SYSTEM_TRUSTED_KEYRING),y)
+-X509_CERTIFICATES-y := $(wildcard *.x509) $(wildcard $(srctree)/*.x509)
+-X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += $(objtree)/signing_key.x509
+-X509_CERTIFICATES-raw := $(sort $(foreach CERT,$(X509_CERTIFICATES-y), \
+-				$(or $(realpath $(CERT)),$(CERT))))
+-X509_CERTIFICATES := $(subst $(realpath $(objtree))/,,$(X509_CERTIFICATES-raw))
++X509_CERTIFICATES-y := $(wildcard *.x509)
++ifneq ($(objtree),$(srctree))
++X509_CERTIFICATES-y += $(wildcard $(srctree)/*.x509)
++endif
++X509_CERTIFICATES-$(CONFIG_MODULE_SIG) += signing_key.x509
++X509_CERTIFICATES := $(sort $(X509_CERTIFICATES-y))
+ 
+ ifeq ($(X509_CERTIFICATES),)
+ $(warning *** No X.509 certificates found ***)
 -- 
-2.1.1
+1.8.4.5
 
