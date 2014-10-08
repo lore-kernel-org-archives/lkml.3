@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224AbaJHUzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:55:08 -0400
-Received: from relay05.alfahosting-server.de ([109.237.142.241]:46247 "EHLO
-	relay05.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755170AbaJHUzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:55:06 -0400
-X-Spam-DCC: : 
-Date: Wed, 8 Oct 2014 22:42:45 +0200
-From: Richard Leitner <me@g0hl1n.net>
-To: dmitry.torokhov@gmail.com
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        richard.leitner@skidata.com
-Subject: [PATCH] input: avoid negative input device numbers
-Message-ID: <20141008224245.601a1339@frodo>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1755249AbaJHUzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:55:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43840 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752172AbaJHUzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 16:55:41 -0400
+Message-ID: <5435A4A4.1070101@zytor.com>
+Date: Wed, 08 Oct 2014 13:55:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: Josh Boyer <jwboyer@fedoraproject.org>, Peter Foley <pefoley2@pefoley.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
+References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>	<CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com> <20141008154659.31f46436@as>
+In-Reply-To: <20141008154659.31f46436@as>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19486/Wed Oct  8 18:37:03 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Leitner <richard.leitner@skidata.com>
+On 10/08/2014 01:46 PM, Chuck Ebbert wrote:
+> 
+> Fedora doesn't cross-compile i686 builds because of problems like
+> this. It sets up an i386 chroot and runs all native tools inside of
+> it.
+> 
 
-Fix the format string for input device name generation to avoid negative
-device numbers when the id exceeds the maximum signed integer value.
+Breaking cross-compilation is not okay, though, regardless of what
+Fedora does.  It should be okay to, for example, build an i386 kernel on
+an ARM box.
 
-Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
----
- drivers/input/input.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 236bc56..6be6982 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -1791,7 +1791,7 @@ struct input_dev *input_allocate_device(void)
- 		INIT_LIST_HEAD(&dev->h_list);
- 		INIT_LIST_HEAD(&dev->node);
- 
--		dev_set_name(&dev->dev, "input%ld",
-+		dev_set_name(&dev->dev, "input%lu",
- 			     (unsigned long) atomic_inc_return(&input_no) - 1);
- 
- 		__module_get(THIS_MODULE);
--- 
-2.1.1
+	-hpa
 
