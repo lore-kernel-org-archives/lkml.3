@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647AbaJHHpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:45:09 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:57714 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbaJHHpH (ORCPT
+	id S1753520AbaJHHrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:47:45 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:46991 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaJHHrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:45:07 -0400
-Date: Wed, 8 Oct 2014 09:45:03 +0200
+	Wed, 8 Oct 2014 03:47:43 -0400
+Date: Wed, 8 Oct 2014 09:47:39 +0200
 From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Vidya Sagar <vidyas@nvidia.com>, bhelgaas@google.com, kthota@nvidia.com,
+To: Vidya Sagar <vidyas@nvidia.com>
+Cc: bhelgaas@google.com, swarren@wwwdotorg.org, kthota@nvidia.com,
         linux-tegra@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH v1] PCI: tegra: Enable root port specific features
-Message-ID: <20141008074502.GD4999@ulmo>
+Message-ID: <20141008074738.GE4999@ulmo>
 References: <1412677678-12011-1-git-send-email-vidyas@nvidia.com>
- <54340A45.4050005@wwwdotorg.org>
+ <20141008074404.GC4999@ulmo>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9UV9rz0O2dU/yYYn"
+	protocol="application/pgp-signature"; boundary="M/SuVGWktc5uNpra"
 Content-Disposition: inline
-In-Reply-To: <54340A45.4050005@wwwdotorg.org>
+In-Reply-To: <20141008074404.GC4999@ulmo>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9UV9rz0O2dU/yYYn
+--M/SuVGWktc5uNpra
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Oct 07, 2014 at 08:44:05AM -0700, Stephen Warren wrote:
-> On 10/07/2014 03:27 AM, Vidya Sagar wrote:
-> > Enables root port to advertise its ASPM-L1 capability
-> >  resulting in possible link entry to L1 when an ASPM-L1 capable
-> >  device is connected
-> > Enables per-controller & per-TMS clock clamping by default
-> > Enabling above features result in more power saving
-> >=20
-> > It also avoids PM message truncation by waiting for DLLP to finish
-> > before entering into L1 or L2
-> >=20
-> > Also, it adds helper functions to access root port registers
+On Wed, Oct 08, 2014 at 09:44:05AM +0200, Thierry Reding wrote:
+> On Tue, Oct 07, 2014 at 03:57:58PM +0530, Vidya Sagar wrote:
+[...]
+> > +static inline void rp_writel(struct tegra_pcie_port *port, u32 value,
+> > +							 unsigned long offset)
+> > +{
+> > +	writel(value, offset + port->base);
+> > +}
+> > +
+> > +static inline unsigned int rp_readl(struct tegra_pcie_port *port,
 >=20
-> > diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+> readl() returns u32 and so should rp_readl().
 >=20
-> > @@ -1870,8 +1920,10 @@ static int tegra_pcie_enable(struct tegra_pcie *=
-pcie)
-> > =20
-> >  		tegra_pcie_port_enable(port);
-> > =20
-> > -		if (tegra_pcie_port_check_link(port))
-> > +		if (tegra_pcie_port_check_link(port)) {
-> > +			tegra_pcie_enable_rp_features(port);
-> >  			continue;
-> > +		}
-> > =20
-> >  		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
+> > +							unsigned long offset)
+> > +{
+> > +	return readl(offset + port->base);
+> > +}
 >=20
-> Wouldn't it be better to have the error case inside the if block; most
-> error-handling is that way. For example:
->=20
-> if (!tegra_pcie_port_check_link(port)) {
-> 	dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
-> 	tegra_pcie_port_disable(port);
-> 	tegra_pcie_port_free(port);
-> 	continue;
-> }
->=20
-> tegra_pcie_enable_rp_features(port);
-> ... any other "good case" code (of which there admittedly is none at
-> present)
+> I don't see much use in these, but if you really want to add them,
+> please also replace any of the open-coded occurrences of this. Also
+> please fix the alignment of function arguments on subsequent lines.
+> They should align with the first argument on the first line.
 
-Yes, that's a little more idiomatic. I think it could be a separate
-cleanup patch, though.
+Oh, and perhaps make it a separate (precursory) patch so that this
+patch can focus on the PM features.
 
 Thierry
 
---9UV9rz0O2dU/yYYn
+--M/SuVGWktc5uNpra
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBAgAGBQJUNOt+AAoJEN0jrNd/PrOhmewP/RBXhTBw5sHJGT30binD1OK+
-wLbDQhnNCVoPw2WF20+ceD4Iy4hBghkjA2C2hpDxTUs4nMVqI7zvjDg9ZE3adSYH
-kNoKma7hZIJNkCwtwtb/aRqSKmdff3kMFmXUMv2e1KoM3uQMvYSAwiDXfS/P+jZg
-dhQCnIcWcOom5VOXmO4xn7IW1m1QQyClJH8U72S45SOYB/Yo1POlbX4jQnQu6CKY
-j+Unk2hxQ3H8Slrz7ObRNOWa4UioaJHrXa2h10yqlTQiwWvfFZjC7jtN9CY+5Hla
-NlTFQP96Ujta3lykL4j4oKsIRv9jXknvNwTN3rjf2riP322PR0d4Iz20k3ksSA/L
-DrHi/vFRLgsxi7j1mQPr/BQQmAJw+SETZXasDl6zFv0im27eHr69Rcg/N1NjzMR/
-XC50Xlx6rNAaEITKMB2Snk5rJw+yh7iaK8qZqwes/Cytz9ozfKsuCKB8GcrXH/uu
-c1DxABnaGgkKHfKzUWw+8vTq8OYY1cG76s/2Jn9u3ME9fFGhMqUvyiex1DOPwXVM
-dnKkgBAtIDkEsbRdLI9/Jd7tmw0HnPPwY/kmbKnxp+qBUPcsPJZuoPVhZ03N2jO4
-XG4B4E+MuU8vPXvuddex3IILrb62Qxv/tjDFOcMp1kSjA/hZ76QmHob+23aylQbm
-k6JjuNXwePm1ArA2mKCj
-=l9qc
+iQIcBAEBAgAGBQJUNOwaAAoJEN0jrNd/PrOhST4QALUDzJ6d7NRI7w2XTnK8cYPQ
+Ws9LgIoVDlh2374mkuzcBJPy2z1fSY6sScR0Ng+mj/KYKyU3F6mT4pOCu0iioTTA
+S+RZTPVqymbTpxzfqKiI+EWuOBGisy3E0BunoSDiVgTbbnER5Vl3XUKd4vQvGdZY
+NyD5f1rio8JBMyu84yqPDrmgrw6iQ8q1+S4IrHmrO1+B1uTXt2ICMoBF52df0SNo
+Q+WUwx8yo+mCtdLJ+yGVfx6uZ8pvO4pTCOX6ndLfshFMRuL1WmtfC9LaHUzCpNXs
+i12bRL1NMgWfnWd8LTphjmrZhPTORrftiHi4axPjKCu594ShF25XCl4EZ2sOKGwQ
+eoD159GkZKeHgMPTSjE0eq3kBYj+QS8EsCAbFSMucZ8O9T+VHeEqUyGL8zueDCG1
+PFTd27rS+gtKRWnUYpJwxvPNYufM78ByT3mG1uleaRlbN7D1oSOKkuen08hjIoWk
+r0CcSQicHt8mMo8nPikrEGwSgd5XGs7ItcKJk9bVKXPM8Q7mXxsgDSDizfcBkMmZ
+x4P7VSK3q1/LqXjkYxd7HIy7JIbBjqpotgAtoE+OSiCkgYGGEBXDKibqz0x4nIrx
+QGqoMjcsizcM+dE9YY2DTENy7pcQwnbTxOL3O1LSZ6EJtwNRqjY+ZViKERcJU89G
+gr7BpX/kPE8bpVa1fojN
+=UX7i
 -----END PGP SIGNATURE-----
 
---9UV9rz0O2dU/yYYn--
+--M/SuVGWktc5uNpra--
