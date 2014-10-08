@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaJHWm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:42:58 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:47061 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946AbaJHWm5 (ORCPT
+	id S1754510AbaJHWoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:44:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51397 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaJHWoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:42:57 -0400
+	Wed, 8 Oct 2014 18:44:14 -0400
+Date: Wed, 8 Oct 2014 15:44:14 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Nitin Kuppelur <nitinkuppelur@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] Staging: rtl8712 removed unnecessary else after return
+Message-ID: <20141008224414.GA25262@kroah.com>
+References: <20141002084745.GF23154@mwanda>
+ <1412253146-3568-1-git-send-email-nitinkuppelur@gmail.com>
 MIME-Version: 1.0
-Date: Wed, 8 Oct 2014 18:42:55 -0400
-X-Google-Sender-Auth: wKsWbbIesjLGhRaxCCSZ0GuD-Nc
-Message-ID: <CA+5PVA4mO+BiTGvrRb7-MLZRV1iQKsmvaDifFLQiqZN1-b88RQ@mail.gmail.com>
-Subject: pinctrl-msm build error on Linus' tree
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Josh Cartwright <joshc@codeaurora.org>,
-        Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412253146-3568-1-git-send-email-nitinkuppelur@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're hitting a build error on ARM with Linus' tree as of Linux
-v3.17-2860-gef0625b70dac :
+On Thu, Oct 02, 2014 at 02:32:26PM +0200, Nitin Kuppelur wrote:
+> Removed unnecessary else after return to solve
+> checkpatch.pl warning
+> 
+> Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
+> ---
+>  drivers/staging/rtl8712/hal_init.c | 7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
+> index 81cd654..fbaba11 100644
+> --- a/drivers/staging/rtl8712/hal_init.c
+> +++ b/drivers/staging/rtl8712/hal_init.c
+> @@ -387,12 +387,9 @@ uint rtl8712_hal_deinit(struct _adapter *padapter)
+>  uint rtl871x_hal_init(struct _adapter *padapter)
+>  {
+>  	padapter->hw_init_completed = false;
+> -	if (padapter->halpriv.hal_bus_init == NULL)
+> +	if (padapter->halpriv.hal_bus_init == NULL ||
+> +	    padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
+>  		return _FAIL;
+> -	else {
+> -		if (padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
+> -			return _FAIL;
+> -	}
+>  	if (rtl8712_hal_init(padapter) == _SUCCESS)
+>  		padapter->hw_init_completed = true;
+>  	else {
 
-drivers/pinctrl/qcom/pinctrl-msm.c: In function 'msm_pinctrl_setup_pm_reset':
-drivers/pinctrl/qcom/pinctrl-msm.c:875:4: error: implicit declaration
-of function 'register_restart_handler'
-[-Werror=implicit-function-declaration]
-    if (register_restart_handler(&pctrl->restart_nb))
-    ^
-drivers/pinctrl/qcom/pinctrl-msm.c: In function 'msm_pinctrl_remove':
-drivers/pinctrl/qcom/pinctrl-msm.c:949:2: error: implicit declaration
-of function 'unregister_restart_handler'
-[-Werror=implicit-function-declaration]
-  unregister_restart_handler(&pctrl->restart_nb);
-  ^
-cc1: some warnings being treated as errors
-
-Looking at the git logs it seems this was added via:
-
-commit cf1fc187628913070c3e418ce0e205732435aa2f
-Author: Josh Cartwright <joshc@codeaurora.org>
-Date:   Tue Sep 23 15:59:53 2014 -0500
-
-    pinctrl: qcom: use restart_notifier mechanism for ps_hold
-
-
-However, there is literally nothing else in the tree that calls or
-provides those functions:
-
-[jwboyer@vader linux]$ git grep unregister_restart_handler
-drivers/pinctrl/qcom/pinctrl-msm.c:     unregister_restart_handler(&pctrl->resta
-[jwboyer@vader linux]$
-
-
-I'm rather confused.  How was this commit built and tested?
-
-josh
-
-Full build log here:
-http://koji.fedoraproject.org/koji/getfile?taskID=7803166&name=build.log
+This doesn't apply to my tree :(
