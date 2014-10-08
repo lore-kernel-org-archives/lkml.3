@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaJHSgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:36:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253AbaJHSgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:36:45 -0400
-Date: Wed, 8 Oct 2014 20:33:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Kirill Tkhai <tkhai@yandex.ru>
-Subject: [PATCH 1/2] sched: schedule_tail() should disable preemption
-Message-ID: <20141008183326.GB17495@redhat.com>
-References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008183302.GA17495@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754591AbaJHShG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:37:06 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:46604 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751253AbaJHShD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 14:37:03 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApgSAGODNVRbsGtC/2dsb2JhbABfgw65BwUBc5oCBAKBCxcBe4RgI4EaN4hCAbcFjmqGIIokHYQ1BZ1FjFqJM4NlOy+CSgEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Paul Moore <paul@paul-moore.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] netlabel: directly return netlbl_unlabel_genl_init()
+Date: Wed,  8 Oct 2014 20:37:01 +0200
+Message-Id: <1412793421-9914-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-finish_task_switch() enables preemption, so post_schedule(rq) can be
-called on the wrong (and even dead) CPU. Afaics, nothing really bad
-can happen, but in this case we can wrongly clear rq->post_schedule
-on that CPU. And this simply looks wrong in any case.
+No need to store netlbl_unlabel_genl_init result and test it before returning.
 
-Another problem is that finish_task_switch() itself runs with preempt
-enabled after finish_lock_switch(). If nothing else this means that
-->sched_in() notifier can't trust its "cpu" arg.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- kernel/sched/core.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+ net/netlabel/netlabel_user.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 703c7e6..3f267e8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2277,15 +2277,14 @@ static inline void post_schedule(struct rq *rq)
- asmlinkage __visible void schedule_tail(struct task_struct *prev)
- 	__releases(rq->lock)
- {
--	struct rq *rq = this_rq();
-+	struct rq *rq;
+diff --git a/net/netlabel/netlabel_user.c b/net/netlabel/netlabel_user.c
+index 1e779bb..adf8b79 100644
+--- a/net/netlabel/netlabel_user.c
++++ b/net/netlabel/netlabel_user.c
+@@ -71,11 +71,7 @@ int __init netlbl_netlink_init(void)
+ 	if (ret_val != 0)
+ 		return ret_val;
  
-+	/* finish_task_switch() drops rq->lock and enables preemtion */
-+	preempt_disable();
-+	rq = this_rq();
- 	finish_task_switch(rq, prev);
+-	ret_val = netlbl_unlabel_genl_init();
+-	if (ret_val != 0)
+-		return ret_val;
 -
--	/*
--	 * FIXME: do we need to worry about rq being invalidated by the
--	 * task_switch?
--	 */
- 	post_schedule(rq);
-+	preempt_enable();
+-	return 0;
++	return netlbl_unlabel_genl_init();
+ }
  
- 	if (current->set_child_tid)
- 		put_user(task_pid_vnr(current), current->set_child_tid);
+ /*
 -- 
-1.5.5.1
-
+1.9.1
 
