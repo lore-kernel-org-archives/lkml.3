@@ -1,96 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163AbaJHONZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:13:25 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43707 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753074AbaJHONY (ORCPT
+	id S1755981AbaJHOQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:16:46 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42516 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800AbaJHOQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:13:24 -0400
-Date: Wed, 8 Oct 2014 15:13:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "keescook@chromium.org" <keescook@chromium.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 1/6] arm64: ptrace: add PTRACE_SET_SYSCALL
-Message-ID: <20141008141306.GQ26140@arm.com>
-References: <1412243176-16192-1-git-send-email-takahiro.akashi@linaro.org>
- <1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org>
+	Wed, 8 Oct 2014 10:16:45 -0400
+Date: Wed, 8 Oct 2014 15:16:26 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
+Message-ID: <20141008141626.GE1788@e105550-lin.cambridge.arm.com>
+References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
+ <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com>
+ <CAKfTPtBXP7HQBHL_Z3aAfdsuLP44_0x_e_LmzEw8qVC-2g=M-w@mail.gmail.com>
+ <20140925172343.GX23693@e103034-lin>
+ <20141002203428.GI2849@worktop.programming.kicks-ass.net>
+ <20141008110054.GA1788@e105550-lin.cambridge.arm.com>
+ <CAKfTPtAQ5FqHqdqDHDKg11XOHt_i0EsQFTuKg4OpreYA9a74Gg@mail.gmail.com>
+ <20141008135339.GC1788@e105550-lin.cambridge.arm.com>
+ <CAKfTPtAefmLDsEhWgri=urSmHQ-sydqcYDGX08dN982Lav1sGw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412243176-16192-2-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKfTPtAefmLDsEhWgri=urSmHQ-sydqcYDGX08dN982Lav1sGw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Akashi,
+On Wed, Oct 08, 2014 at 03:08:04PM +0100, Vincent Guittot wrote:
+> On 8 October 2014 15:53, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> > On Wed, Oct 08, 2014 at 12:21:45PM +0100, Vincent Guittot wrote:
+> >> On 8 October 2014 13:00, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> 
+> >> >
+> >> > Sure. The easiest way to avoid introducing overflows is to ensure that
+> >> > we always scale by a factor >= 1.0. That should be true as long as
+> >> > arch_scale_{cpu,freq}_capacity() never returns anything greater than
+> >> > SCHED_CAPACITY_SCALE (= 1024 = 1.0).
+> >>
+> >> the current ARM arch_scale_cpu is in the range [1536..0] which is free
+> >> of overflow AFAICT
+> >
+> > If I'm not mistaken, that will cause an overflow in
+> > __update_task_entity_contrib():
+> >
+> > static inline void __update_task_entity_contrib(struct sched_entity *se)
+> > {
+> >         u32 contrib;
+> >         /* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
+> >         contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+> >         contrib /= (se->avg.avg_period + 1);
+> >         se->avg.load_avg_contrib = scale_load(contrib);
+> > }
+> >
+> > With arch_scale_cpu_capacity() > 1024 se->avg.runnable_avg_sum is no
+> > longer bounded by LOAD_AVG_MAX = 47742. scale_load_down(se->load.weight)
+> > == se->load.weight =< 88761.
+> >
+> >         47742 * 88761 = 4237627662 (2^32 = 4294967296)
+> >
+> > To avoid overflow se->avg.runnable_avg_sum must be less than 2^32/88761
+> > = 48388, which means that arch_scale_cpu_capacity() must be in the range
+> > 0..48388*1024/47742 = 0..1037.
+> >
+> > I also think it is easier to have a fixed defined max scaling factor,
+> > but that might just be me.
+> 
+> OK,  overflow comes with adding uarch invariance into runnable load average
+> 
+> >
+> > Regarding the ARM arch_scale_cpu_capacity() implementation, I think that
+> > can be changed to fit the 0..1024 range easily. Currently, it will only
+> > report a non-default (1024) capacity for big.LITTLE systems and actually
+> > enabling it (requires a certain property to be set in device tree) leads
+> > to broken load-balancing decisions. We have discussed that several times
+> 
+> Only the 1 task per CPU is broken but in the other hand, it better
+> handles the overload use case where we have more tasks than CPU and
+> other middle range use case by putting more task on big cluster.
 
-On Thu, Oct 02, 2014 at 10:46:11AM +0100, AKASHI Takahiro wrote:
-> To allow tracer to be able to change/skip a system call by re-writing
-> a syscall number, there are several approaches:
-> 
-> (1) modify x8 register with ptrace(PTRACE_SETREGSET), and handle this case
->     later on in syscall_trace_enter(), or
-> (2) support ptrace(PTRACE_SET_SYSCALL) as on arm
-> 
-> Thinking of the fact that user_pt_regs doesn't expose 'syscallno' to
-> tracer as well as that secure_computing() expects a changed syscall number
-> to be visible, especially case of -1, before this function returns in
-> syscall_trace_enter(), we'd better take (2).
-> 
-> Reviewed-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
-> ---
->  arch/arm64/include/uapi/asm/ptrace.h |    1 +
->  arch/arm64/kernel/ptrace.c           |   14 +++++++++++++-
->  2 files changed, 14 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/include/uapi/asm/ptrace.h b/arch/arm64/include/uapi/asm/ptrace.h
-> index 6913643..49c6174 100644
-> --- a/arch/arm64/include/uapi/asm/ptrace.h
-> +++ b/arch/arm64/include/uapi/asm/ptrace.h
-> @@ -23,6 +23,7 @@
->  
->  #include <asm/hwcap.h>
->  
-> +#define PTRACE_SET_SYSCALL	23
->  
->  /*
->   * PSR bits
-> diff --git a/arch/arm64/kernel/ptrace.c b/arch/arm64/kernel/ptrace.c
-> index fe63ac5..2842f9f 100644
-> --- a/arch/arm64/kernel/ptrace.c
-> +++ b/arch/arm64/kernel/ptrace.c
-> @@ -1082,7 +1082,19 @@ const struct user_regset_view *task_user_regset_view(struct task_struct *task)
->  long arch_ptrace(struct task_struct *child, long request,
->  		 unsigned long addr, unsigned long data)
->  {
-> -	return ptrace_request(child, request, addr, data);
-> +	int ret;
-> +
-> +	switch (request) {
-> +		case PTRACE_SET_SYSCALL:
-> +			task_pt_regs(child)->syscallno = data;
-> +			ret = 0;
-> +			break;
-> +		default:
-> +			ret = ptrace_request(child, request, addr, data);
-> +			break;
-> +	}
-> +
-> +	return ret;
->  }
-
-I still don't understand why this needs to be in arch-specific code. Can't
-we implement this in generic code and get architectures to implement
-something like syscall_set_nr if they want the generic interface?
-
-Will
+Yes, agreed. My point was just to say that it shouldn't cause a lot of
+harm changing the range of arch_scale_cpu_capacity() for ARM. We need to
+fix things anyway.
