@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055AbaJHIrO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 04:47:14 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:35795 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754957AbaJHIrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:47:06 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: =?utf-8?B?J0xvdGhhciBXYcOfbWFubic=?= <LW@KARO-electronics.de>
-CC: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Topic: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Index: AQHP4jrJm8o16PSYfUeOu2GPn2nYPZwksznAgADheoCAAEwIIA==
-Date: Wed, 8 Oct 2014 08:45:31 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
-References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
-	<1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174C6116@AcuExch.aculab.com>
- <20141008070147.2f3b5319@ipc1.ka-ro>
-In-Reply-To: <20141008070147.2f3b5319@ipc1.ka-ro>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1755138AbaJHIrd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 04:47:33 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:51192 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062AbaJHIra (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 04:47:30 -0400
+Message-ID: <5434FA02.8070608@huawei.com>
+Date: Wed, 8 Oct 2014 16:46:58 +0800
+From: yinpeijun <yinpeijun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ogerlitz@mellanox.com>
+CC: <lichunhe@huawei.com>, <wangfakai@huawei.com>
+Subject: vxlan gro problem ?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.19.133]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.5434FA1A.0014,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: c82206a4da7d19b77529b0e8a0ab4bf4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s988lNMb023062
 
-From: Lothar WaÃŸmann
-> David Laight wrote:
-> > From: Eric Dumazet
-> > > On Tue, 2014-10-07 at 15:19 +0200, Lothar Wamann wrote:
-> > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-> > > > introduced a regression for i.MX28. The swap_buffer() function doing
-> > > > the endian conversion of the received data on i.MX28 may access memory
-> > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-> > > > does not copy those bytes, so that the last bytes of a packet may be
-> > > > filled with invalid data after swapping.
-> > > > This will likely lead to checksum errors on received packets.
-> > > > E.g. when trying to mount an NFS rootfs:
-> > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-> > > >
-> > > > Do the byte swapping and copying to the new skb in one go if
-> > > > necessary.
-> > > >
-> > > > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
-> > > > ---
-> > > >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
-> > > >  1 file changed, 21 insertions(+), 4 deletions(-)
-> > > >
-> > > > diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-> > > > index 87975b5..eaaebad 100644
-> > > > --- a/drivers/net/ethernet/freescale/fec_main.c
-> > > > +++ b/drivers/net/ethernet/freescale/fec_main.c
-> > > > @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
-> > > >  	return bufaddr;
-> > > >  }
-> > > >
-> > > > +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-> > > > +{
-> > > > +	int i;
-> > > > +	unsigned int *src = src_buf;
-> > > > +	unsigned int *dst = dst_buf;
-> > > > +
-> > > > +	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
-> > > > +		*dst = cpu_to_be32(*src);
-> > >
-> > > No need for the DIV :
-> > >
-> > > 	for (i = 0; i < len; i += sizeof(*dst), src++, dst++)
-> > > 		*dst = cpu_to_be32(*src);
-> > >
-> > > Also are you sure both src/dst are aligned to word boundaries, or is
-> > > this architecture OK with possible misalignment ?
-> >
-> > I wondered about that as well.
-> > I wouldn't have expected ppc to support misaligned transfers, and you'd also
-> > want to make sure that cpu_to_be(*src) was using a byte-swapping instruction.
-> > Hmmm... cpu_to_be() doesn't sound like the right 'swap' macro name.
-> >
-> ??? So what is cpu_to_be32() then?
-> The new swap function is an exact copy of the original one already in
-> use except for the fact that it uses distinct source and destination
-> buffers.
+Hi all,
+        recently Linux 3.14 has been released and I find the networking has added udp gro and vxlan gro funtion, then I use the redhat 7.0(there is also add this funtion)
+to test, I use kernel vxlan module and  create a vxlan device then attach the device to  ovs  bridge , the configure as follow:
+       root@25:~$ ip link      
+        15: vxlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue master ovs-system state UNKNOWN mode DEFAULT
+            link/ether be:e1:ae:3d:8b:f2 brd ff:ff:ff:ff:ff:ff
+        16: vnet0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1400 qdisc mq master ovs-system state UNKNOWN mode DEFAULT qlen 5000
+       
+       root@25:~$ ovs-vsctl show
+        aa1294f3-9952-4393-b2b5-54e9a6eb76ee
+        Bridge ovs-vx
+            Port ovs-vx
+                Interface ovs-vx
+                    type: internal
+            Port "vnet0"
+                Interface "vnet0"
+            Port "vxlan0"
+                Interface "vxlan0"
+        ovs_version: "2.0.2"
 
-cpu_to_be32() is for converting a 'cpu' endianness value to 'big-endian'.
-Here you are processing receive data - so you probably want be32_to_cpu().
-(Yes, I know they are functionally identical....)
+vnet0 is a vm backend device,  and the end is the same configuration. then I use netperf to test throughput  in vm (netperf -H **** -t TCP_STREAM -l 10 -- -m 1460), 
+the result is 3-4 Gbit/sec, the  improvement  is not obvious,   and I also confused there is no aggregation  packets (length > mtu) in the end vm.   so I want to know what
+wrong ?   or how to test the function ?
 
-Alternatively, since these aren't actually 32bit numbers and you know
-whether you want to swap, something like the __swab32p() from swab.h
-- but I'm not entirely sure that one is expected to be used.
 
-Clearly you are well inside the ppc 'endianness' hell.
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
