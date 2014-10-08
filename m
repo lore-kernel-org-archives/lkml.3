@@ -1,75 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752208AbaJHQoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 12:44:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:38726 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaJHQoL (ORCPT
+	id S1754201AbaJHQok (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:44:40 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45441 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaJHQoh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:44:11 -0400
-Message-ID: <543569CD.4060309@oracle.com>
-Date: Wed, 08 Oct 2014 12:43:57 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Wed, 8 Oct 2014 12:44:37 -0400
+Date: Wed, 8 Oct 2014 17:44:32 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Robert Richter <robert.richter@caviumnetworks.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Richter <rric@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sunil Goutham <sgoutham@cavium.com>
+Subject: Re: [PATCH 3/6] pci, thunder: Add PCIe host controller devicetree
+ bindings
+Message-ID: <20141008164432.GC15382@e106497-lin.cambridge.arm.com>
+References: <1411573068-12952-1-git-send-email-rric@kernel.org>
+ <1411573068-12952-4-git-send-email-rric@kernel.org>
+ <3082935.e3X4GsVUDn@wuerfel>
+ <20141007142744.GE31556@rric.localhost>
+ <20141007150149.GW4652@e106497-lin.cambridge.arm.com>
+ <20141008084927.GH31556@rric.localhost>
 MIME-Version: 1.0
-To: Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mgorman@suse.de
-Subject: Re: [PATCH 0/5] mm: poison critical mm/ structs
-References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com> <20141001140725.fd7f1d0cf933fbc2aa9fc1b1@linux-foundation.org> <542C749B.1040103@oracle.com> <alpine.LSU.2.11.1410020154500.6444@eggly.anvils> <542D680E.8010909@oracle.com> <54346623.6000309@intel.com>
-In-Reply-To: <54346623.6000309@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20141008084927.GH31556@rric.localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Oct 2014 16:44:33.0608 (UTC) FILETIME=[237B7480:01CFE317]
+X-MC-Unique: 114100817443402001
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2014 06:16 PM, Dave Hansen wrote:
-> On 10/02/2014 07:58 AM, Sasha Levin wrote:
->>>> What does this add on top of slab poisoning?  Some checks in some
->>>> mm places while the object is active, I guess: why not base those
->>>> on slab poisoning?  And add them in as appropriate to the problem
->>>> at hand, when a problem is seen.
->> The extra you're getting is detecting corruption that happened
->> inside the object rather than around it.
+On Wed, Oct 08, 2014 at 09:49:27AM +0100, Robert Richter wrote:
+> On 07.10.14 16:01:49, Liviu Dudau wrote:
+> > On Tue, Oct 07, 2014 at 03:27:44PM +0100, Robert Richter wrote:
+> > > On 24.09.14 18:06:04, Arnd Bergmann wrote:
+> > > > > +               compatible = "cavium,thunder-pcie";
+> > > > > +               device_type = "pci";
+> > > > > +               msi-parent = <&its>;
+> > > > > +               bus-range = <0 255>;
+> > > > > +               #size-cells = <2>;
+> > > > > +               #address-cells = <3>;
+> > > > > +               reg = <0x8480 0x00000000 0 0x10000000>;  /* Configuration space */
+> > > > > +               ranges = <0x03000000 0x8010 0x00000000 0x8010 0x00000000 0x70 0x00000000>, /* mem ranges */
+> > > > > +                       <0x03000000 0x8300 0x00000000 0x8300 0x00000000 0x80 0x00000000>,
+> > > > > +                       <0x03000000 0x87e0 0x00000000 0x87e0 0x00000000 0x01 0x00000000>;
+> > > > > +        };
+> > > > 
+> > > > If you claim the entire 0-255 bus range, I think you should also
+> > > > specify a domain, otherwise it's not predictable which domain you
+> > > > get.
+> > > 
+> > > Liviu's code assigns a unique id to the domain if missing, see
+> > > of_pci_get_domain_nr(). So I don't think we need to add a "pci-domain"
+> > > property here.
+> > 
+> > Not anymore! That function is gone in v12 onwards. What is in -next has
+> > a new function called of_get_pci_domain_nr() (slight name change) but
+> > that only gets the value set in the "linux,pci-domain" property of the
+> > device node. It is the choice of the host bridge driver to use that
+> > function or to use pci_get_new_domain_nr() which *does* generate an
+> > unique id every time it gets called.
 > 
-> Isn't this more akin to redzoning that poisoning?
+> I am quite confused a bit on which is the latest code base now. I was
+> looking into Bjorn's pci/host-generic and there is a different
+> implemetation:
 > 
-> I'm not sure I follow the logic here.  The poison is inside the object,
-> but it's now at the edges.  With slub at least, you get a redzone right
-> after the object(s):
+> ----
+> /**
+>  * This function will try to obtain the host bridge domain number by
+>  * using of_alias_get_id() call with "pci-domain" as a stem.  If that
+>  * fails, a local allocator will be used.  The local allocator can
+>  * be requested to return a new domain_nr if the information is missing
+>  * from the device tree.
+>  *
+>  * @node: device tree node with the domain information
+>  * @allocate_if_missing: if DT lacks information about the domain nr,
+>  * allocate a new number.
+>  *
+>  * Returns the associated domain number from DT, or a new domain number
+>  * if DT information is missing and @allocate_if_missing is true.  If
+>  * @allocate_if_missing is false then the last allocated domain number
+>  * will be returned.
+>  */
+> int of_pci_get_domain_nr(struct device_node *node, bool allocate_if_missing)
+> {
+>         int domain;
 > 
-> 	{ OBJ } | REDZONE | { OBJ } | REDZONE | ...
+>         domain = atomic_read(&of_domain_nr);
+>         if (domain == -1) {
+>                 /* first run, get max defined domain nr in device tree */
+>                 domain = of_get_max_pci_domain_nr();
+>                 /* then set the start value for allocator to be max + 1 */
+>                 atomic_set(&of_domain_nr, domain + 1);
+>         }
+>         domain = of_alias_get_id(node, "pci-domain");
+>         if (domain == -ENODEV) {
+>                 domain = atomic_read(&of_domain_nr);
+>                 if (allocate_if_missing)
+>                         atomic_inc(&of_domain_nr);
+>         }
 > 
-> With this patch, you'd get something along these lines:
+>         return domain;
+> }
+> EXPORT_SYMBOL_GPL(of_pci_get_domain_nr);
+> ----
 > 
-> 	{ POISON | OBJ | POISON } { POISON | OBJ | POISON }  ...
-> 
-> So if somebody overflows OBJ, they'll hit the redzone/poison in either
-> case.  If they're randomly scribbling on memory, their likelihood of
-> hitting the redzone/poison is proportional to the size of the
-> redzone/poison.
-> 
-> The only place this really helps is if someone overflows from a
-> non-redzoned page or structure in to the beginning of a slub redzoned
-> one.  The fact that the redzone is at the end means we'll miss it.
-> 
-> But, all that means is that we should probably add redzones to the
-> beginning of slub objects, not just the end.  That doesn't help us with
-> 'struct page' of course, but it does for the mm_struct and vma.
+> This differs also from v13. Please check.
 
-This patchset is based on an actual issue we're seeing where the vma
-gets corrupted without triggering any of the slub redzones.
-
-Testing this patchset locally confirmed that while slub redzones stay
-intact, the poison fields get overwritten - so now we're able to catch
-the corruption after it happened.
-
-I'm not sure what's the scenario that causes that, but once we figure
-that out I could have a better response to your question...
+I'm not sure what you are looking at. Commit 41e5c0f81d3e does look like
+my v13. Not sure why you are still seeing this v11 version.
 
 
-Thanks,
-Sasha
+> 
+> It would be good to have a stable code base to work with, so I would
+> prefer incremental patches on top of Bjorn's pci/host-generic.
+
+Agreed, but from what I can see from my side pci/host-generic and next
+have the same versions, so there should not be any confusion.
+
+Best regards,
+Liviu
+
+> 
+> > > Liviu's DT implementation that assigns a unique number differs a bit
+> > > from ACPI which states: "If _SEG [aka domain number] does not exist,
+> > > OSPM assumes that all PCI bus segments are in PCI Segment Group 0."
+> > > 
+> > > Maybe of_pci_get_domain_nr() should be similar to ACPI. If there are
+> > > multiple root bridges, the "pci-domain" property could be forced
+> > > instead.
+> > 
+> > Indeed. But the enforcing is left as an exercise to the host bridge
+> > implementor for the moment.
+> 
+> Right, can be added later.
+> 
+> Thanks,
+> 
+> -Robert
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
 
