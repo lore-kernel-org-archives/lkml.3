@@ -1,115 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022AbaJHMT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:19:58 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:47278 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140AbaJHMTo (ORCPT
+	id S1756064AbaJHM1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:27:42 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:30807 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497AbaJHM1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:19:44 -0400
-Date: Wed, 8 Oct 2014 05:19:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jiri Pirko <jiri@resnulli.us>
-Cc: Joe Lawrence <joe.lawrence@stratus.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] workqueue: add quiescent state between work items
-Message-ID: <20141008121938.GJ4880@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1412529862-17954-1-git-send-email-joe.lawrence@stratus.com>
- <1412529862-17954-2-git-send-email-joe.lawrence@stratus.com>
- <20141005192119.GE8549@htj.dyndns.org>
- <20141005194748.GG8549@htj.dyndns.org>
- <20141006042158.GW5015@linux.vnet.ibm.com>
- <20141007072942.GA2088@nanopsycho.orion>
- <20141007134329.GA4880@linux.vnet.ibm.com>
- <20141007134528.1a59f31b@jlaw-desktop.mno.stratus.com>
- <20141008032411.GG4880@linux.vnet.ibm.com>
- <20141008115428.GA1858@nanopsycho.orion>
+	Wed, 8 Oct 2014 08:27:40 -0400
+X-IronPort-AV: E=Sophos;i="5.04,677,1406617200"; 
+   d="scan'208";a="47928690"
+Message-ID: <54352DAC.3080001@broadcom.com>
+Date: Wed, 8 Oct 2014 05:27:24 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008115428.GA1858@nanopsycho.orion>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100812-0013-0000-0000-00000564A51F
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, <devicetree@vger.kernel.org>,
+        Ray Jui <rjui@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        Jonathan Richardson <jonathar@broadcom.com>,
+        JD Zheng <jdzheng@broadcom.com>
+Subject: Re: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus
+ SoC
+References: <1412746025-11998-2-git-send-email-sbranden@broadcom.com> <4255803.4lcNtQPo2T@wuerfel>
+In-Reply-To: <4255803.4lcNtQPo2T@wuerfel>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 01:54:28PM +0200, Jiri Pirko wrote:
-> Wed, Oct 08, 2014 at 05:24:11AM CEST, paulmck@linux.vnet.ibm.com wrote:
-> >On Tue, Oct 07, 2014 at 01:45:28PM -0400, Joe Lawrence wrote:
-> >> On Tue, 7 Oct 2014 06:43:29 -0700
-> >> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> >> 
-> >> > On Tue, Oct 07, 2014 at 09:29:42AM +0200, Jiri Pirko wrote:
-> >> [ ... snip ... ]
-> >> > > 
-> >> > > Paul, Tehun, how do you propose to fix this on older kernels which do
-> >> > > not have rcu_note_voluntary_context_switch? I'm particullary interested
-> >> > > in 3.10.
-> >> > 
-> >> > Hello, Jiri,
-> >> > 
-> >> > Older kernels can instead use rcu_note_context_switch().
-> >> 
-> >> Hi Paul,
-> >> 
-> >> Does 4a81e8328d37 ("rcu: Reduce overhead of cond_resched() checks for
-> >> RCU") affect a backport to 3.10?
-> >> 
-> >> I noticed that rcu_note_context_switch added a call to
-> >> rcu_momentary_dyntick_idle in that change, which is only present in
-> >> v3.16+.
-> >> 
-> >> Would rcu_note_context_switch be effective by itself on a 3.10 kernel?
-> >
-> >Should be fine.  There is more overhead than current mainline, but that
-> >should not be in the noise compared to executing a work-queue item.
-> >
-> >							Thanx, Paul
-> >
-> 
-> I cooked up following patch. Please tell me if it is fine or not. I can
-> also send it oficially so it can be included into stable trees:
+Thanks for the review - comments inline.
 
-Looks good!
-
-							Thanx, Paul
-
-> Subject: workqueue: Add quiescent state between work items
-> 
-> Similar to the stop_machine deadlock scenario on !PREEMPT kernels
-> addressed in b22ce2785d97 "workqueue: cond_resched() after processing
-> each work item", kworker threads requeueing back-to-back with zero jiffy
-> delay can stall RCU. The cond_resched call introduced in that fix will
-> yield only iff there are other higher priority tasks to run, so force a
-> quiescent RCU state between work items.
-> 
-> Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-> ---
->  kernel/workqueue.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index e9719c7..14a7163 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -2196,8 +2196,10 @@ __acquires(&pool->lock)
->  	 * kernels, where a requeueing work item waiting for something to
->  	 * happen could deadlock with stop_machine as such work item could
->  	 * indefinitely requeue itself while all other CPUs are trapped in
-> -	 * stop_machine.
-> +	 * stop_machine. At the same time, report a quiescent RCU state so
-> +	 * the same condition doesn't freeze RCU.
->  	 */
-> +	rcu_note_context_switch(raw_smp_processor_id());
->  	cond_resched();
-> 
->  	spin_lock_irq(&pool->lock);
-> -- 
-> 1.9.3
-> 
-> 
+On 14-10-08 12:54 AM, Arnd Bergmann wrote:
+> On Tuesday 07 October 2014 22:27:00 Scott Branden wrote:
+>> From: Jonathan Richardson <jonathar@broadcom.com>
+>>
+>> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+>>
+>> Reviewed-by: Ray Jui <rjui@broadcom.com>
+>> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
+>> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+>> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+>> ---
+>>   arch/arm/mach-bcm/Kconfig      |   31 ++++++++
+>>   arch/arm/mach-bcm/Makefile     |    3 +
+>>   arch/arm/mach-bcm/bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++++++++
+>>   3 files changed, 200 insertions(+)
+>>   create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+>>
+>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+>> index fc93800..2dd3f78 100644
+>> --- a/arch/arm/mach-bcm/Kconfig
+>> +++ b/arch/arm/mach-bcm/Kconfig
+>> @@ -5,6 +5,37 @@ menuconfig ARCH_BCM
+>>
+>>   if ARCH_BCM
+>>
+>> +config ARCH_BCM_IPROC
+>> +	bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
+>> +	select ARM_GIC
+>> +	select CACHE_L2X0
+>> +	select HAVE_ARM_TWD if LOCAL_TIMERS
+>> +	select HAVE_CLK
+>> +	select CLKSRC_OF
+>> +	select CLKSRC_MMIO
+>> +	select GENERIC_CLOCKEVENTS
+>> +	select ARM_GLOBAL_TIMER
+>> +	select ARCH_REQUIRE_GPIOLIB
+>> +	select ARM_AMBA
+>> +	select PINCTRL
+>> +	select DEBUG_UART_8250
+>
+> A lot of these are implied by ARCH_MULTI_V7, just drop them here.
+>
+> Some others like DEBUG_UART_8250 should remain user-selectable, if
+> the platform works without them.
+>
+Will review.  It looks like DEBUG_UART_8250 actually has to move to 
+Kconfig.debug as that is where everyone else selects it.
+>> +	help
+>> +	  This enables support for systems based on Broadcom IPROC architected SoCs.
+>> +	  The IPROC complex contains one or more ARM CPUs along with common
+>> +	  core periperals. Application specific SoCs are created by adding a
+>> +	  uArchitecture containing peripherals outside of the IPROC complex.
+>> +	  Currently supported SoCs are Cygnus.
+>> +
+>> +menu "iProc SoC based Machine types"
+>> +	depends on ARCH_BCM_IPROC
+>> +
+>> +	config ARCH_BCM_CYGNUS
+>> +		bool "Support Broadcom Cygnus board"
+>> +		select USB_ARCH_HAS_EHCI if USB_SUPPORT
+>> +		help
+>> +		  Support for Broadcom Cygnus SoC.
+>> +endmenu
+>
+> I don't think you need per-board config options. The main option
+> above should be enough.
+This is not a per-board config option.  This is actually a per-SoC 
+uArchtecture selection.  More major uArchectures will be added to the 
+IPROC.  Will Change comment to "Support Broadcom Cygnus SoC"
+>
+>> +
+>> +#define CRMU_MAIL_BOX1      0x03024028
+>> +#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
+>
+> Never hardcode physical register locations in source. This should come
+> from DT, and get moved into a regular 'reset' device driver.
+>
+> You probably want to use drivers/power/reset/syscon-reboot.c
+>
+OK, thanks for advice on where to put reset device driver.  Will 
+investigate.
+>> +/* CRU_RESET register */
+>> +static void * __iomem crmu_mail_box1_reg;
+>> +
+>> +#ifdef CONFIG_NEON
+>> +
+>> +#define CRU_BASE                  0x1800e000
+>> +#define CRU_SIZE                  0x34
+>> +#define CRU_CONTROL_OFFSET        0x0
+>> +#define CRU_PWRDWN_EN_OFFSET      0x4
+>> +#define CRU_PWRDWN_STATUS_OFFSET  0x8
+>> +#define CRU_NEON0_HW_RESET  6
+>> +#define CRU_CLAMP_ON_NEON0  20
+>> +#define CRU_PWRONIN_NEON0   21
+>> +#define CRU_PWRONOUT_NEON0  21
+>> +#define CRU_PWROKIN_NEON0   22
+>> +#define CRU_PWROKOUT_NEON0  22
+>> +#define CRU_STATUS_DELAY_NS 500
+>> +#define CRU_MAX_RETRY_COUNT 10
+>> +#define CRU_RETRY_INTVL_US  1
+>> +
+>> +/* Power up the NEON/VFPv3 block. */
+>> +static void bcm_cygnus_powerup_neon(void)
+>> +{
+>> +	void * __iomem cru_base = ioremap(CRU_BASE, CRU_SIZE);
+>> +	u32 reg, i;
+>
+> Same thing here: this should really use the device node for CRU.
+>
+> Can you describe what the CRU is? Is this specific to NEON or is
+> it some general-purpose power management unit?
+>
+It's a central resource unit with a lot of random registers to perform 
+various operations.  To reduce confusion I'll probably move this out of 
+the kernel init and into the bootloader.  This will simplify the kernel 
+init.
+>> +static void __init bcm_cygnus_init(void)
+>> +{
+>> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>> +
+>> +	l2x0_of_init(0, ~0UL);
+>
+> The l2x0_of_init can be removed now, just move the arguments into the
+> respective fields of the machine descriptor.
+>
+Yes, thanks for pointing this out.
+>> +	crmu_mail_box1_reg = ioremap(CRMU_MAIL_BOX1, SZ_4);
+>> +	WARN_ON(!crmu_mail_box1_reg);
+>> +
+>> +#ifdef CONFIG_NEON
+>> +	bcm_cygnus_powerup_neon();
+>> +#endif
+>> +}
+>
+> In general, try to avoid #ifdef, use
+>
+> 	if (IS_ENABLED(CONFIG_NEON))
+> 		bcm_cygnus_powerup_neon();
+>
+> instead.
+>
+>> +
+>> +static const char const *bcm_cygnus_dt_compat[] = {
+>> +	"brcm,cygnus",
+>> +	NULL,
+>> +};
+>> +
+>> +DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
+>> +	.init_machine = bcm_cygnus_init,
+>> +	.map_io = debug_ll_io_init,
+>> +	.dt_compat = bcm_cygnus_dt_compat,
+>> +	.restart   = bcm_cygnus_restart
+>> +MACHINE_END
+>
+> The map_io pointer is unnecessary, and the restart pointer should get
+> set by the reset driver. I hope we can find a way to avoid the
+> bcm_cygnus_init callback as well.
+bcm_cygnus_init callback can be removed by moving initialization to 
+bootloader.
+>
+> 	Arnd
+>
 
