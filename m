@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292AbaJHOfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:35:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40792 "EHLO
+	id S1756494AbaJHOhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:37:04 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40803 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868AbaJHOfN (ORCPT
+	with ESMTP id S1753550AbaJHOhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:35:13 -0400
-Date: Wed, 8 Oct 2014 15:34:39 +0100
+	Wed, 8 Oct 2014 10:37:01 -0400
+Date: Wed, 8 Oct 2014 15:36:32 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 Cc: Doug Anderson <dianders@chromium.org>,
@@ -17,20 +17,20 @@ Cc: Doug Anderson <dianders@chromium.org>,
         Abhilash Kesavan <kesavan.abhilash@gmail.com>,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Message-ID: <20141008143439.GB4609@sirena.org.uk>
+Message-ID: <20141008143632.GC4609@sirena.org.uk>
 References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
- <1412775847-15213-4-git-send-email-javier.martinez@collabora.co.uk>
+ <1412775847-15213-5-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Nu+X7QXugUj78Xnb"
+	protocol="application/pgp-signature"; boundary="LpveMUvXs97SUkgl"
 Content-Disposition: inline
-In-Reply-To: <1412775847-15213-4-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1412775847-15213-5-git-send-email-javier.martinez@collabora.co.uk>
 X-Cookie: Everything you know is wrong!
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] regulator: dt-bindings: Add regulator-initial-mode
- support
+Subject: Re: [PATCH 4/5] regulator: max77802: Add regulator operating mode
+ set support
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -38,41 +38,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Nu+X7QXugUj78Xnb
+--LpveMUvXs97SUkgl
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 08, 2014 at 03:44:05PM +0200, Javier Martinez Canillas wrote:
+On Wed, Oct 08, 2014 at 03:44:06PM +0200, Javier Martinez Canillas wrote:
+> Add a function handler for the struct regulator_ops .set_mode so an
+> operating mode (opmode) can be set for regulators.
+>=20
+> Regulators opmode are defined using the generic REGULATOR_MODE_*
+> modes so the driver maps these generic modes to the device-specific
+> operating modes as stated in the hardware data-sheet.
 
-> +- regulator-initial-mode: initial regulator operating mode. One of following:
-> +	<1>: REGULATOR_MODE_FAST    - Regulator can handle fast changes.
-> +	<2>: REGULATOR_MODE_NORMAL  - Normal regulator power supply mode.
-> +	<4>: REGULATOR_MODE_IDLE    - Regulator runs in a more efficient mode.
-> +	<8>: REGULATOR_MODE_STANDBY - Regulator runs in the most efficient mode.
-> +  modes are defined in the dt-bindings/regulator/regulator.h header and can be
-> +  used in device tree sources files. If no mode is defined, then the OS will not
-> +  manage the operating mode and the HW default values will be used instead.
+Why is this implementing a set operation but not a get operation?
 
-...and as previously and repeatedly discussed this still gives the user
-no way of telling if or how these modes might correspond to what the
-chip is capable of doing.  This really needs addressing rather than
-ignoring, for example by not trying to define the modes in generic
-bindings.
-
---Nu+X7QXugUj78Xnb
+--LpveMUvXs97SUkgl
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUNUt+AAoJECTWi3JdVIfQ0jwH/jMxJCoKWBeiy9HsDqEoVCAJ
-wYn32QHWujgvtnZ4oB1FsrWcN0g6c1naph65d54DDspJwnAOWAFEoMEvOzxPwOTQ
-5W9dsbK9f/yYNuBYiL6Q6esID5sbKJzegaQbnoJMW6r8m4xJj0AjU1XFiliUJpFM
-BqdUomeyhtDp6N5KYhzWOXQp7MVQ3BTYCbdw7BV0Zt5r1C+s2PKdIZX7jMsjRuUV
-95Wv96EDVJSOvkl9bAeH164+U8pYkHqehja0W8zy06zbLzJTqN5gTYRnFnznwWgi
-KLS77LUqL7GVy+6VVVdtjU97oSp3mh1Sg32MM3ltI8RHabd/VDqBFZhtnIBLqlM=
-=pZBq
+iQEcBAEBAgAGBQJUNUvwAAoJECTWi3JdVIfQ+egH/AzTAD46kL1iB/BKJ5q6R0sI
+tdDXExvBp7lOBG48vWxTk2IXVZuls0aK0a9nHX7x9drIZKsQgiVO8QDKFzJ0Ej9J
+ZzAg9qZGHGvaciS+1nFhpQj32GgIb1BAnp54yR7SrUpoAmxhf3xHuBW6HjsHNZHI
+SxPlM+3R8STQHZbNQ+v5cRmNQooOq/Cu10q38kTBX6j6KC2+Kq9/6p2tF/FqfiV6
+/SohXYv5M37FjYticvoYw9JfwG7244fZ3q7jNGhtajvp9+A5E7E1eHCi/CPdbyAq
+VpF0ztWyas3cxfD4oJPSSLFqtO4+la6M/zB4kUpoID92/4Ozq4/Fz8ZabbvGtGA=
+=5XOQ
 -----END PGP SIGNATURE-----
 
---Nu+X7QXugUj78Xnb--
+--LpveMUvXs97SUkgl--
