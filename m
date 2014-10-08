@@ -1,160 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444AbaJHJBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:01:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:56966 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755125AbaJHIze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:55:34 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: greg@kroah.com, arnd@arndb.de, mpe@ellerman.id.au,
-        benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v4 14/16] cxl: Add userspace header file
-Date: Wed,  8 Oct 2014 19:55:03 +1100
-Message-Id: <1412758505-23495-15-git-send-email-mikey@neuling.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412758505-23495-1-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org>
+	id S1754995AbaJHIzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 04:55:33 -0400
+Received: from mail-ig0-f201.google.com ([209.85.213.201]:48353 "EHLO
+	mail-ig0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754726AbaJHIz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 04:55:28 -0400
+From: Sonny Rao <sonnyrao@chromium.org>
+To: Heiko Stuebner <heiko@sntech.de>
+Cc: linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, dianders@chromium.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>
+Subject: [PATCH] clk: rockchip: fix parent for spdif_8ch_frac on rk3288
+Date: Wed,  8 Oct 2014 01:55:16 -0700
+Message-Id: <1412758516-18285-1-git-send-email-sonnyrao@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+The parent should be spdif_8ch_pre not spdif_8ch_src, which doesn't
+exist and looks to be a typo.  The TRM also confirms this.
 
-This adds a header file for use by userspace programs wanting to interact with
-the kernel cxl driver.  It defines structs and magic numbers required for
-userspace to interact with devices in /dev/cxl/afuM.N.
-
-Further documentation on this interface is added in a subsequent patch in
-Documentation/powerpc/cxl.txt.
-
-It also adds this new userspace header file to Kbuild so it's exported when
-doing "make headers_installs".
-
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
 ---
- include/uapi/Kbuild      |  1 +
- include/uapi/misc/Kbuild |  2 ++
- include/uapi/misc/cxl.h  | 87 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 90 insertions(+)
- create mode 100644 include/uapi/misc/Kbuild
- create mode 100644 include/uapi/misc/cxl.h
+ drivers/clk/rockchip/clk-rk3288.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/uapi/Kbuild b/include/uapi/Kbuild
-index 81d2106..245aa6e 100644
---- a/include/uapi/Kbuild
-+++ b/include/uapi/Kbuild
-@@ -12,3 +12,4 @@ header-y += video/
- header-y += drm/
- header-y += xen/
- header-y += scsi/
-+header-y += misc/
-diff --git a/include/uapi/misc/Kbuild b/include/uapi/misc/Kbuild
-new file mode 100644
-index 0000000..e96cae7
---- /dev/null
-+++ b/include/uapi/misc/Kbuild
-@@ -0,0 +1,2 @@
-+# misc Header export list
-+header-y += cxl.h
-diff --git a/include/uapi/misc/cxl.h b/include/uapi/misc/cxl.h
-new file mode 100644
-index 0000000..c232be6
---- /dev/null
-+++ b/include/uapi/misc/cxl.h
-@@ -0,0 +1,87 @@
-+/*
-+ * Copyright 2014 IBM Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#ifndef _UAPI_MISC_CXL_H
-+#define _UAPI_MISC_CXL_H
-+
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
-+
-+/* Structs for IOCTLS for userspace to talk to the kernel */
-+struct cxl_ioctl_start_work {
-+	__u64 flags;
-+	__u64 work_element_descriptor;
-+	__u64 amr;
-+	__s16 num_interrupts;
-+	__s16 reserved1;
-+	__s32 reserved2;
-+	__u64 reserved3;
-+	__u64 reserved4;
-+	__u64 reserved5;
-+	__u64 reserved6;
-+};
-+#define CXL_START_WORK_AMR		0x0000000000000001ULL
-+#define CXL_START_WORK_NUM_IRQS		0x0000000000000002ULL
-+#define CXL_START_WORK_ALL		(CXL_START_WORK_AMR |\
-+					 CXL_START_WORK_NUM_IRQS)
-+
-+/* IOCTL numbers */
-+#define CXL_MAGIC 0xCA
-+#define CXL_IOCTL_START_WORK		_IOW(CXL_MAGIC, 0x00, struct cxl_ioctl_start_work)
-+#define CXL_IOCTL_GET_PROCESS_ELEMENT	_IOR(CXL_MAGIC, 0x01, __u32)
-+
-+/* Events from read() */
-+#define CXL_READ_MIN_SIZE 0x1000 /* 4K */
-+
-+enum cxl_event_type {
-+	CXL_EVENT_RESERVED      = 0,
-+	CXL_EVENT_AFU_INTERRUPT = 1,
-+	CXL_EVENT_DATA_STORAGE  = 2,
-+	CXL_EVENT_AFU_ERROR     = 3,
-+};
-+
-+struct cxl_event_header {
-+	__u16 type;
-+	__u16 size;
-+	__u16 process_element;
-+	__u16 reserved1;
-+};
-+
-+struct cxl_event_afu_interrupt {
-+	__u16 flags;
-+	__u16 irq; /* Raised AFU interrupt number */
-+	__u32 reserved1;
-+};
-+
-+struct cxl_event_data_storage {
-+	__u16 flags;
-+	__u16 reserved1;
-+	__u32 reserved2;
-+	__u64 addr;
-+	__u64 dsisr;
-+	__u64 reserved3;
-+};
-+
-+struct cxl_event_afu_error {
-+	__u16 flags;
-+	__u16 reserved1;
-+	__u32 reserved2;
-+	__u64 error;
-+};
-+
-+struct cxl_event {
-+	struct cxl_event_header header;
-+	union {
-+		struct cxl_event_afu_interrupt irq;
-+		struct cxl_event_data_storage fault;
-+		struct cxl_event_afu_error afu_error;
-+	};
-+};
-+
-+#endif /* _UAPI_MISC_CXL_H */
+diff --git a/drivers/clk/rockchip/clk-rk3288.c b/drivers/clk/rockchip/clk-rk3288.c
+index 2327829..e41ae1f 100644
+--- a/drivers/clk/rockchip/clk-rk3288.c
++++ b/drivers/clk/rockchip/clk-rk3288.c
+@@ -325,7 +325,7 @@ static struct rockchip_clk_branch rk3288_clk_branches[] __initdata = {
+ 	COMPOSITE_NOMUX(0, "spdif_8ch_pre", "spdif_src", 0,
+ 			RK3288_CLKSEL_CON(40), 0, 7, DFLAGS,
+ 			RK3288_CLKGATE_CON(4), 7, GFLAGS),
+-	COMPOSITE_FRAC(0, "spdif_8ch_frac", "spdif_8ch_src", 0,
++	COMPOSITE_FRAC(0, "spdif_8ch_frac", "spdif_8ch_pre", 0,
+ 			RK3288_CLKSEL_CON(41), 0,
+ 			RK3288_CLKGATE_CON(4), 8, GFLAGS),
+ 	COMPOSITE_NODIV(SCLK_SPDIF8CH, "sclk_spdif_8ch", mux_spdif_8ch_p, 0,
 -- 
-1.9.1
+1.8.3.2
 
