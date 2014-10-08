@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaJHJc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:32:59 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59183 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262AbaJHJcx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:32:53 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 8 Oct 2014 11:30:02 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Johan Hovold <johan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
-Message-ID: <20141008093002.GC1990@localhost>
-References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
- <1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
- <20141003171207.GC2394@localhost>
- <CAE1zotLEV-=JvCJvEQqg8CA6fu3UWmPOx3ZYgpd+rYSuSEVmNQ@mail.gmail.com>
- <20141007171003.GI5362@localhost>
- <CAE1zotLmO=VPkE5RYpr1k0-3N8__7A8pWCEM23hXh6nzEqAjeQ@mail.gmail.com>
+	id S1755944AbaJHJdk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:33:40 -0400
+Received: from mail-bn1on0062.outbound.protection.outlook.com ([157.56.110.62]:5888
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755839AbaJHJcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:32:12 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
+        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
+Subject: [PATCH v4 27/29] MAINTAINERS: Add nios2 maintainer
+Date: Wed, 8 Oct 2014 17:29:53 +0800
+Message-ID: <1412760595-3935-28-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
+References: <1412760595-3935-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE1zotLmO=VPkE5RYpr1k0-3N8__7A8pWCEM23hXh6nzEqAjeQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(31966008)(76482002)(120916001)(77156001)(36756003)(50986999)(102836001)(44976005)(20776003)(104166001)(6806004)(47776003)(19580405001)(64706001)(85306004)(85852003)(42186005)(99396003)(19580395003)(68736004)(92566001)(33646002)(86362001)(93916002)(92726001)(2201001)(84676001)(77096002)(229853001)(97736003)(48376002)(50466002)(107046002)(88136002)(62966002)(89996001)(21056001)(46102003)(87286001)(87936001)(4396001)(80022003)(95666004)(76176999)(50226001)(105596002)(106466001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0358535363
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB211;
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 09:01:27PM +0300, Octavian Purdila wrote:
-> On Tue, Oct 7, 2014 at 8:10 PM, Johan Hovold <johan@kernel.org> wrote:
-> > On Mon, Oct 06, 2014 at 03:17:22PM +0300, Octavian Purdila wrote:
-> >> On Fri, Oct 3, 2014 at 8:12 PM, Johan Hovold <johan@kernel.org> wrote:
-> >> >
-> >> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
-> >> > > This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> >> > > Master Adapter DLN-2. Details about the device can be found here:
-> >> > >
-> >>
-> >> <snip>
-> >>
-> >> > > +
-> >> > > +             ret = dln2_submit_urb(dln2, dln2->rx_urb[i], GFP_KERNEL);
-> >> > > +             if (ret < 0)
-> >> > > +                     return ret;
-> >> >
-> >> > Is it really worth having this helper only to save a couple of lines on
-> >> > a dev_err? If you do all resubmissions on completion inline in the
-> >> > handler, you only have three places where usb_submit_urb is called.
-> >>
-> >> I moved the completion in the handler as you suggested. I have kept
-> >> the helper, would you prefer to remove it?
-> >
-> > Moved the "completion"? I was suggesting that the URB resubmission
-> > should be done inline the URB completion handler.
-> >
-> > [ "Completion" may be a little ambiguous. The URB callback is called an
-> > URB completion handler. Not be confused with the completion structures
-> > you use to wait for responses. ]
-> >
-> 
-> Sorry, I meant to say resubmission instead of completion.
-> 
-> > It's fine to keep the helper as long as it's clear that the urb has been
-> > "cached" and should not be resubmitted (inline) in the completion
-> > handler in that case.
-> 
-> Not sure I follow you here. I kept the helper and I call it from the
-> completion handler, from free_rx_slot and from dln2_setup_rx_ubs.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ MAINTAINERS |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-Ah sorry, I was referring to your other helper dln2_rx_transfer().
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a12edf2..580499e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6421,6 +6421,13 @@ S:	Maintained
+ F:	Documentation/scsi/NinjaSCSI.txt
+ F:	drivers/scsi/nsp32*
+ 
++NIOS2 ARCHITECTURE
++M:	Ley Foon Tan <lftan@altera.com>
++L:	nios2-dev@lists.rocketboards.org (moderated for non-subscribers)
++T:	git git://git.rocketboards.org/linux-socfpga.git
++S:	Maintained
++F:	arch/nios2/
++
+ NTB DRIVER
+ M:	Jon Mason <jdmason@kudzu.us>
+ M:	Dave Jiang <dave.jiang@intel.com>
+-- 
+1.7.7.4
 
-I still think you should do away with the dln2_submit_urb() helper as
-it needlessly hides what's on going without any real gain.
-
-Johan
