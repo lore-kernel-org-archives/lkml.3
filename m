@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553AbaJHARp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 20:17:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27049 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755362AbaJHARo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 20:17:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,674,1406617200"; 
-   d="scan'208";a="585072353"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: mina86@mina86.com, r.baldyga@samsung.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Qiuxu Zhuo <qiuxu.zhuo@intel.com>
-Subject: [PATCH] usb: ffs: fix regression when quirk_ep_out_aligned_size flag is set
-Date: Tue,  7 Oct 2014 17:18:06 -0700
-Message-Id: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
+	id S1755557AbaJHASk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 20:18:40 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:57291 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362AbaJHASi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 20:18:38 -0400
+Date: Tue, 7 Oct 2014 19:18:33 -0500
+From: Chuck Ebbert <cebbert.lkml@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Rich Felker <dalias@libc.org>,
+        David Daney <ddaney.cavm@gmail.com>, <libc-alpha@sourceware.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH resend] MIPS: Allow FPU emulator to use non-stack area.
+Message-ID: <20141007191833.4d625472@as>
+In-Reply-To: <54347E47.1080809@caviumnetworks.com>
+References: <1412627010-4311-1-git-send-email-ddaney.cavm@gmail.com>
+	<20141006205459.GZ23797@brightrain.aerifal.cx>
+	<5433071B.4050606@caviumnetworks.com>
+	<20141007232019.GA30470@linux-mips.org>
+	<54347E47.1080809@caviumnetworks.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit '2e4c7553cd usb: gadget: f_fs: add aio support' broke the
-quirk implemented to align buffer size to maxpacketsize on out endpoint.
-As result, functionfs does not work on Intel platforms using dwc3 driver
-(i.e. Bay Trail and Merrifield). This patch fixes the issue.
+On Tue, 7 Oct 2014 16:59:03 -0700
+David Daney <ddaney@caviumnetworks.com> wrote:
 
-This code is based on a previous Qiuxu's patch.
+> On 10/07/2014 04:20 PM, Ralf Baechle wrote:
+> > On Mon, Oct 06, 2014 at 02:18:19PM -0700, David Daney wrote:
+> >
+> >>> As an alternative, if the space of possible instruction with a delay
+> >>> slot is sufficiently small, all such instructions could be mapped as
+> >>> immutable code in a shared mapping, each at a fixed offset in the
+> >>> mapping. I suspect this would be borderline-impractical (multiple
+> >>> megabytes?), but it is the cleanest solution otherwise.
+> >>>
+> >>
+> >> Yes, there are 2^32 possible instructions.  Each one is 4 bytes, plus you
+> >> need a way to exit after the instruction has executed, which would require
+> >> another instruction.  So you would need 32GB of memory to hold all those
+> >> instructions, larger than the 32-bit virtual address space.
+> >
+> > Plus errata support for some older CPUs requires no other instructions
+> > that might cause an exception to be present in the same cache line inflating
+> > the size to 32 bytes per instruction.
+> >
+> > I've contemplated a full emulation - but that would require an emulator that
+> > is capable of most of the instruction set.  With all the random ASEs around
+> > that would be hard to implement while the FPU emulator trampoline as currently
+> > used has the advantage of automatically supporting ASEs, known and unknown.
+> > So it's a huge bonus for maintenance.
+> >
+> 
+> Unfortunatly it breaks when our friends at Imgtec introduce their PC 
+> relative instructions in mipsr6, so an emulator may be unavoidable.
+> 
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Qiuxu Zhuo <qiuxu.zhuo@intel.com>
----
+The x86 kprobes code deals with executing relocated insns with
+PC-relative offsets by adjusting the offset in a relocated instruction
+before executing it.
 
-Hi,
-
-Since this is a feature that worked in past, this patch is meant for 3.17
-kernel. If/when we pass review and accept it on 3.17, I'll send a version for
-stable 3.16 kernel too. It is not required for 3.14, since the regression came
-later.
-
-Br, David Cohen
-
----
- drivers/usb/gadget/function/f_fs.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 0dc3552d1360..6e2b8063b170 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -648,15 +648,26 @@ static void ffs_user_copy_worker(struct work_struct *work)
- 	if (io_data->read && ret > 0) {
- 		int i;
- 		size_t pos = 0;
-+
-+		/*
-+		 * Since req->length may be bigger than io_data->len (after
-+		 * being rounded up to maxpacketsize), we may end up with more
-+		 * data then user space has space for.
-+		 */
-+		ret = min_t(int, ret, io_data->len);
-+
- 		use_mm(io_data->mm);
- 		for (i = 0; i < io_data->nr_segs; i++) {
-+			size_t len = min_t(size_t, ret - pos,
-+					io_data->iovec[i].iov_len);
-+			if (!len)
-+				break;
- 			if (unlikely(copy_to_user(io_data->iovec[i].iov_base,
--						 &io_data->buf[pos],
--						 io_data->iovec[i].iov_len))) {
-+						 &io_data->buf[pos], len))) {
- 				ret = -EFAULT;
- 				break;
- 			}
--			pos += io_data->iovec[i].iov_len;
-+			pos += len;
- 		}
- 		unuse_mm(io_data->mm);
- 	}
-@@ -794,7 +805,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
- 				goto error_lock;
- 
- 			req->buf      = data;
--			req->length   = io_data->len;
-+			req->length   = data_len;
- 
- 			io_data->buf = data;
- 			io_data->ep = ep->ep;
-@@ -816,7 +827,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
- 
- 			req = ep->req;
- 			req->buf      = data;
--			req->length   = io_data->len;
-+			req->length   = data_len;
- 
- 			req->context  = &done;
- 			req->complete = ffs_epfile_io_complete;
--- 
-2.1.0
-
+See arch/x86/kernel/kprobes/core.c::__copy_instruction()
