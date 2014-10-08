@@ -1,129 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926AbaJHL7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:59:14 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:59565 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755599AbaJHL7M (ORCPT
+	id S1756929AbaJHMAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:00:42 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:34060 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756044AbaJHMAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:59:12 -0400
+	Wed, 8 Oct 2014 08:00:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <543523A8.1040006@gmail.com>
-References: <CAFLt3pjkXgz9H9p=u-NATyf4C+8ybJ3fwLc=GXEjaabBZ8NF5g@mail.gmail.com>
-	<543523A8.1040006@gmail.com>
-Date: Wed, 8 Oct 2014 13:59:11 +0200
-Message-ID: <CAFLt3pjSQq+Q5mk1e74m9yXUTYZ8JkojQGKieTWonxomR0KOMA@mail.gmail.com>
-Subject: Re: High latency while CPU is under full load
-From: Grozdan <neutrino8@gmail.com>
-To: Austin S Hemmelgarn <ahferroin7@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20141006153224.GC18303@htj.dyndns.org>
+References: <CAKZGPAPS+x2V3Ajj323EUStpWGmZ6taOuovjqA3_kaYXA3T_Ag@mail.gmail.com>
+ <20141006153224.GC18303@htj.dyndns.org>
+From: Arun KS <getarunks@gmail.com>
+Date: Wed, 8 Oct 2014 17:30:20 +0530
+Message-ID: <CABOM9ZpEhh7PnJT0hRa=Jx1CfYTU0QTG_71Qz-iB3VxygsYgzw@mail.gmail.com>
+Subject: Re: [Workqueue] crash in process_one_work
+To: Tejun Heo <tj@kernel.org>
+Cc: Arun KS <arunks.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        laijs@cn.fujitsu.com, Silesh C V <saileshcv@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 1:44 PM, Austin S Hemmelgarn
-<ahferroin7@gmail.com> wrote:
-> On 2014-10-07 15:28, Grozdan wrote:
->>
->> Hi,
->>
->> Basically, my problem is this:
->>
->> I'm doing a lot of audio/video encoding on an AMD FX8350. The encoder
->> process always runs at nice 10. Even so, my whole system feels very
->> sluggish. Switching between different app windows and/or virtual
->> desktops takes up usually 3-5 seconds giving the impression that there
->> is not enough processing power. Browsing the web is also severely
->> impacted.
->>
->> I had to tune CFS in order to be (much) more responsive during an
->> encoding session. This has worked out pretty well thus far, but it is
->> my opinion that the user should *not* need to fiddle with buttons to
->> make his system respond fluently even under high load. The below is
->> what I had to do in order to get a snappy system during such load
->>
->> kernel.sched_nr_migrate = 64
->> kernel.sched_latency_ns = 65000000
->> kernel.sched_wakeup_granularity_ns = 100000
->> kernel.sched_min_granularity_ns = 100000
->> kernel.sched_migration_cost_ns = 7000000
->>
->> I have tried 3 different kernels, including one compiled myself, but
->> the results are the same
->> Kernels I tried were: 3.11.10, 3.12 and 3.16.4 (self-compiled)
->>
->> My system specs are as follows
->>
->> CPU: AMD FX-8350 @ 4GHz
->> RAM: 16GB DDR1333
->> GPU: NVIDIA GTX 560 with NV blob driver
->> HDD: Seagate Constellation ES.3 128MB cache
->> Desktop: KDE 4.11
->>
-> Are you using a kernel with CONFIG_PREEMPT=y?  I've personally found that
-> that can help hugely with UI sluggishness (and also tends to get better
-> results when doing stuff like live video capture), although to get this you
-> may need to build the kernel yourself.  Also, I would suggest trying the
-> deadline I/O scheduler; I've found it provides much better latency than CFQ
-> for most workloads, and you almost certainly don't need I/O priorities.
-> I've actually got a similar setup (FX-8320 @ 4GHz, 16GB DDR3-1600, High-end
-> storage, and a Radeon R7-240 GPU), and had similar issues when doing
-> processing of big (>500MB) images in GIMP, and using a CONFIG_PREEMPT
-> enabled kernel and the deadline I/O scheduler has pretty much resolved all
-> of these issues.
+Hello Tejun,
+
+On Mon, Oct 6, 2014 at 9:02 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Arun.
 >
-> Additionally, try with KDE's 'semantic desktop' functionality turned off,
-> this eats a huge amount of disk and memory bandwidth, and can easily bring a
-> system to it's knees.  Furthermore, unless you can reproduce things using
-> nouevau instead of the NV driver, you're not as likely to get a lot of help.
+> On Mon, Sep 29, 2014 at 09:40:50PM +0530, Arun KS wrote:
+> ...
+>> The value of data is 0xffffffe0, which is basically the value after an
+>> INIT_WORK() or WORK_DATA_INIT().
+>> This can happen if a driver calls INIT_WORK on same struct work again
+>> after queuing it.
+>>
+>> From the above details of the work_struct shows that the work is
+>> queued from kernel/async.c. async_schedule dynamically allocates the
+>> work_struct and queues it to system_unbonded_wq. And possibility of
+>> calling INIT_WORK on same work is not there.
+>>
+>> After inspecting ramdump for async_entry structure in kernel/async.c
+>>
+>> crash> struct async_entry ed7cf140
+>> struct async_entry {
+>>   domain_list = {
+>>     next = 0xed7cf140,
+>>     prev = 0xed7cf140
+>>   },
+>>   global_list = {
+>>     next = 0xed7cf148,
+>>     prev = 0xed7cf148
+>>   },
+>>   work = {
+>>     data = {
+>>       counter = 0xffffffe0
+>>     },
+>>     entry = {
+>>       next = 0xed7cf154,
+>>       prev = 0xed7cf154
+>>     },
+>>     func = 0xc0140ac4 <async_run_entry_fn>
+>>   },
+>>   cookie = 0x263e5,
+>>   func = 0xc074dda0 <dapm_post_sequence_async>,
+>>   data = 0xed48432c,
+>>   domain = 0xe5457dec
+>> }
+>>
+>> the func points to dapm_post_sequence_async. and you can see the
+>> domain_list and global_list is empty. Which shows that the work has
+>> finished execution and there is no pending execution in async.
+>>
+>> But how come this struct work was with work queue data structures?
+>> Is there any corner case in work queue which can miss unlinking the
+>> struct_work from pool_workqueue after executing them?
 >
+> I sure hope not.  How reproducible is the issue?  Can you try w/
+> CONFIG_DEBUG_OBJECTS_WORK enabled?
+
+Thanks for replying.
+That was a problem with one of our driver. It was freeing the
+memory(struct work) without flushing workqueue.
+We caught faulty driver by adding a BUG_ON() in INIT_WORK and looking
+at the func pointer in work_struct( which will be pointing to the
+faulty driver work function)
+
+1) faulty driver queue_work to system_unbownded_wq
+2) free work_struct memory, but it is still queued in the work queue.
+3) another driver request the memory from SLAB, go the same memory, it INIT_WORK
+4) process work try to execute the work queued by the faulty driver,
+result in a crash.
+
+
+Thanks,
+Arun
+
 >
-
-Hi,
-
-Yes, PREEMP is enabled and the I/O scheduler used is BFQ. But the
-problem existed regardless of the I/O scheduler
-
-I've followed the suggestions of Mike and set the CFS values a little
-bit lower than their standard ones and it appears to have improved.
-There is sometimes a very small delay while opening something, but I
-guess this is from the heavy load. I also turned off the KDE effects
-and it's much more snappy now but I turned a few back on as I like the
-animations of opening/closing windows :P
-
-I have not tested the nouveau driver as I need VDPAU here. Also
-updated the NV blob to latest version and it seems to improve a bit.
-In the changelog it was mentioned that there was a fix
-
-"Fixed an OpenGL issue that could cause glReadPixels() operations to
-be improperly clipped when resizing composited application windows,
-potentially leading to momentary X freezes."
-
-I do not have KDE's semantic stuff enabled here as it's useless for me
-
-This is the vmstat output. I have no idea what it means
-
-procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
- r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
-10  0      0 10298064    428 2873036    0    0   648   542  144  140
-90  1  8  1  0
-11  0      0 10295352    428 2874160    0    0  1024     0 9498 6792
-88  1 12  0  0
-10  0      0 10290824    428 2879140    0    0  3212  1540 9366 6305
-89  1 10  0  0
-10  0      0 10288868    428 2880944    0    0   896     0 8826 6037
-89  1 10  0  0
- 9  0      0 10286796    428 2883188    0    0  1920   172 8635 5447
-89  1 10  0  0
-12  0      0 10284848    428 2885508    0    0   896  1684 9162 6119
-88  1 11  0  0
-11  0      0 10280436    428 2888896    0    0  2560     0 8702 6206
-86  2 12  0  0
-12  0      0 10279448    428 2889744    0    0   640     0 8757 5915
-91  1  8  0  0
-10  0      0 10276564    428 2892480    0    0  1920  4168 8649 5471
-88  1 11  0  0
-
--- 
-Yours truly
+> Thanks.
+>
+> --
+> tejun
