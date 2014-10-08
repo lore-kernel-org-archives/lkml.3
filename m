@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755806AbaJHK2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:28:05 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:47738 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755567AbaJHK2D (ORCPT
+	id S1755927AbaJHK2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:28:09 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55112 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567AbaJHK2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:28:03 -0400
-Date: Wed, 8 Oct 2014 11:27:58 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 04/11] perf: Make perf_cgroup_from_task() global
-Message-ID: <20141008102758.GN14343@console-pimps.org>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-5-git-send-email-matt@console-pimps.org>
- <20141007185157.GA4750@worktop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007185157.GA4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 8 Oct 2014 06:28:06 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>, mpe <mpe@ellerman.id.au>,
+        benh <benh@kernel.crashing.org>, anton <anton@samba.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
+        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 13/16] cxl: Driver code for powernv PCIe based cards for userspace access
+In-reply-to: <1412758505-23495-14-git-send-email-mikey@neuling.org>
+References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-14-git-send-email-mikey@neuling.org>
+Date: Wed, 08 Oct 2014 21:28:05 +1100
+Message-Id: <1412763264-sup-2737@delenn.ozlabs.ibm.com>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100810-1618-0000-0000-00000103060F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Oct, at 08:51:57PM, Peter Zijlstra wrote:
-> On Wed, Sep 24, 2014 at 03:04:08PM +0100, Matt Fleming wrote:
-> > From: Matt Fleming <matt.fleming@intel.com>
-> > 
-> > Move perf_cgroup_from_task() from kernel/events to include/ along with
-> > the necessary struct definitions, so that it can be used by the PMU
-> > code.
-> > 
-> > The upcoming Intel Cache Monitoring PMU driver assigns monitoring IDs
-> > based on a task's association with a cgroup - all tasks in the same
-> > cgroup share an ID. We can use perf_cgroup_from_task() to track this
-> > association.
-> 
-> Not yet having read the rest of the patches and maybe understanding
-> things wrong, that doesn't sound right.
-> 
-> The RMID should be associated with events, not groups. The event can be
-> associated with whatever perf provides {task, cgroup, cpu}.
+Excerpts from Michael Neuling's message of 2014-10-08 19:55:02 +1100:
+> +static ssize_t afu_read(struct file *file, char __user *buf, size_t count,
+> +            loff_t *off)
+...
+> +    for (;;) {
+> +        prepare_to_wait(&ctx->wq, &wait, TASK_INTERRUPTIBLE);
+> +        if (ctx_event_pending(ctx))
+> +            break;
+> +
+> +        spin_unlock_irqrestore(&ctx->lock, flags);
+> +        if (file->f_flags & O_NONBLOCK)
+> +            return -EAGAIN;
+> +
+> +        if (signal_pending(current))
+> +            return -ERESTARTSYS;
 
-I think I just wrote the commit message in a goofy way.
+Looks like I mucked this up while refactoring - these two cases no
+longer call finish_wait() which can lead to a crash if something later
+wakes up the ctx->wq... I'll post a fix in a separate patch shortly.
 
-What we actually use perf_cgroup_from_task() for is to figure out when
-to prohibit an event from being created if it overlaps/conflicts with an
-existing event.
+-Ian
 
-I'll rewrite the commit message to be clearer.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
