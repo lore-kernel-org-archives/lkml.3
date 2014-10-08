@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277AbaJHTKu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:10:50 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:39934 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbaJHTKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:10:49 -0400
-Date: Wed, 8 Oct 2014 14:10:50 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
-Subject: [BUG] mm, thp: khugepaged can't allocate on requested node when
- confined to a cpuset
-Message-ID: <20141008191050.GK3778@sgi.com>
+	id S1753761AbaJHTQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:16:36 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:51352 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbaJHTQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 15:16:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
+References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 8 Oct 2014 12:16:11 -0700
+Message-ID: <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
+Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Peter Foley <pefoley2@pefoley.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey everyone,
+On Wed, Oct 8, 2014 at 11:52 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+> I'm seeing the following build failure on a 32-bit x86 build in Fedora
+> based on Linux v3.17-2860-gef0625b70dac:
+>
+> Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
+> vdso_standalone_test_x86.c:(.text+0xcc): undefined reference to `__umoddi3'
+> vdso_standalone_test_x86.c:(.text+0xea): undefined reference to `__udivdi3'
+> collect2: error: ld returned 1 exit status
+> scripts/Makefile.host:100: recipe for target
+> 'Documentation/vDSO/vdso_standalone_test_x86' failed
+> make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
+> scripts/Makefile.build:404: recipe for target 'Documentation/vDSO' failed
+> make[1]: *** [Documentation/vDSO] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+> Makefile:922: recipe for target 'vmlinux' failed
+> make: *** [vmlinux] Error 2
+>
+> Looking at some of the git logs around this, it seems that
+> vdso_standalone_test_x86.c is 64-bit specific, so I was curious why it
+> was even being built on a 32-bit build.  Seems this commit:
+>
+> commit adb19fb66eeebac07fe37d968725bb8906dadb8e
+> Author: Peter Foley <pefoley2@pefoley.com>
+> Date:   Thu Sep 25 11:23:09 2014 -0700
+>
+>     Documentation: add makefiles for more targets
+>
+>     Add a bunch of previously unbuilt source files to the Documentation build
+>     machinery.
+>
+>     Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+>     Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+>     Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+>
+>
+> blindly added it to the build target.
+>
+> So is vdso_standalone_test_x86.c really 64-bit specific?  If so,
+> should that commit be reverted (or a hunk of it anyway), should there
+> be some mechanism to not build it on 32-bit, or should there be some
+> additional CFLAGS passed?
 
-I've run into a some frustrating behavior from the khugepaged thread,
-that I'm hoping to get sorted out.  It appears that if you pin
-khugepaged to a cpuset (i.e. node 0), and it begins scanning/collapsing
-pages for a process on a cpuset that doesn't have any memory nodes in
-common with kugepaged (i.e. node 1), then the collapsed pages will all
-be allocated khugepaged's node (in this case node 0), clearly breaking
-the cpuset boundary set up for the process in question.
+It should build and work on 32-bit.
 
-I'm aware that there are some known issues with khugepaged performing
-off-node allocations in certain situations, but I believe this is a bit
-of a special circumstance since, in this situation, there's no way for
-khugepaged to perform an allocation on the desired node.
+Except that the makefile is totally bogus.  vdso_standalone_test isn't
+a hostprog at all.  It's a target prog.  But kbuild doesn't understand
+that, so I have no idea what, if anything, that makefile is supposed
+to do.
 
-The problem really stems from the way that we determine the allowed
-memory nodes in get_page_from_freelist.  When we call down to
-cpuset_zone_allowed_softwall, we check current->mems_allowed to
-determine what nodes we're allowed on.  In the case of khugepaged, we'll
-be making allocations for the mm of the process we're collapsing for,
-but we'll be checking the mems_allowed of khugepaged, which can
-obviously cause some problems.
+I would argue that the whole documentation build system should be
+fixed to cross-compile or should just be disabled for cross-builds if
+glibc isn't available.
 
-Is this particular bug a known issue?  I've been trying to come up with
-a simple way to fix the bug, but it's a bit difficult since we no longer
-have a way to trace back to the task_struct that we're collapsing for
-once we've reached get_page_from_freelist.  I'm wondering if we might
-want to make the cpuset check higher up in the call-chain and then pass
-that nodemask down instead of sending a NULL nodemask, as we end up
-doing in many (most?) situations.  I can think of several problems with
-that approach as well, but it's all I've come up with so far.
+FWIW, the comment at the top of vdso_standalone_test_x86.c documents
+*exactly* how to build it, and it works if you build it like that.
 
-The obvious workaround is to not isolate khugepaged to a cpuset, but
-since we're allowed to do so, I think the thread should probably behave
-appropriately when pinned to a cpuset.
-
-Any input on this issue is greatly appreciated.  Thanks, guys!
-
-- Alex
+--Andy
