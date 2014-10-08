@@ -1,125 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaJHJLv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:11:51 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:52741 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122AbaJHJLr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:11:47 -0400
-Date: Wed, 8 Oct 2014 10:55:54 +0200
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
+	id S1755241AbaJHJMB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:12:01 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:36609 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754992AbaJHJLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:11:55 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
+        Fabian Frederick <fabf@skynet.be>
+CC: Guenter Roeck <linux@roeck-us.net>, David Miller <davem@davemloft.net>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Message-ID: <20141008105554.2af97be9@ipc1.ka-ro>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
-References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
-	<1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
-	<063D6719AE5E284EB5DD2968C1650D6D174C6116@AcuExch.aculab.com>
-	<20141008070147.2f3b5319@ipc1.ka-ro>
-	<063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
+Thread-Topic: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
+Thread-Index: AQHP4nDaY/3w3KaSUkWpLu0HQtjtIJwl6V3A
+Date: Wed, 8 Oct 2014 09:10:23 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
+References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
+	 <20141007.161832.453892039501955243.davem@davemloft.net>
+	 <20141007203344.GA4748@roeck-us.net>
+	 <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
+ <1412715283.11600.11.camel@localhost>
+In-Reply-To: <1412715283.11600.11.camel@localhost>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s989C9Wg023285
 
-Hi,
+From: Hannes Frederic Sowa
+> I think David's concern was whether if 0 == false in all situations. It
+> is pretty clear that static memory is initialized to 0.
 
-David Laight wrote:
-> From: Lothar WaÃŸmann
-> > David Laight wrote:
-> > > From: Eric Dumazet
-> > > > On Tue, 2014-10-07 at 15:19 +0200, Lothar Wamann wrote:
-> > > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-> > > > > introduced a regression for i.MX28. The swap_buffer() function doing
-> > > > > the endian conversion of the received data on i.MX28 may access memory
-> > > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-> > > > > does not copy those bytes, so that the last bytes of a packet may be
-> > > > > filled with invalid data after swapping.
-> > > > > This will likely lead to checksum errors on received packets.
-> > > > > E.g. when trying to mount an NFS rootfs:
-> > > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-> > > > >
-> > > > > Do the byte swapping and copying to the new skb in one go if
-> > > > > necessary.
-> > > > >
-> > > > > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
-> > > > > ---
-> > > > >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
-> > > > >  1 file changed, 21 insertions(+), 4 deletions(-)
-> > > > >
-> > > > > diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-> > > > > index 87975b5..eaaebad 100644
-> > > > > --- a/drivers/net/ethernet/freescale/fec_main.c
-> > > > > +++ b/drivers/net/ethernet/freescale/fec_main.c
-> > > > > @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
-> > > > >  	return bufaddr;
-> > > > >  }
-> > > > >
-> > > > > +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-> > > > > +{
-> > > > > +	int i;
-> > > > > +	unsigned int *src = src_buf;
-> > > > > +	unsigned int *dst = dst_buf;
-> > > > > +
-> > > > > +	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
-> > > > > +		*dst = cpu_to_be32(*src);
-> > > >
-> > > > No need for the DIV :
-> > > >
-> > > > 	for (i = 0; i < len; i += sizeof(*dst), src++, dst++)
-> > > > 		*dst = cpu_to_be32(*src);
-> > > >
-> > > > Also are you sure both src/dst are aligned to word boundaries, or is
-> > > > this architecture OK with possible misalignment ?
-> > >
-> > > I wondered about that as well.
-> > > I wouldn't have expected ppc to support misaligned transfers, and you'd also
-> > > want to make sure that cpu_to_be(*src) was using a byte-swapping instruction.
-> > > Hmmm... cpu_to_be() doesn't sound like the right 'swap' macro name.
-> > >
-> > ??? So what is cpu_to_be32() then?
-> > The new swap function is an exact copy of the original one already in
-> > use except for the fact that it uses distinct source and destination
-> > buffers.
-> 
-> cpu_to_be32() is for converting a 'cpu' endianness value to 'big-endian'.
-> Here you are processing receive data - so you probably want be32_to_cpu().
-> (Yes, I know they are functionally identical....)
-> 
-> Alternatively, since these aren't actually 32bit numbers and you know
-> whether you want to swap, something like the __swab32p() from swab.h
-> - but I'm not entirely sure that one is expected to be used.
-> 
-OK, but that should probably be a separate patch to fix the original
-swap_buffer() function as well.
+I'm not 100% sure about that.
+static pointers may be required to be initialised to NULL.
+If NULL isn't the 'all 0 bit pattern' then the memory would need
+to be initialised to a different pattern.
+Not that anyone is likely to implement such a system because far too
+much code will break.
 
-> Clearly you are well inside the ppc 'endianness' hell.
->
-No. i.MX28 is not PPC. It only has a "feature" in the ethernet
-controller that stores all data in big endian format.
+The only system I knew where 'native' NULL pointers were 'all 1s'
+used 0 in its C compiler.
 
+	David
 
-Lothar WaÃŸmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | PascalstraÃŸe 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-GeschÃ¤ftsfÃ¼hrer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
