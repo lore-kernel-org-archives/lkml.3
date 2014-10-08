@@ -1,503 +1,674 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678AbaJHJa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:30:57 -0400
-Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:24466
+	id S1755733AbaJHJbF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:31:05 -0400
+Received: from mail-bn1bon0077.outbound.protection.outlook.com ([157.56.111.77]:40064
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755567AbaJHJaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:30:52 -0400
+	id S1755684AbaJHJa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:30:59 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v4 09/29] nios2: Page table management
-Date: Wed, 8 Oct 2014 17:29:35 +0800
-Message-ID: <1412760595-3935-10-git-send-email-lftan@altera.com>
+Subject: [PATCH v4 10/29] nios2: Process management
+Date: Wed, 8 Oct 2014 17:29:36 +0800
+Message-ID: <1412760595-3935-11-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
 References: <1412760595-3935-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(97736003)(107046002)(105596002)(229853001)(42186005)(85306004)(120916001)(99396003)(104166001)(106466001)(95666004)(31966008)(50986999)(87286001)(88136002)(76176999)(68736004)(50226001)(4396001)(87936001)(50466002)(36756003)(62966002)(77156001)(19580405001)(19580395003)(44976005)(6806004)(84676001)(33646002)(21056001)(85852003)(20776003)(47776003)(77096002)(102836001)(64706001)(48376002)(2201001)(92566001)(86362001)(93916002)(92726001)(80022003)(46102003)(89996001)(76482002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB213;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB213;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(199003)(189002)(43544003)(31966008)(76482002)(120916001)(77156001)(36756003)(50986999)(102836001)(44976005)(20776003)(104166001)(6806004)(47776003)(19580405001)(64706001)(85306004)(85852003)(42186005)(99396003)(19580395003)(68736004)(92566001)(33646002)(86362001)(93916002)(92726001)(2201001)(84676001)(77096002)(229853001)(97736003)(48376002)(50466002)(107046002)(88136002)(62966002)(89996001)(21056001)(46102003)(87286001)(87936001)(4396001)(80022003)(95666004)(76176999)(50226001)(105596002)(106466001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB209;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB209;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0358535363
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB323;
 X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for page table management.
+This patch adds support for thread creation and context switching.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/pgalloc.h      |   86 +++++++++
- arch/nios2/include/asm/pgtable-bits.h |   35 ++++
- arch/nios2/include/asm/pgtable.h      |  305 +++++++++++++++++++++++++++++++++
- arch/nios2/mm/pgtable.c               |   73 ++++++++
- 4 files changed, 499 insertions(+), 0 deletions(-)
- create mode 100644 arch/nios2/include/asm/pgalloc.h
- create mode 100644 arch/nios2/include/asm/pgtable-bits.h
- create mode 100644 arch/nios2/include/asm/pgtable.h
- create mode 100644 arch/nios2/mm/pgtable.c
+ arch/nios2/include/asm/mmu_context.h |   66 +++++++++
+ arch/nios2/include/asm/processor.h   |  103 ++++++++++++++
+ arch/nios2/include/asm/switch_to.h   |   31 ++++
+ arch/nios2/include/asm/thread_info.h |  120 ++++++++++++++++
+ arch/nios2/kernel/process.c          |  257 ++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/mmu_context.c          |  116 +++++++++++++++
+ 6 files changed, 693 insertions(+), 0 deletions(-)
+ create mode 100644 arch/nios2/include/asm/mmu_context.h
+ create mode 100644 arch/nios2/include/asm/processor.h
+ create mode 100644 arch/nios2/include/asm/switch_to.h
+ create mode 100644 arch/nios2/include/asm/thread_info.h
+ create mode 100644 arch/nios2/kernel/process.c
+ create mode 100644 arch/nios2/mm/mmu_context.c
 
-diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
+diff --git a/arch/nios2/include/asm/mmu_context.h b/arch/nios2/include/asm/mmu_context.h
 new file mode 100644
-index 0000000..6e2985e
+index 0000000..294b4b1
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgalloc.h
-@@ -0,0 +1,86 @@
++++ b/arch/nios2/include/asm/mmu_context.h
+@@ -0,0 +1,66 @@
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 1996, 1997, 1998, 1999 by Ralf Baechle
++ * Copyright (C) 1999 Silicon Graphics, Inc.
 + *
-+ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGALLOC_H
-+#define _ASM_NIOS2_PGALLOC_H
-+
-+#include <linux/mm.h>
-+
-+static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
-+	pte_t *pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)pte));
-+}
-+
-+static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
-+	pgtable_t pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
-+}
-+#define pmd_pgtable(pmd) pmd_page(pmd)
-+
-+/*
-+ * Initialize a new pmd table with invalid pointers.
-+ */
-+extern void pmd_init(unsigned long page, unsigned long pagetable);
-+
-+extern pgd_t *pgd_alloc(struct mm_struct *mm);
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, PGD_ORDER);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	pte_t *pte;
-+
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
-+					PTE_ORDER);
-+
-+	return pte;
-+}
-+
-+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	struct page *pte;
-+
-+	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
-+	if (pte) {
-+		if (!pgtable_page_ctor(pte)) {
-+			__free_page(pte);
-+			return NULL;
-+		}
-+		clear_highpage(pte);
-+	}
-+	return pte;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, PTE_ORDER);
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, struct page *pte)
-+{
-+	pgtable_page_dtor(pte);
-+	__free_pages(pte, PTE_ORDER);
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)				\
-+	do {							\
-+		pgtable_page_dtor(pte);				\
-+		tlb_remove_page((tlb), (pte));			\
-+	} while (0)
-+
-+#define check_pgt_cache()	do { } while (0)
-+
-+#endif /* _ASM_NIOS2_PGALLOC_H */
-diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
-new file mode 100644
-index 0000000..ce9e706
---- /dev/null
-+++ b/arch/nios2/include/asm/pgtable-bits.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ * based on MIPS asm/mmu_context.h
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_PGTABLE_BITS_H
-+#define _ASM_NIOS2_PGTABLE_BITS_H
++#ifndef _ASM_NIOS2_MMU_CONTEXT_H
++#define _ASM_NIOS2_MMU_CONTEXT_H
++
++#include <asm-generic/mm_hooks.h>
++
++extern void mmu_context_init(void);
++extern unsigned long get_pid_from_context(mm_context_t *ctx);
 +
 +/*
-+ * These are actual hardware defined protection bits in the tlbacc register
-+ * which looks like this:
++ * For the fast tlb miss handlers, we keep a pointer to the current pgd.
++ * processor.
++ */
++extern pgd_t *pgd_current;
++
++static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
++{
++}
++
++/*
++ * Initialize the context related info for a new mm_struct instance.
 + *
-+ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
-+ * ignored........  C  R  W  X  G PFN............
++ * Set all new contexts to 0, that way the generation will never match
++ * the currently running generation when this context is switched in.
 + */
-+#define _PAGE_GLOBAL	(1<<20)
-+#define _PAGE_EXEC	(1<<21)
-+#define _PAGE_WRITE	(1<<22)
-+#define _PAGE_READ	(1<<23)
-+#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
++static inline int init_new_context(struct task_struct *tsk,
++					struct mm_struct *mm)
++{
++	mm->context = 0;
++	return 0;
++}
 +
 +/*
-+ * Software defined bits. They are ignored by the hardware and always read back
-+ * as zero, but can be written as non-zero.
++ * Destroy context related info for an mm_struct that is about
++ * to be put to rest.
 + */
-+#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
-+#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
-+#define _PAGE_DIRTY	(1<<27)	/* dirty page */
-+#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
++static inline void destroy_context(struct mm_struct *mm)
++{
++}
 +
-+#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
-diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
++void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++		struct task_struct *tsk);
++
++static inline void deactivate_mm(struct task_struct *tsk,
++				struct mm_struct *mm)
++{
++}
++
++/*
++ * After we have set current->mm to a new value, this activates
++ * the context for the new mm so we see the new mappings.
++ */
++void activate_mm(struct mm_struct *prev, struct mm_struct *next);
++
++#endif /* _ASM_NIOS2_MMU_CONTEXT_H */
+diff --git a/arch/nios2/include/asm/processor.h b/arch/nios2/include/asm/processor.h
 new file mode 100644
-index 0000000..ec85481
+index 0000000..3bd3494
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgtable.h
-@@ -0,0 +1,305 @@
++++ b/arch/nios2/include/asm/processor.h
+@@ -0,0 +1,103 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2001 Ken Hill (khill@microtronix.com)
++ *                    Vic Phillips (vic@microtronix.com)
 + *
-+ * Based on asm/pgtable-32.h from mips which is:
++ * based on SPARC asm/processor_32.h which is:
 + *
-+ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ * Copyright (C) 1994 David S. Miller
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_PGTABLE_H
-+#define _ASM_NIOS2_PGTABLE_H
++#ifndef _ASM_NIOS2_PROCESSOR_H
++#define _ASM_NIOS2_PROCESSOR_H
 +
-+#include <linux/io.h>
-+#include <linux/bug.h>
++#include <asm/ptrace.h>
++#include <asm/registers.h>
 +#include <asm/page.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
 +
-+#include <asm/pgtable-bits.h>
-+#include <asm-generic/pgtable-nopmd.h>
++#define NIOS2_FLAG_KTHREAD	0x00000001	/* task is a kernel thread */
 +
-+#define FIRST_USER_ADDRESS	0
++#define NIOS2_OP_NOP		0x1883a
++#define NIOS2_OP_BREAK		0x3da03a
 +
-+#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
-+#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
++#ifdef __KERNEL__
 +
-+struct mm_struct;
++#define STACK_TOP	TASK_SIZE
++#define STACK_TOP_MAX	STACK_TOP
 +
-+/* Helper macro */
-+#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
-+				((x) ? _PAGE_EXEC : 0) |		\
-+				((r) ? _PAGE_READ : 0) |		\
-+				((w) ? _PAGE_WRITE : 0))
-+/*
-+ * These are the macros that generic kernel code needs
-+ * (to populate protection_map[])
-+ */
++#endif /* __KERNEL__ */
 +
-+/* Remove W bit on private pages for COW support */
-+#define __P000	MKP(0, 0, 0)
-+#define __P001	MKP(0, 0, 1)
-+#define __P010	MKP(0, 0, 0)	/* COW */
-+#define __P011	MKP(0, 0, 1)	/* COW */
-+#define __P100	MKP(1, 0, 0)
-+#define __P101	MKP(1, 0, 1)
-+#define __P110	MKP(1, 0, 0)	/* COW */
-+#define __P111	MKP(1, 0, 1)	/* COW */
-+
-+/* Shared pages can have exact HW mapping */
-+#define __S000	MKP(0, 0, 0)
-+#define __S001	MKP(0, 0, 1)
-+#define __S010	MKP(0, 1, 0)
-+#define __S011	MKP(0, 1, 1)
-+#define __S100	MKP(1, 0, 0)
-+#define __S101	MKP(1, 0, 1)
-+#define __S110	MKP(1, 1, 0)
-+#define __S111	MKP(1, 1, 1)
-+
-+/* Used all over the kernel */
-+#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
-+			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
-+
-+#define PAGE_COPY MKP(0, 0, 1)
-+
-+#define PGD_ORDER	0
-+#define PTE_ORDER	0
-+
-+#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
-+#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
-+
-+#define USER_PTRS_PER_PGD	\
-+	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
-+
-+#define PGDIR_SHIFT	22
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++/* Kuser helpers is mapped to this user space address */
++#define KUSER_BASE		0x1000
++#define KUSER_SIZE		(PAGE_SIZE)
++#ifndef __ASSEMBLY__
 +
 +/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
++ * Default implementation of macro that returns current
++ * instruction pointer ("program counter").
 + */
-+extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
++#define current_text_addr() ({ __label__ _l; _l: &&_l; })
 +
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
++# define TASK_SIZE		0x7FFF0000UL
++# define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 3))
 +
-+/*
-+ * (pmds are folded into puds so this doesn't get actually called,
-+ * but the define is needed for a generic inline function.)
-+ */
-+static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
-+{
-+	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
++/* The Nios processor specific thread struct. */
++struct thread_struct {
++	struct pt_regs *kregs;
++
++	/* Context switch saved kernel state. */
++	unsigned long ksp;
++	unsigned long kpsr;
++};
++
++#define INIT_MMAP \
++	{ &init_mm, (0), (0), __pgprot(0x0), VM_READ | VM_WRITE | VM_EXEC }
++
++# define INIT_THREAD {			\
++	.kregs	= NULL,			\
++	.ksp	= 0,			\
++	.kpsr	= 0,			\
 +}
 +
-+/* to find an entry in a page-table-directory */
-+#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-+#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
++extern void start_thread(struct pt_regs *regs, unsigned long pc,
++			unsigned long sp);
 +
-+static inline int pte_write(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_WRITE; }
-+static inline int pte_dirty(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_DIRTY; }
-+static inline int pte_young(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_ACCESSED; }
-+static inline int pte_file(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_FILE; }
-+static inline int pte_special(pte_t pte)	{ return 0; }
++struct task_struct;
 +
-+#define pgprot_noncached pgprot_noncached
-+
-+static inline pgprot_t pgprot_noncached(pgprot_t _prot)
++/* Free all resources held by a thread. */
++static inline void release_thread(struct task_struct *dead_task)
 +{
-+	unsigned long prot = pgprot_val(_prot);
-+
-+	prot &= ~_PAGE_CACHED;
-+
-+	return __pgprot(prot);
 +}
 +
-+static inline int pte_none(pte_t pte)
++/* Free current thread data structures etc.. */
++static inline void exit_thread(void)
 +{
-+	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
 +}
 +
-+static inline int pte_present(pte_t pte)	\
-+	{ return pte_val(pte) & _PAGE_PRESENT; }
++/* Return saved PC of a blocked thread. */
++#define thread_saved_pc(tsk)	((tsk)->thread.kregs->ea)
 +
-+/*
-+ * The following only work if pte_present() is true.
-+ * Undefined behaviour if not..
-+ */
-+static inline pte_t pte_wrprotect(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_WRITE;
-+	return pte;
-+}
++extern unsigned long get_wchan(struct task_struct *p);
 +
-+static inline pte_t pte_mkclean(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_DIRTY;
-+	return pte;
-+}
++/* Prepare to copy thread state - unlazy all lazy status */
++#define prepare_to_copy(tsk)	do { } while (0)
 +
-+static inline pte_t pte_mkold(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_ACCESSED;
-+	return pte;
-+}
++#define task_pt_regs(p) \
++	((struct pt_regs *)(THREAD_SIZE + task_stack_page(p)) - 1)
 +
-+static inline pte_t pte_mkwrite(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_WRITE;
-+	return pte;
-+}
++/* Used by procfs */
++#define KSTK_EIP(tsk)	((tsk)->thread.kregs->ea)
++#define KSTK_ESP(tsk)	((tsk)->thread.kregs->sp)
 +
-+static inline pte_t pte_mkdirty(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_DIRTY;
-+	return pte;
-+}
++#define cpu_relax()	barrier()
++#define cpu_relax_lowlatency()  cpu_relax()
 +
-+static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
++#endif /* __ASSEMBLY__ */
 +
-+static inline pte_t pte_mkyoung(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
-+	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
-+	return pte;
-+}
-+
-+static inline int pmd_present(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
-+			&& (pmd_val(pmd) != 0UL);
-+}
-+
-+static inline void pmd_clear(pmd_t *pmdp)
-+{
-+	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
-+}
-+
-+#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
-+#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
-+#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
-+
-+/*
-+ * Store a linux PTE into the linux page table.
-+ */
-+static inline void set_pte(pte_t *ptep, pte_t pteval)
-+{
-+	*ptep = pteval;
-+}
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	unsigned long paddr = page_to_virt(pte_page(pteval));
-+	flush_dcache_range(paddr, paddr + PAGE_SIZE);
-+	set_pte(ptep, pteval);
-+}
-+
-+static inline int pmd_none(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) ==
-+		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
-+}
-+
-+#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
-+
-+static inline void pte_clear(struct mm_struct *mm,
-+				unsigned long addr, pte_t *ptep)
-+{
-+	pte_t null;
-+
-+	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
-+
-+	set_pte_at(mm, addr, ptep, null);
-+	flush_tlb_one(addr);
-+}
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
-+
-+#define pte_unmap(pte)	do { } while (0)
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
-+#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
-+#define pmd_page_vaddr(pmd)	pmd_val(pmd)
-+
-+#define pte_offset_map(dir, addr)			\
-+	((pte_t *) page_address(pmd_page(*dir)) +	\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+/* to find an entry in a kernel page-table-directory */
-+#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
-+
-+/* Get the address to the PTE for a vaddr in specfic directory */
-+#define pte_offset_kernel(dir, addr)			\
-+	((pte_t *) pmd_page_vaddr(*(dir)) +		\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+#define pte_ERROR(e) \
-+	pr_err("%s:%d: bad pte %08lx.\n", \
-+		__FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_err("%s:%d: bad pgd %08lx.\n", \
-+		__FILE__, __LINE__, pgd_val(e))
-+
-+/*
-+ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
-+ * && !pte_file(pte)):
-+ *
-+ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
-+ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
-+ *
-+ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
-+ *
-+ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
-+ * true.
-+ */
-+#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
-+#define __swp_offset(swp)	((swp).val & 0xfffff)
-+#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
-+						 | ((off) & 0xfffff) })
-+#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+
-+/* Encode and decode a nonlinear file mapping entry */
-+#define PTE_FILE_MAX_BITS	25
-+#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
-+#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
-+
-+#define kern_addr_valid(addr)		(1)
-+
-+#include <asm-generic/pgtable.h>
-+
-+#define pgtable_cache_init()		do { } while (0)
-+
-+extern void __init paging_init(void);
-+extern void __init mmu_init(void);
-+
-+extern void update_mmu_cache(struct vm_area_struct *vma,
-+			     unsigned long address, pte_t *pte);
-+
-+#endif /* _ASM_NIOS2_PGTABLE_H */
-diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
++#endif /* _ASM_NIOS2_PROCESSOR_H */
+diff --git a/arch/nios2/include/asm/switch_to.h b/arch/nios2/include/asm/switch_to.h
 new file mode 100644
-index 0000000..21e865f
+index 0000000..c47b3f4
 --- /dev/null
-+++ b/arch/nios2/mm/pgtable.c
-@@ -0,0 +1,73 @@
++++ b/arch/nios2/include/asm/switch_to.h
+@@ -0,0 +1,31 @@
 +/*
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef _ASM_NIOS2_SWITCH_TO_H
++#define _ASM_NIOS2_SWITCH_TO_H
++
++/*
++ * switch_to(n) should switch tasks to task ptr, first checking that
++ * ptr isn't the current task, in which case it does nothing.  This
++ * also clears the TS-flag if the task we switched to has used the
++ * math co-processor latest.
++ */
++#define switch_to(prev, next, last)			\
++{							\
++	void *_last;					\
++	__asm__ __volatile__ (				\
++		"mov	r4, %1\n"			\
++		"mov	r5, %2\n"			\
++		"call	resume\n"			\
++		"mov	%0,r4\n"			\
++		: "=r" (_last)				\
++		: "r" (prev), "r" (next)		\
++		: "r4", "r5", "r7", "r8", "ra");	\
++	(last) = _last;					\
++}
++
++#endif /* _ASM_NIOS2_SWITCH_TO_H */
+diff --git a/arch/nios2/include/asm/thread_info.h b/arch/nios2/include/asm/thread_info.h
+new file mode 100644
+index 0000000..1f26657
+--- /dev/null
++++ b/arch/nios2/include/asm/thread_info.h
+@@ -0,0 +1,120 @@
++/*
++ * NiosII low-level thread information
++ *
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * Based on asm/thread_info_no.h from m68k which is:
++ *
++ * Copyright (C) 2002 David Howells <dhowells@redhat.com>
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_THREAD_INFO_H
++#define _ASM_NIOS2_THREAD_INFO_H
++
++#ifdef __KERNEL__
++
++/*
++ * Size of the kernel stack for each process.
++ */
++#define THREAD_SIZE_ORDER	1
++#define THREAD_SIZE		8192 /* 2 * PAGE_SIZE */
++
++#ifndef __ASSEMBLY__
++
++typedef struct {
++	unsigned long seg;
++} mm_segment_t;
++
++/*
++ * low level task data that entry.S needs immediate access to
++ * - this struct should fit entirely inside of one cache line
++ * - this struct shares the supervisor stack pages
++ * - if the contents of this structure are changed, the assembly constants
++ *   must also be changed
++ */
++struct thread_info {
++	struct task_struct	*task;		/* main task structure */
++	struct exec_domain	*exec_domain;	/* execution domain */
++	unsigned long		flags;		/* low level flags */
++	__u32			cpu;		/* current CPU */
++	int			preempt_count;	/* 0 => preemptable,<0 => BUG */
++	mm_segment_t		addr_limit;	/* thread address space:
++						  0-0x7FFFFFFF for user-thead
++						  0-0xFFFFFFFF for kernel-thread
++						*/
++	struct restart_block	restart_block;
++	struct pt_regs		*regs;
++};
++
++/*
++ * macros/functions for gaining access to the thread information structure
++ *
++ * preempt_count needs to be 1 initially, until the scheduler is functional.
++ */
++#define INIT_THREAD_INFO(tsk)			\
++{						\
++	.task		= &tsk,			\
++	.exec_domain	= &default_exec_domain,	\
++	.flags		= 0,			\
++	.cpu		= 0,			\
++	.preempt_count	= INIT_PREEMPT_COUNT,	\
++	.addr_limit	= KERNEL_DS,		\
++	.restart_block	= {			\
++		.fn = do_no_restart_syscall,	\
++	},					\
++}
++
++#define init_thread_info	(init_thread_union.thread_info)
++#define init_stack		(init_thread_union.stack)
++
++/* how to get the thread information struct from C */
++static inline struct thread_info *current_thread_info(void)
++{
++	register unsigned long sp asm("sp");
++
++	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
++}
++#endif /* !__ASSEMBLY__ */
++
++/*
++ * thread information flags
++ * - these are process state flags that various assembly files may need to
++ *   access
++ * - pending work-to-be-done flags are in LSW
++ * - other flags in MSW
++ */
++#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
++#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
++#define TIF_SIGPENDING		2	/* signal pending */
++#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
++#define TIF_MEMDIE		4	/* is terminating due to OOM killer */
++#define TIF_SECCOMP		5	/* secure computing */
++#define TIF_SYSCALL_AUDIT	6	/* syscall auditing active */
++#define TIF_RESTORE_SIGMASK	9	/* restore signal mask in do_signal() */
++
++#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling
++					   TIF_NEED_RESCHED */
++
++#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
++#define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
++#define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
++#define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
++#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
++#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
++#define _TIF_RESTORE_SIGMASK	(1 << TIF_RESTORE_SIGMASK)
++#define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
++
++/* work to do on interrupt/exception return */
++#define _TIF_WORK_MASK		0x0000FFFE
++
++/* work to do on any return to u-space */
++# define _TIF_ALLWORK_MASK	0x0000FFFF
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_NIOS2_THREAD_INFO_H */
+diff --git a/arch/nios2/kernel/process.c b/arch/nios2/kernel/process.c
+new file mode 100644
+index 0000000..e4c85bb
+--- /dev/null
++++ b/arch/nios2/kernel/process.c
+@@ -0,0 +1,257 @@
++/*
++ * Architecture-dependent parts of process handling.
++ *
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/export.h>
++#include <linux/sched.h>
++#include <linux/tick.h>
++#include <linux/uaccess.h>
++
++#include <asm/unistd.h>
++#include <asm/traps.h>
++#include <asm/cpuinfo.h>
++
++asmlinkage void ret_from_fork(void);
++asmlinkage void ret_from_kernel_thread(void);
++
++void (*pm_power_off)(void) = NULL;
++EXPORT_SYMBOL(pm_power_off);
++
++void arch_cpu_idle(void)
++{
++	local_irq_enable();
++}
++
++/*
++ * The development boards have no way to pull a board reset. Just jump to the
++ * cpu reset address and let the boot loader or the code in head.S take care of
++ * resetting peripherals.
++ */
++void machine_restart(char *__unused)
++{
++	pr_notice("Machine restart (%08x)...\n", cpuinfo.reset_addr);
++	local_irq_disable();
++	__asm__ __volatile__ (
++	"jmp	%0\n\t"
++	:
++	: "r" (cpuinfo.reset_addr)
++	: "r4");
++}
++
++void machine_halt(void)
++{
++	pr_notice("Machine halt...\n");
++	local_irq_disable();
++	for (;;)
++		;
++}
++
++/*
++ * There is no way to power off the development boards. So just spin for now. If
++ * we ever have a way of resetting a board using a GPIO we should add that here.
++ */
++void machine_power_off(void)
++{
++	pr_notice("Machine power off...\n");
++	local_irq_disable();
++	for (;;)
++		;
++}
++
++void show_regs(struct pt_regs *regs)
++{
++	pr_notice("\n");
++	show_regs_print_info(KERN_DEFAULT);
++
++	pr_notice("r1: %08lx r2: %08lx r3: %08lx r4: %08lx\n",
++		regs->r1,  regs->r2,  regs->r3,  regs->r4);
++
++	pr_notice("r5: %08lx r6: %08lx r7: %08lx r8: %08lx\n",
++		regs->r5,  regs->r6,  regs->r7,  regs->r8);
++
++	pr_notice("r9: %08lx r10: %08lx r11: %08lx r12: %08lx\n",
++		regs->r9,  regs->r10, regs->r11, regs->r12);
++
++	pr_notice("r13: %08lx r14: %08lx r15: %08lx\n",
++		regs->r13, regs->r14, regs->r15);
++
++	pr_notice("ra: %08lx fp:  %08lx sp: %08lx gp: %08lx\n",
++		regs->ra,  regs->fp,  regs->sp,  regs->gp);
++
++	pr_notice("ea: %08lx estatus: %08lx\n",
++		regs->ea,  regs->estatus);
++}
++
++void flush_thread(void)
++{
++	set_fs(USER_DS);
++}
++
++int copy_thread(unsigned long clone_flags,
++		unsigned long usp, unsigned long arg, struct task_struct *p)
++{
++	struct pt_regs *childregs = task_pt_regs(p);
++	struct pt_regs *regs;
++	struct switch_stack *stack;
++	struct switch_stack *childstack =
++		((struct switch_stack *)childregs) - 1;
++
++	if (unlikely(p->flags & PF_KTHREAD)) {
++		memset(childstack, 0,
++			sizeof(struct switch_stack) + sizeof(struct pt_regs));
++
++		childstack->r16 = usp;		/* fn */
++		childstack->r17 = arg;
++		childstack->ra = (unsigned long) ret_from_kernel_thread;
++		childregs->estatus = STATUS_PIE;
++		childregs->sp = (unsigned long) childstack;
++
++		p->thread.ksp = (unsigned long) childstack;
++		p->thread.kregs = childregs;
++		return 0;
++	}
++
++	regs = current_pt_regs();
++	*childregs = *regs;
++	childregs->r2 = 0;	/* Set the return value for the child. */
++	childregs->r7 = 0;
++
++	stack = ((struct switch_stack *) regs) - 1;
++	*childstack = *stack;
++	childstack->ra = (unsigned long)ret_from_fork;
++	p->thread.kregs = childregs;
++	p->thread.ksp = (unsigned long) childstack;
++
++	if (usp)
++		childregs->sp = usp;
++
++	/* Initialize tls register. */
++	if (clone_flags & CLONE_SETTLS)
++		childstack->r23 = regs->r8;
++
++	return 0;
++}
++
++/*
++ *	Generic dumping code. Used for panic and debug.
++ */
++void dump(struct pt_regs *fp)
++{
++	unsigned long	*sp;
++	unsigned char	*tp;
++	int		i;
++
++	pr_emerg("\nCURRENT PROCESS:\n\n");
++	pr_emerg("COMM=%s PID=%d\n", current->comm, current->pid);
++
++	if (current->mm) {
++		pr_emerg("TEXT=%08x-%08x DATA=%08x-%08x BSS=%08x-%08x\n",
++			(int) current->mm->start_code,
++			(int) current->mm->end_code,
++			(int) current->mm->start_data,
++			(int) current->mm->end_data,
++			(int) current->mm->end_data,
++			(int) current->mm->brk);
++		pr_emerg("USER-STACK=%08x  KERNEL-STACK=%08x\n\n",
++			(int) current->mm->start_stack,
++			(int)(((unsigned long) current) + THREAD_SIZE));
++	}
++
++	pr_emerg("PC: %08lx\n", fp->ea);
++	pr_emerg(KERN_EMERG "SR: %08lx    SP: %08lx\n",
++		(long) fp->estatus, (long) fp);
++
++	pr_emerg("r1: %08lx    r2: %08lx    r3: %08lx\n",
++		fp->r1, fp->r2, fp->r3);
++
++	pr_emerg("r4: %08lx    r5: %08lx    r6: %08lx    r7: %08lx\n",
++		fp->r4, fp->r5, fp->r6, fp->r7);
++	pr_emerg("r8: %08lx    r9: %08lx    r10: %08lx    r11: %08lx\n",
++		fp->r8, fp->r9, fp->r10, fp->r11);
++	pr_emerg("r12: %08lx  r13: %08lx    r14: %08lx    r15: %08lx\n",
++		fp->r12, fp->r13, fp->r14, fp->r15);
++	pr_emerg("or2: %08lx   ra: %08lx     fp: %08lx    sp: %08lx\n",
++		fp->orig_r2, fp->ra, fp->fp, fp->sp);
++	pr_emerg("\nUSP: %08x   TRAPFRAME: %08x\n",
++		(unsigned int) fp->sp, (unsigned int) fp);
++
++	pr_emerg("\nCODE:");
++	tp = ((unsigned char *) fp->ea) - 0x20;
++	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n");
++
++	pr_emerg("\nKERNEL STACK:");
++	tp = ((unsigned char *) fp) - 0x40;
++	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n");
++	pr_emerg("\n");
++
++	pr_emerg("\nUSER STACK:");
++	tp = (unsigned char *) (fp->sp - 0x10);
++	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n\n");
++}
++
++unsigned long get_wchan(struct task_struct *p)
++{
++	unsigned long fp, pc;
++	unsigned long stack_page;
++	int count = 0;
++	if (!p || p == current || p->state == TASK_RUNNING)
++		return 0;
++
++	stack_page = (unsigned long)p;
++	fp = ((struct switch_stack *)p->thread.ksp)->fp;	/* ;dgt2 */
++	do {
++		if (fp < stack_page+sizeof(struct task_struct) ||
++			fp >= 8184+stack_page)	/* ;dgt2;tmp */
++			return 0;
++		pc = ((unsigned long *)fp)[1];
++		if (!in_sched_functions(pc))
++			return pc;
++		fp = *(unsigned long *) fp;
++	} while (count++ < 16);		/* ;dgt2;tmp */
++	return 0;
++}
++
++/*
++ * Do necessary setup to start up a newly executed thread.
++ * Will startup in user mode (status_extension = 0).
++ */
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++{
++	memset((void *) regs, 0, sizeof(struct pt_regs));
++	regs->estatus = ESTATUS_EPIE | ESTATUS_EU;
++	regs->ea = pc;
++	regs->sp = sp;
++}
++
++#include <linux/elfcore.h>
++
++/* Fill in the FPU structure for a core dump. */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *r)
++{
++	return 0; /* Nios2 has no FPU and thus no FPU registers */
++}
+diff --git a/arch/nios2/mm/mmu_context.c b/arch/nios2/mm/mmu_context.c
+new file mode 100644
+index 0000000..45d6b9c
+--- /dev/null
++++ b/arch/nios2/mm/mmu_context.c
+@@ -0,0 +1,116 @@
++/*
++ * MMU context handling.
++ *
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2009 Wind River Systems Inc
 + *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
@@ -507,68 +678,108 @@ index 0000000..21e865f
 + */
 +
 +#include <linux/mm.h>
-+#include <linux/sched.h>
 +
-+#include <asm/pgtable.h>
 +#include <asm/cpuinfo.h>
++#include <asm/mmu_context.h>
++#include <asm/tlb.h>
 +
-+/* pteaddr:
-+ *   ptbase | vpn* | zero
-+ *   31-22  | 21-2 | 1-0
-+ *
-+ *   *vpn is preserved on double fault
-+ *
-+ * tlbacc:
-+ *   IG   |*flags| pfn
-+ *   31-25|24-20 | 19-0
-+ *
-+ *   *crwxg
-+ *
-+ * tlbmisc:
-+ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
-+ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
-+ *
-+ */
++/* The pids position and mask in context */
++#define PID_SHIFT	0
++#define PID_BITS	(cpuinfo.tlb_pid_num_bits)
++#define PID_MASK	((1UL << PID_BITS) - 1)
++
++/* The versions position and mask in context */
++#define VERSION_BITS	(32 - PID_BITS)
++#define VERSION_SHIFT	(PID_SHIFT + PID_BITS)
++#define VERSION_MASK	((1UL << VERSION_BITS) - 1)
++
++/* Return the version part of a context */
++#define CTX_VERSION(c)	(((c) >> VERSION_SHIFT) & VERSION_MASK)
++
++/* Return the pid part of a context */
++#define CTX_PID(c)	(((c) >> PID_SHIFT) & PID_MASK)
++
++/* Value of the first context (version 1, pid 0) */
++#define FIRST_CTX	((1UL << VERSION_SHIFT) | (0 << PID_SHIFT))
++
++static mm_context_t next_mmu_context;
 +
 +/*
-+ * Initialize a new pgd / pmd table with invalid pointers.
++ * Initialize MMU context management stuff.
 + */
-+static void pgd_init(pgd_t *pgd)
++void __init mmu_context_init(void)
 +{
-+	unsigned long *p = (unsigned long *) pgd;
-+	int i;
-+
-+	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
-+		p[i + 0] = (unsigned long) invalid_pte_table;
-+		p[i + 1] = (unsigned long) invalid_pte_table;
-+		p[i + 2] = (unsigned long) invalid_pte_table;
-+		p[i + 3] = (unsigned long) invalid_pte_table;
-+		p[i + 4] = (unsigned long) invalid_pte_table;
-+		p[i + 5] = (unsigned long) invalid_pte_table;
-+		p[i + 6] = (unsigned long) invalid_pte_table;
-+		p[i + 7] = (unsigned long) invalid_pte_table;
-+	}
++	/* We need to set this here because the value depends on runtime data
++	 * from cpuinfo */
++	next_mmu_context = FIRST_CTX;
 +}
 +
-+pgd_t *pgd_alloc(struct mm_struct *mm)
++/*
++ * Set new context (pid), keep way
++ */
++static void set_context(mm_context_t context)
 +{
-+	pgd_t *ret, *init;
-+	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
-+	if (ret) {
-+		init = pgd_offset(&init_mm, 0UL);
-+		pgd_init(ret);
-+		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
-+		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
-+	}
-+
-+	return ret;
++	set_mmu_pid(CTX_PID(context));
 +}
 +
-+void __init pagetable_init(void)
++static mm_context_t get_new_context(void)
 +{
-+	/* Initialize the entire pgd.  */
-+	pgd_init(swapper_pg_dir);
-+	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
++	/* Return the next pid */
++	next_mmu_context += (1UL << PID_SHIFT);
++
++	/* If the pid field wraps around we increase the version and
++	 * flush the tlb */
++	if (unlikely(CTX_PID(next_mmu_context) == 0)) {
++		/* Version is incremented since the pid increment above
++		 * overflows info version */
++		flush_cache_all();
++		flush_tlb_all();
++	}
++
++	/* If the version wraps we start over with the first generation, we do
++	 * not need to flush the tlb here since it's always done above */
++	if (unlikely(CTX_VERSION(next_mmu_context) == 0))
++		next_mmu_context = FIRST_CTX;
++
++	return next_mmu_context;
++}
++
++void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++	       struct task_struct *tsk)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	/* If the process context we are swapping in has a different context
++	 * generation then we have it should get a new generation/pid */
++	if (unlikely(CTX_VERSION(next->context) !=
++		CTX_VERSION(next_mmu_context)))
++		next->context = get_new_context();
++
++	/* Save the current pgd so the fast tlb handler can find it */
++	pgd_current = next->pgd;
++
++	/* Set the current context */
++	set_context(next->context);
++
++	local_irq_restore(flags);
++}
++
++/*
++ * After we have set current->mm to a new value, this activates
++ * the context for the new mm so we see the new mappings.
++ */
++void activate_mm(struct mm_struct *prev, struct mm_struct *next)
++{
++	next->context = get_new_context();
++	set_context(next->context);
++	pgd_current = next->pgd;
++}
++
++unsigned long get_pid_from_context(mm_context_t *context)
++{
++	return CTX_PID((*context));
 +}
 -- 
 1.7.7.4
