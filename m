@@ -1,140 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217AbaJHF5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 01:57:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:53118 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750705AbaJHF5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 01:57:04 -0400
-Date: Tue, 7 Oct 2014 22:57:18 -0700
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux FS Dev Mailing List <linux-fsdevel@vger.kernel.org>,
-        Linux F2FS Dev Mailing List 
-	<linux-f2fs-devel@lists.sourceforge.net>
-Subject: [GIT PULL] f2fs updates for v3.18
-Message-ID: <20141008055718.GA68158@jaegeuk-mac02.hsd1.ca.comcast.net>
+	id S1753339AbaJHGE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:04:56 -0400
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:56147 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaJHGEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 02:04:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412740211-3345-1-git-send-email-addy.ke@rock-chips.com>
+References: <1412740211-3345-1-git-send-email-addy.ke@rock-chips.com>
+Date: Tue, 7 Oct 2014 23:04:52 -0700
+X-Google-Sender-Auth: BAcdnpa_kVPvJsvIkBcsQRbge-I
+Message-ID: <CAD=FV=W+raLff9uW5MgkZkSoDwPyAAShWZ46J80dGHC=GKd54A@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c: rk3x: adjust the LOW divison based on
+ characteristics of SCL
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>,
+        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>,
+        Alexandru Stan <amstan@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Addy,
 
-This patch-set introduces a couple of new features such as large sector size,
-FITRIM, and atomic/volatile writes.
-Several patches enhance power-off recovery and checkpoint routines.
-The fsck.f2fs starts to support fixing corrupted partitions with recovery hints
-provided by this patch-set.
+On Tue, Oct 7, 2014 at 8:50 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
+> As show in I2C specification:
+> - Standard-mode: the minimum HIGH period of the scl clock is 4.0us
+>                  the minimum LOW period of the scl clock is 4.7us
+> - Fast-mode: the minimum HIGH period of the scl clock is 0.6us
+>              the minimum LOW period of the scl clock is 1.3us
+>
+> I have measured i2c SCL waveforms in fast-mode by oscilloscope
+> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
+> It is so critical that we must adjust LOW division to increase
+> the LOW period of the scl clock.
+>
+> Thanks Doug for the suggestion about division formulas.
+>
+> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
+> ---
+> Changes in v2:
+> - remove Fast-mode plus and HS-mode
+> - use new formulas suggested by Doug
+> Changes in V3:
+> - use new formulas (sep 30) suggested by Doug
+>
+>  drivers/i2c/busses/i2c-rk3x.c | 135 +++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 128 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+> index b41d979..9612eba 100644
+> --- a/drivers/i2c/busses/i2c-rk3x.c
+> +++ b/drivers/i2c/busses/i2c-rk3x.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/wait.h>
+>  #include <linux/mfd/syscon.h>
+>  #include <linux/regmap.h>
+> +#include <linux/math64.h>
+>
+>
+>  /* Register Map */
+> @@ -428,18 +429,138 @@ out:
+>         return IRQ_HANDLED;
+>  }
+>
+> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
+> +                              unsigned long *div_low, unsigned long *div_high)
+> +{
+> +       unsigned long min_low_ns, min_high_ns;
+> +       unsigned long max_data_hold_ns;
+> +       unsigned long data_hold_buffer_ns;
+> +       unsigned long max_low_ns, min_total_ns;
+> +
+> +       unsigned long i2c_rate_khz, scl_rate_khz;
+> +
+> +       unsigned long min_low_div, min_high_div;
+> +       unsigned long max_low_div;
+> +
+> +       unsigned long min_div_for_hold, min_total_div;
+> +       unsigned long extra_div, extra_low_div, ideal_low_div;
+> +
+> +       /* Only support standard-mode and fast-mode */
+> +       WARN_ON(scl_rate > 400000);
+> +
+> +       /*
+> +        * min_low_ns:  The minimum number of ns we need to hold low
+> +        *              to meet i2c spec
+> +        * min_high_ns: The minimum number of ns we need to hold high
+> +        *              to meet i2c spec
+> +        * max_low_ns:  The maximum number of ns we can hold low
+> +        *              to meet i2c spec
+> +        *
+> +        * Note: max_low_ns should be (max data hold time * 2 - buffer)
+> +        *       This is because the i2c host on Rockchip holds the data line
+> +        *       for half the low time.
+> +        */
+> +       if (scl_rate <= 100000) {
+> +               min_low_ns = 4700;
+> +               min_high_ns = 4000;
+> +               max_data_hold_ns = 3450;
+> +               data_hold_buffer_ns = 50;
+> +       } else {
+> +               min_low_ns = 1300;
+> +               min_high_ns = 600;
+> +               max_data_hold_ns = 900;
+> +               data_hold_buffer_ns = 50;
+> +       }
+> +       max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
+> +       min_total_ns = min_low_ns + min_high_ns;
+> +
+> +       /* Adjust to avoid overflow */
+> +       i2c_rate_khz = DIV_ROUND_UP(i2c_rate, 1000);
+> +       scl_rate_khz = DIV_ROUND_UP(scl_rate, 1000);
+> +
+> +       /*
+> +        * We need the total div to be >= this number
+> +        * so we don't clock too fast.
+> +        */
+> +       min_total_div = DIV_ROUND_UP(i2c_rate_khz, scl_rate_khz * 8);
+> +
+> +       /* These are the min dividers needed for min hold times.*/
 
-Thank you very much.
+nit: a space before the "*" in the comment.
 
-The following changes since commit 70c8038dd698b44daf7c8fc7e2eca142bec694c4:
+> +       min_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns, 8 * 1000000);
+> +       min_high_div = DIV_ROUND_UP(i2c_rate_khz * min_high_ns, 8 * 1000000);
+> +       min_div_for_hold = (min_low_div + min_high_div);
+> +
+> +       /*
+> +        * This is the maximum divider so we don't go over the max.
+> +        * We don't round up here (we round down) since this is a max.
+> +        */
+> +       max_low_div = i2c_rate_khz * max_low_ns / (8 * 1000000);
+> +
+> +       if (min_low_div > max_low_div)
 
-  Merge tag 'for-f2fs-3.17-rc4' of git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs (2014-09-03 10:10:28 -0700)
+It feels like we should print some sort of warning here.  Maybe WARN_ONCE?
 
-are available in the git repository at:
+> +               max_low_div = min_low_div;
+> +
+> +       if (min_div_for_hold > min_total_div) {
+> +               /*
+> +                * Time needed to meet hold requirements is important.
+> +                * Just use that.
+> +                */
+> +               *div_low = min_low_div;
+> +               *div_high = min_high_div;
+> +       } else {
+> +               /*
+> +                * We've got to distribute some time among the low and high
+> +                * so we don't run too fast.
+> +                */
+> +               extra_div = min_total_div - min_div_for_hold;
+> +               /*
+> +                * We'll try to split things up perfectly evenly,
+> +                * biasing slightly towards having a higher div
+> +                * for low (spend more time low).
+> +                */
+> +
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git tags/f2fs-for-3.18
+nit: The comment above should probably be next to the line below, not
+to the line above it.
 
-for you to fetch changes up to 02a1335f25a386db9afc68f8315162f862aac93f:
+> +               ideal_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns,
+> +                                            scl_rate_khz * 8 * min_total_ns);
+> +
+> +               /* Don't allow it to go over the max */
+> +               if (ideal_low_div > max_low_div)
+> +                       ideal_low_div = max_low_div;
+> +
+> +               /* Handle when the ideal low div is going to take up
+> +                * more than we have.
+> +                */
 
-  f2fs: support volatile operations for transient data (2014-10-07 11:54:41 -0700)
+nit: above comment had the wrong style still
 
-----------------------------------------------------------------
-f2fs updates for v3.18
+> +               if (ideal_low_div > min_low_div + extra_div)
+> +                       ideal_low_div = min_low_div + extra_div;
+> +
+> +               /* Give low the "ideal" and give high whatever extra is left */
+> +               extra_low_div = ideal_low_div - min_low_div;
+> +               *div_low = ideal_low_div;
+> +               *div_high = min_high_div + (extra_div - extra_low_div);
+> +       }
+> +
+> +       /*
+> +       * Adjust to the fact that the hardware has an implicit "+1".
+> +       * NOTE: Above calculations always produce div_low > 0 and  div_high > 0.
+> +       */
+> +       *div_low = *div_low - 1;
+> +       *div_high = *div_high - 1;
+> +}
+> +
+>  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
+>  {
+>         unsigned long i2c_rate = clk_get_rate(i2c->clk);
+> -       unsigned int div;
+> +       unsigned long div_low, div_high;
+> +       u64 t_low_ns, t_high_ns;
+>
+> -       /* set DIV = DIVH = DIVL
+> -        * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
+> -        *          = (clk rate) / (16 * (DIV + 1))
+> -        */
+> -       div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
+> +       rk3x_i2c_calc_divs(i2c_rate, scl_rate, &div_low, &div_high);
+> +
+> +       i2c_writel(i2c, (div_high << 16) | (div_low & 0xffff), REG_CLKDIV);
+>
+> -       i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
+> +       t_low_ns = div_u64(((u64)div_low + 1) * 8 * 1000000000, i2c_rate);
+> +       t_high_ns = div_u64(((u64)div_high + 1) * 8 * 1000000000, i2c_rate);
+> +       dev_dbg(i2c->dev,
+> +               "CLK %lukhz, Req %luns, Act low %lluns high %lluns\n",
+> +               i2c_rate / 1000,
+> +               1000000000 / scl_rate,
+> +               t_low_ns, t_high_ns);
+>  }
+>
+>  /**
 
-This series includes patches to:
- o retain some recovery information for fsck.f2fs
- o enhance checkpoint speed
- o enhance flush command management
- o bug fix for lseek
- o tune in-place-update policies
- o enhance roll-forward speed
- o revisit all the roll-forward and fsync rules
- o support large sector size
- o support FITRIM
- o support atomic and volatile writes
+All of my comments are just nits and this appears to match the python
+script I sent out exactly.  I guess that means you're happy with these
+formulas now.  :)  Hopefully others (Max, Wolfram?) can take a look at
+this now and see what they think.  It's definitely long but I think it
+should give us the best numbers we can get (and most of the length is
+all the comments).
 
-And several clean-ups and bug fixes are included.
+Maybe you can send up a v4 that addresses nits?  After nits:
 
-----------------------------------------------------------------
-Chao Yu (7):
-      f2fs: remove unneeded sit_i in macro SIT_BLOCK_OFFSET/START_SEGNO
-      f2fs: refactor flush_sit_entries codes for reducing SIT writes
-      f2fs: fix to truncate blocks past EOF in ->setattr
-      f2fs: support large sector size
-      f2fs: skip punching hole in special condition
-      f2fs: fix to clean previous mount option when remount_fs
-      f2fs: fix to search whole dirty segmap when get_victim
+Reviewed-by: Doug Anderson <dianders@chromium.org>
 
-Dan Carpenter (1):
-      f2fs: potential shift wrapping buf in f2fs_trim_fs()
+I've tested this on my rk3288 board and i2c still seems to work fine
+at 400kHz.  I haven't scoped it myself, but I trust that you have.
 
-Gu Zheng (1):
-      f2fs: use lock-less list(llist) to simplify the flush cmd management
-
-Huang Ying (3):
-      f2fs: avoid node page to be written twice in gc_node_segment
-      f2fs: use nm_i->next_scan_nid as default for next_free_nid
-      f2fs: fix a race condition in next_free_nid
-
-Jaegeuk Kim (30):
-      f2fs: introduce F2FS_I_SB, F2FS_M_SB, and F2FS_P_SB
-      f2fs: retain inconsistency information to initiate fsck.f2fs
-      f2fs: need fsck.f2fs when f2fs_bug_on is triggered
-      f2fs: add BUG cases to initiate fsck.f2fs
-      f2fs: handle bug cases by letting fsck.f2fs initiate
-      f2fs: need fsck.f2fs if the recovery was failed
-      f2fs: fix negative value for lseek offset
-      f2fs: remove lengthy inode->i_ino
-      f2fs: expand counting dirty pages in the inode page cache
-      f2fs: give an option to enable in-place-updates during fsync to users
-      f2fs: fix double lock for inode page during roll-foward recovery
-      f2fs: use meta_inode cache to improve roll-forward speed
-      f2fs: introduce a flag to represent each nat entry information
-      f2fs: fix conditions to remain recovery information in f2fs_sync_file
-      f2fs: fix roll-forward missing scenarios
-      f2fs: do not skip latest inode information
-      f2fs: remove redundant operation during roll-forward recovery
-      f2fs: use MAX_BIO_BLOCKS(sbi)
-      f2fs: update i_size when __allocate_data_block
-      f2fs: change the ipu_policy option to enable combinations
-      f2fs: use more free segments until SSR is activated
-      f2fs: introduce cp_control structure
-      f2fs: introduce FITRIM in f2fs_ioctl
-      f2fs: refactor flush_nat_entries to remove costly reorganizing ops
-      f2fs: check the use of macros on block counts and addresses
-      f2fs: call f2fs_unlock_op after error was handled
-      f2fs: clean up f2fs_ioctl functions
-      f2fs: remove unused return value
-      f2fs: support atomic writes
-      f2fs: support volatile operations for transient data
-
- Documentation/ABI/testing/sysfs-fs-f2fs |   7 +
- Documentation/filesystems/f2fs.txt      |  13 +-
- fs/f2fs/checkpoint.c                    |  97 +++---
- fs/f2fs/data.c                          |  69 +++--
- fs/f2fs/debug.c                         |  20 +-
- fs/f2fs/dir.c                           |  19 +-
- fs/f2fs/f2fs.h                          | 163 +++++++---
- fs/f2fs/file.c                          | 257 ++++++++++++----
- fs/f2fs/gc.c                            |  26 +-
- fs/f2fs/inline.c                        |  20 +-
- fs/f2fs/inode.c                         |  37 ++-
- fs/f2fs/namei.c                         |  53 ++--
- fs/f2fs/node.c                          | 460 ++++++++++++++--------------
- fs/f2fs/node.h                          |  60 ++--
- fs/f2fs/recovery.c                      | 191 +++++++-----
- fs/f2fs/segment.c                       | 520 +++++++++++++++++++++++---------
- fs/f2fs/segment.h                       | 160 ++++++----
- fs/f2fs/super.c                         |  47 ++-
- fs/f2fs/xattr.c                         |   8 +-
- include/linux/f2fs_fs.h                 |   6 +-
- include/trace/events/f2fs.h             |  16 +-
- 21 files changed, 1453 insertions(+), 796 deletions(-)
-
+Tested-by: Doug Anderson <dianders@chromium.org>
