@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaJHUFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:05:06 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:40697 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777AbaJHUFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:05:01 -0400
-Date: Wed, 8 Oct 2014 21:04:58 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Perform rotation on Intel CQM RMIDs
-Message-ID: <20141008200458.GV14343@console-pimps.org>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-12-git-send-email-matt@console-pimps.org>
- <20141008181044.GI4750@worktop.programming.kicks-ass.net>
+	id S1755345AbaJHUF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:05:28 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:39947 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754078AbaJHUF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 16:05:26 -0400
+Message-ID: <54359902.3070405@osg.samsung.com>
+Date: Wed, 08 Oct 2014 14:05:22 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008181044.GI4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 00/26] 3.16.5-stable review
+References: <20141007231848.487609292@linuxfoundation.org>
+In-Reply-To: <20141007231848.487609292@linuxfoundation.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Oct, at 08:10:44PM, Peter Zijlstra wrote:
-> On Wed, Sep 24, 2014 at 03:04:15PM +0100, Matt Fleming wrote:
-> > +	limbo_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(nr_bits) *
-> > +			       nr_cpumask_bits, GFP_KERNEL);
+On 10/07/2014 05:19 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.16.5 release.
+> There are 26 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> That's going to be a _huge_ amount of memory on SGI class systems. Do we
-> really need per-cpu storage for this?
+> Responses should be made by Thu Oct  9 23:18:40 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.5-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-Ah, no we don't.
+Compiled and booted on my test system. No dmesg regressions.
 
-Allocating it the above way just makes things easier because you can
-index the array directly using your cpu.
+-- Shuah
 
-I'll shrink this down to the minimum memory needed.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
