@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708AbaJHHtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:49:43 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35584 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600AbaJHHtb (ORCPT
+	id S1754743AbaJHHuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:50:01 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:40724 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754524AbaJHHt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:49:31 -0400
+	Wed, 8 Oct 2014 03:49:27 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: viresh.kumar@linaro.org
 Cc: thomas.petazzoni@free-electrons.com, rjw@rjwysocki.net,
@@ -19,53 +19,33 @@ Cc: thomas.petazzoni@free-electrons.com, rjw@rjwysocki.net,
         dietmar.eggemann@arm.com, vincent.guittot@linaro.org,
         nicolas.pitre@linaro.org, linux-kernel@vger.kernel.org,
         tuukka.tikkanen@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 2/2] cpufreq: new function to query driver for flags
-Date: Wed,  8 Oct 2014 00:48:54 -0700
-Message-Id: <1412754534-14068-3-git-send-email-mturquette@linaro.org>
+Subject: [PATCH 0/2] allow cpufreq drivers to export flags
+Date: Wed,  8 Oct 2014 00:48:52 -0700
+Message-Id: <1412754534-14068-1-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412754534-14068-1-git-send-email-mturquette@linaro.org>
+In-Reply-To: <CAKohpo=7q9bDcHRxLehNLX6A2idGxUy3jEWvQ+EGbKOQG-MH2g@mail.gmail.com>
 References: <CAKohpo=7q9bDcHRxLehNLX6A2idGxUy3jEWvQ+EGbKOQG-MH2g@mail.gmail.com>
- <1412754534-14068-1-git-send-email-mturquette@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are cases for CPUfreq driver flags to be exposed outside of the
-CPUfreq core code. In particular the CPUFREQ_NO_SLEEP flag can be used
-by CPUfreq governors to optimize when and how they call that drivers
-.target callback. In fact this knowledge is a requirement for the
-on-going work to initiate cpu frequency transitions from the scheduler.
+This series is partially in response to a discussion around DT bindings
+for CPUfreq drivers [0], but it is also needed for on-going work to
+integrate CPUfreq with the scheduler. In particular a scheduler-driven
+cpu frequency scaling policy would be well served to know if the
+underlying CPUfreq driver .target callback might sleep or block for a
+long time.
 
-This patch implements a simple function to return the CPUfreq driver
-flags. While currently the flags are a u8, that could grow at a future
-date and cpufreq_driver_get_flags returns an int. Additionally the
-function needs to return an error in case no driver is registered.
+[0] http://lkml.kernel.org/r/<fcb88cd21f31a467d2d49911c2505082837f72ea.1410323179.git.viresh.kumar@linaro.org>
 
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
- drivers/cpufreq/cpufreq.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Mike Turquette (2):
+  cpufreq: add driver flag for sleepable transitions
+  cpufreq: new function to query driver for flags
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 9b471b2..f3b9042 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1980,6 +1980,15 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
- }
- EXPORT_SYMBOL_GPL(cpufreq_driver_target);
- 
-+int cpufreq_driver_get_flags(void)
-+{
-+	if (!cpufreq_driver)
-+		return -ENODEV;
-+
-+	return cpufreq_driver->flags;
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_driver_get_flags);
-+
- /*
-  * when "event" is CPUFREQ_GOV_LIMITS
-  */
+ drivers/cpufreq/cpufreq.c |  9 +++++++++
+ include/linux/cpufreq.h   | 13 +++++++++++++
+ 2 files changed, 22 insertions(+)
+
 -- 
 1.8.3.2
 
