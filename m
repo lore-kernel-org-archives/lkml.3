@@ -1,83 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145AbaJHKq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:46:56 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39315 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932104AbaJHKqx (ORCPT
+	id S932172AbaJHKrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:47:11 -0400
+Received: from smtp89.ord1c.emailsrvr.com ([108.166.43.89]:50593 "EHLO
+	smtp89.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932106AbaJHKqz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:46:53 -0400
-Date: Wed, 8 Oct 2014 14:46:49 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
-        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH] mnt: Move the clear of MNT_LOCKED from copy_tree to it's
-Message-ID: <20141008104649.GA24908@paralelels.com>
-References: <1412683212-28077-1-git-send-email-avagin@openvz.org>
- <20141007132431.GF7996@ZenIV.linux.org.uk>
- <20141007134011.GA569@paralelels.com>
- <87vbnv3cl1.fsf_-_@x220.int.ebiederm.org>
- <20141007195307.GA23694@paralelels.com>
- <87iojvvbqe.fsf@x220.int.ebiederm.org>
- <20141007215959.GA4622@paralelels.com>
- <878ukrmp1t.fsf@x220.int.ebiederm.org>
- <87zjd7la91.fsf_-_@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <87zjd7la91.fsf_-_@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.30.16.48]
+	Wed, 8 Oct 2014 06:46:55 -0400
+X-Sender-Id: pramod.gurav@smartplayin.com
+From: Pramod Gurav <pramod.gurav@smartplayin.com>
+To: linux-kernel@vger.kernel.org
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH] Input: nomadik-ske-keypad: Switch to using managed resources
+Date: Wed,  8 Oct 2014 16:20:28 +0530
+Message-Id: <1412765428-6517-1-git-send-email-pramod.gurav@smartplayin.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 04:40:10PM -0700, Eric W. Biederman wrote:
-> 
-> Clear MNT_LOCKED in the callers of copy_tree except copy_mnt_ns, and
-> collect_mounts.  In copy_mnt_nswe want an exact copy of a mount tree,
-> so not clearing MNT_LOCKED is important.  Similarly collect_mounts
-> is used to take a snapshot of the mount tree for audit logging purposes
-> and auditing using a faithful copy of the tree is important.
-> 
-> This becomes particularly significant when we start setting MNT_LOCKED
-> on rootfs to prevent it from being unmounted.
-> 
+This change switches to using devm_* APIs to allocate  resources.
+This helps to simplify failure path in probe function as well as
+remove function.
 
-Acked-by: Andrew Vagin <avagin@parallels.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org
+Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+---
+ drivers/input/keyboard/nomadik-ske-keypad.c |   63 +++++++++------------------
+ 1 file changed, 20 insertions(+), 43 deletions(-)
 
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  fs/namespace.c | 1 -
->  fs/pnode.c     | 1 +
->  2 files changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index 9c6ee037bef7..5a11e273541c 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1498,7 +1498,6 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
->  	if (IS_ERR(q))
->  		return q;
->  
-> -	q->mnt.mnt_flags &= ~MNT_LOCKED;
->  	q->mnt_mountpoint = mnt->mnt_mountpoint;
->  
->  	p = mnt;
-> diff --git a/fs/pnode.c b/fs/pnode.c
-> index aae331a5d03b..260ac8f898a4 100644
-> --- a/fs/pnode.c
-> +++ b/fs/pnode.c
-> @@ -242,6 +242,7 @@ static int propagate_one(struct mount *m)
->  	child = copy_tree(last_source, last_source->mnt.mnt_root, type);
->  	if (IS_ERR(child))
->  		return PTR_ERR(child);
-> +	child->mnt.mnt_flags &= ~MNT_LOCKED;
->  	mnt_set_mountpoint(m, mp, child);
->  	last_dest = m;
->  	last_source = child;
-> -- 
-> 1.9.1
-> 
+diff --git a/drivers/input/keyboard/nomadik-ske-keypad.c b/drivers/input/keyboard/nomadik-ske-keypad.c
+index 63332e2..95ac317 100644
+--- a/drivers/input/keyboard/nomadik-ske-keypad.c
++++ b/drivers/input/keyboard/nomadik-ske-keypad.c
+@@ -247,12 +247,11 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	keypad = kzalloc(sizeof(struct ske_keypad), GFP_KERNEL);
++	keypad = devm_kzalloc(&pdev->dev, sizeof(*keypad), GFP_KERNEL);
+ 	input = input_allocate_device();
+ 	if (!keypad || !input) {
+ 		dev_err(&pdev->dev, "failed to allocate keypad memory\n");
+-		error = -ENOMEM;
+-		goto err_free_mem;
++		return -ENOMEM;
+ 	}
+ 
+ 	keypad->irq = irq;
+@@ -260,31 +259,29 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 	keypad->input = input;
+ 	spin_lock_init(&keypad->ske_keypad_lock);
+ 
+-	if (!request_mem_region(res->start, resource_size(res), pdev->name)) {
++	if (!devm_request_mem_region(&pdev->dev, res->start,
++				     resource_size(res), pdev->name)) {
+ 		dev_err(&pdev->dev, "failed to request I/O memory\n");
+-		error = -EBUSY;
+-		goto err_free_mem;
++		return -EBUSY;
+ 	}
+ 
+-	keypad->reg_base = ioremap(res->start, resource_size(res));
++	keypad->reg_base = devm_ioremap(&pdev->dev, res->start,
++					resource_size(res));
+ 	if (!keypad->reg_base) {
+ 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+-		error = -ENXIO;
+-		goto err_free_mem_region;
++		return -ENXIO;
+ 	}
+ 
+-	keypad->pclk = clk_get(&pdev->dev, "apb_pclk");
++	keypad->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
+ 	if (IS_ERR(keypad->pclk)) {
+ 		dev_err(&pdev->dev, "failed to get pclk\n");
+-		error = PTR_ERR(keypad->pclk);
+-		goto err_iounmap;
++		return PTR_ERR(keypad->pclk);
+ 	}
+ 
+-	keypad->clk = clk_get(&pdev->dev, NULL);
++	keypad->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(keypad->clk)) {
+ 		dev_err(&pdev->dev, "failed to get clk\n");
+-		error = PTR_ERR(keypad->clk);
+-		goto err_pclk;
++		return PTR_ERR(keypad->clk);
+ 	}
+ 
+ 	input->id.bustype = BUS_HOST;
+@@ -296,7 +293,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 					   keypad->keymap, input);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "Failed to build keymap\n");
+-		goto err_clk;
++		return error;
+ 	}
+ 
+ 	input_set_capability(input, EV_MSC, MSC_SCAN);
+@@ -306,7 +303,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 	error = clk_prepare_enable(keypad->pclk);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "Failed to prepare/enable pclk\n");
+-		goto err_clk;
++		return error;
+ 	}
+ 
+ 	error = clk_prepare_enable(keypad->clk);
+@@ -326,8 +323,9 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 		goto err_clk_disable;
+ 	}
+ 
+-	error = request_threaded_irq(keypad->irq, NULL, ske_keypad_irq,
+-				     IRQF_ONESHOT, "ske-keypad", keypad);
++	error = devm_request_threaded_irq(&pdev->dev, keypad->irq, NULL,
++					  ske_keypad_irq, IRQF_ONESHOT,
++					  "ske-keypad", keypad);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "allocate irq %d failed\n", keypad->irq);
+ 		goto err_clk_disable;
+@@ -337,7 +335,7 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 	if (error) {
+ 		dev_err(&pdev->dev,
+ 				"unable to register input device: %d\n", error);
+-		goto err_free_irq;
++		goto err_clk_disable;
+ 	}
+ 
+ 	if (plat->wakeup_enable)
+@@ -347,45 +345,24 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-err_free_irq:
+-	free_irq(keypad->irq, keypad);
+ err_clk_disable:
+ 	clk_disable_unprepare(keypad->clk);
+ err_pclk_disable:
+ 	clk_disable_unprepare(keypad->pclk);
+-err_clk:
+-	clk_put(keypad->clk);
+-err_pclk:
+-	clk_put(keypad->pclk);
+-err_iounmap:
+-	iounmap(keypad->reg_base);
+-err_free_mem_region:
+-	release_mem_region(res->start, resource_size(res));
+-err_free_mem:
+-	input_free_device(input);
+-	kfree(keypad);
++
+ 	return error;
+ }
+ 
+ static int ske_keypad_remove(struct platform_device *pdev)
+ {
+ 	struct ske_keypad *keypad = platform_get_drvdata(pdev);
+-	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-
+-	free_irq(keypad->irq, keypad);
+-
+-	input_unregister_device(keypad->input);
+ 
+ 	clk_disable_unprepare(keypad->clk);
+-	clk_put(keypad->clk);
++	clk_disable_unprepare(keypad->pclk);
+ 
+ 	if (keypad->board->exit)
+ 		keypad->board->exit();
+ 
+-	iounmap(keypad->reg_base);
+-	release_mem_region(res->start, resource_size(res));
+-	kfree(keypad);
+-
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
+
