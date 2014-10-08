@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaJHSKr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:10:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34797 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046AbaJHSKq (ORCPT
+	id S1754108AbaJHSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:11:09 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23451 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751919AbaJHSLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:10:46 -0400
-Date: Wed, 8 Oct 2014 20:10:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 11/11] perf/x86/intel: Perform rotation on Intel CQM RMIDs
-Message-ID: <20141008181044.GI4750@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-12-git-send-email-matt@console-pimps.org>
+	Wed, 8 Oct 2014 14:11:07 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 162.217.72.246
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/G2OJuORqz0b5r02HQU0/Y
+Date: Wed, 8 Oct 2014 11:10:28 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: He YunLei <heyunlei@huawei.com>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
+        wangbintian@huawei.com, liguozhu@hisilicon.com,
+        kong.kongxinwei@hisilicon.com
+Subject: Re: [RFC PATCH] pinctrl: pinctrl-single.c:  init pinctrl single at
+ arch_initcall time
+Message-ID: <20141008181027.GE10014@atomide.com>
+References: <542934F4.10303@huawei.com>
+ <20140929175427.GE3122@atomide.com>
+ <54349671.6090008@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1411567455-31264-12-git-send-email-matt@console-pimps.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <54349671.6090008@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 24, 2014 at 03:04:15PM +0100, Matt Fleming wrote:
-> +	limbo_bitmap = kmalloc(sizeof(long) * BITS_TO_LONGS(nr_bits) *
-> +			       nr_cpumask_bits, GFP_KERNEL);
+* He YunLei <heyunlei@huawei.com> [141007 18:43]:
+> 
+> Thanks for your review and I am really appreciated it, but in our arm
+> platform, we haven't custom initcall levels for other drivers. Although
+> deferred probe helps other drivers to register well, we are also confused
+> for the issues of lots of pin request errors debug output while booting the
+> kernel. Besides, if the number is bigger than the limited number, whether
+> deferred probe can solve this problem.
 
-That's going to be a _huge_ amount of memory on SGI class systems. Do we
-really need per-cpu storage for this?
+OK. Care to provide some examples where this happens on your
+platform?
+
+Note that we already have pinctrl very early in drivers/Makefile.
+What are the early users for pinctrl-single in your setup?
+
+Regards,
+
+Tony
