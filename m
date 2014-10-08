@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226AbaJHJq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:46:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41522 "EHLO mx2.suse.de"
+	id S1755401AbaJHJuF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:50:05 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:45046 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755495AbaJHJqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:46:25 -0400
-Date: Wed, 8 Oct 2014 11:46:20 +0200
-From: Michal Kubecek <mkubecek@suse.cz>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Hannes Frederic Sowa'" <hannes@stressinduktion.org>,
-        Fabian Frederick <fabf@skynet.be>, Guenter Roeck <linux@roeck-us.net>,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
-Message-ID: <20141008094620.GA12270@unicorn.suse.cz>
-References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
- <20141007.161832.453892039501955243.davem@davemloft.net>
- <20141007203344.GA4748@roeck-us.net>
- <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
- <1412715283.11600.11.camel@localhost>
- <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754601AbaJHJuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:50:01 -0400
+Message-ID: <1412761807.13569.12.camel@iivanov-dev>
+Subject: Re: [PATCH 0/2] Qualcomm PM8941 power key driver
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Wed, 08 Oct 2014 12:50:07 +0300
+In-Reply-To: <20141007184640.GB31125@sonymobile.com>
+References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
+	 <1412672510.1027.57.camel@iivanov-dev>
+	 <20141007184640.GB31125@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 09:10:23AM +0000, David Laight wrote:
-> From: Hannes Frederic Sowa
-> > I think David's concern was whether if 0 == false in all situations. It
-> > is pretty clear that static memory is initialized to 0.
+On Tue, 2014-10-07 at 11:46 -0700, Bjorn Andersson wrote:
+> On Tue 07 Oct 02:01 PDT 2014, Ivan T. Ivanov wrote:
 > 
-> I'm not 100% sure about that.
-> static pointers may be required to be initialised to NULL.
+> > 
+> > Hi Bjorn,
+> > 
+> > On Mon, 2014-10-06 at 18:11 -0700, Bjorn Andersson wrote:
+> > > These patches add dt bindings and a device driver for the power key block in
+> > > the Qualcomm PM8941 pmic.
+> > > 
+> > > Courtney Cavin (2):
+> > >   input: Add Qualcomm PM8941 power key driver
+> > >   input: pm8941-pwrkey: Add DT binding documentation
+> > > 
+> > >  .../bindings/input/qcom,pm8941-pwrkey.txt          |   43 +++++
+> > >  drivers/input/misc/Kconfig                         |   12 ++
+> > >  drivers/input/misc/Makefile                        |    1 +
+> > >  drivers/input/misc/pm8941-pwrkey.c                 |  196 ++++++++++++++++++++
+> > >  4 files changed, 252 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/input/qcom,pm8941-pwrkey.txt
+> > >  create mode 100644 drivers/input/misc/pm8941-pwrkey.c
+> > 
+> > Any reason why we cannot reuse pm8xxx-pwrkey driver? It have been
+> > converted to regmap already. 
+> > 
+> 
+> The boilerplate code is the same,
 
-ISO C 99 says:
+The boilerplate code is almost 100% :-)
 
-  If an object that has static storage duration is not initialized
-  explicitly, then:
-  - if it has pointer type, it is initialized to a null pointer;
-  - if it has arithmetic type, it is initialized to (positive or
-    unsigned) zero;
-  - if it is an aggregate, every member is initialized (recursively)
-    according to these rules;
-  - if it is a union, the first named member is initialized
-    (recursively) according to these rules.
+>  but configuration registers have different
+> layout and values written in them are different. 
 
-Michal Kubeèek
+We talk about 3 registers and 2 bit defines. struct regmap_field
+should be able to help here.
+
+> The pm8xxx block have separate
+> interrupts for press and release events while pm8941 have one interrupt for
+> both, so the pm8941 must read out the irq status bits to figure out which event
+> it was.
+
+Optional interrupt property? If both are defined hook old ISR, if its
+only one hook pm8941 ISR?
+
+> 
+> Maybe if we introduce some vagueness related to interrupts in the dt binding
+> documentation for pm8xxx we could simply reuse that binding.
+> 
+
+I would not say vagueness, we just can say that pm8941 did not have
+second interrupt?
+
+Regards,
+Ivan
+
+> Regards,
+> Bjorn
+
 
