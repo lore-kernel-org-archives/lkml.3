@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000AbaJHQXX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 12:23:23 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:50949 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469AbaJHQXW (ORCPT
+	id S1755357AbaJHQZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:25:11 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:52653 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbaJHQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:23:22 -0400
-Date: Wed, 8 Oct 2014 18:23:13 +0200
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-Message-ID: <20141008162313.GA38790@sesse.net>
-References: <20141003194428.GA27084@sesse.net>
- <1412782664.5179.75.camel@marge.simpson.net>
+	Wed, 8 Oct 2014 12:25:08 -0400
+Message-ID: <5435655C.8090803@collabora.co.uk>
+Date: Wed, 08 Oct 2014 18:25:00 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1412782664.5179.75.camel@marge.simpson.net>
-X-Operating-System: Linux 3.16.3 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Doug Anderson <dianders@chromium.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 5/5] ARM: dts: Add initial regulator mode on exynos Peach
+ boards
+References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk> <1412775847-15213-6-git-send-email-javier.martinez@collabora.co.uk> <20141008145627.GD4609@sirena.org.uk>
+In-Reply-To: <20141008145627.GD4609@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 05:37:44PM +0200, Mike Galbraith wrote:
-> Seems you opened a can of futex worms...
+On 10/08/2014 04:56 PM, Mark Brown wrote:
+> On Wed, Oct 08, 2014 at 03:44:07PM +0200, Javier Martinez Canillas wrote:
+> 
+>> The regulator core now has support to choose a default initial
+>> operating mode for regulators from DT. Set the initial opmode
+>> for the max77802 PMIC regulators with the same modes that are
+>> used in the downstream ChromeOS kernel, in order to allow the
+>> system to lower power at suspend time.
+> 
+> The stated goal of this change doesn't appear to correspond to what it
+> actually does.  It's saying that we want to be able to set the regulator
+> into low power modes on suspend which is a sensible and useful thing to
+> want to do (especially for regulators which don't have physical suspend
+> modes which we currently make any effort to handle) but what the change
+> actually does is cause us to set the default state of supplies on boot.
+> 
 
-Awesome.
+Well, setting a regulator into low power mode on suspend is something
+that Chanwoo's series tried to address. At least on v3 since he removed
+regulator-mode property for the regulator-state-{standby,mem,disk} on v4.
 
-> I don't see that on the 2 x E5-2697 box I borrowed to take a peek.  Once
-> I got stockfish to actually run to completion by hunting down and brute
-> force reverting the below, I see ~32 million nodes/sec throughput with
-> 3.17 whether I use taskset or just let it do its thing.
+What this series tried to solve is when you have to set a opmode on boot
+to change how the physical suspend is managed by the PMIC.
 
-Interesting. If you open up top, do you see (like me) the load being spread
-out across multiple CPUs, or do they actually stay in place like they're
-supposed to?
+In the Maxim77802 PMIC is even trickier since not all the modes have the
+semantics. That is the value 0x1 could have different meanings depending
+of the regulator.
 
-I suppose you run with Threads set to 28, right? (And not, say, 56.)
+> The device tree should describe what it's trying to achieve, otherwise
+> even if things happen to work right now it's going to be vulnerable to
+> being broken by future kernel changes which take what it's saying at
+> face value.
+> 
+>>  			buck2_reg: BUCK2 {
+>> @@ -201,6 +203,7 @@
+>>  				regulator-always-on;
+>>  				regulator-boot-on;
+>>  				regulator-ramp-delay = <12500>;
+>> +				regulator-initial-mode = <REGULATOR_MODE_STANDBY>;
+>>  			};
+> 
+> This appears to set the supply which is labelled as VDD_ARM into standby
+> mode by default (from a first glance the change appears to set all
+> supplies into standby mode) and of course we currently have no way of
+> changing the mode at runtime in DT systems.  Are you *really* sure this
+> is a good idea of which an electrical engineer would approve, CPU cores
+> are typically one of the most demanding workloads available for a
+> regulator?
+> 
 
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+Well, the standby mode for this regulator is actually:
+
+Output ON/OFF Controlled by PWRREQ
+	PWRREQ=HIGH (1): Output ON in Normal Mode
+	PWRREQ=LOW (0): Output OFF
+
+this means that when the Soc enters into suspend mode a pin is toggled
+and that pin is connected to the PWRREQ line in the PMIC to signal that
+the SoC has entered in sleep mode so the regulator has to be OFF.
+
+When the SoC leaves sleep mode and is resumed again, the pin is toggled
+so the PMIC puts the regulator in ON again.
+
+There is other mode that instead of turning off the regulator, keeps it
+enabled but in low power mode.
+
+Best regards,
+Javier
