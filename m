@@ -1,68 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932415AbaJHNoI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:44:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45995 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932322AbaJHNoF (ORCPT
+	id S932493AbaJHNoL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:44:11 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62144 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932326AbaJHNoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:44:05 -0400
-Date: Wed, 8 Oct 2014 06:43:07 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: arnd@arndb.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] misc: always assign miscdevice to file->private_data in
- open()
-Message-ID: <20141008134307.GA6099@kroah.com>
-References: <1412758074-7882-1-git-send-email-martink@posteo.de>
+	Wed, 8 Oct 2014 09:44:08 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>, devicetree@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 12/13] leds: leds-gpio: Make use of device property API
+Date: Wed, 08 Oct 2014 16:04:13 +0200
+Message-ID: <2960802.kPr8UT7PvT@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1997643.hzLDnYTZoH@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1997643.hzLDnYTZoH@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412758074-7882-1-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 10:47:54AM +0200, Martin Kepplinger wrote:
-> As of now, a miscdevice driver has to provide an implementation of
-> the open() file operation if it wants to have misc_open() assign a
-> pointer to struct miscdevice to file->private_data for other file
-> operations to use (given the user calls open()).
+On Tuesday, October 07, 2014 02:18:45 AM Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> This leads to situations where a miscdevice driver that doesn't need
-> internal operations during open() has to implement open() that only
-> returns immediately, in order to use the data in private_data in other
-> fops.
-
-Yeah, that's messy, do we have any in-kernel misc drivers that do this?
-
-> This change provides consistent behaviour for miscdevice developers by
-> always providing the pointer in private_data. A driver's open() fop would,
-> of course, just overwrite it, when using private_data itself.
+> Make use of device property API in this driver so that both OF and ACPI
+> based system can use the same driver.
 > 
-> Signed-off-by: Martin Kepplinger <martink@posteo.de>
+> This change contains material from Max Eliaser and Mika Westerberg.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+Bryan, can you please tell me if you are OK with this patch?
+
+You said you were for one of the previous versions if I remember correctly,
+but it's changed quite a bit since then, so can you please check this new
+version too?
+
 > ---
-> This is really only a question: Do I understand this correctly, and,
-> could this change then hurt any existing driver?
+>  drivers/leds/leds-gpio.c |   67 +++++++++++++++++++++--------------------------
+>  1 file changed, 30 insertions(+), 37 deletions(-)
+> 
+> Index: linux-pm/drivers/leds/leds-gpio.c
+> ===================================================================
+> --- linux-pm.orig/drivers/leds/leds-gpio.c
+> +++ linux-pm/drivers/leds/leds-gpio.c
+> @@ -15,13 +15,11 @@
+>  #include <linux/gpio.h>
+>  #include <linux/gpio/consumer.h>
+>  #include <linux/leds.h>
+> -#include <linux/of.h>
+> -#include <linux/of_platform.h>
+> -#include <linux/of_gpio.h>
+>  #include <linux/slab.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/module.h>
+>  #include <linux/err.h>
+> +#include <linux/property.h>
+>  
+>  struct gpio_led_data {
+>  	struct led_classdev cdev;
+> @@ -171,40 +169,41 @@ static inline int sizeof_gpio_leds_priv(
+>  		(sizeof(struct gpio_led_data) * num_leds);
+>  }
+>  
+> -/* Code to create from OpenFirmware platform devices */
+> -#ifdef CONFIG_OF_GPIO
+> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+> +static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
+>  {
+> -	struct device_node *np = pdev->dev.of_node, *child;
+> +	struct device *dev = &pdev->dev;
+>  	struct gpio_leds_priv *priv;
+>  	int count, ret;
+> +	void *child;
+>  
+> -	/* count LEDs in this device, so we know how much to allocate */
+> -	count = of_get_available_child_count(np);
+> +	count = device_get_child_node_count(dev);
+>  	if (!count)
+>  		return ERR_PTR(-ENODEV);
+>  
+> -	for_each_available_child_of_node(np, child)
+> -		if (of_get_gpio(child, 0) == -EPROBE_DEFER)
+> -			return ERR_PTR(-EPROBE_DEFER);
+> -
+> -	priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
+> -			GFP_KERNEL);
+> +	priv = devm_kzalloc(dev, sizeof_gpio_leds_priv(count), GFP_KERNEL);
+>  	if (!priv)
+>  		return ERR_PTR(-ENOMEM);
+>  
+> -	for_each_available_child_of_node(np, child) {
+> +	device_for_each_child_node(dev, child) {
+>  		struct gpio_led led = {};
+> -		enum of_gpio_flags flags;
+> -		const char *state;
+> +		const char *state = NULL;
+> +
+> +		led.gpiod = devm_get_named_gpiod_from_child(dev, child,
+> +							    "gpios", 0);
+> +		if (IS_ERR(led.gpiod)) {
+> +			device_put_child_node(dev, child);
+> +			goto err;
+> +		}
+>  
+> -		led.gpio = of_get_gpio_flags(child, 0, &flags);
+> -		led.active_low = flags & OF_GPIO_ACTIVE_LOW;
+> -		led.name = of_get_property(child, "label", NULL) ? : child->name;
+> -		led.default_trigger =
+> -			of_get_property(child, "linux,default-trigger", NULL);
+> -		state = of_get_property(child, "default-state", NULL);
+> -		if (state) {
+> +		device_child_property_read_string(dev, child,
+> +						  "label", &led.name);
+> +		device_child_property_read_string(dev, child,
+> +						  "linux,default-trigger",
+> +						  &led.default_trigger);
+> +
+> +		if (!device_child_property_read_string(dev, child,
+> +						       "linux,default_state",
+> +						       &state)) {
+>  			if (!strcmp(state, "keep"))
+>  				led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+>  			else if (!strcmp(state, "on"))
+> @@ -213,13 +212,14 @@ static struct gpio_leds_priv *gpio_leds_
+>  				led.default_state = LEDS_GPIO_DEFSTATE_OFF;
+>  		}
+>  
+> -		if (of_get_property(child, "retain-state-suspended", NULL))
+> +		if (!device_get_child_property(dev, child,
+> +					       "retain-state-suspended", NULL))
+>  			led.retain_state_suspended = 1;
+>  
+>  		ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
+> -				      &pdev->dev, NULL);
+> +				      dev, NULL);
+>  		if (ret < 0) {
+> -			of_node_put(child);
+> +			device_put_child_node(dev, child);
+>  			goto err;
+>  		}
+>  	}
+> @@ -238,13 +238,6 @@ static const struct of_device_id of_gpio
+>  };
+>  
+>  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
+> -#else /* CONFIG_OF_GPIO */
+> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+> -{
+> -	return ERR_PTR(-ENODEV);
+> -}
+> -#endif /* CONFIG_OF_GPIO */
+> -
+>  
+>  static int gpio_led_probe(struct platform_device *pdev)
+>  {
+> @@ -273,7 +266,7 @@ static int gpio_led_probe(struct platfor
+>  			}
+>  		}
+>  	} else {
+> -		priv = gpio_leds_create_of(pdev);
+> +		priv = gpio_leds_create(pdev);
+>  		if (IS_ERR(priv))
+>  			return PTR_ERR(priv);
+>  	}
+> @@ -300,7 +293,7 @@ static struct platform_driver gpio_led_d
+>  	.driver		= {
+>  		.name	= "leds-gpio",
+>  		.owner	= THIS_MODULE,
+> -		.of_match_table = of_match_ptr(of_gpio_leds_match),
+> +		.of_match_table = of_gpio_leds_match,
+>  	},
+>  };
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I don't know, take a look at the existing ones and see please.
-
-> As a driver developer it took me a while to figure out what happens here,
-> and in my situation it would have been nice to just have this feature as
-> part of the miscdevice API. Possibly documented somewhere?
-
-Patches always accepted for documentation :)
-
-> misc_open() is called in any case, on open(). As long as miscdevice drivers
-> don't explicitly rely on private_data being NULL exactly IF they don't
-> implement an open() fop (which I wouldn't imagine), this would make things
-> even more convenient.
-
-I agree, but it would be great if you can audit the existing misc
-drivers to ensure we don't break anything with this change.  Can you do
-that please?
-
-thanks,
-
-greg k-h
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
