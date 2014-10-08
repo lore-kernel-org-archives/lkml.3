@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107AbaJHT62 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:58:28 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:42019 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857AbaJHT6Y (ORCPT
+	id S1755217AbaJHT6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:58:36 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:44866 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086AbaJHT63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:58:24 -0400
+	Wed, 8 Oct 2014 15:58:29 -0400
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
         Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 08/12] serial/mcf: Use the rs485 functions on serial_core
-Date: Wed,  8 Oct 2014 21:57:34 +0200
-Message-Id: <1412798258-23655-9-git-send-email-ricardo.ribalda@gmail.com>
+Subject: [PATCH 11/12] drivers/max310: Use the rs485 functions on serial_core
+Date: Wed,  8 Oct 2014 21:57:37 +0200
+Message-Id: <1412798258-23655-12-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -23,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to unify all the rs485 ioctl handling.
+In order to unify all the rs485 ioctl handling
 Use the implementation of TIOC[GS]RS485 ioctl handling on serial_core.
 
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -32,115 +32,109 @@ Cc: linux-serial@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/tty/serial/mcf.c | 37 +++++++------------------------------
- 1 file changed, 7 insertions(+), 30 deletions(-)
+ drivers/tty/serial/max310x.c | 70 +++++++++++++++++---------------------------
+ 1 file changed, 27 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/tty/serial/mcf.c b/drivers/tty/serial/mcf.c
-index bc896dc..d7be1f1 100644
---- a/drivers/tty/serial/mcf.c
-+++ b/drivers/tty/serial/mcf.c
-@@ -57,7 +57,6 @@ struct mcf_uart {
- 	struct uart_port	port;
- 	unsigned int		sigs;		/* Local copy of line sigs */
- 	unsigned char		imr;		/* Local IMR mirror */
--	struct serial_rs485	rs485;		/* RS485 settings */
- };
- 
- /****************************************************************************/
-@@ -104,7 +103,7 @@ static void mcf_start_tx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
- 
--	if (pp->rs485.flags & SER_RS485_ENABLED) {
-+	if (port->rs485.flags & SER_RS485_ENABLED) {
- 		/* Enable Transmitter */
- 		writeb(MCFUART_UCR_TXENABLE, port->membase + MCFUART_UCR);
- 		/* Manually assert RTS */
-@@ -258,7 +257,7 @@ static void mcf_set_termios(struct uart_port *port, struct ktermios *termios,
- 		mr2 |= MCFUART_MR2_TXCTS;
- 	}
- 
--	if (pp->rs485.flags & SER_RS485_ENABLED) {
-+	if (port->rs485.flags & SER_RS485_ENABLED) {
- 		dev_dbg(port->dev, "Setting UART to RS485\n");
- 		mr2 |= MCFUART_MR2_TXRTS;
- 	}
-@@ -360,7 +359,7 @@ static void mcf_tx_chars(struct mcf_uart *pp)
- 		pp->imr &= ~MCFUART_UIR_TXREADY;
- 		writeb(pp->imr, port->membase + MCFUART_UIMR);
- 		/* Disable TX to negate RTS automatically */
--		if (pp->rs485.flags & SER_RS485_ENABLED)
-+		if (port->rs485.flags & SER_RS485_ENABLED)
- 			writeb(MCFUART_UCR_TXDISABLE,
- 				port->membase + MCFUART_UCR);
- 	}
-@@ -440,7 +439,7 @@ static int mcf_verify_port(struct uart_port *port, struct serial_struct *ser)
- /****************************************************************************/
- 
- /* Enable or disable the RS485 support */
--static void mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
-+static int mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
- 	unsigned long flags;
-@@ -460,32 +459,9 @@ static void mcf_config_rs485(struct uart_port *port, struct serial_rs485 *rs485)
- 	}
- 	writeb(mr1, port->membase + MCFUART_UMR);
- 	writeb(mr2, port->membase + MCFUART_UMR);
--	pp->rs485 = *rs485;
-+	port->rs485 = *rs485;
- 	spin_unlock_irqrestore(&port->lock, flags);
--}
- 
--static int mcf_ioctl(struct uart_port *port, unsigned int cmd,
--		unsigned long arg)
--{
--	switch (cmd) {
--	case TIOCSRS485: {
--		struct serial_rs485 rs485;
--		if (copy_from_user(&rs485, (struct serial_rs485 *)arg,
--				sizeof(struct serial_rs485)))
--			return -EFAULT;
--		mcf_config_rs485(port, &rs485);
--		break;
--	}
--	case TIOCGRS485: {
--		struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--		if (copy_to_user((struct serial_rs485 *)arg, &pp->rs485,
--				sizeof(struct serial_rs485)))
--			return -EFAULT;
--		break;
--	}
--	default:
--		return -ENOIOCTLCMD;
--	}
- 	return 0;
+diff --git a/drivers/tty/serial/max310x.c b/drivers/tty/serial/max310x.c
+index 670aba4..5ad9713 100644
+--- a/drivers/tty/serial/max310x.c
++++ b/drivers/tty/serial/max310x.c
+@@ -874,53 +874,37 @@ static void max310x_set_termios(struct uart_port *port,
+ 	uart_update_timeout(port, termios->c_cflag, baud);
  }
  
-@@ -510,7 +486,6 @@ static const struct uart_ops mcf_uart_ops = {
- 	.release_port	= mcf_release_port,
- 	.config_port	= mcf_config_port,
- 	.verify_port	= mcf_verify_port,
--	.ioctl		= mcf_ioctl,
+-static int max310x_ioctl(struct uart_port *port, unsigned int cmd,
+-			 unsigned long arg)
++static int max310x_rs485_config(struct uart_port *port,
++				struct serial_rs485 *rs485)
+ {
+-	struct serial_rs485 rs485;
+ 	unsigned int val;
+ 
+-	switch (cmd) {
+-	case TIOCSRS485:
+-		if (copy_from_user(&rs485, (void __user *)arg, sizeof(rs485)))
+-			return -EFAULT;
+-		if (rs485.delay_rts_before_send > 0x0f ||
+-		    rs485.delay_rts_after_send > 0x0f)
+-			return -ERANGE;
+-		val = (rs485.delay_rts_before_send << 4) |
+-		      rs485.delay_rts_after_send;
+-		max310x_port_write(port, MAX310X_HDPIXDELAY_REG, val);
+-		if (rs485.flags & SER_RS485_ENABLED) {
+-			max310x_port_update(port, MAX310X_MODE1_REG,
+-					    MAX310X_MODE1_TRNSCVCTRL_BIT,
+-					    MAX310X_MODE1_TRNSCVCTRL_BIT);
+-			max310x_port_update(port, MAX310X_MODE2_REG,
+-					    MAX310X_MODE2_ECHOSUPR_BIT,
+-					    MAX310X_MODE2_ECHOSUPR_BIT);
+-		} else {
+-			max310x_port_update(port, MAX310X_MODE1_REG,
+-					    MAX310X_MODE1_TRNSCVCTRL_BIT, 0);
+-			max310x_port_update(port, MAX310X_MODE2_REG,
+-					    MAX310X_MODE2_ECHOSUPR_BIT, 0);
+-		}
+-		return 0;
+-	case TIOCGRS485:
+-		memset(&rs485, 0, sizeof(rs485));
+-		val = max310x_port_read(port, MAX310X_MODE1_REG);
+-		rs485.flags = (val & MAX310X_MODE1_TRNSCVCTRL_BIT) ?
+-			      SER_RS485_ENABLED : 0;
+-		rs485.flags |= SER_RS485_RTS_ON_SEND;
+-		val = max310x_port_read(port, MAX310X_HDPIXDELAY_REG);
+-		rs485.delay_rts_before_send = val >> 4;
+-		rs485.delay_rts_after_send = val & 0x0f;
+-		if (copy_to_user((void __user *)arg, &rs485, sizeof(rs485)))
+-			return -EFAULT;
+-		return 0;
+-	default:
+-		break;
++	if (rs485->delay_rts_before_send > 0x0f ||
++		    rs485->delay_rts_after_send > 0x0f)
++		return -ERANGE;
++
++	val = (rs485->delay_rts_before_send << 4) |
++		rs485->delay_rts_after_send;
++	max310x_port_write(port, MAX310X_HDPIXDELAY_REG, val);
++	if (rs485->flags & SER_RS485_ENABLED) {
++		max310x_port_update(port, MAX310X_MODE1_REG,
++				MAX310X_MODE1_TRNSCVCTRL_BIT,
++				MAX310X_MODE1_TRNSCVCTRL_BIT);
++		max310x_port_update(port, MAX310X_MODE2_REG,
++				MAX310X_MODE2_ECHOSUPR_BIT,
++				MAX310X_MODE2_ECHOSUPR_BIT);
++	} else {
++		max310x_port_update(port, MAX310X_MODE1_REG,
++				MAX310X_MODE1_TRNSCVCTRL_BIT, 0);
++		max310x_port_update(port, MAX310X_MODE2_REG,
++				MAX310X_MODE2_ECHOSUPR_BIT, 0);
+ 	}
+ 
+-	return -ENOIOCTLCMD;
++	rs485->flags &= SER_RS485_RTS_ON_SEND | SER_RS485_ENABLED;
++	memset(rs485->padding, 0, sizeof(rs485->padding));
++	port->rs485 = *rs485;
++
++	return 0;
+ }
+ 
+ static int max310x_startup(struct uart_port *port)
+@@ -1015,7 +999,6 @@ static const struct uart_ops max310x_ops = {
+ 	.release_port	= max310x_null_void,
+ 	.config_port	= max310x_config_port,
+ 	.verify_port	= max310x_verify_port,
+-	.ioctl		= max310x_ioctl,
  };
  
- static struct mcf_uart mcf_ports[4];
-@@ -538,6 +513,7 @@ int __init early_mcf_setup(struct mcf_platform_uart *platp)
- 		port->irq = platp[i].irq;
- 		port->uartclk = MCF_BUSCLK;
- 		port->flags = UPF_BOOT_AUTOCONF;
-+		port->rs485_config = mcf_config_rs485;
- 		port->ops = &mcf_uart_ops;
- 	}
- 
-@@ -663,6 +639,7 @@ static int mcf_probe(struct platform_device *pdev)
- 		port->uartclk = MCF_BUSCLK;
- 		port->ops = &mcf_uart_ops;
- 		port->flags = UPF_BOOT_AUTOCONF;
-+		port->rs485_config = mcf_config_rs485;
- 
- 		uart_add_one_port(&mcf_driver, port);
- 	}
+ static int __maybe_unused max310x_suspend(struct device *dev)
+@@ -1216,6 +1199,7 @@ static int max310x_probe(struct device *dev, struct max310x_devtype *devtype,
+ 		s->p[i].port.iobase	= i * 0x20;
+ 		s->p[i].port.membase	= (void __iomem *)~0;
+ 		s->p[i].port.uartclk	= uartclk;
++		s->p[i].port.rs485_config = max310x_rs485_config;
+ 		s->p[i].port.ops	= &max310x_ops;
+ 		/* Disable all interrupts */
+ 		max310x_port_write(&s->p[i].port, MAX310X_IRQEN_REG, 0);
 -- 
 2.1.1
 
