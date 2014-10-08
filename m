@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaJHUuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:50:24 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:34170 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772AbaJHUuX (ORCPT
+	id S1754871AbaJHUvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:51:23 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41643 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979AbaJHUvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:50:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141008154659.31f46436@as>
-References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
- <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com> <20141008154659.31f46436@as>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 8 Oct 2014 13:50:01 -0700
-Message-ID: <CALCETrW6C+Hnx964uBQgD_JNCjGJAq3v=oeMc7vZB0E4_EDeXQ@mail.gmail.com>
-Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Peter Foley <pefoley2@pefoley.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
+	Wed, 8 Oct 2014 16:51:22 -0400
+Date: Wed, 8 Oct 2014 22:51:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+        Matt Fleming <matt.fleming@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 08/11] perf/x86/intel: Add Intel Cache QoS Monitoring
+ support
+Message-ID: <20141008205114.GB14547@worktop.programming.kicks-ass.net>
+References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
+ <1411567455-31264-9-git-send-email-matt@console-pimps.org>
+ <20141007194310.GC4750@worktop.programming.kicks-ass.net>
+ <20141008103658.GP14343@console-pimps.org>
+ <20141008121535.GT14343@console-pimps.org>
+ <20141008144704.GJ10832@worktop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008144704.GJ10832@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 1:46 PM, Chuck Ebbert <cebbert.lkml@gmail.com> wrote:
-> On Wed, 8 Oct 2014 12:16:11 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Wed, Oct 8, 2014 at 11:52 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
->> > I'm seeing the following build failure on a 32-bit x86 build in Fedora
->> > based on Linux v3.17-2860-gef0625b70dac:
->> >
->> > Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
->> > vdso_standalone_test_x86.c:(.text+0xcc): undefined reference to `__umoddi3'
->> > vdso_standalone_test_x86.c:(.text+0xea): undefined reference to `__udivdi3'
->> > collect2: error: ld returned 1 exit status
->> > scripts/Makefile.host:100: recipe for target
->> > 'Documentation/vDSO/vdso_standalone_test_x86' failed
->> > make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
->> > scripts/Makefile.build:404: recipe for target 'Documentation/vDSO' failed
->> > make[1]: *** [Documentation/vDSO] Error 2
->> > make[1]: *** Waiting for unfinished jobs....
->> > Makefile:922: recipe for target 'vmlinux' failed
->> > make: *** [vmlinux] Error 2
->> >
->> It should build and work on 32-bit.
->>
->> Except that the makefile is totally bogus.  vdso_standalone_test isn't
->> a hostprog at all.  It's a target prog.  But kbuild doesn't understand
->> that, so I have no idea what, if anything, that makefile is supposed
->> to do.
->
-> Heh, I was wondering why I got a 64-bit program with ARCH=i386
+On Wed, Oct 08, 2014 at 04:47:04PM +0200, Peter Zijlstra wrote:
+> On Wed, Oct 08, 2014 at 01:15:35PM +0100, Matt Fleming wrote:
+> > I was having an interesting discussion with one of the teams using this
+> > stuff at Intel and they made the suggestion that when using,
+> > 
+> >   perf stat -p <pid>
+> > 
+> > we should by default opt for sharing an RMID between all tasks in that
+> > thread group, rather that assigning a new RMID for each task, which is
+> > what we do currently.
+> > 
+> > Right now, it's like the Oprah Winfrey of RMID assignment, "You get an
+> > RMID, and you get an RMID!"
+> > 
+> > Which means we'll run out of RMIDs quicker, and enable the rotation code
+> > sooner.
+> > 
+> > I'm wondering whether we should require that the user specify whether
+> > they want per-thread monitoring if using -p, via some perf tools event
+> > modifier, and make the record-per-thread-data scenario the exceptional
+> > case, rather than the default?
+> 
+> Right so perf cannot do this. And I'm not sure that's fixable, it
+> depends a bit on how the cqm thing deals with inherited events, IFF it
+> can reuse RMIDs for inherited events we might be able to extend the
+> syscall to install 'inherited' events throughout the process group,
+> instead of just the one thread.
 
-Once kselftest takes off, we'll have lots of fun.  In principle,
-x86_64 kernels should pass the 32-bit tests, too :)
+Right, so inherited events aren't going to work right for this. Look at
+patch 10, these events target a different task and will not match, so
+we'll not share RMIDs.
 
->
->> I would argue that the whole documentation build system should be
->> fixed to cross-compile or should just be disabled for cross-builds if
->> glibc isn't available.
->>
->
-> Fedora doesn't cross-compile i686 builds because of problems like
-> this. It sets up an i386 chroot and runs all native tools inside of
-> it.
->
-
-In this particular case, cross-compiling would have worked around the bug.
-
---Andy
+The only way to make this happen is stuff the process in a cgroup and
+measure the cgroup.
