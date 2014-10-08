@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323AbaJHJNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:13:05 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:41948 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754151AbaJHJM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:12:59 -0400
-Message-ID: <1412759584.13569.0.camel@iivanov-dev>
-Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for
- register access
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Wed, 08 Oct 2014 12:13:04 +0300
-In-Reply-To: <20141007172606.GG16469@dtor-ws>
-References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>
-	 <1412675448-11990-3-git-send-email-iivanov@mm-sol.com>
-	 <20141007172606.GG16469@dtor-ws>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755439AbaJHJNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:13:14 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56737 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754151AbaJHJNK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:13:10 -0400
+Date: Wed, 8 Oct 2014 10:12:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Sergei Shtylyov'" <sergei.shtylyov@cogentembedded.com>,
+        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frank Li <Frank.Li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
+	rx_copybreak support
+Message-ID: <20141008091248.GE5182@n2100.arm.linux.org.uk>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de> <54340FA4.509@cogentembedded.com> <063D6719AE5E284EB5DD2968C1650D6D174C6C14@AcuExch.aculab.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6C14@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-07 at 10:26 -0700, Dmitry Torokhov wrote:
-> Hi Ivan,
+On Wed, Oct 08, 2014 at 08:54:58AM +0000, David Laight wrote:
+> Hmmm... in that case you may not want the compiler to convert the bit value
+> to a 'bool' at all.
 > 
-> On Tue, Oct 07, 2014 at 12:50:46PM +0300, Ivan T. Ivanov wrote:
-> > @@ -527,10 +538,55 @@ static int pmic8xxx_kp_probe(struct platform_device *pdev)
-> >  
-
-> > +
-> > +	kp->row_hold = devm_regmap_field_alloc(kp->dev, kp->regmap,
-> > +					       info->row_hold);
-> > +	if (IS_ERR(kp->row_hold))
-> > +		return PTR_ERR(kp->row_hold);
+> Passing 'id_entry->driver_data' through (that doesn't look like a field name for
+> 'quirk flags) would generate better code.
 > 
-> Why do we have to allocate all regmap fields separately instead of
-> embedding them into keypad structure?
-> 
+> Even better would be to reference the flag directly from 'ndev'.
+> A pointer indirection for the test if probably faster then passing
+> another argument.
 
-No particular reason. Will rework it.
+A far better idea would be to copy the quirks into the fec_net_private
+structure, storing them as a 'unsigned int' value, and test them from
+there.  This is /much/ more efficient than jumping through the hoops to
+retrieve id_entry, and then testing the 64-bit driver_data value.
 
-Thank you,
-Ivan
+I've had such a patch since about the beginning of the year (and patches
+which add stuff like byte queue limits, which are really needed now that
+we have a /huge/ transmit ring), but I can't keep up with rebasing the
+patch set, and properly tested and performance impacts evaluated due to
+the rate of FEC changes.  I never finished rebasing the set after Andy's
+TSO work...
 
-> Thanks.
-> 
-
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
