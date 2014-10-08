@@ -1,116 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaJHUFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:05:44 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:62584 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753035AbaJHUFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:05:43 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscNAEOYNVRbsGtC/2dsb2JhbABfgw65BwUBc5oIgQsXAXuEMS8jgRo3iEIBtyuOaoYgiiQdhDUFhiuLJIt2jFqJM4NlOy+CSgEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC 1/1 linux-next] fs/affs: only call remove_header on empty directory
-Date: Wed,  8 Oct 2014 22:05:40 +0200
-Message-Id: <1412798740-18881-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	id S1755572AbaJHUGB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:06:01 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:39952 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754751AbaJHUF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 16:05:58 -0400
+Message-ID: <54359924.5040709@osg.samsung.com>
+Date: Wed, 08 Oct 2014 14:05:56 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 00/37] 3.14.21-stable review
+References: <20141007231827.043235686@linuxfoundation.org>
+In-Reply-To: <20141007231827.043235686@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-affs_rmdir unconditionally called affs_remove_header which had to check stype
-then directory emptiness.
+On 10/07/2014 05:19 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.21 release.
+> There are 37 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Oct  9 23:18:16 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.21-rc1.gz
+> and the diffstat can be found below.
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-This patch directly checks for directory status(like ext filesystems)
+Compiled and booted on my test system. No dmesg regressions.
 
-remove_header is also called by affs_unlink and affs_rename but
-switch(stype) seems no longer needed.
+-- Shuah
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/affs/affs.h     |  1 +
- fs/affs/amigaffs.c | 18 +-----------------
- fs/affs/namei.c    | 11 +++++++++--
- 3 files changed, 11 insertions(+), 19 deletions(-)
-
-diff --git a/fs/affs/affs.h b/fs/affs/affs.h
-index 9bca881..3a7f287 100644
---- a/fs/affs/affs.h
-+++ b/fs/affs/affs.h
-@@ -130,6 +130,7 @@ void affs_mark_sb_dirty(struct super_block *sb);
- extern int	affs_insert_hash(struct inode *inode, struct buffer_head *bh);
- extern int	affs_remove_hash(struct inode *dir, struct buffer_head *rem_bh);
- extern int	affs_remove_header(struct dentry *dentry);
-+extern int	affs_empty_dir(struct inode *inode);
- extern u32	affs_checksum_block(struct super_block *sb, struct buffer_head *bh);
- extern void	affs_fix_checksum(struct super_block *sb, struct buffer_head *bh);
- extern void	secs_to_datestamp(time_t secs, struct affs_date *ds);
-diff --git a/fs/affs/amigaffs.c b/fs/affs/amigaffs.c
-index abc8539..9288d28 100644
---- a/fs/affs/amigaffs.c
-+++ b/fs/affs/amigaffs.c
-@@ -229,7 +229,7 @@ done:
- }
- 
- 
--static int
-+int
- affs_empty_dir(struct inode *inode)
- {
- 	struct super_block *sb = inode->i_sb;
-@@ -286,22 +286,6 @@ affs_remove_header(struct dentry *dentry)
- 
- 	affs_lock_link(inode);
- 	affs_lock_dir(dir);
--	switch (be32_to_cpu(AFFS_TAIL(sb, bh)->stype)) {
--	case ST_USERDIR:
--		/* if we ever want to support links to dirs
--		 * i_hash_lock of the inode must only be
--		 * taken after some checks
--		 */
--		affs_lock_dir(inode);
--		retval = affs_empty_dir(inode);
--		affs_unlock_dir(inode);
--		if (retval)
--			goto done_unlock;
--		break;
--	default:
--		break;
--	}
--
- 	retval = affs_remove_hash(dir, bh);
- 	if (retval)
- 		goto done_unlock;
-diff --git a/fs/affs/namei.c b/fs/affs/namei.c
-index 035bd31..b352f78 100644
---- a/fs/affs/namei.c
-+++ b/fs/affs/namei.c
-@@ -321,11 +321,18 @@ affs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- int
- affs_rmdir(struct inode *dir, struct dentry *dentry)
- {
-+	struct inode *inode = dentry->d_inode;
-+	int retval;
-+
- 	pr_debug("%s(dir=%u, %lu \"%.*s\")\n",
- 		__func__, (u32)dir->i_ino, dentry->d_inode->i_ino,
- 		 (int)dentry->d_name.len, dentry->d_name.name);
--
--	return affs_remove_header(dentry);
-+	affs_lock_dir(inode);
-+	retval = affs_empty_dir(inode);
-+	affs_unlock_dir(inode);
-+	if (!retval)
-+		retval = affs_remove_header(dentry);
-+	return retval;
- }
- 
- int
 -- 
-1.9.1
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
