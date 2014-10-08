@@ -1,254 +1,608 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaJHGE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:04:56 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:56147 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaJHGEx (ORCPT
+	id S1753881AbaJHGFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:05:40 -0400
+Received: from atl4mhob15.myregisteredsite.com ([209.17.115.53]:60217 "EHLO
+	atl4mhob15.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753411AbaJHGFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:04:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412740211-3345-1-git-send-email-addy.ke@rock-chips.com>
-References: <1412740211-3345-1-git-send-email-addy.ke@rock-chips.com>
-Date: Tue, 7 Oct 2014 23:04:52 -0700
-X-Google-Sender-Auth: BAcdnpa_kVPvJsvIkBcsQRbge-I
-Message-ID: <CAD=FV=W+raLff9uW5MgkZkSoDwPyAAShWZ46J80dGHC=GKd54A@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c: rk3x: adjust the LOW divison based on
- characteristics of SCL
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-rockchip@lists.infradead.org, Eddie Cai <cf@rock-chips.com>,
-        Jianqun Xu <xjq@rock-chips.com>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        han jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>,
-        =?UTF-8?B?5pmT6IW+546L?= <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>,
-        Alexandru Stan <amstan@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 8 Oct 2014 02:05:38 -0400
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org,
+        linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH v3] Add LTC2941/LTC2943 Battery Gauge Driver
+Date: Wed,  8 Oct 2014 08:05:00 +0200
+Message-Id: <1412748300-3915-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1412170334-11976-1-git-send-email-mike.looijmans@topic.nl>
+References: <1412170334-11976-1-git-send-email-mike.looijmans@topic.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Addy,
+Both the LTC2941 and LTC2943 measure battery capacity.
+The LTC2943 is compatible with the LTC2941, it adds voltage and
+temperature monitoring, and uses a slightly different conversion
+formula for the charge counter.
 
-On Tue, Oct 7, 2014 at 8:50 PM, Addy Ke <addy.ke@rock-chips.com> wrote:
-> As show in I2C specification:
-> - Standard-mode: the minimum HIGH period of the scl clock is 4.0us
->                  the minimum LOW period of the scl clock is 4.7us
-> - Fast-mode: the minimum HIGH period of the scl clock is 0.6us
->              the minimum LOW period of the scl clock is 1.3us
->
-> I have measured i2c SCL waveforms in fast-mode by oscilloscope
-> on rk3288-pinky board. the LOW period of the scl clock is 1.3us.
-> It is so critical that we must adjust LOW division to increase
-> the LOW period of the scl clock.
->
-> Thanks Doug for the suggestion about division formulas.
->
-> Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-> ---
-> Changes in v2:
-> - remove Fast-mode plus and HS-mode
-> - use new formulas suggested by Doug
-> Changes in V3:
-> - use new formulas (sep 30) suggested by Doug
->
->  drivers/i2c/busses/i2c-rk3x.c | 135 +++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 128 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-> index b41d979..9612eba 100644
-> --- a/drivers/i2c/busses/i2c-rk3x.c
-> +++ b/drivers/i2c/busses/i2c-rk3x.c
-> @@ -24,6 +24,7 @@
->  #include <linux/wait.h>
->  #include <linux/mfd/syscon.h>
->  #include <linux/regmap.h>
-> +#include <linux/math64.h>
->
->
->  /* Register Map */
-> @@ -428,18 +429,138 @@ out:
->         return IRQ_HANDLED;
->  }
->
-> +static void rk3x_i2c_calc_divs(unsigned long i2c_rate, unsigned long scl_rate,
-> +                              unsigned long *div_low, unsigned long *div_high)
-> +{
-> +       unsigned long min_low_ns, min_high_ns;
-> +       unsigned long max_data_hold_ns;
-> +       unsigned long data_hold_buffer_ns;
-> +       unsigned long max_low_ns, min_total_ns;
-> +
-> +       unsigned long i2c_rate_khz, scl_rate_khz;
-> +
-> +       unsigned long min_low_div, min_high_div;
-> +       unsigned long max_low_div;
-> +
-> +       unsigned long min_div_for_hold, min_total_div;
-> +       unsigned long extra_div, extra_low_div, ideal_low_div;
-> +
-> +       /* Only support standard-mode and fast-mode */
-> +       WARN_ON(scl_rate > 400000);
-> +
-> +       /*
-> +        * min_low_ns:  The minimum number of ns we need to hold low
-> +        *              to meet i2c spec
-> +        * min_high_ns: The minimum number of ns we need to hold high
-> +        *              to meet i2c spec
-> +        * max_low_ns:  The maximum number of ns we can hold low
-> +        *              to meet i2c spec
-> +        *
-> +        * Note: max_low_ns should be (max data hold time * 2 - buffer)
-> +        *       This is because the i2c host on Rockchip holds the data line
-> +        *       for half the low time.
-> +        */
-> +       if (scl_rate <= 100000) {
-> +               min_low_ns = 4700;
-> +               min_high_ns = 4000;
-> +               max_data_hold_ns = 3450;
-> +               data_hold_buffer_ns = 50;
-> +       } else {
-> +               min_low_ns = 1300;
-> +               min_high_ns = 600;
-> +               max_data_hold_ns = 900;
-> +               data_hold_buffer_ns = 50;
-> +       }
-> +       max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
-> +       min_total_ns = min_low_ns + min_high_ns;
-> +
-> +       /* Adjust to avoid overflow */
-> +       i2c_rate_khz = DIV_ROUND_UP(i2c_rate, 1000);
-> +       scl_rate_khz = DIV_ROUND_UP(scl_rate, 1000);
-> +
-> +       /*
-> +        * We need the total div to be >= this number
-> +        * so we don't clock too fast.
-> +        */
-> +       min_total_div = DIV_ROUND_UP(i2c_rate_khz, scl_rate_khz * 8);
-> +
-> +       /* These are the min dividers needed for min hold times.*/
+To avoid confusion with e.g. the LTC2945, the driver is called
+LTC2941 instead of LTC294X.
 
-nit: a space before the "*" in the comment.
+v2: Fix units of measurement: uV, uA and centidegrees.
+v3: Correctly set configuration register. Allow negative values
+    for the sense resistor.
 
-> +       min_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns, 8 * 1000000);
-> +       min_high_div = DIV_ROUND_UP(i2c_rate_khz * min_high_ns, 8 * 1000000);
-> +       min_div_for_hold = (min_low_div + min_high_div);
-> +
-> +       /*
-> +        * This is the maximum divider so we don't go over the max.
-> +        * We don't round up here (we round down) since this is a max.
-> +        */
-> +       max_low_div = i2c_rate_khz * max_low_ns / (8 * 1000000);
-> +
-> +       if (min_low_div > max_low_div)
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+---
+ drivers/power/Kconfig                 |    7 +
+ drivers/power/Makefile                |    1 +
+ drivers/power/ltc2941-battery-gauge.c |  524 +++++++++++++++++++++++++++++++++
+ 3 files changed, 532 insertions(+)
+ create mode 100644 drivers/power/ltc2941-battery-gauge.c
 
-It feels like we should print some sort of warning here.  Maybe WARN_ONCE?
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 73cfcdf..3333bf3 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -382,6 +382,13 @@ config CHARGER_TPS65090
+ 	 Say Y here to enable support for battery charging with TPS65090
+ 	 PMIC chips.
+ 
++config BATTERY_GAUGE_LTC2941
++	tristate "LTC2941/LTC2943 Battery Gauge Driver"
++	depends on I2C
++	help
++	 Say Y here to include support for LTC2941 and LTC2943 Battery Gauge
++	 IC.
++
+ config AB8500_BM
+ 	bool "AB8500 Battery Management Driver"
+ 	depends on AB8500_CORE && AB8500_GPADC
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index dfa8942..4f8e6c0 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
+ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
+ obj-$(CONFIG_BATTERY_TWL4030_MADC)	+= twl4030_madc_battery.o
++obj-$(CONFIG_BATTERY_GAUGE_LTC2941)	+= ltc2941-battery-gauge.o
+ obj-$(CONFIG_CHARGER_88PM860X)	+= 88pm860x_charger.o
+ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+diff --git a/drivers/power/ltc2941-battery-gauge.c b/drivers/power/ltc2941-battery-gauge.c
+new file mode 100644
+index 0000000..f0c387d
+--- /dev/null
++++ b/drivers/power/ltc2941-battery-gauge.c
+@@ -0,0 +1,524 @@
++/*
++ * I2C client/driver for the Linear Technology LTC2941 and LTC2943
++ * Battery Gas Gauge IC
++ *
++ * Copyright (C) 2014 Topic Embedded Systems
++ *
++ * Author: Auryn Verwegen
++ * Author: Mike Looijmans
++ */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/errno.h>
++#include <linux/swab.h>
++#include <linux/i2c.h>
++#include <linux/delay.h>
++#include <linux/idr.h>
++#include <linux/power_supply.h>
++#include <linux/slab.h>
++
++#define I16_MSB(x)			((x >> 8) & 0xFF)
++#define I16_LSB(x)			(x & 0xFF)
++
++#define LTC294X_WORK_DELAY		10	/* Update delay in seconds */
++
++#define LTC294X_MAX_VALUE		0xFFFF
++#define LTC294X_MID_SUPPLY		0x7FFF
++
++#define LTC2941_MAX_PRESCALER_EXP	7
++#define LTC2943_MAX_PRESCALER_EXP	6
++
++enum ltc294x_reg {
++	LTC294X_REG_STATUS		= 0x00,
++	LTC294X_REG_CONTROL		= 0x01,
++	LTC294X_REG_ACC_CHARGE_MSB	= 0x02,
++	LTC294X_REG_ACC_CHARGE_LSB	= 0x03,
++	LTC294X_REG_THRESH_HIGH_MSB	= 0x04,
++	LTC294X_REG_THRESH_HIGH_LSB	= 0x05,
++	LTC294X_REG_THRESH_LOW_MSB	= 0x06,
++	LTC294X_REG_THRESH_LOW_LSB	= 0x07,
++	LTC294X_REG_VOLTAGE_MSB	= 0x08,
++	LTC294X_REG_VOLTAGE_LSB	= 0x09,
++	LTC294X_REG_CURRENT_MSB	= 0x0E,
++	LTC294X_REG_CURRENT_LSB	= 0x0F,
++	LTC294X_REG_TEMPERATURE_MSB	= 0x14,
++	LTC294X_REG_TEMPERATURE_LSB	= 0x15,
++} ;
++
++#define LTC2943_REG_CONTROL_MODE_MASK (BIT(7) | BIT(6))
++#define LTC2943_REG_CONTROL_MODE_SCAN BIT(7)
++#define LTC294X_REG_CONTROL_PRESCALER_MASK	(BIT(5) | BIT(4) | BIT(3))
++#define LTC294X_REG_CONTROL_SHUTDOWN_MASK	(BIT(0))
++#define LTC294X_REG_CONTROL_PRESCALER_SET(x)		((x << 3) & LTC294X_REG_CONTROL_PRESCALER_MASK)
++#define LTC294X_REG_CONTROL_ALCC_CONFIG_DISABLED	0
++
++#define LTC2941_NUM_REGS	0x08
++#define LTC2943_NUM_REGS	0x18
++
++struct ltc294x_info {
++	struct i2c_client *client;	/* I2C Client pointer */
++	struct power_supply supply;	/* Supply pointer */
++	struct delayed_work work;	/* Work scheduler */
++	int num_regs; /* Number of registers (chip type) */
++	int	id;	/* Identifier of ltc294x chip */
++	int	charge;	/* Last charge register content */
++	int	r_sense;	/* mOhm */
++	int Qlsb;	/* nAh */
++};
++
++static DEFINE_IDR(ltc294x_id);
++static DEFINE_MUTEX(ltc294x_lock);
++
++static inline int convert_bin_to_uAh(
++	const struct ltc294x_info *info, int Q)
++{
++	int uAh;
++	uAh = ((Q * (info->Qlsb / 10))) / 100;
++	return uAh;
++}
++
++static inline int convert_uAh_to_bin(
++	const struct ltc294x_info *info, int uAh)
++{
++	int Q;
++	Q = (uAh * 100) / (info->Qlsb/10);
++	return (Q < LTC294X_MAX_VALUE) ? Q : LTC294X_MAX_VALUE;
++}
++
++static int ltc294x_read_regs(struct i2c_client *client,
++    enum ltc294x_reg reg, u8 *buf, int num_regs)
++{
++	int ret;
++	struct i2c_msg msgs[2] = { };
++	u8 reg_start = reg;
++
++	msgs[0].addr 	= client->addr;
++	msgs[0].len 	= 1;
++	msgs[0].buf 	= &reg_start;
++
++	msgs[1].addr 	= client->addr;
++	msgs[1].len 	= num_regs;
++	msgs[1].buf 	= buf;
++	msgs[1].flags	= I2C_M_RD;
++
++	ret = i2c_transfer(client->adapter, &msgs[0], 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "ltc2941 read_reg failed!\n");
++		return ret;
++	}
++
++	dev_dbg(&client->dev, "%s (%#x, %d) -> %#x\n",
++		__func__, reg, num_regs, *buf);
++
++	return 0;
++}
++
++static int ltc294x_write_regs(struct i2c_client *client,
++	enum ltc294x_reg reg, const u8* const buf, int num_regs)
++{
++	int ret;
++	u8 reg_start = reg;
++
++	ret = i2c_smbus_write_i2c_block_data(client, reg_start, num_regs, buf);
++	if (ret < 0) {
++		dev_err(&client->dev, "ltc2941 write_reg failed!\n");
++		return ret;
++	}
++
++	dev_dbg(&client->dev, "%s (%#x, %d) -> %#x\n",
++		__func__, reg, num_regs, *buf);
++
++	return 0;
++}
++
++static int ltc294x_reset(const struct ltc294x_info *info, int prescaler_exp)
++{
++	int ret;
++	u8 value;
++	u8 control;
++
++	/* Read status and control registers */
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_CONTROL, &value, 1);
++	if(ret < 0) {
++		dev_err(&info->client->dev, "LTC2941: Could not read registers from device!\n");
++		goto error_exit;
++	}
++
++	control = LTC294X_REG_CONTROL_PRESCALER_SET(prescaler_exp) |
++				LTC294X_REG_CONTROL_ALCC_CONFIG_DISABLED;
++	/* Put the 2943 into "monitor" mode, so it measures every 10 sec */
++	if (info->num_regs == LTC2943_NUM_REGS)
++		control |= LTC2943_REG_CONTROL_MODE_SCAN;
++
++	if (value != control) {
++		ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &control, 1);
++		if(ret < 0){
++			dev_err(&info->client->dev, "Could not write registers!\n");
++			goto error_exit;
++		}
++	}
++
++	return 0;
++
++error_exit:
++	return ret;
++}
++
++static int ltc294x_read_charge_register(const struct ltc294x_info *info)
++{
++	int ret;
++	u8 datar[2];
++
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_ACC_CHARGE_MSB, &datar[0], 2);
++	if (ret < 0)
++		return ret;
++	return (datar[0] << 8) + datar[1];
++}
++
++static int ltc294x_get_charge_now(const struct ltc294x_info *info, int *val)
++{
++	int value = ltc294x_read_charge_register(info);
++	if (value < 0)
++		return value;
++	/* When r_sense < 0, this counts up when the battery discharges */
++	if (info->Qlsb < 0)
++		value -= 0xFFFF;
++	*val = convert_bin_to_uAh(info, value);
++	return 0;
++}
++
++static int ltc294x_set_charge_now(const struct ltc294x_info *info, int val)
++{
++	int ret;
++	u8 dataw[2];
++	u8 ctrl_reg;
++	s32 value;
++
++	value = convert_uAh_to_bin(info, val);
++	if (info->Qlsb < 0) /* Direction depends on how sense+/- were connected */
++		value += 0xFFFF;
++	if ((value < 0) || (value > 0xFFFF)) /* input validation */
++		return -EINVAL;
++
++	/* Read control register */
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
++	if(ret < 0)
++		return ret;
++	/* Disable analog section */
++	ctrl_reg |= LTC294X_REG_CONTROL_SHUTDOWN_MASK;
++	ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
++	if(ret < 0)
++		return ret;
++	/* Set new charge value */
++	dataw[0] = I16_MSB(value);
++	dataw[1] = I16_LSB(value);
++	ret = ltc294x_write_regs(info->client, LTC294X_REG_ACC_CHARGE_MSB, &dataw[0], 2);
++	if(ret < 0)
++		goto error_exit;
++	/* Enable analog section */
++error_exit:
++	ctrl_reg &= ~LTC294X_REG_CONTROL_SHUTDOWN_MASK;
++	ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
++
++	return ret < 0 ? ret : 0;
++}
++
++static int ltc294x_get_charge_counter(const struct ltc294x_info *info, int *val)
++{
++	int value = ltc294x_read_charge_register(info);
++	if (value < 0)
++		return value;
++	value -= LTC294X_MID_SUPPLY;
++	*val = convert_bin_to_uAh(info, value);
++	return 0;
++}
++
++static int ltc294x_get_voltage(const struct ltc294x_info *info, int *val)
++{
++	int ret;
++	u8 datar[2];
++	u32 value;
++
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_VOLTAGE_MSB, &datar[0], 2);
++	value = (datar[0] << 8) | datar[1];
++	*val = ((value * 23600) / 0xFFFF) * 1000; /* in uV */
++	return ret;
++}
++
++static int ltc294x_get_current(const struct ltc294x_info *info, int *val)
++{
++	int ret;
++	u8 datar[2];
++	s32 value;
++
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_CURRENT_MSB, &datar[0], 2);
++	value = (datar[0] << 8) | datar[1];
++	value -= 0x7FFF;
++	/* Value is in range -32k..+32k, r_sense is usually 10..50 mOhm,
++	 * the formula below keeps everything in s32 range while preserving
++	 * enough digits */
++	*val = 1000 * ((60000 * value) / (info->r_sense * 0x7FFF)); /* in uA */
++	return ret;
++}
++
++static int ltc294x_get_temperature(const struct ltc294x_info *info, int *val)
++{
++	int ret;
++	u8 datar[2];
++	u32 value;
++
++	ret = ltc294x_read_regs(info->client, LTC294X_REG_TEMPERATURE_MSB, &datar[0], 2);
++	value = (datar[0] << 8) | datar[1];
++	/* Full-scale is 510 Kelvin, convert to centidegrees  */
++	*val = (((51000 * value) / 0xFFFF) - 27215);
++	return ret;
++}
++
++static int ltc294x_get_property(struct power_supply *psy,
++				enum power_supply_property prop,
++				union power_supply_propval *val)
++{
++	struct ltc294x_info *info = container_of(psy, struct ltc294x_info, supply);
++
++	switch (prop) {
++		case POWER_SUPPLY_PROP_CHARGE_NOW:
++			return ltc294x_get_charge_now(info, &val->intval);
++		case POWER_SUPPLY_PROP_CHARGE_COUNTER:
++			return ltc294x_get_charge_counter(info, &val->intval);
++		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++			return ltc294x_get_voltage(info, &val->intval);
++		case POWER_SUPPLY_PROP_CURRENT_NOW:
++			return ltc294x_get_current(info, &val->intval);
++		case POWER_SUPPLY_PROP_TEMP:
++			return ltc294x_get_temperature(info, &val->intval);
++		default:
++			return -EINVAL;
++	}
++}
++
++static int ltc294x_set_property(struct power_supply *psy,
++	enum power_supply_property psp,
++	const union power_supply_propval *val)
++{
++	struct ltc294x_info *info =
++		container_of(psy, struct ltc294x_info, supply);
++
++	switch (psp) {
++		case POWER_SUPPLY_PROP_CHARGE_NOW:
++			return ltc294x_set_charge_now(info, val->intval);
++		default:
++			return -EPERM;
++	}
++}
++
++static int ltc294x_property_is_writeable(
++	struct power_supply *psy, enum power_supply_property psp)
++{
++	switch (psp)
++	{
++		case POWER_SUPPLY_PROP_CHARGE_NOW:
++			return 1;
++		default:
++			return 0;
++	}
++}
++
++static void ltc294x_update(struct ltc294x_info *info)
++{
++	int charge = ltc294x_read_charge_register(info);
++	if (charge != info->charge) {
++		info->charge = charge;
++		power_supply_changed(&info->supply);
++	}
++}
++
++static void ltc294x_work(struct work_struct *work)
++{
++	struct ltc294x_info *info;
++
++	info = container_of(work, struct ltc294x_info, work.work);
++	ltc294x_update(info);
++	schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
++}
++
++static enum power_supply_property ltc294x_properties[] = {
++	POWER_SUPPLY_PROP_CHARGE_COUNTER,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_TEMP,
++};
++
++static int ltc294x_i2c_remove(struct i2c_client *client)
++{
++	struct ltc294x_info *info = i2c_get_clientdata(client);
++
++	cancel_delayed_work(&info->work);
++	power_supply_unregister(&info->supply);
++	kfree(info->supply.name);
++	mutex_lock(&ltc294x_lock);
++	idr_remove(&ltc294x_id, info->id);
++	mutex_unlock(&ltc294x_lock);
++	return 0;
++}
++
++static int ltc294x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	struct ltc294x_info *info;
++	int ret;
++	int num;
++	u32 prescaler_exp;
++	s32 r_sense;
++	struct device_node *np;
++
++	mutex_lock(&ltc294x_lock);
++	ret = idr_alloc(&ltc294x_id, client, 0, 0, GFP_KERNEL);
++	mutex_unlock(&ltc294x_lock);
++	if(ret < 0)
++		goto fail_id;
++
++	num = ret;
++
++	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
++	if(info == NULL) {
++		dev_err(&client->dev, "Could not allocate memory for device structure!\n");
++		ret = -ENOMEM;
++		goto fail_info;
++	}
++
++	i2c_set_clientdata(client, info);
++
++	info->num_regs = id->driver_data;
++	info->supply.name = kasprintf(GFP_KERNEL, "%s-%d", client->name, num);
++	if(!info->supply.name) {
++		dev_err(&client->dev, "Could not allocate memory for device name!\n");
++		ret = -ENOMEM;
++		goto fail_name;
++	}
++
++	np = of_node_get(client->dev.of_node);
++
++	/* r_sense can be negative, when sense+ is connected to the battery
++	 * instead of the sense-. This results in reversed measurements. */
++	ret = of_property_read_u32(np, "resistor-sense", &r_sense);
++	if(ret < 0) {
++		dev_err(&client->dev, "Could not find resistor-sense in devicetree!\n");
++		goto fail_name;
++	}
++	info->r_sense = r_sense;
++
++	ret = of_property_read_u32(np, "prescaler-exponent", &prescaler_exp);
++	if(ret < 0) {
++		dev_err(&client->dev, "PrescalerExponent not in devicetree, assume max.\n");
++		prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
++	}
++
++	if (info->num_regs == LTC2943_NUM_REGS) {
++		if (prescaler_exp > LTC2943_MAX_PRESCALER_EXP)
++			prescaler_exp = LTC2943_MAX_PRESCALER_EXP;
++		info->Qlsb = ((340 * 50000) / r_sense) / (4096 / (1 << (2*prescaler_exp)));
++	} else {
++		if (prescaler_exp > LTC2941_MAX_PRESCALER_EXP)
++			prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
++		info->Qlsb = ((58 * 50000) / r_sense) / (128 / (1 << prescaler_exp));
++	}
++
++	info->client = client;
++	info->id = num;
++	info->supply.type			= POWER_SUPPLY_TYPE_BATTERY;
++	info->supply.properties			= ltc294x_properties;
++	if (info->num_regs >= LTC294X_REG_TEMPERATURE_LSB)
++		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties);
++	else if (info->num_regs >= LTC294X_REG_CURRENT_LSB)
++		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 1;
++	else if (info->num_regs >= LTC294X_REG_VOLTAGE_LSB)
++		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 2;
++	else
++		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 3;
++	info->supply.get_property		= ltc294x_get_property;
++	info->supply.set_property		= ltc294x_set_property;
++	info->supply.property_is_writeable	= ltc294x_property_is_writeable;
++	info->supply.external_power_changed	= NULL;
++
++	INIT_DELAYED_WORK(&info->work, ltc294x_work);
++
++	ret = ltc294x_reset(info, prescaler_exp);
++	if (ret < 0) {
++		dev_err(&client->dev, "Communication with chip failed!\n");
++		goto fail_comm;
++	}
++
++	ret = power_supply_register(&client->dev, &info->supply);
++	if (ret) {
++		dev_err(&client->dev, "failed to register ltc2941\n");
++		goto fail_register;
++	} else {
++		schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
++	}
++
++	return 0;
++
++fail_register:
++	kfree(info->supply.name);
++fail_comm:
++fail_name:
++fail_info:
++	mutex_lock(&ltc294x_lock);
++	idr_remove(&ltc294x_id, num);
++	mutex_unlock(&ltc294x_lock);
++fail_id:
++	return ret;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static int ltc294x_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltc294x_info *info = i2c_get_clientdata(client);
++
++	cancel_delayed_work(&info->work);
++	return 0;
++}
++
++static int ltc294x_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct ltc294x_info *info = i2c_get_clientdata(client);
++
++	schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(ltc294x_pm_ops, ltc294x_suspend, ltc294x_resume);
++#define LTC294X_PM_OPS (&ltc294x_pm_ops)
++
++#else
++#define LTC294X_PM_OPS NULL
++#endif /* CONFIG_PM_SLEEP */
++
++
++static const struct i2c_device_id ltc294x_i2c_id[] = {
++	{"ltc2941", LTC2941_NUM_REGS},
++	{"ltc2943", LTC2943_NUM_REGS},
++	{ },
++};
++MODULE_DEVICE_TABLE(i2c, ltc294x_i2c_id);
++
++static struct i2c_driver ltc294x_driver = {
++	.driver 	= {
++		.name	= "LTC2941",
++		.owner	= THIS_MODULE,
++		.pm 	= LTC294X_PM_OPS,
++	},
++	.probe		= ltc294x_i2c_probe,
++	.remove		= ltc294x_i2c_remove,
++	.id_table	= ltc294x_i2c_id,
++};
++module_i2c_driver(ltc294x_driver);
++
++MODULE_AUTHOR("Auryn Verwegen, Topic Embedded Systems");
++MODULE_AUTHOR("Mike Looijmans, Topic Embedded Products");
++MODULE_DESCRIPTION("LTC2941/LTC2943 Battery Gas Gauge IC driver");
++MODULE_LICENSE("GPL");
+-- 
+1.7.9.5
 
-> +               max_low_div = min_low_div;
-> +
-> +       if (min_div_for_hold > min_total_div) {
-> +               /*
-> +                * Time needed to meet hold requirements is important.
-> +                * Just use that.
-> +                */
-> +               *div_low = min_low_div;
-> +               *div_high = min_high_div;
-> +       } else {
-> +               /*
-> +                * We've got to distribute some time among the low and high
-> +                * so we don't run too fast.
-> +                */
-> +               extra_div = min_total_div - min_div_for_hold;
-> +               /*
-> +                * We'll try to split things up perfectly evenly,
-> +                * biasing slightly towards having a higher div
-> +                * for low (spend more time low).
-> +                */
-> +
-
-nit: The comment above should probably be next to the line below, not
-to the line above it.
-
-> +               ideal_low_div = DIV_ROUND_UP(i2c_rate_khz * min_low_ns,
-> +                                            scl_rate_khz * 8 * min_total_ns);
-> +
-> +               /* Don't allow it to go over the max */
-> +               if (ideal_low_div > max_low_div)
-> +                       ideal_low_div = max_low_div;
-> +
-> +               /* Handle when the ideal low div is going to take up
-> +                * more than we have.
-> +                */
-
-nit: above comment had the wrong style still
-
-> +               if (ideal_low_div > min_low_div + extra_div)
-> +                       ideal_low_div = min_low_div + extra_div;
-> +
-> +               /* Give low the "ideal" and give high whatever extra is left */
-> +               extra_low_div = ideal_low_div - min_low_div;
-> +               *div_low = ideal_low_div;
-> +               *div_high = min_high_div + (extra_div - extra_low_div);
-> +       }
-> +
-> +       /*
-> +       * Adjust to the fact that the hardware has an implicit "+1".
-> +       * NOTE: Above calculations always produce div_low > 0 and  div_high > 0.
-> +       */
-> +       *div_low = *div_low - 1;
-> +       *div_high = *div_high - 1;
-> +}
-> +
->  static void rk3x_i2c_set_scl_rate(struct rk3x_i2c *i2c, unsigned long scl_rate)
->  {
->         unsigned long i2c_rate = clk_get_rate(i2c->clk);
-> -       unsigned int div;
-> +       unsigned long div_low, div_high;
-> +       u64 t_low_ns, t_high_ns;
->
-> -       /* set DIV = DIVH = DIVL
-> -        * SCL rate = (clk rate) / (8 * (DIVH + 1 + DIVL + 1))
-> -        *          = (clk rate) / (16 * (DIV + 1))
-> -        */
-> -       div = DIV_ROUND_UP(i2c_rate, scl_rate * 16) - 1;
-> +       rk3x_i2c_calc_divs(i2c_rate, scl_rate, &div_low, &div_high);
-> +
-> +       i2c_writel(i2c, (div_high << 16) | (div_low & 0xffff), REG_CLKDIV);
->
-> -       i2c_writel(i2c, (div << 16) | (div & 0xffff), REG_CLKDIV);
-> +       t_low_ns = div_u64(((u64)div_low + 1) * 8 * 1000000000, i2c_rate);
-> +       t_high_ns = div_u64(((u64)div_high + 1) * 8 * 1000000000, i2c_rate);
-> +       dev_dbg(i2c->dev,
-> +               "CLK %lukhz, Req %luns, Act low %lluns high %lluns\n",
-> +               i2c_rate / 1000,
-> +               1000000000 / scl_rate,
-> +               t_low_ns, t_high_ns);
->  }
->
->  /**
-
-All of my comments are just nits and this appears to match the python
-script I sent out exactly.  I guess that means you're happy with these
-formulas now.  :)  Hopefully others (Max, Wolfram?) can take a look at
-this now and see what they think.  It's definitely long but I think it
-should give us the best numbers we can get (and most of the length is
-all the comments).
-
-Maybe you can send up a v4 that addresses nits?  After nits:
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-
-I've tested this on my rk3288 board and i2c still seems to work fine
-at 400kHz.  I haven't scoped it myself, but I trust that you have.
-
-Tested-by: Doug Anderson <dianders@chromium.org>
