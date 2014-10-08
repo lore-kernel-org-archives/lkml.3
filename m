@@ -1,109 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368AbaJHVMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:12:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8291 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753396AbaJHVMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:12:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,680,1406617200"; 
-   d="scan'208";a="585622210"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: mina86@mina86.com, r.baldyga@samsung.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        David Cohen <david.a.cohen@linux.intel.com>, <stable@vger.kernel.org>,
-        Qiuxu Zhuo <qiuxu.zhuo@intel.com>
-Subject: [PATCH v2] usb: ffs: fix regression when quirk_ep_out_aligned_size flag is set
-Date: Wed,  8 Oct 2014 14:12:18 -0700
-Message-Id: <1412802738-28839-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1412727486-479-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1754823AbaJHVUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:20:51 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53050 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627AbaJHVUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 17:20:50 -0400
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH] regulator: rn5t618: Convert to new style DT parsing
+Date: Wed,  8 Oct 2014 23:19:08 +0200
+Message-Id: <1412803148-21255-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit '2e4c7553cd usb: gadget: f_fs: add aio support' broke the
-quirk implemented to align buffer size to maxpacketsize on out endpoint.
-As result, functionfs does not work on Intel platforms using dwc3 driver
-(i.e. Bay Trail and Merrifield). This patch fixes the issue.
+Use the simplified DT parsing method to remove some duplicated
+code.
 
-This code is based on a previous Qiuxu's patch.
+Since this is a MFD subdevice and its device object doesn't have an
+associated DT node, the configuration instance used to register the
+regulators has been changed to point to the parent device.
 
-Fixes: 2e4c7553cd (usb: gadget: f_fs: add aio support)
-Cc: <stable@vger.kernel.org> # v3.16+
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Signed-off-by: Qiuxu Zhuo <qiuxu.zhuo@intel.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 ---
+ drivers/regulator/rn5t618-regulator.c | 51 +++--------------------------------
+ 1 file changed, 4 insertions(+), 47 deletions(-)
 
-Hi,
-
-Since this is a feature that worked in past, this is meant for stable
-versions >= 3.16 too.
-
-v1 to v2: just added Fixes, Cc and Acked-by lines on patch description.
-
-Br, David Cohen
-
----
- drivers/usb/gadget/function/f_fs.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 0dc3552d1360..6e2b8063b170 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -648,15 +648,26 @@ static void ffs_user_copy_worker(struct work_struct *work)
- 	if (io_data->read && ret > 0) {
- 		int i;
- 		size_t pos = 0;
-+
-+		/*
-+		 * Since req->length may be bigger than io_data->len (after
-+		 * being rounded up to maxpacketsize), we may end up with more
-+		 * data then user space has space for.
-+		 */
-+		ret = min_t(int, ret, io_data->len);
-+
- 		use_mm(io_data->mm);
- 		for (i = 0; i < io_data->nr_segs; i++) {
-+			size_t len = min_t(size_t, ret - pos,
-+					io_data->iovec[i].iov_len);
-+			if (!len)
-+				break;
- 			if (unlikely(copy_to_user(io_data->iovec[i].iov_base,
--						 &io_data->buf[pos],
--						 io_data->iovec[i].iov_len))) {
-+						 &io_data->buf[pos], len))) {
- 				ret = -EFAULT;
- 				break;
- 			}
--			pos += io_data->iovec[i].iov_len;
-+			pos += len;
- 		}
- 		unuse_mm(io_data->mm);
- 	}
-@@ -794,7 +805,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
- 				goto error_lock;
+diff --git a/drivers/regulator/rn5t618-regulator.c b/drivers/regulator/rn5t618-regulator.c
+index e58d79a..b85ceb8 100644
+--- a/drivers/regulator/rn5t618-regulator.c
++++ b/drivers/regulator/rn5t618-regulator.c
+@@ -31,6 +31,8 @@ static struct regulator_ops rn5t618_reg_ops = {
+ #define REG(rid, ereg, emask, vreg, vmask, min, max, step)		\
+ 	[RN5T618_##rid] = {						\
+ 		.name		= #rid,					\
++		.of_match	= of_match_ptr(#rid),			\
++		.regulators_node = of_match_ptr("regulators"),		\
+ 		.id		= RN5T618_##rid,			\
+ 		.type		= REGULATOR_VOLTAGE,			\
+ 		.owner		= THIS_MODULE,				\
+@@ -60,60 +62,15 @@ static struct regulator_desc rn5t618_regulators[] = {
+ 	REG(LDORTC2, LDOEN2, BIT(5), LDORTC2DAC, 0x7f, 900000, 3500000, 25000),
+ };
  
- 			req->buf      = data;
--			req->length   = io_data->len;
-+			req->length   = data_len;
+-static struct of_regulator_match rn5t618_matches[] = {
+-	[RN5T618_DCDC1]		= { .name = "DCDC1" },
+-	[RN5T618_DCDC2]		= { .name = "DCDC2" },
+-	[RN5T618_DCDC3]		= { .name = "DCDC3" },
+-	[RN5T618_LDO1]		= { .name = "LDO1" },
+-	[RN5T618_LDO2]		= { .name = "LDO2" },
+-	[RN5T618_LDO3]		= { .name = "LDO3" },
+-	[RN5T618_LDO4]		= { .name = "LDO4" },
+-	[RN5T618_LDO5]		= { .name = "LDO5" },
+-	[RN5T618_LDORTC1]	= { .name = "LDORTC1" },
+-	[RN5T618_LDORTC2]	= { .name = "LDORTC2" },
+-};
+-
+-static int rn5t618_regulator_parse_dt(struct platform_device *pdev)
+-{
+-	struct device_node *np, *regulators;
+-	int ret;
+-
+-	np = of_node_get(pdev->dev.parent->of_node);
+-	if (!np)
+-		return 0;
+-
+-	regulators = of_get_child_by_name(np, "regulators");
+-	if (!regulators) {
+-		dev_err(&pdev->dev, "regulators node not found\n");
+-		return -EINVAL;
+-	}
+-
+-	ret = of_regulator_match(&pdev->dev, regulators, rn5t618_matches,
+-				 ARRAY_SIZE(rn5t618_matches));
+-	of_node_put(regulators);
+-	if (ret < 0) {
+-		dev_err(&pdev->dev, "error parsing regulator init data: %d\n",
+-			ret);
+-	}
+-
+-	return 0;
+-}
+-
+ static int rn5t618_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct rn5t618 *rn5t618 = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = { };
+ 	struct regulator_dev *rdev;
+-	int ret, i;
+-
+-	ret = rn5t618_regulator_parse_dt(pdev);
+-	if (ret)
+-		return ret;
++	int i;
  
- 			io_data->buf = data;
- 			io_data->ep = ep->ep;
-@@ -816,7 +827,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
+ 	for (i = 0; i < RN5T618_REG_NUM; i++) {
+-		config.dev = &pdev->dev;
+-		config.init_data = rn5t618_matches[i].init_data;
+-		config.of_node = rn5t618_matches[i].of_node;
++		config.dev = pdev->dev.parent;
+ 		config.regmap = rn5t618->regmap;
  
- 			req = ep->req;
- 			req->buf      = data;
--			req->length   = io_data->len;
-+			req->length   = data_len;
- 
- 			req->context  = &done;
- 			req->complete = ffs_epfile_io_complete;
+ 		rdev = devm_regulator_register(&pdev->dev,
 -- 
-2.1.0
+1.9.1
 
