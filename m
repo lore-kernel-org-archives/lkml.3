@@ -1,556 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194AbaJHVdL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 17:33:11 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43164 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134AbaJHVdH (ORCPT
+	id S1755650AbaJHVgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 17:36:08 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:63750 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470AbaJHVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 17:33:07 -0400
-Message-ID: <5435AD8E.2000109@codeaurora.org>
-Date: Wed, 08 Oct 2014 15:33:02 -0600
-From: Jeffrey Hugo <jhugo@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	Wed, 8 Oct 2014 17:36:06 -0400
+Message-ID: <5435AE41.20105@landley.net>
+Date: Wed, 08 Oct 2014 16:36:01 -0500
+From: Rob Landley <rob@landley.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Suman Anna <s-anna@ti.com>
-Subject: Re: [RFC 4/7] soc: qcom: Add Shared Memory Manager driver
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com> <1412037291-16880-5-git-send-email-bjorn.andersson@sonymobile.com>
-In-Reply-To: <1412037291-16880-5-git-send-email-bjorn.andersson@sonymobile.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
+ current root
+References: <1412683977-29543-1-git-send-email-avagin@openvz.org> <87mw97wqvx.fsf@x220.int.ebiederm.org> <20141008110829.GC24908@paralelels.com> <CALCETrX4XrgbQNZZa7=1009KqhJ2gT+VBUkC15+59K9yEiTSbQ@mail.gmail.com> <87vbnue56f.fsf@x220.int.ebiederm.org> <CALCETrVSxYr=Oa29qHNL-GoifS26U8TfpreGY+KN7g926YgHUw@mail.gmail.com>
+In-Reply-To: <CALCETrVSxYr=Oa29qHNL-GoifS26U8TfpreGY+KN7g926YgHUw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here in my initial detailed pass.  I still have some "issues" that I 
-want to clarify on my end, but I think I have plenty of comments to 
-start with.
+On 10/08/14 14:31, Andy Lutomirski wrote:
+> On Wed, Oct 8, 2014 at 12:23 PM, Eric W. Biederman
+> <ebiederm@xmission.com> wrote:
+>> Andy Lutomirski <luto@amacapital.net> writes:
+>>>> Maybe we want to say that rootfs should not be used if we are going to
+>>>> create containers...
+>>
+>> Today it is an assumption of the vfs that rootfs is mounted.  With
+>> rootfs mounted and pivot_root at the base of the mount stack you can
+>> make as minimal of a set of mounts as the vfs allows.
+>>
+>> Removing rootfs from the vfs requires an audit of everything that
+>> manipulates mounts.  It is not remotely a local excercise.
+> 
+> Would it be a less invasive audit to allow different mount namespaces
+> to have different rootfses?
 
-On 9/29/2014 6:34 PM, Bjorn Andersson wrote:
-> The Shared Memory Manager driver implements an interface for allocating
-> and accessing items in the memory area shared among all of the
-> processors in a Qualcomm platform.
->
-> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-> ---
->
-> In later platforms this is extended to support "secure smem", I do
-> unfortunately not have any devices that I could test this with so I have only
-> implemented the "insecure" version for now.
->
-> I was thinking about implementing an of_xlate as this would make sense for many
-> things. It is however not feasible for SMD, that would require us to list 257
-> items.
->
-> It would make sense to enhance this with a method of keeping track of currently
-> consumed items, both to take care of "mutual exclusion" between consumers as
-> well as knowing when it's safe to remove the device and/or unload the driver.
+I.E. The same way different namespaces have different init tasks?
 
-By "mutual exclusion" I assume you mean that two different entities are 
-using the same smem id.  Such a usecase is outside the purview of this 
-driver, and is essentially unsupported.  Any such usecases would need to 
-be handled by the client.  In short, smem items support one direct client.
+The abstraction containers has implemented here should be logically
+consistent.
 
-I'm not sure it makes sense to unload the driver.  I understand this is 
-a qcom specific driver, but it is critical to our devices.  Any 
-situation I can think of in which this driver would be unloaded, would 
-ultimately result in a reboot of the device.
+>>> Could we have an extra rootfs-like fs that is always completely empty,
+>>> doesn't allow any writes, and can sit at the bottom of container
+>>> namespace hierarchies?  If so, and if we add a new syscall that's like
+>>> pivot_root (or unshare) but prunes the hierarchy, then we could switch
+>>> to that rootfs then.
+>>
+>> Or equally have something that guarantees that rootfs is empty and
+>> read-only at the time the normal root filesystem is mounted.  That is
+>> certainly a much more localized change if we want to go there.
+>>
+>> I am half tempted to suggest that mount --move /some/path / be updated
+>> to make the old / just go away (perhaps to be replaced with a read-only
+>> empty rootfs).  That gets us into figuring out if we break userspace
+>> which is a big challenge.
+> 
+> Hence my argument for a new syscall or entirely new operation.
 
->
-> I did consider exposing the items as regmaps, but for many of the items the
-> regmap context is consuming far more space then the actual data. And we would
-> end up creating 3-400 regmap contexts in a normal system.
->
->
-> Also note that the hwspinlock framework does not yet support devicetree based
-> retrieval of spinlock handles, so that part needs to be changed.
->
->   drivers/soc/qcom/Kconfig           |    8 +
->   drivers/soc/qcom/Makefile          |    1 +
->   drivers/soc/qcom/qcom_smem.c       |  328 ++++++++++++++++++++++++++++++++++++
->   include/linux/soc/qcom/qcom_smem.h |   14 ++
->   4 files changed, 351 insertions(+)
->   create mode 100644 drivers/soc/qcom/qcom_smem.c
->   create mode 100644 include/linux/soc/qcom/qcom_smem.h
->
-> diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
-> index 7bd2c94..9e6bc56 100644
-> --- a/drivers/soc/qcom/Kconfig
-> +++ b/drivers/soc/qcom/Kconfig
-> @@ -9,3 +9,11 @@ config QCOM_GSBI
->             functions for connecting the underlying serial UART, SPI, and I2C
->             devices to the output pins.
->
-> +config QCOM_SMEM
-> +	tristate "Qualcomm Shared Memory Interface"
-> +	depends on ARCH_QCOM
-> +	help
-> +	  Say y here to enable support for the Qualcomm Shared Memory Manager.
-> +	  The driver provides an interface to items in a heap shared among all
-> +	  processors in a Qualcomm platform and is used for exchanging
-> +	  information as well as a fifo based communication mechanism (SMD).
+I'm still waiting for somebody to explain to my why chroot() shouldn't
+be changed to do this instead of adding a new syscall. (At least when
+mount namespace support is enabled.)
 
-I don't think the reference to SMD is appropriate here.  SMD is one of 
-many clients that make use of SMEM.
+> mount(2) and friends are way too multiplexed right now.  I just found
+> yet another security bug due to the insanely complicated semantics of
+> the vfs syscalls.  (Yes, a different one from the one yesterday.)
 
-> diff --git a/drivers/soc/qcom/Makefile b/drivers/soc/qcom/Makefile
-> index 4389012..b1f7b18 100644
-> --- a/drivers/soc/qcom/Makefile
-> +++ b/drivers/soc/qcom/Makefile
-> @@ -1 +1,2 @@
->   obj-$(CONFIG_QCOM_GSBI)	+=	qcom_gsbi.o
-> +obj-$(CONFIG_QCOM_SMEM) +=	qcom_smem.o
-> diff --git a/drivers/soc/qcom/qcom_smem.c b/drivers/soc/qcom/qcom_smem.c
-> new file mode 100644
-> index 0000000..9766c86
-> --- /dev/null
-> +++ b/drivers/soc/qcom/qcom_smem.c
+As the guy who rewrote busybox mount 3 times, and who just implemented a
+brand new one (toybox) from scratch:
 
-I see there appears to be a very small ammount of precidence (one other 
-file), but it seems pointlessly redundant to prefix "qcom_" to the file 
-when it exists in a "qcom" directory.  What is the other point of view 
-that I am missing?
+It's a bit fiddly, yes.
 
-> @@ -0,0 +1,328 @@
-> +/*
-> + * Copyright (c) 2014, Sony Mobile Communications AB.
-> + * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <linux/hwspinlock.h>
-> +#include <linux/soc/qcom/qcom_smem.h>
+> A new operation kills several birds with one stone.  It could look like:
+> 
+> int mntns_change_root(int dfd, const char *path, int flags);
+> 
+> return -EPERM if chrooted.
 
-Alphabetized please.
+Really?
 
-> +
-> +#define AUX_BASE_MASK		0xfffffffc
-> +#define HWSPINLOCK_TIMEOUT	1000
-> +#define SMEM_MAX_ITEMS		512
-> +
-> +/**
-> +  * struct smem_proc_comm - proc_comm communication struct (legacy)
-> +  * @command:	current command to be executed
-> +  * @status:	status of the currently requested command
-> +  * @params:	parameters to the command
-> +  */
-> +struct smem_proc_comm {
-> +	u32 command;
-> +	u32 status;
-> +	u32 params[2];
-> +};
-> +
-> +/**
-> + * struct smem_entry - entry to reference smem items on the heap
-> + * @allocated:	boolean to indicate if this entry is used
-> + * @offset:	offset to the allocated space
-> + * @size:	size of the allocated space, 8 byte aligned
-> + * @aux_base:	base address for the memory region used by this unit, or 0 for
-> + *		the default region. bits 0,1 are reserved
-> + */
-> +struct smem_entry {
-> +	u32 allocated;
-> +	u32 offset;
-> +	u32 size;
-> +	u32 aux_base; /* bits 1:0 reserved */
+>  Returns -EINVAL if path (relative to dfd) isn't a mountmount.
 
-Inline comment appears redundant since its addressed in the comment 
-block above
+Requiring that chroot() only be called on mountpoints would break
+existing semantics, which gets us back to new systemcall instead of
+changing behavior of existing one.
 
-> +};
-> +
-> +/**
-> + * struct smem_header - header found in beginning of primary smem region
-> + * @proc_comm:		proc_comm communication interface (legacy)
-> + * @version:		array of versions for the various subsystems
-> + * @smem_initialized:	boolean to indicate that smem is initialized
-> + * @free_offset:	index of the first unallocated byte in smem
-> + * @available:		number of bytes available for allocation
-> + * @unused:		reserved field
-> + * toc:			array of references to smem entries
+If I recall, the first line of pushback against merging the openvz code
+as is was "buckets of new syscalls". Pushback against adding a new
+system call is understandable. Why can't we fix chroot() now that we
+have the tools to do so?
 
-"@toc"?
+>  Otherwise it disconnects path from the existing
+> hierarchy, attaches a permanently-empty read-only rootfs under it,
+> makes it the root of the mntns, and does the root refs fixup.  The old
+> hierarchy gets thrown out.
 
-> + */
-> +struct smem_header {
-> +	struct smem_proc_comm proc_comm[4];
-> +	u32 version[32];
-> +	u32 smem_initialized;
-> +	u32 free_offset;
-> +	u32 available;
-> +	u32 unused;
+We have a chroot() syscall. We don't use it for containers because it
+doesn't do what we want. Does it currently do what _anybody_ wants?
 
-I see that you inlined the smem_heap_info struct.  That is slightly 
-problematic since we have some uses of that structure, and without it, 
-accessing id 1 becomes complicated.  I would prefer you reintroduce it.
+> Systemd could use this, too.
 
-> +	struct smem_entry toc[SMEM_MAX_ITEMS];
-> +};
-> +
-> +/**
-> +  * struct smem_area - memory region used for smem heap
+While that's a strong argument against it, I'm willing to overlook it.
 
-smem_region?
-
-> +  * @aux_base:	physical base address of the region, used for entry lookup
-> +  * @virt_base:	virtual address of the mapping
-> +  */
-> +struct smem_region {
-> +	u32 aux_base;
-> +	void __iomem *virt_base;
-> +};
-> +
-> +/**
-> +  * struct qcom_smem - control struct for the smem driver
-> +  * @dev:		device pointer
-> +  * @hwlock:		hwspinlock to be held during heap operations
-> +  * @num_regions:	number of entires in the regions array
-> +  * @regions:		array of memory regions, region 0 contains smem_header
-> +  */
-> +struct qcom_smem {
-> +	struct device *dev;
-> +
-> +	struct hwspinlock *hwlock;
-> +
-> +	unsigned num_regions;
-> +	struct smem_region regions[0];
-> +};
-> +
-> +/* Pointer to the one and only smem handle */
-> +static struct qcom_smem *smem_handle;
-> +
-> +/**
-> + * of_get_qcom_smem - retrieve a smem handle from a phandle
-
-"of_get_qcom_smem()"?
-
-> + * @client_node: of_node of the client
-> + *
-> + * Resolve the phandle in the property "qcom,smem" of @client_node and use this
-> + * to retrieve an smem handle.
-> + */
-> +struct qcom_smem *of_get_qcom_smem(struct device_node *client_node)
-> +{
-> +	struct device_node *node;
-> +
-> +	node = of_parse_phandle(client_node, "qcom,smem", 0);
-> +	if (!node)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	of_node_put(node);
-> +
-> +	if (!smem_handle)
-> +		return ERR_PTR(-EPROBE_DEFER);
-> +	else if (smem_handle->dev->of_node != node)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	return smem_handle;
-> +}
-> +EXPORT_SYMBOL(of_get_qcom_smem);
-
-Why?  I understand what this does in a technical sense, but I don't 
-understand the reasoning behind it.  This forces every entity that is a 
-client of smem to have some kind of existance in DT, when for a lot of 
-them, they won't have a need or justification to be in DT other than to 
-have a phandle to smem.
-
-Smem is a special memory allocator.  I don't recall seeing a DT hook for 
-kmalloc/dma_alloc_coherent/alloc_skb/etc so I'm not seeing why we have 
-one here.
-
-All this does is get the clients the qcom_smem handle so that they can 
-pass it back to smem for alloc and get, but there doesn't seem to be a 
-need for it.  The handle is a singleton which this driver already has a 
-reference to, so giving it out to the clients and having them hand it 
-back seems Rube Goldberg-esq.  It also gives the clients the ability to 
-screw with the handle, which I would prefer they never even touch since 
-they have no business doing.  You don't even sanity check the handle 
-when it gets passed in.  What happens when a client screws up and passes 
-in NULL or a random pointer?
-
-The only positive thing about this that I see is it centralizes 
-EPROBE_DEFER, but only for well behaved clients.  It doesn't appear that 
-it would be too difficult to have that functionality in the simplified 
-API you've presented.
-
-> +
-> +/**
-> + * qcom_smem_alloc - allocate space for a smem item
-
-"qcom_smem_alloc()"?
-
-> + * @smem:	smem handle
-> + * @smem_id:	item to be allocated
-> + * @size:	number of bytes to be allocated
-> + *
-> + * Allocate space for a given smem item of size @size, given that the item is
-> + * not yet allocated.
-
-Return?
-
-> + */
-> +int qcom_smem_alloc(struct qcom_smem *smem, unsigned smem_id, size_t size)
-> +{
-> +	struct smem_header *header = smem->regions[0].virt_base;
-> +	struct smem_entry *entry;
-> +	unsigned long flags;
-> +	int ret;
-> +
-> +	size = ALIGN(size, 8);
-> +
-> +	if (WARN_ON(smem_id >= SMEM_MAX_ITEMS))
-> +		return -EINVAL;
-> +
-> +	ret = hwspin_lock_timeout_irqsave(smem->hwlock,
-> +					  HWSPINLOCK_TIMEOUT,
-> +					  &flags);
-> +	if (ret)
-> +		return ret;
-> +
-> +	entry = &header->toc[smem_id];
-> +	if (entry->allocated) {
-> +		ret = -EEXIST;
-> +		goto out;
-> +	}
-> +
-> +	if (WARN_ON(size > header->available)) {
-> +		ret = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	entry->offset = header->free_offset;
-> +	entry->size = size;
-
-wmb() is needed here.  We need to ensure the remote side sees the offset 
-and size before seeing allocated because they may be doing a lookup 
-without allocation without the lock.
-
-> +	entry->allocated = 1;
-> +
-> +	header->free_offset += size;
-> +	header->available -= size;
-> +
-> +	/* Commit the changes before we release the spin lock */
-> +	wmb();
-> +out:
-> +	hwspin_unlock_irqrestore(smem->hwlock, &flags);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(qcom_smem_alloc);
-> +
-
-qcom_smem_get_free_space() kerneldoc?
-
-> +unsigned qcom_smem_get_free_space(struct qcom_smem *smem)
-> +{
-> +	struct smem_header *header = smem->regions[0].virt_base;
-> +
-> +	return header->available;
-> +}
-> +EXPORT_SYMBOL(qcom_smem_get_free_space);
-> +
-> +/**
-> + * qcom_smem_get - resolve ptr of size of a smem item
-
-"qcom_smem_get()"?
-
-> + * @smem:	smem handle
-> + * @smem_id:	item id to be resolved
-> + * @ptr:	pointer to be filled out with address of the item
-> + * @size:	pointer to be filled out with size of the item
-> + *
-> + * Looks up pointer and size of a smem item.
-
-Return?
-
-> + */
-> +int qcom_smem_get(struct qcom_smem *smem,
-> +		  unsigned smem_id,
-> +		  void **ptr,
-> +		  size_t *size)
-> +{
-> +	struct smem_header *header = smem->regions[0].virt_base;
-> +	struct smem_region *area;
-> +	struct smem_entry *entry;
-> +	unsigned long flags;
-> +	u32 aux_base;
-> +	unsigned i;
-> +	int ret;
-> +
-> +	if (WARN_ON(smem_id >= SMEM_MAX_ITEMS))
-> +		return -EINVAL;
-> +
-> +	ret = hwspin_lock_timeout_irqsave(smem->hwlock,
-> +					  HWSPINLOCK_TIMEOUT,
-> +					  &flags);
-> +	if (ret)
-> +		return ret;
-> +
-> +	entry = &header->toc[smem_id];
-> +	if (!entry->allocated) {
-> +		ret = -ENXIO;
-> +		goto out;
-> +	}
-> +
-> +	if (ptr != NULL) {
-> +		aux_base = entry->aux_base & AUX_BASE_MASK;
-> +
-> +		for (i = 0; i < smem->num_regions; i++) {
-> +			area = &smem->regions[i];
-> +
-> +			if (area->aux_base == aux_base || !aux_base) {
-> +				*ptr = area->virt_base + entry->offset;
-> +				break;
-> +			}
-> +		}
-> +	}
-> +	if (size != NULL)
-> +		*size = entry->size;
-> +
-> +out:
-> +	hwspin_unlock_irqrestore(smem->hwlock, &flags);
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(qcom_smem_get);
-> +
-> +static int qcom_smem_probe(struct platform_device *pdev)
-> +{
-> +	struct qcom_smem *smem;
-> +	struct resource *res;
-> +	size_t array_size;
-> +	int num_regions = 0;
-> +	int i;
-> +
-> +	for (i = 0; i < pdev->num_resources; i++) {
-> +		res = &pdev->resource[i];
-> +
-> +		if (resource_type(res) == IORESOURCE_MEM)
-> +			num_regions++;
-> +	}
-> +
-> +	if (num_regions == 0) {
-> +		dev_err(&pdev->dev, "no smem regions specified\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	array_size = num_regions * sizeof(struct smem_region);
-> +	smem = devm_kzalloc(&pdev->dev, sizeof(*smem) + array_size, GFP_KERNEL);
-> +	if (!smem)
-> +		return -ENOMEM;
-> +
-> +	smem->dev = &pdev->dev;
-> +	smem->hwlock = of_hwspin_lock_request(pdev->dev.of_node, NULL);
-> +	if (IS_ERR(smem->hwlock))
-> +		return PTR_ERR(smem->hwlock);
-> +
-> +	smem->num_regions = num_regions;
-> +
-> +	for (i = 0; i < num_regions; i++) {
-> +		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-> +
-> +		smem->regions[i].aux_base = (u32)res->start;
-> +		smem->regions[i].virt_base = devm_ioremap(&pdev->dev,
-> +							  res->start,
-> +							  resource_size(res));
-> +		if (!smem->regions[i].virt_base)
-> +			return -ENOMEM;
-> +	}
-> +
-> +	dev_set_drvdata(&pdev->dev, smem);
-> +	smem_handle = smem;
-> +
-> +	dev_info(&pdev->dev, "Qualcomm Shared Memory Interface probed\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id qcom_smem_of_match[] = {
-> +	{ .compatible = "qcom,smem" },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, qcom_smem_of_match);
-> +
-> +static struct platform_driver qcom_smem_driver = {
-> +	.probe          = qcom_smem_probe,
-> +	.driver  = {
-> +		.name  = "qcom_smem",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = qcom_smem_of_match,
-> +	},
-> +};
-> +
-> +static int __init qcom_smem_init(void)
-> +{
-> +	return platform_driver_register(&qcom_smem_driver);
-> +}
-> +arch_initcall(qcom_smem_init);
-> +
-> +static void __exit qcom_smem_exit(void)
-> +{
-> +	platform_driver_unregister(&qcom_smem_driver);
-> +}
-> +module_exit(qcom_smem_exit)
-> +
-> +MODULE_AUTHOR("Bjorn Andersson <bjorn.andersson@sonymobile.com>");
-> +MODULE_DESCRIPTION("Qualcomm Shared Memory Interface");
-> +MODULE_LICENSE("GPLv2");
-> diff --git a/include/linux/soc/qcom/qcom_smem.h b/include/linux/soc/qcom/qcom_smem.h
-
-include/soc/ already exists, why add include/linux/soc?
-
-> new file mode 100644
-> index 0000000..7c0d3fd
-> --- /dev/null
-> +++ b/include/linux/soc/qcom/qcom_smem.h
-> @@ -0,0 +1,14 @@
-> +#ifndef __QCOM_SMEM_H__
-> +#define __QCOM_SMEM_H__
-> +
-
-Why are the item definitions missing?
-
-> +struct device_node;
-> +struct qcom_smem;
-> +
-> +struct qcom_smem *of_get_qcom_smem(struct device_node *node);
-> +
-> +int qcom_smem_alloc(struct qcom_smem *smem, unsigned smem_id, size_t size);
-> +int qcom_smem_get(struct qcom_smem *smem, unsigned item, void **ptr, size_t *size);
-> +
-> +unsigned qcom_smem_get_free_space(struct qcom_smem *smem);
-
-The above functions should be stubbed out when !CONFIG_QCOM_SMEM, no?
-
-> +
-> +#endif
->
-
-
--- 
-Jeffrey Hugo
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, a 
-Linux Foundation Collaborative Project
+Rob
