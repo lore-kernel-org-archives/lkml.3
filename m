@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaJHTpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:45:00 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:47198 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513AbaJHTo7 (ORCPT
+	id S1754876AbaJHTpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:45:19 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57063 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745AbaJHTpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:44:59 -0400
-MIME-Version: 1.0
-X-Originating-IP: [129.2.129.149]
-In-Reply-To: <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
-References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
- <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Wed, 8 Oct 2014 15:44:37 -0400
-Message-ID: <CAOFdcFP=z4Tn-Zt6cuujGABWPDQrCy4=LzXHndB5rzFnEdyvXw@mail.gmail.com>
-Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Jiri Kosina <jkosina@suse.cz>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 8 Oct 2014 15:45:16 -0400
+Date: Wed, 08 Oct 2014 15:45:13 -0400 (EDT)
+Message-Id: <20141008.154513.1944594723904521723.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next] r8152: use mutex for hw settings
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1394712342-15778-58-Taiwan-albertk@realtek.com>
+References: <1394712342-15778-58-Taiwan-albertk@realtek.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 08 Oct 2014 12:45:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 3:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> It should build and work on 32-bit.
->
-> Except that the makefile is totally bogus.  vdso_standalone_test isn't
-> a hostprog at all.  It's a target prog.  But kbuild doesn't understand
-> that, so I have no idea what, if anything, that makefile is supposed
-> to do.
-The idea is to increase build testing for targets in Documentation,
-but I didn't really consider cross-compiling those targets.
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Tue, 7 Oct 2014 13:36:30 +0800
 
->
-> I would argue that the whole documentation build system should be
-> fixed to cross-compile or should just be disabled for cross-builds if
-> glibc isn't available.
-It might make sense to just completely disable CONFIG_BUILD_DOCSRC if
-we're cross-compiling.
+> Use mutex to avoid that the serial hw settings would be interrupted
+> by other settings. Although there is no problem now, it makes the
+> driver more safe.
+> 
+> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 
->
-> FWIW, the comment at the top of vdso_standalone_test_x86.c documents
-> *exactly* how to build it, and it works if you build it like that.
+I think a much simpler fix is to take rtnl_lock() in the workqueue
+function and suspend/resume ops.
 
-So, it looks like 32bit needs -lgcc_s
-I'll whip up a patch to add that.
+Every other place you are adding the mutex already holds the RTNL
+mutex.
