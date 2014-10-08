@@ -1,98 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345AbaJHLeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:34:18 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:25072 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932278AbaJHLeM (ORCPT
+	id S932522AbaJHLyh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:54:37 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:49396 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343AbaJHLyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:34:12 -0400
-Date: Wed, 8 Oct 2014 19:31:23 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
-Message-ID: <20141008193123.11f42bb0@xhacker>
-In-Reply-To: <alpine.DEB.2.11.1409302351500.4455@nanos>
-References: <1411454100-6814-1-git-send-email-jszhang@marvell.com>
-	<1411454100-6814-4-git-send-email-jszhang@marvell.com>
-	<542AA336.6070206@gmail.com>
-	<alpine.DEB.2.11.1409302351500.4455@nanos>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 8 Oct 2014 07:54:33 -0400
+Date: Wed, 8 Oct 2014 13:54:28 +0200
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Joe Lawrence <joe.lawrence@stratus.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] workqueue: add quiescent state between work items
+Message-ID: <20141008115428.GA1858@nanopsycho.orion>
+References: <1412529862-17954-1-git-send-email-joe.lawrence@stratus.com>
+ <1412529862-17954-2-git-send-email-joe.lawrence@stratus.com>
+ <20141005192119.GE8549@htj.dyndns.org>
+ <20141005194748.GG8549@htj.dyndns.org>
+ <20141006042158.GW5015@linux.vnet.ibm.com>
+ <20141007072942.GA2088@nanopsycho.orion>
+ <20141007134329.GA4880@linux.vnet.ibm.com>
+ <20141007134528.1a59f31b@jlaw-desktop.mno.stratus.com>
+ <20141008032411.GG4880@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-08_06:2014-10-08,2014-10-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410080106
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008032411.GG4880@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, Sebastian,
+Wed, Oct 08, 2014 at 05:24:11AM CEST, paulmck@linux.vnet.ibm.com wrote:
+>On Tue, Oct 07, 2014 at 01:45:28PM -0400, Joe Lawrence wrote:
+>> On Tue, 7 Oct 2014 06:43:29 -0700
+>> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+>> 
+>> > On Tue, Oct 07, 2014 at 09:29:42AM +0200, Jiri Pirko wrote:
+>> [ ... snip ... ]
+>> > > 
+>> > > Paul, Tehun, how do you propose to fix this on older kernels which do
+>> > > not have rcu_note_voluntary_context_switch? I'm particullary interested
+>> > > in 3.10.
+>> > 
+>> > Hello, Jiri,
+>> > 
+>> > Older kernels can instead use rcu_note_context_switch().
+>> 
+>> Hi Paul,
+>> 
+>> Does 4a81e8328d37 ("rcu: Reduce overhead of cond_resched() checks for
+>> RCU") affect a backport to 3.10?
+>> 
+>> I noticed that rcu_note_context_switch added a call to
+>> rcu_momentary_dyntick_idle in that change, which is only present in
+>> v3.16+.
+>> 
+>> Would rcu_note_context_switch be effective by itself on a 3.10 kernel?
+>
+>Should be fine.  There is more overhead than current mainline, but that
+>should not be in the noise compared to executing a work-queue item.
+>
+>							Thanx, Paul
+>
 
-On Tue, 30 Sep 2014 14:52:54 -0700
-Thomas Gleixner <tglx@linutronix.de> wrote:
+I cooked up following patch. Please tell me if it is fine or not. I can
+also send it oficially so it can be included into stable trees:
 
-> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
-> > On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
-> > > This patch adds in support for S2R for dw-apb-ictl irqchip driver.
-> > > 
-> > > Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
-> > > ---
-> > >   drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
-> > >   1 file changed, 19 insertions(+)
-> > > 
-> > > diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
-> > > b/drivers/irqchip/irq-dw-apb-ictl.c
-> > > index c136b67..53bb732 100644
-> > > --- a/drivers/irqchip/irq-dw-apb-ictl.c
-> > > +++ b/drivers/irqchip/irq-dw-apb-ictl.c
-> > > @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
-> > > struct irq_desc *desc)
-> > >   	chained_irq_exit(chip, desc);
-> > >   }
-> > > 
-> > > +#ifdef CONFIG_PM
-> > > +static void dw_apb_ictl_resume(struct irq_data *d)
-> > > +{
-> > > +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> > > +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
-> > > +
-> > > +	irq_gc_lock(gc);
-> > > +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
-> > > +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
-> > > +	irq_gc_unlock(gc);
-> > > +}
-> > 
-> > I agree with the overall change, but may this also be suited for a
-> > generic irq_chip helper instead of being a driver specific one?
-> > 
-> > Maybe Thomas or Jason can comment on this.
-> 
-> If we have enough similar resume callbacks, yes. 
->  
-> > Also, now that you are using writel_relaxed, I understand that both
-> > writes above can happen in any order? Are there any implication we
-> > have to consider, i.e. do we require any of the registers above to
-> > be written first?
+Subject: workqueue: Add quiescent state between work items
 
-The registers sits at device type memory, the writes should happen in the same
-order as before.
+Similar to the stop_machine deadlock scenario on !PREEMPT kernels
+addressed in b22ce2785d97 "workqueue: cond_resched() after processing
+each work item", kworker threads requeueing back-to-back with zero jiffy
+delay can stall RCU. The cond_resched call introduced in that fix will
+yield only iff there are other higher priority tasks to run, so force a
+quiescent RCU state between work items.
 
-Thanks for reviewing,
-Jisheng
+Signed-off-by: Jiri Pirko <jiri@resnulli.us>
+---
+ kernel/workqueue.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> 
-> Was about to ask that as well :)
-> 
-> Thanks,
-> 
-> 	tglx
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index e9719c7..14a7163 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2196,8 +2196,10 @@ __acquires(&pool->lock)
+ 	 * kernels, where a requeueing work item waiting for something to
+ 	 * happen could deadlock with stop_machine as such work item could
+ 	 * indefinitely requeue itself while all other CPUs are trapped in
+-	 * stop_machine.
++	 * stop_machine. At the same time, report a quiescent RCU state so
++	 * the same condition doesn't freeze RCU.
+ 	 */
++	rcu_note_context_switch(raw_smp_processor_id());
+ 	cond_resched();
+ 
+ 	spin_lock_irq(&pool->lock);
+-- 
+1.9.3
+
 
