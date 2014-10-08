@@ -1,213 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbaJHHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:07:56 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:44079 "EHLO e8.ny.us.ibm.com"
+	id S1754236AbaJHHJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:09:13 -0400
+Received: from sym2.noone.org ([178.63.92.236]:36271 "EHLO sym2.noone.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343AbaJHHHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:07:54 -0400
-Subject: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks hotplug
- invariant
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-To: svaidy@linux.vnet.ibm.com, peterz@infradead.org, rjw@rjwysocki.net,
-        lizefan@huawei.com, anton@samba.org, tj@kernel.org,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 08 Oct 2014 12:37:40 +0530
-Message-ID: <20141008070739.1170.33313.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.17-dirty
+	id S1754080AbaJHHJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 03:09:10 -0400
+Date: Wed, 8 Oct 2014 09:09:07 +0200
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH] Input: opencores-kbd: Switch to using managed resources
+Message-ID: <20141008070907.GM3279@distanz.ch>
+References: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
+ <20141007133322.GL3279@distanz.ch>
+ <20141007161716.GB16469@dtor-ws>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100807-0320-0000-0000-000000B360B1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007161716.GB16469@dtor-ws>
+X-Editor: Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two masks associated with cpusets. The cpus/mems_allowed
-and effective_cpus/mems. On the legacy hierarchy both these masks
-are consistent with each other. This is the intersection of their
-value and the currently active cpus. This means that we destroy the
-original values set in these masks on each cpu/mem hot unplug operation.
-	As a consequence when we hot plug back the cpus/mems, the tasks
-no longer run on them and performance degrades, inspite of having
-resources to run on.
+On 2014-10-07 at 18:17:16 +0200, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> On Tue, Oct 07, 2014 at 03:33:22PM +0200, Tobias Klauser wrote:
+> > On 2014-10-07 at 13:31:41 +0200, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
+> > > This change switch to managed resources to simplifies error handling
+> > > and module unloading and does away with platform_driver remove function.
+> > > 
+> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > > Cc: linux-input@vger.kernel.org
+> > > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> > > ---
+> > >  drivers/input/keyboard/opencores-kbd.c |   54 ++++++++------------------------
+> > >  1 file changed, 13 insertions(+), 41 deletions(-)
+> > > 
+> > > diff --git a/drivers/input/keyboard/opencores-kbd.c b/drivers/input/keyboard/opencores-kbd.c
+> > > index 7b9b441..ecacb87 100644
+> > > --- a/drivers/input/keyboard/opencores-kbd.c
+> > > +++ b/drivers/input/keyboard/opencores-kbd.c
+> > > @@ -56,27 +56,27 @@ static int opencores_kbd_probe(struct platform_device *pdev)
+> > >  		return -EINVAL;
+> > >  	}
+> > >  
+> > > -	opencores_kbd = kzalloc(sizeof(*opencores_kbd), GFP_KERNEL);
+> > > -	input = input_allocate_device();
+> > > +	opencores_kbd = devm_kzalloc(&pdev->dev, sizeof(*opencores_kbd),
+> > > +				     GFP_KERNEL);
+> > > +	input = devm_input_allocate_device(&pdev->dev);
+> > >  	if (!opencores_kbd || !input) {
+> > >  		dev_err(&pdev->dev, "failed to allocate device structures\n");
+> > > -		error = -ENOMEM;
+> > > -		goto err_free_mem;
+> > > +		return -ENOMEM;
+> > >  	}
+> > >  
+> > >  	opencores_kbd->addr_res = res;
+> > > -	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> > > +	res = devm_request_mem_region(&pdev->dev, res->start,
+> > > +				      resource_size(res), pdev->name);
+> > >  	if (!res) {
+> > >  		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> > > -		error = -EBUSY;
+> > > -		goto err_free_mem;
+> > > +		return -EBUSY;
+> > >  	}
+> > >  
+> > > -	opencores_kbd->addr = ioremap(res->start, resource_size(res));
+> > > +	opencores_kbd->addr = devm_ioremap(&pdev->dev, res->start,
+> > > +					   resource_size(res));
+> > 
+> > You could use devm_ioremap_resource() here and get rid of the call to
+> > devm_request_mem_region() and the check for !res above, i.e. something
+> > like:
+> > 
+> > 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > 	[...]
+> > 	opencores_kbd->addr = devm_ioremap_resource(&pdev->dev, res);
+> > 	if (!opencores_kbd->addr) {
+> > 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> > 		return -ENXIO;
+> > 	}
+> 
+> You need to be careful with devm_ioremap_resource() ocnversions as it
+> returns ERR_PTR-encoded pointer on failures, not NULL.
 
-This effect is not seen in the default hierarchy since the
-allowed and effective masks are distinctly maintained.
-allowed masks are never touched once configured and effective masks
-alone are hotplug variant.
-
-This patch replicates the above design even for the legacy hierarchy,
-so that:
-
-1. Tasks always run on the cpus/memory nodes that they are allowed to run on
-as long as they are online. The allowed masks are hotplug invariant.
-
-2. When all cpus/memory nodes in a cpuset are hot unplugged out, the tasks
-are moved to their nearest ancestor which has resources to run on.
-
-There were discussions earlier around this issue:
-https://lkml.org/lkml/2012/5/4/265
-http://thread.gmane.org/gmane.linux.kernel/1250097/focus=1252133
-
-The argument against making the allowed masks hotplug invariant was that
-hotplug is destructive and hence cpusets cannot expect to regain resources
-that have gone through a hotplug operation by the user.
-
-But on powerpc we do smt mode switch to suit the workload running.
-We therefore need to keep track of the original cpuset configuration
-so as to make use of them when they are back online due to a mode switch.
-Moreover there is no real harm in keeping the allowed masks invariant
-on hotplug since the effective masks will anyway keep track of the
-online cpus. In fact there are use cases which need the cpuset's
-original configuration to be retained. The v2 of cgroup design therefore
-does not overwrite this configuration.
-
-Till the time the controllers switch to the default hierarchy it serves
-well to fix this problem in the legacy hierarchy. While at it fix a comment
-which assumes that cpuset masks are changed only during a hot-unplug operation.
-With this patch it is ensured that cpuset masks are consistent with online cpus
-in both default and legacy hierarchy.
-
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
-
- kernel/cpuset.c |   38 ++++++++++----------------------------
- 1 file changed, 10 insertions(+), 28 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 22874d7..89c2e60 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -78,8 +78,6 @@ struct cpuset {
- 	unsigned long flags;		/* "unsigned long" so bitops work */
- 
- 	/*
--	 * On default hierarchy:
--	 *
- 	 * The user-configured masks can only be changed by writing to
- 	 * cpuset.cpus and cpuset.mems, and won't be limited by the
- 	 * parent masks.
-@@ -91,10 +89,6 @@ struct cpuset {
- 	 * effective_mask == configured_mask & parent's effective_mask,
- 	 * and if it ends up empty, it will inherit the parent's mask.
- 	 *
--	 *
--	 * On legacy hierachy:
--	 *
--	 * The user-configured masks are always the same with effective masks.
- 	 */
- 
- 	/* user-configured CPUs and Memory Nodes allow to tasks */
-@@ -842,8 +836,6 @@ static void update_tasks_cpumask(struct cpuset *cs)
-  * When congifured cpumask is changed, the effective cpumasks of this cpuset
-  * and all its descendants need to be updated.
-  *
-- * On legacy hierachy, effective_cpus will be the same with cpu_allowed.
-- *
-  * Called with cpuset_mutex held
-  */
- static void update_cpumasks_hier(struct cpuset *cs, struct cpumask *new_cpus)
-@@ -879,9 +871,6 @@ static void update_cpumasks_hier(struct cpuset *cs, struct cpumask *new_cpus)
- 		cpumask_copy(cp->effective_cpus, new_cpus);
- 		mutex_unlock(&callback_mutex);
- 
--		WARN_ON(!cgroup_on_dfl(cp->css.cgroup) &&
--			!cpumask_equal(cp->cpus_allowed, cp->effective_cpus));
--
- 		update_tasks_cpumask(cp);
- 
- 		/*
-@@ -1424,7 +1413,7 @@ static int cpuset_can_attach(struct cgroup_subsys_state *css,
- 	/* allow moving tasks into an empty cpuset if on default hierarchy */
- 	ret = -ENOSPC;
- 	if (!cgroup_on_dfl(css->cgroup) &&
--	    (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed)))
-+	    (cpumask_empty(cs->effective_cpus) || nodes_empty(cs->effective_mems)))
- 		goto out_unlock;
- 
- 	cgroup_taskset_for_each(task, tset) {
-@@ -2108,8 +2097,8 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 	 * has online cpus, so can't be empty).
- 	 */
- 	parent = parent_cs(cs);
--	while (cpumask_empty(parent->cpus_allowed) ||
--			nodes_empty(parent->mems_allowed))
-+	while (cpumask_empty(parent->effective_cpus) ||
-+			nodes_empty(parent->effective_mems))
- 		parent = parent_cs(parent);
- 
- 	if (cgroup_transfer_tasks(parent->css.cgroup, cs->css.cgroup)) {
-@@ -2127,9 +2116,7 @@ hotplug_update_tasks_legacy(struct cpuset *cs,
- 	bool is_empty;
- 
- 	mutex_lock(&callback_mutex);
--	cpumask_copy(cs->cpus_allowed, new_cpus);
- 	cpumask_copy(cs->effective_cpus, new_cpus);
--	cs->mems_allowed = *new_mems;
- 	cs->effective_mems = *new_mems;
- 	mutex_unlock(&callback_mutex);
- 
-@@ -2137,13 +2124,13 @@ hotplug_update_tasks_legacy(struct cpuset *cs,
- 	 * Don't call update_tasks_cpumask() if the cpuset becomes empty,
- 	 * as the tasks will be migratecd to an ancestor.
- 	 */
--	if (cpus_updated && !cpumask_empty(cs->cpus_allowed))
-+	if (cpus_updated && !cpumask_empty(cs->effective_cpus))
- 		update_tasks_cpumask(cs);
--	if (mems_updated && !nodes_empty(cs->mems_allowed))
-+	if (mems_updated && !nodes_empty(cs->effective_mems))
- 		update_tasks_nodemask(cs);
- 
--	is_empty = cpumask_empty(cs->cpus_allowed) ||
--		   nodes_empty(cs->mems_allowed);
-+	is_empty = cpumask_empty(cs->effective_cpus) ||
-+		   nodes_empty(cs->effective_mems);
- 
- 	mutex_unlock(&cpuset_mutex);
- 
-@@ -2180,11 +2167,11 @@ hotplug_update_tasks(struct cpuset *cs,
- }
- 
- /**
-- * cpuset_hotplug_update_tasks - update tasks in a cpuset for hotunplug
-+ * cpuset_hotplug_update_tasks - update tasks in a cpuset for hotplug
-  * @cs: cpuset in interest
-  *
-- * Compare @cs's cpu and mem masks against top_cpuset and if some have gone
-- * offline, update @cs accordingly.  If @cs ends up with no CPU or memory,
-+ * Compare @cs's cpu and mem masks against top_cpuset and update @cs
-+ * accordingly.  If @cs ends up with no CPU or memory,
-  * all its tasks are moved to the nearest ancestor with both resources.
-  */
- static void cpuset_hotplug_update_tasks(struct cpuset *cs)
-@@ -2244,7 +2231,6 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 	static cpumask_t new_cpus;
- 	static nodemask_t new_mems;
- 	bool cpus_updated, mems_updated;
--	bool on_dfl = cgroup_on_dfl(top_cpuset.css.cgroup);
- 
- 	mutex_lock(&cpuset_mutex);
- 
-@@ -2258,8 +2244,6 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 	/* synchronize cpus_allowed to cpu_active_mask */
- 	if (cpus_updated) {
- 		mutex_lock(&callback_mutex);
--		if (!on_dfl)
--			cpumask_copy(top_cpuset.cpus_allowed, &new_cpus);
- 		cpumask_copy(top_cpuset.effective_cpus, &new_cpus);
- 		mutex_unlock(&callback_mutex);
- 		/* we don't mess with cpumasks of tasks in top_cpuset */
-@@ -2268,8 +2252,6 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 	/* synchronize mems_allowed to N_MEMORY */
- 	if (mems_updated) {
- 		mutex_lock(&callback_mutex);
--		if (!on_dfl)
--			top_cpuset.mems_allowed = new_mems;
- 		top_cpuset.effective_mems = new_mems;
- 		mutex_unlock(&callback_mutex);
- 		update_tasks_nodemask(&top_cpuset);
-
+Ah yes of course, I was a bit too quick with my top-of-the-head
+conversion. Thanks for fixing it up.
