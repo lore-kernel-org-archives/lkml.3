@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaJHF1t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 01:27:49 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:57249 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656AbaJHF1n (ORCPT
+	id S1755002AbaJHF2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 01:28:38 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:18093 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185AbaJHF1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 01:27:43 -0400
+	Wed, 8 Oct 2014 01:27:48 -0400
 X-IronPort-AV: E=Sophos;i="5.04,675,1406617200"; 
-   d="scan'208";a="47678156"
+   d="scan'208";a="47909457"
 From: Scott Branden <sbranden@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -29,98 +29,55 @@ CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         <devicetree@vger.kernel.org>,
         Jonathan Richardson <jonathar@broadcom.com>,
         Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH 1/6] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Tue, 7 Oct 2014 22:27:00 -0700
-Message-ID: <1412746025-11998-2-git-send-email-sbranden@broadcom.com>
+Subject: [PATCH 5/6] ARM: dts: Enable Broadcom Cygnus SoC
+Date: Tue, 7 Oct 2014 22:27:04 -0700
+Message-ID: <1412746025-11998-6-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1412746025-11998-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
  <1412746025-11998-1-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jonathan Richardson <jonathar@broadcom.com>
 
-Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+DT files to enable cygnus consisting of the enterprise phone board variant and
+cygnus core configuration.
 
 Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
 Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
 Signed-off-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/mach-bcm/Kconfig      |   31 ++++++++
- arch/arm/mach-bcm/Makefile     |    3 +
- arch/arm/mach-bcm/bcm_cygnus.c |  166 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 200 insertions(+)
- create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+ arch/arm/boot/dts/Makefile             |    1 +
+ arch/arm/boot/dts/bcm-cygnus.dtsi      |  349 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/bcm911360_entphn.dts |   22 ++
+ 3 files changed, 372 insertions(+)
+ create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+ create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index fc93800..2dd3f78 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -5,6 +5,37 @@ menuconfig ARCH_BCM
- 
- if ARCH_BCM
- 
-+config ARCH_BCM_IPROC
-+	bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_CLK
-+	select CLKSRC_OF
-+	select CLKSRC_MMIO
-+	select GENERIC_CLOCKEVENTS
-+	select ARM_GLOBAL_TIMER
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
-+	select PINCTRL
-+	select DEBUG_UART_8250
-+	help
-+	  This enables support for systems based on Broadcom IPROC architected SoCs.
-+	  The IPROC complex contains one or more ARM CPUs along with common
-+	  core periperals. Application specific SoCs are created by adding a
-+	  uArchitecture containing peripherals outside of the IPROC complex.
-+	  Currently supported SoCs are Cygnus.
-+
-+menu "iProc SoC based Machine types"
-+	depends on ARCH_BCM_IPROC
-+
-+	config ARCH_BCM_CYGNUS
-+		bool "Support Broadcom Cygnus board"
-+		select USB_ARCH_HAS_EHCI if USB_SUPPORT
-+		help
-+		  Support for Broadcom Cygnus SoC.
-+endmenu
-+
- config ARCH_BCM_MOBILE
- 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index b19a396..46e092a 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,6 +10,9 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
-+# Cygnus
-+obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  bcm_cygnus.o
-+
- # BCM281XX
- obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-diff --git a/arch/arm/mach-bcm/bcm_cygnus.c b/arch/arm/mach-bcm/bcm_cygnus.c
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index b8c5cd3..b95d41d 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -52,6 +52,7 @@ dtb-$(CONFIG_ARCH_AT91)	+= sama5d36ek.dtb
+ dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
+ dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
+ dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
++dtb-$(CONFIG_ARCH_BCM_CYGNUS) += bcm911360_entphn.dtb
+ dtb-$(CONFIG_ARCH_BCM_5301X) += bcm4708-netgear-r6250.dtb
+ dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb \
+ 	bcm21664-garnet.dtb
+diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
 new file mode 100644
-index 0000000..8e430ed
+index 0000000..81da0d8
 --- /dev/null
-+++ b/arch/arm/mach-bcm/bcm_cygnus.c
-@@ -0,0 +1,166 @@
++++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
+@@ -0,0 +1,349 @@
 +/*
 + * Copyright 2014 Broadcom Corporation.  All rights reserved.
 + *
@@ -135,158 +92,369 @@ index 0000000..8e430ed
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/clocksource.h>
-+#include <linux/clk-provider.h>
-+#include <linux/delay.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/map.h>
-+#include <asm/proc-fns.h>
-+#include <asm/hardware/cache-l2x0.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/interrupt-controller/irq.h>
 +
-+#define CRMU_MAIL_BOX1      0x03024028
-+#define CRMU_SOFT_RESET_CMD 0xFFFFFFFF
++#include "skeleton.dtsi"
 +
-+/* CRU_RESET register */
-+static void * __iomem crmu_mail_box1_reg;
++/ {
++	compatible = "brcm,cygnus";
++	model = "Broadcom Cygnus SoC";
++	interrupt-parent = <&gic>;
 +
-+#ifdef CONFIG_NEON
++	aliases {
++		serial0 = &uart3;
++		serial1 = &uart0;
++	};
 +
-+#define CRU_BASE                  0x1800e000
-+#define CRU_SIZE                  0x34
-+#define CRU_CONTROL_OFFSET        0x0
-+#define CRU_PWRDWN_EN_OFFSET      0x4
-+#define CRU_PWRDWN_STATUS_OFFSET  0x8
-+#define CRU_NEON0_HW_RESET  6
-+#define CRU_CLAMP_ON_NEON0  20
-+#define CRU_PWRONIN_NEON0   21
-+#define CRU_PWRONOUT_NEON0  21
-+#define CRU_PWROKIN_NEON0   22
-+#define CRU_PWROKOUT_NEON0  22
-+#define CRU_STATUS_DELAY_NS 500
-+#define CRU_MAX_RETRY_COUNT 10
-+#define CRU_RETRY_INTVL_US  1
++	chosen {
++		bootargs = "console=ttyS0,115200 earlyprintk debug";
++	};
 +
-+/* Power up the NEON/VFPv3 block. */
-+static void bcm_cygnus_powerup_neon(void)
-+{
-+	void * __iomem cru_base = ioremap(CRU_BASE, CRU_SIZE);
-+	u32 reg, i;
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
 +
-+	if (WARN_ON(!cru_base))
-+		return;
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a9";
++			next-level-cache = <&L2>;
++			reg = <0x0>;
++		};
++	};
 +
-+	/* De-assert the neon hardware block reset */
-+	reg = readl(cru_base + CRU_CONTROL_OFFSET);
-+	reg &= ~(1 << CRU_NEON0_HW_RESET);
-+	writel(reg, cru_base + CRU_CONTROL_OFFSET);
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
 +
-+	/* Assert the power ON register bit */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg |= (1 << CRU_PWRONIN_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
++		osc: oscillator {
++			#clock-cells = <0>;
++			compatible = "fixed-clock";
++			clock-frequency = <25000000>;
++		};
 +
-+	/*
-+	 * Wait up to 10 usec in 1 usec increments for the
-+	 * status register to acknowledge the power ON assert
-+	 */
-+	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
-+		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
-+		if (reg & CRU_PWRONOUT_NEON0)
-+			break;
++		lcpll: lcpll@0301d02c {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-lcpll-clk";
++			reg = <0x0301d02c 0x1c>;
++			clocks = <&osc>;
++		};
 +
-+		udelay(CRU_RETRY_INTVL_US);
-+	}
++		genpll: genpll@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-clk";
++			reg = <0x0301d000 0x2c>,
++				  <0x180AA024 0x4>,
++				  <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
 +
-+	if (WARN_ON(i == CRU_MAX_RETRY_COUNT))
-+		goto neon_unmap;
++		axi21_clk: genpll_ch0@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <0>;
++		};
 +
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
++		clk_25MHz: genpll_ch1@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <1>;
++		};
 +
-+	/* Assert the power OK register bit */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg |= (1 << CRU_PWROKIN_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
++		sys_clk: genpll_ch2@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <2>;
++		};
 +
-+	/*
-+	 * Wait up to 10 usec in 1 usec increments for the
-+	 * status register to acknowledge the power OK assert
-+	 */
-+	for (i = 0; i < CRU_MAX_RETRY_COUNT; i++) {
-+		reg = readl(cru_base + CRU_PWRDWN_STATUS_OFFSET);
-+		if (reg & CRU_PWROKOUT_NEON0)
-+			break;
++		ethernet_clk: genpll_ch3@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <3>;
++		};
 +
-+		udelay(CRU_RETRY_INTVL_US);
-+	}
++		asiu_audio_clk: genpll_ch4@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <4>;
++		};
 +
-+	if (WARN_ON(i == CRU_MAX_RETRY_COUNT))
-+		goto neon_unmap;
++		asiu_can_clk: genpll_ch5@0301d000 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-genpll-ch";
++			reg = <0x0301d000 0x2c>;
++			clocks = <&genpll>;
++			channel = <5>;
++		};
 +
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
++		pcie_clk: lcpll_ch0@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <0>;
++		};
 +
-+	/* Set the logic clamp for the neon block */
-+	reg = readl(cru_base + CRU_PWRDWN_EN_OFFSET);
-+	reg &= ~(1 << CRU_CLAMP_ON_NEON0);
-+	writel(reg, cru_base + CRU_PWRDWN_EN_OFFSET);
++		ddr_clk: lcpll_ch1@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <1>;
++		};
 +
-+	/* Wait 0.5 usec = 500 nsec */
-+	ndelay(CRU_STATUS_DELAY_NS);
++		sdio_clk: lcpll_ch2@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <2>;
++		};
 +
-+	/* Reset the neon hardware block */
-+	reg = readl(cru_base + CRU_CONTROL_OFFSET);
-+	reg |= (1 << CRU_NEON0_HW_RESET);
-+	writel(reg, cru_base + CRU_CONTROL_OFFSET);
++		usb_clk: lcpll_ch3@0301d02c {
++		    compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <3>;
++		};
 +
-+neon_unmap:
-+	iounmap(cru_base);
-+}
-+#endif /* CONFIG_NEON */
++		smart_card_clk: lcpll_ch4@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <4>;
++		};
 +
-+static void __init bcm_cygnus_init(void)
-+{
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++		ch5_unknown_clk: lcpll_ch5@0301d02c {
++			compatible = "brcm,cygnus-lcpll-ch";
++			reg = <0x0301d02c 0x1c>;
++			#clock-cells = <0>;
++			clocks = <&lcpll>;
++			channel = <5>;
++		};
 +
-+	l2x0_of_init(0, ~0UL);
++		/*
++		 * There are 2 clocks derived from genpll ch0 (axi21) which are
++		 * divided internally by 2 and 4. If axi21 clock rate changes, these
++		 * derived clock rates scale accordingly.
++		 */
 +
-+	crmu_mail_box1_reg = ioremap(CRMU_MAIL_BOX1, SZ_4);
-+	WARN_ON(!crmu_mail_box1_reg);
++		axi41_clk: axi41_clk {
++			reg = <0x0301d000 0x2c>;
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-pll-derived";
++			clocks = <&axi21_clk>;
++			div = <2>;
++		};
 +
-+#ifdef CONFIG_NEON
-+	bcm_cygnus_powerup_neon();
-+#endif
-+}
++		axi81_clk: axi81_clk {
++			reg = <0x0301d000 0x2c>;
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-pll-derived";
++			clocks = <&axi21_clk>;
++			div = <4>;
++		};
 +
-+/*
-+ * Reset the system
-+ */
-+void bcm_cygnus_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	/* Send reset command to M0 via Mailbox. */
-+	if (crmu_mail_box1_reg) {
-+		writel(CRMU_SOFT_RESET_CMD, crmu_mail_box1_reg);
-+		iounmap(crmu_mail_box1_reg);
-+	}
++		/*
++		 * The main output of the ARM PLL is arm_clk with several derived
++		 * child clocks:
++		 * 		periph_clk
++		 * 		apb_clk
++		 * 		arm_switch
++		 * 		apb0_free
++		 */
++		a9pll: arm_clk@19000000 {
++			compatible = "brcm,iproc-arm-a9pll";
++			reg = <0x19000000 0x1000>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++		};
 +
-+	/* Wait for M0 to reset the chip. */
-+	while (1)
-+		cpu_do_idle();
-+}
++		periph_clk: periph_clk@19000000 {
++			compatible = "brcm,iproc-arm-ch";
++			reg = <0x19000000 0x1000>;
++			#clock-cells = <0>;
++			clocks = <&a9pll>;
++			channel = <3>;
++		};
 +
-+static const char const *bcm_cygnus_dt_compat[] = {
-+	"brcm,cygnus",
-+	NULL,
++		apb0_free: apb0_free@19000000 {
++			compatible = "brcm,iproc-arm-ch";
++			reg = <0x19000000 0x1000>;
++			#clock-cells = <0>;
++			clocks = <&a9pll>;
++			channel = <0>;
++		};
++
++		arm_switch: arm_switch@19000000 {
++			compatible = "brcm,iproc-arm-ch";
++			reg = <0x19000000 0x1000>;
++			#clock-cells = <0>;
++			clocks = <&a9pll>;
++			channel = <1>;
++		};
++
++		apb_clk: apb_clk@19000000 {
++			compatible = "brcm,iproc-arm-ch";
++			reg = <0x19000000 0x1000>;
++			#clock-cells = <0>;
++			clocks = <&a9pll>;
++			channel = <2>;
++		};
++
++		/*
++		 * Clocks derived from oscillator.
++		 */
++		keypad_clk: keypad_clk@0301D048 {
++			compatible = "brcm,cygnus-osc-derived";
++			reg = <0x0301D048 0x4>,
++				  <0x180AA024 0x4>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++			channel = <0>;
++			div = <392>;
++		};
++
++		adc_clk: adc_clk@0301D04C {
++			compatible = "brcm,cygnus-osc-derived";
++			reg = <0x0301D04C 0x4>,
++				  <0x180AA024 0x4>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++			channel = <1>;
++		};
++
++		pwm_clk: pwm_clk@0301D050 {
++			compatible = "brcm,cygnus-osc-derived";
++			reg = <0x0301D050 0x4>,
++				  <0x180AA024 0x4>;
++			#clock-cells = <0>;
++			clocks = <&osc>;
++			channel = <2>;
++		};
++
++		mipipll: mipipll@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-clk";
++			reg = <0x180a9800 0x2c>,
++				  top_clk_gating_ctrl: <0x180AA024 0x4>,
++				  crmu_pll_aon_ctrl: <0x0301C020 0x4>;
++			clocks = <&osc>;
++		};
++
++		lcd_clk: mipipll_ch1@180a9800 {
++			#clock-cells = <0>;
++			compatible = "brcm,cygnus-mipipll-ch";
++			reg = <0x180a9800 0x2c>,
++				  <0x180AA024 0x4>;
++			clocks = <&mipipll>;
++			channel = <1>;
++		};
++	};
++
++	amba {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "arm,amba-bus", "simple-bus";
++		interrupt-parent = <&gic>;
++		ranges;
++
++		wdt@18009000 {
++			 compatible = "arm,sp805" , "arm,primecell";
++			 reg = <0x18009000 0x1000>;
++			 interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
++			 clocks = <&axi81_clk>;
++			 clock-names = "apb_pclk";
++		};
++	};
++
++	uart3: serial@18023000 {
++		compatible = "snps,dw-apb-uart";
++		reg = <0x18023000 0x100>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
++		clock-frequency = <100000000>;
++		clocks = <&axi81_clk>;
++		status = "okay";
++	};
++
++	uart0: serial@18020000 {
++		compatible = "snps,dw-apb-uart";
++		reg = <0x18020000 0x100>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&axi81_clk>;
++		clock-frequency = <100000000>;
++		status = "okay";
++	};
++
++	gic: interrupt-controller@19021000 {
++		compatible = "arm,cortex-a9-gic";
++		#interrupt-cells = <3>;
++		#address-cells = <0>;
++		interrupt-controller;
++		reg = <0x19021000 0x1000>,
++		      <0x19020100 0x100>;
++	};
++
++	L2: l2-cache {
++		compatible = "arm,pl310-cache";
++		reg = <0x19022000 0x1000>;
++		cache-unified;
++		cache-level = <2>;
++	};
++
++	timer@19020200 {
++		compatible = "arm,cortex-a9-global-timer";
++		reg = <0x19020200 0x100>;
++		interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&periph_clk>;
++	};
++
 +};
+diff --git a/arch/arm/boot/dts/bcm911360_entphn.dts b/arch/arm/boot/dts/bcm911360_entphn.dts
+new file mode 100644
+index 0000000..cee4aff
+--- /dev/null
++++ b/arch/arm/boot/dts/bcm911360_entphn.dts
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2014 Broadcom Corporation.  All rights reserved.
++ *
++ * Unless you and Broadcom execute a separate written software license
++ * agreement governing use of this software, this software is licensed to you
++ * under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-+	.init_machine = bcm_cygnus_init,
-+	.map_io = debug_ll_io_init,
-+	.dt_compat = bcm_cygnus_dt_compat,
-+	.restart   = bcm_cygnus_restart
-+MACHINE_END
++/dts-v1/;
++
++#include "bcm-cygnus.dtsi"
++
++/ {
++	model = "Cygnus Enterprise Phone (BCM911360_ENTPHN)";
++	compatible = "brcm,bcm911360_entphn", "brcm,cygnus";
++};
 -- 
 1.7.9.5
 
