@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaJHUyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:54:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35642 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439AbaJHUyu (ORCPT
+	id S1755224AbaJHUzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:55:08 -0400
+Received: from relay05.alfahosting-server.de ([109.237.142.241]:46247 "EHLO
+	relay05.alfahosting-server.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755170AbaJHUzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:54:50 -0400
-Date: Wed, 8 Oct 2014 22:54:41 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: mingo@kernel.org, rafael.j.wysocki@intel.com, toshi.kani@hp.com,
-        akpm@linux-foundation.org, ktkhai@parallels.com, fabf@skynet.be,
-        laijs@cn.fujitsu.com, srivatsa.bhat@linux.vnet.ibm.com,
-        ego@linux.vnet.ibm.com, srivatsa@mit.edu, viresh.kumar@linaro.org,
-        todd.e.brandt@linux.intel.com, tipbot@zytor.com,
-        wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH V3 0/3] PM/CPU: Parallel enalbing nonboot cpus with
- resume devices
-Message-ID: <20141008205441.GJ4750@worktop.programming.kicks-ass.net>
-References: <1411633925-9018-1-git-send-email-tianyu.lan@intel.com>
+	Wed, 8 Oct 2014 16:55:06 -0400
+X-Spam-DCC: : 
+Date: Wed, 8 Oct 2014 22:42:45 +0200
+From: Richard Leitner <me@g0hl1n.net>
+To: dmitry.torokhov@gmail.com
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        richard.leitner@skidata.com
+Subject: [PATCH] input: avoid negative input device numbers
+Message-ID: <20141008224245.601a1339@frodo>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1411633925-9018-1-git-send-email-tianyu.lan@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Virus-Checker-Version: clamassassin 1.2.4 with ClamAV 0.97.3/19486/Wed Oct  8 18:37:03 2014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 04:32:02PM +0800, Lan Tianyu wrote:
-> This patchset is to parallel enabling nonboot cpus with resuming devices
-> during system resume in order to accelerate S2RAM. From test result on
-> a 8 logical core Haswell machine, system resume time reduces from 347ms
-> to 217ms with this patchset.
-> 
-> In the current world, all nonboot cpus are enabled serially during system
-> resume. System resume sequence is that boot cpu enables nonboot cpu one by
-> one and then resume devices. Before resuming devices, there are few tasks
-> assigned to nonboot cpus after they are brought up. This wastes cpu usage.
-> 
-> This patchset is to allow boot cpu to go forward to resume devices after
-> bringing up one nonboot cpu and starting a thread. The thread will be in
-> charge of bringing up other frozen cpus. The thread will be scheduled to
-> the first online cpu to run . This makes enabling cpu2~x parallel with
-> resuming devices.
+From: Richard Leitner <richard.leitner@skidata.com>
 
-So I feel we should really clean up hotplug before doing anything like
-this. Its a trainwreck and just piling more and more hacks ontop isn't
-going to help any.
+Fix the format string for input device name generation to avoid negative
+device numbers when the id exceeds the maximum signed integer value.
+
+Signed-off-by: Richard Leitner <richard.leitner@skidata.com>
+---
+ drivers/input/input.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 236bc56..6be6982 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1791,7 +1791,7 @@ struct input_dev *input_allocate_device(void)
+ 		INIT_LIST_HEAD(&dev->h_list);
+ 		INIT_LIST_HEAD(&dev->node);
+ 
+-		dev_set_name(&dev->dev, "input%ld",
++		dev_set_name(&dev->dev, "input%lu",
+ 			     (unsigned long) atomic_inc_return(&input_no) - 1);
+ 
+ 		__module_get(THIS_MODULE);
+-- 
+2.1.1
+
