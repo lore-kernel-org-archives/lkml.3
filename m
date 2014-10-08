@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895AbaJHST6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:19:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58207 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610AbaJHST4 (ORCPT
+	id S1754066AbaJHSUo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:20:44 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41085 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaJHSUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:19:56 -0400
-Message-ID: <54358047.1000002@gmail.com>
-Date: Wed, 08 Oct 2014 20:19:51 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Jisheng Zhang <jszhang@marvell.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+	Wed, 8 Oct 2014 14:20:42 -0400
+Date: Wed, 8 Oct 2014 19:19:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
-References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-4-git-send-email-jszhang@marvell.com> <542AA336.6070206@gmail.com> <alpine.DEB.2.11.1409302351500.4455@nanos> <20141008193123.11f42bb0@xhacker> <543523B1.1060002@gmail.com> <20141008195053.0e8aeaf0@xhacker> <20141008195832.1fb16337@xhacker>
-In-Reply-To: <20141008195832.1fb16337@xhacker>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Message-ID: <20141008181959.GG4609@sirena.org.uk>
+References: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
+ <CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
+ <20141008124935.GA24947@sirena.org.uk>
+ <CAD=FV=U5ng8egj4b5Mz1gwFpJPFxJmnSzhT0iRtOj=7VxFTbSA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="D5hdKamO53XmQjsc"
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=U5ng8egj4b5Mz1gwFpJPFxJmnSzhT0iRtOj=7VxFTbSA@mail.gmail.com>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: rk808: Add support setting suspend voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 01:58 PM, Jisheng Zhang wrote:
-> Hi Sebastian,
->
-> On Wed, 8 Oct 2014 04:50:53 -0700
-> Jisheng Zhang <jszhang@marvell.com> wrote:
->
->> Hi Sebastian,
->>
->> On Wed, 8 Oct 2014 04:44:49 -0700
->> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
->>
->>> On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
->>>> Hi Thomas, Sebastian,
->>>>
->>>> On Tue, 30 Sep 2014 14:52:54 -0700
->>>> Thomas Gleixner <tglx@linutronix.de> wrote:
->>>>
->>>>> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
->>>>>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
->>>>>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
->>>>>>>
->>>>>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
->>>>>>> ---
->>>>>>>     drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
->>>>>>>     1 file changed, 19 insertions(+)
->>>>>>>
->>>>>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
->>>>>>> b/drivers/irqchip/irq-dw-apb-ictl.c
->>>>>>> index c136b67..53bb732 100644
->>>>>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
->>>>>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
->>>>>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
->>>>>>> struct irq_desc *desc)
->>>>>>>     	chained_irq_exit(chip, desc);
->>>>>>>     }
->>>>>>>
->>>>>>> +#ifdef CONFIG_PM
->>>>>>> +static void dw_apb_ictl_resume(struct irq_data *d)
->>>>>>> +{
->>>>>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
->>>>>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
->>>>>>> +
->>>>>>> +	irq_gc_lock(gc);
->>>>>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
->>>>>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base +
->>>>>>> ct->regs.mask);
->>>>>>> +	irq_gc_unlock(gc);
->>>>>>> +}
->>>>>>
->>>>>> I agree with the overall change, but may this also be suited for a
->>>>>> generic irq_chip helper instead of being a driver specific one?
->>>>>>
->>>>>> Maybe Thomas or Jason can comment on this.
->>>>>
->>>>> If we have enough similar resume callbacks, yes.
->>>>>
->>>>>> Also, now that you are using writel_relaxed, I understand that both
->>>>>> writes above can happen in any order? Are there any implication we
->>>>>> have to consider, i.e. do we require any of the registers above to
->>>>>> be written first?
->>>>
->>>> The registers sits at device type memory, the writes should happen in
->>>> the same order as before.
->>>
->>> it is not about the location of the register but, as far as I
->>> understand, when using {readl,writel}_relaxed the compiler is
->>> free to reorder the calls. So, if there is a strict order we
->>
->> The "volatile" in readl/writel relaxed implementations should prevent the
->> compiler to do reorder. Or I misunderstand something?
->
-> My understanding is that the relaxed version imply compiler barriers.
-> I'm not sure I understand the real/writel relaxed implementations correctly. But
-> one obvious example which shows the relaxed version won't have the compiler
-> reorder issue is drivers/irqchip/irq-gic.c, all the configurations must be done
-> before enable the GIC which is done by "writel_relaxed(1, cpu_base + GIC_CPU_CTRL);"
-> However, we didn't see any explicit compiler barriers.
 
-Yup, I just checked the discussion here:
-http://comments.gmane.org/gmane.linux.ports.arm.kernel/117626
+--D5hdKamO53XmQjsc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are right, write order is ensured.
+On Wed, Oct 08, 2014 at 09:12:59AM -0700, Doug Anderson wrote:
+> On Wed, Oct 8, 2014 at 5:49 AM, Mark Brown <broonie@kernel.org> wrote:
 
-Sebastian
+> > No, this is not the case.  The suspend mode settings are a completely
+> > different set of settings activated when the system goes into suspend
+> > with explicit hardware support.  If no configuration for this mode is
+> > provided then
+
+> I think maybe you missed finishing your sentence?
+
+nothing will be changed.
+
+> >> I believe that won't be the case for your driver.  The rk808 will (I
+> >> think) automatically transition to the "suspend voltage" settings for
+> >> ALL regulators at suspend time.  If you didn't explicitly set the
+> >> suspend voltage then you'll move to whatever the default voltage is,
+> >> right?
+
+> > As ever the hardware configuration won't be touched by the kernel unless
+> > it's explicitly told to do something.
+
+> I guess my point is that the kernel's inaction is actually causing
+> something unexpected to happen.  Robots can't let humans come to harm
+> by inaction any more than they can harm them by action.
+
+> Specifically I would expect that voltages would stay constant when the
+> rk808 "sleep" pin is asserted if I didn't explicitly say to disable
+> this regulator at sleep time and I didn't explicitly specify a voltage
+> at sleep time.  As Chris's patch stands right now this isn't the case.
+
+The assumption has to be that the configuration that the device has is
+essential to bringing the system into and out of suspend, if we went and
+overrode everything with the current runtime configuration I'd expect
+we'd break a whole bunch of systems and severely impact the power
+consumption in suspend of more.  What you're asking for is just not how
+these systems are designed, complain to your electrical engineers.  With
+this model for doing things suspend entry and exit is defined and
+sequenced at system design time (often with limited configuration so
+really at tapeout time). =20
+
+> When the kernel driver sets it to 1.9V, it will go through
+> regulator_set_voltage_sel_regmap() which will set the BUCK4_ON_VSEL
+> register and we'll be at 1.9V.  Great, we're at 1.9V.  Now we're ready
+> to go to sleep.  I'd expect that the voltage would stay at 1.9V, but
+> it won't.  BUCK4_SLP_VSEL was never programmed so it's at whatever the
+> default is (1.8V) and we will transition there.
+
+No, if the driver needs a particular state during suspend it needs to
+explicitly set the suspend mode, that's what those APIs are there for.
+Remember that a suspended device is supposed to not be doing anything
+anyway most of the time...
+
+--D5hdKamO53XmQjsc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNYBOAAoJECTWi3JdVIfQeqEH/jS8pizxUt7Hhnuex3Ugr8Si
+k3tQmIf/xknx42d/fZLO3qAyXH+G9K/xru1SOJmGPu1Ij9845dwjr4f5z1iY2Qjh
+dYuoaxBDXBxXHNaBlpYmplOME1SMSa8+BeCBlrEFxzUii8pICkxp6wmsvt48RtzB
+Ch96YT2l6ZkOKcQ26wz1XGg5zPn1iwFGpXJj0hBLdLw0E5i9idHVHQloFbP8BUcU
+RfvkibZRI75LgBgXIOuLeMUQMwVBNPX3Jf+nt0/KjXQaqtlMsE9tPz++Z4USXWS8
+LcLGxBTP7f+ky9zxnRM8OoLkffRVcC/LWkPH+8P0xJ55WsoTcpVH0toiPOf43fc=
+=G0Rn
+-----END PGP SIGNATURE-----
+
+--D5hdKamO53XmQjsc--
