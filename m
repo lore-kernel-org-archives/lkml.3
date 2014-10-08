@@ -1,102 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbaJHGrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:47:07 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59040 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaJHGrF (ORCPT
+	id S1754262AbaJHGrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:47:48 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:50484 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbaJHGrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:47:05 -0400
-Date: Wed, 8 Oct 2014 08:46:52 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
-Cc: chris@printf.net, ulf.hansson@linaro.org, shc_work@mail.ru,
-        peter.griffin@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linucppc-dev@lists.ozlabs.org,
-        agust@denx.de, gsi@denx.de, sbabic@denx.de
-Subject: Re: [PATCH 2/2] mmc: mxcmmc: fix the default value for available
- voltages into mxcmci_probe
-Message-ID: <20141008064652.GZ4992@pengutronix.de>
-References: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
- <1412089178-21946-3-git-send-email-matteo.facchinetti@sirius-es.it>
+	Wed, 8 Oct 2014 02:47:47 -0400
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Wed, 8 Oct 2014 15:48:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: karam.lee@lge.com
+Cc: ngupta@vflare.org, linux-kernel@vger.kernel.org, seungho1.park@lge.com,
+        Jerome Marchand <jmarchan@redhat.com>
+Subject: Re: [PATCH] zram: implement rw_page operation of zram block device
+ operation
+Message-ID: <20141008064810.GA14960@bbox>
+References: <1412573465-28286-1-git-send-email-karam.lee@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1412089178-21946-3-git-send-email-matteo.facchinetti@sirius-es.it>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:41:27 up 27 days, 23:28, 81 users,  load average: 0.02, 0.04,
- 0.05
+In-Reply-To: <1412573465-28286-1-git-send-email-karam.lee@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 04:59:38PM +0200, Matteo Facchinetti wrote:
-> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+Hello Karam,
+
+On Mon, Oct 06, 2014 at 02:31:05PM +0900, karam.lee@lge.com wrote:
+> From: "karam.lee" <karam.lee@lge.com>
 > 
-> If available voltages are not given, mmc_regulator_get_supply() function
-> returns 0 and mxcmmc driver doesn't set a value for ocr_avail mask.
-> 
-> In accordance with the comment in platform_data/mmc-mxcmmc.h,
-> fix it, assuming MMC_VDD_32_33 | MMC_VDD_33_34 as default value.
-> 
-> Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+> Recently rw_page block device operation is added.
+> This patch implements rw_page operation for zram block device so
+> zram can process page sized I/O without bio.
+
+It's a performance enhance patch? If you had, pz, inclulde the result
+in the description.
+
 > ---
->  drivers/mmc/host/mxcmmc.c | 14 +++++++-------
->  1 file changed, 7 insertions(+), 7 deletions(-)
+> ---
+>  drivers/block/zram/zram_drv.c |   60 +++++++++++++++++++++++++++++++++++------
+>  1 file changed, 52 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-> index 536a898..5350dc5 100644
-> --- a/drivers/mmc/host/mxcmmc.c
-> +++ b/drivers/mmc/host/mxcmmc.c
-> @@ -1077,13 +1077,13 @@ static int mxcmci_probe(struct platform_device *pdev)
->  		dat3_card_detect = true;
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 48eccb3..b76a5dc 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -368,7 +368,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
+>  }
 >  
->  	ret = mmc_regulator_get_supply(mmc);
+>  static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
+> -			  u32 index, int offset, struct bio *bio)
+> +			  u32 index, int offset)
 
-mmc_regulator_get_supply() sets mmc->ocr_avail based on the information
-of the vmmc regulator if present...
+Isn't it cleanup? Please, separate it into another patch.
 
-> -	if (ret) {
-> -		if (pdata && ret != -EPROBE_DEFER)
-> -			mmc->ocr_avail = pdata->ocr_avail ? :
-> -				MMC_VDD_32_33 | MMC_VDD_33_34;
-> -		else
-> -			goto out_free;
-> -	}
-> +	if (ret == -EPROBE_DEFER)
-> +		goto out_free;
+>  {
+>  	int ret;
+>  	struct page *page;
+> @@ -535,14 +535,13 @@ out:
+>  }
+>  
+>  static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
+> -			int offset, struct bio *bio)
+> +			int offset, int rw)
+>  {
+>  	int ret;
+> -	int rw = bio_data_dir(bio);
+>  
+>  	if (rw == READ) {
+>  		atomic64_inc(&zram->stats.num_reads);
+> -		ret = zram_bvec_read(zram, bvec, index, offset, bio);
+> +		ret = zram_bvec_read(zram, bvec, index, offset);
+>  	} else {
+>  		atomic64_inc(&zram->stats.num_writes);
+>  		ret = zram_bvec_write(zram, bvec, index, offset);
+> @@ -718,7 +717,7 @@ out:
+>  
+>  static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  {
+> -	int offset;
+> +	int offset, rw;
+>  	u32 index;
+>  	struct bio_vec bvec;
+>  	struct bvec_iter iter;
+> @@ -733,6 +732,7 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  		return;
+>  	}
+>  
+> +	rw = bio_data_dir(bio);
+>  	bio_for_each_segment(bvec, bio, iter) {
+>  		int max_transfer_size = PAGE_SIZE - offset;
+>  
+> @@ -747,15 +747,15 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
+>  			bv.bv_len = max_transfer_size;
+>  			bv.bv_offset = bvec.bv_offset;
+>  
+> -			if (zram_bvec_rw(zram, &bv, index, offset, bio) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index, offset, rw) < 0)
+>  				goto out;
+>  
+>  			bv.bv_len = bvec.bv_len - max_transfer_size;
+>  			bv.bv_offset += max_transfer_size;
+> -			if (zram_bvec_rw(zram, &bv, index + 1, 0, bio) < 0)
+> +			if (zram_bvec_rw(zram, &bv, index + 1, 0, rw) < 0)
+>  				goto out;
+>  		} else
+> -			if (zram_bvec_rw(zram, &bvec, index, offset, bio) < 0)
+> +			if (zram_bvec_rw(zram, &bvec, index, offset, rw) < 0)
+>  				goto out;
+>  
+>  		update_position(&index, &offset, &bvec);
+> @@ -810,8 +810,52 @@ static void zram_slot_free_notify(struct block_device *bdev,
+>  	atomic64_inc(&zram->stats.notify_free);
+>  }
+>  
+> +static int zram_rw_page(struct block_device *bdev, sector_t sector,
+> +		       struct page *page, int rw)
+> +{
+> +	int offset, ret = 1;
+> +	u32 index;
+> +	u64 start, end, bound;
+> +	struct zram *zram;
+> +	struct bio_vec bv;
 > +
-> +	if (pdata && pdata->ocr_avail)
-> +		mmc->ocr_avail = pdata->ocr_avail;
-> +	else
-> +		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+> +	zram = bdev->bd_disk->private_data;
+> +
+> +	if (unlikely(sector&
+> +			(ZRAM_SECTOR_PER_LOGICAL_BLOCK - 1)))
+> +		goto out;
+> +
+> +	start = sector;
+> +	end = start + (PAGE_SIZE >> SECTOR_SHIFT);
+> +	bound = zram->disksize >> SECTOR_SHIFT;
+> +	if (unlikely(start >= bound || end > bound || start > end))
+> +		goto out;
 
-... and here mmc->ocr_avail is overwritten unconditionally.
+Please modify valid_io_request to used for your purpose and share it
+with zram_make_request.
 
-Unfortunately the return value of mmc_regulator_get_supply() doesn't
-indicate if it was successful in setting a ocr_avail. So I think the best
-you can do here is:
+And please include Jerome because I'd like to confirm this patch in
+partial_io system for just in case.
 
-	if (!mmc->ocr_avail) {
-		if (pdata && pdata->ocr_avail)
-			mmc->ocr_avail = pdata->ocr_avail;
-		else
-			mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-	}
-
-Sascha
+> +
+> +	down_read(&zram->init_lock);
+> +	if (unlikely(!init_done(zram))) {
+> +		ret = -ENOMEM;
+> +		goto out_unlock;
+> +	}
+> +
+> +	index = sector >> SECTORS_PER_PAGE_SHIFT;
+> +	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
+> +
+> +	bv.bv_page = page;
+> +	bv.bv_len = PAGE_SIZE;
+> +	bv.bv_offset = 0;
+> +
+> +	ret = zram_bvec_rw(zram, &bv, index, offset, rw);
+> +	page_endio(page, rw, ret);
+> +
+> +out_unlock:
+> +	up_read(&zram->init_lock);
+> +out:
+> +	return ret;
+> +}
+> +
+>  static const struct block_device_operations zram_devops = {
+>  	.swap_slot_free_notify = zram_slot_free_notify,
+> +	.rw_page = zram_rw_page,
+>  	.owner = THIS_MODULE
+>  };
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Kind regards,
+Minchan Kim
