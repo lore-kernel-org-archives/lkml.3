@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaJHArT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 20:47:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55039 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709AbaJHArR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 20:47:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,674,1406617200"; 
-   d="scan'208";a="611094224"
-From: "Chen, Alvin" <alvin.chen@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Subject: RE: [PATCH 1/2 v2] SPI: spi-pxa2xx: Add helpers for regiseters'
- accessing
-Thread-Topic: [PATCH 1/2 v2] SPI: spi-pxa2xx: Add helpers for regiseters'
- accessing
-Thread-Index: AQHP28Kzrtwa1R6LgUKlE/qxsg2Y55wlapFg
-Date: Wed, 8 Oct 2014 00:46:58 +0000
-Message-ID: <4656BEB6164FC34F8171C6538F1A595B2E997C28@SHSMSX101.ccr.corp.intel.com>
-References: <1412000548-9908-1-git-send-email-alvin.chen@intel.com>
-	 <1412000548-9908-2-git-send-email-alvin.chen@intel.com>
- <1411980737.10697.0.camel@linux.intel.com>
-In-Reply-To: <1411980737.10697.0.camel@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1755757AbaJHAsx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 20:48:53 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:46609 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572AbaJHAsw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 20:48:52 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Taeung Song <treeze.taeung@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] perf top: Add a visual cue for toggle zeroing of samples
+References: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
+Date: Wed, 08 Oct 2014 09:48:48 +0900
+In-Reply-To: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
+	(Taeung Song's message of "Tue, 7 Oct 2014 16:13:15 +0900")
+Message-ID: <87wq8bfksv.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s980lOxO021443
+
+Hi Taeung,
+
+On Tue,  7 Oct 2014 16:13:15 +0900, Taeung Song wrote:
+> When 'perf top' is run, one can't easily find a difference
+> between -z option and normal output.
+> So I added a visual cue to know whether it is the zeroing or not.
+>
+> Output is as below.
+>
+> Before:
+>  $ perf top
+>
+>  Samples: 61K of event 'cycles', Event count (approx.): 3908136933
+>  Overhead  Shared Object                       Symbol
+>     1.42%  firefox                             [.] 0x0000000000011e76
+>     1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
+>
+> If you press key 'z' or run with zero option like '$ perf top --zero', it is as below.
+>
+> After:
+>  Samples: 61K of event 'cycles', Event count (approx.): 3908136933 [z]
+>  Overhead  Shared Object                       Symbol
+>     1.42%  firefox                             [.] 0x0000000000011e76
+>     1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
+>
+> Signed-off-by: Taeung Song <treeze.taeung@gmail.com>
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
 
 
-> I'm okay with the current version, though I have few minor comments below.
-> 
-> > Introduce helper functions to access the 'SSCR0' and 'SSCR1'.
-> >
-> 
-> Like you said in the summary there are many accessors to many registers, not
-> only cr1/cr0. Perhaps, you may extend your commit message.
-> 
-OK.
-
-> In any case
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> 
-OK.
-> > +
-> >  /*
-> >   * Read and write LPSS SSP private registers. Caller must first check that
-> >   * is_lpss_ssp() returns true before these can be called.
-> > @@ -234,7 +301,7 @@ static int null_writer(struct driver_data *drv_data)
-> >  	void __iomem *reg = drv_data->ioaddr;
-> >  	u8 n_bytes = drv_data->n_bytes;
-> >
-> > -	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
-> > +	if (pxa2xx_spi_txfifo_full(drv_data)
-> >  		|| (drv_data->tx == drv_data->tx_end))
-> 
-> Just wondering if those two could fit one line.
-> 
-No, if make the two in one line, it is 84 characters.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> ---
+>  tools/perf/ui/browsers/hists.c | 32 ++++++++++++++++++++++----------
+>  1 file changed, 22 insertions(+), 10 deletions(-)
+>
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index 8f60a97..79b66d0 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -35,7 +35,9 @@ struct hist_browser {
+>  
+>  extern void hist_browser__init_hpp(void);
+>  
+> -static int hists__browser_title(struct hists *hists, char *bf, size_t size);
+> +static int hists__browser_title(struct hists *hists,
+> +				struct hist_browser_timer *hbt,
+> +				char *bf, size_t size);
+>  static void hist_browser__update_nr_entries(struct hist_browser *hb);
+>  
+>  static struct rb_node *hists__filter_entries(struct rb_node *nd,
+> @@ -390,7 +392,7 @@ static int hist_browser__run(struct hist_browser *browser,
+>  	browser->b.entries = &browser->hists->entries;
+>  	browser->b.nr_entries = hist_browser__nr_entries(browser);
+>  
+> -	hists__browser_title(browser->hists, title, sizeof(title));
+> +	hists__browser_title(browser->hists, hbt, title, sizeof(title));
+>  
+>  	if (ui_browser__show(&browser->b, title,
+>  			     "Press '?' for help on key bindings") < 0)
+> @@ -417,7 +419,8 @@ static int hist_browser__run(struct hist_browser *browser,
+>  				ui_browser__warn_lost_events(&browser->b);
+>  			}
+>  
+> -			hists__browser_title(browser->hists, title, sizeof(title));
+> +			hists__browser_title(browser->hists,
+> +					     hbt, title, sizeof(title));
+>  			ui_browser__show_title(&browser->b, title);
+>  			continue;
+>  		}
+> @@ -1204,7 +1207,15 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *browser
+>  	return browser->he_selection->thread;
+>  }
+>  
+> -static int hists__browser_title(struct hists *hists, char *bf, size_t size)
+> +/* Check whether the browser is for 'top' or 'report' */
+> +static inline bool is_report_browser(void *timer)
+> +{
+> +	return timer == NULL;
+> +}
+> +
+> +static int hists__browser_title(struct hists *hists,
+> +				struct hist_browser_timer *hbt,
+> +				char *bf, size_t size)
+>  {
+>  	char unit;
+>  	int printed;
+> @@ -1256,6 +1267,13 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size)
+>  	if (dso)
+>  		printed += scnprintf(bf + printed, size - printed,
+>  				    ", DSO: %s", dso->short_name);
+> +	if (!is_report_browser(hbt)) {
+> +		struct perf_top *top = hbt->arg;
+> +
+> +		if (top->zero)
+> +			printed += scnprintf(bf + printed, size - printed, " [z]");
+> +	}
+> +
+>  	return printed;
+>  }
+>  
+> @@ -1267,12 +1285,6 @@ static inline void free_popup_options(char **options, int n)
+>  		zfree(&options[i]);
+>  }
+>  
+> -/* Check whether the browser is for 'top' or 'report' */
+> -static inline bool is_report_browser(void *timer)
+> -{
+> -	return timer == NULL;
+> -}
+> -
+>  /*
+>   * Only runtime switching of perf data file will make "input_name" point
+>   * to a malloced buffer. So add "is_input_name_malloced" flag to decide
