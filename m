@@ -1,144 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaJHLwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:52:05 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:53213 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932291AbaJHLv7 (ORCPT
+	id S932392AbaJHLxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:53:45 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:52210 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932372AbaJHLxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:51:59 -0400
-Message-ID: <54352545.8060605@gmail.com>
-Date: Wed, 08 Oct 2014 19:51:33 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 8 Oct 2014 07:53:40 -0400
+Date: Wed, 8 Oct 2014 19:50:53 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
+Message-ID: <20141008195053.0e8aeaf0@xhacker>
+In-Reply-To: <543523B1.1060002@gmail.com>
+References: <1411454100-6814-1-git-send-email-jszhang@marvell.com>
+	<1411454100-6814-4-git-send-email-jszhang@marvell.com>
+	<542AA336.6070206@gmail.com>
+	<alpine.DEB.2.11.1409302351500.4455@nanos>
+	<20141008193123.11f42bb0@xhacker>
+	<543523B1.1060002@gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>, mingo@redhat.com,
-        peterz@infradead.org
-CC: linux-kernel@vger.kernel.org, riel@redhat.com, tkhai@yandex.ru
-Subject: Re: [PATCH] sched/fair: Care divide error in update_task_scan_period()
-References: <5434DCFF.1040208@jp.fujitsu.com>
-In-Reply-To: <5434DCFF.1040208@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-08_06:2014-10-08,2014-10-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410080109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Sebastian,
 
-于 10/8/14, 2:43 PM, Yasuaki Ishimatsu 写道:
-> While offling node by hot removing memory, the following divide error
-> occurs:
->
->   divide error: 0000 [#1] SMP
->   [...]
->   Call Trace:
->    [...] handle_mm_fault
->    [...] ? try_to_wake_up
->    [...] ? wake_up_state
->    [...] __do_page_fault
->    [...] ? do_futex
->    [...] ? put_prev_entity
->    [...] ? __switch_to
->    [...] do_page_fault
->    [...] page_fault
->   [...]
->   RIP  [<ffffffff810a7081>] task_numa_fault
->    RSP <ffff88084eb2bcb0>
->
-> The issue occurs as follows:
->   1. When page fault occurs and page is allocated from node 1,
->      task_struct->numa_faults_buffer_memory[] of node 1 is
->      incremented and p->numa_faults_locality[] is also incremented
->      as follows:
->
->      o numa_faults_buffer_memory[]       o numa_faults_locality[]
->               NR_NUMA_HINT_FAULT_TYPES
->              |      0     |     1     |
->      ----------------------------------  ----------------------
->       node 0 |      0     |     0     |   remote |      0     |
->       node 1 |      0     |     1     |   locale |      1     |
->      ----------------------------------  ----------------------
->
->   2. node 1 is offlined by hot removing memory.
->
->   3. When page fault occurs, fault_types[] is calculated by using
->      p->numa_faults_buffer_memory[] of all online nodes in
->      task_numa_placement(). But node 1 was offline by step 2. So
->      the fault_types[] is calculated by using only
->      p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
->      are set to 0.
->
->   4. The values(0) of fault_types[] pass to update_task_scan_period().
->
->   5. numa_faults_locality[1] is set to 1. So the following division is
->      calculated.
->
->         static void update_task_scan_period(struct task_struct *p,
->                                 unsigned long shared, unsigned long private){
->         ...
->                 ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
->         }
->
->   6. But both of private and shared are set to 0. So divide error
->      occurs here.
->
->   The divide error is rare case because the trigger is node offline.
->   By this patch, when both of private and shared are set to 0, diff
->   is just set to 0, not calculating the division.
->
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->  kernel/sched/fair.c | 30 +++++++++++++++++++-----------
->  1 file changed, 19 insertions(+), 11 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index bfa3c86..fb7dc3f 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1496,18 +1496,26 @@ static void update_task_scan_period(struct task_struct *p,
->  			slot = 1;
->  		diff = slot * period_slot;
->  	} else {
-> -		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
-> +		if (unlikely((private + shared) == 0))
-> +			/*
-> +			 * This is a rare case. The trigger is node offline.
-> +			 */
-> +			diff = 0;
-> +		else {
-> +			diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
->
-> -		/*
-> -		 * Scale scan rate increases based on sharing. There is an
-> -		 * inverse relationship between the degree of sharing and
-> -		 * the adjustment made to the scanning period. Broadly
-> -		 * speaking the intent is that there is little point
-> -		 * scanning faster if shared accesses dominate as it may
-> -		 * simply bounce migrations uselessly
-> -		 */
-> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-> -		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
-> +			/*
-> +			 * Scale scan rate increases based on sharing. There is
-> +			 * an inverse relationship between the degree of sharing
-> +			 * and the adjustment made to the scanning period.
-> +			 * Broadly speaking the intent is that there is little
-> +			 * point scanning faster if shared accesses dominate as
-> +			 * it may simply bounce migrations uselessly
-> +			 */
-> +			ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS,
-> +							(private + shared));
-> +			diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
-> +		}
->  	}
+On Wed, 8 Oct 2014 04:44:49 -0700
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-How about just
+> On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
+> > Hi Thomas, Sebastian,
+> >
+> > On Tue, 30 Sep 2014 14:52:54 -0700
+> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> >> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
+> >>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
+> >>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
+> >>>>
+> >>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> >>>> ---
+> >>>>    drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
+> >>>>    1 file changed, 19 insertions(+)
+> >>>>
+> >>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
+> >>>> b/drivers/irqchip/irq-dw-apb-ictl.c
+> >>>> index c136b67..53bb732 100644
+> >>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
+> >>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
+> >>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
+> >>>> struct irq_desc *desc)
+> >>>>    	chained_irq_exit(chip, desc);
+> >>>>    }
+> >>>>
+> >>>> +#ifdef CONFIG_PM
+> >>>> +static void dw_apb_ictl_resume(struct irq_data *d)
+> >>>> +{
+> >>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> >>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
+> >>>> +
+> >>>> +	irq_gc_lock(gc);
+> >>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
+> >>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
+> >>>> +	irq_gc_unlock(gc);
+> >>>> +}
+> >>>
+> >>> I agree with the overall change, but may this also be suited for a
+> >>> generic irq_chip helper instead of being a driver specific one?
+> >>>
+> >>> Maybe Thomas or Jason can comment on this.
+> >>
+> >> If we have enough similar resume callbacks, yes.
+> >>
+> >>> Also, now that you are using writel_relaxed, I understand that both
+> >>> writes above can happen in any order? Are there any implication we
+> >>> have to consider, i.e. do we require any of the registers above to
+> >>> be written first?
+> >
+> > The registers sits at device type memory, the writes should happen in the
+> > same order as before.
+> 
+> Jisheng,
+> 
+> it is not about the location of the register but, as far as I
+> understand, when using {readl,writel}_relaxed the compiler is
+> free to reorder the calls. So, if there is a strict order we
 
-ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+The "volatile" in readl/writel relaxed implementations should prevent the
+compiler to do reorder. Or I misunderstand something?
 
+Thanks,
+Jisheng
 
-Regards,
-Wanpeng Li
-
->  	p->numa_scan_period = clamp(p->numa_scan_period + diff,
+> want to ensure, we have to use non-relaxed {readl,writel}.
+> 
+> The performance penalty of non-relaxed calls can be ignored anyway
+> as it is done only once after resume.
+> 
+> Sebastian
 
