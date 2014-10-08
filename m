@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030AbaJHPMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 11:12:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40861 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036AbaJHPMn (ORCPT
+	id S1755056AbaJHPOC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 11:14:02 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40301 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503AbaJHPOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 11:12:43 -0400
-Date: Wed, 8 Oct 2014 16:12:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141008151220.GE4609@sirena.org.uk>
-References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
- <1412775847-15213-2-git-send-email-javier.martinez@collabora.co.uk>
- <20141008142511.GA4609@sirena.org.uk>
- <54354C7D.7090104@collabora.co.uk>
+	Wed, 8 Oct 2014 11:14:00 -0400
+From: Serguey Parkhomovsky <xindigo@gmail.com>
+X-Google-Original-From: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+Date: Tue, 7 Oct 2014 20:42:45 -0700
+To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
+        florian.c.schilhabel@googlemail.com, Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: rtl8712: fix unnecessary elses after
+ return/break in rtl8712_efuse.c
+Message-ID: <20141008034245.GA26853@fedora.localdomain>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3qTVFk/EjXyDmsv5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54354C7D.7090104@collabora.co.uk>
-X-Cookie: Everything you know is wrong!
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/5] regulator: of: Add regulator-initial-mode parse
- support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch fixes two unnecessary else conditions that were found by checkpatch.pl.
 
---3qTVFk/EjXyDmsv5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Serguey Parkhomovsky <sergueyparkhomovsky@gmail.com>
+---
+v2: use negation instead of comparing to false in if statement (suggested by Joe Perches)
+ drivers/staging/rtl8712/rtl8712_efuse.c | 40 ++++++++++++++++-----------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
 
-On Wed, Oct 08, 2014 at 04:38:53PM +0200, Javier Martinez Canillas wrote:
-> On 10/08/2014 04:25 PM, Mark Brown wrote:
+diff --git a/drivers/staging/rtl8712/rtl8712_efuse.c b/drivers/staging/rtl8712/rtl8712_efuse.c
+index c9eeb42..97b7839 100644
+--- a/drivers/staging/rtl8712/rtl8712_efuse.c
++++ b/drivers/staging/rtl8712/rtl8712_efuse.c
+@@ -414,19 +414,18 @@ u8 r8712_efuse_pg_packet_write(struct _adapter *padapter, const u8 offset,
+ 					bResult = false;
+ 			}
+ 			break;
+-		} else { /* write header fail */
+-			bResult = false;
+-			if (0xFF == efuse_data)
+-				return bResult; /* nothing damaged. */
+-			/* call rescue procedure */
+-			if (fix_header(padapter, efuse_data, efuse_addr) ==
+-			    false)
+-				return false; /* rescue fail */
+-
+-			if (++repeat_times > _REPEAT_THRESHOLD_) /* fail */
+-				break;
+-			/* otherwise, take another risk... */
+ 		}
++		/* write header fail */
++		bResult = false;
++		if (0xFF == efuse_data)
++			return bResult; /* nothing damaged. */
++		/* call rescue procedure */
++		if (!fix_header(padapter, efuse_data, efuse_addr))
++			return false; /* rescue fail */
++
++		if (++repeat_times > _REPEAT_THRESHOLD_) /* fail */
++			break;
++		/* otherwise, take another risk... */
+ 	}
+ 	return bResult;
+ }
+@@ -541,15 +540,16 @@ u8 r8712_efuse_map_write(struct _adapter *padapter, u16 addr, u16 cnts,
+ 				}
+ 				idx++;
+ 				break;
+-			} else {
+-				if ((data[idx] != pktdata[i]) || (data[idx+1] !=
+-				     pktdata[i+1])) {
+-					word_en &= ~BIT(i >> 1);
+-					newdata[j++] = data[idx];
+-					newdata[j++] = data[idx + 1];
+-				}
+-				idx += 2;
+ 			}
++
++			if ((data[idx] != pktdata[i]) || (data[idx+1] !=
++			     pktdata[i+1])) {
++				word_en &= ~BIT(i >> 1);
++				newdata[j++] = data[idx];
++				newdata[j++] = data[idx + 1];
++			}
++			idx += 2;
++
+ 			if (idx == cnts)
+ 				break;
+ 		}
+-- 
+1.9.3
 
-> > That doesn't mean that the definition of those modes is something we can
-> > sensibly provide in generic code, especially in a completely
-> > undocumented fashion (perhaps you've done that later in the patch series
-> > but bisection also applies to reviewability).
-
-> As a general question, now that the convention is for DT binding docs to go
-> in a separate patch, should the DT documentation be added before or after
-> that code using these bindings is added?
-
-It fairly obviously needs to go before so that reviewers can tell if the
-code is actually implementing the binding.
-
---3qTVFk/EjXyDmsv5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUNVRTAAoJECTWi3JdVIfQtg4H/i+ZNi9+Fmd/Rzq3xk4Tj29I
-vNR5T6mPodulKKjwx+IBh02pLMHwB6gKkgeHxKGG62KcbY9rCW6+50TQ/WYsGHz7
-4lXOu8Hp6Hhmg49V2j4OC2yAGCmh/VfTkJAYF+jWoQn//6xlkZTf2qejX2khcxtu
-a3TuNsfsK6eOFbWuxwI6/5qp7Bq/836Og6lZHklkyWSi3P7nO9UUb+7b/gPfy6Ry
-WscjLuH4QcQ86XzsZtb4Gvui8HqAr+RCj/nq9wJBqWVb/UuIOATXWzYG3z3kASn7
-/YIz3JHRjDOdY9Y7/A00quD5aCwQnLAbA2CvbotxHY/bp/aU/p8ZeSFTiTwTSuY=
-=5lir
------END PGP SIGNATURE-----
-
---3qTVFk/EjXyDmsv5--
