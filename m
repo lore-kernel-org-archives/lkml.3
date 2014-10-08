@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933360AbaJHLnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:43:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60108 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019AbaJHLnF (ORCPT
+	id S933548AbaJHLo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:44:56 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:35970 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933490AbaJHLoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:43:05 -0400
-Message-ID: <54352340.3050900@ti.com>
-Date: Wed, 8 Oct 2014 14:42:56 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Oussama Ghorbel <ghorbel@pivasoftware.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Rabin Vincent <rabin@rab.in>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy
- properly
-References: <20141006194418.GA399@debian> <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com> <5434F336.4040908@ti.com> <543517F9.9070109@pivasoftware.com>
-In-Reply-To: <543517F9.9070109@pivasoftware.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 8 Oct 2014 07:44:54 -0400
+Message-ID: <543523B1.1060002@gmail.com>
+Date: Wed, 08 Oct 2014 13:44:49 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: Jisheng Zhang <jszhang@marvell.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
+References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-4-git-send-email-jszhang@marvell.com> <542AA336.6070206@gmail.com> <alpine.DEB.2.11.1409302351500.4455@nanos> <20141008193123.11f42bb0@xhacker>
+In-Reply-To: <20141008193123.11f42bb0@xhacker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oussama,
-
-On 10/08/2014 01:54 PM, Oussama Ghorbel wrote:
-> Hi Roger,
-> 
-> Should I resend this v2 version of the patch to stable@vger.kernel.org which is suitable for v3.17 and which will require a very tiny adaptation?
-> Or I should resend the first version of this patch which is suitable for 3.16 but might seems confusing a little sine I'm resend the outdated version.
-
-If it is a trivial conflict then I think you can just send the patch which applies to the most recent kernel.
-Greg can clarify if I'm wrong as he maintains the stable trees.
-
-cheers,
--roger
-
-> 
-> Thanks,
-> Oussama
-> On 10/08/2014 09:17 AM, Roger Quadros wrote:
->> Hi Oussama,
->>
->> On 10/07/2014 02:02 PM, Oussama Ghorbel wrote:
->>> The USB OTG port does not work since v3.16 on omap platform.
->>> This is a regression introduced by the commit
->>> eb82a3d846fa (phy: omap-usb2: Balance pm_runtime_enable() on probe failure
->>>   and remove).
->>> This because the call to pm_runtime_enable() function is moved after the
->>> call to devm_phy_create() function, which has side effect since later in
->>> the subsequent calls of devm_phy_create() there is a check with
->>> pm_runtime_enabled() to configure few things.
+On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
+> Hi Thomas, Sebastian,
+>
+> On Tue, 30 Sep 2014 14:52:54 -0700
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+>> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
+>>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
+>>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
+>>>>
+>>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+>>>> ---
+>>>>    drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
+>>>>    1 file changed, 19 insertions(+)
+>>>>
+>>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
+>>>> b/drivers/irqchip/irq-dw-apb-ictl.c
+>>>> index c136b67..53bb732 100644
+>>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
+>>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
+>>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
+>>>> struct irq_desc *desc)
+>>>>    	chained_irq_exit(chip, desc);
+>>>>    }
+>>>>
+>>>> +#ifdef CONFIG_PM
+>>>> +static void dw_apb_ictl_resume(struct irq_data *d)
+>>>> +{
+>>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+>>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
+>>>> +
+>>>> +	irq_gc_lock(gc);
+>>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
+>>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
+>>>> +	irq_gc_unlock(gc);
+>>>> +}
 >>>
->>> Signed-off-by: Oussama Ghorbel <ghorbel@pivasoftware.com>
->> Acked-by: Roger Quadros <rogerq@ti.com>
+>>> I agree with the overall change, but may this also be suited for a
+>>> generic irq_chip helper instead of being a driver specific one?
+>>>
+>>> Maybe Thomas or Jason can comment on this.
 >>
->> Could you please send the patch to
->> Cc: <stable@vger.kernel.org>        [3.16+]
+>> If we have enough similar resume callbacks, yes.
 >>
->> That way it will get into 3.16 onwards. Thanks.
->>
->> cheers,
->> -roger
->>
-> 
+>>> Also, now that you are using writel_relaxed, I understand that both
+>>> writes above can happen in any order? Are there any implication we
+>>> have to consider, i.e. do we require any of the registers above to
+>>> be written first?
+>
+> The registers sits at device type memory, the writes should happen in the same
+> order as before.
 
+Jisheng,
+
+it is not about the location of the register but, as far as I
+understand, when using {readl,writel}_relaxed the compiler is
+free to reorder the calls. So, if there is a strict order we
+want to ensure, we have to use non-relaxed {readl,writel}.
+
+The performance penalty of non-relaxed calls can be ignored anyway
+as it is done only once after resume.
+
+Sebastian
