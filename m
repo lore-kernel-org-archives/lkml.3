@@ -1,85 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaJHRrM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 13:47:12 -0400
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:42850 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaJHRrK (ORCPT
+	id S1754008AbaJHRrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 13:47:41 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:39662 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521AbaJHRri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 13:47:10 -0400
-Date: Wed, 8 Oct 2014 12:47:05 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: i915.ko WC writes are slow after ea8596bb2d8d379
-Message-ID: <20141008124705.793d652d@as>
-In-Reply-To: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
-References: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
+	Wed, 8 Oct 2014 13:47:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <2960802.kPr8UT7PvT@vostro.rjw.lan>
+References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1997643.hzLDnYTZoH@vostro.rjw.lan>
+ <2960802.kPr8UT7PvT@vostro.rjw.lan>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 8 Oct 2014 10:47:16 -0700
+Message-ID: <CAK5ve-JTri0ML23gdXTgfRPh+tkJGUj6jHcjEKEVNphwG-PQjw@mail.gmail.com>
+Subject: Re: [PATCH 12/13] leds: leds-gpio: Make use of device property API
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014 10:03:36 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On Wed, Oct 8, 2014 at 7:04 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Tuesday, October 07, 2014 02:18:45 AM Rafael J. Wysocki wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> Make use of device property API in this driver so that both OF and ACPI
+>> based system can use the same driver.
+>>
+>> This change contains material from Max Eliaser and Mika Westerberg.
+>>
+>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Bryan, can you please tell me if you are OK with this patch?
+>
+> You said you were for one of the previous versions if I remember correctly,
+> but it's changed quite a bit since then, so can you please check this new
+> version too?
+>
 
-> and adding that back into the current build, e.g.
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 3632743..48a8a69 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -87,6 +87,7 @@ config X86
->         select HAVE_USER_RETURN_NOTIFIER
->         select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->         select HAVE_ARCH_JUMP_LABEL
-> +       select STOP_MACHINE
->         select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->         select SPARSE_IRQ
->         select GENERIC_FIND_FIRST_BIT
-> 
-> fixes the regression.
-> 
+Sure, the new one is even better than before. Please go ahead with my Ack
+Acked-by: Bryan Wu <cooloney@gmail.com>
 
-Looking closer at this, it seems most configs work by accident,
-because they have MOD_UNLOAD and/or HOTPLUG_CPU enabled. I take it
-you disabled both of those? stop_machine() is called from all kinds
-of places and almost none of them make sure STOP_MACHINE is selected.
+Thanks,
+-Bryan
 
-$ find -name Kconf\* | xargs grep STOP_MACHINE
-./init/Kconfig:config STOP_MACHINE
-
-All these places use stop_machine():
-
-    mm/page_alloc.c, line 3886
-    drivers/xen/manage.c, line 130
-    drivers/char/hw_random/intel-rng.c, line 373
-    arch/powerpc/mm/numa.c:
-        line 1616
-        line 1623 
-    arch/powerpc/platforms/powernv/subcore.c, line 324
-    arch/arm/kernel/kprobes.c, line 165
-    arch/arm/kernel/patch.c:
-        line 64
-        line 71 
-    arch/s390/kernel/jump_label.c, line 61
-    arch/s390/kernel/kprobes.c:
-        line 311
-        line 320 
-    arch/s390/kernel/time.c:
-        line 820
-        line 1590 
-    arch/x86/kernel/cpu/mtrr/main.c, line 231
-    arch/arm64/kernel/insn.c, line 181
-    kernel/time/timekeeping.c, line 892
-    kernel/trace/ftrace.c, line 2219
-    kernel/module.c:
-        line 770
-        line 1861 
+>> ---
+>>  drivers/leds/leds-gpio.c |   67 +++++++++++++++++++++--------------------------
+>>  1 file changed, 30 insertions(+), 37 deletions(-)
+>>
+>> Index: linux-pm/drivers/leds/leds-gpio.c
+>> ===================================================================
+>> --- linux-pm.orig/drivers/leds/leds-gpio.c
+>> +++ linux-pm/drivers/leds/leds-gpio.c
+>> @@ -15,13 +15,11 @@
+>>  #include <linux/gpio.h>
+>>  #include <linux/gpio/consumer.h>
+>>  #include <linux/leds.h>
+>> -#include <linux/of.h>
+>> -#include <linux/of_platform.h>
+>> -#include <linux/of_gpio.h>
+>>  #include <linux/slab.h>
+>>  #include <linux/workqueue.h>
+>>  #include <linux/module.h>
+>>  #include <linux/err.h>
+>> +#include <linux/property.h>
+>>
+>>  struct gpio_led_data {
+>>       struct led_classdev cdev;
+>> @@ -171,40 +169,41 @@ static inline int sizeof_gpio_leds_priv(
+>>               (sizeof(struct gpio_led_data) * num_leds);
+>>  }
+>>
+>> -/* Code to create from OpenFirmware platform devices */
+>> -#ifdef CONFIG_OF_GPIO
+>> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+>> +static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
+>>  {
+>> -     struct device_node *np = pdev->dev.of_node, *child;
+>> +     struct device *dev = &pdev->dev;
+>>       struct gpio_leds_priv *priv;
+>>       int count, ret;
+>> +     void *child;
+>>
+>> -     /* count LEDs in this device, so we know how much to allocate */
+>> -     count = of_get_available_child_count(np);
+>> +     count = device_get_child_node_count(dev);
+>>       if (!count)
+>>               return ERR_PTR(-ENODEV);
+>>
+>> -     for_each_available_child_of_node(np, child)
+>> -             if (of_get_gpio(child, 0) == -EPROBE_DEFER)
+>> -                     return ERR_PTR(-EPROBE_DEFER);
+>> -
+>> -     priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
+>> -                     GFP_KERNEL);
+>> +     priv = devm_kzalloc(dev, sizeof_gpio_leds_priv(count), GFP_KERNEL);
+>>       if (!priv)
+>>               return ERR_PTR(-ENOMEM);
+>>
+>> -     for_each_available_child_of_node(np, child) {
+>> +     device_for_each_child_node(dev, child) {
+>>               struct gpio_led led = {};
+>> -             enum of_gpio_flags flags;
+>> -             const char *state;
+>> +             const char *state = NULL;
+>> +
+>> +             led.gpiod = devm_get_named_gpiod_from_child(dev, child,
+>> +                                                         "gpios", 0);
+>> +             if (IS_ERR(led.gpiod)) {
+>> +                     device_put_child_node(dev, child);
+>> +                     goto err;
+>> +             }
+>>
+>> -             led.gpio = of_get_gpio_flags(child, 0, &flags);
+>> -             led.active_low = flags & OF_GPIO_ACTIVE_LOW;
+>> -             led.name = of_get_property(child, "label", NULL) ? : child->name;
+>> -             led.default_trigger =
+>> -                     of_get_property(child, "linux,default-trigger", NULL);
+>> -             state = of_get_property(child, "default-state", NULL);
+>> -             if (state) {
+>> +             device_child_property_read_string(dev, child,
+>> +                                               "label", &led.name);
+>> +             device_child_property_read_string(dev, child,
+>> +                                               "linux,default-trigger",
+>> +                                               &led.default_trigger);
+>> +
+>> +             if (!device_child_property_read_string(dev, child,
+>> +                                                    "linux,default_state",
+>> +                                                    &state)) {
+>>                       if (!strcmp(state, "keep"))
+>>                               led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+>>                       else if (!strcmp(state, "on"))
+>> @@ -213,13 +212,14 @@ static struct gpio_leds_priv *gpio_leds_
+>>                               led.default_state = LEDS_GPIO_DEFSTATE_OFF;
+>>               }
+>>
+>> -             if (of_get_property(child, "retain-state-suspended", NULL))
+>> +             if (!device_get_child_property(dev, child,
+>> +                                            "retain-state-suspended", NULL))
+>>                       led.retain_state_suspended = 1;
+>>
+>>               ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
+>> -                                   &pdev->dev, NULL);
+>> +                                   dev, NULL);
+>>               if (ret < 0) {
+>> -                     of_node_put(child);
+>> +                     device_put_child_node(dev, child);
+>>                       goto err;
+>>               }
+>>       }
+>> @@ -238,13 +238,6 @@ static const struct of_device_id of_gpio
+>>  };
+>>
+>>  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
+>> -#else /* CONFIG_OF_GPIO */
+>> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
+>> -{
+>> -     return ERR_PTR(-ENODEV);
+>> -}
+>> -#endif /* CONFIG_OF_GPIO */
+>> -
+>>
+>>  static int gpio_led_probe(struct platform_device *pdev)
+>>  {
+>> @@ -273,7 +266,7 @@ static int gpio_led_probe(struct platfor
+>>                       }
+>>               }
+>>       } else {
+>> -             priv = gpio_leds_create_of(pdev);
+>> +             priv = gpio_leds_create(pdev);
+>>               if (IS_ERR(priv))
+>>                       return PTR_ERR(priv);
+>>       }
+>> @@ -300,7 +293,7 @@ static struct platform_driver gpio_led_d
+>>       .driver         = {
+>>               .name   = "leds-gpio",
+>>               .owner  = THIS_MODULE,
+>> -             .of_match_table = of_match_ptr(of_gpio_leds_match),
+>> +             .of_match_table = of_gpio_leds_match,
+>>       },
+>>  };
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
