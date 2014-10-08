@@ -1,58 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439AbaJHJNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:13:14 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:56737 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754151AbaJHJNK (ORCPT
+	id S1755502AbaJHJNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:13:32 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37620 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354AbaJHJN1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:13:10 -0400
-Date: Wed, 8 Oct 2014 10:12:48 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: "'Sergei Shtylyov'" <sergei.shtylyov@cogentembedded.com>,
-        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frank Li <Frank.Li@freescale.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: fec: fix regression on i.MX28 introduced by
-	rx_copybreak support
-Message-ID: <20141008091248.GE5182@n2100.arm.linux.org.uk>
-References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de> <54340FA4.509@cogentembedded.com> <063D6719AE5E284EB5DD2968C1650D6D174C6C14@AcuExch.aculab.com>
+	Wed, 8 Oct 2014 05:13:27 -0400
+Date: Wed, 8 Oct 2014 10:13:21 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH v13 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20141008091321.GC4652@e106497-lin.cambridge.arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140929194335.GA13747@google.com>
+ <20140930103942.GO841@e106497-lin.cambridge.arm.com>
+ <20140930161805.GB5625@google.com>
+ <20140930165431.GV841@e106497-lin.cambridge.arm.com>
+ <20141008074428.GD20256@rric.localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20141008074428.GD20256@rric.localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Oct 2014 09:13:22.0685 (UTC) FILETIME=[1BF46AD0:01CFE2D8]
+X-MC-Unique: 114100810132402801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6C14@AcuExch.aculab.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 08:54:58AM +0000, David Laight wrote:
-> Hmmm... in that case you may not want the compiler to convert the bit value
-> to a 'bool' at all.
+On Wed, Oct 08, 2014 at 08:44:28AM +0100, Robert Richter wrote:
+> Liviu, Bjorn,
 > 
-> Passing 'id_entry->driver_data' through (that doesn't look like a field name for
-> 'quirk flags) would generate better code.
+> On 30.09.14 17:54:31, Liviu Dudau wrote:
+> > On Tue, Sep 30, 2014 at 05:18:05PM +0100, Bjorn Helgaas wrote:
+> > > OK, I rebuilt pci/host-generic from scratch.  It consists of your v13
+> > > patches + Arnd's build fix for pci_pio_to_address() in !CONFIG_OF configs.
+> > 
+> > Something went wrong with the integration, patch 02 adds another definition of 
+> > of_pci_range_to_resource() before it is moved out of the header file for some reason.
 > 
-> Even better would be to reference the flag directly from 'ndev'.
-> A pointer indirection for the test if probably faster then passing
-> another argument.
+> I assume pci/host-generic is the latest now with this issue fixed as
+> the commit date is 2014-10-01 past you message above, right? So is it
+> ok to rebase our host controller driver onto pci/host-generic or will
+> there be further updates or any other branch that is newer?
 
-A far better idea would be to copy the quirks into the fec_net_private
-structure, storing them as a 'unsigned int' value, and test them from
-there.  This is /much/ more efficient than jumping through the hoops to
-retrieve id_entry, and then testing the 64-bit driver_data value.
+You can rebase either on top of Bjorn's next branch or use linux-next. Hope to
+see it in v3.18 soon.
 
-I've had such a patch since about the beginning of the year (and patches
-which add stuff like byte queue limits, which are really needed now that
-we have a /huge/ transmit ring), but I can't keep up with rebasing the
-patch set, and properly tested and performance impacts evaluated due to
-the rate of FEC changes.  I never finished rebasing the set after Andy's
-TSO work...
+Best regards,
+Liviu
+
+> 
+> Thanks,
+> 
+> -Robert
+> 
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
