@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236AbaJHHJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:09:13 -0400
-Received: from sym2.noone.org ([178.63.92.236]:36271 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754080AbaJHHJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:09:10 -0400
-Date: Wed, 8 Oct 2014 09:09:07 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH] Input: opencores-kbd: Switch to using managed resources
-Message-ID: <20141008070907.GM3279@distanz.ch>
-References: <1412681501-28072-1-git-send-email-pramod.gurav@smartplayin.com>
- <20141007133322.GL3279@distanz.ch>
- <20141007161716.GB16469@dtor-ws>
+	id S1754407AbaJHHJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:09:20 -0400
+Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:45344
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754244AbaJHHJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 03:09:16 -0400
+From: Muthu Mani <muth@cypress.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>,
+        "Johan Hovold" <johan@kernel.org>
+Subject: RE: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO
+ adapter
+Thread-Topic: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO
+ adapter
+Thread-Index: AQHP4XRW+p3KAYX9WkKxGiOpXWlsnZwkaRoAgAFf9JA=
+Date: Wed, 8 Oct 2014 07:09:06 +0000
+Message-ID: <405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
+References: <1412606822-3406-1-git-send-email-muth@cypress.com>
+ <CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
+In-Reply-To: <CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [121.243.89.10]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR06MB463;
+x-exchange-antispam-report-test: UriScan:;
+x-forefront-prvs: 0358535363
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51704005)(24454002)(13464003)(377454003)(46102003)(21056001)(54356999)(80022003)(50986999)(92566001)(77096002)(64706001)(74316001)(20776003)(19580395003)(76176999)(101416001)(85852003)(66066001)(19580405001)(33646002)(76482002)(108616004)(95666004)(110136001)(2656002)(97736003)(87936001)(99396003)(1411001)(4396001)(31966008)(85306004)(106356001)(105586002)(120916001)(106116001)(40100002)(122556002)(86362001)(107046002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR06MB463;H:BN1PR06MB069.namprd06.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007161716.GB16469@dtor-ws>
-X-Editor: Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9879RoD022627
 
-On 2014-10-07 at 18:17:16 +0200, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Tue, Oct 07, 2014 at 03:33:22PM +0200, Tobias Klauser wrote:
-> > On 2014-10-07 at 13:31:41 +0200, Pramod Gurav <pramod.gurav@smartplayin.com> wrote:
-> > > This change switch to managed resources to simplifies error handling
-> > > and module unloading and does away with platform_driver remove function.
-> > > 
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Cc: linux-input@vger.kernel.org
-> > > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> > > ---
-> > >  drivers/input/keyboard/opencores-kbd.c |   54 ++++++++------------------------
-> > >  1 file changed, 13 insertions(+), 41 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/keyboard/opencores-kbd.c b/drivers/input/keyboard/opencores-kbd.c
-> > > index 7b9b441..ecacb87 100644
-> > > --- a/drivers/input/keyboard/opencores-kbd.c
-> > > +++ b/drivers/input/keyboard/opencores-kbd.c
-> > > @@ -56,27 +56,27 @@ static int opencores_kbd_probe(struct platform_device *pdev)
-> > >  		return -EINVAL;
-> > >  	}
-> > >  
-> > > -	opencores_kbd = kzalloc(sizeof(*opencores_kbd), GFP_KERNEL);
-> > > -	input = input_allocate_device();
-> > > +	opencores_kbd = devm_kzalloc(&pdev->dev, sizeof(*opencores_kbd),
-> > > +				     GFP_KERNEL);
-> > > +	input = devm_input_allocate_device(&pdev->dev);
-> > >  	if (!opencores_kbd || !input) {
-> > >  		dev_err(&pdev->dev, "failed to allocate device structures\n");
-> > > -		error = -ENOMEM;
-> > > -		goto err_free_mem;
-> > > +		return -ENOMEM;
-> > >  	}
-> > >  
-> > >  	opencores_kbd->addr_res = res;
-> > > -	res = request_mem_region(res->start, resource_size(res), pdev->name);
-> > > +	res = devm_request_mem_region(&pdev->dev, res->start,
-> > > +				      resource_size(res), pdev->name);
-> > >  	if (!res) {
-> > >  		dev_err(&pdev->dev, "failed to request I/O memory\n");
-> > > -		error = -EBUSY;
-> > > -		goto err_free_mem;
-> > > +		return -EBUSY;
-> > >  	}
-> > >  
-> > > -	opencores_kbd->addr = ioremap(res->start, resource_size(res));
-> > > +	opencores_kbd->addr = devm_ioremap(&pdev->dev, res->start,
-> > > +					   resource_size(res));
-> > 
-> > You could use devm_ioremap_resource() here and get rid of the call to
-> > devm_request_mem_region() and the check for !res above, i.e. something
-> > like:
-> > 
-> > 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > 	[...]
-> > 	opencores_kbd->addr = devm_ioremap_resource(&pdev->dev, res);
-> > 	if (!opencores_kbd->addr) {
-> > 		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-> > 		return -ENXIO;
-> > 	}
+> -----Original Message-----
+> From: Alexandre Courbot [mailto:gnurou@gmail.com]
+> Sent: Tuesday, October 07, 2014 3:34 PM
+> To: Muthu Mani
+> Cc: Samuel Ortiz; Lee Jones; Wolfram Sang; Linus Walleij; Greg Kroah-
+> Hartman; linux-i2c@vger.kernel.org; linux-gpio@vger.kernel.org; linux-
+> usb@vger.kernel.org; Linux Kernel Mailing List; Rajaram Regupathy; Johan
+> Hovold
+> Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-
+> GPIO adapter
 > 
-> You need to be careful with devm_ioremap_resource() ocnversions as it
-> returns ERR_PTR-encoded pointer on failures, not NULL.
+> On Mon, Oct 6, 2014 at 11:47 PM, Muthu Mani <muth@cypress.com> wrote:
+> > +
+> > +static int cy_gpio_direction_input(struct gpio_chip *chip,
+> > +                                       unsigned offset) {
+> > +       return 0;
+> > +}
+> > +
+> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
+> > +                                       unsigned offset, int value) {
+> > +       return 0;
+> > +}
+> 
+> If that chip is capable of both output and input, shouldn't these functions be
+> implemented? I think this has already been pointed out in a previous version
+> but you did not reply.
 
-Ah yes of course, I was a bit too quick with my top-of-the-head
-conversion. Thanks for fixing it up.
+Thanks for your inputs.
+
+Only the GPIOs which are configured to be output GPIO can be set.
+The set operation would fail trying to set the input or unconfigured GPIOs.
+In this version of driver, this support is not added, it can be introduced in future versions.
+I will add a TODO note in the code.
+
+> 
+> > +
+> > +static int cyusbs23x_gpio_probe(struct platform_device *pdev) {
+> > +       struct cyusbs23x *cyusbs;
+> > +       struct cyusbs_gpio *cy_gpio;
+> > +       int ret = 0;
+> > +
+> > +       dev_dbg(&pdev->dev, "%s\n", __func__);
+> 
+> > +
+> > +       cyusbs = dev_get_drvdata(pdev->dev.parent);
+> > +
+> > +       cy_gpio = devm_kzalloc(&pdev->dev, sizeof(*cy_gpio), GFP_KERNEL);
+> > +       if (cy_gpio == NULL)
+> > +               return -ENOMEM;
+> > +
+> > +       cy_gpio->cyusbs = cyusbs;
+> > +       /* registering gpio */
+> > +       cy_gpio->gpio.label = dev_name(&pdev->dev);
+> > +       cy_gpio->gpio.dev = &pdev->dev;
+> > +       cy_gpio->gpio.owner = THIS_MODULE;
+> > +       cy_gpio->gpio.base = -1;
+> > +       cy_gpio->gpio.ngpio = 12; /* total GPIOs */
+> 
+> Isn't there a way to get the number of GPIOs from a reliable source?
+> If not, please at least use a macro here.
+
+CYUSBS234 has 12 GPIOs in total as per the datasheet. I will add a macro and use it.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
