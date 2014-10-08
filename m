@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833AbaJHLNa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:13:30 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42394 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316AbaJHLN3 (ORCPT
+	id S1756024AbaJHLNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:13:35 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:37321 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755316AbaJHLNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:13:29 -0400
-Date: Wed, 8 Oct 2014 12:13:26 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "bsegall@google.com" <bsegall@google.com>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
-        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        "pjt@google.com" <pjt@google.com>
-Subject: Re: [PATCH 4/7] sched: Track group sched_entity usage contributions
-Message-ID: <20141008111326.GB1788@e105550-lin.cambridge.arm.com>
-References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
- <1412684017-16595-5-git-send-email-vincent.guittot@linaro.org>
- <xm26oatnk55g.fsf@sword-of-the-dawn.mtv.corp.google.com>
+	Wed, 8 Oct 2014 07:13:31 -0400
+Message-ID: <54351C25.70604@st.com>
+Date: Wed, 8 Oct 2014 13:12:37 +0200
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xm26oatnk55g.fsf@sword-of-the-dawn.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seraphin Bonnaffe <seraphin.bonnaffe@st.com>, <b29396@freescale.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <lee.jones@linaro.org>
+Cc: <sameo@linux.intel.com>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <arnd@arndb.de>
+Subject: Re: [RFC PATCH 0/2] mfd: syscon: declare holes in syscon register
+ maps
+References: <54244655.1090801@st.com> <1412688148-20835-1-git-send-email-seraphin.bonnaffe@st.com>
+In-Reply-To: <1412688148-20835-1-git-send-email-seraphin.bonnaffe@st.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-08_06:2014-10-08,2014-10-08,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 09:15:39PM +0100, bsegall@google.com wrote:
-> Vincent Guittot <vincent.guittot@linaro.org> writes:
-> 
-> > From: Morten Rasmussen <morten.rasmussen@arm.com>
-> >
-> > Adds usage contribution tracking for group entities. Unlike
-> > se->avg.load_avg_contrib, se->avg.utilization_avg_contrib for group
-> > entities is the sum of se->avg.utilization_avg_contrib for all entities on the
-> > group runqueue. It is _not_ influenced in any way by the task group
-> > h_load. Hence it is representing the actual cpu usage of the group, not
-> > its intended load contribution which may differ significantly from the
-> > utilization on lightly utilized systems.
-> 
-> 
-> Just noting that this version also has usage disappear immediately when
-> a task blocks, although it does what you probably want on migration.
+Hi Seraphin,
 
-Yes, as it was discussed at Ksummit, we should include blocked
-usage. It gives a much more stable metric.
+On 10/07/2014 03:22 PM, Seraphin Bonnaffe wrote:
+> In reply to mail: Holes management in syscon driver.
+> 
+> Hi Dong, Maxime, Lee, all,
+> 
+> Regmap also offers .rd_table and .wr_table structures that can be used to
+> specify valid ranges within agiven regmap configuration.
+> 
+> This patch uses these structures to declare holes in a syscon instance.
+> It takes the description from DT, and fills in the structures accordingly.
+> 
+> Can I have your opinion on this implementation ?
 
-> Also, group-ses don't ever use their running_avg_sum so it's kinda a
-> waste, but I'm not sure it's worth doing anything about.
+As discussed face to face, it looks fine to me.
 
-Yeah, but since we still have to maintain runnable_avg_sum for group-ses
-it isn't much that can be saved I think. Maybe avoid calling
-update_entity_load_avg() from set_next_entity() for group-ses, but I'm
-not sure how much it helps.
+But we would like green light in the new "holes" property introduced.
+
+Thanks,
+Maxime
+
+> 
+> Thanks and Regards,
+> Seraphin
+> 
+> Seraphin Bonnaffe (2):
+>    mfd: syscon: Document new DT binding "holes"
+>    mfd: syscon: specify rd_table and wr_table from DT
+> 
+>   Documentation/devicetree/bindings/mfd/syscon.txt |  5 ++++
+>   drivers/mfd/syscon.c                             | 35 ++++++++++++++++++++++++
+>   2 files changed, 40 insertions(+)
+> 
