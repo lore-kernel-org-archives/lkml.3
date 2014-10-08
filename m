@@ -1,74 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765AbaJHOZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:25:50 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40769 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaJHOZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:25:47 -0400
-Date: Wed, 8 Oct 2014 15:25:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20141008142511.GA4609@sirena.org.uk>
-References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
- <1412775847-15213-2-git-send-email-javier.martinez@collabora.co.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NRg0qHkDgHfQnopc"
-Content-Disposition: inline
-In-Reply-To: <1412775847-15213-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/5] regulator: of: Add regulator-initial-mode parse
- support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1754690AbaJHOaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:30:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaJHOaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 10:30:08 -0400
+From: Maurizio Lombardi <mlombard@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, jet.chen@intel.com,
+        akpm@linux-foundation.org, thenzl@redhat.com, ming.lei@canonical.com
+Subject: [PATCH V4] bio: modify __bio_add_page() to accept pages that don't start a new segment
+Date: Wed,  8 Oct 2014 16:29:58 +0200
+Message-Id: <1412778598-1067-1-git-send-email-mlombard@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The original behaviour is to refuse to add a new page if the maximum
+number of segments has been reached, regardless of the fact the page we
+are going to add can be merged into the last segment or not.
 
---NRg0qHkDgHfQnopc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Unfortunately, when the system runs under heavy memory fragmentation
+conditions, a driver may try to add multiple pages to the last segment.
+The original code won't accept them and EBUSY will be reported to
+userspace.
 
-On Wed, Oct 08, 2014 at 03:44:03PM +0200, Javier Martinez Canillas wrote:
+This patch modifies the function so it refuses to add a page only in case
+the latter starts a new segment and the maximum number of segments has
+already been reached.
 
-> But currently there isn't a way to do the same with DeviceTrees. Argubly
-> the operating modes are Linux-specific so that information should not be
-> in the DT which should be used to only describe hardware. But regulators
-> having different operating modes is also a hardware property since many
-> PMICs have support to set different modes for their regulators.
+The bug can be easily reproduced with the st driver:
 
-That doesn't mean that the definition of those modes is something we can
-sensibly provide in generic code, especially in a completely
-undocumented fashion (perhaps you've done that later in the patch series
-but bisection also applies to reviewability).
+1) set CONFIG_SCSI_MPT2SAS_MAX_SGE or CONFIG_SCSI_MPT3SAS_MAX_SGE  to 16
+2) modprobe st buffer_kbs=1024
+3) #dd if=/dev/zero of=/dev/st0 bs=1M count=10
+   dd: error writing `/dev/st0': Device or resource busy
 
---NRg0qHkDgHfQnopc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+V2: restore the correct number of segments in case of failure.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+V3: In case of error, V2 restored the previous number of segments but left
+    the BIO_SEG_VALID flag set.
+    To avoid problems, after the page is removed from the bio vec,
+    V3 performs a recount of the segments in the error code path.
 
-iQEcBAEBAgAGBQJUNUlGAAoJECTWi3JdVIfQgHkIAIY527r8xpJbskYfmMvb5P66
-GvpG+7Uc5BKFOkdpceg2Mf+oO5TZR1ilPsAOEQYGhOHHLhMeKZi3pwgx9gLCiR7g
-oB+dXKw0J5QcDhN7jGLFCUDSWDzD7mgqhGmP3zeO2pAbKqaaACNBjEAKrWhp4kgz
-Ra9gqvOVZjhV8LoVZThjpxoxucfwue3ywSJZLCtQ40HMJRnxyNO8KKqEwc7MJbqI
-lJmZNeFTzGbAtc+DXi1VmR4+MlSkBQw564jgJ/b3NEWrT/o1/lfFVJrjHJj1xV+r
-CZup4CpdynrzaKYYQN9RFjosM4e1XKcVxyXBIF1X3qao8MxE1uYU+jXGcRr2R5U=
-=roPf
------END PGP SIGNATURE-----
+[ming.lei@canonical.com: update bi_iter.bi_size before recounting segments]
 
---NRg0qHkDgHfQnopc--
+V4: merge_bvec_fn() must be called with the old bi_iter.bi_size value.
+
+Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ block/bio.c | 54 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 24 deletions(-)
+
+diff --git a/block/bio.c b/block/bio.c
+index 3e6331d..535b16d 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -745,6 +745,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 				}
+ 			}
+ 
++			bio->bi_iter.bi_size += len;
+ 			goto done;
+ 		}
+ 
+@@ -761,29 +762,32 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		return 0;
+ 
+ 	/*
+-	 * we might lose a segment or two here, but rather that than
+-	 * make this too complex.
++	 * setup the new entry, we might clear it again later if we
++	 * cannot add the page
++	 */
++	bvec = &bio->bi_io_vec[bio->bi_vcnt];
++	bvec->bv_page = page;
++	bvec->bv_len = len;
++	bvec->bv_offset = offset;
++	bio->bi_vcnt++;
++	bio->bi_phys_segments++;
++	bio->bi_iter.bi_size += len;
++
++	/*
++	 * Perform a recount if the number of segments is greater
++	 * than queue_max_segments(q).
+ 	 */
+ 
+-	while (bio->bi_phys_segments >= queue_max_segments(q)) {
++	while (bio->bi_phys_segments > queue_max_segments(q)) {
+ 
+ 		if (retried_segments)
+-			return 0;
++			goto failed;
+ 
+ 		retried_segments = 1;
+ 		blk_recount_segments(q, bio);
+ 	}
+ 
+ 	/*
+-	 * setup the new entry, we might clear it again later if we
+-	 * cannot add the page
+-	 */
+-	bvec = &bio->bi_io_vec[bio->bi_vcnt];
+-	bvec->bv_page = page;
+-	bvec->bv_len = len;
+-	bvec->bv_offset = offset;
+-
+-	/*
+ 	 * if queue has other restrictions (eg varying max sector size
+ 	 * depending on offset), it can specify a merge_bvec_fn in the
+ 	 * queue to get further control
+@@ -792,7 +796,7 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		struct bvec_merge_data bvm = {
+ 			.bi_bdev = bio->bi_bdev,
+ 			.bi_sector = bio->bi_iter.bi_sector,
+-			.bi_size = bio->bi_iter.bi_size,
++			.bi_size = bio->bi_iter.bi_size - len,
+ 			.bi_rw = bio->bi_rw,
+ 		};
+ 
+@@ -800,23 +804,25 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
+ 		 * merge_bvec_fn() returns number of bytes it can accept
+ 		 * at this offset
+ 		 */
+-		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len) {
+-			bvec->bv_page = NULL;
+-			bvec->bv_len = 0;
+-			bvec->bv_offset = 0;
+-			return 0;
+-		}
++		if (q->merge_bvec_fn(q, &bvm, bvec) < bvec->bv_len)
++			goto failed;
+ 	}
+ 
+ 	/* If we may be able to merge these biovecs, force a recount */
+-	if (bio->bi_vcnt && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
++	if (bio->bi_vcnt > 1 && (BIOVEC_PHYS_MERGEABLE(bvec-1, bvec)))
+ 		bio->bi_flags &= ~(1 << BIO_SEG_VALID);
+ 
+-	bio->bi_vcnt++;
+-	bio->bi_phys_segments++;
+  done:
+-	bio->bi_iter.bi_size += len;
+ 	return len;
++
++ failed:
++	bvec->bv_page = NULL;
++	bvec->bv_len = 0;
++	bvec->bv_offset = 0;
++	bio->bi_vcnt--;
++	bio->bi_iter.bi_size -= len;
++	blk_recount_segments(q, bio);
++	return 0;
+ }
+ 
+ /**
+-- 
+Maurizio Lombardi
+
