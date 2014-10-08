@@ -1,94 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254AbaJHUoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:44:03 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:42016 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaJHUoA (ORCPT
+	id S1754433AbaJHUo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:44:58 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58119 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752961AbaJHUo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:44:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412799101.28467.68.camel@acox1-desk.ger.corp.intel.com>
-References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
- <1412798258-23655-4-git-send-email-ricardo.ribalda@gmail.com> <1412799101.28467.68.camel@acox1-desk.ger.corp.intel.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 8 Oct 2014 22:43:38 +0200
-Message-ID: <CAPybu_1vXc+=dVbradArvFYiFBy2c=0tTM7RAHDhycCkQQv_5g@mail.gmail.com>
-Subject: Re: [PATCH 03/12] serial_core: Handle TIOC[GS]RS485 ioctls.
-To: Alan Cox <alan@linux.intel.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 8 Oct 2014 16:44:57 -0400
+Message-ID: <1412801095.32718.13.camel@jarvis>
+Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+Cc: arnd@arndb.de, linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        opw-kernel@googlegroups.com
+Date: Wed, 08 Oct 2014 13:44:55 -0700
+In-Reply-To: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
+References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
+On Wed, 2014-10-08 at 23:14 +0300, Ebru Akagunduz wrote:
+> This patch changes 32-bit time types to 64-bit in
+> ips.c
+> 
+> time_t can only represent signed 32-bit dates but
+> the driver should represent dates that are after
+> January 2038.
+> 
+> Use time64_t type instead of time_t.
+> 
+> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
+> ---
+>  drivers/scsi/ips.c | 6 ++++--
+>  drivers/scsi/ips.h | 2 +-
+>  2 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
+> index 52a216f..8a2cf68 100644
+> --- a/drivers/scsi/ips.c
+> +++ b/drivers/scsi/ips.c
+> @@ -195,6 +195,8 @@
+>  
+>  #include <linux/smp.h>
+>  
+> +#include <linux/time64.h>
+> +
+>  #ifdef MODULE
+>  static char *ips = NULL;
+>  module_param(ips, charp, 0);
+> @@ -297,7 +299,7 @@ static void ips_freescb(ips_ha_t *, ips_scb_t *);
+>  static void ips_setup_funclist(ips_ha_t *);
+>  static void ips_statinit(ips_ha_t *);
+>  static void ips_statinit_memio(ips_ha_t *);
+> -static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time_t);
+> +static void ips_fix_ffdc_time(ips_ha_t *, ips_scb_t *, time64_t);
+>  static void ips_ffdc_reset(ips_ha_t *, int);
+>  static void ips_ffdc_time(ips_ha_t *);
+>  static uint32_t ips_statupd_copperhead(ips_ha_t *);
+> @@ -6000,7 +6002,7 @@ ips_ffdc_time(ips_ha_t * ha)
+>  /*                                                                          */
+>  /****************************************************************************/
+>  static void
+> -ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time_t current_time)
+> +ips_fix_ffdc_time(ips_ha_t * ha, ips_scb_t * scb, time64_t current_time)
+>  {
+>  	long days;
+>  	long rem;
+> diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
+> index 45b9566..ff2a0b3 100644
+> --- a/drivers/scsi/ips.h
+> +++ b/drivers/scsi/ips.h
+> @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
+>     uint8_t            active;
+>     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
+>     uint16_t           reset_count;        /* number of resets           */
+> -   time_t             last_ffdc;          /* last time we sent ffdc info*/
+> +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
+>     uint8_t            slot_num;           /* PCI Slot Number            */
+>     int                ioctl_len;          /* size of ioctl buffer       */
+>     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
 
-This patchset adds no extra locking features, if the drivers did not
-implement a locking mechanism (and none did) there is chance of
-conflict.
+This is completely pointless, isn't it?  All the ips driver cares about
+is that we send a FFDC time update every eight hours or so, so we can
+happily truncate the number of seconds to 32 bits for that calculation
+just keep the variable at 32 bits and do a time_after thing for the
+comparison.
 
-I can add a call to lock/unlock around uart_[gs]et_rs485_config. And
-then, inside the drivers, use the lock when the structure is used.
+However, what the code *should* be doing is using jiffies and
+time_before/after since the interval is so tiny rather than a
+do_gettimeofday() call in the fast path.
 
-I would prefer to add it as new patches in the patchset, so in case
-this adds some bugs they can be bisected easily.
-
-Thanks for your fast reply
-
-
-
-On Wed, Oct 8, 2014 at 10:11 PM, Alan Cox <alan@linux.intel.com> wrote:
-> On Wed, 2014-10-08 at 21:57 +0200, Ricardo Ribalda Delgado wrote:
->> The following drivers: 8250_core, atmel_serial, max310x, mcf, omap-serial
->> and sci16is7xx implement code to handle RS485 ioctls.
->
->>
->> +static int uart_get_rs485_config(struct uart_port *port,
->> +                      struct serial_rs485 __user *rs485)
->> +{
->> +     if (!port->rs485_config)
->> +             return -ENOIOCTLCMD;
->> +
->> +     if (copy_to_user(rs485, &port->rs485, sizeof(port->rs485)))
->> +             return -EFAULT;
->> +     return 0;
->> +}
->> +
->> +static int uart_set_rs485_config(struct uart_port *port,
->> +                      struct serial_rs485 __user *rs485_user)
->> +{
->> +     struct serial_rs485 rs485;
->> +     int ret;
->> +
->> +     if (!port->rs485_config)
->> +             return -ENOIOCTLCMD;
->> +
->> +     if (copy_from_user(&rs485, rs485_user, sizeof(rs485_user)))
->> +             return -EFAULT;
->> +
->> +     ret = port->rs485_config(port, &rs485);
->> +     if (ret)
->> +             return ret;
->> +
->> +     if (copy_to_user(rs485_user, &port->rs485, sizeof(port->rs485)))
->> +             return -EFAULT;
->> +
->> +     return 0;
->> +
->
-> What is the locking between setting/getting/driver use of the config ?
-> This really needs a lock (termios sem I think is perhaps appropriate
-> given when the values are normally referenced).
->
-> Alan
->
->
+James
 
 
 
--- 
-Ricardo Ribalda
+
