@@ -1,228 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092AbaJHJhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:37:50 -0400
-Received: from mail-bn1on0099.outbound.protection.outlook.com ([157.56.110.99]:4256
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755791AbaJHJbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:31:22 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
-        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v4 16/29] nios2: ELF definitions
-Date: Wed, 8 Oct 2014 17:29:42 +0800
-Message-ID: <1412760595-3935-17-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1412760595-3935-1-git-send-email-lftan@altera.com>
-References: <1412760595-3935-1-git-send-email-lftan@altera.com>
+	id S1756115AbaJHJiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:38:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46209 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755922AbaJHJiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 05:38:12 -0400
+Message-ID: <543505EF.7070804@linux.vnet.ibm.com>
+Date: Wed, 08 Oct 2014 15:07:51 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(99396003)(120916001)(76482002)(62966002)(21056001)(77156001)(68736004)(19580395003)(19580405001)(6806004)(104166001)(44976005)(64706001)(15975445006)(84676001)(87286001)(85852003)(89996001)(88136002)(87936001)(50466002)(48376002)(92566001)(92726001)(2201001)(20776003)(47776003)(93916002)(86362001)(4396001)(50226001)(105596002)(106466001)(97736003)(36756003)(102836001)(15202345003)(95666004)(42186005)(46102003)(80022003)(85306004)(107046002)(31966008)(229853001)(50986999)(76176999)(33646002)(77096002)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB211;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB211;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0358535363
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-OriginatorOrg: altera.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: svaidy@linux.vnet.ibm.com, rjw@rjwysocki.net, lizefan@huawei.com,
+        anton@samba.org, tj@kernel.org, paulmck@linux.vnet.ibm.com,
+        mingo@kernel.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks hotplug
+ invariant
+References: <20141008070739.1170.33313.stgit@preeti.in.ibm.com> <20141008080706.GC10832@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141008080706.GC10832@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100809-7182-0000-0000-000000A7E53F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds definitions for the ELF format
+Hi Peter,
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- arch/nios2/include/asm/elf.h      |  101 +++++++++++++++++++++++++++++++++++++
- arch/nios2/include/uapi/asm/elf.h |   67 ++++++++++++++++++++++++
- 2 files changed, 168 insertions(+), 0 deletions(-)
- create mode 100644 arch/nios2/include/asm/elf.h
- create mode 100644 arch/nios2/include/uapi/asm/elf.h
+On 10/08/2014 01:37 PM, Peter Zijlstra wrote:
+> On Wed, Oct 08, 2014 at 12:37:40PM +0530, Preeti U Murthy wrote:
+>> There are two masks associated with cpusets. The cpus/mems_allowed
+>> and effective_cpus/mems. On the legacy hierarchy both these masks
+>> are consistent with each other. This is the intersection of their
+>> value and the currently active cpus. This means that we destroy the
+>> original values set in these masks on each cpu/mem hot unplug operation.
+>> 	As a consequence when we hot plug back the cpus/mems, the tasks
+>> no longer run on them and performance degrades, inspite of having
+>> resources to run on.
+>>
+>> This effect is not seen in the default hierarchy since the
+>> allowed and effective masks are distinctly maintained.
+>> allowed masks are never touched once configured and effective masks
+>> alone are hotplug variant.
+>>
+>> This patch replicates the above design even for the legacy hierarchy,
+>> so that:
+>>
+>> 1. Tasks always run on the cpus/memory nodes that they are allowed to run on
+>> as long as they are online. The allowed masks are hotplug invariant.
+>>
+>> 2. When all cpus/memory nodes in a cpuset are hot unplugged out, the tasks
+>> are moved to their nearest ancestor which has resources to run on.
+>>
+>> There were discussions earlier around this issue:
+>> https://lkml.org/lkml/2012/5/4/265
+>> http://thread.gmane.org/gmane.linux.kernel/1250097/focus=1252133
+>>
+>> The argument against making the allowed masks hotplug invariant was that
+>> hotplug is destructive and hence cpusets cannot expect to regain resources
+>> that have gone through a hotplug operation by the user.
+>>
+>> But on powerpc we do smt mode switch to suit the workload running.
+>> We therefore need to keep track of the original cpuset configuration
+>> so as to make use of them when they are back online due to a mode switch.
+>> Moreover there is no real harm in keeping the allowed masks invariant
+>> on hotplug since the effective masks will anyway keep track of the
+>> online cpus. In fact there are use cases which need the cpuset's
+>> original configuration to be retained. The v2 of cgroup design therefore
+>> does not overwrite this configuration.
+>>
+> 
+> I still completely hate all that.. It basically makes cpusets useless,
+> they no longer guarantee anything, it makes then an optional placement
+> hint instead.
 
-diff --git a/arch/nios2/include/asm/elf.h b/arch/nios2/include/asm/elf.h
-new file mode 100644
-index 0000000..b7d655d
---- /dev/null
-+++ b/arch/nios2/include/asm/elf.h
-@@ -0,0 +1,101 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#ifndef _ASM_NIOS2_ELF_H
-+#define _ASM_NIOS2_ELF_H
-+
-+#include <uapi/asm/elf.h>
-+
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ */
-+#define elf_check_arch(x) ((x)->e_machine == EM_ALTERA_NIOS2)
-+
-+#define ELF_PLAT_INIT(_r, load_addr)
-+
-+#define CORE_DUMP_USE_REGSET
-+#define ELF_EXEC_PAGESIZE	4096
-+
-+/* This is the location that an ET_DYN program is loaded if exec'ed.  Typical
-+   use of this is to invoke "./ld.so someprog" to test out a new version of
-+   the loader.  We need to make sure that it is out of the way of the program
-+   that it will "exec", and that there is sufficient room for the brk.  */
-+
-+#define ELF_ET_DYN_BASE		0xD0000000UL
-+
-+/* regs is struct pt_regs, pr_reg is elf_gregset_t (which is
-+   now struct_user_regs, they are different) */
-+
-+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES	1
-+struct linux_binprm;
-+extern int arch_setup_additional_pages(struct linux_binprm *bprm,
-+	int uses_interp);
-+#define ELF_CORE_COPY_REGS(pr_reg, regs)				\
-+{ do {									\
-+	/* Bleech. */							\
-+	pr_reg[0]  = regs->r8;						\
-+	pr_reg[1]  = regs->r9;						\
-+	pr_reg[2]  = regs->r10;						\
-+	pr_reg[3]  = regs->r11;						\
-+	pr_reg[4]  = regs->r12;						\
-+	pr_reg[5]  = regs->r13;						\
-+	pr_reg[6]  = regs->r14;						\
-+	pr_reg[7]  = regs->r15;						\
-+	pr_reg[8]  = regs->r1;						\
-+	pr_reg[9]  = regs->r2;						\
-+	pr_reg[10] = regs->r3;						\
-+	pr_reg[11] = regs->r4;						\
-+	pr_reg[12] = regs->r5;						\
-+	pr_reg[13] = regs->r6;						\
-+	pr_reg[14] = regs->r7;						\
-+	pr_reg[15] = regs->orig_r2;					\
-+	pr_reg[16] = regs->ra;						\
-+	pr_reg[17] = regs->fp;						\
-+	pr_reg[18] = regs->sp;						\
-+	pr_reg[19] = regs->gp;						\
-+	pr_reg[20] = regs->estatus;					\
-+	pr_reg[21] = regs->ea;						\
-+	pr_reg[22] = regs->orig_r7;					\
-+	{								\
-+		struct switch_stack *sw = ((struct switch_stack *)regs) - 1; \
-+		pr_reg[23] = sw->r16;					\
-+		pr_reg[24] = sw->r17;					\
-+		pr_reg[25] = sw->r18;					\
-+		pr_reg[26] = sw->r19;					\
-+		pr_reg[27] = sw->r20;					\
-+		pr_reg[28] = sw->r21;					\
-+		pr_reg[29] = sw->r22;					\
-+		pr_reg[30] = sw->r23;					\
-+		pr_reg[31] = sw->fp;					\
-+		pr_reg[32] = sw->gp;					\
-+		pr_reg[33] = sw->ra;					\
-+	}								\
-+} while (0); }
-+
-+/* This yields a mask that user programs can use to figure out what
-+   instruction set this cpu supports.  */
-+
-+#define ELF_HWCAP	(0)
-+
-+/* This yields a string that ld.so will use to load implementation
-+   specific libraries for optimization.  This is more specific in
-+   intent than poking at uname or /proc/cpuinfo.  */
-+
-+#define ELF_PLATFORM  (NULL)
-+
-+#endif /* _ASM_NIOS2_ELF_H */
-diff --git a/arch/nios2/include/uapi/asm/elf.h b/arch/nios2/include/uapi/asm/elf.h
-new file mode 100644
-index 0000000..a5b91ae
---- /dev/null
-+++ b/arch/nios2/include/uapi/asm/elf.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+
-+#ifndef _UAPI_ASM_NIOS2_ELF_H
-+#define _UAPI_ASM_NIOS2_ELF_H
-+
-+#include <linux/ptrace.h>
-+
-+/* Relocation types */
-+#define R_NIOS2_NONE		0
-+#define R_NIOS2_S16		1
-+#define R_NIOS2_U16		2
-+#define R_NIOS2_PCREL16		3
-+#define R_NIOS2_CALL26		4
-+#define R_NIOS2_IMM5		5
-+#define R_NIOS2_CACHE_OPX	6
-+#define R_NIOS2_IMM6		7
-+#define R_NIOS2_IMM8		8
-+#define R_NIOS2_HI16		9
-+#define R_NIOS2_LO16		10
-+#define R_NIOS2_HIADJ16		11
-+#define R_NIOS2_BFD_RELOC_32	12
-+#define R_NIOS2_BFD_RELOC_16	13
-+#define R_NIOS2_BFD_RELOC_8	14
-+#define R_NIOS2_GPREL		15
-+#define R_NIOS2_GNU_VTINHERIT	16
-+#define R_NIOS2_GNU_VTENTRY	17
-+#define R_NIOS2_UJMP		18
-+#define R_NIOS2_CJMP		19
-+#define R_NIOS2_CALLR		20
-+#define R_NIOS2_ALIGN		21
-+/* Keep this the last entry.  */
-+#define R_NIOS2_NUM		22
-+
-+typedef unsigned long elf_greg_t;
-+
-+#define ELF_NGREG	\
-+	((sizeof(struct pt_regs) + sizeof(struct switch_stack)) /	\
-+		sizeof(elf_greg_t))
-+typedef elf_greg_t elf_gregset_t[ELF_NGREG];
-+
-+typedef unsigned long elf_fpregset_t;
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_DATA	ELFDATA2LSB
-+#define ELF_ARCH	EM_ALTERA_NIOS2
-+
-+#endif /* _UAPI_ASM_NIOS2_ELF_H */
--- 
-1.7.7.4
+Why do you say they don't guarantee anything? We ensure that we always
+run on the cpus in our cpuset which are online. We do not run in any
+arbitrary cpuset. We also do not wait unreasonably on an offline cpu to
+come back. What we are doing is ensuring that if the resources that we
+began with are available we use them. Why is this not a logical thing to
+expect?
+
+> 
+> You also break long standing behaviour.
+
+Which is? As I understand cpusets are meant to ensure a dedicated set of
+resources to some tasks. We cannot scheduler the tasks anywhere outside
+this set as long as they are available. And when they are not, currently
+we move them to their parents, but you had also suggested killing the
+task. Maybe this can be debated. But what behavior are we changing by
+ensuring that we retain our original configuration at all times?
+
+> 
+> Also, power is insane if it needs/uses hotplug for operational crap
+> like that.
+
+SMT 8 on Power8 can help/hinder workloads. Hence we dynamically switch
+the modes at runtime.
+
+Regards
+Preeti U Murthy
+> 
 
