@@ -1,149 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212AbaJHKr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:47:27 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:53965 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106AbaJHKrX (ORCPT
+	id S932248AbaJHKrj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:47:39 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39380 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106AbaJHKrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:47:23 -0400
-Date: Wed, 8 Oct 2014 11:47:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Johannes Pointner <johannes.pointner@gmail.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] dt: bindings: tps65217: add compatible property
- for subnodes
-Message-ID: <20141008104717.GG20647@lee--X1>
-References: <1660410.j399mvljTo@lenovobook>
- <20141006212232.GF18035@lee--X1>
- <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
+	Wed, 8 Oct 2014 06:47:36 -0400
+Date: Wed, 8 Oct 2014 14:47:32 +0400
+From: Andrew Vagin <avagin@parallels.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Andrey Vagin <avagin@openvz.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH] umount:  Do not allow unmounting rootfs.
+Message-ID: <20141008104732.GB24908@paralelels.com>
+References: <1412683212-28077-1-git-send-email-avagin@openvz.org>
+ <20141007132431.GF7996@ZenIV.linux.org.uk>
+ <20141007134011.GA569@paralelels.com>
+ <87vbnv3cl1.fsf_-_@x220.int.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="koi8-r"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJKbBDCSrPd=JGP2sfk1D-eNf55iYBKUqBtqA=4m6r5xL6oYnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87vbnv3cl1.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.30.16.48]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Oct 2014, Johannes Pointner wrote:
+On Tue, Oct 07, 2014 at 12:27:06PM -0700, Eric W. Biederman wrote:
+> 
+> Andrew Vagin <avagin@parallels.com> writes:
+> 
+> > #define _GNU_SOURCE
+> > #include <sys/types.h>
+> > #include <sys/stat.h>
+> > #include <fcntl.h>
+> > #include <sched.h>
+> > #include <unistd.h>
+> > #include <sys/mount.h>
+> >
+> > int main(int argc, char **argv)
+> > {
+> > 	int fd;
+> >
+> > 	fd = open("/proc/self/ns/mnt", O_RDONLY);
+> > 	if (fd < 0)
+> > 	   return 1;
+> > 	   while (1) {
+> > 	   	 if (umount2("/", MNT_DETACH) ||
+> > 		        setns(fd, CLONE_NEWNS))
+> > 					break;
+> > 					}
+> >
+> > 					return 0;
+> > }
+> >
+> > root@ubuntu:/home/avagin# gcc -Wall nsenter.c -o nsenter
+> > root@ubuntu:/home/avagin# strace ./nsenter
+> > execve("./nsenter", ["./nsenter"], [/* 22 vars */]) = 0
+> > ...
+> > open("/proc/self/ns/mnt", O_RDONLY)     = 3
+> > umount("/", MNT_DETACH)                 = 0
+> > setns(3, 131072)                        = 0
+> > umount("/", MNT_DETACH
+> >
+> causes:
+> 
+> > [  260.548301] ------------[ cut here ]------------
+> > [  260.550941] kernel BUG at /build/buildd/linux-3.13.0/fs/pnode.c:372!
+> > [  260.552068] invalid opcode: 0000 [#1] SMP
+> > [  260.552068] Modules linked in: xt_CHECKSUM iptable_mangle xt_tcpudp xt_addrtype xt_conntrack ipt_MASQUERADE iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack bridge stp llc dm_thin_pool dm_persistent_data dm_bufio dm_bio_prison iptable_filter ip_tables x_tables crct10dif_pclmul crc32_pclmul ghash_clmulni_intel binfmt_misc nfsd auth_rpcgss nfs_acl aesni_intel nfs lockd aes_x86_64 sunrpc fscache lrw gf128mul glue_helper ablk_helper cryptd serio_raw ppdev parport_pc lp parport btrfs xor raid6_pq libcrc32c psmouse floppy
+> > [  260.552068] CPU: 0 PID: 1723 Comm: nsenter Not tainted 3.13.0-30-generic #55-Ubuntu
+> > [  260.552068] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> > [  260.552068] task: ffff8800376097f0 ti: ffff880074824000 task.ti: ffff880074824000
+> > [  260.552068] RIP: 0010:[<ffffffff811e9483>]  [<ffffffff811e9483>] propagate_umount+0x123/0x130
+> > [  260.552068] RSP: 0018:ffff880074825e98  EFLAGS: 00010246
+> > [  260.552068] RAX: ffff88007c741140 RBX: 0000000000000002 RCX: ffff88007c741190
+> > [  260.552068] RDX: ffff88007c741190 RSI: ffff880074825ec0 RDI: ffff880074825ec0
+> > [  260.552068] RBP: ffff880074825eb0 R08: 00000000000172e0 R09: ffff88007fc172e0
+> > [  260.552068] R10: ffffffff811cc642 R11: ffffea0001d59000 R12: ffff88007c741140
+> > [  260.552068] R13: ffff88007c741140 R14: ffff88007c741140 R15: 0000000000000000
+> > [  260.552068] FS:  00007fd5c7e41740(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+> > [  260.552068] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > [  260.552068] CR2: 00007fd5c7968050 CR3: 0000000070124000 CR4: 00000000000406f0
+> > [  260.552068] Stack:
+> > [  260.552068]  0000000000000002 0000000000000002 ffff88007c631000 ffff880074825ed8
+> > [  260.552068]  ffffffff811dcfac ffff88007c741140 0000000000000002 ffff88007c741160
+> > [  260.552068]  ffff880074825f38 ffffffff811dd12b ffffffff811cc642 0000000075640000
+> > [  260.552068] Call Trace:
+> > [  260.552068]  [<ffffffff811dcfac>] umount_tree+0x20c/0x260
+> > [  260.552068]  [<ffffffff811dd12b>] do_umount+0x12b/0x300
+> > [  260.552068]  [<ffffffff811cc642>] ? final_putname+0x22/0x50
+> > [  260.552068]  [<ffffffff811cc849>] ? putname+0x29/0x40
+> > [  260.552068]  [<ffffffff811dd88c>] SyS_umount+0xdc/0x100
+> > [  260.552068]  [<ffffffff8172aeff>] tracesys+0xe1/0xe6
+> > [  260.552068] Code: 89 50 08 48 8b 50 08 48 89 02 49 89 45 08 e9 72 ff ff ff 0f 1f 44 00 00 4c 89 e6 4c 89 e7 e8 f5 f6 ff ff 48 89 c3 e9 39 ff ff ff <0f> 0b 66 2e 0f 1f 84 00 00 00 00 00 90 66 66 66 66 90 55 b8 01
+> > [  260.552068] RIP  [<ffffffff811e9483>] propagate_umount+0x123/0x130
+> > [  260.552068]  RSP <ffff880074825e98>
+> > [  260.611451] ---[ end trace 11c33d85f1d4c652 ]--
+> 
+> Which in practice is totally uninteresting.  Only the global root user can
+> do it, and it is just a stupid thing to do.
+> 
+> However that is no excuse to allow a silly way to oops the kernel.
+> 
+> We can avoid this silly problem by setting MNT_LOCKED on the rootfs
+> mount point and thus avoid needing any special cases in the unmount
+> code.
+>
 
-> 2014-10-06 23:22 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
-> > On Thu, 25 Sep 2014, Johannes Pointner wrote:
-> >
-> >> Add documentation for compatible property of subnodes.
-> >>
-> >> Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-> >> ---
-> >>  Documentation/devicetree/bindings/regulator/tps65217.txt         | 7 ++++++-
-> >>  .../devicetree/bindings/video/backlight/tps65217-backlight.txt   | 9 ++++++---
-> >>  2 files changed, 12 insertions(+), 4 deletions(-)
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/regulator/tps65217.txt b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> index 4f05d20..8ae3a3b 100644
-> >> --- a/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> +++ b/Documentation/devicetree/bindings/regulator/tps65217.txt
-> >> @@ -14,6 +14,9 @@ Required properties:
-> >>  Optional properties:
-> >>  - ti,pmic-shutdown-controller: Telling the PMIC to shutdown on PWR_EN toggle.
-> >>
-> >> +Required subnode properties:
-> >> +- compatible: "ti,tps65217-pmic"
-> >> +
-> >>    The valid names for regulators are:
-> >>    tps65217: dcdc1, dcdc2, dcdc3, ldo1, ldo2, ldo3 and ldo4
-> >>
-> >> @@ -23,9 +26,11 @@ Example:
-> >>
-> >>       tps: tps@24 {
-> >>               compatible = "ti,tps65217";
-> >> +             reg = <0x24>;
-> >>               ti,pmic-shutdown-controller;
-> >>
-> >> -             regulators {
-> >> +             tps_pmic: regulators {
-> >
-> > How is the tps_pmic label used?
-> >
-> >> +                     compatible = "ti,tps65217-pmic";
-> >
-> > I'd like to see a '\n' here.
-> I will add a newline here.
-> >
-> >>                       dcdc1_reg: dcdc1 {
-> >>                               regulator-min-microvolt = <900000>;
-> >>                               regulator-max-microvolt = <1800000>;
-> >> diff --git a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> index 5fb9279..f92f154 100644
-> >> --- a/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> +++ b/Documentation/devicetree/bindings/video/backlight/tps65217-backlight.txt
-> >> @@ -6,19 +6,22 @@ used to drive LEDs for use as backlights.
-> >>  Required properties:
-> >>  - compatible: "ti,tps65217"
-> >>  - reg: I2C slave address
-> >> -- backlight: node for specifying WLED1 and WLED2 lines in TPS65217
-> >> +- backlight: subnode for specifying WLED1 and WLED2 lines in TPS65217
-> >> +
-> >> +Required subnode properties:
-> >> +- compatible: "ti,tps65217-bl"
-> >>  - isel: selection bit, valid values: 1 for ISEL1 (low-level) and 2 for ISEL2 (high-level)
-> >>  - fdim: PWM dimming frequency, valid values: 100, 200, 500, 1000
-> >>  - default-brightness: valid values: 0-100
-> >>
-> >> -Each regulator is defined using the standard binding for regulators.
-> >>
-> >>  Example:
-> >>
-> >>       tps: tps@24 {
-> >>               reg = <0x24>;
-> >>               compatible = "ti,tps65217";
-> >
-> > I'd like to see a '\n' here.
-> I will add a newline here.
-> >
-> >> -             backlight {
-> >> +             tps_bl: backlight {
-> >
-> > Same here.  Is this label used?
-> >
-> >> +                     compatible = "ti,tps65217-bl";
-> >>                       isel = <1>;  /* 1 - ISET1, 2 ISET2 */
-> >>                       fdim = <100>; /* TPS65217_BL_FDIM_100HZ */
-> >>                       default-brightness = <50>;
-> >
-> 
-> Regarding the labels: The backlight label could be used like the
-> following. I use it like this in my tests with the tilcdc panel driver
-> which has a backlight support.
-> 
->     panel {
->         backlight = <&tps_bl>;
-> 
->         panel-info {
->             ac-bias        = <255>;
->             ac-bias-intrpt    = <0>;
->             dma-burst-sz    = <16>;
->             bpp        = <32>;
->             fdd        = <0x80>;
->             sync-edge    = <0>;
->             sync-ctrl    = <1>;
->             .
->             .
->             .
-> 
-> I'm not sure if there could be actual use for the pmic label, but I
-> thought if I add a label to backlight, I have to add one to the pmic
-> too to keep it similar.
+Acked-by: Andrew Vagin <avagin@parallels.com>
 
-No, not at all.  If it's not used, you should remove it.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> ---
+>  fs/namespace.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 7c5834381a73..9c6ee037bef7 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -2887,6 +2887,7 @@ static void __init init_mount_tree(void)
+>  
+>  	root.mnt = mnt;
+>  	root.dentry = mnt->mnt_root;
+> +	mnt->mnt_flags |= MNT_LOCKED;
+>  
+>  	set_fs_pwd(current->fs, &root);
+>  	set_fs_root(current->fs, &root);
+> -- 
+> 1.9.1
+> 
