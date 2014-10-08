@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140AbaJHNsx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46016 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440AbaJHNrN (ORCPT
+	id S932481AbaJHNuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:50:23 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:50752 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754944AbaJHNuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:47:13 -0400
-Date: Wed, 8 Oct 2014 06:46:15 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Chris Zhong <zyw@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] drivers/pinctrl: Add the concept of an "init" state
-Message-ID: <20141008134615.GA6586@kroah.com>
-References: <1412713696-13343-1-git-send-email-dianders@chromium.org>
- <CACRpkda2O+LWQovekrxNDa27O7OK4GRRz6ugA=Yzh4qZ3JSc7Q@mail.gmail.com>
+	Wed, 8 Oct 2014 09:50:21 -0400
+Message-ID: <5435410C.4040005@pivasoftware.com>
+Date: Wed, 08 Oct 2014 14:50:04 +0100
+From: Oussama Ghorbel <ghorbel@pivasoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkda2O+LWQovekrxNDa27O7OK4GRRz6ugA=Yzh4qZ3JSc7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg KH <gregkh@linuxfoundation.org>, Roger Quadros <rogerq@ti.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, Rabin Vincent <rabin@rab.in>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] phy: omap-usb2: Enable runtime PM of omap-usb2 phy
+ properly
+References: <20141006194418.GA399@debian> <1412679771-8293-1-git-send-email-ghorbel@pivasoftware.com> <5434F336.4040908@ti.com> <543517F9.9070109@pivasoftware.com> <54352340.3050900@ti.com> <20141008132615.GA5119@kroah.com>
+In-Reply-To: <20141008132615.GA5119@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:bUc8lm6EuS7ly/2abQEiqC6bKAR94w7/xwULaygQHJ4
+ 0iDpa67+3/tV/DQ8+k6zaBVYg6S0Zap6ucetN/vuhCG7maZRak
+ /t6RK7w+Fudqxgn6Uu7sOggahgd5lB7tGR0pqpQoqlMc1Ldsj3
+ oWc24RQJhJlBow5SNGNCBxStxobGO2otx9S59D/xX3bH3RsFMO
+ Ag7mkJhpjE75bIS/r1Zgi8cyv/lOyNaVPhjAzJQqw5CJnLBM2w
+ 5hYdKHI4j8w3OUVfmQDdkDK9oquAsY8HbovBLGTDjpjJL4erdu
+ nmByGwzKKhjBK3Mj4TO7Gqqf6vOgClTyU5hCP0UdKPsXVRhnJe
+ X0cdHsBD8u2BkFaTkP2ZgBXeqLqZbxaV7TtVupaY/
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:00:11AM +0200, Linus Walleij wrote:
-> On Tue, Oct 7, 2014 at 10:28 PM, Doug Anderson <dianders@chromium.org> wrote:
-> 
-> > For pinctrl the "default" state is applied to pins before the driver's
-> > probe function is called.  This is normally a sensible thing to do,
-> > but in some cases can cause problems.  That's because the pins will
-> > change state before the driver is given a chance to program how those
-> > pins should behave.
-> >
-> > As an example you might have a regulator that is controlled by a PWM
-> > (output high = high voltage, output low = low voltage).  The firmware
-> > might leave this pin as driven high.  If we allow the driver core to
-> > reconfigure this pin as a PWM pin before the PWM's probe function runs
-> > then you might end up running at too low of a voltage while we probe.
-> >
-> > Let's introudce a new "init" state.  If this is defined we'll set
-> > pinctrl to this state before probe and then "default" after probe
-> > (unless the driver explicitly changed states already).
-> >
-> > An alternative idea that was thought of was to use the pre-existing
-> > "sleep" or "idle" states and add a boolean property that we should
-> > start in that mode.  This was not done because the "init" state is
-> > needed for correctness and those other states are only present (and
-> > only transitioned in to and out of) when (optional) power management
-> > is enabled.
-> >
-> > Signed-off-by: Doug Anderson <dianders@chromium.org>
-> 
-> I *like* this approach. A lot.
-> 
-> It will come with DT bindings for free as it's just strings.
-> 
-> > +++ b/drivers/base/dd.c
-> > @@ -308,6 +308,8 @@ static int really_probe(struct device *dev, struct device_driver *drv)
-> >                         goto probe_failed;
-> >         }
-> >
-> > +       pinctrl_init_done(dev);
-> 
-> We will need Greg's ACK for this oneliner.
+Nothing to send then.
 
-As much as I hate subsystem-specific code in the driver core, I guess I
-let this happen before, so I can't object here :)
+Oussama
+On 10/08/2014 02:26 PM, Greg KH wrote:
+> On Wed, Oct 08, 2014 at 02:42:56PM +0300, Roger Quadros wrote:
+>> Oussama,
+>>
+>> On 10/08/2014 01:54 PM, Oussama Ghorbel wrote:
+>>> Hi Roger,
+>>>
+>>> Should I resend this v2 version of the patch to stable@vger.kernel.org which is suitable for v3.17 and which will require a very tiny adaptation?
+>>> Or I should resend the first version of this patch which is suitable for 3.16 but might seems confusing a little sine I'm resend the outdated version.
+>> If it is a trivial conflict then I think you can just send the patch
+>> which applies to the most recent kernel.
+>> Greg can clarify if I'm wrong as he maintains the stable trees.
+> Please read Documentation/stable_kernel_rules.txt for how to submit
+> patches to the stable trees.  Note, it has to be in Linus's tree _first_
+> before you ever worry about the stable trees.  Do that first please.
+>
+> thanks,
+>
+> greg k-h
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
