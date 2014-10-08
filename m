@@ -1,124 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908AbaJHL6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:58:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49685 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755599AbaJHL6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:58:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,677,1406617200"; 
-   d="scan'208";a="585311918"
-Date: Wed, 8 Oct 2014 04:58:12 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lejun Zhu <lejun.zhu@intel.com>,
-        Radivoje Jovanovic <radivoje.jovanovic@intel.com>,
-        Daniel =?UTF-8?B?R2zDtmNrbmVy?= <dg@emlix.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH 2/2] PMIC / opregion: support PMIC customized operation
- region for CrystalCove
-Message-ID: <20141008045812.734a24db@ultegra>
-In-Reply-To: <CACRpkdaPFzq=Qya_UoZpxHom+VcynTwQL9EfdLb_Vpr=g6+Prg@mail.gmail.com>
-References: <1410229968-11638-1-git-send-email-aaron.lu@intel.com>
-	<1410229968-11638-3-git-send-email-aaron.lu@intel.com>
-	<20141008080515.GC20647@lee--X1>
-	<CACRpkdaPFzq=Qya_UoZpxHom+VcynTwQL9EfdLb_Vpr=g6+Prg@mail.gmail.com>
-Organization: OTC
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1756926AbaJHL7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:59:14 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:59565 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599AbaJHL7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 07:59:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <543523A8.1040006@gmail.com>
+References: <CAFLt3pjkXgz9H9p=u-NATyf4C+8ybJ3fwLc=GXEjaabBZ8NF5g@mail.gmail.com>
+	<543523A8.1040006@gmail.com>
+Date: Wed, 8 Oct 2014 13:59:11 +0200
+Message-ID: <CAFLt3pjSQq+Q5mk1e74m9yXUTYZ8JkojQGKieTWonxomR0KOMA@mail.gmail.com>
+Subject: Re: High latency while CPU is under full load
+From: Grozdan <neutrino8@gmail.com>
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014 11:16:11 +0200
-Linus Walleij <linus.walleij@linaro.org> wrote:
+On Wed, Oct 8, 2014 at 1:44 PM, Austin S Hemmelgarn
+<ahferroin7@gmail.com> wrote:
+> On 2014-10-07 15:28, Grozdan wrote:
+>>
+>> Hi,
+>>
+>> Basically, my problem is this:
+>>
+>> I'm doing a lot of audio/video encoding on an AMD FX8350. The encoder
+>> process always runs at nice 10. Even so, my whole system feels very
+>> sluggish. Switching between different app windows and/or virtual
+>> desktops takes up usually 3-5 seconds giving the impression that there
+>> is not enough processing power. Browsing the web is also severely
+>> impacted.
+>>
+>> I had to tune CFS in order to be (much) more responsive during an
+>> encoding session. This has worked out pretty well thus far, but it is
+>> my opinion that the user should *not* need to fiddle with buttons to
+>> make his system respond fluently even under high load. The below is
+>> what I had to do in order to get a snappy system during such load
+>>
+>> kernel.sched_nr_migrate = 64
+>> kernel.sched_latency_ns = 65000000
+>> kernel.sched_wakeup_granularity_ns = 100000
+>> kernel.sched_min_granularity_ns = 100000
+>> kernel.sched_migration_cost_ns = 7000000
+>>
+>> I have tried 3 different kernels, including one compiled myself, but
+>> the results are the same
+>> Kernels I tried were: 3.11.10, 3.12 and 3.16.4 (self-compiled)
+>>
+>> My system specs are as follows
+>>
+>> CPU: AMD FX-8350 @ 4GHz
+>> RAM: 16GB DDR1333
+>> GPU: NVIDIA GTX 560 with NV blob driver
+>> HDD: Seagate Constellation ES.3 128MB cache
+>> Desktop: KDE 4.11
+>>
+> Are you using a kernel with CONFIG_PREEMPT=y?  I've personally found that
+> that can help hugely with UI sluggishness (and also tends to get better
+> results when doing stuff like live video capture), although to get this you
+> may need to build the kernel yourself.  Also, I would suggest trying the
+> deadline I/O scheduler; I've found it provides much better latency than CFQ
+> for most workloads, and you almost certainly don't need I/O priorities.
+> I've actually got a similar setup (FX-8320 @ 4GHz, 16GB DDR3-1600, High-end
+> storage, and a Radeon R7-240 GPU), and had similar issues when doing
+> processing of big (>500MB) images in GIMP, and using a CONFIG_PREEMPT
+> enabled kernel and the deadline I/O scheduler has pretty much resolved all
+> of these issues.
+>
+> Additionally, try with KDE's 'semantic desktop' functionality turned off,
+> this eats a huge amount of disk and memory bandwidth, and can easily bring a
+> system to it's knees.  Furthermore, unless you can reproduce things using
+> nouevau instead of the NV driver, you're not as likely to get a lot of help.
+>
+>
 
-> On Wed, Oct 8, 2014 at 10:05 AM, Lee Jones <lee.jones@linaro.org>
-> wrote:
-> 
-> > With the influx of new same-chip devices, I think the MFD subsystem
-> > is fast becoming overloaded.  I think all of the PMIC handling
-> > should in fact either live in Regulators or have its own subsystem.
-> 
-> You have a valid point, and it's been raised before that MFD risk
-> being a dumping ground of the same kind that drivers/misc used to be
-> (is?).
-> 
-> PMIC (Power Management Integrated Circuit) is often not even a
-> correct name for the thing if it contains things like audio amplifiers
-> USB PHY intrerfaces or LED boosters as some do.
-> 
-> MSIC (Mixed-Signal Integrated Circuit) is the correct name for
-> silicon that is created as a one-stop shop for anything combining
-> digital and analog constructions, often in a higher micron node
-> (not as densely integrated) as a digital IC (the latter referred to
-> as SoCs, "baseband", "CPU" and whatnot).
-> 
-> If they shall live in MFD the driver there should (IMHO) just be
-> an exchange station, multiplexing messages and spawning
-> MFD cells into platform devices for respective *real* subsystem,
-> various misc stuff should not be allowed to be shoehorned
-> into MFD just because there is no other place to put it.
-> 
-I agree since in most cases there are not much common code to
-consolidate among cell drivers. MFD is convenient as an exchange
-station as you pointed out but the same time, drivers can create their
-own platform devices without MFD. Perhaps we can add a set of MFD
-internal APIs for PMIC for the things are common, e.g.
-- regmap
-- irq chip
+Hi,
 
-> This driver clearly does not qualify, look:
-> 
-ACPI is kind of special since it is already an abstraction of the HW
-making it easy to consolidate code. Perhaps that is why Aaron provides
-the kind of callbacks for each PMIC.
-> > +static int intel_crc_pmic_update_power(struct regmap *regmap,
-> > +                                    struct pmic_pwr_reg *preg,
-> > bool on) +{
-> > +     int data;
-> > +
-> > +     if (regmap_read(regmap, preg->reg, &data))
-> > +             return -EIO;
-> > +
-> > +     if (on) {
-> > +             data |= PWR_SOURCE_SELECT | BIT(preg->bit);
-> > +     } else {
-> > +             data &= ~BIT(preg->bit);
-> > +             data |= PWR_SOURCE_SELECT;
-> > +     }
-> > +
-> > +     if (regmap_write(regmap, preg->reg, data))
-> > +             return -EIO;
-> > +     return 0;
-> > +}
-> 
-> Selecting power source? Isn't that something and MFD cell
-> spawned driver in either drivers/regulator or drivers/power should
-> be doing?
-> 
-The difference in this case is that opregion handler driver does not
-need the interfaces provided by sys/class/power_supply, or regulator
-etc. By moving them away from the opregion common code, you would need
-to export the APIs. I think we can have opregion code under
-drivers/acpi?
-> I know I have sinned in this regard in the past. But let's move
-> forward with defining what this subsystem should *REALLY*
-> be.
-> 
+Yes, PREEMP is enabled and the I/O scheduler used is BFQ. But the
+problem existed regardless of the I/O scheduler
 
-> Yours,
-> Linus Walleij
+I've followed the suggestions of Mike and set the CFS values a little
+bit lower than their standard ones and it appears to have improved.
+There is sometimes a very small delay while opening something, but I
+guess this is from the heavy load. I also turned off the KDE effects
+and it's much more snappy now but I turned a few back on as I like the
+animations of opening/closing windows :P
 
-[Jacob Pan]
+I have not tested the nouveau driver as I need VDPAU here. Also
+updated the NV blob to latest version and it seems to improve a bit.
+In the changelog it was mentioned that there was a fix
+
+"Fixed an OpenGL issue that could cause glReadPixels() operations to
+be improperly clipped when resizing composited application windows,
+potentially leading to momentary X freezes."
+
+I do not have KDE's semantic stuff enabled here as it's useless for me
+
+This is the vmstat output. I have no idea what it means
+
+procs -----------memory---------- ---swap-- -----io---- -system-- -----cpu------
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+10  0      0 10298064    428 2873036    0    0   648   542  144  140
+90  1  8  1  0
+11  0      0 10295352    428 2874160    0    0  1024     0 9498 6792
+88  1 12  0  0
+10  0      0 10290824    428 2879140    0    0  3212  1540 9366 6305
+89  1 10  0  0
+10  0      0 10288868    428 2880944    0    0   896     0 8826 6037
+89  1 10  0  0
+ 9  0      0 10286796    428 2883188    0    0  1920   172 8635 5447
+89  1 10  0  0
+12  0      0 10284848    428 2885508    0    0   896  1684 9162 6119
+88  1 11  0  0
+11  0      0 10280436    428 2888896    0    0  2560     0 8702 6206
+86  2 12  0  0
+12  0      0 10279448    428 2889744    0    0   640     0 8757 5915
+91  1  8  0  0
+10  0      0 10276564    428 2892480    0    0  1920  4168 8649 5471
+88  1 11  0  0
+
+-- 
+Yours truly
