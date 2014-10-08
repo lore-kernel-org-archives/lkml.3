@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152AbaJHXrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:47:05 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:50465 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289AbaJHXq5 (ORCPT
+	id S1755228AbaJHXrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:47:55 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:65405 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaJHXrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:46:57 -0400
+	Wed, 8 Oct 2014 19:47:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
-References: <1412606822-3406-1-git-send-email-muth@cypress.com>
-	<CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
-	<405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
-	<CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
-Date: Wed, 8 Oct 2014 16:46:55 -0700
-Message-ID: <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
-From: RR <rajaram.officemails@gmail.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Muthu Mani <muth@cypress.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+In-Reply-To: <CALCETrWQLEB1tPO1pfEEyA5LWre6x7aEa08+L4HDb4uUezFiPA@mail.gmail.com>
+References: <CALCETrU3nNvG6+-7iScYT8LDRFnq8kYnpK0cdW1bgW5O4EGrUg@mail.gmail.com>
+ <9930.1412012182@turing-police.cc.vt.edu> <CALCETrWQLEB1tPO1pfEEyA5LWre6x7aEa08+L4HDb4uUezFiPA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 8 Oct 2014 16:47:26 -0700
+Message-ID: <CALCETrX9KAFMyQNhx5-qvZGPZQxDimLByr7u4Nj5tLuBsG_Tvw@mail.gmail.com>
+Subject: Re: Tightening up rdpmc permissions?
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 12:18 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
->>> -----Original Message-----
->>> From: Alexandre Courbot [mailto:gnurou@gmail.com]
->>> Sent: Tuesday, October 07, 2014 3:34 PM
->>> To: Muthu Mani
->>> Cc: Samuel Ortiz; Lee Jones; Wolfram Sang; Linus Walleij; Greg Kroah-
->>> Hartman; linux-i2c@vger.kernel.org; linux-gpio@vger.kernel.org; linux-
->>> usb@vger.kernel.org; Linux Kernel Mailing List; Rajaram Regupathy; Johan
->>> Hovold
->>> Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-
->>> GPIO adapter
->>>
->>> On Mon, Oct 6, 2014 at 11:47 PM, Muthu Mani <muth@cypress.com> wrote:
->>> > +
->>> > +static int cy_gpio_direction_input(struct gpio_chip *chip,
->>> > +                                       unsigned offset) {
->>> > +       return 0;
->>> > +}
->>> > +
->>> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
->>> > +                                       unsigned offset, int value) {
->>> > +       return 0;
->>> > +}
->>>
->>> If that chip is capable of both output and input, shouldn't these functions be
->>> implemented? I think this has already been pointed out in a previous version
->>> but you did not reply.
+On Mon, Sep 29, 2014 at 11:42 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Sep 29, 2014 10:36 AM, <Valdis.Kletnieks@vt.edu> wrote:
 >>
->> Thanks for your inputs.
+>> On Mon, 29 Sep 2014 09:39:16 -0700, Andy Lutomirski said:
 >>
->> Only the GPIOs which are configured to be output GPIO can be set.
+>> > Would it make sense to restrict rdpmc to tasks that are in mms that
+>> > have a perf_event mapping?  After all, unless I misunderstand
+>> > something, user code can't reliably use rdpmc unless they've mapped a
+>> > perf_event object to check the rdpmc bit and figure out what ecx value
+>> > to use.
+>>
+>> Wouldn't that be trivially easy for an attacker to bypass? Just map a dummy
+>> perf_event object  and then go to town?
 >
-> In that case cy_gpio_set() should return an error for GPIOs which are
-> not configured as outputs. Is that guaranteed by the current
-> implementation?
+> Depends on the paranoia setting.  We could require that the mapped
+> object actually have an rdpmc-able counter running.
 >
->> The set operation would fail trying to set the input or unconfigured GPIOs.
->> In this version of driver, this support is not added, it can be introduced in future versions.
->> I will add a TODO note in the code.
+> Seccomp can (and often does) block access to perf_event_open entirely.
+> We could certainly change the code to only twiddle CR4 if TIF_SECCOMP
+> or TIF_NOTSC is set.  I think that the real thing we should optimize
+> for is to minimize the chance that a given context switch actually
+> needs to *change* cr4.  Since perf_event maps are relatively unusual,
+> at least only perf-using programs would have overhead if we just gated
+> it on the existence of a useful rdpmc-able mapping.
 >
-> Argh, no TODO please. Actual code that will turn this code into a
-> solid driver that can be merged.
+> (Also, why on earth is TIF_NOTSC a thread_info flag?  Wouldn't just
+> adding a field "cr4" to task_struct or something be simpler and quite
+> possibly faster?  We have a branch anyway...)
 
-Does a driver targeted for a custom device has to implement every
-functionality in the 1st version ? My understanding is that Linux
-follows incremental model and allows incremental merge.
+I have a prototype patch that seems to work and should have relatively
+little overhead.  I'll send it either when the merge window closes or
+when some pending dependencies get resolved.
 
-(On a side note the driver is functionally verified with the necessary hardware)
-
-Please correct me if I am missing something
+--Andy
 
 >
-> Can all GPIOs be set as input or output? If so, please implement
-> cy_gpio_direction_*() and make sure that cy_gpio_set() behaves
-> properly if a GPIO is not an output. If the input/output GPIOs are
-> fixed, please make cy_gpio_direction_*() return an error if the GPIO
-> capabilities does not correspond to what is asked, and again ensure
-> that cy_gpio_set() works as expected.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> --Andy
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
