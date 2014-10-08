@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672AbaJHHtc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 03:49:32 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:40106 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588AbaJHHt3 (ORCPT
+	id S1754708AbaJHHtn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 03:49:43 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:35584 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaJHHtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 03:49:29 -0400
+	Wed, 8 Oct 2014 03:49:31 -0400
 From: Mike Turquette <mturquette@linaro.org>
 To: viresh.kumar@linaro.org
 Cc: thomas.petazzoni@free-electrons.com, rjw@rjwysocki.net,
@@ -19,9 +19,9 @@ Cc: thomas.petazzoni@free-electrons.com, rjw@rjwysocki.net,
         dietmar.eggemann@arm.com, vincent.guittot@linaro.org,
         nicolas.pitre@linaro.org, linux-kernel@vger.kernel.org,
         tuukka.tikkanen@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH 1/2] cpufreq: add driver flag for sleepable transitions
-Date: Wed,  8 Oct 2014 00:48:53 -0700
-Message-Id: <1412754534-14068-2-git-send-email-mturquette@linaro.org>
+Subject: [PATCH 2/2] cpufreq: new function to query driver for flags
+Date: Wed,  8 Oct 2014 00:48:54 -0700
+Message-Id: <1412754534-14068-3-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1412754534-14068-1-git-send-email-mturquette@linaro.org>
 References: <CAKohpo=7q9bDcHRxLehNLX6A2idGxUy3jEWvQ+EGbKOQG-MH2g@mail.gmail.com>
@@ -30,56 +30,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPUfreq core does not differentiate between .target & .target_index
-callbacks that may sleep or block and callbacks that are fast and return
-immediately. To date this has not mattered much since the typical
-CPUfreq governor calls the .target callback from process context via a
-workqueue.
+There are cases for CPUfreq driver flags to be exposed outside of the
+CPUfreq core code. In particular the CPUFREQ_NO_SLEEP flag can be used
+by CPUfreq governors to optimize when and how they call that drivers
+.target callback. In fact this knowledge is a requirement for the
+on-going work to initiate cpu frequency transitions from the scheduler.
 
-When calling the .target callback from a different context, such as a
-scheduler load balance operation (see Morten's "energy aware scheduler"
-RFC[0]), this detail matters.
-
-This patch introduces a new CPUfreq driver flag for fast .target
-callbacks that are guaranteed to neither sleep nor block. Setting this
-flag allows for .target to be called from schedule() and other call
-sites that have interrupts disabled or other constraints. Drivers may
-set CPUFREQ_NO_SLEEP at driver registration-time.
-
-The default is to not have this flag set, resulting in the need to defer
-calls to .target and .target_index.
-
-[0] http://lkml.kernel.org/r/<1381511957-29776-7-git-send-email-morten.rasmussen@arm.com>
+This patch implements a simple function to return the CPUfreq driver
+flags. While currently the flags are a u8, that could grow at a future
+date and cpufreq_driver_get_flags returns an int. Additionally the
+function needs to return an error in case no driver is registered.
 
 Signed-off-by: Mike Turquette <mturquette@linaro.org>
 ---
- include/linux/cpufreq.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/cpufreq/cpufreq.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 138336b..9034573 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -308,6 +308,19 @@ struct cpufreq_driver {
-  */
- #define CPUFREQ_NEED_INITIAL_FREQ_CHECK	(1 << 5)
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 9b471b2..f3b9042 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1980,6 +1980,15 @@ int cpufreq_driver_target(struct cpufreq_policy *policy,
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_driver_target);
  
-+/*
-+ * Set by drivers whose .target or .target_index callback will never sleep or
-+ * block. Setting this flag allows for more optimal code by calling .target
-+ * from a context that otherwise would require deferring the work.
-+ *
-+ * An example use of this flag is when scaling cpu frequency from within a call
-+ * to schedule() with interrupts disabled and runqueue locks held.
-+ *
-+ * This flag is not set by default, causing calls to .target to be done in
-+ * process context.
-+ */
-+#define CPUFREQ_NO_SLEEP (1 << 6)
++int cpufreq_driver_get_flags(void)
++{
++	if (!cpufreq_driver)
++		return -ENODEV;
 +
- int cpufreq_register_driver(struct cpufreq_driver *driver_data);
- int cpufreq_unregister_driver(struct cpufreq_driver *driver_data);
- 
++	return cpufreq_driver->flags;
++}
++EXPORT_SYMBOL_GPL(cpufreq_driver_get_flags);
++
+ /*
+  * when "event" is CPUFREQ_GOV_LIMITS
+  */
 -- 
 1.8.3.2
 
