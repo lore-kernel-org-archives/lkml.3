@@ -1,104 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929AbaJHMAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:00:42 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:34060 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756044AbaJHMAk (ORCPT
+	id S1756948AbaJHMCQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:02:16 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:6022 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755556AbaJHMCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:00:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141006153224.GC18303@htj.dyndns.org>
-References: <CAKZGPAPS+x2V3Ajj323EUStpWGmZ6taOuovjqA3_kaYXA3T_Ag@mail.gmail.com>
- <20141006153224.GC18303@htj.dyndns.org>
-From: Arun KS <getarunks@gmail.com>
-Date: Wed, 8 Oct 2014 17:30:20 +0530
-Message-ID: <CABOM9ZpEhh7PnJT0hRa=Jx1CfYTU0QTG_71Qz-iB3VxygsYgzw@mail.gmail.com>
-Subject: Re: [Workqueue] crash in process_one_work
-To: Tejun Heo <tj@kernel.org>
-Cc: Arun KS <arunks.linux@gmail.com>,
+	Wed, 8 Oct 2014 08:02:15 -0400
+Date: Wed, 8 Oct 2014 19:58:32 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        laijs@cn.fujitsu.com, Silesh C V <saileshcv@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
+Message-ID: <20141008195832.1fb16337@xhacker>
+In-Reply-To: <20141008195053.0e8aeaf0@xhacker>
+References: <1411454100-6814-1-git-send-email-jszhang@marvell.com>
+	<1411454100-6814-4-git-send-email-jszhang@marvell.com>
+	<542AA336.6070206@gmail.com>
+	<alpine.DEB.2.11.1409302351500.4455@nanos>
+	<20141008193123.11f42bb0@xhacker>
+	<543523B1.1060002@gmail.com>
+	<20141008195053.0e8aeaf0@xhacker>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-08_06:2014-10-08,2014-10-08,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410080111
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tejun,
+Hi Sebastian,
 
-On Mon, Oct 6, 2014 at 9:02 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Arun.
->
-> On Mon, Sep 29, 2014 at 09:40:50PM +0530, Arun KS wrote:
-> ...
->> The value of data is 0xffffffe0, which is basically the value after an
->> INIT_WORK() or WORK_DATA_INIT().
->> This can happen if a driver calls INIT_WORK on same struct work again
->> after queuing it.
->>
->> From the above details of the work_struct shows that the work is
->> queued from kernel/async.c. async_schedule dynamically allocates the
->> work_struct and queues it to system_unbonded_wq. And possibility of
->> calling INIT_WORK on same work is not there.
->>
->> After inspecting ramdump for async_entry structure in kernel/async.c
->>
->> crash> struct async_entry ed7cf140
->> struct async_entry {
->>   domain_list = {
->>     next = 0xed7cf140,
->>     prev = 0xed7cf140
->>   },
->>   global_list = {
->>     next = 0xed7cf148,
->>     prev = 0xed7cf148
->>   },
->>   work = {
->>     data = {
->>       counter = 0xffffffe0
->>     },
->>     entry = {
->>       next = 0xed7cf154,
->>       prev = 0xed7cf154
->>     },
->>     func = 0xc0140ac4 <async_run_entry_fn>
->>   },
->>   cookie = 0x263e5,
->>   func = 0xc074dda0 <dapm_post_sequence_async>,
->>   data = 0xed48432c,
->>   domain = 0xe5457dec
->> }
->>
->> the func points to dapm_post_sequence_async. and you can see the
->> domain_list and global_list is empty. Which shows that the work has
->> finished execution and there is no pending execution in async.
->>
->> But how come this struct work was with work queue data structures?
->> Is there any corner case in work queue which can miss unlinking the
->> struct_work from pool_workqueue after executing them?
->
-> I sure hope not.  How reproducible is the issue?  Can you try w/
-> CONFIG_DEBUG_OBJECTS_WORK enabled?
+On Wed, 8 Oct 2014 04:50:53 -0700
+Jisheng Zhang <jszhang@marvell.com> wrote:
 
-Thanks for replying.
-That was a problem with one of our driver. It was freeing the
-memory(struct work) without flushing workqueue.
-We caught faulty driver by adding a BUG_ON() in INIT_WORK and looking
-at the func pointer in work_struct( which will be pointing to the
-faulty driver work function)
+> Hi Sebastian,
+> 
+> On Wed, 8 Oct 2014 04:44:49 -0700
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+> 
+> > On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
+> > > Hi Thomas, Sebastian,
+> > >
+> > > On Tue, 30 Sep 2014 14:52:54 -0700
+> > > Thomas Gleixner <tglx@linutronix.de> wrote:
+> > >
+> > >> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
+> > >>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
+> > >>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
+> > >>>>
+> > >>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+> > >>>> ---
+> > >>>>    drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
+> > >>>>    1 file changed, 19 insertions(+)
+> > >>>>
+> > >>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
+> > >>>> b/drivers/irqchip/irq-dw-apb-ictl.c
+> > >>>> index c136b67..53bb732 100644
+> > >>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
+> > >>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
+> > >>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
+> > >>>> struct irq_desc *desc)
+> > >>>>    	chained_irq_exit(chip, desc);
+> > >>>>    }
+> > >>>>
+> > >>>> +#ifdef CONFIG_PM
+> > >>>> +static void dw_apb_ictl_resume(struct irq_data *d)
+> > >>>> +{
+> > >>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> > >>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
+> > >>>> +
+> > >>>> +	irq_gc_lock(gc);
+> > >>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
+> > >>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base +
+> > >>>> ct->regs.mask);
+> > >>>> +	irq_gc_unlock(gc);
+> > >>>> +}
+> > >>>
+> > >>> I agree with the overall change, but may this also be suited for a
+> > >>> generic irq_chip helper instead of being a driver specific one?
+> > >>>
+> > >>> Maybe Thomas or Jason can comment on this.
+> > >>
+> > >> If we have enough similar resume callbacks, yes.
+> > >>
+> > >>> Also, now that you are using writel_relaxed, I understand that both
+> > >>> writes above can happen in any order? Are there any implication we
+> > >>> have to consider, i.e. do we require any of the registers above to
+> > >>> be written first?
+> > >
+> > > The registers sits at device type memory, the writes should happen in
+> > > the same order as before.
+> > 
+> > Jisheng,
+> > 
+> > it is not about the location of the register but, as far as I
+> > understand, when using {readl,writel}_relaxed the compiler is
+> > free to reorder the calls. So, if there is a strict order we
+> 
+> The "volatile" in readl/writel relaxed implementations should prevent the
+> compiler to do reorder. Or I misunderstand something?
 
-1) faulty driver queue_work to system_unbownded_wq
-2) free work_struct memory, but it is still queued in the work queue.
-3) another driver request the memory from SLAB, go the same memory, it INIT_WORK
-4) process work try to execute the work queued by the faulty driver,
-result in a crash.
-
+My understanding is that the relaxed version imply compiler barriers.
+I'm not sure I understand the real/writel relaxed implementations correctly. But
+one obvious example which shows the relaxed version won't have the compiler
+reorder issue is drivers/irqchip/irq-gic.c, all the configurations must be done
+before enable the GIC which is done by "writel_relaxed(1, cpu_base + GIC_CPU_CTRL);"
+However, we didn't see any explicit compiler barriers.
 
 Thanks,
-Arun
+Jisheng
 
->
-> Thanks.
->
-> --
-> tejun
+
+> 
+> Thanks,
+> Jisheng
+> 
+> > want to ensure, we have to use non-relaxed {readl,writel}.
+> > 
+> > The performance penalty of non-relaxed calls can be ignored anyway
+> > as it is done only once after resume.
+> > 
+> > Sebastian
+> 
+
