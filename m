@@ -1,84 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaJHEDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 00:03:19 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:36658 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaJHEDS (ORCPT
+	id S1754544AbaJHEXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 00:23:24 -0400
+Received: from regular1.263xmail.com ([211.150.99.131]:60989 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502AbaJHEXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 00:03:18 -0400
-Subject: [PATCH ftrace/for-next V2] tracing/kprobes: Add selftest scripts
- testing kprobe-tracer as startup test
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Shuah Khan <shuah.kh@samsung.com>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Wed, 08 Oct 2014 04:03:07 +0000
-Message-ID: <20141008040307.13415.45145.stgit@kbuild-f20.novalocal>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Oct 2014 00:23:21 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: mark.yao@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 127.0.0.1
+X-LOGIN-NAME: mark.yao@rock-chips.com
+X-UNIQUE-TAG: <271f788350a562c78eb631399df2c9f1>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 1
+From: Mark Yao <mark.yao@rock-chips.com>
+To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rom Lemarchand <romlem@google.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
+        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
+        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
+        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
+        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
+        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
+        xw@rock-chips.com, Mark Yao <mark.yao@rock-chips.com>
+Subject: [PATCH v10 0/3] Add drm driver for Rockchip Socs
+Date: Wed,  8 Oct 2014 12:22:59 +0800
+Message-Id: <1412742179-32761-1-git-send-email-mark.yao@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two selftest scripts which tests kprobe-tracer as the startup
-selftest does.
-These test cases are testing that the kprobe_event can accept a
-kprobe event with $stack related arguments and a kretprobe event
-with $retval argument.
+This a series of patches is a DRM Driver for Rockchip Socs, add support
+for vop devices. Future patches will add additional encoders/connectors,
+such as eDP, HDMI.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
- .../selftests/ftrace/test.d/kprobe/kprobe_args.tc  |   16 ++++++++++++++++
- .../ftrace/test.d/kprobe/kretprobe_args.tc         |   15 +++++++++++++++
- 2 files changed, 31 insertions(+)
- create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
- create mode 100644 tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
+The basic "crtc" for rockchip is a "VOP" - Video Output Processor.
+the vop devices found on Rockchip rk3288 Soc, rk3288 soc have two similar
+Vop devices. Vop devices support iommu mapping, we use dma-mapping API with
+ARM_DMA_USE_IOMMU.
 
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-new file mode 100644
-index 0000000..a603d3f
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/kprobe_args.tc
-@@ -0,0 +1,16 @@
-+#!/bin/sh
-+# description: Kprobe dynamic event with arguments
-+
-+[ -f kprobe_events ] || exit_unsupported # this is configurable
-+
-+echo 0 > events/enable
-+echo > kprobe_events
-+echo 'p:testprobe do_fork $stack $stack0 +0($stack)' > kprobe_events
-+grep testprobe kprobe_events
-+test -d events/kprobes/testprobe
-+echo 1 > events/kprobes/testprobe/enable
-+( echo "forked")
-+echo 0 > events/kprobes/testprobe/enable
-+echo "-:testprobe" >> kprobe_events
-+test -d events/kprobes/testprobe && exit 1 || exit 0
-+
-diff --git a/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-new file mode 100644
-index 0000000..283c29e
---- /dev/null
-+++ b/tools/testing/selftests/ftrace/test.d/kprobe/kretprobe_args.tc
-@@ -0,0 +1,15 @@
-+#!/bin/sh
-+# description: Kretprobe dynamic event with arguments
-+
-+[ -f kprobe_events ] || exit_unsupported # this is configurable
-+
-+echo 0 > events/enable
-+echo > kprobe_events
-+echo 'r:testprobe2 do_fork $retval' > kprobe_events
-+grep testprobe2 kprobe_events
-+test -d events/kprobes/testprobe2
-+echo 1 > events/kprobes/testprobe2/enable
-+( echo "forked")
-+echo 0 > events/kprobes/testprobe2/enable
-+echo '-:testprobe2' >> kprobe_events
-+test -d events/kprobes/testprobe2 && exit 1 || exit 0
+Changes in v2:
+- add DRM master device node to list all display nodes that comprise
+  the graphics subsystem.
+- use the component framework to defer main drm driver probe
+  until all VOP devices have been probed.
+- use dma-mapping API with ARM_DMA_USE_IOMMU, create dma mapping by
+  master device and each vop device can shared the drm dma mapping.
+- use drm_crtc_init_with_planes and drm_universal_plane_init.
+- remove unnecessary middle layers.
+- add cursor set, move funcs to rockchip drm crtc.
+- add vop reset.
+
+Changes in v3:
+- change "crtc->fb" to "crtc->primary-fb"
+Adviced by Daniel Vetter
+- init cursor plane with universal api, remove unnecessary cursor set,move 
+
+Changes in v4:
+Adviced by David Herrmann
+- remove drm_platform_*() usage, use register drm device directly.
+Adviced by Rob Clark
+- remove special mmap ioctl, do userspace mmap with normal mmap() or mmap offset
+
+Changes in v5:
+Adviced by Arnd Bergmann
+- doing DMA start with a 32-bit masks with dma_mask and dma_coherent_mark
+- fix some incorrect dependencies.
+Adviced by Boris BREZILLON
+- fix some mistake and bugs. 
+Adviced by Daniel Vetter
+- drop all special ioctl and use generic kms ioctl instead.
+Adviced by Rob Clark
+- use unlocked api for drm_fb_helper_restore_fbdev_mode.
+- remove unused rockchip_gem_prime_import_sg_table.
+
+Changes in v6:
+- set gem buffer pitch 64 bytes align, needed by mali gpu.
+Adviced by Daniel Kurtz
+- fix some mistake, bugs, remove unused define, more better code style etc. 
+- use clk_prepare()/unprepare() at probe()/remove() and clk_enable()/disable()
+  at runtime instead of clk_prepare_enable().
+- provide a help function from vop for encoder to do mode config, instead of
+  using drm_diaplay_mode private method.
+- change vop mode_set timing to make it more safely. 
+
+Changes in v7:
+- fix memory leakage problem.
+
+Changes in v8:
+- fix iommu crash when use dual crtc.
+- use frame start interrupt for vsync instead of line flag interrupt,
+because the win config take affect at frame start time, if we use ling flag
+interrupt, the address check often failed.
+Adviced by Daniel Kurtz
+- fix some bugs, mistake, remove unused function
+- keep clock and vop disabled when probe end
+- use drm_plane_helper_check_update to check update_plane if vaild
+
+Changes in v9:
+- fix suspend and resume bug, make iommu attach and detach safely.
+- fix mail info style.
+
+Changes in v10:
+Adviced by Andrzej Hajda
+- check drm_dev if it's NULL at PM suspend/resume
+Adviced by Sean Paul
+- use drm_fb_helper_prepare to init fb_helper funcs
+- Optimized code structure and remove some unnecessary Variables.
+
+Mark yao (3):
+  drm: rockchip: Add basic drm driver
+  dt-bindings: video: Add for rockchip display subsytem
+  dt-bindings: video: Add documentation for rockchip vop
+
+ .../devicetree/bindings/video/rockchip-drm.txt     |   19 +
+ .../devicetree/bindings/video/rockchip-vop.txt     |   58 +
+ drivers/gpu/drm/Kconfig                            |    2 +
+ drivers/gpu/drm/Makefile                           |    1 +
+ drivers/gpu/drm/rockchip/Kconfig                   |   17 +
+ drivers/gpu/drm/rockchip/Makefile                  |    8 +
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.c        |  465 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_drv.h        |   55 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.c         |  200 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fb.h         |   28 +
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.c      |  210 +++
+ drivers/gpu/drm/rockchip/rockchip_drm_fbdev.h      |   20 +
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.c        |  294 ++++
+ drivers/gpu/drm/rockchip/rockchip_drm_gem.h        |   54 +
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c        | 1415 ++++++++++++++++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h        |  196 +++
+ 16 files changed, 3042 insertions(+)
+
+-- 
+1.7.9.5
 
 
