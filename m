@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaJHUli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:41:38 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:56778 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaJHUlg (ORCPT
+	id S1754254AbaJHUoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:44:03 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:42016 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaJHUoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:41:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com
-Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
-Date: Wed, 08 Oct 2014 22:41:23 +0200
-Message-ID: <1790241.KrvEcO3C6i@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
-References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com>
+	Wed, 8 Oct 2014 16:44:00 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:xMi9igk5XDT9fb2Rj/WdTkok6y02La+eZxupu9FjgIR
- Y1A8NbwakyOjEiVEjdbpmG9HKstTErtkDthe+CRYg0oGWRYKZn
- FVWWCU+uGT2RgidGvQGFFEN0/LNE0V0BaNR/a8GyJ2mqfNuqt0
- CNBbdunMV/7yqrV7Gq85Nax5pUYUuzLMTOb82pKOwXKiJ6JGnO
- ZbOyyw6qt7COaZWJmHR21Ol3U4t4OUSCLebebKFdDttbs/+9kq
- vfdmFYfrs8oLh9hwtvGS/JGTuj6+r/mFnR2/Ai55H8+WlNnzIN
- g+vHA4PJhoy/yO0u8opnYogRfV6COGcCsEmHdROHmJc1m1se8M
- EY8wAfah/buRuIsI4QX4=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1412799101.28467.68.camel@acox1-desk.ger.corp.intel.com>
+References: <1412798258-23655-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1412798258-23655-4-git-send-email-ricardo.ribalda@gmail.com> <1412799101.28467.68.camel@acox1-desk.ger.corp.intel.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Wed, 8 Oct 2014 22:43:38 +0200
+Message-ID: <CAPybu_1vXc+=dVbradArvFYiFBy2c=0tTM7RAHDhycCkQQv_5g@mail.gmail.com>
+Subject: Re: [PATCH 03/12] serial_core: Handle TIOC[GS]RS485 ioctls.
+To: Alan Cox <alan@linux.intel.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 08 October 2014 23:14:08 Ebru Akagunduz wrote:
-> This patch changes 32-bit time types to 64-bit in
-> ips.c
-> 
-> time_t can only represent signed 32-bit dates but
-> the driver should represent dates that are after
-> January 2038.
-> 
-> Use time64_t type instead of time_t.
-> 
-> Signed-off-by: Ebru Akagunduz <ebru.akagunduz@gmail.com>
-> 
+Hello Alan
 
-Hi Ebru,
+This patchset adds no extra locking features, if the drivers did not
+implement a locking mechanism (and none did) there is chance of
+conflict.
 
-I think you missed the location in which ffdc_time is initially
-assigned, and wher it gets compared to the current time:
+I can add a call to lock/unlock around uart_[gs]et_rs485_config. And
+then, inside the drivers, use the lock when the structure is used.
 
-                struct timeval tv;
+I would prefer to add it as new patches in the patchset, so in case
+this adds some bugs they can be bisected easily.
 
-                do_gettimeofday(&tv);
-                ha->last_ffdc = tv.tv_sec;
+Thanks for your fast reply
 
-This needs to be changed to timespec64 to actually avoid the
-overflow problem. I think this one should also use monotonic time,
-i.e. ktime_get_ts64 rather than getnstimeofday64.
 
-	Arnd
+
+On Wed, Oct 8, 2014 at 10:11 PM, Alan Cox <alan@linux.intel.com> wrote:
+> On Wed, 2014-10-08 at 21:57 +0200, Ricardo Ribalda Delgado wrote:
+>> The following drivers: 8250_core, atmel_serial, max310x, mcf, omap-serial
+>> and sci16is7xx implement code to handle RS485 ioctls.
+>
+>>
+>> +static int uart_get_rs485_config(struct uart_port *port,
+>> +                      struct serial_rs485 __user *rs485)
+>> +{
+>> +     if (!port->rs485_config)
+>> +             return -ENOIOCTLCMD;
+>> +
+>> +     if (copy_to_user(rs485, &port->rs485, sizeof(port->rs485)))
+>> +             return -EFAULT;
+>> +     return 0;
+>> +}
+>> +
+>> +static int uart_set_rs485_config(struct uart_port *port,
+>> +                      struct serial_rs485 __user *rs485_user)
+>> +{
+>> +     struct serial_rs485 rs485;
+>> +     int ret;
+>> +
+>> +     if (!port->rs485_config)
+>> +             return -ENOIOCTLCMD;
+>> +
+>> +     if (copy_from_user(&rs485, rs485_user, sizeof(rs485_user)))
+>> +             return -EFAULT;
+>> +
+>> +     ret = port->rs485_config(port, &rs485);
+>> +     if (ret)
+>> +             return ret;
+>> +
+>> +     if (copy_to_user(rs485_user, &port->rs485, sizeof(port->rs485)))
+>> +             return -EFAULT;
+>> +
+>> +     return 0;
+>> +
+>
+> What is the locking between setting/getting/driver use of the config ?
+> This really needs a lock (termios sem I think is perhaps appropriate
+> given when the values are normally referenced).
+>
+> Alan
+>
+>
+
+
+
+-- 
+Ricardo Ribalda
