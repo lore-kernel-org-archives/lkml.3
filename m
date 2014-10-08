@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673AbaJHWK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:10:29 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41378 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990AbaJHWKY (ORCPT
+	id S933683AbaJHWLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:11:23 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:54437 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaJHWLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:10:24 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, atull@opensource.altera.com,
-        Mark Brown <broonie@kernel.org>
-Date: Wed,  8 Oct 2014 23:09:59 +0100
-Message-Id: <1412806199-5363-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 2.1.1
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] regulator: of: Lower the severity of the error with no container
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 8 Oct 2014 18:11:17 -0400
+Message-ID: <1412806271.2908.3.camel@u64>
+Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
+From: Tuan Bui <tuan.d.bui@hp.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        dbueso@suse.de, a.p.zijlstra@chello.nl, paulus@samba.org,
+        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
+Date: Wed, 08 Oct 2014 15:11:11 -0700
+In-Reply-To: <20141001171226.GF2799@kernel.org>
+References: <1412120999.2941.11.camel@u64>
+	 <20141001052832.GA32248@gmail.com> <20141001171226.GF2799@kernel.org>
+Organization: HP
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Description of regulators should generally be optional so if there is no
-DT node for the regulators container then we shouldn't print an error
-message. Lower the severity of the message to debug level (it might help
-someone work out what went wrong) and while we're at it say what we were
-looking for.
+On Wed, 2014-10-01 at 14:12 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Oct 01, 2014 at 07:28:32AM +0200, Ingo Molnar escreveu:
+> > If you compare an strace of AIM7 steady state and 'perf bench 
+> > lock' steady state, is it comparable, i.e. do the syscalls and 
+> 
+> Isn't "lock" too generic? Isn't this stressing some specific lock and if
+> so shouldn't that be made abundantly clear in the 'perf bench' test name
+> and in the docs?
+> 
 
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Mark Brown <broonie@kernel.org>
----
- drivers/regulator/of_regulator.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+In this micro benchmark, I am trying to exhibit the same locking
+contention shown in an AIM7 fserver workload.  Since the creat(2) system
+call is file system dependent running this on different file system show
+different lock being contended that is why i did not specify specific
+lock name in the doc.  Do you have a suggestion here on how i should
+name this benchmark?
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 7a51814abdc5..5a1d4afa4776 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -211,7 +211,8 @@ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
- 		search = dev->of_node;
- 
- 	if (!search) {
--		dev_err(dev, "Failed to find regulator container node\n");
-+		dev_dbg(dev, "Failed to find regulator container node '%s'\n",
-+			desc->regulators_node);
- 		return NULL;
- 	}
- 
--- 
-2.1.1
+> Or is this the case that it started by using 'creat' calls to stress
+> some locking and will go on adding more syscalls to stress more kernel
+> locks?
+> 
+
+When running all AIM7 workloads looking for locking contention to
+reproduce, creat was the only one I found interesting and useful to
+stress locking contention.
+
+
+
 
