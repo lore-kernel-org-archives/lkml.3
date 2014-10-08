@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933AbaJHMcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:32:23 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:54159 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756490AbaJHMcT (ORCPT
+	id S1756980AbaJHMdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:33:31 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:54491 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaJHMd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:32:19 -0400
-Message-ID: <54352ECB.5030507@gmail.com>
-Date: Wed, 08 Oct 2014 20:32:11 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 8 Oct 2014 08:33:29 -0400
 MIME-Version: 1.0
-To: Juri Lelli <juri.lelli@arm.com>, peterz@infradead.org
-CC: mingo@redhat.com, juri.lelli@gmail.com, raistlin@linux.it,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        daniel.wagner@bmw-carit.de, vincent@legout.info, luca.abeni@unitn.it,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] sched/deadline: clear dl_entity params when setscheduling
- to different class
-References: <1411118561-26323-1-git-send-email-juri.lelli@arm.com> <1411118561-26323-2-git-send-email-juri.lelli@arm.com>
-In-Reply-To: <1411118561-26323-2-git-send-email-juri.lelli@arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141008120410.GE1990@localhost>
+References: <1411661254-5204-1-git-send-email-octavian.purdila@intel.com>
+	<1411661254-5204-2-git-send-email-octavian.purdila@intel.com>
+	<20141008092347.GB1990@localhost>
+	<CAE1zotKHq1Fj_AqKzfnBHoypetb6Yz3OsHnqfeHN5PrVJtuHVw@mail.gmail.com>
+	<20141008120410.GE1990@localhost>
+Date: Wed, 8 Oct 2014 15:33:28 +0300
+Message-ID: <CAE1zot+muJn5ngxpq8LeF9J+7kZqCiStzvcxLLP0wf08TjWG4A@mail.gmail.com>
+Subject: Re: [PATCH v6 1/4] mfd: add support for Diolan DLN-2 devices
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Juri,
-
-于 9/19/14, 5:22 PM, Juri Lelli 写道:
-> When a task is using SCHED_DEADLINE and the user setschedules it to a different
-> class its sched_dl_entity static parameters are not cleaned up. This causes a
-> bug if the user sets it back to SCHED_DEADLINE with the same parameters again.
-> The problem resides in the check we perform at the very beginning of
-> dl_overflow():
+On Wed, Oct 8, 2014 at 3:04 PM, Johan Hovold <johan@kernel.org> wrote:
+> On Wed, Oct 08, 2014 at 01:54:07PM +0300, Octavian Purdila wrote:
+>> On Wed, Oct 8, 2014 at 12:23 PM, Johan Hovold <johan@kernel.org> wrote:
+>> > On Thu, Sep 25, 2014 at 07:07:31PM +0300, Octavian Purdila wrote:
+>> >
+>> >> +static void dln2_rx_transfer(struct dln2_dev *dln2, struct urb *urb,
+>> >> +                          u16 handle, u16 rx_slot)
+>> >> +{
+>> >> +     struct dln2_mod_rx_slots *rxs = &dln2->mod_rx_slots[handle];
+>> >> +     struct dln2_rx_context *rxc;
+>> >> +     struct device *dev = &dln2->interface->dev;
+>> >> +
+>> >> +     spin_lock(&rxs->lock);
+>> >
+>> > You must use spin_lock_irqsave here as you call it from the completion
+>> > handler.
+>>
+>> Why? AFAICS the completion handler gets called from the HCD irq handler:
 >
-> 	if (new_bw == p->dl.dl_bw)
-> 		return 0;
+> The completion handler is currently called with local interrupts
+> disabled but that is about to change once all drivers have been updated:
 >
-> This condition is met in the case depicted above, so the function returns and
-> dl_b->total_bw is not updated (the p->dl.dl_bw is not added to it). After this,
-
-As you know there is no static parameter clear before this patch, so if 
-p->dl.dl_bw will decrease from dl_b->total_bw when the user setschedules 
-to a different class instead of dl?
-
-Regards,
-Wanpeng Li
-
-> admission control is broken.
+>         http://marc.info/?l=linux-usb&m=137353360511003&w=2
 >
-> This patch fixes the thing, properly clearing static parameters for a task
-> that ceases to use SCHED_DEADLINE.
+> In this case you could probably get away with not disabling interrupts
+> anyway, but using the irqsave versions would make it obvious.
 >
-> Reported-by: Daniele Alessandrelli <daniele.alessandrelli@gmail.com>
-> Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
-> Reported-by: Vincent Legout <vincent@legout.info>
-> Tested-by: Luca Abeni <luca.abeni@unitn.it>
-> Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Juri Lelli <juri.lelli@gmail.com>
-> Cc: Dario Faggioli <raistlin@linux.it>
-> Cc: Michael Trimarchi <michael@amarulasolutions.com>
-> Cc: Fabio Checconi <fchecconi@gmail.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   kernel/sched/core.c     | 19 +++++++++++++++----
->   kernel/sched/deadline.c |  2 ++
->   kernel/sched/sched.h    |  3 +++
->   3 files changed, 20 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index ec1a286..581a429 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1776,6 +1776,20 @@ int wake_up_state(struct task_struct *p, unsigned int state)
->   }
->   
->   /*
-> + * This function clears the sched_dl_entity static params.
-> + */
-> +void __dl_clear_params(struct task_struct *p)
-> +{
-> +	struct sched_dl_entity *dl_se = &p->dl;
-> +
-> +	dl_se->dl_runtime = 0;
-> +	dl_se->dl_deadline = 0;
-> +	dl_se->dl_period = 0;
-> +	dl_se->flags = 0;
-> +	dl_se->dl_bw = 0;
-> +}
-> +
-> +/*
->    * Perform scheduler related setup for a newly forked process p.
->    * p is forked by current.
->    *
-> @@ -1799,10 +1813,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
->   
->   	RB_CLEAR_NODE(&p->dl.rb_node);
->   	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-> -	p->dl.dl_runtime = p->dl.runtime = 0;
-> -	p->dl.dl_deadline = p->dl.deadline = 0;
-> -	p->dl.dl_period = 0;
-> -	p->dl.flags = 0;
-> +	__dl_clear_params(p);
->   
->   	INIT_LIST_HEAD(&p->rt.run_list);
->   
-> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-> index 255ce13..4a51b14 100644
-> --- a/kernel/sched/deadline.c
-> +++ b/kernel/sched/deadline.c
-> @@ -1569,6 +1569,8 @@ static void switched_from_dl(struct rq *rq, struct task_struct *p)
->   	if (hrtimer_active(&p->dl.dl_timer) && !dl_policy(p->policy))
->   		hrtimer_try_to_cancel(&p->dl.dl_timer);
->   
-> +	__dl_clear_params(p);
-> +
->   #ifdef CONFIG_SMP
->   	/*
->   	 * Since this might be the only -deadline task on the rq,
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 579712f..4890484 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -126,6 +126,9 @@ struct rt_bandwidth {
->   	u64			rt_runtime;
->   	struct hrtimer		rt_period_timer;
->   };
-> +
-> +void __dl_clear_params(struct task_struct *p);
-> +
->   /*
->    * To keep the bandwidth of -deadline tasks and groups under control
->    * we need some place where:
 
+I was not assuming that interrupts are disabled while running the
+completion handler. Since that spinlock is not touched by any other
+interrupt context code I don't think irqsave is necessary.
