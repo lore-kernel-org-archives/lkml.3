@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664AbaJHSvt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:51:49 -0400
-Received: from mout.gmx.net ([212.227.17.20]:59048 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555AbaJHSvr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:51:47 -0400
-From: Marc Dietrich <marvin24@gmx.de>
-To: Guenter Roeck <linux@roeck-us.net>, devel@driverdev.osuosl.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@vger.kernel.org, Andrey Danin <danindrey@mail.ru>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 29/44] staging: nvec: Register with kernel poweroff handler
-Date: Wed, 08 Oct 2014 20:51:10 +0200
-Message-ID: <1986471.ednzxGGBeV@ax5200p>
-User-Agent: KMail/4.13.3 (Linux/3.13.0-35-generic; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1412659726-29957-30-git-send-email-linux@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net> <1412659726-29957-30-git-send-email-linux@roeck-us.net>
+	id S1754176AbaJHSwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:52:41 -0400
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:48785 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaJHSwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 14:52:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:ZCF+iHlP1ZyF0fTaEaxJsUQXT8GBnkIPZCyrHbGguV8RZpFBRHN
- aja7Y8iOaYD+oXbEzTQsi+ZNFVMjdLvSJaD/eZ3GU1vYygVxvmqHY/1RRfImpgHCuS9C1bP
- tpica/ELVpgNpwIv5jkIs4KH1yisPClqZt0tfYdX5rjTu2vpZZSR7wwB3OOM8qU/9wjpy6/
- jG/A36VS1qnRSbsqS6qJw==
-X-UI-Out-Filterresults: notjunk:1;
+Date: Wed, 8 Oct 2014 14:52:39 -0400
+X-Google-Sender-Auth: AROEeO6u-KZVBeHBFZn44dwEosQ
+Message-ID: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com>
+Subject: vdso_standalone_test_x86.c build failure on Linus' tree
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Peter Foley <pefoley2@pefoley.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Jiri Kosina <jkosina@suse.cz>, Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag 06 Oktober 2014, 22:28:31 schrieb Guenter Roeck:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly. Register with default priority value of 128 since we don't know
-> any better.
+I'm seeing the following build failure on a 32-bit x86 build in Fedora
+based on Linux v3.17-2860-gef0625b70dac:
 
-I just tested this change and it seems to break power off. What the driver 
-does it to queue the power off request and execute it sometime later. The 
-command is send via i2c to an embedded controller (mfd device) which is 
-responsible for removing the power.
+Documentation/vDSO/vdso_standalone_test_x86.o: In function `to_base10':
+vdso_standalone_test_x86.c:(.text+0xcc): undefined reference to `__umoddi3'
+vdso_standalone_test_x86.c:(.text+0xea): undefined reference to `__udivdi3'
+collect2: error: ld returned 1 exit status
+scripts/Makefile.host:100: recipe for target
+'Documentation/vDSO/vdso_standalone_test_x86' failed
+make[2]: *** [Documentation/vDSO/vdso_standalone_test_x86] Error 1
+scripts/Makefile.build:404: recipe for target 'Documentation/vDSO' failed
+make[1]: *** [Documentation/vDSO] Error 2
+make[1]: *** Waiting for unfinished jobs....
+Makefile:922: recipe for target 'vmlinux' failed
+make: *** [vmlinux] Error 2
 
-I haven't analyzed further, but I guess this could be related with the atomic 
-discussion brought up in some other thread of this patch series.
+Looking at some of the git logs around this, it seems that
+vdso_standalone_test_x86.c is 64-bit specific, so I was curious why it
+was even being built on a 32-bit build.  Seems this commit:
 
-Marc
+commit adb19fb66eeebac07fe37d968725bb8906dadb8e
+Author: Peter Foley <pefoley2@pefoley.com>
+Date:   Thu Sep 25 11:23:09 2014 -0700
 
+    Documentation: add makefiles for more targets
+
+    Add a bunch of previously unbuilt source files to the Documentation build
+    machinery.
+
+    Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+    Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+
+blindly added it to the build target.
+
+So is vdso_standalone_test_x86.c really 64-bit specific?  If so,
+should that commit be reverted (or a hunk of it anyway), should there
+be some mechanism to not build it on 32-bit, or should there be some
+additional CFLAGS passed?
+
+josh
+
+Full build log here:
+http://koji.fedoraproject.org/koji/getfile?taskID=7802438&name=build.log
