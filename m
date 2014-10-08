@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304AbaJHOyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 10:54:24 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33184 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260AbaJHOyX (ORCPT
+	id S932424AbaJHOyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 10:54:32 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:44168 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932314AbaJHOy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 10:54:23 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, davem@davemloft.net, netdev@vger.kernel.org
-Cc: dan.j.williams@intel.com, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] net: description of dma_cookie cause make xmldocs warning
-Date: Wed,  8 Oct 2014 23:53:39 +0900
-Message-Id: <1412780019-32475-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.1.1.273.g97b8860
+	Wed, 8 Oct 2014 10:54:28 -0400
+MIME-Version: 1.0
+Date: Wed, 8 Oct 2014 20:24:26 +0530
+X-Google-Sender-Auth: 4lbJ7Vj3VmoHYr2dEKwSVZWAItE
+Message-ID: <CAC4Lta2AS6M5upg8n9Qu5+1pqCMF3j8_cYuLAS1DH9C_BQP0PA@mail.gmail.com>
+Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks hotplug invariant
+From: Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: svaidy@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        rjw@rjwysocki.net, lizefan@huawei.com,
+        Anton Blanchard <anton@samba.org>, Tejun Heo <tj@kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, cgroups@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 7bced397510ab569d31de4c70b39e13355046387,
-dma_cookie was removed from struct skbuff.
-But the description of dma_cookie still exist.
-So the "make xmldocs" output following warning.
+On Wed, Oct 8, 2014 at 12:37 PM, Preeti U Murthy
+<preeti@linux.vnet.ibm.com> wrote:
+> There are two masks associated with cpusets. The cpus/mems_allowed
+> and effective_cpus/mems. On the legacy hierarchy both these masks
+> are consistent with each other. This is the intersection of their
+> value and the currently active cpus. This means that we destroy the
+> original values set in these masks on each cpu/mem hot unplug operation.
+>         As a consequence when we hot plug back the cpus/mems, the tasks
+> no longer run on them and performance degrades, inspite of having
+> resources to run on.
+>
+> This effect is not seen in the default hierarchy since the
+> allowed and effective masks are distinctly maintained.
+> allowed masks are never touched once configured and effective masks
+> alone are hotplug variant.
+>
+> This patch replicates the above design even for the legacy hierarchy,
+> so that:
+>
+> 1. Tasks always run on the cpus/memory nodes that they are allowed to run on
+> as long as they are online. The allowed masks are hotplug invariant.
+>
+> 2. When all cpus/memory nodes in a cpuset are hot unplugged out, the tasks
+> are moved to their nearest ancestor which has resources to run on.
 
-Warning(.//include/linux/skbuff.h:609): Excess struct/union
-/enum/typedef member 'dma_cookie' description in 'sk_buff'
+Hi Preeti,
 
-Remove description of dma_cookie fix the symptom.
+I may be missing some thing here could you please explain when do we get
+tasks move out of a cpuset after this patch and why it is even necessary?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- include/linux/skbuff.h | 2 --
- 1 file changed, 2 deletions(-)
+IIUC, with default hierarchy we should never hit a case where we have empty
+effective cpuset and hence remove_tasks_in_empty_cpuset should never happen. no?
 
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index a17ba08..9a86644 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -459,8 +459,6 @@ static inline u32 skb_mstamp_us_delta(const struct skb_mstamp *t1,
-  *	@wifi_acked_valid: wifi_acked was set
-  *	@wifi_acked: whether frame was acked on wifi or not
-  *	@no_fcs:  Request NIC to treat last 4 bytes as Ethernet FCS
-- *	@dma_cookie: a cookie to one of several possible DMA operations
-- *		done by skb DMA functions
-   *	@napi_id: id of the NAPI struct this skb came from
-  *	@secmark: security marking
-  *	@mark: Generic packet mark
--- 
-2.1.1.273.g97b8860
-
+if my assumption is correct then we should remove
+remove_tasks_in_empty_cpuset itself...
