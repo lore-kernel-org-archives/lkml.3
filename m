@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960AbaJHNdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:33:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45853 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756234AbaJHNdv (ORCPT
+	id S1756531AbaJHNg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:36:26 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:63890 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235AbaJHNgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:33:51 -0400
-Date: Wed, 8 Oct 2014 06:32:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 00/26] 3.16.5-stable review
-Message-ID: <20141008133252.GD5119@kroah.com>
-References: <20141007231848.487609292@linuxfoundation.org>
- <5434A5B1.9010408@roeck-us.net>
- <20141008044803.GC26820@kroah.com>
- <87r3yihh0p.wl%satoru.takeuchi@gmail.com>
+	Wed, 8 Oct 2014 09:36:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: linux-arm-kernel@lists.infradead.org, Christian Daudt <bcm@fixthebug.org>,
+        Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, devicetree@vger.kernel.org,
+        Ray Jui <rjui@broadcom.com>, linux-kernel@vger.kernel.org,
+        Jonathan Richardson <jonathar@broadcom.com>,
+        JD Zheng <jdzheng@broadcom.com>
+Subject: Re: [PATCH 3/6] dt-bindings: Document Broadcom Cygnus SoC and clock driver
+Date: Wed, 08 Oct 2014 15:35:27 +0200
+Message-ID: <2797894.oaYXOOJrDl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <543518C7.9070809@broadcom.com>
+References: <1412746025-11998-4-git-send-email-sbranden@broadcom.com> <2480056.Cs3dr8EM2e@wuerfel> <543518C7.9070809@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r3yihh0p.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:8tadGmAJvUjgZUddziU0VHVfWBpvMQKmSX0vdc7qv7f
+ 2jDZGkdHtLRGpG0gbRXTisHCog6A+nOIlNkdZMcYPCc4v0Bd9S
+ oixJJInuOsv+KwZ67NxpwmJu85QIOA+/NPStH4eHMoHL1m9eXf
+ q/e/HcjadLl/wsILQ0uOTFOkjDJkijmgim3h1EcsPfuB95AxZx
+ zeInE2jY8xkbxawOsnfu/QTjVABuy0WKmRVq9O9Mii/Xw6tDjT
+ vfok2r7KRM9LtJW+beL2OI1qNblvKg7Qg4DbhrVcMDckXt2t2R
+ EdXCxOQjy9sdJLNeMT8icLFUPpaGgSRIKzJvgxfHNiS0Fc0NZE
+ XWvl1Jy6DIATZnFLXvw8=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 09:39:50PM +0900, Satoru Takeuchi wrote:
-> At Tue, 7 Oct 2014 21:48:04 -0700,
-> Greg Kroah-Hartman wrote:
-> > 
-> > On Tue, Oct 07, 2014 at 07:47:13PM -0700, Guenter Roeck wrote:
-> > > On 10/07/2014 04:19 PM, Greg Kroah-Hartman wrote:
-> > > >This is the start of the stable review cycle for the 3.16.5 release.
-> > > >There are 26 patches in this series, all will be posted as a response
-> > > >to this one.  If anyone has any issues with these being applied, please
-> > > >let me know.
-> > > >
-> > > >Responses should be made by Thu Oct  9 23:18:40 UTC 2014.
-> > > >Anything received after that time might be too late.
-> > > >
-> > > 
-> > > Build results:
-> > > 	total: 136 pass: 136 fail: 0
-> > > Qemu tests:
-> > > 	total: 30 pass: 30 fail: 0
-> > > 
-> > > Details are available at http://server.roeck-us.net:8010/builders.
-> > 
-> > Wonderful, thanks for testing all 3 of these and letting me know.
-> 
-> Plus, all these kernels passed my test.
-> 
->  - Test Cases:
->    - Build this kernel.
->    - Boot this kernel.
->    - Build the latest mainline kernel with this kernel.
-> 
->  - Test Tool:
->    https://github.com/satoru-takeuchi/test-linux-stable
-> 
->  - Test Result (kernel .config, ktest config and test log):
->    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
-> 
->  - Build Environment:
->    - OS: Debian Jessy x86_64
->    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
->    - memory: 8GB
-> 
->  - Test Target Environment:
->    - Debian Jessy x86_64 (KVM guest on the Build Environment)
->    - # of vCPU: 2
->    - memory: 2GB
+On Wednesday 08 October 2014 03:58:15 Scott Branden wrote:
+> On 14-10-08 12:57 AM, Arnd Bergmann wrote:
+> > On Tuesday 07 October 2014 22:27:02 Scott Branden wrote:
+> >> diff --git a/Documentation/devicetree/bindings/arm/cygnus.txt b/Documentation/devicetree/bindings/arm/cygnus.txt
+> >> new file mode 100644
+> >> index 0000000..a210377
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/arm/cygnus.txt
+> >> @@ -0,0 +1,12 @@
+> >> +Broadcom Cygnus device tree bindings
+> >> +------------------------------------
+> >> +
+> >> +All Cygnus boards shall have the following properties:
+> >> +
+> >> +Required root node property:
+> >> +       - compatible = "brcm,cygnus";
+> >
+> > Can you add a more specific model number for the soc as well?
+> > I assume that cygnus refers to more than one model, so you
+> > should probably list both the family and the individual
+> > SoC type here.
+> Add specific model numbers does not seem necessary because they are not 
+> needed to be specified in the device tree for compatible purposes for 
+> the kernel to work.  Plus, the list of model numbers will continue to 
+> grow over time and compatible strings would need to be added to the 
+> kernel for no apparent reason?
 
-Glad to hear it, I was worried about 3.14, thanks for testing and
-verifying I didn't mess anything up.
+It's always helpful to have them in the DT though, in case you ever
+need to add a workaround for one of the SoCs.
 
-greg k-h
+You can change the description to just state the format of the
+more specific model number so you don't need to add the particular
+type to the binding, but I'd definitely recommend listing both
+a generic and a more specific name here, such as
+
+	compatible = "brcm,bcm123456", "brcm,cygnus";
+
+> >> +Boards variants shall have the following additional properties:
+> >> +
+> >> +Required root node property for the BCM911360_ENTPHN board:
+> >> +       - compatible = "brcm,bcm911360_entphn";
+> >>
+> >
+> > We normally don't list specific boards here, since it's hard to
+> > keep up.
+> Thanks - removed specific boards from file and moved the cygnus.txt file 
+> to devicetree/bindings/arm/bcm/cygnus.txt in next version.  This seems 
+> to be like the appropriate place to put this document. We will need to 
+> add back in board specific bindings when ALSA support is added.  But 
+> that will be a later commit to deal with.
+
+I believe most new alsa drivers can now use the binding from
+Documentation/devicetree/bindings/sound/simple-card.txt
+so you should no longer need a board specific driver or binding
+for those.
+
+	Arnd
