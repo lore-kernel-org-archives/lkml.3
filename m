@@ -1,206 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaJHRrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 13:47:41 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:39662 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbaJHRri (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 13:47:38 -0400
+	id S1753784AbaJHRrk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 13:47:40 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:41417 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751620AbaJHRrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 13:47:37 -0400
+Date: Wed, 8 Oct 2014 13:47:25 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memcontrol: fix transparent huge page
+ allocations under pressure
+Message-ID: <20141008174725.GA31706@cmpxchg.org>
+References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
+ <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
+ <20140929135707.GA25956@dhcp22.suse.cz>
+ <20140929175700.GA20053@cmpxchg.org>
+ <20141007135950.GD14243@dhcp22.suse.cz>
+ <20141008011106.GA12339@cmpxchg.org>
+ <20141008153329.GF4592@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <2960802.kPr8UT7PvT@vostro.rjw.lan>
-References: <2660541.BycO7TFnA2@vostro.rjw.lan> <1997643.hzLDnYTZoH@vostro.rjw.lan>
- <2960802.kPr8UT7PvT@vostro.rjw.lan>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 8 Oct 2014 10:47:16 -0700
-Message-ID: <CAK5ve-JTri0ML23gdXTgfRPh+tkJGUj6jHcjEKEVNphwG-PQjw@mail.gmail.com>
-Subject: Re: [PATCH 12/13] leds: leds-gpio: Make use of device property API
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008153329.GF4592@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 7:04 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, October 07, 2014 02:18:45 AM Rafael J. Wysocki wrote:
->> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>
->> Make use of device property API in this driver so that both OF and ACPI
->> based system can use the same driver.
->>
->> This change contains material from Max Eliaser and Mika Westerberg.
->>
->> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->
-> Bryan, can you please tell me if you are OK with this patch?
->
-> You said you were for one of the previous versions if I remember correctly,
-> but it's changed quite a bit since then, so can you please check this new
-> version too?
->
+On Wed, Oct 08, 2014 at 05:33:29PM +0200, Michal Hocko wrote:
+> [I do not have time to get over all points here and will be offline
+> until Monday - will get back to the rest then]
+> 
+> On Tue 07-10-14 21:11:06, Johannes Weiner wrote:
+> > On Tue, Oct 07, 2014 at 03:59:50PM +0200, Michal Hocko wrote:
+> [...]
+> > > I am completely missing any notes about potential excessive
+> > > swapouts or longer reclaim stalls which are a natural side effect of direct
+> > > reclaim with a larger target (or is this something we do not agree on?).
+> > 
+> > Yes, we disagree here.  Why is reclaiming 2MB once worse than entering
+> > reclaim 16 times to reclaim SWAP_CLUSTER_MAX?
+> 
+> You can enter DEF_PRIORITY reclaim 16 times and reclaim your target but
+> you need at least 512<<DEF_PRIORITY pages on your LRUs to do it in a
+> single run on that priority. So especially small groups will pay more
+> and would be subject to mentioned problems (e.g. over-reclaim).
 
-Sure, the new one is even better than before. Please go ahead with my Ack
-Acked-by: Bryan Wu <cooloney@gmail.com>
+No, even low priority scans bail out shortly after nr_to_reclaim.
 
-Thanks,
--Bryan
+> > There is no inherent difference in reclaiming a big chunk and
+> > reclaiming many small chunks that add up to the same size.
+>  
+> [...]
+> 
+> > > Another part that matters is the size. Memcgs might be really small and
+> > > that changes the math. Large reclaim target will get to low prio reclaim
+> > > and thus the excessive reclaim.
+> > 
+> > I already addressed page size vs. memcg size before.
+> > 
+> > However, low priority reclaim does not result in excessive reclaim.
+> > The reclaim goal is checked every time it scanned SWAP_CLUSTER_MAX
+> > pages, and it exits if the goal has been met.  See shrink_lruvec(),
+> > shrink_zone() etc.
+> 
+> Now I am confused. shrink_zone will bail out but shrink_lruvec will loop
+> over nr[...] until they are empty and only updates the numbers to be
+> roughly proportional once:
+> 
+>                 if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+>                         continue;
+> 
+>                 /*
+>                  * For kswapd and memcg, reclaim at least the number of pages
+>                  * requested. Ensure that the anon and file LRUs are scanned
+>                  * proportionally what was requested by get_scan_count(). We
+>                  * stop reclaiming one LRU and reduce the amount scanning
+>                  * proportional to the original scan target.
+>                  */
+> 		[...]
+> 		scan_adjusted = true;
+> 
+> Or do you rely on
+>                 /*
+>                  * It's just vindictive to attack the larger once the smaller
+>                  * has gone to zero.  And given the way we stop scanning the
+>                  * smaller below, this makes sure that we only make one nudge
+>                  * towards proportionality once we've got nr_to_reclaim.
+>                  */
+>                 if (!nr_file || !nr_anon)
+>                         break;
+> 
+> and SCAN_FILE because !inactive_file_is_low?
 
->> ---
->>  drivers/leds/leds-gpio.c |   67 +++++++++++++++++++++--------------------------
->>  1 file changed, 30 insertions(+), 37 deletions(-)
->>
->> Index: linux-pm/drivers/leds/leds-gpio.c
->> ===================================================================
->> --- linux-pm.orig/drivers/leds/leds-gpio.c
->> +++ linux-pm/drivers/leds/leds-gpio.c
->> @@ -15,13 +15,11 @@
->>  #include <linux/gpio.h>
->>  #include <linux/gpio/consumer.h>
->>  #include <linux/leds.h>
->> -#include <linux/of.h>
->> -#include <linux/of_platform.h>
->> -#include <linux/of_gpio.h>
->>  #include <linux/slab.h>
->>  #include <linux/workqueue.h>
->>  #include <linux/module.h>
->>  #include <linux/err.h>
->> +#include <linux/property.h>
->>
->>  struct gpio_led_data {
->>       struct led_classdev cdev;
->> @@ -171,40 +169,41 @@ static inline int sizeof_gpio_leds_priv(
->>               (sizeof(struct gpio_led_data) * num_leds);
->>  }
->>
->> -/* Code to create from OpenFirmware platform devices */
->> -#ifdef CONFIG_OF_GPIO
->> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
->> +static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
->>  {
->> -     struct device_node *np = pdev->dev.of_node, *child;
->> +     struct device *dev = &pdev->dev;
->>       struct gpio_leds_priv *priv;
->>       int count, ret;
->> +     void *child;
->>
->> -     /* count LEDs in this device, so we know how much to allocate */
->> -     count = of_get_available_child_count(np);
->> +     count = device_get_child_node_count(dev);
->>       if (!count)
->>               return ERR_PTR(-ENODEV);
->>
->> -     for_each_available_child_of_node(np, child)
->> -             if (of_get_gpio(child, 0) == -EPROBE_DEFER)
->> -                     return ERR_PTR(-EPROBE_DEFER);
->> -
->> -     priv = devm_kzalloc(&pdev->dev, sizeof_gpio_leds_priv(count),
->> -                     GFP_KERNEL);
->> +     priv = devm_kzalloc(dev, sizeof_gpio_leds_priv(count), GFP_KERNEL);
->>       if (!priv)
->>               return ERR_PTR(-ENOMEM);
->>
->> -     for_each_available_child_of_node(np, child) {
->> +     device_for_each_child_node(dev, child) {
->>               struct gpio_led led = {};
->> -             enum of_gpio_flags flags;
->> -             const char *state;
->> +             const char *state = NULL;
->> +
->> +             led.gpiod = devm_get_named_gpiod_from_child(dev, child,
->> +                                                         "gpios", 0);
->> +             if (IS_ERR(led.gpiod)) {
->> +                     device_put_child_node(dev, child);
->> +                     goto err;
->> +             }
->>
->> -             led.gpio = of_get_gpio_flags(child, 0, &flags);
->> -             led.active_low = flags & OF_GPIO_ACTIVE_LOW;
->> -             led.name = of_get_property(child, "label", NULL) ? : child->name;
->> -             led.default_trigger =
->> -                     of_get_property(child, "linux,default-trigger", NULL);
->> -             state = of_get_property(child, "default-state", NULL);
->> -             if (state) {
->> +             device_child_property_read_string(dev, child,
->> +                                               "label", &led.name);
->> +             device_child_property_read_string(dev, child,
->> +                                               "linux,default-trigger",
->> +                                               &led.default_trigger);
->> +
->> +             if (!device_child_property_read_string(dev, child,
->> +                                                    "linux,default_state",
->> +                                                    &state)) {
->>                       if (!strcmp(state, "keep"))
->>                               led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
->>                       else if (!strcmp(state, "on"))
->> @@ -213,13 +212,14 @@ static struct gpio_leds_priv *gpio_leds_
->>                               led.default_state = LEDS_GPIO_DEFSTATE_OFF;
->>               }
->>
->> -             if (of_get_property(child, "retain-state-suspended", NULL))
->> +             if (!device_get_child_property(dev, child,
->> +                                            "retain-state-suspended", NULL))
->>                       led.retain_state_suspended = 1;
->>
->>               ret = create_gpio_led(&led, &priv->leds[priv->num_leds++],
->> -                                   &pdev->dev, NULL);
->> +                                   dev, NULL);
->>               if (ret < 0) {
->> -                     of_node_put(child);
->> +                     device_put_child_node(dev, child);
->>                       goto err;
->>               }
->>       }
->> @@ -238,13 +238,6 @@ static const struct of_device_id of_gpio
->>  };
->>
->>  MODULE_DEVICE_TABLE(of, of_gpio_leds_match);
->> -#else /* CONFIG_OF_GPIO */
->> -static struct gpio_leds_priv *gpio_leds_create_of(struct platform_device *pdev)
->> -{
->> -     return ERR_PTR(-ENODEV);
->> -}
->> -#endif /* CONFIG_OF_GPIO */
->> -
->>
->>  static int gpio_led_probe(struct platform_device *pdev)
->>  {
->> @@ -273,7 +266,7 @@ static int gpio_led_probe(struct platfor
->>                       }
->>               }
->>       } else {
->> -             priv = gpio_leds_create_of(pdev);
->> +             priv = gpio_leds_create(pdev);
->>               if (IS_ERR(priv))
->>                       return PTR_ERR(priv);
->>       }
->> @@ -300,7 +293,7 @@ static struct platform_driver gpio_led_d
->>       .driver         = {
->>               .name   = "leds-gpio",
->>               .owner  = THIS_MODULE,
->> -             .of_match_table = of_match_ptr(of_gpio_leds_match),
->> +             .of_match_table = of_gpio_leds_match,
->>       },
->>  };
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+That function is indeed quite confusing.
+
+Once nr_to_reclaim has been met, it looks at both LRUs and decides
+which one has the smaller scan target left, sets it to 0, and then
+scales the bigger target in proportion - that means if it scanned 10%
+of nr[file], it sets nr[anon] to 10% of its original size, minus the
+anon pages it already scanned.  Based on that alone, overscanning is
+limited to twice the requested size, i.e. 4MB for a 2MB THP page,
+regardless of how low the priority drops.
+
+In practice, the VM is heavily biased to avoid swapping.  The forceful
+SCAN_FILE you point out is one condition that avoids the proportional
+scan most of the time.  But even the proportional scan is heavily
+biased towards cache - every cache insertion decreases the file
+recent_rotated/recent_scanned ratio, whereas anon faults do not.
+
+On top of that, anon pages start out on the active list, whereas cache
+starts on the inactive, which means that the majority of the anon scan
+target - should there be one - usually translates to deactivation.
+
+So in most cases, I'd expect the scanner to bail after nr_to_reclaim
+cache pages, and in low cache situations it might scan up to 2MB worth
+of anon pages, a small amount of which it might swap.
+
+I don't particularly like the decisions the current code makes, but it
+should work.  We have put in a lot of effort to prevent overreclaim in
+the last few years, and a big part of this was decoupling the priority
+level from the actual reclaim results.  Nowadays, the priority level
+should merely dictate the scan window and have no impact on the number
+of pages actually reclaimed.  I don't expect that it will, but if it
+does, that's a reclaim bug that needs to be addressed.  If we ask for
+N pages, it should never reclaim significantly more than that,
+regardless of how aggressively it has to scan to accomplish that.
