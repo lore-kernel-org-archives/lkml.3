@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933548AbaJHLo4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 07:44:56 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:35970 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933490AbaJHLoy (ORCPT
+	id S1756770AbaJHLqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 07:46:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:33748 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756738AbaJHLqL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 07:44:54 -0400
-Message-ID: <543523B1.1060002@gmail.com>
-Date: Wed, 08 Oct 2014 13:44:49 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Jisheng Zhang <jszhang@marvell.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 3/3] irqchip: dw-apb-ictl: add PM support
-References: <1411454100-6814-1-git-send-email-jszhang@marvell.com> <1411454100-6814-4-git-send-email-jszhang@marvell.com> <542AA336.6070206@gmail.com> <alpine.DEB.2.11.1409302351500.4455@nanos> <20141008193123.11f42bb0@xhacker>
-In-Reply-To: <20141008193123.11f42bb0@xhacker>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Oct 2014 07:46:11 -0400
+Date: Wed, 8 Oct 2014 12:46:07 +0100
+From: Liviu Dudau <Liviu.Dudau@arm.com>
+To: Robert Richter <rric@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sinan Kaya <okaya@codeaurora.org>, Jingoo Han <jg1.han@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Suravee Suthikulanit <suravee.suthikulpanit@amd.com>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Device Tree ML <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH v13 00/12] Support for creating generic PCI host bridges
+ from DT
+Message-ID: <20141008114606.GG4652@e106497-lin.cambridge.arm.com>
+References: <1412000971-9242-1-git-send-email-Liviu.Dudau@arm.com>
+ <20140929194335.GA13747@google.com>
+ <20140930103942.GO841@e106497-lin.cambridge.arm.com>
+ <20140930161805.GB5625@google.com>
+ <20140930165431.GV841@e106497-lin.cambridge.arm.com>
+ <20141008074428.GD20256@rric.localhost>
+ <20141008091321.GC4652@e106497-lin.cambridge.arm.com>
+ <20141008103600.GS20170@rric.localhost>
+MIME-Version: 1.0
+In-Reply-To: <20141008103600.GS20170@rric.localhost>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-OriginalArrivalTime: 08 Oct 2014 11:46:08.0235 (UTC) FILETIME=[730C5BB0:01CFE2ED]
+X-MC-Unique: 114100812460805801
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 01:31 PM, Jisheng Zhang wrote:
-> Hi Thomas, Sebastian,
->
-> On Tue, 30 Sep 2014 14:52:54 -0700
-> Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> On Tue, 30 Sep 2014, Sebastian Hesselbarth wrote:
->>> On 09/23/2014 08:35 AM, Jisheng Zhang wrote:
->>>> This patch adds in support for S2R for dw-apb-ictl irqchip driver.
->>>>
->>>> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
->>>> ---
->>>>    drivers/irqchip/irq-dw-apb-ictl.c | 19 +++++++++++++++++++
->>>>    1 file changed, 19 insertions(+)
->>>>
->>>> diff --git a/drivers/irqchip/irq-dw-apb-ictl.c
->>>> b/drivers/irqchip/irq-dw-apb-ictl.c
->>>> index c136b67..53bb732 100644
->>>> --- a/drivers/irqchip/irq-dw-apb-ictl.c
->>>> +++ b/drivers/irqchip/irq-dw-apb-ictl.c
->>>> @@ -50,6 +50,21 @@ static void dw_apb_ictl_handler(unsigned int irq,
->>>> struct irq_desc *desc)
->>>>    	chained_irq_exit(chip, desc);
->>>>    }
->>>>
->>>> +#ifdef CONFIG_PM
->>>> +static void dw_apb_ictl_resume(struct irq_data *d)
->>>> +{
->>>> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
->>>> +	struct irq_chip_type *ct = irq_data_get_chip_type(d);
->>>> +
->>>> +	irq_gc_lock(gc);
->>>> +	writel_relaxed(~0, gc->reg_base + ct->regs.enable);
->>>> +	writel_relaxed(*ct->mask_cache, gc->reg_base + ct->regs.mask);
->>>> +	irq_gc_unlock(gc);
->>>> +}
->>>
->>> I agree with the overall change, but may this also be suited for a
->>> generic irq_chip helper instead of being a driver specific one?
->>>
->>> Maybe Thomas or Jason can comment on this.
->>
->> If we have enough similar resume callbacks, yes.
->>
->>> Also, now that you are using writel_relaxed, I understand that both
->>> writes above can happen in any order? Are there any implication we
->>> have to consider, i.e. do we require any of the registers above to
->>> be written first?
->
-> The registers sits at device type memory, the writes should happen in the same
-> order as before.
+On Wed, Oct 08, 2014 at 11:36:00AM +0100, Robert Richter wrote:
+> On 08.10.14 10:13:21, Liviu Dudau wrote:
+> > On Wed, Oct 08, 2014 at 08:44:28AM +0100, Robert Richter wrote:
+> > > I assume pci/host-generic is the latest now with this issue fixed as
+> > > the commit date is 2014-10-01 past you message above, right? So is it
+> > > ok to rebase our host controller driver onto pci/host-generic or will
+> > > there be further updates or any other branch that is newer?
+> > 
+> > You can rebase either on top of Bjorn's next branch or use linux-next. Hope to
+> > see it in v3.18 soon.
+> 
+> Thanks Liviu. So I will use pci/host-generic which is what is in
+> pci/next:
+> 
+>  d1e6dc91b532 arm64: Add architectural support for PCI
 
-Jisheng,
+Yes, that's the one.
 
-it is not about the location of the register but, as far as I
-understand, when using {readl,writel}_relaxed the compiler is
-free to reorder the calls. So, if there is a strict order we
-want to ensure, we have to use non-relaxed {readl,writel}.
+Best regards,
+Liviu
 
-The performance penalty of non-relaxed calls can be ignored anyway
-as it is done only once after resume.
+> 
+> -Robert
+> 
 
-Sebastian
+-- 
+====================
+| I would like to |
+| fix the world,  |
+| but they're not |
+| giving me the   |
+ \ source code!  /
+  ---------------
+    ¯\_(ツ)_/¯
+
