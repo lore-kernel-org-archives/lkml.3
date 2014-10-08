@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170AbaJHMt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:49:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42031 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753787AbaJHMt5 (ORCPT
+	id S1756407AbaJHMuN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:50:13 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40601 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195AbaJHMuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:49:57 -0400
-Date: Wed, 8 Oct 2014 13:49:28 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+	Wed, 8 Oct 2014 08:50:11 -0400
+Date: Wed, 8 Oct 2014 13:49:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Chris Zhong <zyw@rock-chips.com>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/3] ARM: vfp: fix VFPv3 hwcap detection on non-ARM vfp
- implementations
-Message-ID: <20141008124927.GK26140@arm.com>
-References: <1411076592-6157-1-git-send-email-sboyd@codeaurora.org>
- <1411076592-6157-3-git-send-email-sboyd@codeaurora.org>
- <20140918224625.GF5182@n2100.arm.linux.org.uk>
- <541C74C1.9060504@codeaurora.org>
- <542C3FCA.2010006@codeaurora.org>
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Message-ID: <20141008124935.GA24947@sirena.org.uk>
+References: <1412671438-25399-1-git-send-email-zyw@rock-chips.com>
+ <CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
 Content-Disposition: inline
-In-Reply-To: <542C3FCA.2010006@codeaurora.org>
+In-Reply-To: <CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
+X-Cookie: What fools these morals be!
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: rk808: Add support setting suspend voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-On Wed, Oct 01, 2014 at 06:54:18PM +0100, Stephen Boyd wrote:
-> On 09/19/14 11:24, Stephen Boyd wrote:
-> > On 09/18/14 15:46, Russell King - ARM Linux wrote:
-> >> I know that you're changing this to conform with the ARM ARM, but we
-> >> have to consider that before VFP was subsumed into the ARM ARM, this
-> >> register had the format described as per this file, and these other
-> >> bits may be set for an ARM part.  Including these bits in the mask
-> >> means that we will mis-identify these older parts as VFPv3.
-> >>
-> > Do you, or anyone else, know of other implementations? I *hope* that
-> > this same exercise was done by the VFP architects before they
-> > re-purposed bits but who knows. If nobody is actually setting these
-> > higher bits then is there any problem widening the mask (besides it
-> > being slightly confusing)?
-> >
-> 
-> Any thoughts?
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've spoken to the architects about this, and it seems that you need to
-parse FPSID differently depending upon whether you are a v7 CPU or not.
+On Tue, Oct 07, 2014 at 10:48:41AM -0700, Doug Anderson wrote:
+> On Tue, Oct 7, 2014 at 1:43 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> > support setting suspend voltage and disable regulator in suspend.
 
-However, as you are well aware, detecting whether or not you are v7 isn't as
-simple as it sounds. cpu_architecture() checks the VMSA/PMSA fields in
-MMFR0, but that's not quite right for 11MPcore (and 1176 iirc), which are
-v6 implementations.
+Doug, please delete unneeded context from mails, paging through screen
+after screen of irrelevant text on the off chance of finding content
+gets old fast so it's likely that some or all what you're saying will be
+missed either through boredone or error.
 
-So, it sounds like the scheme is:
+> One point of curiosity (maybe this is a question for Chanwoo and
+> Javier): I'd expect that if someone didn't explicitly setup a "suspend
+> voltage" that their voltage would just be left alone at suspend time.
 
-  if (revised_cpuid_format()) // i.e. MIDR.Architecture == 0xF
-	determine_vfp_arch_using_mvfr_regs();
-  else
-        determine_vfp_arch_using_fpsid();
+No, this is not the case.  The suspend mode settings are a completely
+different set of settings activated when the system goes into suspend
+with explicit hardware support.  If no configuration for this mode is
+provided then=20
 
-which in turn means that we probably need to rethink how we want to
-advertise floating point hardware features in the future. ARMv8, for
-example, adds an additional MVFR2 register, which advertises additional
-floating point instructions without explicitly creating something akin to
-VFPv5.
+> I believe that won't be the case for your driver.  The rk808 will (I
+> think) automatically transition to the "suspend voltage" settings for
+> ALL regulators at suspend time.  If you didn't explicitly set the
+> suspend voltage then you'll move to whatever the default voltage is,
+> right?
 
-Will
+As ever the hardware configuration won't be touched by the kernel unless
+it's explicitly told to do something.
+
+--HcAYCG3uE/tztfnV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNTLeAAoJECTWi3JdVIfQoGwH/0hJgyPdrO3knMrlBVSyDHGC
+OkkD+kL20fPkmrbjRJfnjCm+qP7vGY8UIfnSfv9+ZzK5SLlGgTNNn4feldHuDgDt
+VZGNSAcbsdKkcG2V3Jwy7dCPCB6pKZTcNTSbvxRoSHD14Vk3FP2e/Hxq28qMkfcP
+zDcPZ4M7fUydrNTPltTTe36nu8sR4qKPq7lLy2eineq1yhpcsXqoHb56dSxB7yW2
+PIxiEkJzzjiD+fcI+Lv9uG6c0dXsd1IsJVXR0anMh/YO+jf+tDta9xlSf3xkCdzF
+aWWKnyNeq4U3trWum3PeSa3/2MRi7ckKDEvvPDGJGgyNFRxfGJeE4NiIBctMgIo=
+=JYfG
+-----END PGP SIGNATURE-----
+
+--HcAYCG3uE/tztfnV--
