@@ -1,59 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaJHRw0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 13:52:26 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:36798 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051AbaJHRwZ (ORCPT
+	id S1754186AbaJHRwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 13:52:35 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:5254 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754139AbaJHRwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 13:52:25 -0400
-Message-ID: <1412790740.5173.4.camel@marge.simpson.net>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Wed, 08 Oct 2014 19:52:20 +0200
-In-Reply-To: <20141008164557.GB38790@sesse.net>
-References: <20141003194428.GA27084@sesse.net>
-	 <1412782664.5179.75.camel@marge.simpson.net>
-	 <alpine.DEB.2.11.1410081756250.4292@nanos>
-	 <20141008164557.GB38790@sesse.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 8 Oct 2014 13:52:33 -0400
+Date: Wed, 8 Oct 2014 13:52:16 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace: Robustify wait loop
+Message-ID: <20141008135216.76142204@gandalf.local.home>
+In-Reply-To: <20141008165110.GA14547@worktop.programming.kicks-ass.net>
+References: <20141008100613.GA17869@wfg-t540p.sh.intel.com>
+	<20141008104120.GH10832@worktop.programming.kicks-ass.net>
+	<20141008110825.58bdb51d@gandalf.local.home>
+	<20141008154838.GM10832@worktop.programming.kicks-ass.net>
+	<20141008121718.0210c24e@gandalf.local.home>
+	<20141008163657.GN10832@worktop.programming.kicks-ass.net>
+	<20141008165110.GA14547@worktop.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-08 at 18:45 +0200, Steinar H. Gunderson wrote: 
-> On Wed, Oct 08, 2014 at 06:14:18PM +0200, Thomas Gleixner wrote:
-> > It looks far more like an issue with the stocking fish code, but hell
-> > with futexes one can never be sure.
+On Wed, 8 Oct 2014 18:51:10 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, Oct 08, 2014 at 06:36:57PM +0200, Peter Zijlstra wrote:
+> > 
+> > Right, I'll send the patch. 
 > 
-> OK, maybe we should move to a more recent Stockfish version first of all;
-> the specific benchmark was about that specific binary, but for tracking down
-> futex issues we can see if more recent code fixes it (the SMP in this thing
-> keeps getting developed).
-
-Mine was self build master, downloaded as a tarball.
-
-> I'm moving to 2ac206e847a04a7de07690dd575c6949e5625115 (current head) of
-> https://github.com/mcostalba/Stockfish.git, and building with
-> “make -j ARCH=x86-64-bmi2”.
 > 
-> I still don't see any hangs, but I do see the same behavior of moving around
-> between CPUs as the older version exhibited. In a test run (using the given
-> test script, just with 28 replaced by 20), I get 18273 kN/sec with default,
-> and 21875 kN/sec when using taskset.
 
-Sure, that will likely be workqueues or whatnot running when one of the
-chess threads wakes, so select_idle_sibling() shows one of its two
-faces.. the butt ugly one.  That's what I wanted to play with on a too
-darn big socket box when I discovered the thing didn't want to play.
+I'll see if I can get this in this merge window before I leave to
+Dusseldorf.
 
--Mike
+BTW, what do you think of this solution? Feel free to ack it if you
+like it.
 
+-- Steve
+
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 5ef60499dc8e..593f52b73551 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -1025,6 +1025,12 @@ trace_selftest_startup_nop(struct tracer *trace, struct trace_array *tr)
+ #endif
+ 
+ #ifdef CONFIG_SCHED_TRACER
++
++struct wakeup_test_data {
++	struct completion	is_ready;
++	int			go;
++};
++
+ static int trace_wakeup_test_thread(void *data)
+ {
+ 	/* Make this a -deadline thread */
+@@ -1034,51 +1040,56 @@ static int trace_wakeup_test_thread(void *data)
+ 		.sched_deadline = 10000000ULL,
+ 		.sched_period = 10000000ULL
+ 	};
+-	struct completion *x = data;
++	struct wakeup_test_data *x = data;
+ 
+ 	sched_setattr(current, &attr);
+ 
+ 	/* Make it know we have a new prio */
+-	complete(x);
++	complete(&x->is_ready);
+ 
+ 	/* now go to sleep and let the test wake us up */
+ 	set_current_state(TASK_INTERRUPTIBLE);
+-	schedule();
++	while (!x->go) {
++		schedule();
++		set_current_state(TASK_INTERRUPTIBLE);
++	}
+ 
+-	complete(x);
++	complete(&x->is_ready);
++
++	set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 	/* we are awake, now wait to disappear */
+ 	while (!kthread_should_stop()) {
+-		/*
+-		 * This will likely be the system top priority
+-		 * task, do short sleeps to let others run.
+-		 */
+-		msleep(100);
++		schedule();
++		set_current_state(TASK_INTERRUPTIBLE);
+ 	}
+ 
++	__set_current_state(TASK_RUNNING);
++
+ 	return 0;
+ }
+-
+ int
+ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
+ {
+ 	unsigned long save_max = tr->max_latency;
+ 	struct task_struct *p;
+-	struct completion is_ready;
++	struct wakeup_test_data data;
+ 	unsigned long count;
+ 	int ret;
+ 
+-	init_completion(&is_ready);
++	memset(&data, 0, sizeof(data));
++
++	init_completion(&data.is_ready);
+ 
+ 	/* create a -deadline thread */
+-	p = kthread_run(trace_wakeup_test_thread, &is_ready, "ftrace-test");
++	p = kthread_run(trace_wakeup_test_thread, &data, "ftrace-test");
+ 	if (IS_ERR(p)) {
+ 		printk(KERN_CONT "Failed to create ftrace wakeup test thread ");
+ 		return -1;
+ 	}
+ 
+ 	/* make sure the thread is running at -deadline policy */
+-	wait_for_completion(&is_ready);
++	wait_for_completion(&data.is_ready);
+ 
+ 	/* start the tracing */
+ 	ret = tracer_init(trace, tr);
+@@ -1099,18 +1110,20 @@ trace_selftest_startup_wakeup(struct tracer *trace, struct trace_array *tr)
+ 		msleep(100);
+ 	}
+ 
+-	init_completion(&is_ready);
++	init_completion(&data.is_ready);
++
++	data.go = 1;
++	/* memory barrier is in the wake_up_process() */
+ 
+ 	wake_up_process(p);
+ 
+ 	/* Wait for the task to wake up */
+-	wait_for_completion(&is_ready);
++	wait_for_completion(&data.is_ready);
+ 
+ 	/* stop the tracing. */
+ 	tracing_stop();
+ 	/* check both trace buffers */
+ 	ret = trace_test_buffer(&tr->trace_buffer, NULL);
+-	printk("ret = %d\n", ret);
+ 	if (!ret)
+ 		ret = trace_test_buffer(&tr->max_buffer, &count);
+ 
