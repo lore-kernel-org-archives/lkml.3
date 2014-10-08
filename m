@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755713AbaJHQep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 12:34:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47210 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbaJHQen (ORCPT
+	id S1752583AbaJHQhI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 12:37:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52688 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJHQhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 12:34:43 -0400
-Date: Wed, 8 Oct 2014 09:34:42 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 00/26] 3.16.5-stable review
-Message-ID: <20141008163442.GA29773@kroah.com>
-References: <20141007231848.487609292@linuxfoundation.org>
- <5434A5B1.9010408@roeck-us.net>
- <20141008044803.GC26820@kroah.com>
- <87r3yihh0p.wl%satoru.takeuchi@gmail.com>
- <20141008133252.GD5119@kroah.com>
- <20141008154929.GA12647@roeck-us.net>
+	Wed, 8 Oct 2014 12:37:07 -0400
+Date: Wed, 8 Oct 2014 18:36:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Su Tao <tao.su@intel.com>, Yuanhan Liu <yuanhan.liu@intel.com>,
+        LKP <lkp@01.org>, linux-kernel@vger.kernel.org
+Subject: Re: [trace events] WARNING: CPU: 0 PID: 91 at
+ kernel/sched/core.c:7253 __might_sleep()
+Message-ID: <20141008163657.GN10832@worktop.programming.kicks-ass.net>
+References: <20141008100613.GA17869@wfg-t540p.sh.intel.com>
+ <20141008104120.GH10832@worktop.programming.kicks-ass.net>
+ <20141008110825.58bdb51d@gandalf.local.home>
+ <20141008154838.GM10832@worktop.programming.kicks-ass.net>
+ <20141008121718.0210c24e@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141008154929.GA12647@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141008121718.0210c24e@gandalf.local.home>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 08:49:47AM -0700, Guenter Roeck wrote:
-> On Wed, Oct 08, 2014 at 06:32:52AM -0700, Greg Kroah-Hartman wrote:
-> > On Wed, Oct 08, 2014 at 09:39:50PM +0900, Satoru Takeuchi wrote:
-> > > At Tue, 7 Oct 2014 21:48:04 -0700,
-> > > Greg Kroah-Hartman wrote:
-> > > > 
-> > > > On Tue, Oct 07, 2014 at 07:47:13PM -0700, Guenter Roeck wrote:
-> > > > > On 10/07/2014 04:19 PM, Greg Kroah-Hartman wrote:
-> > > > > >This is the start of the stable review cycle for the 3.16.5 release.
-> > > > > >There are 26 patches in this series, all will be posted as a response
-> > > > > >to this one.  If anyone has any issues with these being applied, please
-> > > > > >let me know.
-> > > > > >
-> > > > > >Responses should be made by Thu Oct  9 23:18:40 UTC 2014.
-> > > > > >Anything received after that time might be too late.
-> > > > > >
-> > > > > 
-> > > > > Build results:
-> > > > > 	total: 136 pass: 136 fail: 0
-> > > > > Qemu tests:
-> > > > > 	total: 30 pass: 30 fail: 0
-> > > > > 
-> > > > > Details are available at http://server.roeck-us.net:8010/builders.
-> > > > 
-> > > > Wonderful, thanks for testing all 3 of these and letting me know.
+On Wed, Oct 08, 2014 at 12:17:18PM -0400, Steven Rostedt wrote:
+> On Wed, 8 Oct 2014 17:48:38 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+>  
+> > > Wow, what a blast from the past. That code hasn't been touched since
+> > > 2009!
 > > > 
-> > > Plus, all these kernels passed my test.
+> > > Anyway, all that thread did was call test work on each cpu, and then
+> > > waits to be killed. It should only get a single wake up and that should
+> > > be from the kthread_stop() call. IOW, that loop should never be
+> > > executed more than once.
 > > > 
-> > >  - Test Cases:
-> > >    - Build this kernel.
-> > >    - Boot this kernel.
-> > >    - Build the latest mainline kernel with this kernel.
-> > > 
-> > >  - Test Tool:
-> > >    https://github.com/satoru-takeuchi/test-linux-stable
-> > > 
-> > >  - Test Result (kernel .config, ktest config and test log):
-> > >    http://satoru-takeuchi.org/test-linux-stable/results/<version>-<test datetime>.tar.xz
-> > > 
-> > >  - Build Environment:
-> > >    - OS: Debian Jessy x86_64
-> > >    - CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
-> > >    - memory: 8GB
-> > > 
-> > >  - Test Target Environment:
-> > >    - Debian Jessy x86_64 (KVM guest on the Build Environment)
-> > >    - # of vCPU: 2
-> > >    - memory: 2GB
+> > > What exactly is the bug here?
 > > 
-> > Glad to hear it, I was worried about 3.14, thanks for testing and
-> > verifying I didn't mess anything up.
+> > The bug is as explained, the loop is wrong and will revert to a yield
+> > 'spin' loop after a single wakeup.
 > > 
-> Anything special to be worried about for 3.14.20 that might warrant
-> further / special testing ?
+> > The debugging that caught it is that you exit the loop without setting
+> > TASK_RUNNING.
+> 
+> I understand that it becomes a yield if something sends a wakeup before
+> killing it. I highly doubt that would ever happen since it doesn't call
+> anything that should wake it up and it only runs at boot up.
 
-If it boots, it's good :)
+Still we should always assume spurious wakeups, its fragile not to and
+has so far made life sad a few times.
 
-> FWIW, I merged 3.14.19 into our target kernel. It does pass smoketest ;-).
+> Looking at the original email that has the trace, I'm betting it hit
+> the race where kthread_stop() was called on the thread before it set
+> its state to TASK_INTERRUPTIBLE and then the first call to
+> kthread_should_stop() returned true and schedule() was never called and
+> the task exited with the TASK_INTERRUPTIBLE state.
 
-Good, I merged a bunch of mm patches that Mel backported for 3.12.  I
-have more to do, was doing them in batches to try to make bisection
-easier if problems show up.
+Sure.
 
-thanks,
+> Really no harm here. If we had called set_task_state(TASK_RUNNING)
+> before exiting this never would have been seen.
+> 
+> Anyway, as for a fix, if you want to do it fully with setting
+> TASK_INTERRUPTBILE again in the loop, I'm fine with it. I still don't
+> see any possible way it can be woken up before kthread_should_stop()
+> being true, but hey, lets make it more robust. Then if we ever
+> extend on the tests that are run, which could add a delayed wake up, it
+> would not turn into a yield.
 
-greg k-h
+Right, I'll send the patch. While looking I found another issue,
+trace_selftest.c:trace_wakeup_test_thread() has a schedule() without a
+loop around. We should really not do that.
