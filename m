@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135AbaJHGLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:11:33 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44357 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaJHGLc (ORCPT
+	id S1754272AbaJHG0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:26:38 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:42906 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172AbaJHG0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:11:32 -0400
-Message-ID: <1412748690.31947.38.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH] target/file: fix inclusive vfs_fsync_range() end
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Zach Brown <zab@zabbo.net>
-Cc: linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 07 Oct 2014 23:11:30 -0700
-In-Reply-To: <1412638813-13285-1-git-send-email-zab@zabbo.net>
-References: <1412638813-13285-1-git-send-email-zab@zabbo.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 8 Oct 2014 02:26:37 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>, peterz@infradead.org,
+        mingo@redhat.com
+Cc: dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
+        vincent.guittot@linaro.org, nicolas.pitre@linaro.org,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        tuukka.tikkanen@linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH RFC 0/2] introduce capacity_ops to CFS
+Date: Tue,  7 Oct 2014 23:26:10 -0700
+Message-Id: <1412749572-29449-1-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20141008060712.4379.42509@quantum>
+References: <20141008060712.4379.42509@quantum>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-06 at 16:40 -0700, Zach Brown wrote:
-> Both of the file target's calls to vfs_fsync_range() got the end offset
-> off by one.  The range is inclusive, not exclusive.  It would sync a bit
-> more data than was required.
-> 
-> The sync path already tested the length of the range and fell back to
-> LLONG_MAX so I copied that pattern in the rw path.
-> 
-> This is untested. I found the errors by inspection while following other
-> code.
-> 
-> Signed-off-by: Zach Brown <zab@zabbo.net>
-> ---
->  drivers/target/target_core_file.c | 9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-> index 7d6cdda..176588f 100644
-> --- a/drivers/target/target_core_file.c
-> +++ b/drivers/target/target_core_file.c
-> @@ -415,7 +415,7 @@ fd_execute_sync_cache(struct se_cmd *cmd)
->  	} else {
->  		start = cmd->t_task_lba * dev->dev_attrib.block_size;
->  		if (cmd->data_length)
-> -			end = start + cmd->data_length;
-> +			end = start + cmd->data_length - 1;
->  		else
->  			end = LLONG_MAX;
->  	}
-> @@ -680,7 +680,12 @@ fd_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
->  			struct fd_dev *fd_dev = FD_DEV(dev);
->  			loff_t start = cmd->t_task_lba *
->  				dev->dev_attrib.block_size;
-> -			loff_t end = start + cmd->data_length;
-> +			loff_t end;
-> +
-> +			if (cmd->data_length)
-> +				end = start + cmd->data_length - 1;
-> +			else
-> +				end = LLONG_MAX;
->  
->  			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
->  		}
+The fair scheduler needs a method to retrieve the capacity of a cpu,
+which may be derived from several platform-specific factors including
+micro-architectural differences (e.g. big.LITTLE cpus), cpus with
+different transistor types or process node properties (e.g. Nvidia
+Tegra30 LP cpu) and cpu frequency (for cpus that dynamically scale clock
+speed).
 
-Nice catch Zach.  Applying to target-pending/for-next now.
+This info is inherently machine-specific and the first patch in this
+series implements a new callback, .get_capacity as part of struct
+capacity_ops. The default simply returns SCHED_CAPACITY_SCALE.
 
-Thank you,
+The second patch populates that callback with CPUfreq-based method for
+machines using the arm_big_little CPUfreq driver. This can likely be
+abstracted out a bit more to be generally useful to more CPUfreq drivers
+but I wanted to gather feedback on the approach before going any
+further.
 
---nab
+Mike Turquette (2):
+  sched: cfs: introduce capacity_ops
+  cpufreq: arm_big_little: provide cpu capacity
+
+ arch/arm/include/asm/topology.h  |  2 ++
+ arch/arm/kernel/topology.c       | 42 ++-------------------------------
+ drivers/cpufreq/arm_big_little.c | 51 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/sched.h            | 28 ++++++++++++++++++++++
+ kernel/sched/fair.c              | 41 +++++++++++++++++++++++++++-----
+ 5 files changed, 118 insertions(+), 46 deletions(-)
+
+-- 
+1.8.3.2
 
