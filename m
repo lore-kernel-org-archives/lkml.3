@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995AbaJHJeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 05:34:07 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41026 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960AbaJHJdo (ORCPT
+	id S1756021AbaJHJeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 05:34:20 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35614 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754992AbaJHJeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 05:33:44 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, linux@roeck-us.net,
-        devicetree@vger.kernel.org, David Paris <david.paris@st.com>
-Subject: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for ST's LPC Watchdog driver
-Date: Wed,  8 Oct 2014 10:33:29 +0100
-Message-Id: <1412760810-23199-4-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
-References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
+	Wed, 8 Oct 2014 05:34:13 -0400
+X-Sasl-enc: Q2mwVzAVDcn55nnUHa+x4ye5wOANGrgvXQ+H1sOMcYaj 1412760852
+Message-ID: <1412760850.7228.5.camel@localhost>
+Subject: Re: [PATCH 1/1 net-next] af_unix: remove NULL assignment on static
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: Fabian Frederick <fabf@skynet.be>, Guenter Roeck <linux@roeck-us.net>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 08 Oct 2014 11:34:10 +0200
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
+References: <1412712996-4672-1-git-send-email-fabf@skynet.be>
+	 <20141007.161832.453892039501955243.davem@davemloft.net>
+	 <20141007203344.GA4748@roeck-us.net>
+	 <1559212122.19553.1412714971908.open-xchange@webmail.nmp.skynet.be>
+	 <1412715283.11600.11.camel@localhost>
+	 <063D6719AE5E284EB5DD2968C1650D6D174C6CA5@AcuExch.aculab.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: David Paris <david.paris@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 30 ++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+On Mi, 2014-10-08 at 09:10 +0000, David Laight wrote:
+> From: Hannes Frederic Sowa
+> > I think David's concern was whether if 0 == false in all situations. It
+> > is pretty clear that static memory is initialized to 0.
+> 
+> I'm not 100% sure about that.
+> static pointers may be required to be initialised to NULL.
 
-diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-new file mode 100644
-index 0000000..520ce90
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-@@ -0,0 +1,30 @@
-+STMicroelectronics LPC Watchdog
-+===============================
-+
-+Required properties
-+
-+- compatible 	: Must be one of:
-+			"st,stih407-watchdog"
-+			"st,stih416-watchdog"
-+			"st,stih415-watchdog"
-+			"st,stid127-watchdog"
-+- reg		: LPC registers base address + range
-+- reg-names	: Register map "base" and "syscfg-en" are compulsory. "type" is
-+		  platform dependent and not required for the STiH407
-+- clock-names 	: Should be "lpc_wdt"
-+- clocks	: Clock used by LPC device
-+- timeout-sec	: Watchdog timeout in seconds
-+- st,syscfg	: Syscfg node used to configure CPU reset type and mask
-+- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
-+
-+Example:
-+	watchdog@fde05000 {
-+		compatible	= "st,stih416-lpc-watchdog";
-+		reg		= <0xfde05000 0x1000> <0x204 0x4>;
-+		reg-names	= "base", "syscfg-en"
-+		clock-names	= "lpc_wdt";
-+		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-+		timeout-sec	= <600>;
-+		st,syscfg	= <&syscfg_core>;
-+		st,warm_reset;
-+	};
--- 
-1.9.1
+This isn't something the C standard specified but in case of Linux, I
+think the ELF standard might be the right one to look at. Looking at the
+kernel, I think this is an unwritten law. ;)
+
+The standard allows NULL and static memory initialization to be
+implementation defined, so NULL very well might not be 'all 0', that's
+correct. Even static memory must only be initialized, when this happens
+and how it is initialized is completely up to the implementation.
+
+> If NULL isn't the 'all 0 bit pattern' then the memory would need
+> to be initialised to a different pattern.
+
+I haven't looked closely but I don't think that pointers need to be
+initialized to NULL, but please don't quote me on this.
+
+> Not that anyone is likely to implement such a system because far too
+> much code will break.
+> 
+> The only system I knew where 'native' NULL pointers were 'all 1s'
+> used 0 in its C compiler.
+
+:)
+
+Bye,
+Hannes
+
 
