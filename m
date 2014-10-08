@@ -1,154 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069AbaJHKYu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:24:50 -0400
-Received: from regular1.263xmail.com ([211.150.99.131]:43608 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755561AbaJHKYr (ORCPT
+	id S1755714AbaJHKZt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:25:49 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:38841 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755000AbaJHKZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:24:47 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: mark.yao@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 127.0.0.1
-X-LOGIN-NAME: mark.yao@rock-chips.com
-X-UNIQUE-TAG: <8011aea6b10bf676ca31e0164c04eca3>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 1
-From: Mark Yao <mark.yao@rock-chips.com>
-To: heiko@sntech.de, Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        David Airlie <airlied@gmail.com>, Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rom Lemarchand <romlem@google.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-api@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        dianders@chromium.org, marcheu@chromium.org, dbehr@chromium.org,
-        olof@lixom.net, djkurtz@chromium.org, xjq@rock-chips.com,
-        kfx@rock-chips.com, cym@rock-chips.com, cf@rock-chips.com,
-        zyw@rock-chips.com, xxm@rock-chips.com, huangtao@rock-chips.com,
-        kever.yang@rock-chips.com, yxj@rock-chips.com, wxt@rock-chips.com,
-        xw@rock-chips.com, Mark yao <mark.yao@rock-chips.com>
-Subject: [PATCH v11 3/3] dt-bindings: video: Add documentation for rockchip vop
-Date: Wed,  8 Oct 2014 18:24:33 +0800
-Message-Id: <1412763873-31682-1-git-send-email-mark.yao@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
-References: <1412763781-31533-1-git-send-email-mark.yao@rock-chips.com>
+	Wed, 8 Oct 2014 06:25:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMf-jS=jvo2hzULv_MtvbeAq_A2z0aJS2F=1Zx5tPonKsJTrNg@mail.gmail.com>
+References: <1412667049-6128-1-git-send-email-pramod.gurav@smartplayin.com>
+	<20141007163856.GE16469@dtor-ws>
+	<CAMf-jS=jvo2hzULv_MtvbeAq_A2z0aJS2F=1Zx5tPonKsJTrNg@mail.gmail.com>
+Date: Wed, 8 Oct 2014 15:55:45 +0530
+Message-ID: <CAMf-jSkLsSw6EZZCZ-AMqvaRZYhh8oJ6uwvEwZUJXG8SxicEuw@mail.gmail.com>
+Subject: Re: [PATCH] Input: adp5588-keys: cancel workqueue in failure path
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark yao <mark.yao@rock-chips.com>
+On Wed, Oct 8, 2014 at 3:48 PM, Pramod Gurav <pramod.gurav.etc@gmail.com> wrote:
+> Hi Dmitry,
+>
+> On Tue, Oct 7, 2014 at 10:08 PM, Dmitry Torokhov
+>
 
-This adds binding documentation for Rockchip SoC VOP driver.
+..
 
-Signed-off-by: Mark Yao <mark.yao@rock-chips.com>
----
-Changes in v2:
-- rename "lcdc" to "vop"
-- add vop reset
-- add iommu node
-- add port for display-subsystem
+> Thanks. I saw the change in your tree. Shouldn't
+> cancel_delayed_work_sync(&kpad->work) be called under label
+> err_free_mem so that it will executed in case adp5588_read,
+> input_register_device, request_irq etc.
+> Or else we will still have workqueue instance hanging around.
+>
 
-Changes in v3: None
+Sorry, Should have read Michael's reply more carefully. I get the
+reason behind cancelling workquequq after freeing irq.
 
-Changes in v4: None
 
-Changes in v5: None
-
-Changes in v6: None
-
-Changes in v7: None
-
-Changes in v8: None
-
-Changes in v9: None
-
-Changes in v10: None
-
-Changes in v11: None
-
- .../devicetree/bindings/video/rockchip-vop.txt     |   58 ++++++++++++++++++++
- 1 file changed, 58 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/video/rockchip-vop.txt
-
-diff --git a/Documentation/devicetree/bindings/video/rockchip-vop.txt b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-new file mode 100644
-index 0000000..d15351f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/rockchip-vop.txt
-@@ -0,0 +1,58 @@
-+device-tree bindings for rockchip soc display controller (vop)
-+
-+VOP (Visual Output Processor) is the Display Controller for the Rockchip
-+series of SoCs which transfers the image data from a video memory
-+buffer to an external LCD interface.
-+
-+Required properties:
-+- compatible: value should be one of the following
-+		"rockchip,rk3288-vop";
-+
-+- interrupts: should contain a list of all VOP IP block interrupts in the
-+		 order: VSYNC, LCD_SYSTEM. The interrupt specifier
-+		 format depends on the interrupt controller used.
-+
-+- clocks: must include clock specifiers corresponding to entries in the
-+		clock-names property.
-+
-+- clock-names: Must contain
-+		aclk_vop: for ddr buffer transfer.
-+		hclk_vop: for ahb bus to R/W the phy regs.
-+		dclk_vop: pixel clock.
-+
-+- resets: Must contain an entry for each entry in reset-names.
-+  See ../reset/reset.txt for details.
-+- reset-names: Must include the following entries:
-+  - axi
-+  - ahb
-+  - dclk
-+
-+- iommus: required a iommu node
-+
-+- port: A port node with endpoint definitions as defined in
-+  Documentation/devicetree/bindings/media/video-interfaces.txt.
-+
-+Example:
-+SoC specific DT entry:
-+	vopb: vopb@ff930000 {
-+		compatible = "rockchip,rk3288-vop";
-+		reg = <0xff930000 0x19c>;
-+		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
-+		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
-+		resets = <&cru SRST_LCDC1_AXI>, <&cru SRST_LCDC1_AHB>, <&cru SRST_LCDC1_DCLK>;
-+		reset-names = "axi", "ahb", "dclk";
-+		iommus = <&vopb_mmu>;
-+		vopb_out: port {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			vopb_out_edp: endpoint@0 {
-+				reg = <0>;
-+				remote-endpoint=<&edp_in_vopb>;
-+			};
-+			vopb_out_hdmi: endpoint@1 {
-+				reg = <1>;
-+				remote-endpoint=<&hdmi_in_vopb>;
-+			};
-+		};
-+	};
 -- 
-1.7.9.5
-
-
+Thanks and Regards
+Pramod
