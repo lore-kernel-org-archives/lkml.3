@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124AbaJHW0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:26:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35925 "EHLO mx1.redhat.com"
+	id S1755429AbaJHW0d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:26:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34203 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753845AbaJHW0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:26:18 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Cc: martin.petersen@oracle.com, dm-devel@redhat.com
-Subject: [PATCH v2] block: fix alignment_offset math that assumes io_min is a power-of-2
-Date: Wed,  8 Oct 2014 18:26:13 -0400
-Message-Id: <1412807173-15541-1-git-send-email-snitzer@redhat.com>
-In-Reply-To: <to=1412805952-15316-1-git-send-email-snitzer@redhat.com>
-References: <to=1412805952-15316-1-git-send-email-snitzer@redhat.com>
+	id S1754453AbaJHW01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 18:26:27 -0400
+Date: Thu, 9 Oct 2014 00:26:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+Message-ID: <20141008222619.GG16892@pd.tnic>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+ <1411313216-2641-2-git-send-email-minipli@googlemail.com>
+ <20141003134707.GJ14343@console-pimps.org>
+ <20141007150132.GA7307@nazgul.tnic>
+ <20141007170748.GA25767@jig.fritz.box>
+ <20141008151730.GB16892@pd.tnic>
+ <CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The math in both blk_stack_limits() and queue_limit_alignment_offset()
-assume that a block device's io_min (aka minimum_io_size) is always a
-power-of-2.  Fix the math such that it works for non-power-of-2 io_min.
+On Wed, Oct 08, 2014 at 11:58:20PM +0200, Mathias Krause wrote:
+> Well, that is only partly correct. The call chain in efi_map_regions()
+> [ -> efi_map_region() -> __map_region() -> kernel_map_pages_in_pgd()
+> -> ..."magic"... ] does not only map the EFI regions in
+> trampoline_pgd, but also in kernel page table, i.e. init_level4_pgt.
 
-This issue (of alignment_offset != 0) became apparent when testing
-dm-thinp with a thinp blocksize that matches a RAID6 stripesize of
-1280K.  Commit fdfb4c8c1 ("dm thin: set minimum_io_size to pool's data
-block size") unlocked the potential for alignment_offset != 0 due to
-the dm-thin-pool's io_min possibly being a non-power-of-2.
+No, this is completely correct. If it isn't, then it needs to be. We
+can't have EFI mappings in the kernel page table for a reason.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org
----
- block/blk-settings.c   | 4 ++--
- include/linux/blkdev.h | 5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+EFI mappings only land in trampoline_pgd, not in the kernel page table,
+.i.e *not* in init_level4_pgt. Look at what the first argument of every
+invocation of kernel_map_pages_in_pgd() is.
 
-v2: fix bug in queue_limit_alignment_offset's math conversion (missed trailing << 9)
+> That can easily be shown by looking at the kernel_page_tables debugfs
+> file on a running system. You'll notice large RWX portions covering
+> the "phys" mappings in the "Low Kernel Mapping" area and the "virt"
+> mappings in the "EFI Runtime Services" area. Now reboot with "noefi"
+> and see those be gone.
 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index f1a1795..aa02247 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -574,7 +574,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
- 		bottom = max(b->physical_block_size, b->io_min) + alignment;
- 
- 		/* Verify that top and bottom intervals line up */
--		if (max(top, bottom) & (min(top, bottom) - 1)) {
-+		if (max(top, bottom) % min(top, bottom)) {
- 			t->misaligned = 1;
- 			ret = -1;
- 		}
-@@ -619,7 +619,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
- 
- 	/* Find lowest common alignment_offset */
- 	t->alignment_offset = lcm(t->alignment_offset, alignment)
--		& (max(t->physical_block_size, t->io_min) - 1);
-+		% max(t->physical_block_size, t->io_min);
- 
- 	/* Verify that new alignment_offset is on a logical block boundary */
- 	if (t->alignment_offset & (t->logical_block_size - 1)) {
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 038b40f..5546392 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1279,10 +1279,9 @@ static inline int queue_alignment_offset(struct request_queue *q)
- static inline int queue_limit_alignment_offset(struct queue_limits *lim, sector_t sector)
- {
- 	unsigned int granularity = max(lim->physical_block_size, lim->io_min);
--	unsigned int alignment = (sector << 9) & (granularity - 1);
-+	unsigned int alignment = sector_div(sector, granularity >> 9) << 9;
- 
--	return (granularity + lim->alignment_offset - alignment)
--		& (granularity - 1);
-+	return (granularity + lim->alignment_offset - alignment) % granularity;
- }
- 
- static inline int bdev_alignment_offset(struct block_device *bdev)
+You need to show me - I don't see them here, in my guest.
+
+> Well, beside the debugfs file is always using init_level4_pgt, reality
+> shows the EFI mappings are visible there, too. So why omit them?
+
+Again, you need to show me - I don't see any EFI mappings in my setup
+here when cat-ting /sys/kernel/debug/kernel_page_tables
+
+> Well, maybe I got it all wrong and there should be no EFI mappings in
+> the kernel page table at all? If so, how about fixing
+> kernel_map_pages_in_pgd() to not do so? It's you're code after all...
+> ;)
+
+Well, if you can show me where kernel_map_pages_in_pgd() is called with
+init_level4_pgt as a first argument, I'd gladly fix it.
+
+The 3 calls to it in 3.17 are all in efi_64.c and everytime it is
+real_mode_header->trampoline_pgd that gets handed down:
+
+arch/x86/platform/efi/efi_64.c:161:     if (kernel_map_pages_in_pgd(pgd, pa_memmap, pa_memmap, num_pages, _PAGE_NX)) {
+arch/x86/platform/efi/efi_64.c:187:     if (kernel_map_pages_in_pgd(pgd, text >> PAGE_SHIFT, text, npages, 0)) {
+arch/x86/platform/efi/efi_64.c:210:     if (kernel_map_pages_in_pgd(pgd, md->phys_addr, va, md->num_pages, pf))
+
+So show me please what exactly you're seeing.
+
 -- 
-1.8.3.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
