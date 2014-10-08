@@ -1,85 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834AbaJHXqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:46:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41494 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131AbaJHXqH (ORCPT
+	id S1755152AbaJHXrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 19:47:05 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:50465 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaJHXq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:46:07 -0400
-Date: Thu, 9 Oct 2014 00:45:41 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
-Message-ID: <20141008234541.GQ4609@sirena.org.uk>
-References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
- <20141008223403.GA24828@roeck-us.net>
- <20141008223601.GP4609@sirena.org.uk>
- <20141008225912.GA25134@roeck-us.net>
+	Wed, 8 Oct 2014 19:46:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RFOVuXNPDwFVwt30"
-Content-Disposition: inline
-In-Reply-To: <20141008225912.GA25134@roeck-us.net>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
- container
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
+References: <1412606822-3406-1-git-send-email-muth@cypress.com>
+	<CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
+	<405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
+	<CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
+Date: Wed, 8 Oct 2014 16:46:55 -0700
+Message-ID: <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
+From: RR <rajaram.officemails@gmail.com>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: Muthu Mani <muth@cypress.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 8, 2014 at 12:18 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
+>>> -----Original Message-----
+>>> From: Alexandre Courbot [mailto:gnurou@gmail.com]
+>>> Sent: Tuesday, October 07, 2014 3:34 PM
+>>> To: Muthu Mani
+>>> Cc: Samuel Ortiz; Lee Jones; Wolfram Sang; Linus Walleij; Greg Kroah-
+>>> Hartman; linux-i2c@vger.kernel.org; linux-gpio@vger.kernel.org; linux-
+>>> usb@vger.kernel.org; Linux Kernel Mailing List; Rajaram Regupathy; Johan
+>>> Hovold
+>>> Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-
+>>> GPIO adapter
+>>>
+>>> On Mon, Oct 6, 2014 at 11:47 PM, Muthu Mani <muth@cypress.com> wrote:
+>>> > +
+>>> > +static int cy_gpio_direction_input(struct gpio_chip *chip,
+>>> > +                                       unsigned offset) {
+>>> > +       return 0;
+>>> > +}
+>>> > +
+>>> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
+>>> > +                                       unsigned offset, int value) {
+>>> > +       return 0;
+>>> > +}
+>>>
+>>> If that chip is capable of both output and input, shouldn't these functions be
+>>> implemented? I think this has already been pointed out in a previous version
+>>> but you did not reply.
+>>
+>> Thanks for your inputs.
+>>
+>> Only the GPIOs which are configured to be output GPIO can be set.
+>
+> In that case cy_gpio_set() should return an error for GPIOs which are
+> not configured as outputs. Is that guaranteed by the current
+> implementation?
+>
+>> The set operation would fail trying to set the input or unconfigured GPIOs.
+>> In this version of driver, this support is not added, it can be introduced in future versions.
+>> I will add a TODO note in the code.
+>
+> Argh, no TODO please. Actual code that will turn this code into a
+> solid driver that can be merged.
 
---RFOVuXNPDwFVwt30
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Does a driver targeted for a custom device has to implement every
+functionality in the 1st version ? My understanding is that Linux
+follows incremental model and allows incremental merge.
 
-On Wed, Oct 08, 2014 at 03:59:12PM -0700, Guenter Roeck wrote:
+(On a side note the driver is functionally verified with the necessary hardware)
 
-> There is a log message "no parameters" for each regulator. This is printed
-> unconditionally from print_constraints().
+Please correct me if I am missing something
 
-> Looking through the code again, looks like this is on purpose. It is just=
- a bit
-> annoying to get lots of those messages. One of the systems I am dealing w=
-ith has
-> 17 LTC2978 chips in it, with 8 channels each. That results in 136 times "=
-no
-> parameters" in the boot log. And that is not even a fully populated syste=
-m;
-> if fully populated, there can be more than 60 of those chips. 500+ lines =
-of=20
-> similar log messages is really a bit on the high side.
-
-> It might help if there was a way to silence the messages, ie to make
-> "print_constraints" optional.=20
-
-Ah, from the constraints rather than from the DT parsing.  I do like
-having it there since it's enormously helpful in debugging and that is
-a...  specialist number of regulators you have in your system.  We can
-definitely at least add a boot argument or something to suppress them,
-let me have a think if we want to do that by default.
-
---RFOVuXNPDwFVwt30
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUNcykAAoJECTWi3JdVIfQSqAH/0kx1+a4TRMXDj7EoP2+j6Bb
-6X2DWtwXxewt3o3Ef1LFnyGWa+d4ilNEYagLk3eiCP9J+9j0IgSRYxcB6cI+HNHb
-CRhaYmWVLI/23hUcxhPzitDJ/Z7VtUKeo/WoL8zpF7AgVLi+p3x1ID0l53DyUrvD
-BA6SmmVpbjgPufcQW9nJjzfNSBlBck/UcpnW5xnEw55+goU11QEZbm7xvQgRqOT2
-FY3hheHruGhIcB2q7n9Rdl1rrU1uGd3s728XI4DBoIErcDTQyZdFzGqjMXbzgIbf
-/XBInsnQeYNpE8KiuEAP2fPJzXapujUtxqwGozwCHJ7NrBBHDnj5Z2qV+CHhNsE=
-=tMpn
------END PGP SIGNATURE-----
-
---RFOVuXNPDwFVwt30--
+>
+> Can all GPIOs be set as input or output? If so, please implement
+> cy_gpio_direction_*() and make sure that cy_gpio_set() behaves
+> properly if a GPIO is not an output. If the input/output GPIOs are
+> fixed, please make cy_gpio_direction_*() return an error if the GPIO
+> capabilities does not correspond to what is asked, and again ensure
+> that cy_gpio_set() works as expected.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
