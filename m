@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395AbaJHT1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:27:48 -0400
-Received: from mx.aristanetworks.com ([162.210.130.12]:36266 "EHLO
-	prod-mx.aristanetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752730AbaJHT1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:27:47 -0400
-Date: Wed, 08 Oct 2014 12:27:46 -0700
-To: peter@hurleysoftware.com, jslaby@suse.cz, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 1/1] tty: Fix pty master poll() after slave closes
-Cc: fruggeri@arista.com
-User-Agent: Heirloom mailx 12.5 7/5/10
+	id S1754689AbaJHT2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:28:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754365AbaJHT2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 15:28:03 -0400
+Date: Wed, 8 Oct 2014 15:27:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
+        keescook@chromium.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141008192728.GA26517@redhat.com>
+References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
+ <542B1EC1.8090502@zytor.com>
+ <20141001135237.GA13689@redhat.com>
+ <543553C7.9010906@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20141008192746.5F9C8485A77@fruggeri-Arora18.sjc.aristanetworks.com>
-From: fruggeri@aristanetworks.com (Francesco Ruggeri)
+Content-Disposition: inline
+In-Reply-To: <543553C7.9010906@zytor.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f95499c3030f ("n_tty: Don't wait for buffer work in read() loop")
-introduces a race window where a pty master can be signalled that the pty
-slave was closed before all the data that the slave wrote is delivered.
-Commit f8747d4a466a ("tty: Fix pty master read() after slave closes") fixed the
-problem in case of n_tty_read, but the problem still exists for n_tty_poll.
-This can be seen by running 'for ((i=0; i<100;i++));do ./test.py ;done'
-where test.py is:
+On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
+> On 10/01/2014 06:52 AM, Vivek Goyal wrote:
+> > 
+> > Hi Peter,
+> > 
+> > I think there is some confusion. I will try to clarify.
+> > 
+> > If we have 32bit signed overflow, we will not have a functional kernel.
+> > And that's the message we get when we try to kexec with
+> > CONFIG_RANDOMIZE_BASE=y.
+> > 
+> 
+> And how does that happen?
 
-import os, select, pty
+I compile a kernel for physical address 16MB (CONFIG_PHYSICAL_START=0x1000000).
+And kexec loads this kernel at physical address above 16GB (0x000000042e000000).
 
-(pid, pty_fd) = pty.fork()
+When we boot into second kernel it tries to perform relocations and fails
+as follows. I have printed bunch of variables in handle_relocations(), so
+referring to code will help.
 
-if pid == 0:
-   os.write(1, 'This string should be received by parent')
-else:
-   poller = select.epoll()
-   poller.register( pty_fd, select.EPOLLIN )
-   ready = poller.poll( 1 * 1000 )
-   for fd, events in ready:
-      if not events & select.EPOLLIN:
-         print 'missed POLLIN event'
-      else:
-         print os.read(fd, 100)
-   poller.close()
+min_addr=0x000000042e000000 (Physical address where decompressed kernel is
+			     loaded).
 
-The string from the slave is missed several times.
-This patch takes the same approach as the fix for read and special cases
-this condition for poll.
-Tested on 3.16.
+delta=0x000000042d000000  (Difference between load and compile addr).
 
-Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
----
- drivers/tty/n_tty.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+map=0x00000004ad000000	 (map = delta - __START_KERNEL_map)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f44f1ba..cf16aeb 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2413,14 +2413,16 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
- 
- 	poll_wait(file, &tty->read_wait, wait);
- 	poll_wait(file, &tty->write_wait, wait);
--	if (input_available_p(tty, 1))
--		mask |= POLLIN | POLLRDNORM;
- 	if (tty->packet && tty->link->ctrl_status)
- 		mask |= POLLPRI | POLLIN | POLLRDNORM;
- 	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
- 		mask |= POLLHUP;
- 	if (tty_hung_up_p(file))
- 		mask |= POLLHUP;
-+	if (mask & POLLHUP)
-+		tty_flush_to_ldisc(tty);
-+	if (input_available_p(tty, 1))
-+		mask |= POLLIN | POLLRDNORM;
- 	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
- 		if (MIN_CHAR(tty) && !TIME_CHAR(tty))
- 			ldata->minimum_to_wake = MIN_CHAR(tty);
--- 
-1.8.1.4
+Now we start processing 32bit relocations and read first reloc.
 
+extended=0x81e819c2	(extended = *reloc)
+
+We add map to it and new value of extended is.
+
+extended=0x2ee819c2	(extended += map)
+
+Now we convert this to actual 64bit address which relocation needs to be
+applied and ptr value is.
+
+ptr = 0x000000002ee819c2 (ptr = (unsigned long)extended;)
+
+And this address is outside the range of where kernel is actually loaded.
+(0x000000042e000000). So we ended up with a wrong address to patch hence
+following check fails.
+
+if (ptr < min_addr || ptr > max_addr)
+	error("32-bit relocation outside of kernel!\n");
+
+
+> 
+> > **********************************************************************
+> > [  340.709078] kexec: Starting new kernel
+> > early console in decompress_kernel
+> > KASLR disabled by default...
+> > 
+> > Decompressing Linux... Parsing ELF...
+> > 
+> > Performing relocations...
+> > 32-bit relocation outside of kernel!
+> > 
+> > 
+> >  -- System halted
+> > *****************************************************************
+> > 
+> > We realized that kexec tries to load kernel at higher physical addresses
+> > and that can lead to problmes.
+> > 
+> > Currently for x86_64, handle_relocations() will perform relocations if
+> > kernel is not loaded at LOAD_PHYSICAL_ADDR. I think this does not work for
+> > all the cases and kerenl can not be loaded anywhere in the physical address
+> > space. And that's why we run into issues with kexec.
+> > 
+> > My understanding is that we introduce handle_relcoations() i386 style
+> > because of RANDOMIZE_BASE. If that's the case, one possible solution
+> > is that perform relocations only if ranodmize base logic has chosen
+> > a different load location for kernel than where boot loader loaded
+> > it. Otherwise don't do anything.
+> > 
+> > In case of kexec/kdump, we will pass "nokaslr" to second kernel forcing
+> > it to do nothing and let the kernel run where it was loaded by bootloader.
+> > And in that case handle_relocations() should not do any relocations and
+> > that should allow kernel to be loaded anywhere in physical memory on
+> > x86_64.
+> > 
+> 
+> Sorry... this makes no sense.
+> 
+> For x86-64, there is no direct connection between the physical and
+> virtual address spaces that the kernel runs in...
+
+I am sorry I did not understand this one. I thought that initial
+relocatable kernel implementaion did not have any direct connection
+between virtual and physical address. One could load kernel anywhere
+and kernel virtual address will not change and we will just adjust
+page tables to map virtual address to right physical address.
+
+Now handle_relocation() stuff seems to introduce a close coupling
+between physical and virtual address. So if kernel shifts by 16MB
+in physical address space, then it will shift by equal amount
+in virtual address space. So there seems to be a direct connection
+between virtual and physical address space in this case.
+
+What am I missing?
+
+Thanks
+Vivek
