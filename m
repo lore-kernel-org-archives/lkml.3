@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882AbaJHKcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 06:32:55 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:36642 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaJHKcy (ORCPT
+	id S1755693AbaJHKdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 06:33:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36426 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434AbaJHKdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 06:32:54 -0400
-Date: Wed, 8 Oct 2014 11:32:50 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 06/11] perf: Move cgroup init before PMU ->event_init()
-Message-ID: <20141008103250.GO14343@console-pimps.org>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-7-git-send-email-matt@console-pimps.org>
- <20141007193424.GB4750@worktop.programming.kicks-ass.net>
+	Wed, 8 Oct 2014 06:33:43 -0400
+Date: Wed, 8 Oct 2014 03:33:23 -0700
+From: tip-bot for Jan Beulich <tipbot@zytor.com>
+Message-ID: <tip-f74954f01ec9bb2004bcc24f247d1f26f1063ad2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de
+In-Reply-To: <542291CA0200007800038085@mail.emea.novell.com>
+References: <542291CA0200007800038085@mail.emea.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86: Unwind-annotate thunk_32.S
+Git-Commit-ID: f74954f01ec9bb2004bcc24f247d1f26f1063ad2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20141007193424.GB4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 07 Oct, at 09:34:24PM, Peter Zijlstra wrote:
-> On Wed, Sep 24, 2014 at 03:04:10PM +0100, Matt Fleming wrote:
-> > +++ b/kernel/events/core.c
-> > @@ -6859,7 +6859,7 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
-> >  		 struct perf_event *group_leader,
-> >  		 struct perf_event *parent_event,
-> >  		 perf_overflow_handler_t overflow_handler,
-> > -		 void *context)
-> > +		 void *context, bool cgroup, pid_t pid)
-> >  {
-> >  	struct pmu *pmu;
-> >  	struct perf_event *event;
-> 
-> I don't get this extension, why a bool and pid_t ?
+Commit-ID:  f74954f01ec9bb2004bcc24f247d1f26f1063ad2
+Gitweb:     http://git.kernel.org/tip/f74954f01ec9bb2004bcc24f247d1f26f1063ad2
+Author:     Jan Beulich <JBeulich@suse.com>
+AuthorDate: Wed, 24 Sep 2014 08:41:30 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 8 Oct 2014 12:31:45 +0200
 
-So that it's possible to figure out whether we need to call
-perf_cgroup_connect(). 
+x86: Unwind-annotate thunk_32.S
 
-Oh, why not just 'int fd', you mean? Ermm... yeah that would be better.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/542291CA0200007800038085@mail.emea.novell.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/lib/thunk_32.S | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+diff --git a/arch/x86/lib/thunk_32.S b/arch/x86/lib/thunk_32.S
+index e9acf5f..e28cdaf 100644
+--- a/arch/x86/lib/thunk_32.S
++++ b/arch/x86/lib/thunk_32.S
+@@ -6,14 +6,19 @@
+  */
+ 	#include <linux/linkage.h>
+ 	#include <asm/asm.h>
++	#include <asm/dwarf2.h>
+ 
+ 	/* put return address in eax (arg1) */
+ 	.macro THUNK name, func, put_ret_addr_in_eax=0
+ 	.globl \name
+ \name:
+-	pushl %eax
+-	pushl %ecx
+-	pushl %edx
++	CFI_STARTPROC
++	pushl_cfi %eax
++	CFI_REL_OFFSET eax, 0
++	pushl_cfi %ecx
++	CFI_REL_OFFSET ecx, 0
++	pushl_cfi %edx
++	CFI_REL_OFFSET edx, 0
+ 
+ 	.if \put_ret_addr_in_eax
+ 	/* Place EIP in the arg1 */
+@@ -21,10 +26,14 @@
+ 	.endif
+ 
+ 	call \func
+-	popl %edx
+-	popl %ecx
+-	popl %eax
++	popl_cfi %edx
++	CFI_RESTORE edx
++	popl_cfi %ecx
++	CFI_RESTORE ecx
++	popl_cfi %eax
++	CFI_RESTORE eax
+ 	ret
++	CFI_ENDPROC
+ 	_ASM_NOKPROBE(\name)
+ 	.endm
+ 
