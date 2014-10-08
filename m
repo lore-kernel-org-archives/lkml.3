@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811AbaJHWF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:05:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357AbaJHWF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:05:57 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Cc: martin.petersen@oracle.com, dm-devel@redhat.com
-Subject: [PATCH] block: fix alignment_offset math that assumes io_min is a power-of-2
-Date: Wed,  8 Oct 2014 18:05:52 -0400
-Message-Id: <1412805952-15316-1-git-send-email-snitzer@redhat.com>
+	id S933673AbaJHWK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:10:29 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41378 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756990AbaJHWKY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 18:10:24 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, atull@opensource.altera.com,
+        Mark Brown <broonie@kernel.org>
+Date: Wed,  8 Oct 2014 23:09:59 +0100
+Message-Id: <1412806199-5363-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.1.1
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: of: Lower the severity of the error with no container
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The math in both blk_stack_limits() and queue_limit_alignment_offset()
-assume that a block device's io_min (aka minimum_io_size) is always a
-power-of-2.  Fix the math such that it works for non-power-of-2 io_min.
+Description of regulators should generally be optional so if there is no
+DT node for the regulators container then we shouldn't print an error
+message. Lower the severity of the message to debug level (it might help
+someone work out what went wrong) and while we're at it say what we were
+looking for.
 
-This issue (of alignment_offset != 0) became apparent when testing
-dm-thinp with a thinp blocksize that matches a RAID6 stripesize of
-1280K.  Commit fdfb4c8c1 ("dm thin: set minimum_io_size to pool's data
-block size") unlocked the potential for alignment_offset != 0 due to
-the dm-thin-pool's io_min possibly being a non-power-of-2.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Cc: stable@vger.kernel.org
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 ---
- block/blk-settings.c   | 4 ++--
- include/linux/blkdev.h | 5 ++---
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/regulator/of_regulator.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-settings.c b/block/blk-settings.c
-index f1a1795..aa02247 100644
---- a/block/blk-settings.c
-+++ b/block/blk-settings.c
-@@ -574,7 +574,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
- 		bottom = max(b->physical_block_size, b->io_min) + alignment;
+diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
+index 7a51814abdc5..5a1d4afa4776 100644
+--- a/drivers/regulator/of_regulator.c
++++ b/drivers/regulator/of_regulator.c
+@@ -211,7 +211,8 @@ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
+ 		search = dev->of_node;
  
- 		/* Verify that top and bottom intervals line up */
--		if (max(top, bottom) & (min(top, bottom) - 1)) {
-+		if (max(top, bottom) % min(top, bottom)) {
- 			t->misaligned = 1;
- 			ret = -1;
- 		}
-@@ -619,7 +619,7 @@ int blk_stack_limits(struct queue_limits *t, struct queue_limits *b,
+ 	if (!search) {
+-		dev_err(dev, "Failed to find regulator container node\n");
++		dev_dbg(dev, "Failed to find regulator container node '%s'\n",
++			desc->regulators_node);
+ 		return NULL;
+ 	}
  
- 	/* Find lowest common alignment_offset */
- 	t->alignment_offset = lcm(t->alignment_offset, alignment)
--		& (max(t->physical_block_size, t->io_min) - 1);
-+		% max(t->physical_block_size, t->io_min);
- 
- 	/* Verify that new alignment_offset is on a logical block boundary */
- 	if (t->alignment_offset & (t->logical_block_size - 1)) {
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 038b40f..e077b92 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1279,10 +1279,9 @@ static inline int queue_alignment_offset(struct request_queue *q)
- static inline int queue_limit_alignment_offset(struct queue_limits *lim, sector_t sector)
- {
- 	unsigned int granularity = max(lim->physical_block_size, lim->io_min);
--	unsigned int alignment = (sector << 9) & (granularity - 1);
-+	unsigned int alignment = sector_div(sector, granularity >> 9);
- 
--	return (granularity + lim->alignment_offset - alignment)
--		& (granularity - 1);
-+	return (granularity + lim->alignment_offset - alignment) % granularity;
- }
- 
- static inline int bdev_alignment_offset(struct block_device *bdev)
 -- 
-1.8.3.1
+2.1.1
 
