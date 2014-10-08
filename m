@@ -1,112 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaJHNxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 09:53:44 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:42484 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859AbaJHNxn (ORCPT
+	id S1756246AbaJHN4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 09:56:46 -0400
+Received: from rs04.intra2net.com ([85.214.66.2]:53352 "EHLO
+	rs04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859AbaJHN4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 09:53:43 -0400
-Date: Wed, 8 Oct 2014 14:53:40 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Dietmar Eggemann <Dietmar.Eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
-Message-ID: <20141008135339.GC1788@e105550-lin.cambridge.arm.com>
-References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
- <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com>
- <CAKfTPtBXP7HQBHL_Z3aAfdsuLP44_0x_e_LmzEw8qVC-2g=M-w@mail.gmail.com>
- <20140925172343.GX23693@e103034-lin>
- <20141002203428.GI2849@worktop.programming.kicks-ass.net>
- <20141008110054.GA1788@e105550-lin.cambridge.arm.com>
- <CAKfTPtAQ5FqHqdqDHDKg11XOHt_i0EsQFTuKg4OpreYA9a74Gg@mail.gmail.com>
+	Wed, 8 Oct 2014 09:56:45 -0400
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+To: linux-kernel@vger.kernel.org
+Cc: artem_fetishev@epam.com, Thomas D <whissi@whissi.de>
+Subject: Re: 3.14.19: Oops on boot in rapl_cpu_prepare()
+Date: Wed, 08 Oct 2014 15:56:41 +0200
+Message-ID: <9064398.1oxO9cdJ3A@storm>
+Organization: Intra2net AG
+User-Agent: KMail/4.14.1 (Linux/3.16.3-200.fc20.x86_64; KDE/4.14.1; x86_64; ; )
+In-Reply-To: <10317150.0hmJcKxvss@storm>
+References: <10317150.0hmJcKxvss@storm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtAQ5FqHqdqDHDKg11XOHt_i0EsQFTuKg4OpreYA9a74Gg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 12:21:45PM +0100, Vincent Guittot wrote:
-> On 8 October 2014 13:00, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
-> > On Thu, Oct 02, 2014 at 09:34:28PM +0100, Peter Zijlstra wrote:
-> >> On Thu, Sep 25, 2014 at 06:23:43PM +0100, Morten Rasmussen wrote:
-> >>
-> >> > > Why haven't you used arch_scale_freq_capacity which has a similar
-> >> > > purpose in scaling the CPU capacity except the additional sched_domain
-> >> > > pointer argument ?
-> >> >
-> >> > To be honest I'm not happy with introducing another arch-function
-> >> > either and I'm happy to change that. It wasn't really clear to me which
-> >> > functions that would remain after your cpu_capacity rework patches, so I
-> >> > added this one. Now that we have most of the patches for capacity
-> >> > scaling and scale-invariant load-tracking on the table I think we have a
-> >> > better chance of figuring out which ones are needed and exactly how they
-> >> > are supposed to work.
-> >> >
-> >> > arch_scale_load_capacity() compensates for both frequency scaling and
-> >> > micro-architectural differences, while arch_scale_freq_capacity() only
-> >> > for frequency. As long as we can use arch_scale_cpu_capacity() to
-> >> > provide the micro-architecture scaling we can just do the scaling in two
-> >> > operations rather than one similar to how it is done for capacity in
-> >> > update_cpu_capacity(). I can fix that in the next version. It will cost
-> >> > an extra function call and multiplication though.
-> >> >
-> >> > To make sure that runnable_avg_{sum, period} are still bounded by
-> >> > LOAD_AVG_MAX, arch_scale_{cpu,freq}_capacity() must both return a factor
-> >> > in the range 0..SCHED_CAPACITY_SCALE.
-> >>
-> >> I would certainly like some words in the Changelog on how and that the
-> >> math is still free of overflows. Clearly you've thought about it, so
-> >> please feel free to elucidate the rest of us :-)
-> >
-> > Sure. The easiest way to avoid introducing overflows is to ensure that
-> > we always scale by a factor >= 1.0. That should be true as long as
-> > arch_scale_{cpu,freq}_capacity() never returns anything greater than
-> > SCHED_CAPACITY_SCALE (= 1024 = 1.0).
-> 
-> the current ARM arch_scale_cpu is in the range [1536..0] which is free
-> of overflow AFAICT
+Hi again,
 
-If I'm not mistaken, that will cause an overflow in
-__update_task_entity_contrib():
+On Wednesday, 24. September 2014 17:09:01 Thomas Jarosch wrote:
+> ...
+> general protection fault: 0000 [#1] SMP
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.19-1.i2n.i686 #1
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> task: f58779a0 ti: f5878000 task.ti: f5878000
+> EIP: 0060:[<c101f9b2>] EFLAGS: 00000282 CPU: 0
+> EIP is at rapl_cpu_prepare+0x62/0xf0
+> EAX: 00000606 EBX: c14ef3e4 ECX: 00000606 EDX: 00000000
+> ESI: 00000000 EDI: f5918280 EBP: f5879ec4 ESP: f5879eb4
+>     DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> CR0: 80050033 CR2: ffe16000 CR3: 014fb000 CR4: 000406d0
+> Stack:
+>     00000006 c1491784 00000000 00000000 f5879efc c149e670 c14ee5c0
+> c146a000 00000008 f5879ee0 c103b45d f5879eec c132100e c1491784 f5879efc
+> 00000006 0000009e 00000000 f5879f70 c1000366 00000000 f58ab300 f58ab080
+> 0000000f Call Trace:
+>     [<c149e670>] rapl_pmu_init+0x88/0x1af
+>     [<c103b45d>] ? cpu_maps_update_done+0xd/0x10
+>     [<c132100e>] ? register_cpu_notifier+0x1e/0x30
+>     [<c1000366>] do_one_initcall+0x36/0x150
+>     [<c149e5e8>] ? intel_uncore_init+0x332/0x332
+>     [<c1495600>] ? kernel_init_freeable+0x143/0x18c
+>     [<c1051f23>] ? parse_args+0x1a3/0x330
+>     [<c106aba0>] ? __wake_up+0x40/0x50
+>     [<c14955a4>] kernel_init_freeable+0xe7/0x18c
+>     [<c1495649>] ? kernel_init_freeable+0x18c/0x18c
+>     [<c132087b>] kernel_init+0xb/0xe0
+>     [<c13279b7>] ret_from_kernel_thread+0x1b/0x28
+>     [<c1320870>] ? rest_init+0x60/0x60
+> ...
 
-static inline void __update_task_entity_contrib(struct sched_entity *se)
-{
-        u32 contrib;
-        /* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
-        contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
-        contrib /= (se->avg.avg_period + 1);
-        se->avg.load_avg_contrib = scale_load(contrib);
-}
+the issue is fixed by upgrading to kernel 3.14.20.
 
-With arch_scale_cpu_capacity() > 1024 se->avg.runnable_avg_sum is no
-longer bounded by LOAD_AVG_MAX = 47742. scale_load_down(se->load.weight)
-== se->load.weight =< 88761.
+Probably it's this patch:
 
-	47742 * 88761 = 4237627662 (2^32 = 4294967296)
+----------------------------------------
+commit 2968314094d8db0af32de20ad51349a30ea54a01
+Author: Venkatesh Srinivas <venkateshs@google.com>
+Date:   Thu Mar 13 12:36:26 2014 -0700
 
-To avoid overflow se->avg.runnable_avg_sum must be less than 2^32/88761
-= 48388, which means that arch_scale_cpu_capacity() must be in the range
-0..48388*1024/47742 = 0..1037.
+    perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+    
+    commit 24223657806a0ebd0ae5c9caaf7b021091889cf2 upstream.
+    
+    CPUs which should support the RAPL counters according to
+    Family/Model/Stepping may still issue #GP when attempting to access
+    the RAPL MSRs. This may happen when Linux is running under KVM and
+    we are passing-through host F/M/S data, for example. Use rdmsrl_safe
+    to first access the RAPL_POWER_UNIT MSR; if this fails, do not
+    attempt to use this PMU.
+----------------------------------------
 
-I also think it is easier to have a fixed defined max scaling factor,
-but that might just be me.
+Thanks for the backport to 3.14.
 
-Regarding the ARM arch_scale_cpu_capacity() implementation, I think that
-can be changed to fit the 0..1024 range easily. Currently, it will only
-report a non-default (1024) capacity for big.LITTLE systems and actually
-enabling it (requires a certain property to be set in device tree) leads
-to broken load-balancing decisions. We have discussed that several times
-in the past. I wouldn't recommend enabling it until the load-balance
-code can deal with big.LITTLE compute capacities correctly. This is also
-why it isn't implemented by ARM64.
+Cheers,
+Thomas
+
