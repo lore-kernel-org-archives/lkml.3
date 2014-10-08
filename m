@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452AbaJHMw2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 08:52:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:38743 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754294AbaJHMw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 08:52:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,677,1406617200"; 
-   d="scan'208";a="482789216"
-Date: Wed, 8 Oct 2014 17:49:02 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation
- for the dma controller API
-Message-ID: <20141008121902.GU1638@intel.com>
-References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>
- <5433D9AF.8020508@atmel.com>
- <20141007145226.GA17925@lukather>
- <2491176.7TIClHxUkE@avalon>
+	id S1756261AbaJHMyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 08:54:47 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37022 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293AbaJHMyq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 08:54:46 -0400
+Message-ID: <54353422.3070002@arm.com>
+Date: Wed, 08 Oct 2014 13:54:58 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2491176.7TIClHxUkE@avalon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yuyang Du <yuyang.du@intel.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/7] sched: Introduce scale-invariant load tracking
+References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com> <1411403047-32010-2-git-send-email-morten.rasmussen@arm.com> <20141008005007.GA7017@intel.com>
+In-Reply-To: <20141008005007.GA7017@intel.com>
+X-OriginalArrivalTime: 08 Oct 2014 12:54:43.0560 (UTC) FILETIME=[07F91E80:01CFE2F7]
+X-MC-Unique: 114100813544400301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 06:05:15PM +0300, Laurent Pinchart wrote:
-> > > 
-> > > Beware, it can be confusing when mixing "descriptors" and "hardware
-> > > descriptors". The ones used by the DMA controller itself to describe the
-> > > chunks of data (hardware descriptors) and the ones that would represent
-> > > them in the driver (tx descriptors). However, it's true that both must
-> > > be prepared by this set of functions.
-> > 
-> > There's a few "hardware" missing indeed, but we can't really avoid the
-> > confusion here, since it does rely also on a dma_async_tx_descriptor.
-> 
-> How about always specifying whether we refer to a "hardware descriptor" or a 
-> "transaction descriptor" ?
-> 
-> > > >> +     - You'll also need to set two fields in this structure:
-> > > >> +       + flags:
-> > > >> +		TODO: Can it be modified by the driver itself, or
-> > > >> +		should it be always the flags passed in the arguments
-> > > >> +
-> > > >> +       + tx_submit:	A pointer to a function you have to implement,
-> > > >> +			that is supposed to push the current descriptor
-> > > >> +			to a pending queue, waiting for issue_pending to
-> > > >> +			be called.
-> > > 
-> > > The question remains: why wait when all the information is already
-> > > prepared and available for the DMA controller to start the job?
-> > > Actually, we don't wait in at_hdmac, just to be more efficient, but I
-> > > known that we kind of break this "requirement"... But sorry, it is
-> > > another discussion which should be lead elsewhere.
-> 
-> From my recollection of a discussion I've had with Russell King, I believe the 
-> main reason to separate transaction submission (queueing) issue (start) is to 
-> let DMA engine drivers issuing several queued requests in one go when hardware 
-> supports chaining requests only when none of them are running. It's thus just 
-> an optimization. Russell, could you confirm (or infirm) that ?
-There are few reasons
-- Allow the dmaengine driver to collect and issue all pending txns in shot
-(which is not happening today with drivers)
-- Allow clients to prepare the txns ahead of time and send them when ready
+Hi Yuyang,
 
--- 
-~Vinod
+On 08/10/14 01:50, Yuyang Du wrote:
+> Hi Morten,
+> 
+> Sorry for late jumping in.
+> 
+> The problem seems to be self-evident. But for the implementation to be
+> equally attractive it needs to account for every freq change for every task,
+> or anything less than that makes it less attractive.
+> 
+> But this should be very hard. Intel Architecture has limitation to capture all
+> the freq changes in software and also the intel_pstate should have no
+> notification.
 
+We encountered this missing notification for current frequency with
+Intel systems (e.g. i5-3320M) using the intel_pstate driver while
+testing this patch-set. The arch_scale_set_curr_freq call in
+__cpufreq_notify_transition [[PATCH 2/7] cpufreq: Architecture specific
+callback for frequency changes] will not work on such a system.
+
+In our internal testing, we placed arch_scale_set_curr_freq(cpu->cpu,
+sample->freq) into intel_pstate_timer_func [intel_pstate.c] to get the
+current frequency for a cpu.
+
+The arch_scale_set_max_freq call in cpufreq_set_policy
+[drivers/cpufreq/cpufreq.c] still works although the driver exposes the
+max turbo pstate and not the max pstate. That's an additional problem
+because we don't want to use turbo states for frequency scaling.
 
 > 
-> > It's just a guess, but maybe you might not be able to schedule the
-> > transfer right away? Think about a very dumb 1-channel (or a more
-> > realistic more-DRQ-than-channel) device. You might have all the
-> > channels busy doing some other transfers, and it's not really part of
-> > the client driver job to address that kind of contention: it just
-> > wants to queue some work for a later transfer.
+> For every task, this makes the updating of the entire queue in load tracking
+> more needed, so once again, ping maintainers for the rewrite patches, :)
 > 
-> -- 
-> Regards,
+> Thanks,
+> Yuyang
 > 
-> Laurent Pinchart
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
+[...]
+
