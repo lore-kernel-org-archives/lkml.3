@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaJHTiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 15:38:06 -0400
-Received: from shelob.surriel.com ([74.92.59.67]:34509 "EHLO
+	id S1754720AbaJHTit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 15:38:49 -0400
+Received: from shelob.surriel.com ([74.92.59.67]:34515 "EHLO
 	shelob.surriel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776AbaJHTiC (ORCPT
+	with ESMTP id S1754078AbaJHTiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 15:38:02 -0400
+	Wed, 8 Oct 2014 15:38:05 -0400
 From: riel@redhat.com
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mgorman@suse.de, chegu_vinod@hp.com,
         mingo@kernel.org, efault@gmx.de, vincent.guittot@linaro.org
-Subject: [PATCH RFC 2/5] sched,numa: classify the NUMA topology of a system
-Date: Wed,  8 Oct 2014 15:37:27 -0400
-Message-Id: <1412797050-8903-3-git-send-email-riel@redhat.com>
+Subject: [PATCH RFC 4/5] sched,numa: calculate node scores in complex NUMA topologies
+Date: Wed,  8 Oct 2014 15:37:29 -0400
+Message-Id: <1412797050-8903-5-git-send-email-riel@redhat.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1412797050-8903-1-git-send-email-riel@redhat.com>
 References: <1412797050-8903-1-git-send-email-riel@redhat.com>
@@ -23,128 +23,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rik van Riel <riel@redhat.com>
 
-Smaller NUMA systems tend to have all NUMA nodes directly connected
-to each other. This includes the degenerate case of a system with just
-one node, ie. a non-NUMA system.
+In order to do task placement on systems with complex NUMA topologies,
+it is necessary to count the faults on nodes nearby the node that is
+being examined for a potential move.
 
-Larger systems can have two kinds of NUMA topology, which affects how
-tasks and memory should be placed on the system.
+In case of a system with a backplane interconnect, we are dealing with
+groups of NUMA nodes; each of the nodes within a group is the same number
+of hops away from nodes in other groups in the system. Optimal placement
+on this topology is achieved by counting all nearby nodes equally. When
+comparing nodes A and B at distance N, nearby nodes are those at distances
+smaller than N from nodes A or B.
 
-On glueless mesh systems, nodes that are not directly connected to
-each other will bounce traffic through intermediary nodes. Task groups
-can be run closer to each other by moving tasks from a node to an
-intermediary node between it and the task's preferred node.
+Placement strategy on a system with a glueless mesh NUMA topology needs
+to be different, because there are no natural groups of nodes determined
+by the hardware. Instead, when dealing with two nodes A and B at distance
+N, N >= 2, there will be intermediate nodes at distance < N from both nodes
+A and B. Good placement can be achieved by right shifting the faults on
+nearby nodes by the number of hops from the node being scored. In this
+context, a nearby node is any node less than the maximum distance in the
+system away from the node. Those nodes are skipped for efficiency reasons,
+there is no real policy reason to do so.
 
-On NUMA systems with backplane controllers, the intermediary hops
-are incapable of running programs. This creates "islands" of nodes
-that are at an equal distance to anywhere else in the system.
-
-Each kind of topology requires a slightly different placement
-algorithm; this patch provides the mechanism to detect the kind
-of NUMA topology of a system.
+Placement policy on directly connected NUMA systems is not affected.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/topology.h |  7 +++++++
- kernel/sched/core.c      | 53 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 60 insertions(+)
+ kernel/sched/fair.c | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
 
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index 33002f4..bf40d46 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -49,6 +49,13 @@
- int arch_update_cpu_topology(void);
- extern int node_hops(int i, int j);
- 
-+enum numa_topology_type {
-+	NUMA_DIRECT,
-+	NUMA_GLUELESS_MESH,
-+	NUMA_BACKPLANE,
-+};
-+extern enum numa_topology_type sched_numa_topology_type;
-+
- /* Conform to ACPI 2.0 SLIT distance definitions */
- #define LOCAL_DISTANCE		10
- #define REMOTE_DISTANCE		20
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0cf501e..1898914 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6075,6 +6075,7 @@ static void claim_allocations(int cpu, struct sched_domain *sd)
- 
- #ifdef CONFIG_NUMA
- static int sched_domains_numa_levels;
-+enum numa_topology_type sched_numa_topology_type;
- static int *sched_domains_numa_distance;
- static int *sched_domains_numa_hops;
- static struct cpumask ***sched_domains_numa_masks;
-@@ -6276,6 +6277,56 @@ static bool find_numa_distance(int distance)
- 	return false;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8b3f884..fb22caf 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -924,6 +924,65 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
+ 		group->faults_cpu[task_faults_idx(nid, 1)];
  }
  
-+/*
-+ * A system can have three types of NUMA topology:
-+ * NUMA_DIRECT: all nodes are directly connected, or not a NUMA system
-+ * NUMA_GLUELESS_MESH: some nodes reachable through intermediary nodes
-+ * NUMA_BACKPLANE: nodes can reach other nodes through a backplane
-+ *
-+ * The difference between a glueless mesh topology and a backplane
-+ * topology lies in whether communication between not directly
-+ * connected nodes goes through intermediary nodes (where programs
-+ * could run), or through backplane controllers. This affects
-+ * placement of programs.
-+ *
-+ * The type of topology can be discerned with the following tests:
-+ * - If the maximum distance between any nodes is 1 hop, the system
-+ *   is directly connected.
-+ * - If for two nodes A and B, located N > 1 hops away from each other,
-+ *   there is an intermediary node C, which is < N hops away from both
-+ *   nodes A and B, the system is a glueless mesh.
-+ */
-+static void init_numa_topology_type(void)
++/* Handle placement on systems where not all nodes are directly connected. */
++static unsigned long score_nearby_nodes(struct task_struct *p, int nid,
++					int hoplimit, bool task)
 +{
-+	int a, b, c, n;
++	unsigned long score = 0;
++	int node;
 +
-+	n = sched_domains_numa_levels;
++	/*
++	 * All nodes are directly connected, and the same distance
++	 * from each other. No need for fancy placement algorithms.
++	 */
++	if (sched_numa_topology_type == NUMA_DIRECT)
++		return 0;
 +
-+	if (n <= 1)
-+		sched_numa_topology_type = NUMA_DIRECT;
++	for_each_online_node(node) {
++		unsigned long faults;
++		int hops = node_hops(nid, node);
 +
-+	for_each_online_node(a) {
-+		for_each_online_node(b) {
-+			/* Find two nodes furthest removed from each other. */
-+			if (node_hops(a, b) < n)
-+				continue;
++		/*
++		 * The furthest away nodes in the system are not interesting
++		 * for placement; nid was already counted.
++		 */
++		if (hops == sched_domains_numa_levels || node == nid)
++			continue;
 +
-+			/* Is there an intermediary node between a and b? */
-+			for_each_online_node(c) {
-+				if (node_hops(a, c) < n &&
-+				    node_hops(b, c) < n) {
-+					sched_numa_topology_type =
-+							NUMA_GLUELESS_MESH;
-+					return;
-+				}
-+			}
++		/*
++		 * On systems with a backplane NUMA topology, compare groups
++		 * of nodes, and move tasks towards the group with the most
++		 * memory accesses. When comparing two nodes at distance
++		 * "hoplimit", only nodes closer by than "hoplimit" are part
++		 * of each group. Skip other nodes.
++		 */
++		if (sched_numa_topology_type == NUMA_BACKPLANE &&
++					hops >= hoplimit)
++			continue;
 +
-+			sched_numa_topology_type = NUMA_BACKPLANE;
-+			return;
-+		}
++		/* Add up the faults from nearby nodes. */
++		if (task)
++			faults = task_faults(p, node);
++		else
++			faults = group_faults(p, node);
++
++		/*
++		 * On systems with a glueless mesh NUMA topology, there are
++		 * no fixed "groups of nodes". Instead, nodes that are not
++		 * directly connected bounce traffic through intermediate
++		 * nodes; a numa_group can occupy any set of nodes. Counting
++		 * the faults on nearby hops progressively less as distance
++		 * increases seems to result in good task placement.
++		 */
++		if (sched_numa_topology_type == NUMA_GLUELESS_MESH)
++			faults >>= hops;
++
++		score += faults;
 +	}
++
++	return score;
 +}
 +
- static void sched_init_numa(void)
- {
- 	int next_distance, curr_distance = node_distance(0, 0);
-@@ -6425,6 +6476,8 @@ static void sched_init_numa(void)
- 	sched_domain_topology = tl;
+ /*
+  * These return the fraction of accesses done by a particular task, or
+  * task group, on a particular numa node.  The group weight is given a
+@@ -944,6 +1003,8 @@ static inline unsigned long task_weight(struct task_struct *p, int nid,
+ 		return 0;
  
- 	sched_domains_numa_levels = level;
+ 	faults = task_faults(p, nid);
++	faults += score_nearby_nodes(p, nid, hops, true);
 +
-+	init_numa_topology_type();
+ 	return 1000 * faults / total_faults;
  }
  
- static void sched_domains_numa_masks_set(int cpu)
+@@ -961,6 +1022,8 @@ static inline unsigned long group_weight(struct task_struct *p, int nid,
+ 		return 0;
+ 
+ 	faults = group_faults(p, nid);
++	faults += score_nearby_nodes(p, nid, hops, false);
++
+ 	return 1000 * faults / total_faults;
+ }
+ 
+@@ -1363,6 +1426,11 @@ static int task_numa_migrate(struct task_struct *p)
+ 				continue;
+ 
+ 			hops = node_hops(env.src_nid, env.dst_nid);
++			if (sched_numa_topology_type == NUMA_BACKPLANE &&
++						hops != env.hops) {
++				taskweight = task_weight(p, env.src_nid, hops);
++				groupweight = group_weight(p, env.src_nid, hops);
++			}
+ 
+ 			/* Only consider nodes where both task and groups benefit */
+ 			taskimp = task_weight(p, nid, hops) - taskweight;
 -- 
 1.9.3
 
