@@ -1,133 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaJHRrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 13:47:40 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:41417 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751620AbaJHRrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 13:47:37 -0400
-Date: Wed, 8 Oct 2014 13:47:25 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Dave Hansen <dave@sr71.net>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: memcontrol: fix transparent huge page
- allocations under pressure
-Message-ID: <20141008174725.GA31706@cmpxchg.org>
-References: <1411571338-8178-1-git-send-email-hannes@cmpxchg.org>
- <1411571338-8178-4-git-send-email-hannes@cmpxchg.org>
- <20140929135707.GA25956@dhcp22.suse.cz>
- <20140929175700.GA20053@cmpxchg.org>
- <20141007135950.GD14243@dhcp22.suse.cz>
- <20141008011106.GA12339@cmpxchg.org>
- <20141008153329.GF4592@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008153329.GF4592@dhcp22.suse.cz>
+	id S1754130AbaJHRw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 13:52:26 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36798 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051AbaJHRwZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 13:52:25 -0400
+Message-ID: <1412790740.5173.4.camel@marge.simpson.net>
+Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
+ threads bouncing between HT cores
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Date: Wed, 08 Oct 2014 19:52:20 +0200
+In-Reply-To: <20141008164557.GB38790@sesse.net>
+References: <20141003194428.GA27084@sesse.net>
+	 <1412782664.5179.75.camel@marge.simpson.net>
+	 <alpine.DEB.2.11.1410081756250.4292@nanos>
+	 <20141008164557.GB38790@sesse.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 05:33:29PM +0200, Michal Hocko wrote:
-> [I do not have time to get over all points here and will be offline
-> until Monday - will get back to the rest then]
+On Wed, 2014-10-08 at 18:45 +0200, Steinar H. Gunderson wrote: 
+> On Wed, Oct 08, 2014 at 06:14:18PM +0200, Thomas Gleixner wrote:
+> > It looks far more like an issue with the stocking fish code, but hell
+> > with futexes one can never be sure.
 > 
-> On Tue 07-10-14 21:11:06, Johannes Weiner wrote:
-> > On Tue, Oct 07, 2014 at 03:59:50PM +0200, Michal Hocko wrote:
-> [...]
-> > > I am completely missing any notes about potential excessive
-> > > swapouts or longer reclaim stalls which are a natural side effect of direct
-> > > reclaim with a larger target (or is this something we do not agree on?).
-> > 
-> > Yes, we disagree here.  Why is reclaiming 2MB once worse than entering
-> > reclaim 16 times to reclaim SWAP_CLUSTER_MAX?
+> OK, maybe we should move to a more recent Stockfish version first of all;
+> the specific benchmark was about that specific binary, but for tracking down
+> futex issues we can see if more recent code fixes it (the SMP in this thing
+> keeps getting developed).
+
+Mine was self build master, downloaded as a tarball.
+
+> I'm moving to 2ac206e847a04a7de07690dd575c6949e5625115 (current head) of
+> https://github.com/mcostalba/Stockfish.git, and building with
+> “make -j ARCH=x86-64-bmi2”.
 > 
-> You can enter DEF_PRIORITY reclaim 16 times and reclaim your target but
-> you need at least 512<<DEF_PRIORITY pages on your LRUs to do it in a
-> single run on that priority. So especially small groups will pay more
-> and would be subject to mentioned problems (e.g. over-reclaim).
+> I still don't see any hangs, but I do see the same behavior of moving around
+> between CPUs as the older version exhibited. In a test run (using the given
+> test script, just with 28 replaced by 20), I get 18273 kN/sec with default,
+> and 21875 kN/sec when using taskset.
 
-No, even low priority scans bail out shortly after nr_to_reclaim.
+Sure, that will likely be workqueues or whatnot running when one of the
+chess threads wakes, so select_idle_sibling() shows one of its two
+faces.. the butt ugly one.  That's what I wanted to play with on a too
+darn big socket box when I discovered the thing didn't want to play.
 
-> > There is no inherent difference in reclaiming a big chunk and
-> > reclaiming many small chunks that add up to the same size.
->  
-> [...]
-> 
-> > > Another part that matters is the size. Memcgs might be really small and
-> > > that changes the math. Large reclaim target will get to low prio reclaim
-> > > and thus the excessive reclaim.
-> > 
-> > I already addressed page size vs. memcg size before.
-> > 
-> > However, low priority reclaim does not result in excessive reclaim.
-> > The reclaim goal is checked every time it scanned SWAP_CLUSTER_MAX
-> > pages, and it exits if the goal has been met.  See shrink_lruvec(),
-> > shrink_zone() etc.
-> 
-> Now I am confused. shrink_zone will bail out but shrink_lruvec will loop
-> over nr[...] until they are empty and only updates the numbers to be
-> roughly proportional once:
-> 
->                 if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
->                         continue;
-> 
->                 /*
->                  * For kswapd and memcg, reclaim at least the number of pages
->                  * requested. Ensure that the anon and file LRUs are scanned
->                  * proportionally what was requested by get_scan_count(). We
->                  * stop reclaiming one LRU and reduce the amount scanning
->                  * proportional to the original scan target.
->                  */
-> 		[...]
-> 		scan_adjusted = true;
-> 
-> Or do you rely on
->                 /*
->                  * It's just vindictive to attack the larger once the smaller
->                  * has gone to zero.  And given the way we stop scanning the
->                  * smaller below, this makes sure that we only make one nudge
->                  * towards proportionality once we've got nr_to_reclaim.
->                  */
->                 if (!nr_file || !nr_anon)
->                         break;
-> 
-> and SCAN_FILE because !inactive_file_is_low?
+-Mike
 
-That function is indeed quite confusing.
-
-Once nr_to_reclaim has been met, it looks at both LRUs and decides
-which one has the smaller scan target left, sets it to 0, and then
-scales the bigger target in proportion - that means if it scanned 10%
-of nr[file], it sets nr[anon] to 10% of its original size, minus the
-anon pages it already scanned.  Based on that alone, overscanning is
-limited to twice the requested size, i.e. 4MB for a 2MB THP page,
-regardless of how low the priority drops.
-
-In practice, the VM is heavily biased to avoid swapping.  The forceful
-SCAN_FILE you point out is one condition that avoids the proportional
-scan most of the time.  But even the proportional scan is heavily
-biased towards cache - every cache insertion decreases the file
-recent_rotated/recent_scanned ratio, whereas anon faults do not.
-
-On top of that, anon pages start out on the active list, whereas cache
-starts on the inactive, which means that the majority of the anon scan
-target - should there be one - usually translates to deactivation.
-
-So in most cases, I'd expect the scanner to bail after nr_to_reclaim
-cache pages, and in low cache situations it might scan up to 2MB worth
-of anon pages, a small amount of which it might swap.
-
-I don't particularly like the decisions the current code makes, but it
-should work.  We have put in a lot of effort to prevent overreclaim in
-the last few years, and a big part of this was decoupling the priority
-level from the actual reclaim results.  Nowadays, the priority level
-should merely dictate the scan window and have no impact on the number
-of pages actually reclaimed.  I don't expect that it will, but if it
-does, that's a reclaim bug that needs to be addressed.  If we ask for
-N pages, it should never reclaim significantly more than that,
-regardless of how aggressively it has to scan to accomplish that.
