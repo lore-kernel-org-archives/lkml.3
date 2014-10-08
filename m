@@ -1,90 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaJHIqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 04:46:35 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:52087 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495AbaJHIqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 04:46:33 -0400
-Message-ID: <5434F9E4.7020109@collabora.co.uk>
-Date: Wed, 08 Oct 2014 10:46:28 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1755055AbaJHIrO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 04:47:14 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:35795 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754957AbaJHIrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 04:47:06 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: =?utf-8?B?J0xvdGhhciBXYcOfbWFubic=?= <LW@KARO-electronics.de>
+CC: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        "Fabio Estevam" <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Thread-Topic: [PATCH] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Thread-Index: AQHP4jrJm8o16PSYfUeOu2GPn2nYPZwksznAgADheoCAAEwIIA==
+Date: Wed, 8 Oct 2014 08:45:31 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D174C6BA0@AcuExch.aculab.com>
+References: <1412687977-11742-1-git-send-email-LW@KARO-electronics.de>
+	<1412692034.11091.122.camel@edumazet-glaptop2.roam.corp.google.com>
+	<063D6719AE5E284EB5DD2968C1650D6D174C6116@AcuExch.aculab.com>
+ <20141008070147.2f3b5319@ipc1.ka-ro>
+In-Reply-To: <20141008070147.2f3b5319@ipc1.ka-ro>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>
-CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
-        linux-rockchip@lists.infradead.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH] regulator: rk808: Add support setting suspend voltage
-References: <1412671438-25399-1-git-send-email-zyw@rock-chips.com> <CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
-In-Reply-To: <CAD=FV=W_6_JSn5ZWEG7YBDw5xf+tGReSB-WCV798gBqXyhikgg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s988lNMb023062
 
-Hello Doug,
+From: Lothar WaÃŸmann
+> David Laight wrote:
+> > From: Eric Dumazet
+> > > On Tue, 2014-10-07 at 15:19 +0200, Lothar Wamann wrote:
+> > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> > > > introduced a regression for i.MX28. The swap_buffer() function doing
+> > > > the endian conversion of the received data on i.MX28 may access memory
+> > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> > > > does not copy those bytes, so that the last bytes of a packet may be
+> > > > filled with invalid data after swapping.
+> > > > This will likely lead to checksum errors on received packets.
+> > > > E.g. when trying to mount an NFS rootfs:
+> > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+> > > >
+> > > > Do the byte swapping and copying to the new skb in one go if
+> > > > necessary.
+> > > >
+> > > > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
+> > > > ---
+> > > >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
+> > > >  1 file changed, 21 insertions(+), 4 deletions(-)
+> > > >
+> > > > diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+> > > > index 87975b5..eaaebad 100644
+> > > > --- a/drivers/net/ethernet/freescale/fec_main.c
+> > > > +++ b/drivers/net/ethernet/freescale/fec_main.c
+> > > > @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
+> > > >  	return bufaddr;
+> > > >  }
+> > > >
+> > > > +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
+> > > > +{
+> > > > +	int i;
+> > > > +	unsigned int *src = src_buf;
+> > > > +	unsigned int *dst = dst_buf;
+> > > > +
+> > > > +	for (i = 0; i < DIV_ROUND_UP(len, 4); i++, src++, dst++)
+> > > > +		*dst = cpu_to_be32(*src);
+> > >
+> > > No need for the DIV :
+> > >
+> > > 	for (i = 0; i < len; i += sizeof(*dst), src++, dst++)
+> > > 		*dst = cpu_to_be32(*src);
+> > >
+> > > Also are you sure both src/dst are aligned to word boundaries, or is
+> > > this architecture OK with possible misalignment ?
+> >
+> > I wondered about that as well.
+> > I wouldn't have expected ppc to support misaligned transfers, and you'd also
+> > want to make sure that cpu_to_be(*src) was using a byte-swapping instruction.
+> > Hmmm... cpu_to_be() doesn't sound like the right 'swap' macro name.
+> >
+> ??? So what is cpu_to_be32() then?
+> The new swap function is an exact copy of the original one already in
+> use except for the fact that it uses distinct source and destination
+> buffers.
 
-On 10/07/2014 07:48 PM, Doug Anderson wrote:
-> 
-> I don't have all the right patches to test this right now.  Hopefully
-> you can point me at what we're using right now.  I'd expect that this
-> will need the patches that Chanwoo and Javier are working on, so I've
-> added them to this.
->
+cpu_to_be32() is for converting a 'cpu' endianness value to 'big-endian'.
+Here you are processing receive data - so you probably want be32_to_cpu().
+(Yes, I know they are functionally identical....)
 
-Yes, you will need Chanwoo's series in order to use this. If also the
-driver needs to set a default initial regulator operating mode, it will
-need the series I'll post today but in that case also a .set_mode handler
-is needed.
- 
-> One point of curiosity (maybe this is a question for Chanwoo and
-> Javier): I'd expect that if someone didn't explicitly setup a "suspend
-> voltage" that their voltage would just be left alone at suspend time.
-> I believe that won't be the case for your driver.  The rk808 will (I
-> think) automatically transition to the "suspend voltage" settings for
-> ALL regulators at suspend time.  If you didn't explicitly set the
-> suspend voltage then you'll move to whatever the default voltage is,
-> right?
-> 
+Alternatively, since these aren't actually 32bit numbers and you know
+whether you want to swap, something like the __swab32p() from swab.h
+- but I'm not entirely sure that one is expected to be used.
 
-On system suspend, the regulator core only calls the .set_suspend_voltage
-handler if struct regulator_state *rstate->uV > 0 for the given suspend
-state (mem,disk,standby) and only calls .set_suspend_{enable,disable} if
-struct regulator_state *rstate->{enabled,disable} are set for that state.
+Clearly you are well inside the ppc 'endianness' hell.
 
-Chanwoo's series have different DT properties that are used to set the
-suspend state uV (regulator-volt) and disabled (regulator-off-in-suspend):
+	David
 
-	ldoX_reg: LDOx {
-		...
-		regulator-state-mem {
-			regulator-volt = <1200000>;
-			regulator-off-in-suspend;
-		};
-		...
-	};
-
-So answering your question, the transition to the "suspend voltage" setting
-will only happen if uV is set (regulator-volt), otherwise it will be left
-alone at suspend time just like is left alone on disable.
-
-However, Chanwoo said that he will drop the regulator-volt DT property from
-v5 [0]. It seems that is a useful use case for others to set the regulator
-voltage on suspend, so maybe Chanwoo can address the issues pointed out by
-Mark about renaming it to regulator-uV [1] and revise the check for the
-voltage range [2] but kept the DT property on v5?
-
-> -Doug
-> 
-
-Thanks a lot and best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2014/9/28/202
-[1]: https://lkml.org/lkml/2014/9/4/652
-[2]: https://lkml.org/lkml/2014/9/4/651
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
