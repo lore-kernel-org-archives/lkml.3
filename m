@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaJHSbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 14:31:13 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:39901 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946AbaJHSbL convert rfc822-to-8bit (ORCPT
+	id S1754312AbaJHSb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 14:31:28 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:40541 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176AbaJHSbZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 14:31:11 -0400
-Date: Wed, 8 Oct 2014 15:31:05 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 8 (media/usb/gspca)
-Message-ID: <20141008153105.2fe82fca@recife.lan>
-In-Reply-To: <543570C3.9080207@infradead.org>
-References: <20141008174923.76786a03@canb.auug.org.au>
-	<543570C3.9080207@infradead.org>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Wed, 8 Oct 2014 14:31:25 -0400
+X-IronPort-AV: E=Sophos;i="5.04,679,1406617200"; 
+   d="scan'208";a="47585799"
+Message-ID: <54358301.20505@broadcom.com>
+Date: Wed, 8 Oct 2014 11:31:29 -0700
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+To: Mark Brown <broonie@kernel.org>
+CC: Grant Likely <grant.likely@linaro.org>, <linux-spi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, JD Zheng <jdzheng@broadcom.com>,
+        "Scott Branden" <sbranden@broadcom.com>
+Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
+References: <rjui@broadcom.com> <1412743127-4523-1-git-send-email-rjui@broadcom.com> <20141008112143.GT4609@sirena.org.uk> <543562EB.8060300@broadcom.com> <20141008182123.GH4609@sirena.org.uk>
+In-Reply-To: <20141008182123.GH4609@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, 08 Oct 2014 10:13:39 -0700
-Randy Dunlap <rdunlap@infradead.org> escreveu:
 
-> On 10/07/14 23:49, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Please do not add any material intended for v3.19 to you linux-next
-> > included trees until after v3.18-rc1 has been released.
-> > 
-> > Changes since 20141007:
-> > 
-> 
-> I saw these build errors in gspca when CONFIG_INPUT=m but the gspca
-> sub-drivers are builtin:
-> 
-> drivers/built-in.o: In function `gspca_dev_probe2':
-> (.text+0x10ef43): undefined reference to `input_allocate_device'
-> drivers/built-in.o: In function `gspca_dev_probe2':
-> (.text+0x10efdd): undefined reference to `input_register_device'
-> drivers/built-in.o: In function `gspca_dev_probe2':
-> (.text+0x10f002): undefined reference to `input_free_device'
-> drivers/built-in.o: In function `gspca_dev_probe2':
-> (.text+0x10f0ac): undefined reference to `input_unregister_device'
-> drivers/built-in.o: In function `gspca_disconnect':
-> (.text+0x10f186): undefined reference to `input_unregister_device'
-> drivers/built-in.o: In function `sd_int_pkt_scan':
-> se401.c:(.text+0x11373d): undefined reference to `input_event'
-> se401.c:(.text+0x11374e): undefined reference to `input_event'
-> drivers/built-in.o: In function `sd_pkt_scan':
-> t613.c:(.text+0x119f0e): undefined reference to `input_event'
-> t613.c:(.text+0x119f1f): undefined reference to `input_event'
-> drivers/built-in.o: In function `sd_stopN':
-> t613.c:(.text+0x11a047): undefined reference to `input_event'
-> drivers/built-in.o:t613.c:(.text+0x11a058): more undefined references to `input_event' follow
-> 
-> These could be fixed in Kconfig by something like (for each sub-driver that tests
-> CONFIG_INPUT):
-> 
-> 	depends on INPUT || INPUT=n
-> 
-> Do you have another preference for fixing this?
 
-Hmm... The code at the gspca subdrivers looks like:
+On 10/8/2014 11:21 AM, Mark Brown wrote:
+> On Wed, Oct 08, 2014 at 09:14:35AM -0700, Ray Jui wrote:
+>
+>> Thanks for the reply. It looks like you are also the maintainer of spidev.
+>> In this case, could you please help to confirm that you expect spidev to use
+>> separate buffers for TX and RX? If so, I can go ahead and make the change in
+>> spidev.
+>
+> Yes, that would be my expectation for maximum robustness (or if it is
+> going to use one buffer it explicitly maps it for mixed use but I'd
+> expect that to be asking for trouble).
+>
+Okay, Mark. I'm going to make the change in the spidev and submit a new 
+patch.
 
-#if IS_ENABLED(CONFIG_INPUT)
-		if (data[0] & 0x20) {
-			input_report_key(gspca_dev->input_dev, KEY_CAMERA, 1);
-			input_sync(gspca_dev->input_dev);
-			input_report_key(gspca_dev->input_dev, KEY_CAMERA, 0);
-			input_sync(gspca_dev->input_dev);
-		}
-#endif
+Thanks for the feedback.
 
-As we never got any report about such bug, and this is there for a long
-time, I suspect that maybe the IS_ENABLED() macro had some changes on
-its behavior. So, IMHO, we should first check if something changed there.
-
->From gpsca's PoV, IMHO, it should be fine to disable the webcam buttons if
-the webcam was compiled as builtin and the input subsystem is compiled as 
-module. The core feature expected on a camera is to capture streams. 
-Buttons are just a plus.
-
-Also, most cams don't even have buttons. The gspca subdriver has support 
-for buttons for the few models that have it.
-
-So, IMHO, it should be ok to have GSPCA=y and INPUT=m, provided that 
-the buttons will be disabled.
-
-Regards,
-Mauro
+Ray
