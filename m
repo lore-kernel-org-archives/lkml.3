@@ -1,608 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881AbaJHGFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 02:05:40 -0400
-Received: from atl4mhob15.myregisteredsite.com ([209.17.115.53]:60217 "EHLO
-	atl4mhob15.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753411AbaJHGFi (ORCPT
+	id S1754058AbaJHGHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 02:07:20 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63468 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaJHGHT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 02:05:38 -0400
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: sre@kernel.org, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-pm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH v3] Add LTC2941/LTC2943 Battery Gauge Driver
-Date: Wed,  8 Oct 2014 08:05:00 +0200
-Message-Id: <1412748300-3915-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1412170334-11976-1-git-send-email-mike.looijmans@topic.nl>
-References: <1412170334-11976-1-git-send-email-mike.looijmans@topic.nl>
+	Wed, 8 Oct 2014 02:07:19 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Morten Rasmussen <morten.rasmussen@arm.com>, peterz@infradead.org,
+        mingo@redhat.com
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1411403047-32010-3-git-send-email-morten.rasmussen@arm.com>
+Cc: dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
+        vincent.guittot@linaro.org, nicolas.pitre@linaro.org,
+        rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        "Morten Rasmussen" <morten.rasmussen@arm.com>,
+        tuukka.tikkanen@linaro.org
+References: <1411403047-32010-1-git-send-email-morten.rasmussen@arm.com>
+ <1411403047-32010-3-git-send-email-morten.rasmussen@arm.com>
+Message-ID: <20141008060712.4379.42509@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 2/7] cpufreq: Architecture specific callback for frequency changes
+Date: Tue, 07 Oct 2014 23:07:12 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both the LTC2941 and LTC2943 measure battery capacity.
-The LTC2943 is compatible with the LTC2941, it adds voltage and
-temperature monitoring, and uses a slightly different conversion
-formula for the charge counter.
+Quoting Morten Rasmussen (2014-09-22 09:24:02)
+> Architectures that don't have any other means for tracking cpu frequency
+> changes need a callback from cpufreq to implement a scaling factor to
+> enable scale-invariant per-entity load-tracking in the scheduler.
+> 
+> To compute the scale invariance correction factor the architecture would
+> need to know both the max frequency and the current frequency. This
+> patch defines weak functions for setting both from cpufreq.
+> 
+> Related architecture specific functions use weak function definitions.
+> The same approach is followed here.
+> 
+> These callbacks can be used to implement frequency scaling of cpu
+> capacity later.
+> 
+> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> ---
+>  drivers/cpufreq/cpufreq.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index d9fdedd..e911f6b 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -278,6 +278,10 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
+>  }
+>  #endif
+>  
+> +void __weak arch_scale_set_curr_freq(int cpu, unsigned long freq) {}
+> +
+> +void __weak arch_scale_set_max_freq(int cpu, unsigned long freq) {}
 
-To avoid confusion with e.g. the LTC2945, the driver is called
-LTC2941 instead of LTC294X.
+Hi Morten,
 
-v2: Fix units of measurement: uV, uA and centidegrees.
-v3: Correctly set configuration register. Allow negative values
-    for the sense resistor.
+This approach assumes a single implementation for an architecture, which
+probably will not scale across the myriad platforms we have merged in
+mainline today. For ARM there could be any number of methods for
+determining a cpus capacity, including use of CPUfreq or some other
+platform-specific method.
 
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
----
- drivers/power/Kconfig                 |    7 +
- drivers/power/Makefile                |    1 +
- drivers/power/ltc2941-battery-gauge.c |  524 +++++++++++++++++++++++++++++++++
- 3 files changed, 532 insertions(+)
- create mode 100644 drivers/power/ltc2941-battery-gauge.c
+I am vaguely aware of Intel-based platforms that do not implement ACPI,
+so for that architecture I assume that an arch hook that assumes ACPI is
+similarly restrictive.
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 73cfcdf..3333bf3 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -382,6 +382,13 @@ config CHARGER_TPS65090
- 	 Say Y here to enable support for battery charging with TPS65090
- 	 PMIC chips.
- 
-+config BATTERY_GAUGE_LTC2941
-+	tristate "LTC2941/LTC2943 Battery Gauge Driver"
-+	depends on I2C
-+	help
-+	 Say Y here to include support for LTC2941 and LTC2943 Battery Gauge
-+	 IC.
-+
- config AB8500_BM
- 	bool "AB8500 Battery Management Driver"
- 	depends on AB8500_CORE && AB8500_GPADC
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index dfa8942..4f8e6c0 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_BATTERY_MAX17042)	+= max17042_battery.o
- obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
- obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
- obj-$(CONFIG_BATTERY_TWL4030_MADC)	+= twl4030_madc_battery.o
-+obj-$(CONFIG_BATTERY_GAUGE_LTC2941)	+= ltc2941-battery-gauge.o
- obj-$(CONFIG_CHARGER_88PM860X)	+= 88pm860x_charger.o
- obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
- obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
-diff --git a/drivers/power/ltc2941-battery-gauge.c b/drivers/power/ltc2941-battery-gauge.c
-new file mode 100644
-index 0000000..f0c387d
---- /dev/null
-+++ b/drivers/power/ltc2941-battery-gauge.c
-@@ -0,0 +1,524 @@
-+/*
-+ * I2C client/driver for the Linear Technology LTC2941 and LTC2943
-+ * Battery Gas Gauge IC
-+ *
-+ * Copyright (C) 2014 Topic Embedded Systems
-+ *
-+ * Author: Auryn Verwegen
-+ * Author: Mike Looijmans
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/errno.h>
-+#include <linux/swab.h>
-+#include <linux/i2c.h>
-+#include <linux/delay.h>
-+#include <linux/idr.h>
-+#include <linux/power_supply.h>
-+#include <linux/slab.h>
-+
-+#define I16_MSB(x)			((x >> 8) & 0xFF)
-+#define I16_LSB(x)			(x & 0xFF)
-+
-+#define LTC294X_WORK_DELAY		10	/* Update delay in seconds */
-+
-+#define LTC294X_MAX_VALUE		0xFFFF
-+#define LTC294X_MID_SUPPLY		0x7FFF
-+
-+#define LTC2941_MAX_PRESCALER_EXP	7
-+#define LTC2943_MAX_PRESCALER_EXP	6
-+
-+enum ltc294x_reg {
-+	LTC294X_REG_STATUS		= 0x00,
-+	LTC294X_REG_CONTROL		= 0x01,
-+	LTC294X_REG_ACC_CHARGE_MSB	= 0x02,
-+	LTC294X_REG_ACC_CHARGE_LSB	= 0x03,
-+	LTC294X_REG_THRESH_HIGH_MSB	= 0x04,
-+	LTC294X_REG_THRESH_HIGH_LSB	= 0x05,
-+	LTC294X_REG_THRESH_LOW_MSB	= 0x06,
-+	LTC294X_REG_THRESH_LOW_LSB	= 0x07,
-+	LTC294X_REG_VOLTAGE_MSB	= 0x08,
-+	LTC294X_REG_VOLTAGE_LSB	= 0x09,
-+	LTC294X_REG_CURRENT_MSB	= 0x0E,
-+	LTC294X_REG_CURRENT_LSB	= 0x0F,
-+	LTC294X_REG_TEMPERATURE_MSB	= 0x14,
-+	LTC294X_REG_TEMPERATURE_LSB	= 0x15,
-+} ;
-+
-+#define LTC2943_REG_CONTROL_MODE_MASK (BIT(7) | BIT(6))
-+#define LTC2943_REG_CONTROL_MODE_SCAN BIT(7)
-+#define LTC294X_REG_CONTROL_PRESCALER_MASK	(BIT(5) | BIT(4) | BIT(3))
-+#define LTC294X_REG_CONTROL_SHUTDOWN_MASK	(BIT(0))
-+#define LTC294X_REG_CONTROL_PRESCALER_SET(x)		((x << 3) & LTC294X_REG_CONTROL_PRESCALER_MASK)
-+#define LTC294X_REG_CONTROL_ALCC_CONFIG_DISABLED	0
-+
-+#define LTC2941_NUM_REGS	0x08
-+#define LTC2943_NUM_REGS	0x18
-+
-+struct ltc294x_info {
-+	struct i2c_client *client;	/* I2C Client pointer */
-+	struct power_supply supply;	/* Supply pointer */
-+	struct delayed_work work;	/* Work scheduler */
-+	int num_regs; /* Number of registers (chip type) */
-+	int	id;	/* Identifier of ltc294x chip */
-+	int	charge;	/* Last charge register content */
-+	int	r_sense;	/* mOhm */
-+	int Qlsb;	/* nAh */
-+};
-+
-+static DEFINE_IDR(ltc294x_id);
-+static DEFINE_MUTEX(ltc294x_lock);
-+
-+static inline int convert_bin_to_uAh(
-+	const struct ltc294x_info *info, int Q)
-+{
-+	int uAh;
-+	uAh = ((Q * (info->Qlsb / 10))) / 100;
-+	return uAh;
-+}
-+
-+static inline int convert_uAh_to_bin(
-+	const struct ltc294x_info *info, int uAh)
-+{
-+	int Q;
-+	Q = (uAh * 100) / (info->Qlsb/10);
-+	return (Q < LTC294X_MAX_VALUE) ? Q : LTC294X_MAX_VALUE;
-+}
-+
-+static int ltc294x_read_regs(struct i2c_client *client,
-+    enum ltc294x_reg reg, u8 *buf, int num_regs)
-+{
-+	int ret;
-+	struct i2c_msg msgs[2] = { };
-+	u8 reg_start = reg;
-+
-+	msgs[0].addr 	= client->addr;
-+	msgs[0].len 	= 1;
-+	msgs[0].buf 	= &reg_start;
-+
-+	msgs[1].addr 	= client->addr;
-+	msgs[1].len 	= num_regs;
-+	msgs[1].buf 	= buf;
-+	msgs[1].flags	= I2C_M_RD;
-+
-+	ret = i2c_transfer(client->adapter, &msgs[0], 2);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "ltc2941 read_reg failed!\n");
-+		return ret;
-+	}
-+
-+	dev_dbg(&client->dev, "%s (%#x, %d) -> %#x\n",
-+		__func__, reg, num_regs, *buf);
-+
-+	return 0;
-+}
-+
-+static int ltc294x_write_regs(struct i2c_client *client,
-+	enum ltc294x_reg reg, const u8* const buf, int num_regs)
-+{
-+	int ret;
-+	u8 reg_start = reg;
-+
-+	ret = i2c_smbus_write_i2c_block_data(client, reg_start, num_regs, buf);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "ltc2941 write_reg failed!\n");
-+		return ret;
-+	}
-+
-+	dev_dbg(&client->dev, "%s (%#x, %d) -> %#x\n",
-+		__func__, reg, num_regs, *buf);
-+
-+	return 0;
-+}
-+
-+static int ltc294x_reset(const struct ltc294x_info *info, int prescaler_exp)
-+{
-+	int ret;
-+	u8 value;
-+	u8 control;
-+
-+	/* Read status and control registers */
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_CONTROL, &value, 1);
-+	if(ret < 0) {
-+		dev_err(&info->client->dev, "LTC2941: Could not read registers from device!\n");
-+		goto error_exit;
-+	}
-+
-+	control = LTC294X_REG_CONTROL_PRESCALER_SET(prescaler_exp) |
-+				LTC294X_REG_CONTROL_ALCC_CONFIG_DISABLED;
-+	/* Put the 2943 into "monitor" mode, so it measures every 10 sec */
-+	if (info->num_regs == LTC2943_NUM_REGS)
-+		control |= LTC2943_REG_CONTROL_MODE_SCAN;
-+
-+	if (value != control) {
-+		ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &control, 1);
-+		if(ret < 0){
-+			dev_err(&info->client->dev, "Could not write registers!\n");
-+			goto error_exit;
-+		}
-+	}
-+
-+	return 0;
-+
-+error_exit:
-+	return ret;
-+}
-+
-+static int ltc294x_read_charge_register(const struct ltc294x_info *info)
-+{
-+	int ret;
-+	u8 datar[2];
-+
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_ACC_CHARGE_MSB, &datar[0], 2);
-+	if (ret < 0)
-+		return ret;
-+	return (datar[0] << 8) + datar[1];
-+}
-+
-+static int ltc294x_get_charge_now(const struct ltc294x_info *info, int *val)
-+{
-+	int value = ltc294x_read_charge_register(info);
-+	if (value < 0)
-+		return value;
-+	/* When r_sense < 0, this counts up when the battery discharges */
-+	if (info->Qlsb < 0)
-+		value -= 0xFFFF;
-+	*val = convert_bin_to_uAh(info, value);
-+	return 0;
-+}
-+
-+static int ltc294x_set_charge_now(const struct ltc294x_info *info, int val)
-+{
-+	int ret;
-+	u8 dataw[2];
-+	u8 ctrl_reg;
-+	s32 value;
-+
-+	value = convert_uAh_to_bin(info, val);
-+	if (info->Qlsb < 0) /* Direction depends on how sense+/- were connected */
-+		value += 0xFFFF;
-+	if ((value < 0) || (value > 0xFFFF)) /* input validation */
-+		return -EINVAL;
-+
-+	/* Read control register */
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
-+	if(ret < 0)
-+		return ret;
-+	/* Disable analog section */
-+	ctrl_reg |= LTC294X_REG_CONTROL_SHUTDOWN_MASK;
-+	ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
-+	if(ret < 0)
-+		return ret;
-+	/* Set new charge value */
-+	dataw[0] = I16_MSB(value);
-+	dataw[1] = I16_LSB(value);
-+	ret = ltc294x_write_regs(info->client, LTC294X_REG_ACC_CHARGE_MSB, &dataw[0], 2);
-+	if(ret < 0)
-+		goto error_exit;
-+	/* Enable analog section */
-+error_exit:
-+	ctrl_reg &= ~LTC294X_REG_CONTROL_SHUTDOWN_MASK;
-+	ret = ltc294x_write_regs(info->client, LTC294X_REG_CONTROL, &ctrl_reg, 1);
-+
-+	return ret < 0 ? ret : 0;
-+}
-+
-+static int ltc294x_get_charge_counter(const struct ltc294x_info *info, int *val)
-+{
-+	int value = ltc294x_read_charge_register(info);
-+	if (value < 0)
-+		return value;
-+	value -= LTC294X_MID_SUPPLY;
-+	*val = convert_bin_to_uAh(info, value);
-+	return 0;
-+}
-+
-+static int ltc294x_get_voltage(const struct ltc294x_info *info, int *val)
-+{
-+	int ret;
-+	u8 datar[2];
-+	u32 value;
-+
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_VOLTAGE_MSB, &datar[0], 2);
-+	value = (datar[0] << 8) | datar[1];
-+	*val = ((value * 23600) / 0xFFFF) * 1000; /* in uV */
-+	return ret;
-+}
-+
-+static int ltc294x_get_current(const struct ltc294x_info *info, int *val)
-+{
-+	int ret;
-+	u8 datar[2];
-+	s32 value;
-+
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_CURRENT_MSB, &datar[0], 2);
-+	value = (datar[0] << 8) | datar[1];
-+	value -= 0x7FFF;
-+	/* Value is in range -32k..+32k, r_sense is usually 10..50 mOhm,
-+	 * the formula below keeps everything in s32 range while preserving
-+	 * enough digits */
-+	*val = 1000 * ((60000 * value) / (info->r_sense * 0x7FFF)); /* in uA */
-+	return ret;
-+}
-+
-+static int ltc294x_get_temperature(const struct ltc294x_info *info, int *val)
-+{
-+	int ret;
-+	u8 datar[2];
-+	u32 value;
-+
-+	ret = ltc294x_read_regs(info->client, LTC294X_REG_TEMPERATURE_MSB, &datar[0], 2);
-+	value = (datar[0] << 8) | datar[1];
-+	/* Full-scale is 510 Kelvin, convert to centidegrees  */
-+	*val = (((51000 * value) / 0xFFFF) - 27215);
-+	return ret;
-+}
-+
-+static int ltc294x_get_property(struct power_supply *psy,
-+				enum power_supply_property prop,
-+				union power_supply_propval *val)
-+{
-+	struct ltc294x_info *info = container_of(psy, struct ltc294x_info, supply);
-+
-+	switch (prop) {
-+		case POWER_SUPPLY_PROP_CHARGE_NOW:
-+			return ltc294x_get_charge_now(info, &val->intval);
-+		case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-+			return ltc294x_get_charge_counter(info, &val->intval);
-+		case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-+			return ltc294x_get_voltage(info, &val->intval);
-+		case POWER_SUPPLY_PROP_CURRENT_NOW:
-+			return ltc294x_get_current(info, &val->intval);
-+		case POWER_SUPPLY_PROP_TEMP:
-+			return ltc294x_get_temperature(info, &val->intval);
-+		default:
-+			return -EINVAL;
-+	}
-+}
-+
-+static int ltc294x_set_property(struct power_supply *psy,
-+	enum power_supply_property psp,
-+	const union power_supply_propval *val)
-+{
-+	struct ltc294x_info *info =
-+		container_of(psy, struct ltc294x_info, supply);
-+
-+	switch (psp) {
-+		case POWER_SUPPLY_PROP_CHARGE_NOW:
-+			return ltc294x_set_charge_now(info, val->intval);
-+		default:
-+			return -EPERM;
-+	}
-+}
-+
-+static int ltc294x_property_is_writeable(
-+	struct power_supply *psy, enum power_supply_property psp)
-+{
-+	switch (psp)
-+	{
-+		case POWER_SUPPLY_PROP_CHARGE_NOW:
-+			return 1;
-+		default:
-+			return 0;
-+	}
-+}
-+
-+static void ltc294x_update(struct ltc294x_info *info)
-+{
-+	int charge = ltc294x_read_charge_register(info);
-+	if (charge != info->charge) {
-+		info->charge = charge;
-+		power_supply_changed(&info->supply);
-+	}
-+}
-+
-+static void ltc294x_work(struct work_struct *work)
-+{
-+	struct ltc294x_info *info;
-+
-+	info = container_of(work, struct ltc294x_info, work.work);
-+	ltc294x_update(info);
-+	schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
-+}
-+
-+static enum power_supply_property ltc294x_properties[] = {
-+	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-+	POWER_SUPPLY_PROP_CHARGE_NOW,
-+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
-+	POWER_SUPPLY_PROP_CURRENT_NOW,
-+	POWER_SUPPLY_PROP_TEMP,
-+};
-+
-+static int ltc294x_i2c_remove(struct i2c_client *client)
-+{
-+	struct ltc294x_info *info = i2c_get_clientdata(client);
-+
-+	cancel_delayed_work(&info->work);
-+	power_supply_unregister(&info->supply);
-+	kfree(info->supply.name);
-+	mutex_lock(&ltc294x_lock);
-+	idr_remove(&ltc294x_id, info->id);
-+	mutex_unlock(&ltc294x_lock);
-+	return 0;
-+}
-+
-+static int ltc294x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
-+{
-+	struct ltc294x_info *info;
-+	int ret;
-+	int num;
-+	u32 prescaler_exp;
-+	s32 r_sense;
-+	struct device_node *np;
-+
-+	mutex_lock(&ltc294x_lock);
-+	ret = idr_alloc(&ltc294x_id, client, 0, 0, GFP_KERNEL);
-+	mutex_unlock(&ltc294x_lock);
-+	if(ret < 0)
-+		goto fail_id;
-+
-+	num = ret;
-+
-+	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
-+	if(info == NULL) {
-+		dev_err(&client->dev, "Could not allocate memory for device structure!\n");
-+		ret = -ENOMEM;
-+		goto fail_info;
-+	}
-+
-+	i2c_set_clientdata(client, info);
-+
-+	info->num_regs = id->driver_data;
-+	info->supply.name = kasprintf(GFP_KERNEL, "%s-%d", client->name, num);
-+	if(!info->supply.name) {
-+		dev_err(&client->dev, "Could not allocate memory for device name!\n");
-+		ret = -ENOMEM;
-+		goto fail_name;
-+	}
-+
-+	np = of_node_get(client->dev.of_node);
-+
-+	/* r_sense can be negative, when sense+ is connected to the battery
-+	 * instead of the sense-. This results in reversed measurements. */
-+	ret = of_property_read_u32(np, "resistor-sense", &r_sense);
-+	if(ret < 0) {
-+		dev_err(&client->dev, "Could not find resistor-sense in devicetree!\n");
-+		goto fail_name;
-+	}
-+	info->r_sense = r_sense;
-+
-+	ret = of_property_read_u32(np, "prescaler-exponent", &prescaler_exp);
-+	if(ret < 0) {
-+		dev_err(&client->dev, "PrescalerExponent not in devicetree, assume max.\n");
-+		prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
-+	}
-+
-+	if (info->num_regs == LTC2943_NUM_REGS) {
-+		if (prescaler_exp > LTC2943_MAX_PRESCALER_EXP)
-+			prescaler_exp = LTC2943_MAX_PRESCALER_EXP;
-+		info->Qlsb = ((340 * 50000) / r_sense) / (4096 / (1 << (2*prescaler_exp)));
-+	} else {
-+		if (prescaler_exp > LTC2941_MAX_PRESCALER_EXP)
-+			prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
-+		info->Qlsb = ((58 * 50000) / r_sense) / (128 / (1 << prescaler_exp));
-+	}
-+
-+	info->client = client;
-+	info->id = num;
-+	info->supply.type			= POWER_SUPPLY_TYPE_BATTERY;
-+	info->supply.properties			= ltc294x_properties;
-+	if (info->num_regs >= LTC294X_REG_TEMPERATURE_LSB)
-+		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties);
-+	else if (info->num_regs >= LTC294X_REG_CURRENT_LSB)
-+		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 1;
-+	else if (info->num_regs >= LTC294X_REG_VOLTAGE_LSB)
-+		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 2;
-+	else
-+		info->supply.num_properties	= ARRAY_SIZE(ltc294x_properties) - 3;
-+	info->supply.get_property		= ltc294x_get_property;
-+	info->supply.set_property		= ltc294x_set_property;
-+	info->supply.property_is_writeable	= ltc294x_property_is_writeable;
-+	info->supply.external_power_changed	= NULL;
-+
-+	INIT_DELAYED_WORK(&info->work, ltc294x_work);
-+
-+	ret = ltc294x_reset(info, prescaler_exp);
-+	if (ret < 0) {
-+		dev_err(&client->dev, "Communication with chip failed!\n");
-+		goto fail_comm;
-+	}
-+
-+	ret = power_supply_register(&client->dev, &info->supply);
-+	if (ret) {
-+		dev_err(&client->dev, "failed to register ltc2941\n");
-+		goto fail_register;
-+	} else {
-+		schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
-+	}
-+
-+	return 0;
-+
-+fail_register:
-+	kfree(info->supply.name);
-+fail_comm:
-+fail_name:
-+fail_info:
-+	mutex_lock(&ltc294x_lock);
-+	idr_remove(&ltc294x_id, num);
-+	mutex_unlock(&ltc294x_lock);
-+fail_id:
-+	return ret;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+
-+static int ltc294x_suspend(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct ltc294x_info *info = i2c_get_clientdata(client);
-+
-+	cancel_delayed_work(&info->work);
-+	return 0;
-+}
-+
-+static int ltc294x_resume(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct ltc294x_info *info = i2c_get_clientdata(client);
-+
-+	schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
-+	return 0;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(ltc294x_pm_ops, ltc294x_suspend, ltc294x_resume);
-+#define LTC294X_PM_OPS (&ltc294x_pm_ops)
-+
-+#else
-+#define LTC294X_PM_OPS NULL
-+#endif /* CONFIG_PM_SLEEP */
-+
-+
-+static const struct i2c_device_id ltc294x_i2c_id[] = {
-+	{"ltc2941", LTC2941_NUM_REGS},
-+	{"ltc2943", LTC2943_NUM_REGS},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(i2c, ltc294x_i2c_id);
-+
-+static struct i2c_driver ltc294x_driver = {
-+	.driver 	= {
-+		.name	= "LTC2941",
-+		.owner	= THIS_MODULE,
-+		.pm 	= LTC294X_PM_OPS,
-+	},
-+	.probe		= ltc294x_i2c_probe,
-+	.remove		= ltc294x_i2c_remove,
-+	.id_table	= ltc294x_i2c_id,
-+};
-+module_i2c_driver(ltc294x_driver);
-+
-+MODULE_AUTHOR("Auryn Verwegen, Topic Embedded Systems");
-+MODULE_AUTHOR("Mike Looijmans, Topic Embedded Products");
-+MODULE_DESCRIPTION("LTC2941/LTC2943 Battery Gas Gauge IC driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+I'll reply to this thread with a pair of patches that try to generalize
+the functions you created in patches #2-4 of this series. I'm currently
+hacking on a Chromebook 2 using the arm_big_little CPUfreq driver, so
+you'll notice that is where I decided to implement the ops. Of course
+those could be implemented in arch code, or some other driver.
 
+Regards,
+Mike
+
+> +
+>  static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
+>                 struct cpufreq_freqs *freqs, unsigned int state)
+>  {
+> @@ -315,6 +319,7 @@ static void __cpufreq_notify_transition(struct cpufreq_policy *policy,
+>                 pr_debug("FREQ: %lu - CPU: %lu\n",
+>                          (unsigned long)freqs->new, (unsigned long)freqs->cpu);
+>                 trace_cpu_frequency(freqs->new, freqs->cpu);
+> +               arch_scale_set_curr_freq(freqs->cpu, freqs->new);
+>                 srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
+>                                 CPUFREQ_POSTCHANGE, freqs);
+>                 if (likely(policy) && likely(policy->cpu == freqs->cpu))
+> @@ -2135,7 +2140,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+>                                 struct cpufreq_policy *new_policy)
+>  {
+>         struct cpufreq_governor *old_gov;
+> -       int ret;
+> +       int ret, cpu;
+>  
+>         pr_debug("setting new policy for CPU %u: %u - %u kHz\n",
+>                  new_policy->cpu, new_policy->min, new_policy->max);
+> @@ -2173,6 +2178,9 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+>         policy->min = new_policy->min;
+>         policy->max = new_policy->max;
+>  
+> +       for_each_cpu(cpu, policy->cpus)
+> +               arch_scale_set_max_freq(cpu, policy->max);
+> +
+>         pr_debug("new min and max freqs are %u - %u kHz\n",
+>                  policy->min, policy->max);
+>  
+> -- 
+> 1.7.9.5
+> 
+> 
