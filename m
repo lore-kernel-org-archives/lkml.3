@@ -1,142 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757AbaJHAsx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 7 Oct 2014 20:48:53 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:46609 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572AbaJHAsw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 7 Oct 2014 20:48:52 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Taeung Song <treeze.taeung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend] perf top: Add a visual cue for toggle zeroing of samples
-References: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
-Date: Wed, 08 Oct 2014 09:48:48 +0900
-In-Reply-To: <1412665995-26359-1-git-send-email-treeze.taeung@gmail.com>
-	(Taeung Song's message of "Tue, 7 Oct 2014 16:13:15 +0900")
-Message-ID: <87wq8bfksv.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1755813AbaJHAun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 7 Oct 2014 20:50:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:29446 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755431AbaJHAum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 7 Oct 2014 20:50:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="396849937"
+From: Andi Kleen <andi@firstfloor.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@kernel.org>
+Subject: Re: PERF_EVENT_IOC_SET_FILTER has different values based on bitness
+References: <54347238.2060908@gmail.com> <5434749D.9070301@gmail.com>
+Date: Tue, 07 Oct 2014 17:50:39 -0700
+In-Reply-To: <5434749D.9070301@gmail.com> (David Ahern's message of "Tue, 07
+	Oct 2014 17:17:49 -0600")
+Message-ID: <87a957qt9c.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Taeung,
+David Ahern <dsahern@gmail.com> writes:
+>>
+>> diff --git a/kernel/events/core.c b/kernel/events/core.c
+>> index 963bf139e2b2..c805132ac1cf 100644
+>> --- a/kernel/events/core.c
+>> +++ b/kernel/events/core.c
+>> @@ -3714,6 +3714,7 @@ static long perf_ioctl(struct file *file, unsigned
+>> int cmd, unsigned long arg)
+>>      }
+>>
+>>      case PERF_EVENT_IOC_SET_FILTER:
+>> +   case PERF_EVENT_IOC_SET_FILTER_32:
+>>          return perf_event_set_filter(event, (void __user *)arg);
+>>
+>>      default:
+>>
+>
+> Oh, PERF_EVENT_IOC_ID has the same problem:
+>
+> #define PERF_EVENT_IOC_ID               _IOR('$', 7, __u64 *)
 
-On Tue,  7 Oct 2014 16:13:15 +0900, Taeung Song wrote:
-> When 'perf top' is run, one can't easily find a difference
-> between -z option and normal output.
-> So I added a visual cue to know whether it is the zeroing or not.
->
-> Output is as below.
->
-> Before:
->  $ perf top
->
->  Samples: 61K of event 'cycles', Event count (approx.): 3908136933
->  Overhead  Shared Object                       Symbol
->     1.42%  firefox                             [.] 0x0000000000011e76
->     1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
->
-> If you press key 'z' or run with zero option like '$ perf top --zero', it is as below.
->
-> After:
->  Samples: 61K of event 'cycles', Event count (approx.): 3908136933 [z]
->  Overhead  Shared Object                       Symbol
->     1.42%  firefox                             [.] 0x0000000000011e76
->     1.32%  libpthread-2.17.so                  [.] pthread_mutex_lock
->
-> Signed-off-by: Taeung Song <treeze.taeung@gmail.com>
+The right way is to add a compat_perf_ioctl() 
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+-Andi
 
-Thanks,
-Namhyung
-
-
-> ---
->  tools/perf/ui/browsers/hists.c | 32 ++++++++++++++++++++++----------
->  1 file changed, 22 insertions(+), 10 deletions(-)
->
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index 8f60a97..79b66d0 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -35,7 +35,9 @@ struct hist_browser {
->  
->  extern void hist_browser__init_hpp(void);
->  
-> -static int hists__browser_title(struct hists *hists, char *bf, size_t size);
-> +static int hists__browser_title(struct hists *hists,
-> +				struct hist_browser_timer *hbt,
-> +				char *bf, size_t size);
->  static void hist_browser__update_nr_entries(struct hist_browser *hb);
->  
->  static struct rb_node *hists__filter_entries(struct rb_node *nd,
-> @@ -390,7 +392,7 @@ static int hist_browser__run(struct hist_browser *browser,
->  	browser->b.entries = &browser->hists->entries;
->  	browser->b.nr_entries = hist_browser__nr_entries(browser);
->  
-> -	hists__browser_title(browser->hists, title, sizeof(title));
-> +	hists__browser_title(browser->hists, hbt, title, sizeof(title));
->  
->  	if (ui_browser__show(&browser->b, title,
->  			     "Press '?' for help on key bindings") < 0)
-> @@ -417,7 +419,8 @@ static int hist_browser__run(struct hist_browser *browser,
->  				ui_browser__warn_lost_events(&browser->b);
->  			}
->  
-> -			hists__browser_title(browser->hists, title, sizeof(title));
-> +			hists__browser_title(browser->hists,
-> +					     hbt, title, sizeof(title));
->  			ui_browser__show_title(&browser->b, title);
->  			continue;
->  		}
-> @@ -1204,7 +1207,15 @@ static struct thread *hist_browser__selected_thread(struct hist_browser *browser
->  	return browser->he_selection->thread;
->  }
->  
-> -static int hists__browser_title(struct hists *hists, char *bf, size_t size)
-> +/* Check whether the browser is for 'top' or 'report' */
-> +static inline bool is_report_browser(void *timer)
-> +{
-> +	return timer == NULL;
-> +}
-> +
-> +static int hists__browser_title(struct hists *hists,
-> +				struct hist_browser_timer *hbt,
-> +				char *bf, size_t size)
->  {
->  	char unit;
->  	int printed;
-> @@ -1256,6 +1267,13 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size)
->  	if (dso)
->  		printed += scnprintf(bf + printed, size - printed,
->  				    ", DSO: %s", dso->short_name);
-> +	if (!is_report_browser(hbt)) {
-> +		struct perf_top *top = hbt->arg;
-> +
-> +		if (top->zero)
-> +			printed += scnprintf(bf + printed, size - printed, " [z]");
-> +	}
-> +
->  	return printed;
->  }
->  
-> @@ -1267,12 +1285,6 @@ static inline void free_popup_options(char **options, int n)
->  		zfree(&options[i]);
->  }
->  
-> -/* Check whether the browser is for 'top' or 'report' */
-> -static inline bool is_report_browser(void *timer)
-> -{
-> -	return timer == NULL;
-> -}
-> -
->  /*
->   * Only runtime switching of perf data file will make "input_name" point
->   * to a malloced buffer. So add "is_input_name_malloced" flag to decide
+-- 
+ak@linux.intel.com -- Speaking for myself only
