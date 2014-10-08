@@ -1,209 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbaJHUZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 16:25:46 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:52487 "EHLO
+	id S1754340AbaJHU0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 16:26:53 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:64646 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172AbaJHUZp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752730AbaJHU0v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 16:25:45 -0400
+	Wed, 8 Oct 2014 16:26:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: torvalds@linux-foundation.org
 Cc: linux-arm-kernel@lists.infradead.org, arm@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL 1/7] ARM: SoC non-critical bug fixes for 3.18
-Date: Wed, 08 Oct 2014 22:25:06 +0200
-Message-ID: <11860787.2HyTs6YqEL@wuerfel>
+Subject: [GIT PULL 0/7] ARM: SoC changes for 3.18
+Date: Wed, 08 Oct 2014 22:23:29 +0200
+Message-ID: <1922034.HH2lvbiFi0@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1922034.HH2lvbiFi0@wuerfel>
-References: <1922034.HH2lvbiFi0@wuerfel>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:eWFHAp1XwcoQIOqWUncJZXzjS2KU1EYt8JZEJ3QbteU
- KxgdGHQHO3Q6kQLk0YdP2oRB9T0YrPaZldCqzfySCGVftdEzZL
- 8RP9g7xV/53KSp+OFzKTJ8riRZFoShoWiG1alaFFC/j4jjWs5n
- jSgtfclFzXhnBDPxwqybmINWjES/D1nxbCfHS6une8ubq00KMe
- xKtoilAYD0lneagnTp7oZdx2eZwCkbA2P58jFj/hXYCsyhf3f/
- I8jGN9R/8Xhox+rI7q1pBI3yLEUfCKmUkDcLizgjFdZ+vxGgCi
- POX/CGadeDE2G29OfiqIMma3wOKszTDoZzw+NlV8310HSUryFx
- cYnj2PKVVuZPLqiyLtDU=
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:tcFKULP1+0fKv/W6A+R0OReU64UxdC0S/bweqmGEsOG
+ n+uGcYnF/R61RniG7JgTtOz+zL/txYAd7H8cvhOsK16PMBFUtG
+ fh/C9ba1YFkwhT3MVMG2gF1I4mO3KYprAvS7wb7POvcQIpvrpO
+ ljADrje00UPk/e5U/6NKNflTjVRhsh1o6/SH1IQ3Fs4yaG4++o
+ 8MsYITYbgzMXyh0AUpxIf8hdoiIrUMt9gJopL3KHIyJHUoGMrO
+ PHLyyuDqXaAaaRCPP7g3ir1qTuClucmSDbQ6rDIC4PyLMOfEOJ
+ Sh7Wrq4elbioWxPcIZKuVaHC6v49JrLsMdNaaYBS+GSABe9oky
+ x/41Pl7iFNrbk3llUyQg=
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 69e273c0b0a3c337a521d083374c918dc52c666f:
+Hi Linus,
 
-  Linux 3.17-rc3 (2014-08-31 18:23:04 -0700)
+Sending out the main pull requests for arm-soc now. It feels smaller than
+usual, but we also rejected a number of branches late in the cycle after
+you announced that you'd do an early 3.17 release.
 
-are available in the git repository at:
+As usual, DT changes make up the bulk of this, although less so than
+previously. One reason for this is a relatively large driver for the TI
+keystone platform that skews the statistics.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-nc-for-linus
+The total size of arch/arm/mach-*/ keeps going down (2782 insertions,
+5825 deletions) as we remove files that are obsoleted by the DT
+migration, which is good. Unfortunately, no additional platforms have
+become 'multiplatform' aware this time. I have plans and patches for
+at least five platforms that are still mutually exclusive with all others,
+but it did not work out this time.
 
-for you to fetch changes up to 5df27823b5552e885e02c1ea0d2f52326d7d710c:
+Platform-wise the majority of the patches this time are for shmobile
+and omap, which is fairly common. However, a lot of work is going into
+sunxi as well, which is largely driven by hobbyists and has not
+traditionally seen such a bulk of work going in in the past.
+imx and at91 show up high in the dirstat because of removed code.
+A couple of new platforms have just started appearing, but support
+is very minimal.
 
-  MAINTAINERS: update Shawn's email address (2014-10-08 21:30:56 +0200)
+	Arnd
 
-----------------------------------------------------------------
-ARM: SoC non-critical bug fixes for 3.18
+Some brief statistics:
 
-These are bug fixes for harmless problems that were not important
-enough to get fixed in 3.17. The majority of these are OMAP specific,
-but there are also a couple for Marvell mvebu, cns3xxx, and others,
-as well as some updates for the MAINTAINERS file.
+ 702 non-merge changesets
+  98 merges
+ 139 individual contributors
+ 625 files changed, 26029 insertions(+), 9052 deletions(-)
 
-In particular, Robert Jarzmik and Daniel Mack now volunteered to help
-out maintaining the PXA platform, Krzysztof Halasa took over the
-cns3xxx platform, Carlo Caione is the maintainer for the new Amlogic
-meson platform, and Matthias Brugger is now listed for the mediatek
-platform he recently contributed.
+Contributors with 5 patches/merges or more:
+79 Arnd Bergmann  
+40 Magnus Damm 
+39 Felipe Balbi
+37 Geert Uytterhoeven
+36 Maxime Ripard
+25 Olof Johansson
+25 Nishanth Menon
+22 Chen-Yu Tsai 
+19 Fabio Estevam 
+19 Alexandre Belloni
+18 Tony Lindgren
+16 Simon Horman 
+14 Laurent Pinchart
+12 Ulrich Hecht 
+11 Soren Brinkmann
+11 Alexander Shiyan
+10 Shawn Guo 
+10 Nicolas Ferre 
+10 Marek Belisko
+9 Santosh Shilimkar
+9 Heiko Stuebner
+8 Peter Ujfalusi
+8 Matthias Brugger
+8 Doug Anderson
+8 Andrew Lunn 
+7 Tim Harvey 
+7 Stephen Warren
+7 Stefan Agner 
+7 Linus Walleij 
+7 Haojian Zhuang
+7 Dmitry Lifshitz
+7 Carlo Caione
+7 Boris BREZILLON 
+6 Zhangfei Gao 
+6 Thomas Petazzoni
+6 Shengjiu Wang 
+6 Rajendra Nayak
+6 Michal Simek 
+6 Mark Brown 
+6 Grygorii Strashko
+6 Florian Fainelli
+6 Ezequiel Garcia
+6 Emilio López 
+6 Bo Shen 
+5 Thierry Reding 
+5 Stephen Boyd 
+5 Krzysztof Ha�~Basa
+5 Javier Martinez Canillas
+5 Heiko Stübner 
+5 Georgi Djakov 
+5 Anson Huang 
 
-----------------------------------------------------------------
-Andreas Henriksson (1):
-      ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
+Dirstat (0.1% cutoff):
 
-Andrew Lunn (8):
-      cpuidle: kirkwood: Remove ARCH_KIRKWOOD dependency
-      ata: Remove ARCH_KIRKWOOD dependency
-      thermal: Remove ARCH_KIRKWOOD dependency
-      leds: Remove ARCH_KIRKWOOD dependency
-      rtc: Remove ARCH_KIRKWOOD dependency
-      watchdog: Remove ARCH_KIRKWOOD dependency
-      cpufreq: Remove ARCH_KIRKWOOD dependency
-      ARM: Kirkwood: Fix DT based DSA.
-
-Arnaud Ebalard (2):
-      ARM: mvebu: Netgear RN104: Use Hardware BCH ECC
-      ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
-
-Arnd Bergmann (3):
-      Merge tag 'davinci-for-v3.18/board' of git://git.kernel.org/.../nsekhar/linux-davinci into next/fixes-non-critical
-      Merge tag 'renesas-maintainers-for-v3.18' of git://git.kernel.org/.../horms/renesas into next/fixes-non-critical
-      Merge tag 'at91-fixes-non-critical' of git://github.com/at91linux/linux-at91 into next/fixes-non-critical
-
-Behan Webster (1):
-      arm, vt8500, LLVMLlinux: Use mcr instead of mcr% for mach-vt8500
-
-Carlo Caione (1):
-      MAINTAINERS: Add entry for the Amlogic MesonX SoCs
-
-Florian Fainelli (1):
-      MAINTAINERS: add a third maintainer to mach-bcm
-
-Krzysztof Hałasa (4):
-      CNS3xxx: Fix debug UART.
-      CNS3xxx: Fix logical PCIe topology.
-      CNS3xxx: Fix PCIe read size limit.
-      MAINTAINERS: CNS3xxx and IXP4xx update.
-
-Ludovic Desroches (1):
-      ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks
-
-Matthias Brugger (1):
-      MAINTAINERS: Add maintainers entry for Mediatek SoCs
-
-Nishanth Menon (9):
-      ARM: dts: omap4-panda: Fix model and SoC family details
-      ARM: dts: am335x-bone*: Fix model name and update compatibility information
-      ARM: OMAP: DRA7: powerdomain data: fix powerdomain powerstate
-      ARM: OMAP5: powerdomain data: fix powerdomain powerstate
-      ARM: OMAP2+: powerdomain: pwrdm_for_each_clkdm iterate only valid clkdms
-      ARM: OMAP2+: powerdomain: introduce logic for finding valid power domain
-      ARM: OMAP4+: PM: Make logic state programmable
-      ARM: OMAP4+: PM: use only valid low power state for suspend
-      ARM: OMAP4+: PM: Use only valid low power state for CPU hotplug
-
-Olof Johansson (2):
-      Merge tag 'fixes-v3.18-not-urgent' of git://git.kernel.org/.../tmlind/linux-omap into next/fixes-non-critical
-      Merge tag 'mvebu-fixes-3.17' of git://git.infradead.org/linux-mvebu into next/fixes-non-critical
-
-Paul Bolle (1):
-      ARM: spear: Remove references to PLAT_SPEAR_SINGLE
-
-Peter Ujfalusi (2):
-      ARM: davinci: board-da850-evm: Mark dcdc2 of TPS65070 as always_on
-      ARM: davinci: board-da850-evm: Add needed regulators for tlv320aic3106 codec
-
-Robert Jarzmik (1):
-      MAINTAINERS: update ARM pxa maintainers
-
-Roland Stigge (1):
-      ARM: LPC32xx: Fix reset function
-
-Shawn Guo (1):
-      MAINTAINERS: update Shawn's email address
-
-Simon Horman (1):
-      ARM: shmobile: Remove genmai_defconfig from MAINTAINERS
-
-Stephen Warren (2):
-      MAINTAINERS: add Alexandre Courbot for Tegra
-      MAINTAINERS: condense some Tegra related entries
-
-Tony Lindgren (1):
-      Merge branch 'pull/v3.18/powerdomain-fixes' of https://github.com/nmenon/linux-2.6-playground into omap-for-v3.18/fixes-not-urgent
-
-Uwe Kleine-König (2):
-      ARM: omap2: make arrays containing machine compatible strings const
-      ARM: OMAP2+: make of_device_ids const
-
-Xia Kaixu (1):
-      ARM: cns3xxx: fix allmodconfig panic in pci driver
-
-klightspeed@killerwolves.net (1):
-      ARM: mvebu: Netgear RN102: Use Hardware BCH ECC
-
- MAINTAINERS                                        | 49 +++++++-------
- arch/arm/Kconfig.debug                             |  7 +-
- arch/arm/boot/dts/Makefile                         |  4 +-
- arch/arm/boot/dts/am335x-bone-common.dtsi          |  3 -
- arch/arm/boot/dts/am335x-bone.dts                  |  5 ++
- arch/arm/boot/dts/am335x-boneblack.dts             |  5 ++
- arch/arm/boot/dts/armada-370-netgear-rn102.dts     |  4 ++
- arch/arm/boot/dts/armada-370-netgear-rn104.dts     |  4 ++
- arch/arm/boot/dts/armada-xp-netgear-rn2120.dts     |  4 ++
- arch/arm/boot/dts/at91sam9263.dtsi                 |  2 +
- arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts     | 16 ++---
- arch/arm/boot/dts/kirkwood-rd88f6281-a.dts         | 43 ++++++++++++
- arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts        | 26 -------
- ...-rd88f6281-a1.dts => kirkwood-rd88f6281-z0.dts} | 18 +++--
- arch/arm/boot/dts/kirkwood-rd88f6281.dtsi          | 27 ++------
- arch/arm/boot/dts/kirkwood.dtsi                    |  4 +-
- arch/arm/boot/dts/omap4-panda-common.dtsi          |  3 -
- arch/arm/boot/dts/omap4-panda-es.dts               |  5 ++
- arch/arm/boot/dts/omap4-panda.dts                  |  5 ++
- arch/arm/mach-at91/clock.c                         |  1 +
- arch/arm/mach-cns3xxx/cns3420vb.c                  |  1 +
- arch/arm/mach-cns3xxx/core.c                       |  1 +
- arch/arm/mach-cns3xxx/core.h                       |  6 ++
- arch/arm/mach-cns3xxx/pcie.c                       | 49 +++++++-------
- arch/arm/mach-davinci/board-da850-evm.c            | 15 ++++
- arch/arm/mach-lpc32xx/common.c                     | 29 ++------
- arch/arm/mach-omap2/board-generic.c                | 26 +++----
- arch/arm/mach-omap2/common.h                       |  2 +-
- arch/arm/mach-omap2/gpmc.c                         |  2 +-
- arch/arm/mach-omap2/irq.c                          |  2 +-
- arch/arm/mach-omap2/omap-mpuss-lowpower.c          |  4 ++
- arch/arm/mach-omap2/pdata-quirks.c                 |  2 +-
- arch/arm/mach-omap2/pm44xx.c                       |  9 ++-
- arch/arm/mach-omap2/powerdomain.c                  | 79 +++++++++++++++++++++-
- arch/arm/mach-omap2/powerdomain.h                  |  4 ++
- arch/arm/mach-omap2/powerdomains54xx_data.c        | 12 ++--
- arch/arm/mach-omap2/powerdomains7xx_data.c         | 14 ++--
- arch/arm/mach-omap2/prm_common.c                   |  2 +-
- arch/arm/mach-omap2/timer.c                        |  6 +-
- arch/arm/mach-spear/Kconfig                        |  9 ++-
- arch/arm/mach-vt8500/vt8500.c                      |  2 +-
- drivers/ata/Kconfig                                |  2 +-
- drivers/cpufreq/Kconfig.arm                        |  4 +-
- drivers/cpuidle/Kconfig.arm                        |  2 +-
- drivers/leds/Kconfig                               |  4 +-
- drivers/rtc/Kconfig                                |  2 +-
- drivers/thermal/Kconfig                            |  2 +-
- drivers/watchdog/Kconfig                           |  2 +-
- 48 files changed, 327 insertions(+), 202 deletions(-)
- create mode 100644 arch/arm/boot/dts/kirkwood-rd88f6281-a.dts
- delete mode 100644 arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts
- rename arch/arm/boot/dts/{kirkwood-rd88f6281-a1.dts => kirkwood-rd88f6281-z0.dts} (57%)
+   0.7% Documentation/devicetree/bindings/arm/
+   0.2% Documentation/devicetree/bindings/leds/
+   0.4% Documentation/devicetree/bindings/mailbox/
+   1.2% Documentation/devicetree/bindings/soc/ti/
+   0.1% Documentation/devicetree/bindings/
+  42.2% arch/arm/boot/dts/
+   0.9% arch/arm/configs/
+   0.1% arch/arm/include/debug/
+   0.3% arch/arm/mach-at91/include/mach/
+   6.1% arch/arm/mach-at91/
+   0.1% arch/arm/mach-bcm/
+   0.6% arch/arm/mach-clps711x/
+   0.2% arch/arm/mach-cns3xxx/
+   1.1% arch/arm/mach-hisi/
+   8.4% arch/arm/mach-imx/
+   0.1% arch/arm/mach-integrator/
+   0.1% arch/arm/mach-meson/
+   0.2% arch/arm/mach-msm/
+   4.1% arch/arm/mach-omap2/
+   0.2% arch/arm/mach-pxa/
+   0.3% arch/arm/mach-s3c24xx/
+   3.5% arch/arm/mach-shmobile/
+   0.2% arch/arm/mach-sunxi/
+   0.1% arch/arm/mach-tegra/
+   0.6% arch/arm/mach-zynq/
+   1.9% arch/arm/plat-omap/
+   2.0% arch/arm/
+   1.3% arch/arm64/boot/dts/
+   0.3% drivers/clk/at91/
+   0.9% drivers/clocksource/
+   1.2% drivers/edac/
+   0.9% drivers/irqchip/
+   0.5% drivers/leds/
+   0.5% drivers/mailbox/
+   0.3% drivers/memory/
+   0.1% drivers/mfd/
+   0.2% drivers/misc/
+   1.6% drivers/power/reset/
+   1.3% drivers/rtc/
+  10.1% drivers/soc/ti/
+   0.4% drivers/soc/versatile/
+   0.1% drivers/
+   0.7% include/dt-bindings/clock/
+   0.1% include/linux/irqchip/
+   0.8% include/linux/soc/ti/
+   0.3% include/linux/
 
