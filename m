@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933683AbaJHWLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 18:11:23 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:54437 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347AbaJHWLR (ORCPT
+	id S933705AbaJHWM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 18:12:27 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:63979 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933687AbaJHWMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 18:11:17 -0400
-Message-ID: <1412806271.2908.3.camel@u64>
-Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
-From: Tuan Bui <tuan.d.bui@hp.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        dbueso@suse.de, a.p.zijlstra@chello.nl, paulus@samba.org,
-        artagnon@gmail.com, jolsa@redhat.com, dvhart@linux.intel.com,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
-Date: Wed, 08 Oct 2014 15:11:11 -0700
-In-Reply-To: <20141001171226.GF2799@kernel.org>
-References: <1412120999.2941.11.camel@u64>
-	 <20141001052832.GA32248@gmail.com> <20141001171226.GF2799@kernel.org>
-Organization: HP
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 8 Oct 2014 18:12:25 -0400
+Message-ID: <5435B6C0.8020704@kernel.dk>
+Date: Wed, 08 Oct 2014 16:12:16 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org
+CC: martin.petersen@oracle.com, dm-devel@redhat.com
+Subject: Re: [PATCH] block: fix alignment_offset math that assumes io_min
+ is a power-of-2
+References: <1412805952-15316-1-git-send-email-snitzer@redhat.com>
+In-Reply-To: <1412805952-15316-1-git-send-email-snitzer@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-01 at 14:12 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Oct 01, 2014 at 07:28:32AM +0200, Ingo Molnar escreveu:
-> > If you compare an strace of AIM7 steady state and 'perf bench 
-> > lock' steady state, is it comparable, i.e. do the syscalls and 
+On 10/08/2014 04:05 PM, Mike Snitzer wrote:
+> The math in both blk_stack_limits() and queue_limit_alignment_offset()
+> assume that a block device's io_min (aka minimum_io_size) is always a
+> power-of-2.  Fix the math such that it works for non-power-of-2 io_min.
 > 
-> Isn't "lock" too generic? Isn't this stressing some specific lock and if
-> so shouldn't that be made abundantly clear in the 'perf bench' test name
-> and in the docs?
-> 
+> This issue (of alignment_offset != 0) became apparent when testing
+> dm-thinp with a thinp blocksize that matches a RAID6 stripesize of
+> 1280K.  Commit fdfb4c8c1 ("dm thin: set minimum_io_size to pool's data
+> block size") unlocked the potential for alignment_offset != 0 due to
+> the dm-thin-pool's io_min possibly being a non-power-of-2.
 
-In this micro benchmark, I am trying to exhibit the same locking
-contention shown in an AIM7 fserver workload.  Since the creat(2) system
-call is file system dependent running this on different file system show
-different lock being contended that is why i did not specify specific
-lock name in the doc.  Do you have a suggestion here on how i should
-name this benchmark?
+Well that sucks, AND with a mask is considerably cheaper than a MOD...
 
-> Or is this the case that it started by using 'creat' calls to stress
-> some locking and will go on adding more syscalls to stress more kernel
-> locks?
-> 
-
-When running all AIM7 workloads looking for locking contention to
-reproduce, creat was the only one I found interesting and useful to
-stress locking contention.
-
-
-
+-- 
+Jens Axboe
 
