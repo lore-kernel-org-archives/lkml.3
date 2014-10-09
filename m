@@ -1,109 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036AbaJIW0V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 18:26:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60060 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaJIW0S (ORCPT
+	id S1755948AbaJIW3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:29:03 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:37128 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaJIW3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 18:26:18 -0400
-Date: Thu, 9 Oct 2014 17:26:12 -0500
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, ecryptfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] ecryptfs: remove unneeded buggy code in
- ecryptfs_do_create()
-Message-ID: <20141009222611.GB24046@boyd>
-References: <1411418371-11953-1-git-send-email-khoroshilov@ispras.ru>
+	Thu, 9 Oct 2014 18:29:00 -0400
+Date: Thu, 9 Oct 2014 23:28:54 +0100
+From: Paul Burton <paul.burton@imgtec.com>
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-mips@linux-mips.org>,
+        <Zubair.Kakakhel@imgtec.com>, <geert+renesas@glider.be>,
+        <david.daney@cavium.com>, <peterz@infradead.org>,
+        <paul.gortmaker@windriver.com>, <davidlohr@hp.com>,
+        <macro@linux-mips.org>, <chenhc@lemote.com>, <richard@nod.at>,
+        <zajec5@gmail.com>, <james.hogan@imgtec.com>, <keescook@chromium.org>,
+        <alex@alex-smith.me.uk>, <tglx@linutronix.de>, <blogic@openwrt.org>,
+        <jchandra@broadcom.com>, <qais.yousef@imgtec.com>,
+        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
+        <markos.chandras@imgtec.com>, <dengcheng.zhu@imgtec.com>,
+        <manuel.lauss@gmail.com>, <akpm@linux-foundation.org>,
+        <lars.persson@axis.com>
+Subject: Re: [PATCH v2 0/3] MIPS executable stack protection
+Message-ID: <20141009222854.GX4704@pburton-laptop>
+References: <20141009195030.31230.58695.stgit@linux-yegoshin>
+ <5437015B.3010205@gmail.com>
+ <543709D0.6000501@imgtec.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1411418371-11953-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <543709D0.6000501@imgtec.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [192.168.159.30]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 09, 2014 at 03:18:56PM -0700, Leonid Yegoshin wrote:
+> >The recent discussions on this subject, including many comments from
+> >Imgtec e-mail addresses, brought to light the need to use an instruction
+> >set emulator for newer MIPSr6 ISA processors.
+> 
+> In Imgtec I am only one who works on MIPS R6 SW and FPU branch emulation and
+> I say you - it is not needed, this solution is enough.
 
---0ntfKIWw70PvrIHh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On R6, yes, for some time now but you still have not submitted that code
+for review. Your having worked on something does not automatically make
+it correct.
 
-Hi Alexey - thanks for the patch.
+On the FP branch delays, clearly not given that I submitted a similar
+patch almost a year ago...
 
-On 2014-09-23 00:39:31, Alexey Khoroshilov wrote:
-> There is a bug in error handling of lock_parent() in ecryptfs_do_create():
-> lock_parent() acquries mutex even if dget_parent() fails, so mutex should=
- be unlocked anyway.
->=20
-> But dget_parent() does not fail, so the patch just removes unneeded buggy=
- code.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-
-This looks good to me and I've included it in the pull request that I
-just sent to Linus. Thanks!
-
-Tyler
-
-> ---
->  fs/ecryptfs/inode.c | 7 -------
->  1 file changed, 7 deletions(-)
->=20
-> diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-> index d4a9431ec73c..97735c75085f 100644
-> --- a/fs/ecryptfs/inode.c
-> +++ b/fs/ecryptfs/inode.c
-> @@ -192,12 +192,6 @@ ecryptfs_do_create(struct inode *directory_inode,
-> =20
->  	lower_dentry =3D ecryptfs_dentry_to_lower(ecryptfs_dentry);
->  	lower_dir_dentry =3D lock_parent(lower_dentry);
-> -	if (IS_ERR(lower_dir_dentry)) {
-> -		ecryptfs_printk(KERN_ERR, "Error locking directory of "
-> -				"dentry\n");
-> -		inode =3D ERR_CAST(lower_dir_dentry);
-> -		goto out;
-> -	}
->  	rc =3D vfs_create(lower_dir_dentry->d_inode, lower_dentry, mode, true);
->  	if (rc) {
->  		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
-> @@ -215,7 +209,6 @@ ecryptfs_do_create(struct inode *directory_inode,
->  	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
->  out_lock:
->  	unlock_dir(lower_dir_dentry);
-> -out:
->  	return inode;
->  }
-> =20
-> --=20
-> 1.9.1
->=20
-
---0ntfKIWw70PvrIHh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUNwuDAAoJENaSAD2qAscKlhoQALK4pMcztWmwpqsFkPYxYFeT
-8/IbovX6JlekwhZh2FFb1QAyuN+zFn3OFWDCphSzQOnJQPc1RCySpIWVGJl/8p9p
-tosfzVjFfaJM3qwstgBiHYWF9FkOjB4wlxCYVU7DBfNEo1oCroIIZCWUhyHdFmv0
-WY79uckzA39M4ynsxMKRGfVcGwUHgPWm3JMYAyl5xXhi/sqoRlQcKZ3RWXqb+O0H
-CD67Q7mUYaLA+XF3EV76K4asfMWy1SMJcnGpHfOCvOdZkaWwjI/ect1Lcj4fv+9l
-+DgOjwnh+h2QehoxEvWRNgUAaz4jdtHWI2XS8OlhkJUzgIl02/rGNfjQ/EyosPbE
-ULlNnbLD/OANfOSr1Bp6KYWTebYxrNVgjas/NE3pZb4tn2zrt5IbzT/Lrf94ZY29
-8LrUVbuOFEOlg+g4+2Bkd3W7eGkL5WA0gveGmgsb5jeKLF1uoJNd4slG/blrwwWT
-55abtWmA5XyvQragz8u144zsIU6Kl7RuqbVNuMX2g1pi2APGbh6/bshtc/BpSDnH
-optov0V/dbDa9oGUk4lMaz0EWul/3cfAvOUNNs+ooUiK0KtRAiWb7gYURl5zon+k
-4GRDgrRIa5vhPjsBnB53mU1pJ5JUZbZP2FXI3VS0Df8rb0x6mOjl/6wObWJroOYt
-WcpYnF8J/VB4KNAA33k+
-=lOFH
------END PGP SIGNATURE-----
-
---0ntfKIWw70PvrIHh--
+Paul
