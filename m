@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaJIVEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:04:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58945 "EHLO
+	id S1755233AbaJIVFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:05:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58972 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaJIVD3 (ORCPT
+	with ESMTP id S1754901AbaJIVE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:03:29 -0400
+	Thu, 9 Oct 2014 17:04:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alban Crequy <alban.crequy@collabora.co.uk>, Tejun Heo <tj@kernel.org>,
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>,
+        David Rientjes <rientjes@google.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 005/163] cgroup: reject cgroup names with '\n'
-Date: Thu,  9 Oct 2014 14:00:30 -0700
-Message-Id: <1412888588-26755-6-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 141/163] sched: Fix unreleased llc_shared_mask bit during CPU hotplug
+Date: Thu,  9 Oct 2014 14:02:46 -0700
+Message-Id: <1412888588-26755-142-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,37 +31,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alban Crequy <alban.crequy@collabora.co.uk>
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
 
-commit 71b1fb5c4473a5b1e601d41b109bdfe001ec82e0 upstream.
+commit 03bd4e1f7265548832a76e7919a81f3137c44fd1 upstream.
 
-/proc/<pid>/cgroup contains one cgroup path on each line. If cgroup names are
-allowed to contain "\n", applications cannot parse /proc/<pid>/cgroup safely.
+The following bug can be triggered by hot adding and removing a large number of
+xen domain0's vcpus repeatedly:
 
-Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ kamal: backport to 3.13-stable: fixed in cgroup_create() ]
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000004 IP: [..] find_busiest_group
+	PGD 5a9d5067 PUD 13067 PMD 0
+	Oops: 0000 [#3] SMP
+	[...]
+	Call Trace:
+	load_balance
+	? _raw_spin_unlock_irqrestore
+	idle_balance
+	__schedule
+	schedule
+	schedule_timeout
+	? lock_timer_base
+	schedule_timeout_uninterruptible
+	msleep
+	lock_device_hotplug_sysfs
+	online_store
+	dev_attr_store
+	sysfs_write_file
+	vfs_write
+	SyS_write
+	system_call_fastpath
+
+Last level cache shared mask is built during CPU up and the
+build_sched_domain() routine takes advantage of it to setup
+the sched domain CPU topology.
+
+However, llc_shared_mask is not released during CPU disable,
+which leads to an invalid sched domainCPU topology.
+
+This patch fix it by releasing the llc_shared_mask correctly
+during CPU disable.
+
+Yasuaki also reported that this can happen on real hardware:
+
+  https://lkml.org/lkml/2014/7/22/1018
+
+His case is here:
+
+	==
+	Here is an example on my system.
+	My system has 4 sockets and each socket has 15 cores and HT is
+	enabled. In this case, each core of sockes is numbered as
+	follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-44, 90-104
+	Socket#3 | 45-59, 105-119
+
+	Then llc_shared_mask of CPU#30 has 0x3fff80000001fffc0000000.
+
+	It means that last level cache of Socket#2 is shared with
+	CPU#30-44 and 90-104.
+
+	When hot-removing socket#2 and #3, each core of sockets is
+	numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+
+	But llc_shared_mask is not cleared. So llc_shared_mask of CPU#30
+	remains having 0x3fff80000001fffc0000000.
+
+	After that, when hot-adding socket#2 and #3, each core of
+	sockets is numbered as follows:
+
+		 | CPU#
+	Socket#0 | 0-14 , 60-74
+	Socket#1 | 15-29, 75-89
+	Socket#2 | 30-59
+	Socket#3 | 90-119
+
+	Then llc_shared_mask of CPU#30 becomes
+	0x3fff8000fffffffc0000000. It means that last level cache of
+	Socket#2 is shared with CPU#30-59 and 90-104. So the mask has
+	the wrong value.
+
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+Tested-by: Linn Crosetto <linn@hp.com>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1411547885-48165-1-git-send-email-wanpeng.li@linux.intel.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/cgroup.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/kernel/smpboot.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b44dd49..8e5e0a9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4350,6 +4350,11 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 	struct cgroup_subsys *ss;
- 	struct super_block *sb = root->sb;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index a965665..36d0440 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1287,6 +1287,9 @@ static void remove_siblinginfo(int cpu)
  
-+	/* Do not accept '\n' to prevent making /proc/<pid>/cgroup unparsable.
-+	 */
-+	if (strchr(dentry->d_name.name, '\n'))
-+		return -EINVAL;
-+
- 	/* allocate the cgroup and its ID, 0 is reserved for the root */
- 	cgrp = kzalloc(sizeof(*cgrp), GFP_KERNEL);
- 	if (!cgrp)
+ 	for_each_cpu(sibling, cpu_sibling_mask(cpu))
+ 		cpumask_clear_cpu(cpu, cpu_sibling_mask(sibling));
++	for_each_cpu(sibling, cpu_llc_shared_mask(cpu))
++		cpumask_clear_cpu(cpu, cpu_llc_shared_mask(sibling));
++	cpumask_clear(cpu_llc_shared_mask(cpu));
+ 	cpumask_clear(cpu_sibling_mask(cpu));
+ 	cpumask_clear(cpu_core_mask(cpu));
+ 	c->phys_proc_id = 0;
 -- 
 1.9.1
 
