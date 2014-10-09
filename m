@@ -1,178 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369AbaJHX6n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 19:58:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60076 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056AbaJHX6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 19:58:23 -0400
-From: NeilBrown <neilb@suse.de>
-To: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 09 Oct 2014 10:57:06 +1100
-Subject: [PATCH 2/2] sysfs/kernfs: make read requests on pre-alloc files use
- the buffer.
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>
-Message-ID: <20141008235706.19126.82634.stgit@notabene.brown>
-In-Reply-To: <20141008234119.19126.4182.stgit@notabene.brown>
-References: <20141008234119.19126.4182.stgit@notabene.brown>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
+	id S1754772AbaJIABj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 20:01:39 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:60527 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777AbaJIABa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 20:01:30 -0400
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <CAKohpo=7VxrgdK9zPP89Px3aTiGhFihJ3uetC680fONDgE6O8Q@mail.gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Lists linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Shawn Guo" <shawn.guo@linaro.org>,
+        "Stephen Boyd" <sboyd@codeaurora.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "Sachin Kamat" <spk.linux@gmail.com>,
+        "pramod.gurav@smartplayin.com" <pramod.gurav@smartplayin.com>,
+        "Rob Herring" <rob.herring@linaro.org>,
+        "Ezequiel Garcia" <ezequiel.garcia@free-electrons.com>,
+        "Tawfik Bayouk" <tawfik@marvell.com>,
+        "Nadav Haklai" <nadavh@marvell.com>,
+        "Lior Amsalem" <alior@marvell.com>,
+        "Morten Rasmussen" <morten.rasmussen@arm.com>,
+        "Dietmar Eggemann" <dietmar.eggemann@arm.com>,
+        "Vincent Guittot" <vincent.guittot@linaro.org>,
+        "Nicolas Pitre" <nicolas.pitre@linaro.org>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        "Tuukka Tikkanen" <tuukka.tikkanen@linaro.org>
+References: <CAKohpo=7q9bDcHRxLehNLX6A2idGxUy3jEWvQ+EGbKOQG-MH2g@mail.gmail.com>
+ <1412754534-14068-1-git-send-email-mturquette@linaro.org>
+ <CAKohpo=9XG7XiLxBf=yo7=QCruawYxqPctC6kqB+syERFCoT6Q@mail.gmail.com>
+ <20141008101115.1835927a@free-electrons.com>
+ <CAKohpo=7VxrgdK9zPP89Px3aTiGhFihJ3uetC680fONDgE6O8Q@mail.gmail.com>
+Message-ID: <20141009000123.4379.20957@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 0/2] allow cpufreq drivers to export flags
+Date: Wed, 08 Oct 2014 17:01:23 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To match the previous patch which used the pre-alloc buffer for
-writes, this patch causes reads to use the same buffer.
-This is not strictly necessary as the current seq_read() will allocate
-on first read, so user-space can trigger the required pre-alloc.  But
-consistency is valuable.
+Quoting Viresh Kumar (2014-10-08 01:19:40)
+> On 8 October 2014 13:41, Thomas Petazzoni
+> <thomas.petazzoni@free-electrons.com> wrote:
+> > On Wed, 8 Oct 2014 13:24:30 +0530, Viresh Kumar wrote:
+> >> On 8 October 2014 13:18, Mike Turquette <mturquette@linaro.org> wrote:
+> 
+> >> > This series is partially in response to a discussion around DT bindings
+> >> > for CPUfreq drivers [0], but it is also needed for on-going work to
+> >> > integrate CPUfreq with the scheduler. In particular a scheduler-driven
+> 
+> > Well, when one has to merge a large number of changes, we often
+> > recommend to merge them piece by piece, which is what Mike is trying to
+> > do here. So we cannot at the same time ask developers to merge things
+> > in small pieces that are easy to review and to merge everything
+> > together because the users of a given API are not there yet.
+> 
+> From the wording of Mike it looks like:
+> - This is required by cpufreq drivers - today
+> - And this will also be useful for scheduler
 
-The read function is somewhat simpler than seq_read() and, for example,
-does not support reading from an offset into the file: reads must be
-at the start of the file.
+Hi Viresh and Thomas,
 
-As seq_read() does not use the prealloc buffer, ->seq_show is
-incompatible with ->prealloc and caused an EINVAL return from open().
-sysfs code which calls into kernfs always chooses the correct function.
+Apologies if my wording was confusing. Without getting into a grammar
+war, I did say that these patches were "in response" to this thread
+(entirely accurate) and only necessary for the "on-going work" I'm doing
+with the scheduler. Sorry if any of that came across as me stating that
+these patches were necessary to solve Thomas' problem.
 
-As the buffer is shared with writes and other reads, the mutex is
-extended to cover the copy_to_user.
+> 
+> The first point doesn't stand true anymore. Lets wait for Mike's reply and
+> see his opinion.
+> 
+> And then the patches are so small and there are no objections against
+> them. I don't think getting them with the scheduler changes is that bad
+> of an idea. In worst case, what if he has to redesign his idea? The new
+> routines will stay without a caller then :)
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- fs/kernfs/file.c |   28 +++++++++++++++++++---------
- fs/sysfs/file.c  |   31 +++++++++++++++++++++++++++----
- 2 files changed, 46 insertions(+), 13 deletions(-)
+Whether you merge the patches now or later is fine by me. I prefer to
+get my patches out early and often so I can avoid any surprises later
+on. If you have a fundamental objection to these patches then please let
+me know. Otherwise it would be wonderful to have an Ack.
 
-diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
-index 137c172bccc5..e055c6a01495 100644
---- a/fs/kernfs/file.c
-+++ b/fs/kernfs/file.c
-@@ -189,13 +189,16 @@ static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
- 	const struct kernfs_ops *ops;
- 	char *buf;
- 
--	buf = kmalloc(len, GFP_KERNEL);
-+	buf = of->prealloc_buf;
-+	if (!buf)
-+		buf = kmalloc(len, GFP_KERNEL);
- 	if (!buf)
- 		return -ENOMEM;
- 
- 	/*
--	 * @of->mutex nests outside active ref and is primarily to ensure that
--	 * the ops aren't called concurrently for the same open file.
-+	 * @of->mutex nests outside active ref and is used both to ensure that
-+	 * the ops aren't called concurrently for the same open file, and
-+	 * to provide exclusive access to ->prealloc_buf (when that exists).
- 	 */
- 	mutex_lock(&of->mutex);
- 	if (!kernfs_get_active(of->kn)) {
-@@ -210,21 +213,22 @@ static ssize_t kernfs_file_direct_read(struct kernfs_open_file *of,
- 	else
- 		len = -EINVAL;
- 
--	kernfs_put_active(of->kn);
--	mutex_unlock(&of->mutex);
--
- 	if (len < 0)
--		goto out_free;
-+		goto out_unlock;
- 
- 	if (copy_to_user(user_buf, buf, len)) {
- 		len = -EFAULT;
--		goto out_free;
-+		goto out_unlock;
- 	}
- 
- 	*ppos += len;
- 
-+ out_unlock:
-+	kernfs_put_active(of->kn);
-+	mutex_unlock(&of->mutex);
-  out_free:
--	kfree(buf);
-+	if (buf != of->prealloc_buf)
-+		kfree(buf);
- 	return len;
- }
- 
-@@ -690,6 +694,12 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
- 	 */
- 	of->atomic_write_len = ops->atomic_write_len;
- 
-+	error = -EINVAL;
-+	if (ops->prealloc && ops->seq_show)
-+		/* ->seq_show is incompatible with ->prealloc,
-+		 * ->read must be used instead.
-+		 */
-+		goto err_free;
- 	if (ops->prealloc) {
- 		int len = of->atomic_write_len ?: PAGE_SIZE;
- 		of->prealloc_buf = kmalloc(len + 1, GFP_KERNEL);
-diff --git a/fs/sysfs/file.c b/fs/sysfs/file.c
-index 4a959d231b43..0b02cc515273 100644
---- a/fs/sysfs/file.c
-+++ b/fs/sysfs/file.c
-@@ -102,6 +102,21 @@ static ssize_t sysfs_kf_bin_read(struct kernfs_open_file *of, char *buf,
- 	return battr->read(of->file, kobj, battr, buf, pos, count);
- }
- 
-+/* kernfs read callback for regular sysfs files with pre-alloc */
-+static ssize_t sysfs_kf_read(struct kernfs_open_file *of, char *buf,
-+                            size_t count, loff_t pos)
-+{
-+       const struct sysfs_ops *ops = sysfs_file_ops(of->kn);
-+       struct kobject *kobj = of->kn->parent->priv;
-+
-+       if (pos || buf != of->prealloc_buf)
-+	       /* If buf != of->prealloc_buf, we don't know how
-+		* large it is, so cannot safely pass it to ->show
-+		*/
-+               return 0;
-+       return ops->show(kobj, of->kn->priv, buf);
-+}
-+
- /* kernfs write callback for regular sysfs files */
- static ssize_t sysfs_kf_write(struct kernfs_open_file *of, char *buf,
- 			      size_t count, loff_t pos)
-@@ -184,13 +199,18 @@ static const struct kernfs_ops sysfs_file_kfops_rw = {
- 	.write		= sysfs_kf_write,
- };
- 
-+static const struct kernfs_ops sysfs_prealloc_kfops_ro = {
-+	.read		= sysfs_kf_read,
-+	.prealloc	= true,
-+};
-+
- static const struct kernfs_ops sysfs_prealloc_kfops_wo = {
- 	.write		= sysfs_kf_write,
- 	.prealloc	= true,
- };
- 
- static const struct kernfs_ops sysfs_prealloc_kfops_rw = {
--	.seq_show	= sysfs_kf_seq_show,
-+	.read		= sysfs_kf_read,
- 	.write		= sysfs_kf_write,
- 	.prealloc	= true,
- };
-@@ -238,9 +258,12 @@ int sysfs_add_file_mode_ns(struct kernfs_node *parent,
- 				ops = &sysfs_prealloc_kfops_rw;
- 			else
- 				ops = &sysfs_file_kfops_rw;
--		} else if (sysfs_ops->show)
--			ops = &sysfs_file_kfops_ro;
--		else if (sysfs_ops->store) {
-+		} else if (sysfs_ops->show) {
-+			if (mode & SYSFS_PREALLOC)
-+				ops = &sysfs_prealloc_kfops_ro;
-+			else
-+				ops = &sysfs_file_kfops_ro;
-+		} else if (sysfs_ops->store) {
- 			if (mode & SYSFS_PREALLOC)
- 				ops = &sysfs_prealloc_kfops_wo;
- 			else
+Thanks!
+Mike
 
-
+> 
+> --
+> viresh
