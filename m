@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385AbaJIVGj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:06:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59058 "EHLO
+	id S932427AbaJIVGw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:06:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932357AbaJIVGf (ORCPT
+	with ESMTP id S932400AbaJIVGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:06:35 -0400
+	Thu, 9 Oct 2014 17:06:46 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>,
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 140/163] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
-Date: Thu,  9 Oct 2014 14:02:45 -0700
-Message-Id: <1412888588-26755-141-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 145/163] mm, slab: initialize object alignment on cache creation
+Date: Thu,  9 Oct 2014 14:02:50 -0700
+Message-Id: <1412888588-26755-146-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,51 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: David Rientjes <rientjes@google.com>
 
-commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
+commit d4a5fca592b9ab52b90bb261a90af3c8f53be011 upstream.
 
-In spite of what the GCC manual says, the -mfast-indirect-calls has
-never been supported in the 64-bit parisc compiler. Indirect calls have
-always been done using function descriptors irrespective of the
--mfast-indirect-calls option.
+Since commit 4590685546a3 ("mm/sl[aou]b: Common alignment code"), the
+"ralign" automatic variable in __kmem_cache_create() may be used as
+uninitialized.
 
-Recently, it was noticed that a function descriptor was always requested
-when the -mfast-indirect-calls option was specified. This caused
-problems when the option was used in  application code and doesn't make
-any sense because the whole point of the option is to avoid using a
-function descriptor for indirect calls.
+The proper alignment defaults to BYTES_PER_WORD and can be overridden by
+SLAB_RED_ZONE or the alignment specified by the caller.
 
-Fixing this broke 64-bit kernel builds.
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=85031
 
-I will fix GCC but for now we need the attached change. This results in
-the same kernel code as before.
-
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Andrei Elovikov <a.elovikov@gmail.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/parisc/Makefile | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ mm/slab.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
-index 7187664..5db8882 100644
---- a/arch/parisc/Makefile
-+++ b/arch/parisc/Makefile
-@@ -48,7 +48,12 @@ cflags-y	:= -pipe
+diff --git a/mm/slab.c b/mm/slab.c
+index eb043bf..f985e8f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -2139,7 +2139,8 @@ static int __init_refok setup_cpu_cache(struct kmem_cache *cachep, gfp_t gfp)
+ int
+ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ {
+-	size_t left_over, freelist_size, ralign;
++	size_t left_over, freelist_size;
++	size_t ralign = BYTES_PER_WORD;
+ 	gfp_t gfp;
+ 	int err;
+ 	size_t size = cachep->size;
+@@ -2172,14 +2173,6 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
+ 		size &= ~(BYTES_PER_WORD - 1);
+ 	}
  
- # These flags should be implied by an hppa-linux configuration, but they
- # are not in gcc 3.2.
--cflags-y	+= -mno-space-regs -mfast-indirect-calls
-+cflags-y	+= -mno-space-regs
-+
-+# -mfast-indirect-calls is only relevant for 32-bit kernels.
-+ifndef CONFIG_64BIT
-+cflags-y	+= -mfast-indirect-calls
-+endif
- 
- # Currently we save and restore fpregs on all kernel entry/interruption paths.
- # If that gets optimized, we might need to disable the use of fpregs in the
+-	/*
+-	 * Redzoning and user store require word alignment or possibly larger.
+-	 * Note this will be overridden by architecture or caller mandated
+-	 * alignment if either is greater than BYTES_PER_WORD.
+-	 */
+-	if (flags & SLAB_STORE_USER)
+-		ralign = BYTES_PER_WORD;
+-
+ 	if (flags & SLAB_RED_ZONE) {
+ 		ralign = REDZONE_ALIGN;
+ 		/* If redzoning, ensure that the second redzone is suitably
 -- 
 1.9.1
 
