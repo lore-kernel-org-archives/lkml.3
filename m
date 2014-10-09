@@ -1,120 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470AbaJIPVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:21:07 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35866 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757249AbaJIPVC (ORCPT
+	id S1757471AbaJIPWO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:22:14 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:21183 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752628AbaJIPWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:21:02 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 11/16] powerpc/mm: Add hooks for cxl
-In-Reply-To: <1412758505-23495-12-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-12-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:50:49 +0530
-Message-ID: <87wq891d7y.fsf@linux.vnet.ibm.com>
+	Thu, 9 Oct 2014 11:22:00 -0400
+Date: Thu, 9 Oct 2014 11:21:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH ftrace/for-next v5 0/5] ftrace, kprobes: Introduce
+ IPMODIFY flag for ftrace_ops to detect conflicts
+Message-ID: <20141009112157.17a52571@gandalf.local.home>
+In-Reply-To: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
+References: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0025-0000-0000-0000004C378F
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
+On Thu, 09 Oct 2014 13:00:59 +0000
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> This adds hooks into the core powerpc mm code for cxl.
->
-> The core powerpc code sometimes uses local tlbie. Unfortunately this won't
-> work with the current cxl driver as it relies on snooping tlbie broadcasts.
->
-> The cxl hardware can have TLB entries invalidated via MMIO but this is not
-> currently supported by the driver. In future we can make local tlbie smarter so
-> that it invalidates cxl contexts via MMIO when it needs to but for now we have
-> this workaround.
->
-> This workaround checks for any active cxl contexts and if so, disables local
-> tlbie.
->
-> This also adds a hook for when SLBs are invalidated. This ensures any
-> corresponding SLBs in cxl are also invalidated at the same time. This is
-> required for segment demotion.
->
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/mm/copro_fault.c    | 2 ++
->  arch/powerpc/mm/hash_native_64.c | 6 +++++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-> index f2aa5a8..0f9939e 100644
-> --- a/arch/powerpc/mm/copro_fault.c
-> +++ b/arch/powerpc/mm/copro_fault.c
-> @@ -26,6 +26,7 @@
->  #include <asm/reg.h>
->  #include <asm/copro.h>
->  #include <asm/spu.h>
-> +#include <misc/cxl.h>
->  
->  /*
->   * This ought to be kept in sync with the powerpc specific do_page_fault
-> @@ -143,5 +144,6 @@ void copro_flush_all_slbs(struct mm_struct *mm)
->  #ifdef CONFIG_SPU_BASE
->  	spu_flush_all_slbs(mm);
->  #endif
-> +	cxl_slbia(mm);
->  }
+> Hi,
+> 
+> Here is the 5th version of the series of patches which introduces
+> IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
+> who can modify regs->ip in their handler.
+> 
+> The previous version is here;
+>  https://lkml.org/lkml/2014/7/28/13
+> 
+> This version is basically an update of previous version to the
+> latest ftrace tree, and adding a test code to selftest.
+> 
+> Currently, only kprobes can change the regs->ip in the handler,
+> but recently kpatch is also want to change it. Moreover, since
+> the ftrace itself exported to modules, it might be considerable
+> senario.
+> 
+> Here we talked on github.
+>  https://github.com/dynup/kpatch/issues/47
+> 
+> To protect modified regs-ip from each other, this series
+> introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
+> the flag can be set on each function entry location. If there
+> is someone who already reserve regs->ip on target function
+> entry, ftrace_set_filter_ip or register_ftrace_function will
+> return -EBUSY. Users must handle that.
+> The ftrace_ops with IPMODIFY flag requires at least one
+> entry for filter hash, and its notrace_hash must be empty,
+> because the IPMODIFY action is very address sensitve and
+> user must consider the ip address.
+> 
+> The 3rd patch adds a special reservation of IPMODIFY on the
+> jprobed address, since it is the only user who will change
+> the regs->ip. Other kprobes do not change it anymore. 
+> 
+> Thank you,
+> 
 
-If you split this patch into two and move the above hunk in a patch
-before "[PATCH v4 09/16] powerpc/mm: Add new hash_page_mm()", it would
-make it much easier to follow. We could then update the commit of the
-09th patch to carry additional information that talk about how the
-hash_page_mm really work as I replied to that patch.
+Masami,
 
+Thanks for sending this. I'm going to look at it after Dusseldorf. It's
+too late to get it into 3.18, but it looks like a good fit for the work
+I have for 3.19.
 
->  EXPORT_SYMBOL_GPL(copro_flush_all_slbs);
-> diff --git a/arch/powerpc/mm/hash_native_64.c b/arch/powerpc/mm/hash_native_64.c
-> index afc0a82..ae4962a 100644
-> --- a/arch/powerpc/mm/hash_native_64.c
-> +++ b/arch/powerpc/mm/hash_native_64.c
-> @@ -29,6 +29,8 @@
->  #include <asm/kexec.h>
->  #include <asm/ppc-opcode.h>
->  
-> +#include <misc/cxl.h>
-> +
->  #ifdef DEBUG_LOW
->  #define DBG_LOW(fmt...) udbg_printf(fmt)
->  #else
-> @@ -149,9 +151,11 @@ static inline void __tlbiel(unsigned long vpn, int psize, int apsize, int ssize)
->  static inline void tlbie(unsigned long vpn, int psize, int apsize,
->  			 int ssize, int local)
->  {
-> -	unsigned int use_local = local && mmu_has_feature(MMU_FTR_TLBIEL);
-> +	unsigned int use_local;
->  	int lock_tlbie = !mmu_has_feature(MMU_FTR_LOCKLESS_TLBIE);
->  
-> +	use_local = local && mmu_has_feature(MMU_FTR_TLBIEL) && !cxl_ctx_in_use();
-> +
->  	if (use_local)
->  		use_local = mmu_psize_defs[psize].tlbiel;
->  	if (lock_tlbie && !use_local)
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Just don't let me forget you sent this :-)  Even though I tagged it as
+important, I'm sure I'll be tagging a lot of other emails as important
+in the next week.
 
+Also, my main test box has finally died. I ordered a new motherboard
+(thanks Linus for the suggestion!) and unfortunately it is due to
+arrive tomorrow. That's the same day I leave and I don't trust my wife
+to install it for me ;-)
+
+This means I can not do my tests that I like to run before adding to
+linux-next.
+
+-- Steve
