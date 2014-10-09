@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751161AbaJIWnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 18:43:10 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:37425 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaJIWnI (ORCPT
+	id S1751349AbaJIWoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:44:44 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:3267 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903AbaJIWom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 18:43:08 -0400
-Date: Thu, 9 Oct 2014 23:43:04 +0100
-From: James Hogan <james.hogan@imgtec.com>
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <david.daney@cavium.com>,
-        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
-        <davidlohr@hp.com>, <macro@linux-mips.org>, <chenhc@lemote.com>,
-        <richard@nod.at>, <zajec5@gmail.com>, <keescook@chromium.org>,
-        <alex@alex-smith.me.uk>, <tglx@linutronix.de>, <blogic@openwrt.org>,
-        <jchandra@broadcom.com>, <paul.burton@imgtec.com>,
-        <qais.yousef@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <ralf@linux-mips.org>, <markos.chandras@imgtec.com>,
-        <dengcheng.zhu@imgtec.com>, <manuel.lauss@gmail.com>,
-        <akpm@linux-foundation.org>, <lars.persson@axis.com>
-Subject: Re: [PATCH v2 2/3] MIPS: Setup an instruction emulation in VDSO
- protected page instead of user stack
-Message-ID: <20141009224304.GA4818@jhogan-linux.le.imgtec.org>
-References: <20141009195030.31230.58695.stgit@linux-yegoshin>
- <20141009200017.31230.69698.stgit@linux-yegoshin>
+	Thu, 9 Oct 2014 18:44:42 -0400
+X-IronPort-AV: E=Sophos;i="5.04,688,1406617200"; 
+   d="scan'208";a="48093624"
+From: Scott Branden <sbranden@broadcom.com>
+To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>
+CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
+Subject: [PATCH V4 0/7] Add initial support for Broadcom Cygnus SoC
+Date: Thu, 9 Oct 2014 15:44:24 -0700
+Message-ID: <1412894671-5921-1-git-send-email-sbranden@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Scott Branden <sbranden@broadcom.com>
+References: <Scott Branden <sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20141009200017.31230.69698.stgit@linux-yegoshin>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.168.154.101]
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leonid,
+This patchset contains initial support for Broadcom's Cygnus SoC based on our
+iProc architecture. Initial support is minimal and includes just the mach
+platform code, clock driver, and a basic device tree configuration. Peripheral
+drivers will be submitted soon, as will device tree configurations for other
+Cygnus board variants.
 
-On Thu, Oct 09, 2014 at 01:00:17PM -0700, Leonid Yegoshin wrote:
-> Signal happend during run in emulation block is handled properly - EPC is
-> changed to before an emulated jump or to target address, depending from point of
-> signal.
+Changes from v3:
+ - restart functionality removed.  Will be added in a different patchset
+   in drivers/power
+ - removed NEON init sequence.  Will be moved to bootloader
+ - cleaned up Kconfigs for ARCH_BCM_CYGNUS by removing unnecessary selects
+ - consolidated ARCH_BCM_IPROC with select from ARCH_BCM_CYGNUS and
+   ARCH_BCM5301X
+ - removed bcm911360_entphn binding
+ - added documentation for SoCs currently supported in Cygnus family
 
-Great!
 
-> Small stack of emulation blocks is supported because nested traps are possible
-> in MIPS32/64 R6 emulation mix with FPU emulation.
+Changes from v2:
+ - rebased to 3.17 kernel
 
-Could you please clarify how this nesting of emulation blocks could
-happen now that signals are handled more cleanly.
+Changes from v1:
+ - Address code review comments as per previous responses.
+ - Copyright headers updated to remove Broadcom URL.
+ - mach platform code still contains hard coded addresses. These address are
+   the same for all Cygnus variants. Could you please provide guidance on where
+   they should go if you would still like them changed.  There does not seem to
+   be a reason to change them to device tree as they do not change.
 
-I.e. isn't the emuframe stuff only required for instructions in branch
-delay slots, and branches shouldn't be in branch delay slots anyway, so
-I don't get how they could nest.
 
-Thanks
-James
+Jonathan Richardson (5):
+  ARM: cygnus: Initial support for Broadcom Cygnus SoC
+  clk: Clock driver support for Broadcom Cygnus SoC
+  dt-bindings: Document Broadcom Cygnus SoC and clock driver
+  ARM: cygnus defconfig : Initial defconfig for Broadcom Cygnus SoC
+  ARM: dts: Enable Broadcom Cygnus SoC
+
+Scott Branden (2):
+  MAINTAINERS: Entry for Cygnus/iproc arm architecture and clock
+    drivers
+  ARM: multi_v7_defconfig: Enable ARCH_BCM_CYGNUS config
+
+ .../devicetree/bindings/arm/bcm/cygnus.txt         |   31 +
+ .../devicetree/bindings/clock/clk-cygnus.txt       |  121 ++
+ .../devicetree/bindings/clock/clk-iproc.txt        |   48 +
+ MAINTAINERS                                        |   17 +-
+ arch/arm/Kconfig.debug                             |    2 +-
+ arch/arm/boot/dts/Makefile                         |    1 +
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |  349 ++++++
+ arch/arm/boot/dts/bcm911360_entphn.dts             |   22 +
+ arch/arm/configs/bcm_cygnus_defconfig              |  221 ++++
+ arch/arm/configs/multi_v7_defconfig                |    1 +
+ arch/arm/mach-bcm/Kconfig                          |   68 +-
+ arch/arm/mach-bcm/Makefile                         |    3 +
+ arch/arm/mach-bcm/bcm_cygnus.c                     |   26 +
+ drivers/clk/Makefile                               |    1 +
+ drivers/clk/bcm/Makefile                           |    2 +
+ drivers/clk/bcm/clk-cygnus.c                       | 1186 ++++++++++++++++++++
+ drivers/clk/bcm/clk-iproc.c                        |  451 ++++++++
+ 17 files changed, 2527 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/bcm/cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-cygnus.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-iproc.txt
+ create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
+ create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
+ create mode 100644 arch/arm/configs/bcm_cygnus_defconfig
+ create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+ create mode 100644 drivers/clk/bcm/clk-cygnus.c
+ create mode 100644 drivers/clk/bcm/clk-iproc.c
+
+-- 
+1.7.9.5
+
