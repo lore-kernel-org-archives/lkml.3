@@ -1,119 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657AbaJIIb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:31:29 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:56971 "EHLO sipsolutions.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751147AbaJIIbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:31:21 -0400
-Message-ID: <1412843479.1828.22.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 4/4] nl80211: Join and Leave handling for OCB mode
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de, burak.simsek@volkswagen.de,
-        Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
-        laszlo.virag@commsignia.com,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Thu, 09 Oct 2014 10:31:19 +0200
-In-Reply-To: <1410445822-6559-5-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140911_163052_322975_2F1DAFAB)
-References: <1410445822-6559-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 <1410445822-6559-5-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140911_163052_322975_2F1DAFAB)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754588AbaJIIcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:32:04 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:44061 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaJIIbz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 04:31:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141008222722.GJ7996@ZenIV.linux.org.uk>
+References: <1412760595-3935-1-git-send-email-lftan@altera.com>
+	<1412760595-3935-5-git-send-email-lftan@altera.com>
+	<20141008222722.GJ7996@ZenIV.linux.org.uk>
+Date: Thu, 9 Oct 2014 16:31:53 +0800
+X-Google-Sender-Auth: MSebu6777s8sNUBGQ5fUSxaZx_k
+Message-ID: <CAFiDJ59LZgCeMyNYEv-gWcghBPMJTmKDoyXb9jstToQXjtscHQ@mail.gmail.com>
+Subject: Re: [PATCH v4 04/29] nios2: Exception handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-09-11 at 16:30 +0200, Rostislav Lisovy wrote:
-> Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+On Thu, Oct 9, 2014 at 6:27 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+>> +Lsignal_return:
+>> +     ANDI32  r1, r10, _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
+>> +     beq     r1, r0, restore_all
+>> +     mov     r4, sp                  /* pt_regs */
+>> +     SAVE_SWITCH_STACK
+>> +     call    do_notify_resume
+>> +     beq     r2, r0, no_work_pending
+>> +     RESTORE_SWITCH_STACK
+>> +     /* prepare restart syscall here without leaving kernel */
+>> +     ldw     r2, PT_R2(sp)   /* reload syscall number in r2 */
+>> +     ldw     r4, PT_R4(sp)   /* reload syscall arguments r4-r9 */
+>> +     ldw     r5, PT_R5(sp)
+>> +     ldw     r6, PT_R6(sp)
+>> +     ldw     r7, PT_R7(sp)
+>> +     ldw     r8, PT_R8(sp)
+>> +     ldw     r9, PT_R9(sp)
+>> +     br      local_restart   /* restart syscall */
+>> +
+>> +no_work_pending:
+>> +     RESTORE_SWITCH_STACK
+>> +     br      restore_all
+>
+> Umm...  Branch to no_work_pending will be usuall taken.  How well does
+> branch predictor on that processor cope with such things?
+Nios2 have implemented dynamic branch prediction. Processor will use
+current PC and previous history when lookup branch history table.
+So this mean the same location branch will mostly predict correctly if
+the branch is always taken or always not taken.
 
-same comment about commit log here - also this patch should either go
-first in the series, or just be squashed with the cfg80211 patch,
-there's no real need to distinguish between the two. I guess it can't be
-first, so best just squash it.
 
-I think you can also squash patches 1 and 2, since 2 is so small.
+> Another thing is the point Richard made - multiple pending signals need to be
+> handled.  IOW, that should be a branch to ret_from_exception, not restore_all.
+Okay, will update this to branch to ret_from_exception.
 
-> ---
->  include/uapi/linux/nl80211.h |  8 ++++++++
->  net/wireless/nl80211.c       | 47 ++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 55 insertions(+)
-> 
-> diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
-> index cdf9ba4..4b39455 100644
-> --- a/include/uapi/linux/nl80211.h
-> +++ b/include/uapi/linux/nl80211.h
-> @@ -544,6 +544,11 @@
->   * @NL80211_CMD_LEAVE_MESH: Leave the mesh network -- no special arguments, the
->   *	network is determined by the network interface.
->   *
-> + * @NL80211_CMD_JOIN_OCB: Join the OCB network. The center frequency and
-> + *	bandwidth of a channel must be given.
-> + * @NL80211_CMD_LEAVE_OCB: Leave the OCB network -- no special arguments, the
-> + *	network is determined by the network interface.
-> + *
->   * @NL80211_CMD_UNPROT_DEAUTHENTICATE: Unprotected deauthentication frame
->   *	notification. This event is used to indicate that an unprotected
->   *	deauthentication frame was dropped when MFP is in use.
-> @@ -833,6 +838,9 @@ enum nl80211_commands {
->  	NL80211_CMD_JOIN_MESH,
->  	NL80211_CMD_LEAVE_MESH,
->  
-> +	NL80211_CMD_JOIN_OCB,
-> +	NL80211_CMD_LEAVE_OCB,
-> +
->  	NL80211_CMD_UNPROT_DEAUTHENTICATE,
->  	NL80211_CMD_UNPROT_DISASSOCIATE,
+Thanks for reviewing.
 
-No no, you really really really can't add anything in the middle of this
-enum. The's a comments at the top of it explaining why :)
-
-> diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-> index cf178d2..bfbb54d 100644
-> --- a/net/wireless/nl80211.c
-> +++ b/net/wireless/nl80211.c
-> @@ -1876,6 +1876,7 @@ static bool nl80211_can_set_dev_channel(struct wireless_dev *wdev)
->  	 * operation to set the monitor channel if possible.
->  	 */
->  	return !wdev ||
-> +		wdev->iftype == NL80211_IFTYPE_OCB ||
->  		wdev->iftype == NL80211_IFTYPE_AP ||
->  		wdev->iftype == NL80211_IFTYPE_MESH_POINT ||
->  		wdev->iftype == NL80211_IFTYPE_MONITOR ||
-
-I don't think this is right - join() handles the channel setting.
-
-> @@ -2307,6 +2308,8 @@ static int nl80211_send_chandef(struct sk_buff *msg,
->  			chandef->chan->center_freq))
->  		return -ENOBUFS;
->  	switch (chandef->width) {
-> +	case NL80211_CHAN_WIDTH_5:
-> +	case NL80211_CHAN_WIDTH_10:
-
-This is also wrong, just like the cfg80211.h change in the other patch,
-since the NL80211_ATTR_WIPHY_CHANNEL_TYPE cannot encode 5/10 MHz.
-
-You need to remove both changes.
-
-> +static int nl80211_join_ocb(struct sk_buff *skb, struct genl_info *info)
-> +{
-> +	struct cfg80211_registered_device *rdev = info->user_ptr[0];
-> +	struct net_device *dev = info->user_ptr[1];
-> +	struct ocb_setup setup;
-> +	int err;
-> +
-> +	/* start with default */
-> +	memset(&setup, 0x0, sizeof(setup));
-
-struct ocb_setup setup = {};
-
-Would be an easier way to generate the same code. IMHO no comment is
-needed.
-
-johannes
-
+Regards
+Ley Foon
