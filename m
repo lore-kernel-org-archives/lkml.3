@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338AbaJIVUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:20:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59583 "EHLO
+	id S1758371AbaJIVVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:21:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59577 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757827AbaJIVLF (ORCPT
+	with ESMTP id S1757818AbaJIVLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:11:05 -0400
+	Thu, 9 Oct 2014 17:11:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        Ralf Baechle <ralf@linux-mips.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 051/163] kcmp: fix standard comparison bug
-Date: Thu,  9 Oct 2014 14:01:16 -0700
-Message-Id: <1412888588-26755-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 078/163] MIPS: ZBOOT: add missing <linux/string.h> include
+Date: Thu,  9 Oct 2014 14:01:43 -0700
+Message-Id: <1412888588-26755-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -29,139 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+From: Aurelien Jarno <aurelien@aurel32.net>
 
-commit acbbe6fbb240a927ee1f5994f04d31267d422215 upstream.
+commit 29593fd5a8149462ed6fad0d522234facdaee6c8 upstream.
 
-The C operator <= defines a perfectly fine total ordering on the set of
-values representable in a long.  However, unlike its namesake in the
-integers, it is not translation invariant, meaning that we do not have
-"b <= c" iff "a+b <= a+c" for all a,b,c.
+Commit dc4d7b37 (MIPS: ZBOOT: gather string functions into string.c)
+moved the string related functions into a separate file, which might
+cause the following build error, depending on the configuration:
 
-This means that it is always wrong to try to boil down the relationship
-between two longs to a question about the sign of their difference,
-because the resulting relation [a LEQ b iff a-b <= 0] is neither
-anti-symmetric or transitive.  The former is due to -LONG_MIN==LONG_MIN
-(take any two a,b with a-b = LONG_MIN; then a LEQ b and b LEQ a, but a !=
-b).  The latter can either be seen observing that x LEQ x+1 for all x,
-implying x LEQ x+1 LEQ x+2 ...  LEQ x-1 LEQ x; or more directly with the
-simple example a=LONG_MIN, b=0, c=1, for which a-b < 0, b-c < 0, but a-c >
-0.
+| CC      arch/mips/boot/compressed/decompress.o
+| In file included from linux/arch/mips/boot/compressed/../../../../lib/decompress_unxz.c:234:0,
+|                  from linux/arch/mips/boot/compressed/decompress.c:67:
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c: In function 'fill_temp':
+| linux/arch/mips/boot/compressed/../../../../lib/xz/xz_dec_stream.c:162:2: error: implicit declaration of function 'memcpy' [-Werror=implicit-function-declaration]
+| cc1: some warnings being treated as errors
+| linux/scripts/Makefile.build:308: recipe for target 'arch/mips/boot/compressed/decompress.o' failed
+| make[6]: *** [arch/mips/boot/compressed/decompress.o] Error 1
+| linux/arch/mips/Makefile:308: recipe for target 'vmlinuz' failed
 
-Note that it makes absolutely no difference that a transmogrying bijection
-has been applied before the comparison is done.  In fact, had the
-obfuscation not been done, one could probably not observe the bug
-(assuming all values being compared always lie in one half of the address
-space, the mathematical value of a-b is always representable in a long).
-As it stands, one can easily obtain three file descriptors exhibiting the
-non-transitivity of kcmp().
+It does not fail with the standard configuration, as when
+CONFIG_DYNAMIC_DEBUG is not enabled <linux/string.h> gets included in
+include/linux/dynamic_debug.h. There might be other ways for it to
+get indirectly included.
 
-Side note 1: I can't see that ensuring the MSB of the multiplier is
-set serves any purpose other than obfuscating the obfuscating code.
+We can't add the include directly in xz_dec_stream.c as some
+architectures might want to use a different version for the boot/
+directory (see for example arch/x86/boot/string.h).
 
-Side note 2:
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <assert.h>
-#include <sys/syscall.h>
-
-enum kcmp_type {
-        KCMP_FILE,
-        KCMP_VM,
-        KCMP_FILES,
-        KCMP_FS,
-        KCMP_SIGHAND,
-        KCMP_IO,
-        KCMP_SYSVSEM,
-        KCMP_TYPES,
-};
-pid_t pid;
-
-int kcmp(pid_t pid1, pid_t pid2, int type,
-	 unsigned long idx1, unsigned long idx2)
-{
-	return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
-}
-int cmp_fd(int fd1, int fd2)
-{
-	int c = kcmp(pid, pid, KCMP_FILE, fd1, fd2);
-	if (c < 0) {
-		perror("kcmp");
-		exit(1);
-	}
-	assert(0 <= c && c < 3);
-	return c;
-}
-int cmp_fdp(const void *a, const void *b)
-{
-	static const int normalize[] = {0, -1, 1};
-	return normalize[cmp_fd(*(int*)a, *(int*)b)];
-}
-#define MAX 100 /* This is plenty; I've seen it trigger for MAX==3 */
-int main(int argc, char *argv[])
-{
-	int r, s, count = 0;
-	int REL[3] = {0,0,0};
-	int fd[MAX];
-	pid = getpid();
-	while (count < MAX) {
-		r = open("/dev/null", O_RDONLY);
-		if (r < 0)
-			break;
-		fd[count++] = r;
-	}
-	printf("opened %d file descriptors\n", count);
-	for (r = 0; r < count; ++r) {
-		for (s = r+1; s < count; ++s) {
-			REL[cmp_fd(fd[r], fd[s])]++;
-		}
-	}
-	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
-	qsort(fd, count, sizeof(fd[0]), cmp_fdp);
-	memset(REL, 0, sizeof(REL));
-
-	for (r = 0; r < count; ++r) {
-		for (s = r+1; s < count; ++s) {
-			REL[cmp_fd(fd[r], fd[s])]++;
-		}
-	}
-	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
-	return (REL[0] + REL[2] != 0);
-}
-
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
-"Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/7420/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/kcmp.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/mips/boot/compressed/decompress.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/kcmp.c b/kernel/kcmp.c
-index e30ac0f..0aa69ea 100644
---- a/kernel/kcmp.c
-+++ b/kernel/kcmp.c
-@@ -44,11 +44,12 @@ static long kptr_obfuscate(long v, int type)
-  */
- static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
- {
--	long ret;
-+	long t1, t2;
+diff --git a/arch/mips/boot/compressed/decompress.c b/arch/mips/boot/compressed/decompress.c
+index a8c6fd6..193ceae 100644
+--- a/arch/mips/boot/compressed/decompress.c
++++ b/arch/mips/boot/compressed/decompress.c
+@@ -13,6 +13,7 @@
  
--	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
-+	t1 = kptr_obfuscate((long)v1, type);
-+	t2 = kptr_obfuscate((long)v2, type);
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/string.h>
  
--	return (ret < 0) | ((ret > 0) << 1);
-+	return (t1 < t2) | ((t1 > t2) << 1);
- }
+ #include <asm/addrspace.h>
  
- /* The caller must have pinned the task */
 -- 
 1.9.1
 
