@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaJITNW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:13:22 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:47891 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaJITMa (ORCPT
+	id S1751950AbaJITN3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:13:29 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:50168 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340AbaJITMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:12:30 -0400
+	Thu, 9 Oct 2014 15:12:31 -0400
 X-Google-Original-Sender: <johan@hovold.com>
 From: Johan Hovold <johan@kernel.org>
 To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
@@ -19,9 +19,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 03/12] rtc: omap: fix class-device registration
-Date: Thu,  9 Oct 2014 21:06:25 +0200
-Message-Id: <1412881594-25678-4-git-send-email-johan@kernel.org>
+Subject: [PATCH 07/12] rtc: omap: silence bogus power-up reset message at probe
+Date: Thu,  9 Oct 2014 21:06:29 +0200
+Message-Id: <1412881594-25678-8-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
 References: <1412881594-25678-1-git-send-email-johan@kernel.org>
@@ -29,102 +29,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure not to register the class device until after it has been
-configured and interrupt handlers registered at probe.
+Some legacy RTC IP revisions has a power-up reset flag in the status
+register that later revisions lack.
 
-Currently, the device is not fully configured (e.g. 24-hour mode) when
-the class device is registered, something which involves driver
-callbacks for example to read the current time.
-
-This reordering also prevents user space from enabling an alarm before
-an interrupt handler has been registered.
-
-Note that the interrupts are now registered using the platform-device
-rather than class-device name.
+As this flag is always read back as set on later revisions (or is
+overloaded with a different flag), make sure to only clear the flag and
+print the info message on legacy platforms.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/rtc-omap.c | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+ drivers/rtc/rtc-omap.c | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 828cb9983cc2..2eca141e784e 100644
+index 1c58920b0c88..0ef016553a97 100644
 --- a/drivers/rtc/rtc-omap.c
 +++ b/drivers/rtc/rtc-omap.c
-@@ -147,8 +147,9 @@ static void rtc_wait_not_busy(void)
- 	/* now we have ~15 usec to read/write various registers */
- }
+@@ -118,6 +118,12 @@
+  */
+ #define OMAP_RTC_HAS_32KCLK_EN		BIT(2)
  
--static irqreturn_t rtc_irq(int irq, void *rtc)
-+static irqreturn_t rtc_irq(int irq, void *dev_id)
++/*
++ * Some legacy RTC IP revisions has a power-up reset flag which later
++ * revisions lack.
++ */
++#define OMAP_RTC_HAS_POWER_UP_RESET	BIT(3)
++
+ static void __iomem	*rtc_base;
+ 
+ #define rtc_read(addr)		readb(rtc_base + (addr))
+@@ -347,6 +353,7 @@ static int omap_rtc_timer;
+ static struct platform_device_id omap_rtc_devtype[] = {
+ 	{
+ 		.name	= DRIVER_NAME,
++		.driver_data = OMAP_RTC_HAS_POWER_UP_RESET,
+ 	},
+ 	[OMAP_RTC_DATA_AM3352_IDX] = {
+ 		.name	= "am3352-rtc",
+@@ -376,7 +383,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
  {
-+	struct rtc_device	*rtc = platform_get_drvdata(dev_id);
- 	unsigned long		events = 0;
- 	u8			irq_data;
+ 	struct resource		*res;
+ 	struct rtc_device	*rtc;
+-	u8			reg, new_ctrl;
++	u8			reg, mask, new_ctrl;
+ 	const struct platform_device_id *id_entry;
+ 	const struct of_device_id *of_id;
  
-@@ -164,7 +165,8 @@ static irqreturn_t rtc_irq(int irq, void *rtc)
- 	if (irq_data & OMAP_RTC_STATUS_1S_EVENT)
- 		events |= RTC_IRQF | RTC_UF;
+@@ -429,12 +436,16 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
  
--	rtc_update_irq(rtc, 1, events);
-+	if (rtc)
-+		rtc_update_irq(rtc, 1, events);
- 
- 	return IRQ_HANDLED;
- }
-@@ -416,17 +418,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
+ 	/* clear old status */
+ 	reg = rtc_read(OMAP_RTC_STATUS_REG);
+-	if (reg & (u8) OMAP_RTC_STATUS_POWER_UP) {
+-		dev_info(&pdev->dev, "RTC power up reset detected\n");
+-		rtc_write(OMAP_RTC_STATUS_POWER_UP, OMAP_RTC_STATUS_REG);
++
++	mask = OMAP_RTC_STATUS_ALARM;
++	if (id_entry->driver_data & OMAP_RTC_HAS_POWER_UP_RESET) {
++		mask |= OMAP_RTC_STATUS_POWER_UP;
++		if (reg & OMAP_RTC_STATUS_POWER_UP)
++			dev_info(&pdev->dev, "RTC power up reset detected\n");
  	}
- 
--	device_init_wakeup(&pdev->dev, true);
--
--	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
--			&omap_rtc_ops, THIS_MODULE);
--	if (IS_ERR(rtc)) {
--		pr_debug("%s: can't register RTC device, err %ld\n",
--			pdev->name, PTR_ERR(rtc));
--		goto fail0;
--	}
--	platform_set_drvdata(pdev, rtc);
--
- 	/* clear pending irqs, and set 1/second periodic,
- 	 * which we'll use instead of update irqs
- 	 */
-@@ -450,14 +441,14 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+-	if (reg & (u8) OMAP_RTC_STATUS_ALARM)
+-		rtc_write(OMAP_RTC_STATUS_ALARM, OMAP_RTC_STATUS_REG);
++
++	if (reg & mask)
++		rtc_write(reg & mask, OMAP_RTC_STATUS_REG);
  
  	/* handle periodic and alarm irqs */
  	if (devm_request_irq(&pdev->dev, omap_rtc_timer, rtc_irq, 0,
--			dev_name(&rtc->dev), rtc)) {
-+			dev_name(&pdev->dev), pdev)) {
- 		pr_debug("%s: RTC timer interrupt IRQ%d already claimed\n",
- 			pdev->name, omap_rtc_timer);
- 		goto fail0;
- 	}
- 	if ((omap_rtc_timer != omap_rtc_alarm) &&
- 		(devm_request_irq(&pdev->dev, omap_rtc_alarm, rtc_irq, 0,
--			dev_name(&rtc->dev), rtc))) {
-+			dev_name(&pdev->dev), pdev))) {
- 		pr_debug("%s: RTC alarm interrupt IRQ%d already claimed\n",
- 			pdev->name, omap_rtc_alarm);
- 		goto fail0;
-@@ -492,6 +483,17 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	if (reg != new_ctrl)
- 		rtc_write(new_ctrl, OMAP_RTC_CTRL_REG);
- 
-+	device_init_wakeup(&pdev->dev, true);
-+
-+	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
-+			&omap_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc)) {
-+		pr_debug("%s: can't register RTC device, err %ld\n",
-+			pdev->name, PTR_ERR(rtc));
-+		goto fail0;
-+	}
-+	platform_set_drvdata(pdev, rtc);
-+
- 	return 0;
- 
- fail0:
 -- 
 2.0.4
 
