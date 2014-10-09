@@ -1,84 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212AbaJIO3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:29:30 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58983 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752189AbaJIO3Y (ORCPT
+	id S1757284AbaJIOaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:30:09 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:59383 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557AbaJIOaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:29:24 -0400
+	Thu, 9 Oct 2014 10:30:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com
+Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
+Date: Thu, 09 Oct 2014 16:29:52 +0200
+Message-ID: <2518561.k9qJZyWstd@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412862026.32718.19.camel@jarvis>
+References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com> <9985506.Mg7cltjCP9@wuerfel> <1412862026.32718.19.camel@jarvis>
 MIME-Version: 1.0
-In-Reply-To: <20141009141607.GR4750@worktop.programming.kicks-ass.net>
-References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
- <1412684017-16595-7-git-send-email-vincent.guittot@linaro.org> <20141009141607.GR4750@worktop.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Thu, 9 Oct 2014 16:28:58 +0200
-Message-ID: <CAKfTPtAGq=zBHNeXZjijM0BxD7g+DYr53CDsF9Cyen1T0FbAMQ@mail.gmail.com>
-Subject: Re: [PATCH v7 6/7] sched: replace capacity_factor by usage
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:FlQoWbgiQoM3NX34yRUzbXQ7TQy7mbk+X15Jza5ChLC
+ E50DXoACzD9mXBVQhMrnYzwRAI4JmQ9HWudBAYbb4qReftmQJo
+ LC/DG07O5n1j7IJr1FT0LzOzsWz4m66eOx/ys+MgXDLBzmrddg
+ JxBxG2uKQfYpv23Q1JVjGRv8I+o2bUW+TpAgsGcQPpLVCVWJwL
+ HbQSyePU0WMDCmFqBPVBnT+Hz4ObajRaGbLBv+h0fM3AMb6Ebk
+ eThNufYK7JYusRYfLz8c19k1Wl3lc1dKnonWirDPvoWsMxqhK4
+ XMONZy00M1zYsG5umb9k1bIaboU8pdXspM76swak3LgtAaX5qb
+ VF4jrLNdDbmrmMOGyitg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2014 16:16, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Oct 07, 2014 at 02:13:36PM +0200, Vincent Guittot wrote:
->> @@ -6214,17 +6178,21 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
->>
->>               /*
->>                * In case the child domain prefers tasks go to siblings
->> +              * first, lower the sg capacity to one so that we'll try
->>                * and move all the excess tasks away. We lower the capacity
->>                * of a group only if the local group has the capacity to fit
->> +              * these excess tasks, i.e. group_capacity > 0. The
->>                * extra check prevents the case where you always pull from the
->>                * heaviest group when it is already under-utilized (possible
->>                * with a large weight task outweighs the tasks on the system).
->>                */
->>               if (prefer_sibling && sds->local &&
->> +                 group_has_capacity(env, &sds->local_stat)) {
->> +                     if (sgs->sum_nr_running > 1)
->> +                             sgs->group_no_capacity = 1;
->> +                     sgs->group_capacity = min(sgs->group_capacity,
->> +                                             SCHED_CAPACITY_SCALE);
->> +             }
->>
->>               if (update_sd_pick_busiest(env, sds, sg, sgs)) {
->>                       sds->busiest = sg;
->
->> @@ -6490,8 +6460,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
->>               goto force_balance;
->>
->>       /* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
->> -     if (env->idle == CPU_NEWLY_IDLE && local->group_has_free_capacity &&
->> -         !busiest->group_has_free_capacity)
->> +     if (env->idle == CPU_NEWLY_IDLE && group_has_capacity(env, local) &&
->> +         busiest->group_no_capacity)
->>               goto force_balance;
->>
->>       /*
->
-> This is two calls to group_has_capacity() on the local group. Why not
-> compute once in update_sd_lb_stats()?
+On Thursday 09 October 2014 06:40:26 James Bottomley wrote:
+> On Wed, 2014-10-08 at 22:58 +0200, Arnd Bergmann wrote:
+> > On Wednesday 08 October 2014 13:44:55 James Bottomley wrote:
+> > > > diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
+> > > > index 45b9566..ff2a0b3 100644
+> > > > --- a/drivers/scsi/ips.h
+> > > > +++ b/drivers/scsi/ips.h
+> > > > @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
+> > > >     uint8_t            active;
+> > > >     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
+> > > >     uint16_t           reset_count;        /* number of resets           */
+> > > > -   time_t             last_ffdc;          /* last time we sent ffdc info*/
+> > > > +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
+> > > >     uint8_t            slot_num;           /* PCI Slot Number            */
+> > > >     int                ioctl_len;          /* size of ioctl buffer       */
+> > > >     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
+> > > 
+> > > This is completely pointless, isn't it?  All the ips driver cares about
+> > > is that we send a FFDC time update every eight hours or so, so we can
+> > > happily truncate the number of seconds to 32 bits for that calculation
+> > > just keep the variable at 32 bits and do a time_after thing for the
+> > > comparison.
+> > 
+> > Good point. The same has come up in a few other places, so I wonder if we
+> > should introduce a proper way to do it that doesn't involve time_t.
+> 
+> We have, it's jiffies ... that's why I'm slightly non-plussed that this
+> driver is using gettimeofday for something like this ... it was clearly
+> a review failure when we put it in.
 
-mainly because of the place in the code, so it is not always used
-during load balance unlike group_no_capacity
+Actually there is more to it, as I just found upon reading the code
+again (I had noticed it before when I first looked at the driver but
+then forgotten about it):
 
-Now that i have said that, i just noticed that it's better to move the
-call to the last tested condition
+ips_fix_ffdc_time() needs the correct current wall-clock time, no overflow
+allowed, to stick the year/month/day/hour/minute/second value into
+the ffdc command.
 
- +     if (env->idle == CPU_NEWLY_IDLE && busiest->group_no_capacity &&
- +         group_has_capacity(env, local))
+My comment to Ebru about ktime_get_ts64 for monotonic time was unfortunately
+completely wrong, since that would break whatever timekeeping it is
+in the hardware that wants the correct year/month/day/hour/minute/second
+values.
+
+> or are you thinking we need a time_t_time_before doing for time_t what
+> we do for jiffies?
+
+The part I'm interested in is getting rid of any mention of time_t,
+timespec and timeval in the kernel by replacing each use with something
+that is known to be y2038-safe. Using jiffies correctly would solve
+a number of them, but is not sufficient for this driver because of the
+ffdc command.
+
+We could use jiffies to test whether we need to send ffdc but then
+we still need to read the correct time.
+
+> > While the current code works, we will have to audit 2000 other locations
+> > in which time_t/timespec/timeval are used in the kernel, so we are going
+> > to need some form of annotation to make sure we don't get everyone to
+> > look at the driver again just to come to the same conclusion after working
+> > on a patch first.
+> > 
+> > > However, what the code *should* be doing is using jiffies and
+> > > time_before/after since the interval is so tiny rather than a
+> > > do_gettimeofday() call in the fast path.
+> > 
+> > Yes, this would probably be best for this particular driver, it also
+> > means we end up with a monotonic clock source rather than a wall-clock.
+> 
+> Right, and it's a 32 bit read instead of a system call every time the
+> thing dispatches a command ... to be honest the overhead of 64 bit
+> arithmetic is peanuts to making a syscall in the fast path.
+
+It's not a system call, all we need is a simple function call that reads
+tk->xtime_sec. We can use get_seconds() today, but it returns an
+'unsigned long', so that won't be enough on 32-bit architectures.
+
+It's still slightly more expensive to do the function call and use a 64-bit
+number on a 32-bit CPU, but it's not on the scale of doing a system call
+here. You can probably judge best if it's worth the increase in complexity
+to use jiffies for determining whether to send the update and then
+use get_seconds64 (or similar) to read the wall-clock time, or whether
+always using get_seconds64 would be good enough.
+
+	Arnd
