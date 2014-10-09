@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaJIHVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 03:21:35 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:45065 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751463AbaJIHVW (ORCPT
+	id S1752945AbaJIHVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 03:21:54 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:48362 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJIHVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 03:21:22 -0400
+	Thu, 9 Oct 2014 03:21:48 -0400
+Date: Thu, 9 Oct 2014 09:21:43 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tuan Bui <tuan.d.bui@hp.com>
+Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
+        paulus@samba.org, acme@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com, dvhart@linux.intel.com,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH] Perf Bench: Locking Microbenchmark
+Message-ID: <20141009072143.GA21018@gmail.com>
+References: <1412120999.2941.11.camel@u64>
+ <20141001052832.GA32248@gmail.com>
+ <1412806419.2908.6.camel@u64>
 MIME-Version: 1.0
-In-Reply-To: <5435E5B0.90900@codeaurora.org>
-References: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com> <5435E5B0.90900@codeaurora.org>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Thu, 9 Oct 2014 09:21:01 +0200
-X-Google-Sender-Auth: k97r5snLsIAw7JIWaYctHxpbH0Y
-Message-ID: <CAAObsKBZ8irmk0fdEQUvT60ffu0oytVdJTu5s3+BXMCPaosPDQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Per-user clock constraints
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Alex Elder <elder@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mips@linux-mips.org, linux-omap@vger.kernel.org,
-        Manuel Lauss <manuel.lauss@gmail.com>,
-        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412806419.2908.6.camel@u64>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2014 03:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 10/07/2014 08:21 AM, Tomeu Vizoso wrote:
->>
->> Hello,
->>
->> this second version of the series adds several cleanups that were
->> suggested by
->> Stephen Boyd and contains several improvements to the seventh patch (clk:
->> Make
->> clk API return per-user struct clk instances) that were suggested by him
->> during
->> the review of v1.
->>
->> The first six patches are just cleanups that should be desirable on their
->> own,
->> and that should make easier to review the actual per-user clock patch.
->>
->> The seventh patch actually moves the per-clock data that was stored in
->> struct
->> clk to a new struct clk_core and adds references to it from both struct
->> clk and
->> struct clk_hw. struct clk is now ready to contain information that is
->> specific
->> to a given clk consumer.
->>
->> The eighth patch adds API for setting floor and ceiling constraints and
->> stores
->> that information on the per-user struct clk, which is iterable from struct
->> clk_core.
->>
->>
->
-> As said in the patches, can you please indicate which baseline this is on?
 
-Sure, this was based on v3.17. Also available at:
+* Tuan Bui <tuan.d.bui@hp.com> wrote:
 
-http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v2
+> > > +static const struct option options[] = {
+> > > +	OPT_UINTEGER('s', "start", &start_nr_threads, "Numbers of processes to start"),
+> > > +	OPT_UINTEGER('e', "end", &end_nr_threads, "Numbers of process to end"),
+> > > +	OPT_UINTEGER('i', "increment", &increment_threads_by, "Number of threads to increment)"),
+> > > +	OPT_UINTEGER('r', "runtime", &bench_dur, "Specify benchmark runtime in seconds"),
+> > > +	OPT_END()
+> > > +};
+> > 
+> > Is this the kind of parameters that AIM7 takes as well?
+> > 
+> > In any case, this is a very nice benchmarking utility.
+> 
+> Yes these parameters are similar to what AIM7 take except for 
+> the runtime parameter.  AIM7 does not have the option to 
+> specify how long the benchmark will run.  Also in AIM7 you can 
+> also specify numbers of jobs per run which i did not include 
+> since i added a runtime parameter for the benchmark.
 
-> Also can you rebase onto clk-next if you send again before that is merged
-> into 3.18-rc1? There are some changes in the debugfs part that will
-> conflict. I'll review the more complicated parts in detail soon.
+It might make sense to add that parameter - which would only be 
+allowed if no runtime is specified, or so.
 
-Ack.
+I.e. to make it as easy for people to use this new tool when they 
+come with AIM7 benchmarking knowledge.
 
 Thanks,
 
-Tomeu
+	Ingo
