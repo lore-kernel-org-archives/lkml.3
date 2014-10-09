@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174AbaJICyz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 22:54:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33146 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756441AbaJICyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 22:54:41 -0400
-Message-ID: <5435F8EB.2040407@suse.de>
-Date: Thu, 09 Oct 2014 04:54:35 +0200
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S932261AbaJIDDb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 23:03:31 -0400
+Received: from mail-bl2on0060.outbound.protection.outlook.com ([65.55.169.60]:55641
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754314AbaJIDDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 23:03:22 -0400
+From: <dinguyen@opensource.altera.com>
+To: <p.zabel@pengutronix.de>
+CC: <dinh.linux@gmail.com>, <s.trumtrar@pengutronix.de>,
+        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
+        <atull@opensource.altera.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>
+Subject: [PATCH] reset: socfpga: use arch_initcall for early initialization
+Date: Wed, 8 Oct 2014 21:44:06 -0500
+Message-ID: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
+X-Mailer: git-send-email 2.0.3
 MIME-Version: 1.0
-To: Chen-Yu Tsai <wens@csie.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, Meng Zhang <kevin@allwinnertech.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/5] ARM: sunxi: Add basic support for Allwinner A80
- SoC
-References: <1412773376-25212-1-git-send-email-wens@csie.org>
-In-Reply-To: <1412773376-25212-1-git-send-email-wens@csie.org>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="RMdukjvIo3OsAg5WOBniW7Kq2WbgXbNWE"
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR08CA0064.namprd08.prod.outlook.com (10.141.200.44) To
+ DM2PR0301MB1200.namprd03.prod.outlook.com (25.160.217.15)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1200;
+X-Forefront-PRVS: 0359162B6D
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(86362001)(64706001)(92726001)(120916001)(80022003)(97736003)(46102003)(101416001)(19580395003)(85306004)(4396001)(2351001)(69596002)(107046002)(53416004)(50226001)(99396003)(93916002)(50466002)(19580405001)(66066001)(48376002)(81156004)(86152002)(95666004)(105586002)(122386002)(106356001)(40100002)(50986999)(76482002)(77096002)(104166001)(47776003)(92566001)(229853001)(20776003)(89996001)(87286001)(88136002)(87976001)(21056001)(77156001)(42186005)(31966008)(110136001)(85852003)(33646002)(102836001)(62966002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1200;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---RMdukjvIo3OsAg5WOBniW7Kq2WbgXbNWE
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+From: Dinh Nguyen <dinguyen@opensource.altera.com>
 
-Hi,
+There are certain drivers that are required to get loaded very early using
+arch_initcall. An example of such a driver is the SOCFPGA's FPGA bridge driver.
+This driver has to get loaded early because it needs to enable FPGA components
+that are connected to the bridge.
 
-Am 08.10.2014 um 15:02 schrieb Chen-Yu Tsai:
-> This is v3 of the initial Allwinner A80 support series.
-> This patch series adds very basic support for Allwinner's A80 SoC,
-> a big.LITTLE architecture with 4 Cortex-A7s and 4 Cortex-A15s.
->=20
-> Development is done on the A80 Optimus Board, the defacto development
-> board for the A80, with the accompanying SDK as a reference.=20
->=20
-> So far I've been unable to get the board to boot from MMC, or
-> using Android fastboot. I'm using Allwinner's FEL mode to load
-> the bootloader and kernel+dtb image over USB. Notes on my attempts
-> can be found here: http://linux-sunxi.org/User:Wens#A80_Optimus
+This FPGA bridge driver will using the reset controller API to toggle it's
+reset bits, thus, it needs the reset driver to be loaded as early as possible
+in order for it to get used properly.
 
-Tested-by: Andreas F=E4rber <afaerber@suse.de>
+Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+---
+ drivers/reset/reset-socfpga.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-With this patch set on top of Maxime's sunxi-next branch, I get as far
-as searching for the rootfs.
+diff --git a/drivers/reset/reset-socfpga.c b/drivers/reset/reset-socfpga.c
+index 79c32ca..a5e8d37 100644
+--- a/drivers/reset/reset-socfpga.c
++++ b/drivers/reset/reset-socfpga.c
+@@ -139,7 +139,20 @@ static struct platform_driver socfpga_reset_driver = {
+ 		.of_match_table	= socfpga_reset_dt_ids,
+ 	},
+ };
+-module_platform_driver(socfpga_reset_driver);
++
++static int __init socfpga_reset_init(void)
++{
++	return platform_driver_probe(&socfpga_reset_driver,
++					socfpga_reset_probe);
++}
++
++static void __exit socfpga_reset_exit(void)
++{
++	platform_driver_unregister(&socfpga_reset_driver);
++}
++
++arch_initcall(socfpga_reset_init);
++module_exit(socfpga_reset_exit);
+ 
+ MODULE_AUTHOR("Steffen Trumtrar <s.trumtrar@pengutronix.de");
+ MODULE_DESCRIPTION("Socfpga Reset Controller Driver");
+-- 
+2.0.3
 
-CPUs 1-7 fail to boot with -38, which I guess is due to the vendor
-U-Boot not yet supporting PSCI.
-
-Thanks a lot for your work and help, Chen-Yu!
-
-Regards,
-Andreas
-
---=20
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N=FCrnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imend=F6rffer; HRB 16746 AG N=FCrnbe=
-rg
-
-
---RMdukjvIo3OsAg5WOBniW7Kq2WbgXbNWE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUNfjrAAoJEPou0S0+fgE/u2gP/j3RXl6WpJu458YhkH+rH6Gd
-6CMV9D2M2clB8y0jbl+XkvQ2C2Y7V0AnrR7LZCCZODU5fd0NYLFoAY28UtdFNVh9
-mtJguueR5dM6Ys5JSjHGZD326uxhu95s9j1dfCbbIS2MzUz+Z836YYQUIIGfR/Ck
-2HWEyF2AF5RqVkv6wKn8k2DlMqsV39k1TzFhw/gjnshb9c/vyxWf1AflInYw2qkG
-jnt/TXBRc0W4Z42GbY2Oy5asbzrABn7iSateGnd7g4L0+ar1OZx3yUT0lDLewhyJ
-0PNwCqAIAdVYTZjGgRFM2+f8zLUCd66ytLV0E7ICXflr9gjUYdUS254jjO6Pw3NJ
-0TmM9qkYHayNBSlWWthFAcQL5BXxCuoHty1xS7F89a5EHpT2gy2xQlLFLOgeCCsZ
-swqMHZOhpU7F/d0fYK/Be4V6Sd+lmrsYJ2Qcovc0kfk9qKDwUr2vfrHtJ5mctudj
-6MMCi58U0UXpeOaFIfu6azd6qHQluY23NJ+mphQdz8+WLlCwut25WP0p4kEsZgC2
-c08nwXjTgYYyt/IzQ7wR970HFjnTahYlOjYd5BcxgkF955pHQju/GELtgmIm1i/U
-wqpsPkP90psEIpzh2+/MFsUcxt2z+4JakaMFNFi9BnCEQZ4qO9IXMBvxnfJ2aDzv
-/5wfaUZc+KGgS1QN1Ace
-=LOA8
------END PGP SIGNATURE-----
-
---RMdukjvIo3OsAg5WOBniW7Kq2WbgXbNWE--
