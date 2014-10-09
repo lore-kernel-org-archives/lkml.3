@@ -1,102 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547AbaJIPEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:04:22 -0400
-Received: from mail-bn1bon0099.outbound.protection.outlook.com ([157.56.111.99]:23168
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757281AbaJIPEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:04:14 -0400
-Date: Thu, 9 Oct 2014 09:57:49 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-CC: Dinh Nguyen <dinguyen@opensource.altera.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, <dinh.linux@gmail.com>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early
- initialization
-In-Reply-To: <20141009132835.GI15799@pengutronix.de>
-Message-ID: <alpine.DEB.2.02.1410090950540.17462@atx-linux-37>
-References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com> <1412845410.6809.3.camel@pengutronix.de> <54368AA2.9000104@opensource.altera.com> <20141009132835.GI15799@pengutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757561AbaJIPEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:04:48 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43374 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757291AbaJIPEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 11:04:35 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH v4 02/16] powerpc/cell: Move data segment faulting code out of cell platform
+In-Reply-To: <1412758505-23495-3-git-send-email-mikey@neuling.org>
+References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-3-git-send-email-mikey@neuling.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 09 Oct 2014 20:34:26 +0530
+Message-ID: <877g092sjp.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR05CA0041.namprd05.prod.outlook.com (10.141.20.11) To
- DM2PR03MB320.namprd03.prod.outlook.com (10.141.54.23)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB320;
-X-Forefront-PRVS: 0359162B6D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(24454002)(199003)(377454003)(51704005)(479174003)(102836001)(46406003)(107046002)(77096002)(81156004)(64706001)(66066001)(31966008)(105586002)(42186005)(53416004)(93886004)(46102003)(15202345003)(106356001)(85306004)(101416001)(40100002)(95666004)(80022003)(4396001)(76176999)(19580395003)(86362001)(19580405001)(21056001)(50986999)(87976001)(83506001)(85852003)(69596002)(110136001)(23726002)(92726001)(50466002)(47776003)(15975445006)(20776003)(97736003)(76482002)(86152002)(120916001)(122386002)(33716001)(92566001)(99396003)(54356999);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB320;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100915-0033-0000-0000-000002320BD2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Oct 2014, Steffen Trumtrar wrote:
+Michael Neuling <mikey@neuling.org> writes:
 
-> On Thu, Oct 09, 2014 at 08:16:18AM -0500, Dinh Nguyen wrote:
-> > Hi Philipp,
-> > 
-> > On 10/9/14, 4:03 AM, Philipp Zabel wrote:
-> > > Am Mittwoch, den 08.10.2014, 21:44 -0500 schrieb
-> > > dinguyen@opensource.altera.com:
-> > >> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> > >>
-> > >> There are certain drivers that are required to get loaded very early using
-> > >> arch_initcall. An example of such a driver is the SOCFPGA's FPGA bridge driver.
-> > >> This driver has to get loaded early because it needs to enable FPGA components
-> > >> that are connected to the bridge.
-> > >>
-> > >> This FPGA bridge driver will using the reset controller API to toggle it's
-> > >> reset bits, thus, it needs the reset driver to be loaded as early as possible
-> > >> in order for it to get used properly.
-> > > 
-> > > Without knowing the details, this sounds like the wrong approach. Can't
-> > > the bridge driver return -EPROBE_DEFER until the reset controller is
-> > > available?
-> > > 
+> From: Ian Munsie <imunsie@au1.ibm.com>
+>
+> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
+> required for a particular EA and mm struct.
+>
+> This code is generically useful for other co-processors. This moves the code of
+> the cell platform so it can be used by other powerpc code. It also adds 1TB
+> segment handling which Cell didn't support.  The new function is called
+> copro_calculate_slb().
+>
+> This also moves the internal struct spu_slb to a generic struct copro_slb which
+> is now used in the Cell and copro code.  We use this new struct instead of
+> passing around esid and vsid parameters.
+>
 
-I don't think we can do deferred probing for arch_initcall.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-> > 
-> > The bridge driver is also using arch_initcall, as it also needs to get
-> > loaded early for FPGA IPs to work, and so later driver loading will work
-> > for the FPGA IPs.
-> > 
-> 
-> For the bridge driver the same is true. I guess that there *might* be
-> IP cores where you need to be very early, but that shouldn't be the normal
-> case. If the driver can't get loaded properly, the right thing would be to
-> fix the driver.
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  arch/powerpc/include/asm/copro.h       |  7 +++++
+>  arch/powerpc/include/asm/mmu-hash64.h  |  7 +++++
+>  arch/powerpc/mm/copro_fault.c          | 46 ++++++++++++++++++++++++++++
+>  arch/powerpc/mm/slb.c                  |  3 --
+>  arch/powerpc/platforms/cell/spu_base.c | 55 ++++++----------------------------
+>  5 files changed, 69 insertions(+), 49 deletions(-)
+>
+> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
+> index 51cae85..b0e6a18 100644
+> --- a/arch/powerpc/include/asm/copro.h
+> +++ b/arch/powerpc/include/asm/copro.h
+> @@ -10,7 +10,14 @@
+>  #ifndef _ASM_POWERPC_COPRO_H
+>  #define _ASM_POWERPC_COPRO_H
+>  
+> +struct copro_slb
+> +{
+> +	u64 esid, vsid;
+> +};
+> +
+>  int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+>  			  unsigned long dsisr, unsigned *flt);
+>  
+> +int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
+> +
+>  #endif /* _ASM_POWERPC_COPRO_H */
+> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
+> index d765144..aeabd02 100644
+> --- a/arch/powerpc/include/asm/mmu-hash64.h
+> +++ b/arch/powerpc/include/asm/mmu-hash64.h
+> @@ -190,6 +190,13 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
+>  
+>  #ifndef __ASSEMBLY__
+>  
+> +static inline int slb_vsid_shift(int ssize)
+> +{
+> +	if (ssize == MMU_SEGSIZE_256M)
+> +		return SLB_VSID_SHIFT;
+> +	return SLB_VSID_SHIFT_1T;
+> +}
+> +
+>  static inline int segment_shift(int ssize)
+>  {
+>  	if (ssize == MMU_SEGSIZE_256M)
+> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> index ba7df14..a15a23e 100644
+> --- a/arch/powerpc/mm/copro_fault.c
+> +++ b/arch/powerpc/mm/copro_fault.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/export.h>
+>  #include <asm/reg.h>
+> +#include <asm/copro.h>
+>  
+>  /*
+>   * This ought to be kept in sync with the powerpc specific do_page_fault
+> @@ -90,3 +91,48 @@ out_unlock:
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> +
+> +int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
+> +{
+> +	u64 vsid;
+> +	int psize, ssize;
+> +
+> +	slb->esid = (ea & ESID_MASK) | SLB_ESID_V;
+> +
+> +	switch (REGION_ID(ea)) {
+> +	case USER_REGION_ID:
+> +		pr_devel("%s: 0x%llx -- USER_REGION_ID\n", __func__, ea);
+> +		psize = get_slice_psize(mm, ea);
+> +		ssize = user_segment_size(ea);
+> +		vsid = get_vsid(mm->context.id, ea, ssize);
+> +		break;
+> +	case VMALLOC_REGION_ID:
+> +		pr_devel("%s: 0x%llx -- VMALLOC_REGION_ID\n", __func__, ea);
+> +		if (ea < VMALLOC_END)
+> +			psize = mmu_vmalloc_psize;
+> +		else
+> +			psize = mmu_io_psize;
+> +		ssize = mmu_kernel_ssize;
+> +		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
+> +		break;
+> +	case KERNEL_REGION_ID:
+> +		pr_devel("%s: 0x%llx -- KERNEL_REGION_ID\n", __func__, ea);
+> +		psize = mmu_linear_psize;
+> +		ssize = mmu_kernel_ssize;
+> +		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
+> +		break;
+> +	default:
+> +		pr_debug("%s: invalid region access at %016llx\n", __func__, ea);
+> +		return 1;
+> +	}
+> +
+> +	vsid = (vsid << slb_vsid_shift(ssize)) | SLB_VSID_USER;
+> +
+> +	vsid |= mmu_psize_defs[psize].sllp |
+> +		((ssize == MMU_SEGSIZE_1T) ? SLB_VSID_B_1T : 0);
+> +
 
-Some fpga ip drivers will need to be early (and will assume that the fpga
-was programmed by the bootloader).  We want to support that case.
+s/0/SLB_VSID_B_256M/ 
 
-> 
-> I have developed a bridge driver, too (which only needs the devicetree binding
-> docu for a v1) and I have a driver+IP core that is directly connected to the
-> bridge. I don't need any messing around with the initcalls to work properly.
-> -EPROBE_DEFER works just fine.
-
-Is this based on the "proposed fpga bridge framework" that I posted?
-What we are trying to do is update that bridge driver to use the reset driver for 
-submitting v2.
-
-Alan
-
-> 
-> What I do need however is loading the FPGA very early of course, if it is not
-> done in the bootloader.
-> 
-> Regards,
-> Steffen
-> 
+> +	slb->vsid = vsid;
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(copro_calculate_slb);
+> diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
+> index 0399a67..6e450ca 100644
+> --- a/arch/powerpc/mm/slb.c
+> +++ b/arch/powerpc/mm/slb.c
+> @@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
+>  	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
+>  }
+>  
+> -#define slb_vsid_shift(ssize)	\
+> -	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
+> -
+>  static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
+>  					 unsigned long flags)
+>  {
+> diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
+> index 2930d1e..ffcbd24 100644
+> --- a/arch/powerpc/platforms/cell/spu_base.c
+> +++ b/arch/powerpc/platforms/cell/spu_base.c
+> @@ -76,10 +76,6 @@ static LIST_HEAD(spu_full_list);
+>  static DEFINE_SPINLOCK(spu_full_list_lock);
+>  static DEFINE_MUTEX(spu_full_list_mutex);
+>  
+> -struct spu_slb {
+> -	u64 esid, vsid;
+> -};
+> -
+>  void spu_invalidate_slbs(struct spu *spu)
+>  {
+>  	struct spu_priv2 __iomem *priv2 = spu->priv2;
+> @@ -149,7 +145,7 @@ static void spu_restart_dma(struct spu *spu)
+>  	}
+>  }
+>  
+> -static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+> +static inline void spu_load_slb(struct spu *spu, int slbe, struct copro_slb *slb)
+>  {
+>  	struct spu_priv2 __iomem *priv2 = spu->priv2;
+>  
+> @@ -167,45 +163,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
+>  
+>  static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
+>  {
+> -	struct mm_struct *mm = spu->mm;
+> -	struct spu_slb slb;
+> -	int psize;
+> -
+> -	pr_debug("%s\n", __func__);
+> -
+> -	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
+> +	struct copro_slb slb;
+> +	int ret;
+>  
+> -	switch(REGION_ID(ea)) {
+> -	case USER_REGION_ID:
+> -#ifdef CONFIG_PPC_MM_SLICES
+> -		psize = get_slice_psize(mm, ea);
+> -#else
+> -		psize = mm->context.user_psize;
+> -#endif
+> -		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
+> -		break;
+> -	case VMALLOC_REGION_ID:
+> -		if (ea < VMALLOC_END)
+> -			psize = mmu_vmalloc_psize;
+> -		else
+> -			psize = mmu_io_psize;
+> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> -		break;
+> -	case KERNEL_REGION_ID:
+> -		psize = mmu_linear_psize;
+> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
+> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
+> -		break;
+> -	default:
+> -		/* Future: support kernel segments so that drivers
+> -		 * can use SPUs.
+> -		 */
+> -		pr_debug("invalid region access at %016lx\n", ea);
+> -		return 1;
+> -	}
+> -	slb.vsid |= mmu_psize_defs[psize].sllp;
+> +	ret = copro_calculate_slb(spu->mm, ea, &slb);
+> +	if (ret)
+> +		return ret;
+>  
+>  	spu_load_slb(spu, spu->slb_replace, &slb);
+>  
+> @@ -253,7 +216,7 @@ static int __spu_trap_data_map(struct spu *spu, unsigned long ea, u64 dsisr)
+>  	return 0;
+>  }
+>  
+> -static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
+> +static void __spu_kernel_slb(void *addr, struct copro_slb *slb)
+>  {
+>  	unsigned long ea = (unsigned long)addr;
+>  	u64 llp;
+> @@ -272,7 +235,7 @@ static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
+>   * Given an array of @nr_slbs SLB entries, @slbs, return non-zero if the
+>   * address @new_addr is present.
+>   */
+> -static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
+> +static inline int __slb_present(struct copro_slb *slbs, int nr_slbs,
+>  		void *new_addr)
+>  {
+>  	unsigned long ea = (unsigned long)new_addr;
+> @@ -297,7 +260,7 @@ static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
+>  void spu_setup_kernel_slbs(struct spu *spu, struct spu_lscsa *lscsa,
+>  		void *code, int code_size)
+>  {
+> -	struct spu_slb slbs[4];
+> +	struct copro_slb slbs[4];
+>  	int i, nr_slbs = 0;
+>  	/* start and end addresses of both mappings */
+>  	void *addrs[] = {
 > -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-> 
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
