@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaJIVMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:12:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59766 "EHLO
+	id S1758000AbaJIVMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:12:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59768 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaJIVM2 (ORCPT
+	with ESMTP id S1757990AbaJIVM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:12:28 -0400
+	Thu, 9 Oct 2014 17:12:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nathan Lynch <nathan_lynch@mentor.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Takashi Iwai <tiwai@suse.de>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Todd Previte <tprevite@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 152/163] ARM: 8178/1: fix set_tls for !CONFIG_KUSER_HELPERS
-Date: Thu,  9 Oct 2014 14:02:57 -0700
-Message-Id: <1412888588-26755-153-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 151/163] drm/i915: Flush the PTEs after updating them before suspend
+Date: Thu,  9 Oct 2014 14:02:56 -0700
+Message-Id: <1412888588-26755-152-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,67 +31,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Lynch <nathan_lynch@mentor.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 9cc6d9e5daaa147a9a3e31557efcb331989e77be upstream.
+commit 91e56499304f3d612053a9cf17f350868182c7d8 upstream.
 
-Joachim Eastwood reports that commit fbfb872f5f41 "ARM: 8148/1: flush
-TLS and thumbee register state during exec" causes a boot-time crash
-on a Cortex-M4 nommu system:
+As we use WC updates of the PTE, we are responsible for notifying the
+hardware when to flush its TLBs. Do so after we zap all the PTEs before
+suspend (and the BIOS tries to read our GTT).
 
-Freeing unused kernel memory: 68K (281e5000 - 281f6000)
-Unhandled exception: IPSR = 00000005 LR = fffffff1
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
-task: 29834000 ti: 29832000 task.ti: 29832000
-PC is at flush_thread+0x2e/0x40
-LR is at flush_thread+0x21/0x40
-pc : [<2800954a>] lr : [<2800953d>] psr: 4100000b
-sp : 29833d60 ip : 00000000 fp : 00000001
-r10: 00003cf8 r9 : 29b1f000 r8 : 00000000
-r7 : 29b0bc00 r6 : 29834000 r5 : 29832000 r4 : 29832000
-r3 : ffff0ff0 r2 : 29832000 r1 : 00000000 r0 : 282121f0
-xPSR: 4100000b
-CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
-[<2800afa5>] (unwind_backtrace) from [<2800a327>] (show_stack+0xb/0xc)
-[<2800a327>] (show_stack) from [<2800a963>] (__invalid_entry+0x4b/0x4c)
+Fixes a regression from
 
-The problem is that set_tls is attempting to clear the TLS location in
-the kernel-user helper page, which isn't set up on V7M.
+commit 828c79087cec61eaf4c76bb32c222fbe35ac3930
+Author: Ben Widawsky <benjamin.widawsky@intel.com>
+Date:   Wed Oct 16 09:21:30 2013 -0700
 
-Fix this by guarding the write to the kuser helper page with
-a CONFIG_KUSER_HELPERS ifdef.
+    drm/i915: Disable GGTT PTEs on GEN6+ suspend
 
-Fixes: fbfb872f5f41 ARM: 8148/1: flush TLS and thumbee register state during exec
+that survived and continue to cause harm even after
 
-Reported-by: Joachim Eastwood <manabian@gmail.com>
-Tested-by: Joachim Eastwood <manabian@gmail.com>
-Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+commit e568af1c626031925465a5caaab7cca1303d55c7
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Wed Mar 26 20:08:20 2014 +0100
+
+    drm/i915: Undo gtt scratch pte unmapping again
+
+v2: Trivial rebase.
+v3: Fixes requires pointer dances.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82340
+Tested-by: ming.yao@intel.com
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Cc: Todd Previte <tprevite@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/include/asm/tls.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/gpu/drm/i915/i915_gem_gtt.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
-index 36172ad..5f833f7 100644
---- a/arch/arm/include/asm/tls.h
-+++ b/arch/arm/include/asm/tls.h
-@@ -81,6 +81,7 @@ static inline void set_tls(unsigned long val)
- 			asm("mcr p15, 0, %0, c13, c0, 3"
- 			    : : "r" (val));
- 		} else {
-+#ifdef CONFIG_KUSER_HELPERS
- 			/*
- 			 * User space must never try to access this
- 			 * directly.  Expect your app to break
-@@ -89,6 +90,7 @@ static inline void set_tls(unsigned long val)
- 			 * entry-armv.S for details)
- 			 */
- 			*((unsigned int *)0xffff0ff0) = val;
-+#endif
- 		}
+diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i915_gem_gtt.c
+index e79720d..db362d1 100644
+--- a/drivers/gpu/drm/i915/i915_gem_gtt.c
++++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
+@@ -813,6 +813,16 @@ void i915_check_and_clear_faults(struct drm_device *dev)
+ 	POSTING_READ(RING_FAULT_REG(&dev_priv->ring[RCS]));
+ }
  
++static void i915_ggtt_flush(struct drm_i915_private *dev_priv)
++{
++	if (INTEL_INFO(dev_priv->dev)->gen < 6) {
++		intel_gtt_chipset_flush();
++	} else {
++		I915_WRITE(GFX_FLSH_CNTL_GEN6, GFX_FLSH_CNTL_EN);
++		POSTING_READ(GFX_FLSH_CNTL_GEN6);
++	}
++}
++
+ void i915_gem_suspend_gtt_mappings(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -829,6 +839,8 @@ void i915_gem_suspend_gtt_mappings(struct drm_device *dev)
+ 				       dev_priv->gtt.base.start / PAGE_SIZE,
+ 				       dev_priv->gtt.base.total / PAGE_SIZE,
+ 				       true);
++
++	i915_ggtt_flush(dev_priv);
+ }
+ 
+ void i915_gem_restore_gtt_mappings(struct drm_device *dev)
+@@ -849,7 +861,7 @@ void i915_gem_restore_gtt_mappings(struct drm_device *dev)
+ 		i915_gem_gtt_bind_object(obj, obj->cache_level);
  	}
+ 
+-	i915_gem_chipset_flush(dev);
++	i915_ggtt_flush(dev_priv);
+ }
+ 
+ int i915_gem_gtt_prepare_object(struct drm_i915_gem_object *obj)
 -- 
 1.9.1
 
