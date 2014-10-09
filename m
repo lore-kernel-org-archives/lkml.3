@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750998AbaJIEmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 00:42:16 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:64873 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaJIEmO (ORCPT
+	id S1751179AbaJIEmw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 00:42:52 -0400
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:49092 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaJIEmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 00:42:14 -0400
-Date: Thu, 9 Oct 2014 13:40:11 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net
-Cc: markh@compro.net, daeseok.youn@gmail.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Subject: [PATCH V2] staging: dgap: introduce dgap_stop()
-Message-ID: <20141009044011.GA999@devel>
+	Thu, 9 Oct 2014 00:42:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1412777266-8251-1-git-send-email-mhocko@suse.cz>
+References: <1412777266-8251-1-git-send-email-mhocko@suse.cz>
+Date: Wed, 8 Oct 2014 21:42:43 -0700
+Message-ID: <CAM_iQpVotwZ50ntff8wvoXFeq3i9k_0xw+pDkrBc0hRDF7qPTA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] OOM vs. freezer interaction fixes
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "\\Rafael J. Wysocki\\" <rjw@rjwysocki.net>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dgap_init_module() need to unwind for cleanup variables properly.
-Because dgap_init_module() calls dgap_cleanup_module() for freeing
-variables but this function is possible to free variables
-which are not allocated.
+Hi, Michal
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-V2: change ulong which is non-standard to "unsigned long".
+On Wed, Oct 8, 2014 at 7:07 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> Hi Andrew, Rafael,
+>
+> this has been originally discussed here [1] but didn't lead anywhere AFAICS
+> so I would like to resurrect them.
+>
 
- drivers/staging/dgap/dgap.c |   27 ++++++++++++++++++++++-----
- 1 files changed, 22 insertions(+), 5 deletions(-)
+Thanks a lot for taking them for me! I was busy with some networking
+stuffs and also actually waiting for Rafael's response to your patch.
 
-diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-index 7c79fe6..290ca3b 100644
---- a/drivers/staging/dgap/dgap.c
-+++ b/drivers/staging/dgap/dgap.c
-@@ -71,6 +71,7 @@ MODULE_DESCRIPTION("Driver for the Digi International EPCA PCI based product lin
- MODULE_SUPPORTED_DEVICE("dgap");
- 
- static int dgap_start(void);
-+static void dgap_stop(void);
- static void dgap_init_globals(void);
- static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
- 					int boardnum);
-@@ -479,19 +480,20 @@ static int dgap_init_module(void)
- 
- 	rc = pci_register_driver(&dgap_driver);
- 	if (rc)
--		goto err_cleanup;
-+		goto err_stop;
- 
- 	rc = dgap_create_driver_sysfiles(&dgap_driver);
- 	if (rc)
--		goto err_cleanup;
-+		goto err_unregister;
- 
- 	dgap_driver_state = DRIVER_READY;
- 
- 	return 0;
- 
--err_cleanup:
--
--	dgap_cleanup_module();
-+err_unregister:
-+	pci_unregister_driver(&dgap_driver);
-+err_stop:
-+	dgap_stop();
- 
- 	return rc;
- }
-@@ -561,6 +563,21 @@ failed_class:
- 	return rc;
- }
- 
-+static void dgap_stop(void)
-+{
-+	unsigned long lock_flags;
-+
-+	spin_lock_irqsave(&dgap_poll_lock, lock_flags);
-+	dgap_poll_stop = 1;
-+	spin_unlock_irqrestore(&dgap_poll_lock, lock_flags);
-+
-+	del_timer_sync(&dgap_poll_timer);
-+
-+	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
-+	class_destroy(dgap_class);
-+	unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
-+}
-+
- static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
- 	int rc;
--- 
-1.7.1
 
+> The first and third patch are regression fixes and they are a stable
+> material IMO. The second patch is a simple cleanup.
+>
+> The 1st patch is fixing a regression introduced in 3.3 since when OOM
+> killer is not able to kill any frozen task and live lock as a result.
+> The fix gets us back to the 3.2. As it turned out during the discussion [2]
+> this was still not 100% sufficient and that's why we need the 3rd patch.
+>
+> I was thinking about the proper 1st vs. 3rd patch ordering because
+> the 1st patch basically opens a race window fixed by the later patch.
+> Original patch from Cong Wang has covered this by cgroup_freezing(current)
+> check in should_thaw_current(). But this approach still suffers from OOM
+> vs. PM freezer interaction (OOM killer would still live lock waiting for a
+> PM frozen task this time).
+
+
+It should be very rare OOM happens during PM frozen.
+
+>
+> So I think the most straight forward way is to address only OOM vs.
+> frozen task interaction in the first patch, mark it for stable 3.3+ and
+> leave the race to a separate follow up patch which is applicable to
+> stable 3.2+ (before a3201227f803 made it inefficient).
+>
+> Switching 1st and 3rd patches would make some sense as well but then
+> it might end up even more confusing because we would be fixing a
+> non-existent issue in upstream first...
+>
+
+Agreed. Up to you, I have no strong opinions here. :)
+
+
+Again, thanks!
