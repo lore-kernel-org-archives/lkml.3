@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378AbaJIOAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:00:17 -0400
-Received: from w-smtp-out-7.wedos.net ([46.28.106.5]:48310 "EHLO
-	we2-f167.wedos.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752327AbaJIOAN (ORCPT
+	id S1757393AbaJIOAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:00:31 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:46955 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaJIOAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:00:13 -0400
-X-Greylist: delayed 728 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Oct 2014 10:00:12 EDT
-Date: Thu, 9 Oct 2014 15:47:54 +0200
-From: Josef Gajdusek <atx@atx.name>
-To: linux-usb@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: Do not re-read descriptors for wired devices in
- usb_authorize_device()
-Message-ID: <20141009134754.GA3209@dashie>
+	Thu, 9 Oct 2014 10:00:20 -0400
+Message-ID: <543694F4.3070306@linux.vnet.ibm.com>
+Date: Thu, 09 Oct 2014 16:00:20 +0200
+From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Riku Voipio <riku.voipio@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] gcov: add ARM64 to GCOV_PROFILE_ALL
+References: <1412852099-23099-1-git-send-email-riku.voipio@linaro.org>
+In-Reply-To: <1412852099-23099-1-git-send-email-riku.voipio@linaro.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100914-0025-0000-0000-000001D22E15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the usb_authorize_device() function such as that it does
-not reload the device descriptor for wired devices. The reasons for this
-are as follows:
+Looks good. Andrew, can you pick this change up via your tree?
 
-* Some devices dislike the master requesting the descriptor from them twice,
-  failing on the usb_get_device_descriptor() call with -ETIMEOUT. Observed this
-  on my Pretec 16GB flash drive (4146:ba65).
+Acked-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-* Malicious device could send two different descriptors - one before
-  authorization, used by userspace to determine whether to authorize it and
-  second to be actually used by the kernel when determining which drivers to
-  bind.
+On 09.10.2014 12:54, Riku Voipio wrote:
+> Following up the arm testing of gcov, turns out gcov on ARM64
+> works fine as well. Only change needed is adding ARM64 to Kconfig
+> depends.
+> 
+> Tested with qemu and mach-virt
+> 
+> Signed-off-by: Riku Voipio <riku.voipio@linaro.org>
+> ---
+>  kernel/gcov/Kconfig | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+> index cf66c5c..3b74087 100644
+> --- a/kernel/gcov/Kconfig
+> +++ b/kernel/gcov/Kconfig
+> @@ -35,7 +35,7 @@ config GCOV_KERNEL
+>  config GCOV_PROFILE_ALL
+>  	bool "Profile entire Kernel"
+>  	depends on GCOV_KERNEL
+> -	depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM
+> +	depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM || ARM64
+>  	default n
+>  	---help---
+>  	This options activates profiling for the entire kernel.
+> 
 
-Signed-off-by: Josef Gajdusek <atx@atx.name>
----
- drivers/usb/core/hub.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 11e80ac..c096a1a 100644
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2543,11 +2543,14 @@ int usb_authorize_device(struct usb_device *usb_dev)
- 			"can't autoresume for authorization: %d\n", result);
- 		goto error_autoresume;
- 	}
--	result = usb_get_device_descriptor(usb_dev, sizeof(usb_dev->descriptor));
--	if (result < 0) {
--		dev_err(&usb_dev->dev, "can't re-read device descriptor for "
--			"authorization: %d\n", result);
--		goto error_device_descriptor;
-+
-+	if (usb_dev->wusb) {
-+		result = usb_get_device_descriptor(usb_dev, sizeof(usb_dev->descriptor));
-+		if (result < 0) {
-+			dev_err(&usb_dev->dev, "can't re-read device descriptor for "
-+				"authorization: %d\n", result);
-+			goto error_device_descriptor;
-+		}
- 	}
- 
- 	usb_dev->authorized = 1;
 -- 
-2.0.4
+Peter Oberparleiter
+Linux on System z Development - IBM Germany
 
