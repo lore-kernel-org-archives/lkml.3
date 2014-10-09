@@ -1,176 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaJIKId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:08:33 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:14511 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaJIKIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:08:23 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 09 Oct 2014 03:06:17 -0700
-Date: Thu, 9 Oct 2014 12:08:12 +0200
-From: Thierry Reding <treding@nvidia.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-CC: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        <linux-samsung-soc@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <dri-devel@lists.freedesktop.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ville =?utf-8?B?U3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] drm/exynos: fix vblank handling during dpms off
-Message-ID: <20141009100811.GB3718@ulmo.nvidia.com>
-References: <542B9A0E.7020206@samsung.com>
- <1412151287-12845-1-git-send-email-a.hajda@samsung.com>
- <542D13CC.5000304@samsung.com>
- <542D2E7C.1020904@samsung.com>
- <542D3C96.7000400@samsung.com>
- <54362066.9000504@nvidia.com>
+	id S1753862AbaJIKKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:10:50 -0400
+Received: from mail-bl2on0148.outbound.protection.outlook.com ([65.55.169.148]:35064
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750942AbaJIKKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 06:10:42 -0400
+From: Jingchang Lu <jingchang.lu@freescale.com>
+To: <gregkh@linuxfoundation.org>
+CC: <arnd@arndb.de>, <linux-serial@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Jingchang Lu <jingchang.lu@freescale.com>,
+        Joseph Lo <josephl@nvidia.com>
+Subject: [PATCH] serial: of-serial: fix up PM ops on no_console_suspend
+Date: Thu, 9 Oct 2014 17:10:52 +0800
+Message-ID: <1412845852-26157-1-git-send-email-jingchang.lu@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(81156004)(87936001)(85852003)(106466001)(89996001)(99396003)(87286001)(105606002)(88136002)(4396001)(50226001)(80022003)(46102003)(97736003)(47776003)(21056001)(20776003)(36756003)(77156001)(62966002)(33646002)(64706001)(110136001)(104016003)(85306004)(86362001)(93916002)(229853001)(2351001)(107046002)(104166001)(50466002)(26826002)(120916001)(6806004)(95666004)(19580395003)(44976005)(84676001)(92566001)(92726001)(50986999)(76482002)(69596002)(31966008)(102836001)(19580405001)(68736004)(48376002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB471;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
-In-Reply-To: <54362066.9000504@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.2.70.118]
-X-ClientProxiedBy: UKMAIL101.nvidia.com (10.26.138.13) To
- UKMAIL101.nvidia.com (10.26.138.13)
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aVD9QWMuhilNxW9f"
-Content-Disposition: inline
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB471;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0359162B6D
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=jingchang.lu@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---aVD9QWMuhilNxW9f
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Mandatorily disabling the uart clock will cause register access
+hung on "no_console_suspend". This patch add condition check on
+it and only disable the clock with console_suspend_enabled true.
 
-On Thu, Oct 09, 2014 at 02:43:02PM +0900, Alexandre Courbot wrote:
-> On 10/02/2014 08:52 PM, Andrzej Hajda wrote:
-> >Hi,
-> >
-> >+CC possible victims
-> >
-> >On 10/02/2014 12:52 PM, Inki Dae wrote:
-> >>On 2014=EB=85=84 10=EC=9B=94 02=EC=9D=BC 17:58, Joonyoung Shim wrote:
-> >>>Hi Andrzej,
-> >>>
-> >>>On 10/01/2014 05:14 PM, Andrzej Hajda wrote:
-> >>>>The patch disables vblanks during dpms off only if pagefilp has
-> >>>>not been finished. It also replaces drm_vblank_off with drm_crtc_vbla=
-nk_put.
-> >>>>It fixes issue with page_flip ioctl not being able to acquire vblank =
-counter.
-> >>>This problem isn't related with pageflip, it just causes from
-> >>>7ffd7a68511c710b84db3548a1997fd2625f580a commit (drm: Always reject
-> >>>drm_vblank_get() after drm_vblank_off()).
-> >>>
-> >>>We need to use drm_vblank_on() as a counterpart to drm_vblank_off()
-> >>>after the commit .
-> >
-> >This patch should break also other drivers, it seems at least following
-> >drms could be affected:
-> >armada, sti, tegra.
->=20
-> Indeed we (tegra) have just been hit by this. The problem seems to come f=
-rom
-> the fact that we have been using drm_vblank_pre_modeset,
-> drm_vblank_post_modeset and drm_vblank_off conjointly. All these functions
-> depend on the value of vblank->inmodeset, and 7ffd7a68511 increases the
-> vblank reference counter only in drm_vblank_off, which can result in the
-> acquired reference never being released.
->=20
-> The following seems to fix this for Tegra, by stopping using
-> drm_vblank_pre/post_modeset and relying on drm_vblank_off/on instead:
->=20
-> diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-> index b08df07cad47..3955d81236d0 100644
-> --- a/drivers/gpu/drm/tegra/dc.c
-> +++ b/drivers/gpu/drm/tegra/dc.c
-> @@ -739,7 +739,6 @@ static const struct drm_crtc_funcs tegra_crtc_funcs =
-=3D {
->=20
->  static void tegra_crtc_disable(struct drm_crtc *crtc)
->  {
-> -       struct tegra_dc *dc =3D to_tegra_dc(crtc);
->         struct drm_device *drm =3D crtc->dev;
->         struct drm_plane *plane;
->=20
-> @@ -755,7 +754,7 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
->                 }
->         }
->=20
-> -       drm_vblank_off(drm, dc->pipe);
-> +       drm_crtc_vblank_off(crtc);
->  }
->=20
->  static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
-> @@ -844,7 +843,7 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
->         u32 value;
->         int err;
->=20
-> -       drm_vblank_pre_modeset(crtc->dev, dc->pipe);
-> +       drm_crtc_vblank_off(crtc);
->=20
->         err =3D tegra_crtc_setup_clk(crtc, mode);
->         if (err) {
-> @@ -946,7 +945,7 @@ static void tegra_crtc_commit(struct drm_crtc *crtc)
->         value =3D GENERAL_ACT_REQ | WIN_A_ACT_REQ;
->         tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
->=20
-> -       drm_vblank_post_modeset(crtc->dev, dc->pipe);
-> +       drm_crtc_vblank_on(crtc);
->  }
->=20
->  static void tegra_crtc_load_lut(struct drm_crtc *crtc)
->=20
-> Thierry, does this look ok to you?
+Signed-off-by: Joseph Lo <josephl@nvidia.com>
+Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
+---
+ drivers/tty/serial/of_serial.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Yes, that looks like almost the same patch that I sent out yesterday.
-The difference is that I didn't replace the drm_vblank_pre_modeset()
-call with drm_vblank_off() like you did, but rather just dropped the
-former.
+diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+index 8bc2563..a765399 100644
+--- a/drivers/tty/serial/of_serial.c
++++ b/drivers/tty/serial/of_serial.c
+@@ -246,7 +246,7 @@ static int of_serial_suspend(struct device *dev)
+ 	struct of_serial_info *info = dev_get_drvdata(dev);
+ 
+ 	serial8250_suspend_port(info->line);
+-	if (info->clk)
++	if (info->clk && console_suspend_enabled)
+ 		clk_disable_unprepare(info->clk);
+ 
+ 	return 0;
+@@ -256,7 +256,7 @@ static int of_serial_resume(struct device *dev)
+ {
+ 	struct of_serial_info *info = dev_get_drvdata(dev);
+ 
+-	if (info->clk)
++	if (info->clk && console_suspend_enabled)
+ 		clk_prepare_enable(info->clk);
+ 
+ 	serial8250_resume_port(info->line);
+-- 
+1.8.0
 
-I /think/ your version is more correct in that regard.
-
-Thierry
-
-> But there might be another issue, which is that calls to drm_vblank_get()
-> will return -EINVAL if invoked between drm_blank_off and drm_blank_on. Is
-> this really the desired behavior? Can it at least happen? If so, how are
-> drivers supposed to react to this situation?
-
-It shouldn't happen. If drm_vblank_off() and drm_vblank_on() are called
-around a modeset they should never conflict with drm_vblank_get(), at
-least on Tegra, because the modeset and page-flip IOCTLs will be
-serialized.
-
-Thierry
-
---aVD9QWMuhilNxW9f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUNl6LAAoJEN0jrNd/PrOhw0cQAJNmTPQtDWz8KJcJb+qJ7Y4p
-6iRUNRnuePh0KKQOz2rPcO6x/OJMzKPBbdC7cGCJTjYafCxZbHGBMi/UGlmXKpFE
-t0Cyn9DTjTLv6u1J8WtN3whAHYEZXWLfsy5Fr4AwK8ylrAVIbbO/ynSjSIwDgRBw
-RJzHkz8Dv3MNHJ02fGhzCNX1ScVG1+Li49ZROP0UxzluepVEHRZG8Pmbmc5UDV2H
-n5myWldjW16cuIePT8bHOMmen0CzjO9QMe1RaVB7XeMJY2J7t1ncBsJdRbRFn2WM
-kHASTs60I0F4wGg8Fh0+X0MCqrnazVrUNXBn3hqJ8+gdji1wONmWvOGs9GQL6GGk
-JGS91kgxMlN7fgq5U2UXg6rO2Er93BccwvxTbT5l/zOf8O5M1oRf0lXdSi165q9M
-/5o5ZCtGyX63eFDGDMIAH5oSlH7JawV6azxzqpVlIlg0ucqIxGcKPDzNWovwZS9t
-RkeKD1uaEo+2jJTtiRi9G08k89YT0QjZ/jlVQO5HIyWVwCZEL7qHXQIVgWZSdbbe
-J4fAvGiy7OjFpeh7VUWoEVlg4fL/A6n6scz9QppOMhP/zo1NxWU7GSae79GFCxCF
-yWGLowPz7DRm0f9gWR1zLww3jOipV6fWf6Lo+amPYfa2nEOo3/mLDF4GejnMTWCY
-8fBp5iKV+cC55+M5CFhr
-=TNgT
------END PGP SIGNATURE-----
-
---aVD9QWMuhilNxW9f--
