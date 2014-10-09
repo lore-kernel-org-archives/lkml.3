@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbaJIVFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:05:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58990 "EHLO
+	id S1757236AbaJIVFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:05:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59008 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaJIVF0 (ORCPT
+	with ESMTP id S1756512AbaJIVFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:05:26 -0400
+	Thu, 9 Oct 2014 17:05:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 131/163] md/raid1: clean up request counts properly in close_sync()
-Date: Thu,  9 Oct 2014 14:02:36 -0700
-Message-Id: <1412888588-26755-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 136/163] md/raid1: fix_read_error should act on all non-faulty devices.
+Date: Thu,  9 Oct 2014 14:02:41 -0700
+Message-Id: <1412888588-26755-137-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: NeilBrown <neilb@suse.de>
 
-commit 669cc7ba77864e7b1ac39c9f2b2afb8730f341f4 upstream.
+commit b8cb6b4c121e1bf1963c16ed69e7adcb1bc301cd upstream.
 
-If there are outstanding writes when close_sync is called,
-the change to ->start_next_window might cause them to
-decrement the wrong counter when they complete.  Fix this
-by merging the two counters into the one that will be decremented.
+If a devices is being recovered it is not InSync and is not Faulty.
 
-Having an incorrect value in a counter can cause raise_barrier()
-to hangs, so this is suitable for -stable.
+If a read error is experienced on that device, fix_read_error()
+will be called, but it ignores non-InSync devices.  So it will
+neither fix the error nor fail the device.
 
-Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+It is incorrect that fix_read_error() ignores non-InSync devices.
+It should only ignore Faulty devices.  So fix it.
+
+This became a bug when we allowed reading from a device that was being
+recovered.  It is suitable for any subsequent -stable kernel.
+
+Fixes: da8840a747c0dbf49506ec906757a6b87b9741e9
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Tested-by: Alexander Lyakas <alex.bolshoy@gmail.com>
 Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid1.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/md/raid1.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index e124f01..2414a79 100644
+index 2cf4f69..e4885c0 100644
 --- a/drivers/md/raid1.c
 +++ b/drivers/md/raid1.c
-@@ -1544,8 +1544,13 @@ static void close_sync(struct r1conf *conf)
- 	mempool_destroy(conf->r1buf_pool);
- 	conf->r1buf_pool = NULL;
- 
-+	spin_lock_irq(&conf->resync_lock);
- 	conf->next_resync = 0;
- 	conf->start_next_window = MaxSector;
-+	conf->current_window_requests +=
-+		conf->next_window_requests;
-+	conf->next_window_requests = 0;
-+	spin_unlock_irq(&conf->resync_lock);
- }
- 
- static int raid1_spare_active(struct mddev *mddev)
+@@ -2154,7 +2154,7 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags))
++			    !test_bit(Faulty, &rdev->flags))
+ 				r1_sync_page_io(rdev, sect, s,
+ 						conf->tmppage, WRITE);
+ 		}
+@@ -2166,7 +2166,7 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
+ 			d--;
+ 			rdev = conf->mirrors[d].rdev;
+ 			if (rdev &&
+-			    test_bit(In_sync, &rdev->flags)) {
++			    !test_bit(Faulty, &rdev->flags)) {
+ 				if (r1_sync_page_io(rdev, sect, s,
+ 						    conf->tmppage, READ)) {
+ 					atomic_add(s, &rdev->corrected_errors);
 -- 
 1.9.1
 
