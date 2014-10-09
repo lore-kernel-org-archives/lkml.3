@@ -1,158 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751043AbaJIFfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 01:35:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40897 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaJIFfm (ORCPT
+	id S1751060AbaJIFnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 01:43:39 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:11468 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705AbaJIFnd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 01:35:42 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <54361E7E.5090006@jp.fujitsu.com>
-Date: Thu, 9 Oct 2014 14:34:54 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 9 Oct 2014 01:43:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 08 Oct 2014 22:43:19 -0700
+Message-ID: <54362066.9000504@nvidia.com>
+Date: Thu, 9 Oct 2014 14:43:02 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Wanpeng Li <kernellwp@gmail.com>, <mingo@redhat.com>,
-        <peterz@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <riel@redhat.com>, <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched/fair: Care divide error in update_task_scan_period()
-References: <5434DCFF.1040208@jp.fujitsu.com> <54352545.8060605@gmail.com>
-In-Reply-To: <54352545.8060605@gmail.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+To: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Thierry Reding <treding@nvidia.com>
+CC: <linux-samsung-soc@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        =?UTF-8?B?VmlsbGUgU3lyasOkbMOk?= <ville.syrjala@linux.intel.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] drm/exynos: fix vblank handling during dpms off
+References: <542B9A0E.7020206@samsung.com> <1412151287-12845-1-git-send-email-a.hajda@samsung.com> <542D13CC.5000304@samsung.com> <542D2E7C.1020904@samsung.com> <542D3C96.7000400@samsung.com>
+In-Reply-To: <542D3C96.7000400@samsung.com>
+X-NVConfidentiality: public
+X-Originating-IP: [10.19.57.128]
+X-ClientProxiedBy: DRBGMAIL104.nvidia.com (10.18.16.23) To
+ HKMAIL102.nvidia.com (10.18.16.11)
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/08 20:51), Wanpeng Li wrote:
-> 
-> $BP2(B 10/8/14, 2:43 PM, Yasuaki Ishimatsu $B<LF;(B:
->> While offling node by hot removing memory, the following divide error
->> occurs:
->>
->>    divide error: 0000 [#1] SMP
->>    [...]
->>    Call Trace:
->>     [...] handle_mm_fault
->>     [...] ? try_to_wake_up
->>     [...] ? wake_up_state
->>     [...] __do_page_fault
->>     [...] ? do_futex
->>     [...] ? put_prev_entity
->>     [...] ? __switch_to
->>     [...] do_page_fault
->>     [...] page_fault
->>    [...]
->>    RIP  [<ffffffff810a7081>] task_numa_fault
->>     RSP <ffff88084eb2bcb0>
->>
->> The issue occurs as follows:
->>    1. When page fault occurs and page is allocated from node 1,
->>       task_struct->numa_faults_buffer_memory[] of node 1 is
->>       incremented and p->numa_faults_locality[] is also incremented
->>       as follows:
->>
->>       o numa_faults_buffer_memory[]       o numa_faults_locality[]
->>                NR_NUMA_HINT_FAULT_TYPES
->>               |      0     |     1     |
->>       ----------------------------------  ----------------------
->>        node 0 |      0     |     0     |   remote |      0     |
->>        node 1 |      0     |     1     |   locale |      1     |
->>       ----------------------------------  ----------------------
->>
->>    2. node 1 is offlined by hot removing memory.
->>
->>    3. When page fault occurs, fault_types[] is calculated by using
->>       p->numa_faults_buffer_memory[] of all online nodes in
->>       task_numa_placement(). But node 1 was offline by step 2. So
->>       the fault_types[] is calculated by using only
->>       p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
->>       are set to 0.
->>
->>    4. The values(0) of fault_types[] pass to update_task_scan_period().
->>
->>    5. numa_faults_locality[1] is set to 1. So the following division is
->>       calculated.
->>
->>          static void update_task_scan_period(struct task_struct *p,
->>                                  unsigned long shared, unsigned long private){
->>          ...
->>                  ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
->>          }
->>
->>    6. But both of private and shared are set to 0. So divide error
->>       occurs here.
->>
->>    The divide error is rare case because the trigger is node offline.
->>    By this patch, when both of private and shared are set to 0, diff
->>    is just set to 0, not calculating the division.
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>   kernel/sched/fair.c | 30 +++++++++++++++++++-----------
->>   1 file changed, 19 insertions(+), 11 deletions(-)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index bfa3c86..fb7dc3f 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -1496,18 +1496,26 @@ static void update_task_scan_period(struct task_struct *p,
->>   			slot = 1;
->>   		diff = slot * period_slot;
->>   	} else {
->> -		diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
->> +		if (unlikely((private + shared) == 0))
->> +			/*
->> +			 * This is a rare case. The trigger is node offline.
->> +			 */
->> +			diff = 0;
->> +		else {
->> +			diff = -(NUMA_PERIOD_THRESHOLD - ratio) * period_slot;
->>
->> -		/*
->> -		 * Scale scan rate increases based on sharing. There is an
->> -		 * inverse relationship between the degree of sharing and
->> -		 * the adjustment made to the scanning period. Broadly
->> -		 * speaking the intent is that there is little point
->> -		 * scanning faster if shared accesses dominate as it may
->> -		 * simply bounce migrations uselessly
->> -		 */
->> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
->> -		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
->> +			/*
->> +			 * Scale scan rate increases based on sharing. There is
->> +			 * an inverse relationship between the degree of sharing
->> +			 * and the adjustment made to the scanning period.
->> +			 * Broadly speaking the intent is that there is little
->> +			 * point scanning faster if shared accesses dominate as
->> +			 * it may simply bounce migrations uselessly
->> +			 */
->> +			ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS,
->> +							(private + shared));
->> +			diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
->> +		}
->>   	}
-> 
+On 10/02/2014 08:52 PM, Andrzej Hajda wrote:
+> Hi,
+>
+> +CC possible victims
+>
+> On 10/02/2014 12:52 PM, Inki Dae wrote:
+>> On 2014년 10월 02일 17:58, Joonyoung Shim wrote:
+>>> Hi Andrzej,
+>>>
+>>> On 10/01/2014 05:14 PM, Andrzej Hajda wrote:
+>>>> The patch disables vblanks during dpms off only if pagefilp has
+>>>> not been finished. It also replaces drm_vblank_off with drm_crtc_vblank_put.
+>>>> It fixes issue with page_flip ioctl not being able to acquire vblank counter.
+>>> This problem isn't related with pageflip, it just causes from
+>>> 7ffd7a68511c710b84db3548a1997fd2625f580a commit (drm: Always reject
+>>> drm_vblank_get() after drm_vblank_off()).
+>>>
+>>> We need to use drm_vblank_on() as a counterpart to drm_vblank_off()
+>>> after the commit .
+>
+> This patch should break also other drivers, it seems at least following
+> drms could be affected:
+> armada, sti, tegra.
 
-> How about just
-> 
-> ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+Indeed we (tegra) have just been hit by this. The problem seems to come 
+from the fact that we have been using drm_vblank_pre_modeset, 
+drm_vblank_post_modeset and drm_vblank_off conjointly. All these 
+functions depend on the value of vblank->inmodeset, and 7ffd7a68511 
+increases the vblank reference counter only in drm_vblank_off, which can 
+result in the acquired reference never being released.
 
-Thank you for providing sample code. Rik also provided other idea.
-So I am confirming which is better idea.
+The following seems to fix this for Tegra, by stopping using 
+drm_vblank_pre/post_modeset and relying on drm_vblank_off/on instead:
 
-Thanks,
-Yasuaki Ishimatsu
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index b08df07cad47..3955d81236d0 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -739,7 +739,6 @@ static const struct drm_crtc_funcs tegra_crtc_funcs = {
 
-> 
-> 
-> Regards,
-> Wanpeng Li
-> 
->>   	p->numa_scan_period = clamp(p->numa_scan_period + diff,
-> 
+  static void tegra_crtc_disable(struct drm_crtc *crtc)
+  {
+-       struct tegra_dc *dc = to_tegra_dc(crtc);
+         struct drm_device *drm = crtc->dev;
+         struct drm_plane *plane;
 
+@@ -755,7 +754,7 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
+                 }
+         }
 
+-       drm_vblank_off(drm, dc->pipe);
++       drm_crtc_vblank_off(crtc);
+  }
+
+  static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
+@@ -844,7 +843,7 @@ static int tegra_crtc_mode_set(struct drm_crtc *crtc,
+         u32 value;
+         int err;
+
+-       drm_vblank_pre_modeset(crtc->dev, dc->pipe);
++       drm_crtc_vblank_off(crtc);
+
+         err = tegra_crtc_setup_clk(crtc, mode);
+         if (err) {
+@@ -946,7 +945,7 @@ static void tegra_crtc_commit(struct drm_crtc *crtc)
+         value = GENERAL_ACT_REQ | WIN_A_ACT_REQ;
+         tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
+
+-       drm_vblank_post_modeset(crtc->dev, dc->pipe);
++       drm_crtc_vblank_on(crtc);
+  }
+
+  static void tegra_crtc_load_lut(struct drm_crtc *crtc)
+
+Thierry, does this look ok to you?
+
+But there might be another issue, which is that calls to 
+drm_vblank_get() will return -EINVAL if invoked between drm_blank_off 
+and drm_blank_on. Is this really the desired behavior? Can it at least 
+happen? If so, how are drivers supposed to react to this situation?
