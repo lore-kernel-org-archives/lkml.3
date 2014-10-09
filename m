@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770AbaJIVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:03:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58912 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaJIVD1 (ORCPT
+	id S932637AbaJIVwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:52:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37197 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaJIVw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:03:27 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 002/163] percpu: fix pcpu_alloc_pages() failure path
-Date: Thu,  9 Oct 2014 14:00:27 -0700
-Message-Id: <1412888588-26755-3-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 9 Oct 2014 17:52:29 -0400
+Date: Thu, 9 Oct 2014 14:52:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jslaby@suse.cz, heiko@sntech.de,
+        yingjoe.chen@gmail.com, ibanezchen@gmail.com,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
+Message-ID: <20141009215228.GA23507@kroah.com>
+References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
+> The calculation of value quot for highspeed register set to three
+> was wrong. This patch fixes the calculation so that the serial port
+> for baudrates bigger then 576000 baud is working correctly.
+> 
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  drivers/tty/serial/8250/8250_mtk.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+> index 1c4b4bf..4376c48 100644
+> --- a/drivers/tty/serial/8250/8250_mtk.c
+> +++ b/drivers/tty/serial/8250/8250_mtk.c
+> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
+>  		/* Set to highest baudrate supported */
+>  		if (baud >= 1152000)
+>  			baud = 921600;
+> -		quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
+> +		quot = (port->uartclk / (256 * baud)) + 1;
+>  	}
+>  
+>  	/*
 
-------------------
+Has this always been incorrect, or was it caused by a specific patch?
+Should it go to the stable kernels?  If so, how far back?
 
-From: Tejun Heo <tj@kernel.org>
+thanks,
 
-commit f0d279654dea22b7a6ad34b9334aee80cda62cde upstream.
-
-When pcpu_alloc_pages() fails midway, pcpu_free_pages() is invoked to
-free what has already been allocated.  The invocation is across the
-whole requested range and pcpu_free_pages() will try to free all
-non-NULL pages; unfortunately, this is incorrect as
-pcpu_get_pages_and_bitmap(), unlike what its comment suggests, doesn't
-clear the pages array and thus the array may have entries from the
-previous invocations making the partial failure path free incorrect
-pages.
-
-Fix it by open-coding the partial freeing of the already allocated
-pages.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- mm/percpu-vm.c | 21 +++++++++++++++------
- 1 file changed, 15 insertions(+), 6 deletions(-)
-
-diff --git a/mm/percpu-vm.c b/mm/percpu-vm.c
-index 3707c71..8d9bb2c 100644
---- a/mm/percpu-vm.c
-+++ b/mm/percpu-vm.c
-@@ -108,7 +108,7 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- 			    int page_start, int page_end)
- {
- 	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
--	unsigned int cpu;
-+	unsigned int cpu, tcpu;
- 	int i;
- 
- 	for_each_possible_cpu(cpu) {
-@@ -116,14 +116,23 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
- 			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
- 
- 			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
--			if (!*pagep) {
--				pcpu_free_pages(chunk, pages, populated,
--						page_start, page_end);
--				return -ENOMEM;
--			}
-+			if (!*pagep)
-+				goto err;
- 		}
- 	}
- 	return 0;
-+
-+err:
-+	while (--i >= page_start)
-+		__free_page(pages[pcpu_page_idx(cpu, i)]);
-+
-+	for_each_possible_cpu(tcpu) {
-+		if (tcpu == cpu)
-+			break;
-+		for (i = page_start; i < page_end; i++)
-+			__free_page(pages[pcpu_page_idx(tcpu, i)]);
-+	}
-+	return -ENOMEM;
- }
- 
- /**
--- 
-1.9.1
-
+greg k-h
