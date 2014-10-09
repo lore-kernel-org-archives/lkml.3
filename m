@@ -1,95 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758326AbaJIVmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:42:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59108 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757326AbaJIVHi (ORCPT
+	id S1758398AbaJIVm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:42:57 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:34759 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756036AbaJIVmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:07:38 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 039/163] imx-drm: ipuv3-plane: fix ipu_plane_dpms()
-Date: Thu,  9 Oct 2014 14:01:04 -0700
-Message-Id: <1412888588-26755-40-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 9 Oct 2014 17:42:54 -0400
+Message-ID: <5437015B.3010205@gmail.com>
+Date: Thu, 09 Oct 2014 14:42:51 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
+CC: linux-mips@linux-mips.org, Zubair.Kakakhel@imgtec.com,
+        geert+renesas@glider.be, david.daney@cavium.com, peterz@infradead.org,
+        paul.gortmaker@windriver.com, davidlohr@hp.com, macro@linux-mips.org,
+        chenhc@lemote.com, richard@nod.at, zajec5@gmail.com,
+        james.hogan@imgtec.com, keescook@chromium.org, alex@alex-smith.me.uk,
+        tglx@linutronix.de, blogic@openwrt.org, jchandra@broadcom.com,
+        paul.burton@imgtec.com, qais.yousef@imgtec.com,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
+        markos.chandras@imgtec.com, dengcheng.zhu@imgtec.com,
+        manuel.lauss@gmail.com, akpm@linux-foundation.org,
+        lars.persson@axis.com
+Subject: Re: [PATCH v2 0/3] MIPS executable stack protection
+References: <20141009195030.31230.58695.stgit@linux-yegoshin>
+In-Reply-To: <20141009195030.31230.58695.stgit@linux-yegoshin>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+On 10/09/2014 01:00 PM, Leonid Yegoshin wrote:
+> The following series implements an executable stack protection in MIPS.
+>
+> It sets up a per-thread 'VDSO' page and appropriate TLB support.
+> Page is set write-protected from user and is maintained via kernel VA.
+> MIPS FPU emulation is shifted to new page and stack is relieved for
+> execute protection as is as all data pages in default setup during ELF
+> binary initialization. The real protection is controlled by GLIBC and
+> it can do stack protected now as it is done in other architectures and
+> I learned today that GLIBC team is ready for this.
 
-------------------
+What does it mean to be 'ready'?  If they committed patches before there 
+was kernel support, that it putting the cart before the horse.  GlibC's 
+state cannot be used as valid reason for committing major kernel 
+changes.  There would be no regression in any GLibC based system as a 
+result of not merging this patch.
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+>
+> Note: actual execute-protection depends from HW capability, of course.
+>
+> This patch is required for MIPS32/64 R2 emulation on MIPS R6 architecture.
+> Without it 'ssh-keygen' crashes pretty fast on attempt to execute instruction
+> in stack.
 
-commit 3a44a2058747d71385eb69691c7f977cb58cc293 upstream.
+There is much more blocking MIPS32/64 R2 emulation on MIPS R6 than just 
+this patch isn't there?
 
-When unbinding imx-drm, the following oops was observed:
+Also, if you are supporting MIPS R6, this patch doesn't even work, 
+because it doesn't handle PC relative instructions at all.
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000004
-pgd = e995c000
-[00000004] *pgd=4fea5831
-Internal error: Oops: 817 [#1] SMP ARM
-Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma snd_soc_sgtl5000 imx_sdma imx2_wdt imx_ldb(C) imx_thermal snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
-CPU: 1 PID: 779 Comm: bash Tainted: G         C    3.16.0-rc2+ #1230
-task: ea9eb180 ti: ea378000 task.ti: ea378000
-PC is at ipu_dp_put+0x10/0x18
-LR is at ipu_plane_dpms+0x60/0x8c
-pc : [<c0350d20>]    lr : [<c04bd9e8>]    psr: 200f0013
-sp : ea379d80  ip : ea379d90  fp : ea379d8c
-r10: 00100100  r9 : 00000000  r8 : 00200200
-r7 : e9ba0264  r6 : e9ba01f8  r5 : 00000000  r4 : ea34b800
-r3 : 00000000  r2 : 00000000  r1 : 0000009b  r0 : 00000000
-Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 10c53c7d  Table: 3995c04a  DAC: 00000015
-Process bash (pid: 779, stack limit = 0xea378240)
-Stack: (0xea379d80 to 0xea37a000)
-...
-Backtrace:
-[<c0350d10>] (ipu_dp_put) from [<c04bd9e8>] (ipu_plane_dpms+0x60/0x8c)
-[<c04bd988>] (ipu_plane_dpms) from [<c04bda40>] (ipu_disable_plane+0x2c/0x60)
-[<c04bda14>] (ipu_disable_plane) from [<c04bda9c>] (ipu_plane_destroy+0x28/0x60)
-[<c04bda74>] (ipu_plane_destroy) from [<c033ff84>] (drm_mode_config_cleanup+0x1b8/0x250)
-[<c033fdcc>] (drm_mode_config_cleanup) from [<c04bc234>] (imx_drm_driver_unload+0x44/0x4c)
-[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
-[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
-[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
-[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
-...
-Code: e1a0c00d e92dd800 e24cb004 e3a03000 (e5c03004)
+>
+> v2 changes:
+>      - Added an optimization during mmap switch - doesn't switch if the same
+>        thread is rescheduled and other threads don't intervene (Peter Zijlstra)
+>      - Fixed uMIPS support (Paul Burton)
+>      - Added unwinding of VDSO emulation stack at signal handler invocation,
+>        hiding an emulation page (Andy Lutomirski note in other patch comments)
+>
+> ---
+>
+> Leonid Yegoshin (3):
+>        MIPS: mips_flush_cache_range is added
+>        MIPS: Setup an instruction emulation in VDSO protected page instead of user stack
+>        MIPS: set stack/data protection as non-executable
+>
 
-This is caused by a missing check in ipu_plane_dpms for a NULL pointer.
+The recent discussions on this subject, including many comments from 
+Imgtec e-mail addresses, brought to light the need to use an instruction 
+set emulator for newer MIPSr6 ISA processors.
 
-Fixes: b8d181e408af ("staging: drm/imx: add drm plane support")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/staging/imx-drm/ipuv3-plane.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+In light of this, why does it make sense to merge this patch, instead of 
+taking the approach of emulating the instructions in the delay slot?
 
-diff --git a/drivers/staging/imx-drm/ipuv3-plane.c b/drivers/staging/imx-drm/ipuv3-plane.c
-index d97454a..69ed0d9 100644
---- a/drivers/staging/imx-drm/ipuv3-plane.c
-+++ b/drivers/staging/imx-drm/ipuv3-plane.c
-@@ -269,7 +269,8 @@ static void ipu_plane_dpms(struct ipu_plane *ipu_plane, int mode)
- 
- 		ipu_idmac_put(ipu_plane->ipu_ch);
- 		ipu_dmfc_put(ipu_plane->dmfc);
--		ipu_dp_put(ipu_plane->dp);
-+		if (ipu_plane->dp)
-+			ipu_dp_put(ipu_plane->dp);
- 	}
- }
- 
--- 
-1.9.1
+David Daney
+
+
+>
+>   arch/mips/include/asm/cacheflush.h   |    3 +
+>   arch/mips/include/asm/fpu_emulator.h |    2
+>   arch/mips/include/asm/mmu.h          |    3 +
+>   arch/mips/include/asm/page.h         |    2
+>   arch/mips/include/asm/processor.h    |    2
+>   arch/mips/include/asm/switch_to.h    |   14 +++
+>   arch/mips/include/asm/thread_info.h  |    3 +
+>   arch/mips/include/asm/tlbmisc.h      |    1
+>   arch/mips/include/asm/vdso.h         |    3 +
+>   arch/mips/kernel/process.c           |    7 ++
+>   arch/mips/kernel/signal.c            |    4 +
+>   arch/mips/kernel/vdso.c              |   41 +++++++++
+>   arch/mips/math-emu/cp1emu.c          |    8 +-
+>   arch/mips/math-emu/dsemul.c          |  153 ++++++++++++++++++++++++++++------
+>   arch/mips/mm/c-octeon.c              |    8 ++
+>   arch/mips/mm/c-r3k.c                 |    8 ++
+>   arch/mips/mm/c-r4k.c                 |   43 ++++++++++
+>   arch/mips/mm/c-tx39.c                |    9 ++
+>   arch/mips/mm/cache.c                 |    4 +
+>   arch/mips/mm/fault.c                 |    5 +
+>   arch/mips/mm/tlb-r4k.c               |   42 +++++++++
+>   21 files changed, 333 insertions(+), 32 deletions(-)
+>
 
