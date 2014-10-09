@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472AbaJIQO5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:14:57 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:42781 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaJIQOt (ORCPT
+	id S1757361AbaJIQS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:18:57 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:50904 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaJIQSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:14:49 -0400
-Date: Thu, 9 Oct 2014 09:14:44 -0700
+	Thu, 9 Oct 2014 12:18:48 -0400
 From: Guenter Roeck <linux@roeck-us.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
-Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
- container
-Message-ID: <20141009161444.GG31987@roeck-us.net>
-References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
- <20141008223403.GA24828@roeck-us.net>
- <20141008223601.GP4609@sirena.org.uk>
- <20141008225912.GA25134@roeck-us.net>
- <20141008234541.GQ4609@sirena.org.uk>
- <20141009000555.GA27476@roeck-us.net>
- <20141009001213.GS4609@sirena.org.uk>
- <20141009002531.GA27920@roeck-us.net>
- <20141009155440.GV4609@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141009155440.GV4609@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] mfd: ab8500-sysctrl: Drop ab8500_restart
+Date: Thu,  9 Oct 2014 09:18:38 -0700
+Message-Id: <1412871518-11359-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 04:54:40PM +0100, Mark Brown wrote:
-> On Wed, Oct 08, 2014 at 05:25:31PM -0700, Guenter Roeck wrote:
-> > On Thu, Oct 09, 2014 at 01:12:13AM +0100, Mark Brown wrote:
-> 
-> > > We'll do something, just a question of what and what the default is.
-> 
-> > Ok. Note that a boot parameter would not work well for our use case,
-> > so it would be great if we can find something else.
-> 
-> Could you explain why please?
-> 
-Some of the system are loaded from u-boot. We can technically change the
-environment, but that would not be persistent. Product requirement is that the
-default (hard-coded) environment has to be the one that is used. And changing
-u-boot in those systems is more difficult than getting an audience with the
-Pope - believe me, we went through that. Unless there is a fatal problem,
-it simply won't be approved.
+ab8500_restart is not called from anywhere in the kernel, so drop it.
 
-On x86 systems, which are booted through grub, we have a similar problem.
-The boot menu is secured and for all practical purposes untouchable.
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/mfd/ab8500-sysctrl.c              | 57 -------------------------------
+ include/linux/mfd/abx500/ab8500-sysctrl.h |  1 -
+ 2 files changed, 58 deletions(-)
 
-All that makes it much simpler to carry a one-line patch to remove the output
-from the log. I may try to do without it and keep the message, but I am quite
-sure that someone will complain and we'll have to do it.
+diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
+index 8e0dae5..94dbcdd 100644
+--- a/drivers/mfd/ab8500-sysctrl.c
++++ b/drivers/mfd/ab8500-sysctrl.c
+@@ -85,63 +85,6 @@ shutdown:
+ 	}
+ }
+ 
+-/*
+- * Use the AB WD to reset the platform. It will perform a hard
+- * reset instead of a soft reset. Write the reset reason to
+- * the AB before reset, which can be read upon restart.
+- */
+-void ab8500_restart(char mode, const char *cmd)
+-{
+-	struct ab8500_platform_data *plat;
+-	struct ab8500_sysctrl_platform_data *pdata;
+-	u16 reason = 0;
+-	u8 val;
+-
+-	if (sysctrl_dev == NULL) {
+-		pr_err("%s: sysctrl not initialized\n", __func__);
+-		return;
+-	}
+-
+-	plat = dev_get_platdata(sysctrl_dev->parent);
+-	pdata = plat->sysctrl;
+-	if (pdata && pdata->reboot_reason_code)
+-		reason = pdata->reboot_reason_code(cmd);
+-	else
+-		pr_warn("[%s] No reboot reason set. Default reason %d\n",
+-			__func__, reason);
+-
+-	/*
+-	 * Disable RTC alarm, just a precaution so that no alarm
+-	 * is running when WD reset is executed.
+-	 */
+-	abx500_get_register_interruptible(sysctrl_dev, AB8500_RTC,
+-		RTC_CTRL , &val);
+-	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+-		RTC_CTRL , (val & ~RTC_ALARM_ENABLE));
+-
+-	/*
+-	 * Android is not using the RTC alarm registers during reboot
+-	 * so we borrow them for writing the reason of reset
+-	 */
+-
+-	/* reason[8 LSB] */
+-	val = reason & 0xFF;
+-	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+-		AB8500_ALARM_MIN_LOW , val);
+-
+-	/* reason[8 MSB] */
+-	val = (reason>>8) & 0xFF;
+-	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+-		AB8500_ALARM_MIN_MID , val);
+-
+-	/* Setting WD timeout to 0 */
+-	ab8500_sysctrl_write(AB8500_MAINWDOGTIMER, 0xFF, 0x0);
+-
+-	/* Setting the parameters to AB8500 WD*/
+-	ab8500_sysctrl_write(AB8500_MAINWDOGCTRL, 0xFF, (AB8500_ENABLE_WD |
+-		AB8500_WD_RESTART_ON_EXPIRE | AB8500_KICK_WD));
+-}
+-
+ static inline bool valid_bank(u8 bank)
+ {
+ 	return ((bank == AB8500_SYS_CTRL1_BLOCK) ||
+diff --git a/include/linux/mfd/abx500/ab8500-sysctrl.h b/include/linux/mfd/abx500/ab8500-sysctrl.h
+index adba89d..6893127 100644
+--- a/include/linux/mfd/abx500/ab8500-sysctrl.h
++++ b/include/linux/mfd/abx500/ab8500-sysctrl.h
+@@ -12,7 +12,6 @@
+ 
+ int ab8500_sysctrl_read(u16 reg, u8 *value);
+ int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value);
+-void ab8500_restart(char mode, const char *cmd);
+ 
+ #else
+ 
+-- 
+1.9.1
 
-> > > Shove a dev_name() on the front if we get a collision?  I have to say
-> > > I've never cared, the debugfs isn't that important so it doesn't matter
-> > > too much if it fails.
-> 
-> > Sure, but, again, I am getting lots and lots of those error messages.
-> > I probably would not care either (and probably not even have noticed)
-> > if not for those messages.
-> 
-> > Want me to submit a patch with the dev_name solution ?
-> 
-> Yes, please.
-
-Ok, will do.
-
-Thanks,
-Guenter
