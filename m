@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362AbaJIWUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 18:20:11 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:57055 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaJIWUJ convert rfc822-to-8bit (ORCPT
+	id S1756036AbaJIW0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:26:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60060 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaJIW0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 18:20:09 -0400
+	Thu, 9 Oct 2014 18:26:18 -0400
+Date: Thu, 9 Oct 2014 17:26:12 -0500
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, ecryptfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] ecryptfs: remove unneeded buggy code in
+ ecryptfs_do_create()
+Message-ID: <20141009222611.GB24046@boyd>
+References: <1411418371-11953-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-In-Reply-To: <CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
-References: <1412618020-22278-1-git-send-email-sonnyrao@chromium.org>
- <CAGOxZ53bviLbuA27=1QjNUgxA_WMMP-6siV=DajuN8iSqsasMg@mail.gmail.com> <CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Fri, 10 Oct 2014 03:49:28 +0530
-Message-ID: <CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Reset DMA before enabling IDMAC
-To: =?UTF-8?B?RWRkaWUgQ2FpKOiUoeaeqyk=?= <eddie.cai@rock-chips.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        addy.ke@rock-chips.com, Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Douglas Anderson <dianders@chromium.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
+Content-Disposition: inline
+In-Reply-To: <1411418371-11953-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eddie,
 
-On Thu, Oct 9, 2014 at 7:43 PM, Eddie Cai(蔡枫) <eddie.cai@rock-chips.com> wrote:
-> Hi Alim
->
-> 2014年10月8日 上午4:28于 "Alim Akhtar" <alim.akhtar@gmail.com>写道：
->
->
->>
->> Hi Sonny/Doug,
->>
->> On Mon, Oct 6, 2014 at 11:23 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
->> > We've already got a reset of DMA after it's done.  Add one before we
->> > start DMA too.  This fixes a data corruption on Rockchip SoCs which
->> > will get bad data when doing a DMA transfer after doing a PIO transfer.
->> >
->> > We tested this on an Exynos 5800 with HS200 and didn't notice any
->> > difference in sequential read throughput.
->> >
->> > Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
->> > Signed-off-by: Doug Anderson <dianders@chromium.org>
->> > ---
->> >  drivers/mmc/host/dw_mmc.c | 4 ++++
->> >  1 file changed, 4 insertions(+)
->> >
->> > diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->> > index 69f0cc6..2b5401e 100644
->> > --- a/drivers/mmc/host/dw_mmc.c
->> > +++ b/drivers/mmc/host/dw_mmc.c
->> > @@ -83,6 +83,7 @@ struct idmac_desc {
->> >  #endif /* CONFIG_MMC_DW_IDMAC */
->> >
->> >  static bool dw_mci_reset(struct dw_mci *host);
->> > +static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
->> >
->> >  #if defined(CONFIG_DEBUG_FS)
->> >  static int dw_mci_req_show(struct seq_file *s, void *v)
->> > @@ -448,6 +449,9 @@ static void dw_mci_idmac_start_dma(struct dw_mci
->> > *host, unsigned int sg_len)
->> >
->> >         dw_mci_translate_sglist(host, host->data, sg_len);
->> >
->> > +       /* Make sure to reset DMA in case we did PIO before this */
->> > +       dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
->> > +
->> Though this is good to do, but this does not look complete to me.
->> dw_mmc data book does mention that " It is recommended that the host
->> issue reset to DMA interface by setting DMA_RESET bit of the CTRL
->> register and then issue a IDMAC software reset."
->> The above lines are from 'Transmission and reception with internal
->> DMA' section of the data book.
->> My suggestion here to add dw_mci_idmac_reset() call after this above
->> change.
->>
->> What is the controller version used in your case?
->
-> it just compatible with dw mmc controler but not the same one. it is
-> designed by rockchip.
->
-Thats fine, I think every vendor (most of them) has a custom
-implementation of dw_mmc, but they do have VERID register to check the
-dw_mmc version.
-The reason why I asked is, I have seen inconsistency in card
-enumeration on few controller version, and this patch alone does not
-help, and adding a call to dw_mci_idmac_reset() after DMA reset is
-needed. And this is what is recommended in the synopsys's data book
-also.
-Do you see any issue/side effect after adding dw_mci_idmac_reset()?
+--0ntfKIWw70PvrIHh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> >         /* Select IDMAC interface */
->> >         temp = mci_readl(host, CTRL);
->> >         temp |= SDMMC_CTRL_USE_IDMAC;
->> > --
->> > 1.8.3.2
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
->>
->> --
->> Regards,
->> Alim
->>
->>
+Hi Alexey - thanks for the patch.
 
+On 2014-09-23 00:39:31, Alexey Khoroshilov wrote:
+> There is a bug in error handling of lock_parent() in ecryptfs_do_create():
+> lock_parent() acquries mutex even if dget_parent() fails, so mutex should=
+ be unlocked anyway.
+>=20
+> But dget_parent() does not fail, so the patch just removes unneeded buggy=
+ code.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
+This looks good to me and I've included it in the pull request that I
+just sent to Linus. Thanks!
 
--- 
-Regards,
-Alim
+Tyler
+
+> ---
+>  fs/ecryptfs/inode.c | 7 -------
+>  1 file changed, 7 deletions(-)
+>=20
+> diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+> index d4a9431ec73c..97735c75085f 100644
+> --- a/fs/ecryptfs/inode.c
+> +++ b/fs/ecryptfs/inode.c
+> @@ -192,12 +192,6 @@ ecryptfs_do_create(struct inode *directory_inode,
+> =20
+>  	lower_dentry =3D ecryptfs_dentry_to_lower(ecryptfs_dentry);
+>  	lower_dir_dentry =3D lock_parent(lower_dentry);
+> -	if (IS_ERR(lower_dir_dentry)) {
+> -		ecryptfs_printk(KERN_ERR, "Error locking directory of "
+> -				"dentry\n");
+> -		inode =3D ERR_CAST(lower_dir_dentry);
+> -		goto out;
+> -	}
+>  	rc =3D vfs_create(lower_dir_dentry->d_inode, lower_dentry, mode, true);
+>  	if (rc) {
+>  		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
+> @@ -215,7 +209,6 @@ ecryptfs_do_create(struct inode *directory_inode,
+>  	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
+>  out_lock:
+>  	unlock_dir(lower_dir_dentry);
+> -out:
+>  	return inode;
+>  }
+> =20
+> --=20
+> 1.9.1
+>=20
+
+--0ntfKIWw70PvrIHh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUNwuDAAoJENaSAD2qAscKlhoQALK4pMcztWmwpqsFkPYxYFeT
+8/IbovX6JlekwhZh2FFb1QAyuN+zFn3OFWDCphSzQOnJQPc1RCySpIWVGJl/8p9p
+tosfzVjFfaJM3qwstgBiHYWF9FkOjB4wlxCYVU7DBfNEo1oCroIIZCWUhyHdFmv0
+WY79uckzA39M4ynsxMKRGfVcGwUHgPWm3JMYAyl5xXhi/sqoRlQcKZ3RWXqb+O0H
+CD67Q7mUYaLA+XF3EV76K4asfMWy1SMJcnGpHfOCvOdZkaWwjI/ect1Lcj4fv+9l
++DgOjwnh+h2QehoxEvWRNgUAaz4jdtHWI2XS8OlhkJUzgIl02/rGNfjQ/EyosPbE
+ULlNnbLD/OANfOSr1Bp6KYWTebYxrNVgjas/NE3pZb4tn2zrt5IbzT/Lrf94ZY29
+8LrUVbuOFEOlg+g4+2Bkd3W7eGkL5WA0gveGmgsb5jeKLF1uoJNd4slG/blrwwWT
+55abtWmA5XyvQragz8u144zsIU6Kl7RuqbVNuMX2g1pi2APGbh6/bshtc/BpSDnH
+optov0V/dbDa9oGUk4lMaz0EWul/3cfAvOUNNs+ooUiK0KtRAiWb7gYURl5zon+k
+4GRDgrRIa5vhPjsBnB53mU1pJ5JUZbZP2FXI3VS0Df8rb0x6mOjl/6wObWJroOYt
+WcpYnF8J/VB4KNAA33k+
+=lOFH
+-----END PGP SIGNATURE-----
+
+--0ntfKIWw70PvrIHh--
