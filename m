@@ -1,230 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757173AbaJIMjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:39:46 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:65211 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754972AbaJIMjX (ORCPT
+	id S1757254AbaJIMkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:40:18 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60915 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757212AbaJIMkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:39:23 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFT 4/8] net: pxa168_eth: Remove HW auto-negotiaion
-Date: Thu,  9 Oct 2014 14:39:02 +0200
-Message-Id: <1412858346-11334-5-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 9 Oct 2014 08:40:05 -0400
+Date: Thu, 9 Oct 2014 14:36:07 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: "David E. Box" <david.e.box@linux.intel.com>
+Cc: wsa@the-dreams.de, jdelvare@suse.de, arnd@arndb.de, dianders@chromium.org,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        =?ISO-8859-1?Q?=20=22=1Bchristian.rupp?=.=?ISO-8859-1?Q?ert=22@abilis.com?=.=?ISO-8859-1?Q?,
+        ?=.alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Illegal-Object: Syntax error in Cc: addresses found on vger.kernel.org:
+	Cc:	=?ISO-8859-1?Q?=20=22=1Bchristian.rupp?==?ISO-8859-1?Q?ert=22@abilis.com?= =?ISO-8859-1?Q?
+								^-missing end of address
+Subject: Re: [PATCH V2] i2c-designware: Add Intel Baytrail PMIC I2C bus
+ support
+Message-ID: <20141009123607.GE19438@lukather>
+References: <1410543367-6565-1-git-send-email-david.e.box@linux.intel.com>
+ <1411497626-7984-1-git-send-email-david.e.box@linux.intel.com>
+ <20140923190057.GN15315@lukather>
+ <20140923195854.GA9921@pathfinder>
+ <20140925094752.GY15315@lukather>
+ <20141007191420.GA25126@pathfinder>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6v9BRtpmy+umdQlo"
+Content-Disposition: inline
+In-Reply-To: <20141007191420.GA25126@pathfinder>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marvell Ethernet IP supports PHY negotiation driven by HW. This
-fundamentally clashes with libphy (software) driven negotiation and
-also cannot cope with quirky PHYs. Therefore, always disable any HW
-negotiation features and properly use libphy's phy_device.
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/net/ethernet/marvell/pxa168_eth.c | 94 ++++++++++++++++++++++++++-----
- 1 file changed, 79 insertions(+), 15 deletions(-)
+--6v9BRtpmy+umdQlo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
-index 332700144d81..a406a91812c5 100644
---- a/drivers/net/ethernet/marvell/pxa168_eth.c
-+++ b/drivers/net/ethernet/marvell/pxa168_eth.c
-@@ -106,6 +106,7 @@
- #define SDMA_CMD_ERD		(1 << 7)
- 
- /* Bit definitions of the Port Config Reg */
-+#define PCR_DUPLEX_FULL		(1 << 15)
- #define PCR_HS			(1 << 12)
- #define PCR_EN			(1 << 7)
- #define PCR_PM			(1 << 0)
-@@ -113,11 +114,17 @@
- /* Bit definitions of the Port Config Extend Reg */
- #define PCXR_2BSM		(1 << 28)
- #define PCXR_DSCP_EN		(1 << 21)
-+#define PCXR_RMII_EN		(1 << 20)
-+#define PCXR_AN_SPEED_DIS	(1 << 19)
-+#define PCXR_SPEED_100		(1 << 18)
- #define PCXR_MFL_1518		(0 << 14)
- #define PCXR_MFL_1536		(1 << 14)
- #define PCXR_MFL_2048		(2 << 14)
- #define PCXR_MFL_64K		(3 << 14)
-+#define PCXR_FLOWCTL_DIS	(1 << 12)
- #define PCXR_FLP		(1 << 11)
-+#define PCXR_AN_FLOWCTL_DIS	(1 << 10)
-+#define PCXR_AN_DUPLEX_DIS	(1 << 9)
- #define PCXR_PRIO_TX_OFF	3
- #define PCXR_TX_HIGH_PRI	(7 << PCXR_PRIO_TX_OFF)
- 
-@@ -272,6 +279,7 @@ enum hash_table_entry {
- static int pxa168_get_settings(struct net_device *dev, struct ethtool_cmd *cmd);
- static int pxa168_set_settings(struct net_device *dev, struct ethtool_cmd *cmd);
- static int pxa168_init_hw(struct pxa168_eth_private *pep);
-+static int pxa168_init_phy(struct net_device *dev);
- static void eth_port_reset(struct net_device *dev);
- static void eth_port_start(struct net_device *dev);
- static int pxa168_eth_open(struct net_device *dev);
-@@ -658,14 +666,7 @@ static void eth_port_start(struct net_device *dev)
- 	struct pxa168_eth_private *pep = netdev_priv(dev);
- 	int tx_curr_desc, rx_curr_desc;
- 
--	/* Perform PHY reset, if there is a PHY. */
--	if (pep->phy != NULL) {
--		struct ethtool_cmd cmd;
--
--		pxa168_get_settings(pep->dev, &cmd);
--		phy_init_hw(pep->phy);
--		pxa168_set_settings(pep->dev, &cmd);
--	}
-+	phy_start(pep->phy);
- 
- 	/* Assignment of Tx CTRP of given queue */
- 	tx_curr_desc = pep->tx_curr_desc_q;
-@@ -720,6 +721,8 @@ static void eth_port_reset(struct net_device *dev)
- 	val = rdl(pep, PORT_CONFIG);
- 	val &= ~PCR_EN;
- 	wrl(pep, PORT_CONFIG, val);
-+
-+	phy_stop(pep->phy);
- }
- 
- /*
-@@ -981,8 +984,11 @@ static int set_port_config_ext(struct pxa168_eth_private *pep)
- 		skb_size = PCXR_MFL_64K;
- 
- 	/* Extended Port Configuration */
--	wrl(pep,
--	    PORT_CONFIG_EXT, PCXR_2BSM | /* Two byte prefix aligns IP hdr */
-+	wrl(pep, PORT_CONFIG_EXT,
-+	    PCXR_AN_SPEED_DIS |		 /* Disable HW AN */
-+	    PCXR_AN_DUPLEX_DIS |
-+	    PCXR_AN_FLOWCTL_DIS |
-+	    PCXR_2BSM |			 /* Two byte prefix aligns IP hdr */
- 	    PCXR_DSCP_EN |		 /* Enable DSCP in IP */
- 	    skb_size | PCXR_FLP |	 /* do not force link pass */
- 	    PCXR_TX_HIGH_PRI);		 /* Transmit - high priority queue */
-@@ -990,6 +996,63 @@ static int set_port_config_ext(struct pxa168_eth_private *pep)
- 	return 0;
- }
- 
-+static void pxa168_eth_adjust_link(struct net_device *dev)
-+{
-+	struct pxa168_eth_private *pep = netdev_priv(dev);
-+	struct phy_device *phy = pep->phy;
-+	u32 cfg = rdl(pep, PORT_CONFIG);
-+	u32 cfgext = rdl(pep, PORT_CONFIG_EXT);
-+
-+	cfg &= ~PCR_DUPLEX_FULL;
-+	cfgext &= ~(PCXR_SPEED_100 | PCXR_FLOWCTL_DIS | PCXR_RMII_EN);
-+
-+	if (phy->interface == PHY_INTERFACE_MODE_RMII)
-+		cfgext |= PCXR_RMII_EN;
-+	if (phy->speed == SPEED_100)
-+		cfgext |= PCXR_SPEED_100;
-+	if (phy->duplex)
-+		cfg |= PCR_DUPLEX_FULL;
-+	if (!phy->pause)
-+		cfgext |= PCXR_FLOWCTL_DIS;
-+
-+	wrl(pep, PORT_CONFIG, cfg);
-+	wrl(pep, PORT_CONFIG_EXT, cfgext);
-+}
-+
-+static int pxa168_init_phy(struct net_device *dev)
-+{
-+	struct pxa168_eth_private *pep = netdev_priv(dev);
-+	struct ethtool_cmd cmd;
-+	int err;
-+
-+	if (pep->phy)
-+		return 0;
-+
-+	pep->phy = mdiobus_scan(pep->smi_bus, pep->phy_addr);
-+	if (!pep->phy)
-+		return -ENODEV;
-+
-+	err = phy_connect_direct(dev, pep->phy, pxa168_eth_adjust_link,
-+				 pep->phy_intf);
-+	if (err)
-+		return err;
-+
-+	err = pxa168_get_settings(dev, &cmd);
-+	if (err)
-+		return err;
-+
-+	cmd.phy_address = pep->phy_addr;
-+	cmd.speed = pep->phy_speed;
-+	cmd.duplex = pep->phy_duplex;
-+	cmd.advertising = PHY_BASIC_FEATURES;
-+	cmd.autoneg = AUTONEG_ENABLE;
-+
-+	if (cmd.speed != 0)
-+		cmd.autoneg = AUTONEG_DISABLE;
-+
-+	return pxa168_set_settings(dev, &cmd);
-+}
-+
- static int pxa168_init_hw(struct pxa168_eth_private *pep)
- {
- 	int err = 0;
-@@ -1136,6 +1199,10 @@ static int pxa168_eth_open(struct net_device *dev)
- 	struct pxa168_eth_private *pep = netdev_priv(dev);
- 	int err;
- 
-+	err = pxa168_init_phy(dev);
-+	if (err)
-+		return err;
-+
- 	err = request_irq(dev->irq, pxa168_eth_int_handler, 0, dev->name, dev);
- 	if (err) {
- 		dev_err(&dev->dev, "can't assign irq\n");
-@@ -1596,9 +1663,6 @@ static int pxa168_eth_probe(struct platform_device *pdev)
- 		goto err_free_mdio;
- 
- 	pxa168_init_hw(pep);
--	err = ethernet_phy_setup(dev);
--	if (err)
--		goto err_mdiobus;
- 	SET_NETDEV_DEV(dev, &pdev->dev);
- 	err = register_netdev(dev);
- 	if (err)
-@@ -1629,13 +1693,13 @@ static int pxa168_eth_remove(struct platform_device *pdev)
- 				  pep->htpr, pep->htpr_dma);
- 		pep->htpr = NULL;
- 	}
-+	if (pep->phy)
-+		phy_disconnect(pep->phy);
- 	if (pep->clk) {
- 		clk_disable(pep->clk);
- 		clk_put(pep->clk);
- 		pep->clk = NULL;
- 	}
--	if (pep->phy != NULL)
--		phy_detach(pep->phy);
- 
- 	iounmap(pep->base);
- 	pep->base = NULL;
--- 
-2.1.1
+Hi David,
 
+On Tue, Oct 07, 2014 at 12:14:20PM -0700, David E. Box wrote:
+> Hi Maxime,
+>=20
+> On Thu, Sep 25, 2014 at 11:47:52AM +0200, Maxime Ripard wrote:
+> > Hi David,
+> >=20
+> > On Tue, Sep 23, 2014 at 12:58:54PM -0700, David E. Box wrote:
+> > > Hi Maxime,
+> > >=20
+> > > On Tue, Sep 23, 2014 at 09:00:57PM +0200, Maxime Ripard wrote:
+> > > > Hi David,
+> > > >=20
+> > > > On Tue, Sep 23, 2014 at 11:40:26AM -0700, David E. Box wrote:
+> > > > > This patch implements an I2C bus sharing mechanism between the ho=
+st and platform
+> > > > > hardware on select Intel BayTrail SoC platforms using the X-Power=
+s AXP288 PMIC.
+> > > > >=20
+> > > > > On these platforms access to the PMIC must be shared with platfor=
+m hardware. The
+> > > > > hardware unit assumes full control of the I2C bus and the host mu=
+st request
+> > > > > access through a special semaphore. Hardware control of the bus a=
+lso makes it
+> > > > > necessary to disable runtime pm to avoid interfering with hardwar=
+e transactions.
+> > > > >=20
+> > > > > Signed-off-by: David E. Box <david.e.box@linux.intel.com>
+> > > >=20
+> > > > Sorry for stepping in like this without really knowing your platfor=
+m,
+> > > > but wouldn't using the hwspinlock framework make more sense than
+> > > > hardcoding your own internal functions here?
+> > >=20
+> > > I looked into this but didn't see a clear way on our platform to iden=
+tify the
+> > > semaphore seperately from doing it in the designware platform driver.=
+ The way
+> > > we can find it now is through evaluating an ACPI _SEM object on every=
+ i2c device
+> > > that gets probed by the dw driver since at probe time we can get the =
+acpi handle.
+> >=20
+> > And you have no way to turn it around and identify which semaphore is
+> > associated to which i2c bus?
+> >=20
+> > If so, there is probably some way to associate a given instance of the
+> > i2c driver to one semaphore.
+> >=20
+> > > Without this handle however there isn't a clear way of evaluating the=
+ _SEM
+> > > object which would be needed to register a hwspinlock in separate cod=
+e.
+> > >=20
+> > > Plus it would still require changes to the designware i2c core, thoug=
+h admittedly
+> > > having a generic hwspinlock pointer added to the struct is cleaner.
+> >=20
+> > Not only cleaner, but that could also be used by other platforms that
+> > are using this I2C driver (and since it's a designware IP, there must
+> > be quite a lot) together with hardware locking.
+> >=20
+>=20
+> After again considering a way to make this work I don't think this api ca=
+n fit
+> well with our platform. Acquisition of this semaphore is through a mailbox
+> sequence where we set one register and then poll another for a value that
+> confirms we have the lock. For best performance we need to be able to
+> periodically sleep while waiting for that confirmation. This time can vary
+> widely as it's dependent on the component we are requesting the semaphore=
+ from
+> which is itself a user of that bus.
+>=20
+> While we could simply fail after a short time, reattempts would still need
+> to happen in the i2c-designware driver and the timing would be completely
+> dependent on our hardware, making it less clean for reuse. In addition,
+> if we timed out, we would have to immediately call unlock to cancel the
+> mailbox transaction. This may not fit well with reuse either.
+
+Ok, if Wolfram is ok with it, and if it makes your life much easier,
+I'm ok :)
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--6v9BRtpmy+umdQlo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUNoE3AAoJEBx+YmzsjxAgOugQAKNDTPzU7kJU6NvYyWt5a2LY
+e6FE6lS2kUhZFUXPXqxs9blYgrJkflqexHtwK7sS4wpv3cBsqWbiEqs5N+KCWoTN
+Gg130vaYFYlckaEAB3emIfDwuEeBm0q8RpG8r6sErgEwI6C08mgZwLJKHKQIrw8O
+l6nlhG/Lu5lx/lKRiTj5bFqtTieQi+9iqjTbxOvfP4kY2NuCO4QKykgGpVU1IO4q
+0wVPYRkQi7sF3VFwkAqycXW8FV40g0Q5MlxlUI8whk4YiORhv9e5N/c/BjGmbdX+
+schArPU8F+NuCNkEdlnhKDCXE9UFYhXPe55wEKcLYfVgBg72Gw3BMwkqleAGsgzA
+QPCGD4GcjaXKk4PMeMenoxKDOtlVCA3kR/ZXwu/Io0nOzfn9v8qjIp5YZLbcDh9X
++HSL7cNDg/xSTH/eahl/qxed2CcKOOWIR0MgM8QRnmdPLNwoiu0x6/Sl9nxiWLSr
+SexV0RV5gU5IsQ1jNm28ysj6Mb34CAm1GyonpNegkS12GktbZgLX4YVuuxz5Mtj0
+TuWFmCTRu5UzlH8NhTjZf7f1aeiQ9tihhYWP3kgzl6F5VwsV4WHcKMFCUYC+RVM1
+V9N2wIYMDNsEncwGSfE3KdvDZN99Om0fGl8tvHvs2k3rwkc86RKlPjik6C2+eCpm
+waVVmdPRPJhMKXnM2TQG
+=PhXP
+-----END PGP SIGNATURE-----
+
+--6v9BRtpmy+umdQlo--
