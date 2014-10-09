@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaJISg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 14:36:57 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:54223 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaJISgo (ORCPT
+	id S1751400AbaJISjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 14:39:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:63307 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaJISjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 14:36:44 -0400
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Doug Anderson <dianders@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 1/1] ARM: exynos_defconfig: re-enable USB gadget and max77802 options
-Date: Thu,  9 Oct 2014 20:36:07 +0200
-Message-Id: <1412879767-24326-1-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.0
+	Thu, 9 Oct 2014 14:39:42 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-55-5436d66a3c94
+From: Karol Wrona <k.wrona@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <k.wrona@samsung.com>
+Subject: [PATCH 0/1] misc: st32boot: Add stm32 upgrade protocol handling
+Date: Thu, 09 Oct 2014 20:35:42 +0200
+Message-id: <1412879743-19928-1-git-send-email-k.wrona@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJJMWRmVeSWpSXmKPExsVy+t/xa7pZ18xCDGbs1bH4O+kYu8XGGetZ
+	LR40rWKyOLVsP5PF2aY37Bbzjrxjsbi8aw6bA7vH71+TGD02repk8+jbsorR4/MmuQCWKC6b
+	lNSczLLUIn27BK6Mow93MRfc5Km4+n0rawPjf84uRk4OCQETifY911ghbDGJC/fWs3UxcnEI
+	CSxllFjeeRjK6WOS2H/xGCNIFZuAukTzjsXMIAkRgUZGiZuL+9lAEswCHYwSi9q5QGxhAQ+J
+	WRcOs4PYLAKqEtNv3wRbwSvgLHFifz9TFyMH0DoFiTmTbCYwci9gZFjFKJpamlxQnJSea6RX
+	nJhbXJqXrpecn7uJERIcX3cwLj1mdYhRgINRiYf3wT/TECHWxLLiytxDjBIczEoivNtnmoUI
+	8aYkVlalFuXHF5XmpBYfYmTi4JRqYJx0lX1R3pl7BrZN74PPScp8YTE9/XHxFq+jwosf3TmX
+	rruJJav8c8CUplcbsu2d5LUjY4oXGddwHJo894vt0dJehrN3VoWu5rzjJRZ+zkula/f0x5v7
+	z9i7KZ54raF2UlBpmt8nDa2EjuN6e68aXN399Vxroe9+Dm7Rm2Y8ShGuDDcLwvijHimxFGck
+	GmoxFxUnAgAtYyRc7AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 43eeaa42e03a ("ARM: exynos_defconfig: savedefconfig") removed a
-set of Kconfig symbols. For most of them there were no functional change
-since are selected by other Kconfig options or were deprecated but some
-options are not explicitly selected so they should not had been removed.
+Hello,
 
-The options that have to be enabled are USB gadget and the MAX77802 PMIC
-support which were enabled in commits:
+This patch is needed by the sensorhub driver which uses STM32F4xx and Jonathan
+suggested to factor out these sources (mentioned in: 
+[RFC/PATCH 2/6] misc: sensorhub: Add sensorhub).
 
-508423bebcda ("ARM: exynos_defconfig: enable USB gadget support")
-6e80e3d87549 ("ARM: exynos_defconfig: Enable MAX77802")
+I feel a bit ashamed because I know a bit STM32F4 controllers but I do not
+realized that it is generic ST protocol. It helped us a lot because this 
+code really needed some refactoring.
 
-Enable those options to leave the config in the state before the change.
+So this patch contains SPI protocol used in the STM32 bootloader and is based
+on AN4286. Generally it can be used to implement handling of other interfaces
+like UART or I2C because the flow is quite similar and maybe adding proper
+hw access callbacks will do all work.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- arch/arm/configs/exynos_defconfig | 4 ++++
- 1 file changed, 4 insertions(+)
+It supports:
+  - get info frame
+  - get version
+  - firmware write
 
-diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
-index b14d8c3..a36fe1c 100644
---- a/arch/arm/configs/exynos_defconfig
-+++ b/arch/arm/configs/exynos_defconfig
-@@ -54,6 +54,7 @@ CONFIG_SMSC911X=y
- CONFIG_USB_USBNET=y
- CONFIG_USB_NET_SMSC75XX=y
- CONFIG_USB_NET_SMSC95XX=y
-+CONFIG_USB_GADGET=y
- CONFIG_INPUT_EVDEV=y
- CONFIG_KEYBOARD_GPIO=y
- CONFIG_KEYBOARD_CROS_EC=y
-@@ -97,6 +98,7 @@ CONFIG_REGULATOR_FIXED_VOLTAGE=y
- CONFIG_REGULATOR_GPIO=y
- CONFIG_REGULATOR_MAX8997=y
- CONFIG_REGULATOR_MAX77686=y
-+CONFIG_REGULATOR_MAX77802=y
- CONFIG_REGULATOR_MAX77693=y
- CONFIG_REGULATOR_S2MPA01=y
- CONFIG_REGULATOR_S2MPS11=y
-@@ -133,11 +135,13 @@ CONFIG_MMC_DW_IDMAC=y
- CONFIG_MMC_DW_EXYNOS=y
- CONFIG_RTC_CLASS=y
- CONFIG_RTC_DRV_MAX77686=y
-+CONFIG_RTC_DRV_MAX77802=y
- CONFIG_RTC_DRV_S5M=y
- CONFIG_RTC_DRV_S3C=y
- CONFIG_DMADEVICES=y
- CONFIG_PL330_DMA=y
- CONFIG_COMMON_CLK_MAX77686=y
-+CONFIG_COMMON_CLK_MAX77802=y
- CONFIG_COMMON_CLK_S2MPS11=y
- CONFIG_EXYNOS_IOMMU=y
- CONFIG_IIO=y
+
+Karol
+
+Karol Wrona (1):
+  misc: st32boot: Add stm32 upgrade protocol handling
+
+ drivers/misc/Kconfig                |    1 +
+ drivers/misc/Makefile               |    1 +
+ drivers/misc/stm32boot/Kconfig      |    6 +
+ drivers/misc/stm32boot/Makefile     |    3 +
+ drivers/misc/stm32boot/stm32_core.c |  412 +++++++++++++++++++++++++++++++++++
+ drivers/misc/stm32boot/stm32_core.h |   81 +++++++
+ drivers/misc/stm32boot/stm32_spi.c  |  108 +++++++++
+ include/linux/stm32fwu.h            |   47 ++++
+ 8 files changed, 659 insertions(+)
+ create mode 100644 drivers/misc/stm32boot/Kconfig
+ create mode 100644 drivers/misc/stm32boot/Makefile
+ create mode 100644 drivers/misc/stm32boot/stm32_core.c
+ create mode 100644 drivers/misc/stm32boot/stm32_core.h
+ create mode 100644 drivers/misc/stm32boot/stm32_spi.c
+ create mode 100644 include/linux/stm32fwu.h
+
 -- 
-2.1.0
+1.7.9.5
 
