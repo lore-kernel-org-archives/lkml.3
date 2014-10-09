@@ -1,141 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaJIOaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:30:46 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:5494 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754557AbaJIOag (ORCPT
+	id S1757209AbaJIOd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:33:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33638 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751315AbaJIOdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:30:36 -0400
-X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
-X-Msg-Ref: server-15.tower-178.messagelabs.com!1412864959!36206235!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.2; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-To: Jonathan Cameron <jic23@kernel.org>,
-        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Support Opensource" <Support.Opensource@diasemi.com>
-Subject: RE: [PATCH 3/8] iio: Add support for DA9150 GPADC
-Thread-Topic: [PATCH 3/8] iio: Add support for DA9150 GPADC
-Thread-Index: AQHP1xygEywc6IiNg0GMK98+C7G0f5wUwoQAgA/5qRCAAFDZAIAC3wyw
-Date: Thu, 9 Oct 2014 14:29:17 +0000
-Message-ID: <2E89032DDAA8B9408CB92943514A0337AB5194A4@SW-EX-MBX01.diasemi.com>
-References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
- <ee4c56931f326d8ee9c1313c44456bce2dec8b8c.1411396719.git.Adam.Thomson.Opensource@diasemi.com>
- <5426964A.3050407@kernel.org>
- <2E89032DDAA8B9408CB92943514A0337AB518D23@SW-EX-MBX01.diasemi.com>
- <3B049606-083E-4220-ADBF-71D74C0A9D9F@kernel.org>
-In-Reply-To: <3B049606-083E-4220-ADBF-71D74C0A9D9F@kernel.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.15]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 9 Oct 2014 10:33:19 -0400
+Date: Thu, 9 Oct 2014 16:33:15 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org,
+        Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin
+ Ethernet
+Message-ID: <20141009163315.2a9e1806@free-electrons.com>
+In-Reply-To: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s99EUoMH030994
 
-On October 7, 2014 20:37, Jonathan Cameron wrote:
+Dear Sebastian Hesselbarth,
 
-> On October 7, 2014 3:55:55 PM GMT+01:00, "Opensource [Adam Thomson]"
-> <Adam.Thomson.Opensource@diasemi.com> wrote:
-> >On September 27, 2014 11:50, Jonathan Cameron wrote:
-> >
-> >> On 23/09/14 11:53, Adam Thomson wrote:
-> >> > This patch adds support for DA9150 Charger & Fuel-Gauge IC GPADC.
-> >
-> >> > +
-> >> > +static inline int da9150_gpadc_gpio_6v_voltage_now(int raw_val)
-> >> > +{
-> >> > +	/* Convert to mV */
-> >> > +	return (6 * ((raw_val * 1000) + 500)) / 1024;
-> >> These could all be expressed as raw values with offsets
-> >> and scales (and that would be preferred).
-> >> E.g. This one has offset 500000 and scale 6000/1024 or even
-> >> better use IIO_VAL_FRACTIONAL_LOG2 for scale with val1 = 6000
-> >> and val2 = (log_2 1024) = 10.
-> >>
-> >
-> >What you've suggested isn't correct. The problem here is that the
-> >offset is
-> >added first to the raw ADC reading, without factoring the ADC value
-> >accordingly
-> >to match the factor of the offset. If we take the original equation
-> >provided for
-> >this channel of the ADC, the offset is actually 0.5 which should be
-> >added to the
-> >raw ADC value. This doesn't fit into the implementation in the kernel
-> >as we
-> >can't use floating point. If we multiply the offset but not the raw ADC
-> >value,
-> >then add them before applying the scale factor, then the result is
-> >wrong at the
-> >end. Basically you need a scale for the raw ADC value to match the
-> >offset scale
-> >so you can achieve the correct results, which is what my calculation
-> >does.
-> >But that seems impossible with the current raw|offset|scale method.
-> Oops got that wrong.  The fixed point maths to fix the in kernel interface isn't exactly
->  difficult but indeed it does not handle this currently.
+On Thu,  9 Oct 2014 14:38:58 +0200, Sebastian Hesselbarth wrote:
 
-I did have a quick look when I had a spare moment, and I guess you could do
-something like having an offset scale/factor which can be applied to the raw
-reading, prior to adding the offset. May be an option but I think this would
-also have to be exposed to user-space as I believe the same problem would reside
-there as well.
-
-> >
-> >> > +	ret = iio_map_array_register(indio_dev,
-> >da9150_gpadc_default_maps);
-> >> > +	if (ret) {
-> >> > +		dev_err(dev, "Failed to register IIO maps: %d\n", ret);
-> >> > +		return ret;
-> >> > +	}
-> >> I'd suggest doing the devm_request_thread_irq before the
-> >iio_map_array
-> >> stuff.  This is purely to avoid the order during remove not being
-> >> obviously correct as it isn't the reverse of during probe.
-> >
-> >Ok, should still work ok that way so can update.
-> >
-> >> > +static int da9150_gpadc_remove(struct platform_device *pdev)
-> >> > +{
-> >> > +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-> >> > +
-> >> > +	iio_map_array_unregister(indio_dev);
-> >> Twice in one day.  I'm definitely thinking we should add a
-> >> devm version of iio_map_array_register...
-> >
-> >I assume you mean here that iio_device_unregister() should come first?
-> >Will
-> >update.
-> Nope just that such a new function might be useful.
-
-:) Ok fair enough.
-
+> This patch series deals with a removing a IP feature that can be found
+> on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
+> mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
+> without software interaction.
 > 
-> --
-> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> However, this feature (a) fundamentally clashes with the way libphy works
+> and (b) is unable to deal with quirky PHYs that require special treatment.
+> In this series, pxa168_eth driver is rewritten to completely disable that
+> feature and properly deal with libphy provided PHYs. The other two drivers
+> are suspect to future patch sets, also removing the code related with it.
+
+Hum, in mvneta, we already disabled the automatic negotiation and use
+libphy. What makes you think the current mvneta driver is wrong in this
+respect?
+
+Thanks,
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
