@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984AbaJIVML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:12:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59730 "EHLO
+	id S932720AbaJIVM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:12:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59735 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713AbaJIVMH (ORCPT
+	with ESMTP id S1751915AbaJIVMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:12:07 -0400
+	Thu, 9 Oct 2014 17:12:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Mel Gorman <mgorman@suse.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 158/163] perf: fix perf bug in fork()
-Date: Thu,  9 Oct 2014 14:03:03 -0700
-Message-Id: <1412888588-26755-159-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 155/163] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
+Date: Thu,  9 Oct 2014 14:03:00 -0700
+Message-Id: <1412888588-26755-156-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -30,69 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 6c72e3501d0d62fc064d3680e5234f3463ec5a86 upstream.
+commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
 
-Oleg noticed that a cleanup by Sylvain actually uncovered a bug; by
-calling perf_event_free_task() when failing sched_fork() we will not yet
-have done the memset() on ->perf_event_ctxp[] and will therefore try and
-'free' the inherited contexts, which are still in use by the parent
-process.  This is bad..
+This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
+NUMA type from the pmd to the pte"). If a huge page is being split due
+a protection change and the tail will be in a PROT_NONE vma then NUMA
+hinting PTEs are temporarily created in the protected VMA.
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Sylvain 'ythier' Hitier <sylvain.hitier@gmail.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+ VM_RW|VM_PROTNONE
+|-----------------|
+      ^
+      split here
+
+In the specific case above, it should get fixed up by change_pte_range()
+but there is a window of opportunity for weirdness to happen. Similarly,
+if a huge page is shrunk and split during a protection update but before
+pmd_numa is cleared then a pte_numa can be left behind.
+
+Instead of adding complexity trying to deal with the case, this patch
+will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
+will not be triggered which is marginal in comparison to the complexity
+in dealing with the corner cases during THP split.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/events/core.c | 4 +++-
- kernel/fork.c        | 5 +++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ mm/huge_memory.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 38f0d1b..6acd7d9 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7808,8 +7808,10 @@ int perf_event_init_task(struct task_struct *child)
- 
- 	for_each_task_context_nr(ctxn) {
- 		ret = perf_event_init_context(child, ctxn);
--		if (ret)
-+		if (ret) {
-+			perf_event_free_task(child);
- 			return ret;
-+		}
- 	}
- 
- 	return 0;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d0ca776..5726bf1 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1323,7 +1323,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 		goto bad_fork_cleanup_policy;
- 	retval = audit_alloc(p);
- 	if (retval)
--		goto bad_fork_cleanup_policy;
-+		goto bad_fork_cleanup_perf;
- 	/* copy all the process information */
- 	retval = copy_semundo(clone_flags, p);
- 	if (retval)
-@@ -1522,8 +1522,9 @@ bad_fork_cleanup_semundo:
- 	exit_sem(p);
- bad_fork_cleanup_audit:
- 	audit_free(p);
--bad_fork_cleanup_policy:
-+bad_fork_cleanup_perf:
- 	perf_event_free_task(p);
-+bad_fork_cleanup_policy:
- #ifdef CONFIG_NUMA
- 	mpol_put(p->mempolicy);
- bad_fork_cleanup_cgroup:
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index a2256e0..64a7f9c 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1823,6 +1823,11 @@ static int __split_huge_page_map(struct page *page,
+ 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+ 			pte_t *pte, entry;
+ 			BUG_ON(PageCompound(page+i));
++			/*
++			 * Note that pmd_numa is not transferred deliberately
++			 * to avoid any possibility that pte_numa leaks to
++			 * a PROT_NONE VMA by accident.
++			 */
+ 			entry = mk_pte(page + i, vma->vm_page_prot);
+ 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+ 			if (!pmd_write(*pmd))
+@@ -1831,8 +1836,6 @@ static int __split_huge_page_map(struct page *page,
+ 				BUG_ON(page_mapcount(page) != 1);
+ 			if (!pmd_young(*pmd))
+ 				entry = pte_mkold(entry);
+-			if (pmd_numa(*pmd))
+-				entry = pte_mknuma(entry);
+ 			pte = pte_offset_map(&_pmd, haddr);
+ 			BUG_ON(!pte_none(*pte));
+ 			set_pte_at(mm, haddr, pte, entry);
 -- 
 1.9.1
 
