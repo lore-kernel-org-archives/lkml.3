@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751706AbaJISgm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 14:36:42 -0400
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:43623 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751240AbaJISge (ORCPT
+	id S1751506AbaJISg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 14:36:57 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:54223 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaJISgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 14:36:34 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkOACnVNlRbtAbo/2dsb2JhbABfgw6BK7dZCAEBAQUBc5oKgQoXAXuEMS8jgRo3iEIBtGqOUYYgiiQdhDUFnUuMXIk1giCBRTsvgkoBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] mac80211: directly return ieee80211_vif_use_reserved_context()
-Date: Thu,  9 Oct 2014 20:36:22 +0200
-Message-Id: <1412879782-8818-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Thu, 9 Oct 2014 14:36:44 -0400
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Doug Anderson <dianders@chromium.org>, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: [PATCH 1/1] ARM: exynos_defconfig: re-enable USB gadget and max77802 options
+Date: Thu,  9 Oct 2014 20:36:07 +0200
+Message-Id: <1412879767-24326-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to store ieee80211_vif_use_reserved_context result and test it before returning.
+Commit 43eeaa42e03a ("ARM: exynos_defconfig: savedefconfig") removed a
+set of Kconfig symbols. For most of them there were no functional change
+since are selected by other Kconfig options or were deprecated but some
+options are not explicitly selected so they should not had been removed.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+The options that have to be enabled are USB gadget and the MAX77802 PMIC
+support which were enabled in commits:
+
+508423bebcda ("ARM: exynos_defconfig: enable USB gadget support")
+6e80e3d87549 ("ARM: exynos_defconfig: Enable MAX77802")
+
+Enable those options to leave the config in the state before the change.
+
+Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- net/mac80211/cfg.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ arch/arm/configs/exynos_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
-index fb6a150..c76b457 100644
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -2850,11 +2850,7 @@ static int __ieee80211_csa_finalize(struct ieee80211_sub_if_data *sdata)
- 		if (sdata->reserved_ready)
- 			return 0;
- 
--		err = ieee80211_vif_use_reserved_context(sdata);
--		if (err)
--			return err;
--
--		return 0;
-+		return ieee80211_vif_use_reserved_context(sdata);
- 	}
- 
- 	if (!cfg80211_chandef_identical(&sdata->vif.bss_conf.chandef,
+diff --git a/arch/arm/configs/exynos_defconfig b/arch/arm/configs/exynos_defconfig
+index b14d8c3..a36fe1c 100644
+--- a/arch/arm/configs/exynos_defconfig
++++ b/arch/arm/configs/exynos_defconfig
+@@ -54,6 +54,7 @@ CONFIG_SMSC911X=y
+ CONFIG_USB_USBNET=y
+ CONFIG_USB_NET_SMSC75XX=y
+ CONFIG_USB_NET_SMSC95XX=y
++CONFIG_USB_GADGET=y
+ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_CROS_EC=y
+@@ -97,6 +98,7 @@ CONFIG_REGULATOR_FIXED_VOLTAGE=y
+ CONFIG_REGULATOR_GPIO=y
+ CONFIG_REGULATOR_MAX8997=y
+ CONFIG_REGULATOR_MAX77686=y
++CONFIG_REGULATOR_MAX77802=y
+ CONFIG_REGULATOR_MAX77693=y
+ CONFIG_REGULATOR_S2MPA01=y
+ CONFIG_REGULATOR_S2MPS11=y
+@@ -133,11 +135,13 @@ CONFIG_MMC_DW_IDMAC=y
+ CONFIG_MMC_DW_EXYNOS=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_DRV_MAX77686=y
++CONFIG_RTC_DRV_MAX77802=y
+ CONFIG_RTC_DRV_S5M=y
+ CONFIG_RTC_DRV_S3C=y
+ CONFIG_DMADEVICES=y
+ CONFIG_PL330_DMA=y
+ CONFIG_COMMON_CLK_MAX77686=y
++CONFIG_COMMON_CLK_MAX77802=y
+ CONFIG_COMMON_CLK_S2MPS11=y
+ CONFIG_EXYNOS_IOMMU=y
+ CONFIG_IIO=y
 -- 
-1.9.3
+2.1.0
 
