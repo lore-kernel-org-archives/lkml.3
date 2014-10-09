@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590AbaJIPFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:05:18 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35786 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757360AbaJIPEx (ORCPT
+	id S1757605AbaJIPFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:05:33 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57558 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640AbaJIPFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:04:53 -0400
+	Thu, 9 Oct 2014 11:05:10 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
         mpe@ellerman.id.au, benh@kernel.crashing.org
 Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
         linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
         cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 03/16] powerpc/cell: Make spu_flush_all_slbs() generic
-In-Reply-To: <1412758505-23495-4-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-4-git-send-email-mikey@neuling.org>
+Subject: Re: [PATCH v4 05/16] powerpc/mm: Export mmu_kernel_ssize and mmu_linear_psize
+In-Reply-To: <1412758505-23495-6-git-send-email-mikey@neuling.org>
+References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-6-git-send-email-mikey@neuling.org>
 User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:34:44 +0530
-Message-ID: <874mvd2sj7.fsf@linux.vnet.ibm.com>
+Date: Thu, 09 Oct 2014 20:35:02 +0530
+Message-ID: <871tqh2sip.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0013-0000-0000-0000019E1127
+x-cbid: 14100915-0017-0000-0000-0000019056EF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,9 +32,8 @@ Michael Neuling <mikey@neuling.org> writes:
 
 > From: Ian Munsie <imunsie@au1.ibm.com>
 >
-> This moves spu_flush_all_slbs() into a generic call copro_flush_all_slbs().
->
-> This will be useful when we add cxl which also needs a similar SLB flush call.
+> Export mmu_kernel_ssize and mmu_linear_psize.  These are needed by the cxl
+> driver which has it's own MMU.  To setup the MMU cxl needs access to these.
 >
 
 Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
@@ -42,121 +41,29 @@ Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 > Signed-off-by: Michael Neuling <mikey@neuling.org>
 > ---
->  arch/powerpc/include/asm/copro.h |  6 ++++++
->  arch/powerpc/mm/copro_fault.c    |  9 +++++++++
->  arch/powerpc/mm/hash_utils_64.c  | 10 +++-------
->  arch/powerpc/mm/slice.c          | 10 +++-------
->  4 files changed, 21 insertions(+), 14 deletions(-)
+>  arch/powerpc/mm/hash_utils_64.c | 2 ++
+>  1 file changed, 2 insertions(+)
 >
-> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-> index b0e6a18..ce216df 100644
-> --- a/arch/powerpc/include/asm/copro.h
-> +++ b/arch/powerpc/include/asm/copro.h
-> @@ -20,4 +20,10 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
->  
->  int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
->  
-> +
-> +#ifdef CONFIG_PPC_COPRO_BASE
-> +void copro_flush_all_slbs(struct mm_struct *mm);
-> +#else
-> +static inline void copro_flush_all_slbs(struct mm_struct *mm) {}
-> +#endif
->  #endif /* _ASM_POWERPC_COPRO_H */
-> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-> index a15a23e..f2aa5a8 100644
-> --- a/arch/powerpc/mm/copro_fault.c
-> +++ b/arch/powerpc/mm/copro_fault.c
-> @@ -25,6 +25,7 @@
->  #include <linux/export.h>
->  #include <asm/reg.h>
->  #include <asm/copro.h>
-> +#include <asm/spu.h>
->  
->  /*
->   * This ought to be kept in sync with the powerpc specific do_page_fault
-> @@ -136,3 +137,11 @@ int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
->  	return 0;
->  }
->  EXPORT_SYMBOL_GPL(copro_calculate_slb);
-> +
-> +void copro_flush_all_slbs(struct mm_struct *mm)
-> +{
-> +#ifdef CONFIG_SPU_BASE
-> +	spu_flush_all_slbs(mm);
-> +#endif
-> +}
-> +EXPORT_SYMBOL_GPL(copro_flush_all_slbs);
 > diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index daee7f4..5c0738d 100644
+> index 5c0738d..bbdb054 100644
 > --- a/arch/powerpc/mm/hash_utils_64.c
 > +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -51,7 +51,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/cputable.h>
->  #include <asm/sections.h>
-> -#include <asm/spu.h>
-> +#include <asm/copro.h>
->  #include <asm/udbg.h>
->  #include <asm/code-patching.h>
->  #include <asm/fadump.h>
-> @@ -901,9 +901,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
->  	if (get_slice_psize(mm, addr) == MMU_PAGE_4K)
->  		return;
->  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
-> -#ifdef CONFIG_SPU_BASE
-> -	spu_flush_all_slbs(mm);
-> -#endif
-> +	copro_flush_all_slbs(mm);
->  	if (get_paca_psize(addr) != MMU_PAGE_4K) {
->  		get_paca()->context = mm->context;
->  		slb_flush_and_rebolt();
-> @@ -1141,9 +1139,7 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  			       "to 4kB pages because of "
->  			       "non-cacheable mapping\n");
->  			psize = mmu_vmalloc_psize = MMU_PAGE_4K;
-> -#ifdef CONFIG_SPU_BASE
-> -			spu_flush_all_slbs(mm);
-> -#endif
-> +			copro_flush_all_slbs(mm);
->  		}
->  	}
->  
-> diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-> index b0c75cc..a81791c 100644
-> --- a/arch/powerpc/mm/slice.c
-> +++ b/arch/powerpc/mm/slice.c
-> @@ -32,7 +32,7 @@
->  #include <linux/export.h>
->  #include <asm/mman.h>
->  #include <asm/mmu.h>
-> -#include <asm/spu.h>
-> +#include <asm/copro.h>
->  
->  /* some sanity checks */
->  #if (PGTABLE_RANGE >> 43) > SLICE_MASK_SIZE
-> @@ -232,9 +232,7 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
->  
->  	spin_unlock_irqrestore(&slice_convert_lock, flags);
->  
-> -#ifdef CONFIG_SPU_BASE
-> -	spu_flush_all_slbs(mm);
-> -#endif
-> +	copro_flush_all_slbs(mm);
->  }
->  
->  /*
-> @@ -671,9 +669,7 @@ void slice_set_psize(struct mm_struct *mm, unsigned long address,
->  
->  	spin_unlock_irqrestore(&slice_convert_lock, flags);
->  
-> -#ifdef CONFIG_SPU_BASE
-> -	spu_flush_all_slbs(mm);
-> -#endif
-> +	copro_flush_all_slbs(mm);
->  }
->  
->  void slice_set_range_psize(struct mm_struct *mm, unsigned long start,
+> @@ -98,6 +98,7 @@ unsigned long htab_size_bytes;
+>  unsigned long htab_hash_mask;
+>  EXPORT_SYMBOL_GPL(htab_hash_mask);
+>  int mmu_linear_psize = MMU_PAGE_4K;
+> +EXPORT_SYMBOL_GPL(mmu_linear_psize);
+>  int mmu_virtual_psize = MMU_PAGE_4K;
+>  int mmu_vmalloc_psize = MMU_PAGE_4K;
+>  #ifdef CONFIG_SPARSEMEM_VMEMMAP
+> @@ -105,6 +106,7 @@ int mmu_vmemmap_psize = MMU_PAGE_4K;
+>  #endif
+>  int mmu_io_psize = MMU_PAGE_4K;
+>  int mmu_kernel_ssize = MMU_SEGSIZE_256M;
+> +EXPORT_SYMBOL_GPL(mmu_kernel_ssize);
+>  int mmu_highuser_ssize = MMU_SEGSIZE_256M;
+>  u16 mmu_slb_size = 64;
+>  EXPORT_SYMBOL_GPL(mmu_slb_size);
 > -- 
 > 1.9.1
 >
