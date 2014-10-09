@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751008AbaJIFUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 01:20:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35515 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaJIFT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 01:19:59 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <54361AD2.1040307@jp.fujitsu.com>
-Date: Thu, 9 Oct 2014 14:19:14 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751168AbaJIFYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 01:24:05 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:17740 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750800AbaJIFYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 01:24:00 -0400
+Message-ID: <54361BE9.8030801@c-s.fr>
+Date: Thu, 09 Oct 2014 07:23:53 +0200
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, <mingo@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched/fair: Care divide error in update_task_scan_period()
-References: <5434DCFF.1040208@jp.fujitsu.com> <54356970.7050805@redhat.com> <20141008165402.GO10832@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141008165402.GO10832@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+To: David Miller <davem@davemloft.net>
+CC: pantelis.antoniou@gmail.com, vbordug@ru.mvista.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 0/2] net: fs_enet: Remove non NAPI RX and add NAPI for
+ TX
+References: <20141007130454.13EF21AB266@localhost.localdomain> <20141008.160301.394010995208640934.davem@davemloft.net>
+In-Reply-To: <20141008.160301.394010995208640934.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/09 1:54), Peter Zijlstra wrote:
-> On Wed, Oct 08, 2014 at 12:42:24PM -0400, Rik van Riel wrote:
->> On 10/08/2014 02:43 AM, Yasuaki Ishimatsu wrote:
->>
->>>    The divide error is rare case because the trigger is node offline.
->>>    By this patch, when both of private and shared are set to 0, diff
->>>    is just set to 0, not calculating the division.
->>
->> How about a simple
->>
->>      if (private + shared) == 0)
->>            return;
->>
->> higher up in the function, to avoid adding an extra
->> layer of indentation and confusion to the main part
->> of the function?
->
-> At which point we'll have 3 different return semantics. Should we not
-> clear numa_faults_localityp[], even in this case?
->
 
-I'm not familiar with Numa balancing feature. So I want to know it too.
-If it's not necessary to clear numa_faults_locality[], I'll apply the idea.
-
-Thanks,
-Yasuaki Ishimatsu
+Le 08/10/2014 22:03, David Miller a écrit :
+> From: Christophe Leroy <christophe.leroy@c-s.fr>
+> Date: Tue,  7 Oct 2014 15:04:53 +0200 (CEST)
+>
+>> When using a MPC8xx as a router, 'perf' shows a significant time spent in
+>> fs_enet_interrupt() and fs_enet_start_xmit().
+>> 'perf annotate' shows that the time spent in fs_enet_start_xmit is indeed spent
+>> between spin_unlock_irqrestore() and the following instruction, hence in
+>> interrupt handling. This is due to the TX complete interrupt that fires after
+>> each transmitted packet.
+>> This patchset first remove all non NAPI handling as NAPI has become the only
+>> mode for RX, then adds NAPI for handling TX complete.
+>> This improves NAT TCP throughput by 21% on MPC885 with FEC.
+>>
+>> Tested on MPC885 with FEC.
+>>
+>> [PATCH 1/2] net: fs_enet: Remove non NAPI RX
+>> [PATCH 2/2] net: fs_enet: Add NAPI TX
+>>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+> Series applied, thanks.
+>
+> Any particular reason you didn't just put the TX reclaim calls into
+> the existing NAPI handler?
+Not really. I used the gianfar.c driver as a model.
+>
+> That's what other drivers do, because TX reclaim can make SKBs
+> available for RX packet receive on the local cpu.  So generally you
+> have one NAPI context that first does any pending TX reclaim, then
+> polls the RX ring for new packets.
+>
+Is that a better approach ?
 
