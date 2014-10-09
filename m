@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249AbaJIVSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:18:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59638 "EHLO
+	id S1758281AbaJIVTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:19:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59628 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897AbaJIVLb (ORCPT
+	with ESMTP id S1757884AbaJIVL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:11:31 -0400
+	Thu, 9 Oct 2014 17:11:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 068/163] be careful with nd->inode in path_init() and follow_dotdot_rcu()
-Date: Thu,  9 Oct 2014 14:01:33 -0700
-Message-Id: <1412888588-26755-69-git-send-email-kamal@canonical.com>
+Cc: Chen Zhen <zhen1.chen@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 086/163] ASoC: samsung-i2s: Maintain CDCLK settings across i2s_{shutdown/startup}
+Date: Thu,  9 Oct 2014 14:01:51 -0700
+Message-Id: <1412888588-26755-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -26,78 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 
-commit 4023bfc9f351a7994fb6a7d515476c320f94a574 upstream.
+commit b97c60abf9a561f86ae71bd741add02673cc1a08 upstream.
 
-in the former we simply check if dentry is still valid after picking
-its ->d_inode; in the latter we fetch ->d_inode in the same places
-where we fetch dentry and its ->d_seq, under the same checks.
+Currently configuration of the CDCLK pad is being overwritten in
+the i2s_shutdown() callback in order to gate the SoC output clock.
+However if an ASoC machine driver doesn't restore that clock
+settings each time after opening the sound device this results
+in the CDCLK pin being permanently configured into input mode.
+I.e. the output clock will always stay disabled.
+Fix that by saving the CDCLKCON bit state in i2s_shutdown() and
+and restoring it in the i2s_startup() callback.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Chen Zhen <zhen1.chen@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+[ kamal: 3.13-stable prereq for
+  133c268 "ASoC: samsung-i2s: Check secondary DAI exists before referencing". ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/namei.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ sound/soc/samsung/i2s.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index aed3458..eaabb52 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1119,6 +1119,7 @@ static bool __follow_mount_rcu(struct nameidata *nd, struct path *path,
+diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
+index 27ca0aa..69160f7 100644
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -70,6 +70,8 @@ struct i2s_dai {
+ #define DAI_OPENED	(1 << 0) /* Dai is opened */
+ #define DAI_MANAGER	(1 << 1) /* Dai is the manager */
+ 	unsigned mode;
++	/* CDCLK pin direction: 0  - input, 1 - output */
++	unsigned int cdclk_out:1;
+ 	/* Driver for this DAI */
+ 	struct snd_soc_dai_driver i2s_dai_drv;
+ 	/* DMA parameters */
+@@ -732,6 +734,9 @@ static int i2s_startup(struct snd_pcm_substream *substream,
  
- static int follow_dotdot_rcu(struct nameidata *nd)
- {
-+	struct inode *inode = nd->inode;
- 	if (!nd->root.mnt)
- 		set_root_rcu(nd);
+ 	spin_unlock_irqrestore(&lock, flags);
  
-@@ -1132,6 +1133,7 @@ static int follow_dotdot_rcu(struct nameidata *nd)
- 			struct dentry *parent = old->d_parent;
- 			unsigned seq;
- 
-+			inode = parent->d_inode;
- 			seq = read_seqcount_begin(&parent->d_seq);
- 			if (read_seqcount_retry(&old->d_seq, nd->seq))
- 				goto failed;
-@@ -1141,6 +1143,7 @@ static int follow_dotdot_rcu(struct nameidata *nd)
- 		}
- 		if (!follow_up_rcu(&nd->path))
- 			break;
-+		inode = nd->path.dentry->d_inode;
- 		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
- 	}
- 	while (d_mountpoint(nd->path.dentry)) {
-@@ -1150,11 +1153,12 @@ static int follow_dotdot_rcu(struct nameidata *nd)
- 			break;
- 		nd->path.mnt = &mounted->mnt;
- 		nd->path.dentry = mounted->mnt.mnt_root;
-+		inode = nd->path.dentry->d_inode;
- 		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
- 		if (!read_seqretry(&mount_lock, nd->m_seq))
- 			goto failed;
- 	}
--	nd->inode = nd->path.dentry->d_inode;
-+	nd->inode = inode;
++	if (!is_opened(other) && i2s->cdclk_out)
++		i2s_set_sysclk(dai, SAMSUNG_I2S_CDCLK,
++				0, SND_SOC_CLOCK_OUT);
  	return 0;
- 
- failed:
-@@ -1883,7 +1887,14 @@ static int path_init(int dfd, const char *name, unsigned int flags,
- 	}
- 
- 	nd->inode = nd->path.dentry->d_inode;
--	return 0;
-+	if (!(flags & LOOKUP_RCU))
-+		return 0;
-+	if (likely(!read_seqcount_retry(&nd->path.dentry->d_seq, nd->seq)))
-+		return 0;
-+	if (!(nd->flags & LOOKUP_ROOT))
-+		nd->root.mnt = NULL;
-+	rcu_read_unlock();
-+	return -ECHILD;
  }
  
- static inline int lookup_last(struct nameidata *nd, struct path *path)
+@@ -747,9 +752,13 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
+ 	i2s->mode &= ~DAI_OPENED;
+ 	i2s->mode &= ~DAI_MANAGER;
+ 
+-	if (is_opened(other))
++	if (is_opened(other)) {
+ 		other->mode |= DAI_MANAGER;
+-
++	} else {
++		u32 mod = readl(i2s->addr + I2SMOD);
++		i2s->cdclk_out = !(mod & MOD_CDCLKCON);
++		other->cdclk_out = i2s->cdclk_out;
++	}
+ 	/* Reset any constraint on RFS and BFS */
+ 	i2s->rfs = 0;
+ 	i2s->bfs = 0;
 -- 
 1.9.1
 
