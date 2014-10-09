@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442AbaJIQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:02:29 -0400
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:62739 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706AbaJIQCV (ORCPT
+	id S1757458AbaJIQEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:04:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40972 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaJIQE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:02:21 -0400
-Message-ID: <5436B188.3070608@gmail.com>
-Date: Fri, 10 Oct 2014 02:32:16 +1030
-From: Daniel Cotton <danielcotton.mailinglists@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Thu, 9 Oct 2014 12:04:27 -0400
+Date: Thu, 9 Oct 2014 18:04:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [PATCH RFC] sched,idle: teach select_idle_sibling about idle
+ states
+Message-ID: <20141009160424.GT4750@worktop.programming.kicks-ass.net>
+References: <1409844730-12273-1-git-send-email-nicolas.pitre@linaro.org>
+ <1409844730-12273-3-git-send-email-nicolas.pitre@linaro.org>
+ <542B277D.7050103@redhat.com>
+ <alpine.LFD.2.11.1409301904150.5311@knanqh.ubzr>
+ <20141002131548.6cd377d5@cuia.bos.redhat.com>
+ <1412317384.5149.19.camel@marge.simpson.net>
+ <20141003075012.GF10583@worktop.programming.kicks-ass.net>
+ <542EB29A.2050704@redhat.com>
+ <20141003144651.GI10583@worktop.programming.kicks-ass.net>
+ <542EC2BB.5030907@redhat.com>
 MIME-Version: 1.0
-To: axboe@fb.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] mtip32xx: Fix incorrect warning
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <542EC2BB.5030907@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent mtip32xx block driver from showing a warning at load time 
-("Error creating debugfs parent") when debugfs is not included in
-the kernel. If debugfs is included, show the error code. Fixes bug
-55831 in the Bugzilla.
+On Fri, Oct 03, 2014 at 11:37:31AM -0400, Rik van Riel wrote:
+> Some more brainstorming points...
+> 
+> 1) We should probably (lazily/batched?) propagate load information
+>    up the sched_group tree.  This will be useful for wake_affine,
+>    load_balancing, find_idlest_cpu, and select_idle_sibling
+> 
+> 2) With both find_idlest_cpu and select_idle_sibling walking down
+>    the tree from the LLC level, they could probably share code
+> 
+> 3) Counting both blocked and runnable load may give better long
+>    term stability of loads, resulting in a reduction in work
+>    preserving behaviour, but an improvement in locality - this
+>    could be worthwhile, but it is hard to say in advance
+> 
+> 4) We can be pretty sure that CPU makers are not going to stop
+>    at a mere 18 cores. We need to subdivide things below the LLC
+>    level, turning select_idle_sibling and find_idlest_cpu into
+>    a tree walk.
+> 
+>    This means whatever selection criteria are used by these need
+>    to be propagated up the sched_group tree. This, in turn, means
+>    we probably need to restrict ourselves to things that do not get
+>    changed/updated too often.
+> 
+> Am I overlooking anything?
 
-Signed-off-by: Daniel Cotton <danielcotton.patches@gmail.com>
----
-  drivers/block/mtip32xx/mtip32xx.c | 11 +++++++----
-  1 file changed, 7 insertions(+), 4 deletions(-)
+Well, we can certainly try something like that; but your last point
+seems like a contradition; seeing how _the_ important point for
+select_idle_sibling() is the actual idle state, and that per definition
+is something that can change/update often.
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c 
-b/drivers/block/mtip32xx/mtip32xx.c
-index 5c8e7fe..1124c61 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4686,16 +4686,19 @@ static int __init mtip_init(void)
-  	mtip_major = error;
-
-  	dfs_parent = debugfs_create_dir("rssd", NULL);
--	if (IS_ERR_OR_NULL(dfs_parent)) {
--		pr_warn("Error creating debugfs parent\n");
-+	if (IS_ERR_OR_NULL(dfs_parent) && PTR_ERR(dfs_parent) != -ENODEV) {
-+		pr_warn("Error creating debugfs parent, error code: %ld\n",
-+			PTR_ERR(dfs_parent));
-  		dfs_parent = NULL;
-  	}
-  	if (dfs_parent) {
-  		dfs_device_status = debugfs_create_file("device_status",
-  					S_IRUGO, dfs_parent, NULL,
-  					&mtip_device_status_fops);
--		if (IS_ERR_OR_NULL(dfs_device_status)) {
--			pr_err("Error creating device_status node\n");
-+		if (IS_ERR_OR_NULL(dfs_device_status) &&
-+		    PTR_ERR(dfs_device_status) != -ENODEV) {
-+			pr_err("Error creating device_status node, error code: %ld\n",
-+				PTR_ERR(dfs_device_status));
-  			dfs_device_status = NULL;
-  		}
-  	}
+But yes, the only viable option is some artificial breakup of the
+topology and we can indeed try and bridge the gap with some caching.
