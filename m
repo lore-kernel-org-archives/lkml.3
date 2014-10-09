@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647AbaJIVpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:45:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59014 "EHLO
+	id S1757187AbaJIVFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:05:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58999 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757194AbaJIVFg (ORCPT
+	with ESMTP id S1755992AbaJIVFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:05:36 -0400
+	Thu, 9 Oct 2014 17:05:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 147/163] shmem: fix nlink for rename overwrite directory
-Date: Thu,  9 Oct 2014 14:02:52 -0700
-Message-Id: <1412888588-26755-148-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 134/163] md/raid1: update next_resync under resync_lock.
+Date: Thu,  9 Oct 2014 14:02:39 -0700
+Message-Id: <1412888588-26755-135-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,79 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: NeilBrown <neilb@suse.de>
 
-commit b928095b0a7cff7fb9fcf4c706348ceb8ab2c295 upstream.
+commit c2fd4c94deedb89ac1746c4a53219be499372c06 upstream.
 
-If overwriting an empty directory with rename, then need to drop the extra
-nlink.
+raise_barrier() uses next_resync as part of its calculations, so it
+really should be updated first, instead of afterwards.
 
-Test prog:
+next_resync is always used under resync_lock so update it under
+resync lock to, just before it is used.  That is safest.
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <err.h>
-#include <sys/stat.h>
+This could cause normal IO and resync IO to interact badly so
+it suitable for -stable.
 
-int main(void)
-{
-	const char *test_dir1 = "test-dir1";
-	const char *test_dir2 = "test-dir2";
-	int res;
-	int fd;
-	struct stat statbuf;
-
-	res = mkdir(test_dir1, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir1);
-
-	res = mkdir(test_dir2, 0777);
-	if (res == -1)
-		err(1, "mkdir(\"%s\")", test_dir2);
-
-	fd = open(test_dir2, O_RDONLY);
-	if (fd == -1)
-		err(1, "open(\"%s\")", test_dir2);
-
-	res = rename(test_dir1, test_dir2);
-	if (res == -1)
-		err(1, "rename(\"%s\", \"%s\")", test_dir1, test_dir2);
-
-	res = fstat(fd, &statbuf);
-	if (res == -1)
-		err(1, "fstat(%i)", fd);
-
-	if (statbuf.st_nlink != 0) {
-		fprintf(stderr, "nlink is %lu, should be 0\n", statbuf.st_nlink);
-		return 1;
-	}
-
-	return 0;
-}
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/shmem.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/raid1.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/mm/shmem.c b/mm/shmem.c
-index de64924..bed15b5 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -2157,8 +2157,10 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 11d0bd8..5ad11da 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -829,7 +829,7 @@ static void flush_pending_writes(struct r1conf *conf)
+  *    there is no normal IO happeing.  It must arrange to call
+  *    lower_barrier when the particular background IO completes.
+  */
+-static void raise_barrier(struct r1conf *conf)
++static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
+ {
+ 	spin_lock_irq(&conf->resync_lock);
  
- 	if (new_dentry->d_inode) {
- 		(void) shmem_unlink(new_dir, new_dentry);
--		if (they_are_dirs)
-+		if (they_are_dirs) {
-+			drop_nlink(new_dentry->d_inode);
- 			drop_nlink(old_dir);
-+		}
- 	} else if (they_are_dirs) {
- 		drop_nlink(old_dir);
- 		inc_nlink(new_dir);
+@@ -839,6 +839,7 @@ static void raise_barrier(struct r1conf *conf)
+ 
+ 	/* block any new IO from starting */
+ 	conf->barrier++;
++	conf->next_resync = sector_nr;
+ 
+ 	/* For these conditions we must wait:
+ 	 * A: while the array is in frozen state
+@@ -2540,9 +2541,8 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr, int *skipp
+ 
+ 	bitmap_cond_end_sync(mddev->bitmap, sector_nr);
+ 	r1_bio = mempool_alloc(conf->r1buf_pool, GFP_NOIO);
+-	raise_barrier(conf);
+ 
+-	conf->next_resync = sector_nr;
++	raise_barrier(conf, sector_nr);
+ 
+ 	rcu_read_lock();
+ 	/*
 -- 
 1.9.1
 
