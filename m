@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaJIG3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 02:29:00 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:61800 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752AbaJIG2w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 02:28:52 -0400
+	id S1751294AbaJIGaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 02:30:16 -0400
+Received: from ygrex.ru ([5.19.241.250]:47325 "EHLO ygrex.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750752AbaJIGaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 02:30:10 -0400
+Date: Thu, 9 Oct 2014 10:30:06 +0400
+From: Igor Bogomazov <ygrex@ygrex.ru>
+To: devel@driverdev.osuosl.org
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] staging: rtl8188eu: coding style fixup
+Message-ID: <20141009103006.6bd8beb0@ygrex-lenovo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-References: <1411726047-3224-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 9 Oct 2014 15:28:31 +0900
-Message-ID: <CAAVeFuKcK_Ave41S6gVBE1ZQda22WPDgDxpCatkmccn3uNmyEQ@mail.gmail.com>
-Subject: Re: [PATCHv2 0/3] Enable Quark X1000 support in gpio-sch
-To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 26, 2014 at 7:07 PM, Chang Rebecca Swee Fun
-<rebecca.swee.fun.chang@intel.com> wrote:
-> Hi,
->
-> This is a revised version for gpio-sch.
->
-> Change log for V2:
-> Patch 1:
-> - Move sch_gpio_get() and sch_gpio_set() to avoid forward declaration.
-> - Changed sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
->   sch_gpio_register_clear().
->
-> Patch 3:
-> - Changed all sch_gpio_enable()/sch_gpio_disable() to sch_gpio_register_set()/
->   sch_gpio_register_clear().
->
-> Version 1:
-> This patch series is about enabling legacy GPIO support for Quark X1000.
-> The patches were developed on top of Mika Westerberg's commit on
-> consolidating core and resume banks. Please refer to the link below for
-> more information about his commit.
-> https://lkml.org/lkml/2014/8/17/13
+checkpatch.pl tiny fix
+get rid of 2 warnings and 2 errors for hal/fw.c
+    
+Signed-off-by: Igor Bogomazov <ygrex@ygrex.ru>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: navin patidar <navin.patidar@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+for linux-next 3.17.0
 
-Sorry for the late review. I tried to apply the patch you mentioned
-above before your series, and even Mika's patch won't apply on Linus'
-devel branch or today's -next. This make it difficult to make a good
-review. Could you rebase and resend this series once all its
-dependencies have been merge by Linus W. ?
+this is an updated version of the patch I've sent two days ago, that one
+did not apply cleanly
+
+diff --git a/drivers/staging/rtl8188eu/hal/fw.c b/drivers/staging/rtl8188eu/hal/fw.c
+--- a/drivers/staging/rtl8188eu/hal/fw.c
++++ b/drivers/staging/rtl8188eu/hal/fw.c
+@@ -154,9 +154,8 @@ static int _rtl88e_fw_free_to_go(struct adapter *adapt)
+ 			break;
+ 	} while (counter++ < POLLING_READY_TIMEOUT_COUNT);
+ 
+-	if (counter >= POLLING_READY_TIMEOUT_COUNT) {
++	if (counter >= POLLING_READY_TIMEOUT_COUNT)
+ 		goto exit;
+-	}
+ 
+ 	value32 = usb_read32(adapt, REG_MCUFWDL);
+ 	value32 |= MCUFWDL_RDY;
+@@ -193,13 +192,13 @@ int rtl88eu_download_fw(struct adapter *adapt)
+ 	u32 fwsize;
+ 	int err;
+ 
+-	if (request_firmware(&fw, fw_name, device)){
++	if (request_firmware(&fw, fw_name, device)) {
+ 		dev_err(device, "Firmware %s not available\n", fw_name);
+ 		return -ENOENT;
+ 	}
+ 
+ 	if (fw->size > FW_8188E_SIZE) {
+-		dev_err(device,"Firmware size exceed 0x%X. Check it.\n",
++		dev_err(device, "Firmware size exceed 0x%X. Check it.\n",
+ 			 FW_8188E_SIZE);
+ 		return -1;
+ 	}
+@@ -226,7 +225,8 @@ int rtl88eu_download_fw(struct adapter *adapt)
+ 		rtl88e_firmware_selfreset(adapt);
+ 	}
+ 	_rtl88e_enable_fw_download(adapt, true);
+-	usb_write8(adapt, REG_MCUFWDL, usb_read8(adapt, REG_MCUFWDL) | FWDL_ChkSum_rpt);
++	usb_write8(adapt, REG_MCUFWDL,
++		usb_read8(adapt, REG_MCUFWDL) | FWDL_ChkSum_rpt);
+ 	_rtl88e_write_fw(adapt, pfwdata, fwsize);
+ 	_rtl88e_enable_fw_download(adapt, false);
+
