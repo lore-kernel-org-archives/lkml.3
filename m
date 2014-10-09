@@ -1,60 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394AbaJIPBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:01:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514AbaJIPA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:00:59 -0400
-Date: Thu, 9 Oct 2014 16:57:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
-Message-ID: <20141009145726.GA5604@redhat.com>
-References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com> <20141008183326.GB17495@redhat.com> <20141008193644.GA32055@redhat.com> <1412804248.24248.1.camel@yandex.ru>
+	id S1757256AbaJIPCB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:02:01 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37712 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaJIPBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 11:01:53 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH v4 01/16] powerpc/cell: Move spu_handle_mm_fault() out of cell platform
+In-Reply-To: <1412758505-23495-2-git-send-email-mikey@neuling.org>
+References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-2-git-send-email-mikey@neuling.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 09 Oct 2014 20:31:37 +0530
+Message-ID: <87a9552soe.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412804248.24248.1.camel@yandex.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100915-0005-0000-0000-0000016553B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09, Kirill Tkhai wrote:
+Michael Neuling <mikey@neuling.org> writes:
+
+> From: Ian Munsie <imunsie@au1.ibm.com>
 >
-> В Ср, 08/10/2014 в 21:36 +0200, Oleg Nesterov пишет:
-> > @@ -2277,15 +2277,14 @@ static inline void post_schedule(struct rq *rq)
-> >  asmlinkage __visible void schedule_tail(struct task_struct *prev)
-> >  	__releases(rq->lock)
-> >  {
-> > -	struct rq *rq = this_rq();
-> > +	struct rq *rq;
-> >  
-> > +	/* finish_task_switch() drops rq->lock and enables preemtion */
-> > +	preempt_disable();
-> 
-> Maybe, the code would look simpler if we change
-> init_task_preempt_count() and create new tasks
-> with preempt_count() == 2, so this preempt_disable()
-> won't be necessary. But it's more or less subjectively.
+> Currently spu_handle_mm_fault() is in the cell platform.
+>
+> This code is generically useful for other non-cell co-processors on powerpc.
+>
+> This patch moves this function out of the cell platform into arch/powerpc/mm so
+> that others may use it.
+>
 
-Yes, yes, I thought about the same.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Except I think we should kill init_task_preempt_count() and change
-schedule_tail()
-
-	-	preempt_disable();
-	+	preempt_count_set(PREEMPT_DISABLED + 1);
-
-but first we need to remove ->saved_preempt_count.
-
-> Reviewed-by: Kirill Tkhai <ktkhai@parallels.com>
-
-Thanks!
-
-Oleg.
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  arch/powerpc/Kconfig                                     |  4 ++++
+>  arch/powerpc/include/asm/copro.h                         | 16 ++++++++++++++++
+>  arch/powerpc/include/asm/spu.h                           |  5 ++---
+>  arch/powerpc/mm/Makefile                                 |  1 +
+>  .../{platforms/cell/spu_fault.c => mm/copro_fault.c}     | 14 ++++++--------
+>  arch/powerpc/platforms/cell/Kconfig                      |  1 +
+>  arch/powerpc/platforms/cell/Makefile                     |  2 +-
+>  arch/powerpc/platforms/cell/spufs/fault.c                |  4 ++--
+>  8 files changed, 33 insertions(+), 14 deletions(-)
+>  create mode 100644 arch/powerpc/include/asm/copro.h
+>  rename arch/powerpc/{platforms/cell/spu_fault.c => mm/copro_fault.c} (89%)
+>
+> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+> index 4bc7b62..8f094e9 100644
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@ -603,6 +603,10 @@ config PPC_SUBPAGE_PROT
+>  	  to set access permissions (read/write, readonly, or no access)
+>  	  on the 4k subpages of each 64k page.
+>  
+> +config PPC_COPRO_BASE
+> +	bool
+> +	default n
+> +
+>  config SCHED_SMT
+>  	bool "SMT (Hyperthreading) scheduler support"
+>  	depends on PPC64 && SMP
+> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
+> new file mode 100644
+> index 0000000..51cae85
+> --- /dev/null
+> +++ b/arch/powerpc/include/asm/copro.h
+> @@ -0,0 +1,16 @@
+> +/*
+> + * Copyright 2014 IBM Corp.
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; either version
+> + * 2 of the License, or (at your option) any later version.
+> + */
+> +
+> +#ifndef _ASM_POWERPC_COPRO_H
+> +#define _ASM_POWERPC_COPRO_H
+> +
+> +int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+> +			  unsigned long dsisr, unsigned *flt);
+> +
+> +#endif /* _ASM_POWERPC_COPRO_H */
+> diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
+> index 37b7ca3..a6e6e2b 100644
+> --- a/arch/powerpc/include/asm/spu.h
+> +++ b/arch/powerpc/include/asm/spu.h
+> @@ -27,6 +27,8 @@
+>  #include <linux/workqueue.h>
+>  #include <linux/device.h>
+>  #include <linux/mutex.h>
+> +#include <asm/reg.h>
+> +#include <asm/copro.h>
+>  
+>  #define LS_SIZE (256 * 1024)
+>  #define LS_ADDR_MASK (LS_SIZE - 1)
+> @@ -277,9 +279,6 @@ void spu_remove_dev_attr(struct device_attribute *attr);
+>  int spu_add_dev_attr_group(struct attribute_group *attrs);
+>  void spu_remove_dev_attr_group(struct attribute_group *attrs);
+>  
+> -int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+> -		unsigned long dsisr, unsigned *flt);
+> -
+>  /*
+>   * Notifier blocks:
+>   *
+> diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
+> index d0130ff..325e861 100644
+> --- a/arch/powerpc/mm/Makefile
+> +++ b/arch/powerpc/mm/Makefile
+> @@ -34,3 +34,4 @@ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += hugepage-hash64.o
+>  obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
+>  obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
+>  obj-$(CONFIG_HIGHMEM)		+= highmem.o
+> +obj-$(CONFIG_PPC_COPRO_BASE)	+= copro_fault.o
+> diff --git a/arch/powerpc/platforms/cell/spu_fault.c b/arch/powerpc/mm/copro_fault.c
+> similarity index 89%
+> rename from arch/powerpc/platforms/cell/spu_fault.c
+> rename to arch/powerpc/mm/copro_fault.c
+> index 641e727..ba7df14 100644
+> --- a/arch/powerpc/platforms/cell/spu_fault.c
+> +++ b/arch/powerpc/mm/copro_fault.c
+> @@ -1,5 +1,5 @@
+>  /*
+> - * SPU mm fault handler
+> + * CoProcessor (SPU/AFU) mm fault handler
+>   *
+>   * (C) Copyright IBM Deutschland Entwicklung GmbH 2007
+>   *
+> @@ -23,16 +23,14 @@
+>  #include <linux/sched.h>
+>  #include <linux/mm.h>
+>  #include <linux/export.h>
+> -
+> -#include <asm/spu.h>
+> -#include <asm/spu_csa.h>
+> +#include <asm/reg.h>
+>  
+>  /*
+>   * This ought to be kept in sync with the powerpc specific do_page_fault
+>   * function. Currently, there are a few corner cases that we haven't had
+>   * to handle fortunately.
+>   */
+> -int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+> +int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+>  		unsigned long dsisr, unsigned *flt)
+>  {
+>  	struct vm_area_struct *vma;
+> @@ -58,12 +56,12 @@ int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+>  			goto out_unlock;
+>  	}
+>  
+> -	is_write = dsisr & MFC_DSISR_ACCESS_PUT;
+> +	is_write = dsisr & DSISR_ISSTORE;
+>  	if (is_write) {
+>  		if (!(vma->vm_flags & VM_WRITE))
+>  			goto out_unlock;
+>  	} else {
+> -		if (dsisr & MFC_DSISR_ACCESS_DENIED)
+> +		if (dsisr & DSISR_PROTFAULT)
+>  			goto out_unlock;
+>  		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
+>  			goto out_unlock;
+> @@ -91,4 +89,4 @@ out_unlock:
+>  	up_read(&mm->mmap_sem);
+>  	return ret;
+>  }
+> -EXPORT_SYMBOL_GPL(spu_handle_mm_fault);
+> +EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
+> diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
+> index 9978f59..870b6db 100644
+> --- a/arch/powerpc/platforms/cell/Kconfig
+> +++ b/arch/powerpc/platforms/cell/Kconfig
+> @@ -86,6 +86,7 @@ config SPU_FS_64K_LS
+>  config SPU_BASE
+>  	bool
+>  	default n
+> +	select PPC_COPRO_BASE
+>  
+>  config CBE_RAS
+>  	bool "RAS features for bare metal Cell BE"
+> diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
+> index fe053e7..2d16884 100644
+> --- a/arch/powerpc/platforms/cell/Makefile
+> +++ b/arch/powerpc/platforms/cell/Makefile
+> @@ -20,7 +20,7 @@ spu-manage-$(CONFIG_PPC_CELL_COMMON)	+= spu_manage.o
+>  
+>  obj-$(CONFIG_SPU_BASE)			+= spu_callbacks.o spu_base.o \
+>  					   spu_notify.o \
+> -					   spu_syscalls.o spu_fault.o \
+> +					   spu_syscalls.o \
+>  					   $(spu-priv1-y) \
+>  					   $(spu-manage-y) \
+>  					   spufs/
+> diff --git a/arch/powerpc/platforms/cell/spufs/fault.c b/arch/powerpc/platforms/cell/spufs/fault.c
+> index 8cb6260..e45894a 100644
+> --- a/arch/powerpc/platforms/cell/spufs/fault.c
+> +++ b/arch/powerpc/platforms/cell/spufs/fault.c
+> @@ -138,7 +138,7 @@ int spufs_handle_class1(struct spu_context *ctx)
+>  	if (ctx->state == SPU_STATE_RUNNABLE)
+>  		ctx->spu->stats.hash_flt++;
+>  
+> -	/* we must not hold the lock when entering spu_handle_mm_fault */
+> +	/* we must not hold the lock when entering copro_handle_mm_fault */
+>  	spu_release(ctx);
+>  
+>  	access = (_PAGE_PRESENT | _PAGE_USER);
+> @@ -149,7 +149,7 @@ int spufs_handle_class1(struct spu_context *ctx)
+>  
+>  	/* hashing failed, so try the actual fault handler */
+>  	if (ret)
+> -		ret = spu_handle_mm_fault(current->mm, ea, dsisr, &flt);
+> +		ret = copro_handle_mm_fault(current->mm, ea, dsisr, &flt);
+>  
+>  	/*
+>  	 * This is nasty: we need the state_mutex for all the bookkeeping even
+> -- 
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
