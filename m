@@ -1,185 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbaJIRCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:02:21 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:59012 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaJIRCP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:02:15 -0400
-From: Tsung-Han Lin <tsunghan.tw@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: rtl8192u: correct coding style errors
-Date: Fri, 10 Oct 2014 01:02:02 +0800
-Message-Id: <1412874122-7650-1-git-send-email-tsunghan.tw@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751197AbaJIRFv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:05:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52915 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750896AbaJIRFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 13:05:43 -0400
+Date: Thu, 9 Oct 2014 19:05:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Arjan van de Veen <arjan@infradead.org>, Paul Turner <pjt@google.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Richard Weinberger <richard@nod.at>,
+        =?utf-8?B?SsO2cmcgUsO2ZGVs?= <joro@8bytes.org>
+Subject: Re: [patch 05/40] cpu: Restructure cpu_down code
+Message-ID: <20141009170533.GB15050@pd.tnic>
+References: <20130131120348.372374706@linutronix.de>
+ <20130131120741.823640323@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130131120741.823640323@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct some coding style errors in
-drivers/staging/rtl8192u/r819xU_firmware.c.
+On Thu, Jan 31, 2013 at 12:11:15PM -0000, Thomas Gleixner wrote:
+> Split out into separate functions, so we can convert it to a state machine.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Signed-off-by: Tsung-Han Lin <tsunghan.tw@gmail.com>
+Refreshed:
+
+>From linux-kernel-owner@vger.kernel.org Thu Jan 31 13:11:32 2013
+Message-Id: <20130131120741.823640323@linutronix.de>
+User-Agent: quilt/0.48-1
+Date:	Thu, 31 Jan 2013 12:11:15 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+ Rusty Russell <rusty@rustcorp.com.au>, Paul McKenney
+ <paulmck@linux.vnet.ibm.com>, "Srivatsa S. Bhat"
+ <srivatsa.bhat@linux.vnet.ibm.com>, Arjan van de Veen <arjan@infradead.org>,
+ Paul Turner <pjt@google.com>, Richard Weinberger <rw@linutronix.de>, Magnus
+ Damm <magnus.damm@gmail.com>
+Subject: [patch 05/40] cpu: Restructure cpu_down code
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Status: RO
+
+Split out into separate functions, so we can convert it to a state machine.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/staging/rtl8192u/r819xU_firmware.c | 65 +++++++++++++++---------------
- 1 file changed, 33 insertions(+), 32 deletions(-)
+ kernel/cpu.c |   69 ++++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 47 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
-index f66ad8a0dfe0..4c766ab3547e 100644
---- a/drivers/staging/rtl8192u/r819xU_firmware.c
-+++ b/drivers/staging/rtl8192u/r819xU_firmware.c
-@@ -37,7 +37,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 	bool		    rt_status = true;
- 	u16		    frag_threshold;
- 	u16		    frag_length, frag_offset = 0;
--	//u16		    total_size;
-+	/* u16		    total_size; */
- 	int		    i;
- 
- 	rt_firmware	    *pfirmware = priv->pFirmware;
-@@ -47,7 +47,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 	u8                  bLastIniPkt;
- 
- 	firmware_init_param(dev);
--	//Fragmentation might be required
-+	/* Fragmentation might be required */
- 	frag_threshold = pfirmware->cmdpacket_frag_thresold;
- 	do {
- 		if ((buffer_len - frag_offset) > frag_threshold) {
-@@ -66,7 +66,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		skb  = dev_alloc_skb(USB_HWDESC_HEADER_LEN + frag_length + 4);
- 		if (!skb)
- 			return false;
--		memcpy((unsigned char *)(skb->cb),&dev,sizeof(dev));
-+		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
- 		tcb_desc = (cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
- 		tcb_desc->queue_index = TXCMD_QUEUE;
- 		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
-@@ -78,19 +78,19 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 		 * Transform from little endian to big endian
- 		 * and pending  zero
- 		 */
--		for (i=0; i < frag_length; i+=4) {
--			*seg_ptr++ = ((i+0)<frag_length)?code_virtual_address[i+3]:0;
--			*seg_ptr++ = ((i+1)<frag_length)?code_virtual_address[i+2]:0;
--			*seg_ptr++ = ((i+2)<frag_length)?code_virtual_address[i+1]:0;
--			*seg_ptr++ = ((i+3)<frag_length)?code_virtual_address[i+0]:0;
-+		for (i = 0; i < frag_length; i += 4) {
-+			*seg_ptr++ = ((i+0) < frag_length)?code_virtual_address[i+3]:0;
-+			*seg_ptr++ = ((i+1) < frag_length)?code_virtual_address[i+2]:0;
-+			*seg_ptr++ = ((i+2) < frag_length)?code_virtual_address[i+1]:0;
-+			*seg_ptr++ = ((i+3) < frag_length)?code_virtual_address[i+0]:0;
- 		}
--		tcb_desc->txbuf_size= (u16)i;
-+		tcb_desc->txbuf_size = (u16)i;
- 		skb_put(skb, i);
- 
--		if (!priv->ieee80211->check_nic_enough_desc(dev,tcb_desc->queue_index)||
--			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index]))||\
-+		if (!priv->ieee80211->check_nic_enough_desc(dev, tcb_desc->queue_index) ||
-+			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index])) || \
- 			(priv->ieee80211->queue_stop)) {
--			RT_TRACE(COMP_FIRMWARE,"=====================================================> tx full!\n");
-+			RT_TRACE(COMP_FIRMWARE, "=====================================================> tx full!\n");
- 			skb_queue_tail(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index], skb);
- 		} else {
- 			priv->ieee80211->softmac_hard_start_xmit(skb, dev);
-@@ -105,19 +105,20 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
- 
+Index: linux/kernel/cpu.c
+===================================================================
+--- linux.orig/kernel/cpu.c	2014-10-09 18:54:47.251793646 +0200
++++ linux/kernel/cpu.c	2014-10-09 19:00:46.743791277 +0200
+@@ -214,6 +214,43 @@ static int cpu_notify(unsigned long val,
+ 	return __cpu_notify(val, cpu, -1, NULL);
  }
  
--//-----------------------------------------------------------------------------
--// Procedure:    Check whether main code is download OK. If OK, turn on CPU
--//
--// Description:   CPU register locates in different page against general register.
--//			    Switch to CPU register in the begin and switch back before return
--//
--//
--// Arguments:   The pointer of the adapter
--//
--// Returns:
--//        NDIS_STATUS_FAILURE - the following initialization process should be terminated
--//        NDIS_STATUS_SUCCESS - if firmware initialization process success
--//-----------------------------------------------------------------------------
-+/*-----------------------------------------------------------------------------
-+ * Procedure:    Check whether main code is download OK. If OK, turn on CPU
-+ *
-+ * Description:   CPU register locates in different page against general register.
-+ *			    Switch to CPU register in the begin and switch back before return
-+ *
-+ *
-+ * Arguments:   The pointer of the adapter
-+ *
-+ * Returns:
-+ *        NDIS_STATUS_FAILURE - the following initialization process should be terminated
-+ *        NDIS_STATUS_SUCCESS - if firmware initialization process success
-+ *-----------------------------------------------------------------------------
-+ */
- static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
++/* Notifier wrappers for transitioning to state machine */
++static int notify_prepare(unsigned int cpu)
++{
++	int nr_calls = 0;
++	int ret;
++
++	ret = __cpu_notify(CPU_UP_PREPARE, cpu, -1, &nr_calls);
++	if (ret) {
++		nr_calls--;
++		printk(KERN_WARNING "%s: attempt to bring up CPU %u failed\n",
++				__func__, cpu);
++		__cpu_notify(CPU_UP_CANCELED, cpu, nr_calls, NULL);
++	}
++	return ret;
++}
++
++static int notify_online(unsigned int cpu)
++{
++	cpu_notify(CPU_ONLINE, cpu);
++	return 0;
++}
++
++static int bringup_cpu(unsigned int cpu)
++{
++	struct task_struct *idle = idle_thread_get(cpu);
++	int ret;
++
++	/* Arch-specific enabling code. */
++	ret = __cpu_up(cpu, idle);
++	if (ret) {
++		cpu_notify(CPU_UP_CANCELED, cpu);
++		return ret;
++	}
++	BUG_ON(!cpu_online(cpu));
++	return 0;
++}
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ 
+ static void cpu_notify_nofail(unsigned long val, unsigned int cpu)
+@@ -421,7 +458,7 @@ EXPORT_SYMBOL(cpu_down);
+ static int _cpu_up(unsigned int cpu, int tasks_frozen)
  {
- 	bool		rt_status = true;
-@@ -220,7 +221,7 @@ bool init_firmware(struct net_device *dev)
- 		/* it is called by reset */
- 		rst_opt = OPT_SYSTEM_RESET;
- 		starting_state = FW_INIT_STEP0_BOOT;
--		// TODO: system reset
-+		/* TODO: system reset */
+ 	struct task_struct *idle;
+-	int ret, nr_calls = 0;
++	int ret;
  
- 	} else if (pfirmware->firmware_status == FW_STATUS_5_READY) {
- 		/* it is called by Initialize */
-@@ -240,7 +241,7 @@ bool init_firmware(struct net_device *dev)
- 		 * or read image file from array. Default load from IMG file
- 		 */
- 		if (rst_opt == OPT_SYSTEM_RESET) {
--			rc = request_firmware(&fw_entry, fw_name[init_step],&priv->udev->dev);
-+			rc = request_firmware(&fw_entry, fw_name[init_step], &priv->udev->dev);
- 			if (rc < 0) {
- 				RT_TRACE(COMP_ERR, "request firmware fail!\n");
- 				goto download_firmware_fail;
-@@ -252,12 +253,12 @@ bool init_firmware(struct net_device *dev)
- 			}
+ 	cpu_hotplug_begin();
  
- 			if (init_step != FW_INIT_STEP1_MAIN) {
--				memcpy(pfirmware->firmware_buf,fw_entry->data,fw_entry->size);
-+				memcpy(pfirmware->firmware_buf, fw_entry->data, fw_entry->size);
- 				mapped_file = pfirmware->firmware_buf;
- 				file_length = fw_entry->size;
- 			} else {
- 				memset(pfirmware->firmware_buf, 0, 128);
--				memcpy(&pfirmware->firmware_buf[128],fw_entry->data,fw_entry->size);
-+				memcpy(&pfirmware->firmware_buf[128], fw_entry->data, fw_entry->size);
- 				mapped_file = pfirmware->firmware_buf;
- 				file_length = fw_entry->size + 128;
- 			}
-@@ -289,7 +290,7 @@ bool init_firmware(struct net_device *dev)
- 			 * will set polling bit when firmware code is also configured
- 			 */
- 			pfirmware->firmware_status = FW_STATUS_1_MOVE_BOOT_CODE;
--			//mdelay(1000);
-+			/* mdelay(1000); */
- 			/*
- 			 * To initialize IMEM, CPU move code  from 0x80000080,
- 			 * hence, we send 0x80 byte packet
-@@ -317,7 +318,7 @@ bool init_firmware(struct net_device *dev)
- 
- 			rt_status = CPUcheck_firmware_ready(dev);
- 			if (rt_status != TRUE) {
--				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n",rt_status);
-+				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n", rt_status);
- 				goto download_firmware_fail;
- 			}
- 
-@@ -328,7 +329,7 @@ bool init_firmware(struct net_device *dev)
+@@ -436,35 +473,24 @@ static int _cpu_up(unsigned int cpu, int
+ 		goto out;
  	}
  
- 	RT_TRACE(COMP_FIRMWARE, "Firmware Download Success\n");
--	//assert(pfirmware->firmware_status == FW_STATUS_5_READY, ("Firmware Download Fail\n"));
-+	/* assert(pfirmware->firmware_status == FW_STATUS_5_READY, ("Firmware Download Fail\n")); */
++	cpuhp_tasks_frozen = tasks_frozen;
++
+ 	ret = smpboot_create_threads(cpu);
+ 	if (ret)
+ 		goto out;
  
- 	return rt_status;
+-	cpuhp_tasks_frozen = tasks_frozen;
+-
+-	ret = __cpu_notify(CPU_UP_PREPARE, cpu, -1, &nr_calls);
+-	if (ret) {
+-		nr_calls--;
+-		pr_warn("%s: attempt to bring up CPU %u failed\n",
+-			__func__, cpu);
+-		goto out_notify;
+-	}
++	ret = notify_prepare(cpu);
++	if (ret)
++		goto out;
  
--- 
-1.9.1
+-	/* Arch-specific enabling code. */
+-	ret = __cpu_up(cpu, idle);
+-	if (ret != 0)
+-		goto out_notify;
+-	BUG_ON(!cpu_online(cpu));
++	ret = bringup_cpu(cpu);
++	if (ret)
++		goto out;
+ 
+ 	/* Wake the per cpu threads */
+ 	smpboot_unpark_threads(cpu);
+ 
+-	/* Now call notifier in preparation. */
+-	cpu_notify(CPU_ONLINE, cpu);
+-
+-out_notify:
+-	if (ret != 0)
+-		__cpu_notify(CPU_UP_CANCELED, cpu, nr_calls, NULL);
++	notify_online(cpu);
+ out:
+ 	cpu_hotplug_done();
+ 
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
