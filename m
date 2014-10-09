@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757261AbaJINyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:54:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaJINyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:54:06 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: Re: [PATCH] block: copy bi_vcnt in __bio_clone_fast
-References: <5435C093.5070405@suse.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 09 Oct 2014 09:53:58 -0400
-In-Reply-To: <5435C093.5070405@suse.com> (Jeff Mahoney's message of "Wed, 08
-	Oct 2014 18:54:11 -0400")
-Message-ID: <x4938axz6vd.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757337AbaJINyX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:54:23 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:39575 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756031AbaJINyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 09:54:10 -0400
+From: Jia He <hejianet@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jia He <hejianet@gmail.com>
+Subject: [PATCH 0/2] staging: rtl8188eu: Fix a series of coding style problems
+Date: Thu,  9 Oct 2014 21:53:51 +0800
+Message-Id: <1412862833-19015-1-git-send-email-hejianet@gmail.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
+References: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Mahoney <jeffm@suse.com> writes:
+This fixes all coding style error problems at rtl8188eu which
+makes checkpatch.pl unhappy
 
-> Commit 05f1dd53152173 (block: add queue flag for disabling SG merging) uses
-> bi_vcnt to assign bio->bi_phys_segments if sg merging is disabled. When
-> using device mapper on top of a blk-mq device (virtio_blk in my test),
-> we'd end up overflowing the scatterlist in __blk_bios_map_sg.
->
-> __bio_clone_fast copies bi_iter and bi_io_vec but not bi_vcnt, so
-> blk_recount_segments would report bi_phys_segments as 0. Since
-> rq->nr_phys_segments is 0 as well, the checks to ensure that we don't
-> exceed the queue's segment limit end up allowing more bios (and segments) to
-> attach the a request until we finally map it. That also means we
-> pass the BUG_ON at the beginning of virtio_queue_rq, ultimately causing
-> memory corruption and a crash.
->
-> If we copy bi_vcnt in __bio_clone_fast, the bios and requests properly
-> report the number of segments and everything works as expected.
->
-> Originally reported at http://bugzilla.opensuse.org/show_bug.cgi?id=888259
+Jia He (2):
+  staging: rtl8188eu: Fix coding style space missing problems
+  staging: rtl8188eu: Fix coding style not using tab problem
 
-Hi, Jeff,
+ drivers/staging/rtl8188eu/hal/bb_cfg.c | 4 ++--
+ drivers/staging/rtl8188eu/hal/fw.c     | 4 ++--
+ drivers/staging/rtl8188eu/hal/phy.c    | 2 +-
+ drivers/staging/rtl8188eu/hal/rf.c     | 4 ++--
+ drivers/staging/rtl8188eu/hal/rf_cfg.c | 4 ++--
+ 5 files changed, 9 insertions(+), 9 deletions(-)
 
-Did you manage to reproduce this problem with commit 0738854 (blk-merge:
-fix blk_recount_segments) applied?  Or perhaps with commit 200612e (dm
-table: propagate QUEUE_FLAG_NO_SG_MERGE)?
+-- 
+1.9.3
 
-Cheers,
-Jeff
