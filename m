@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072AbaJIV15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:27:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59399 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757611AbaJIVJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:34 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Thomas Richter <thor@math.tu-berlin.de>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 094/163] drm/i915: Fix SRC_COPY width on 830/845g
-Date: Thu,  9 Oct 2014 14:01:59 -0700
-Message-Id: <1412888588-26755-95-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1758526AbaJIV2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:28:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757978AbaJIV2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:28:03 -0400
+Date: Thu, 9 Oct 2014 17:27:47 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Vinod, Chegu" <chegu_vinod@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, mgorman@suse.de
+Subject: [PATCH] sched,numa: check all nodes when placing a
+ pseudo-interleaved group
+Message-ID: <20141009172747.0d97c38c@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+In pseudo-interleaved numa_groups, all tasks try to relocate to
+the group's preferred_nid.  When a group is spread across multiple
+NUMA nodes, this can lead to tasks swapping their location with
+other tasks inside the same group, instead of swapping location with
+tasks from other NUMA groups. This can keep NUMA groups from converging.
 
-------------------
+Examining all nodes, when dealing with a task in a pseudo-interleaved
+NUMA group, avoids this problem. Note that only CPUs in nodes that
+improve the task or group score are examined, so the loop isn't too
+bad.
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
-
-commit 611a7a4fd8b5fb6b25ab1f8bdcde61800a7feacf upstream.
-
-One small change I forgot to make in
-
-commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Mon Sep 8 14:25:41 2014 +0100
-
-    drm/i915: Evict CS TLBs between batches
-
-was to update the copy width for the compact BLT copy instruction.
-
-Reported-by: Thomas Richter <thor@math.tu-berlin.de>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Thomas Richter <thor@math.tu-berlin.de>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Thomas Richter <thor@math.tu-berlin.de>
-Acked-by: Daniel Vetter <daniel@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Vinod Chegu <chegu_vinod@hp.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/gpu/drm/i915/intel_ringbuffer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch allows the complex NUMA placement patch series to work,
+but it also fixes issues on normal NUMA systems, so this is an
+independent bugfix that can go in independently.
 
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index a4ec035..82b58dd 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1217,7 +1217,7 @@ i830_dispatch_execbuffer(struct intel_ring_buffer *ring,
- 		 */
- 		intel_ring_emit(ring, SRC_COPY_BLT_CMD | BLT_WRITE_RGBA);
- 		intel_ring_emit(ring, BLT_DEPTH_32 | BLT_ROP_SRC_COPY | 4096);
--		intel_ring_emit(ring, DIV_ROUND_UP(len, 4096) << 16 | 1024);
-+		intel_ring_emit(ring, DIV_ROUND_UP(len, 4096) << 16 | 4096);
- 		intel_ring_emit(ring, cs_offset);
- 		intel_ring_emit(ring, 4096);
- 		intel_ring_emit(ring, offset);
--- 
-1.9.1
+ kernel/sched/fair.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 17ebf41..78f1ade 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1419,8 +1419,15 @@ static int task_numa_migrate(struct task_struct *p)
+ 	/* Try to find a spot on the preferred nid. */
+ 	task_numa_find_cpu(&env, taskimp, groupimp);
+ 
+-	/* No space available on the preferred nid. Look elsewhere. */
+-	if (env.best_cpu == -1) {
++	/*
++	 * Look at other nodes in these cases:
++	 * - there is no space available on the preferred_nid
++	 * - the task is part of a numa_group that is interleaved across
++	 *   multiple NUMA nodes; in order to better consolidate the group,
++	 *   we need to check other locations.
++	 */
++	if (env.best_cpu == -1 || (p->numa_group &&
++			nodes_weight(p->numa_group->active_nodes) > 1)) {
+ 		for_each_online_node(nid) {
+ 			if (nid == env.src_nid || nid == p->numa_preferred_nid)
+ 				continue;
