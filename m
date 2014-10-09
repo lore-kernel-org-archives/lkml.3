@@ -1,80 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaJJXrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 19:47:00 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:50167 "EHLO
+	id S1752194AbaJJXrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 19:47:47 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:50145 "EHLO
 	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073AbaJJXqy (ORCPT
+	with ESMTP id S1751758AbaJJXqp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 19:46:54 -0400
-Message-ID: <5436EA85.90900@kernel.org>
-Date: Thu, 09 Oct 2014 21:05:25 +0100
+	Fri, 10 Oct 2014 19:46:45 -0400
+Message-ID: <5436E27D.8080600@kernel.org>
+Date: Thu, 09 Oct 2014 20:31:09 +0100
 From: Jonathan Cameron <jic23@kernel.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, cw00.choi@samsung.com,
-        gregkh@linuxfoundation.org, naveenkrishna.ch@gmail.com,
-        lars@metafoo.de, cpgs@samsung.com, grundler@chromium.org,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCH v2 0/3] iio: exynos-adc: use syscon instead of ioremap
-References: <1410857931-4980-1-git-send-email-ch.naveen@samsung.com> <541EC1C2.6090608@kernel.org>
-In-Reply-To: <541EC1C2.6090608@kernel.org>
+To: Daniel Baluta <daniel.baluta@intel.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        irina.tirdea@intel.com
+Subject: Re: [RFC PATCH 3/8] iio: core: Introduce new MOTION event
+References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com> <1412257439-15683-4-git-send-email-daniel.baluta@intel.com> <542FF252.1020206@kernel.org> <5432A474.7000700@intel.com>
+In-Reply-To: <5432A474.7000700@intel.com>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/09/14 13:17, Jonathan Cameron wrote:
-> On 16/09/14 09:58, Naveen Krishna Chatradhi wrote:
->> Changes since v1:
->> 1. Rebased on top of togreg branch of IIO git.
->>
->> This patch set does the following
->> 1. Use the syscon and Regmap API instead of ioremappaing the
->>    ADC_PHY register from PMU.
->> 2. Updates the Documentation in exynos-adc.txt with syscon phandle
->>    for the ADC nodes.
->> 3. Updates the Dts files for Exynos3250, Exynos4x12, Exynos5250,
->>    Exynos5420 with the syscon phandle.
->>
->> Tested on Exynos5420 based Peach PIT and Exynos5800 based Peach PI
->> by verifying sysfs entries provided by HWMON based NTC thermistors.
->>
->> Tested-By for Exynos3250, Exynos4x12 would be appreciated.
-> Would definitely be good!
+On 06/10/14 15:17, Daniel Baluta wrote:
 > 
-> The main issue I have with this series is that it breaks backward
-> compatibility with old device trees and newer kernels.
 > 
-> Now I appreciate that sometimes there are reasons to do it but want this
-> to have deeper consideration (and acks to show it) from the Exynos side
-> of things and preferably from the device tree side of things as well.
+> On 10/04/2014 04:12 PM, Jonathan Cameron wrote:
+>> On 02/10/14 14:43, Daniel Baluta wrote:
+>>> This is to be used by drivers to signal detection of motion. We also
+>>> add some possible values for motion as IIO events modifiers:
+>>>     * running
+>>>     * jogging
+>>>     * walking
+>>>     * still
+>>>
+>>> These values are supported by Frescale's MMA9553 sensor:
+>>>
+>>> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+>>>
+>>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+>> Hmm.. This is the interesting one.
+>> Not immediately obvious how best to represent this stuff.
+>>> ---
+>>>   Documentation/ABI/testing/sysfs-bus-iio | 7 +++++++
+>>>   drivers/iio/industrialio-core.c         | 4 ++++
+>>>   drivers/iio/industrialio-event.c        | 1 +
+>>>   include/linux/iio/types.h               | 7 ++++++-
+>>>   4 files changed, 18 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio
+>>> b/Documentation/ABI/testing/sysfs-bus-iio
+>>> index d760b02..070346d 100644
+>>> --- a/Documentation/ABI/testing/sysfs-bus-iio
+>>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+>>> @@ -808,6 +808,13 @@ Description:
+>>>           number or direction is not specified, applies to all channels of
+>>>           this type.
+>>>
+>>> +What:        /sys/.../events/in_activity_motion_either_en
+>>> +KernelVersion:    3.17
+>>> +Contact:    linux-iio@vger.kernel.org
+>>> +Description:
+>>> +        Enables or disables motion detection. Each time motion is detected an
+>>> +        event of this type will be generated.
+>>> +
+>> The either bit seems a bit random but I can see there is no particularly obvious
+>> alternative.
 > 
-> cc'd Kukjin Kim for the Exynos side of things as the listed Maintainer.
+> I wonder if introducing a new IIO_EV_DIR_NONE event direction type would make
+> sense. In this case the sysfs attribute will drop event direction text from its
+> name (e.g /sys/.../events/in_activity_motion_en)
 > 
-> Otherwise, the series looks fine to me.
-Kukjin? Sorry to pester, but this has been sat in my waiting queue for a
-while now.
 >>
->> Naveen Krishna Chatradhi (3):
->>   iio: exyno-adc: use syscon for PMU register access
->>   Documentation: dt-bindings: update exynos-adc.txt with syscon handle
->>   ARM: dts: exynos: Add sysreg phandle to ADC node
+>> We really need a clean way of representing a multilevel 'state change' like this.
 >>
->>  .../devicetree/bindings/arm/samsung/exynos-adc.txt |    9 ++++--
->>  arch/arm/boot/dts/exynos3250.dtsi                  |    3 +-
->>  arch/arm/boot/dts/exynos4x12.dtsi                  |    3 +-
->>  arch/arm/boot/dts/exynos5250.dtsi                  |    3 +-
->>  arch/arm/boot/dts/exynos5420.dtsi                  |    3 +-
->>  drivers/iio/adc/exynos_adc.c                       |   30 ++++++++++++++------
->>  6 files changed, 36 insertions(+), 15 deletions(-)
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Looking at the event code, I almost wonder if we would be better using the
+>> direction element for running, walking etc rather than a modifier.
 > 
+> When pushing events code to userspace the modifier seemed to be the only option.
+> 
+>>
+>> Having said that we will probably also get devices where this is polled rather
+>> than
+>> event.  'What activity is currently going on?'
+> 
+> Adding IIO_EV_INFO_VALUE bit, would create an attribute
+> /sys/.../events/in_activity_motion_either_value that could expose the current
+> activity going on.
+> 
+>> If we take that view modifiers make sense as it becomes
+>> 'Is the user running?'  Perhaps even offering a confidence interval, e.g units as
+>> percentage
+>> in_activity_running_input 0..100
+>> in_activity_walking_input 0..100
+>> etc
+>>
+>> Then our event becomes a state change event (yup we'll need to add that)
+>>
+>> /events/in_activity_walking_rising_en  will then cause events when the percentage
+>> confidence on a state rises above the provided threshold or goes above it
+>> (default of 50% perhaps on devices which only report one state).
+>>
+>> /events/in_activity_walking_falling_en will do the leaving case.
+> 
+> This is a very nice idea and it will also offer more flexibility. I am not sure
+> about the use case of confidence interval but using 0 and 100 will do the trick
+> for us.
+Sure, feel free to propose something else.  We could define a confidence interval
+that counts as 'we think it is this'.  Basically just use values of 0 or 100 when
+there is no explicit indication of the confidence available.  Not sure what
+you do get ;)
+> 
+> We will use this interface for implementation of significant motion in Android's
+> HAL. [1]
+> 
+> I will experiment more with how IIO attributes work and I will send a v2
+> using direction instead of modifier for activity type (running, walking etc).
+> 
+> 
+>>
+>> Note these are just some quick initial thoughts on alternative methods.
+>> I'll want to think on this more and get responses from more interested
+>> parties!
+> 
+> Thanks a lot for your time!
+You are welcome.  Funnily enough I rather enjoy trying to think of ways to
+handle new 'weird' hardware in a consistent fashion :)
+> 
+> Daniel.
+> 
+> [1] https://source.android.com/devices/sensors/composite_sensors.html
