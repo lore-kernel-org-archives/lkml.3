@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264AbaJIRdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:33:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41445 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaJIRdA (ORCPT
+	id S1751804AbaJIRdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:33:35 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35282 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750903AbaJIRd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:33:00 -0400
-Date: Thu, 9 Oct 2014 19:32:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
-Message-ID: <20141009173259.GC14547@worktop.programming.kicks-ass.net>
-References: <20141007195046.GA28002@redhat.com>
- <20141008080016.GB10832@worktop.programming.kicks-ass.net>
- <20141008183302.GA17495@redhat.com>
- <20141008183326.GB17495@redhat.com>
- <20141008193644.GA32055@redhat.com>
- <1412804248.24248.1.camel@yandex.ru>
- <20141009145726.GA5604@redhat.com>
- <20141009151730.GW10832@worktop.programming.kicks-ass.net>
- <20141009165713.GA13118@redhat.com>
- <20141009172834.GZ10832@worktop.programming.kicks-ass.net>
+	Thu, 9 Oct 2014 13:33:27 -0400
+Date: Thu, 9 Oct 2014 18:32:46 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Frans Klaver <frans.klaver@xsens.com>, Sebastian Reichel <sre@kernel.org>,
+        =?utf-8?B?UmVuw6k=?= Moll <linux@r-moll.nl>,
+        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 2/2] power: reset: document LTC2952 poweroff support
+Message-ID: <20141009173246.GB466@leverpostej>
+References: <1412866242-6474-1-git-send-email-frans.klaver@xsens.com>
+ <1412866242-6474-3-git-send-email-frans.klaver@xsens.com>
+ <20141009150756.GC18384@leverpostej>
+ <20141009160935.GF31987@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141009172834.GZ10832@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141009160935.GF31987@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 07:28:34PM +0200, Peter Zijlstra wrote:
-> On Thu, Oct 09, 2014 at 06:57:13PM +0200, Oleg Nesterov wrote:
-> > > Your earlier proposal would penalize every
-> > > !x86 arch by adding extra code to the scheduler core while they already
-> > > automagically preserve their thread_info::preempt_count.
+On Thu, Oct 09, 2014 at 05:09:36PM +0100, Guenter Roeck wrote:
+> On Thu, Oct 09, 2014 at 04:07:56PM +0100, Mark Rutland wrote:
+> > Hi,
 > > 
-> > Sure, and it can't be even compiled on !x86.
+> > On Thu, Oct 09, 2014 at 03:50:42PM +0100, Frans Klaver wrote:
+> > > From: René Moll <linux@r-moll.nl>
+> > > 
+> > > Signed-off-by: René Moll <linux@r-moll.nl>
+> > > Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
+> > > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> > > ---
+> > >  .../bindings/power/reset/ltc2952-poweroff.txt      | 31 ++++++++++++++++++++++
+> > >  1 file changed, 31 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > > new file mode 100644
+> > > index 0000000..c3f3d9e
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > > @@ -0,0 +1,31 @@
+> > > +Binding for the LTC2952 PowerPath controller
+> > > +
+> > > +This chip is used to externally trigger a system shut down. Once the trigger
+> > > +has been sent, the chips watchdog has to be reset to gracefully shut down.
 > > 
-> > But this is simple, just we need a new helper, preempt_count_restore(),
-> > defined as nop in asm-generic/preempt.h. Well, perhaps another helper
-> > makes sense, preempt_count_raw() which simply reads the counter, but
-> > this is minor.
+> > s/chips/chip's/
 > > 
-> > After the patch below we can remove ->saved_preempt_count. Including
-> > init_task_preempt_count(), it is no longer needed after the change in
-> > schedule_tail().
-> 
-> Ah, right, this makes more sense.
-> 
-> > @@ -2333,10 +2336,12 @@ context_switch(struct rq *rq, struct task_struct *prev,
-> >  #endif
-> >  
-> >  	context_tracking_task_switch(prev, next);
-> > +
-> > +	pc = preempt_count();
-> 
-> The only problem here is that you can loose PREEMPT_NEED_RESCHED, I
-> haven't thought about whether that is a problem here or not.
+> > > If +the Linux systems decides to shut down, it powers off the platform
+> > > via the +poweroff signal.
+> > 
+> > This sentence can go; the binding should describe the hardware rather
+> > than the Linux behaviour.
+> > 
+> Maybe find an operating system independent wording and describe what the
+> implementation should do. Or is that out of scope as well ?
 
-Also, if you make that preempt_count_save(), to mirror the restore, you
-can both preserve PREEMPT_NEED_RESCHED and avoid emitting code on !x86.
+Something like "The platform can be powered off via the poweroff signal"
+would be OK. So long as it's not a description of Linux internals that's
+fine. 
+
+Ideally the binding wouldn't state how the OS should use the device
+either. So if bindings can be worded w.r.t. possible uses of a device
+rather than specific users, that would be preferable unless the entire
+point of the binding is to specify a very specific use.
+
+Thanks,
+Mark.
