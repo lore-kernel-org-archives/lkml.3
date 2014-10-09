@@ -1,88 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897AbaJIVhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:37:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59206 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757397AbaJIVIX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:23 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ross Lagerwall <ross.lagerwall@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 022/163] xen/manage: Always freeze/thaw processes when suspend/resuming
-Date: Thu,  9 Oct 2014 14:00:47 -0700
-Message-Id: <1412888588-26755-23-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S932915AbaJIVh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:37:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65175 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932899AbaJIVhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:37:24 -0400
+Date: Thu, 9 Oct 2014 23:34:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
+Cc: "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: Re: [PATCHv4] procfs: show hierarchy of pid namespace
+Message-ID: <20141009213414.GA10705@redhat.com>
+References: <1412762198-21825-1-git-send-email-chenhanxiao@cn.fujitsu.com> <20141008151328.GB4835@redhat.com> <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+On 10/09, Chen, Hanxiao wrote:
+>
+> > From: Oleg Nesterov [mailto:oleg@redhat.com]
+> >
+> > Hmm. We only want the tasks from our namespace, yes? Perhaps find_ge_pid()
+> > makes more sense?
+>
+> Only tasks from our ns is valid.
+> But how could find_ge_pid() do that?
+>
+> nr = 1;
+> while (nr < PID_MAX_LIMIT) {
+> 	find_ge_pid(nr, curr_ns);
+> 	list_add();
+> 	nr++;
+> }
 
-------------------
+something like this, except list_add() should obviously depend on
+is_child_reaper() check.
 
-From: Ross Lagerwall <ross.lagerwall@citrix.com>
+This can be more optimal in sub-namespaces, you do not need to abuse
+the global process list.
 
-commit 61a734d305e16944b42730ef582a7171dc733321 upstream.
+And if you change this code to use get_pid/put_pid, then you do not
+need to hold rcu_read_lock() throughout, you only need it around
+find_ge_pid + get_pid.
 
-Always freeze processes when suspending and thaw processes when resuming
-to prevent a race noticeable with HVM guests.
+At the same time, for_each_process() in the global namespace can be
+faster if there are a lot of sub-threads.
 
-This prevents a deadlock where the khubd kthread (which is designed to
-be freezable) acquires a usb device lock and then tries to allocate
-memory which requires the disk which hasn't been resumed yet.
-Meanwhile, the xenwatch thread deadlocks waiting for the usb device
-lock.
+> Perhaps that's not a good way.
 
-Freezing processes fixes this because the khubd thread is only thawed
-after the xenwatch thread finishes resuming all the devices.
+OK, I won't insist.
 
-Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/xen/manage.c | 7 -------
- 1 file changed, 7 deletions(-)
+although it would be nice to know why do you think this is bad.
 
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 0bc8086..a344372 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -110,16 +110,11 @@ static void do_suspend(void)
- 
- 	shutting_down = SHUTDOWN_SUSPEND;
- 
--#ifdef CONFIG_PREEMPT
--	/* If the kernel is preemptible, we need to freeze all the processes
--	   to prevent them from being in the middle of a pagetable update
--	   during suspend. */
- 	err = freeze_processes();
- 	if (err) {
- 		pr_err("%s: freeze failed %d\n", __func__, err);
- 		goto out;
- 	}
--#endif
- 
- 	err = dpm_suspend_start(PMSG_FREEZE);
- 	if (err) {
-@@ -172,10 +167,8 @@ out_resume:
- 	dpm_resume_end(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
- 
- out_thaw:
--#ifdef CONFIG_PREEMPT
- 	thaw_processes();
- out:
--#endif
- 	shutting_down = SHUTDOWN_INVALID;
- }
- #endif	/* CONFIG_HIBERNATE_CALLBACKS */
--- 
-1.9.1
+> > > +		pid = task_pid(p);
+> >
+> > Well, in theory you need barrier() here. Or perhaps we should add
+> > ACCESS_ONCE() into task_pid()...
+>
+> You mean modify task_pid as:
+> return ACCESS_ONCE(task->pids[PIDTYPE_PID].pid;);
+
+Yes. But not now an not in this patch of course. I'd suggest to add
+barrier() just in case.
+
+
+> > And imho it would be better to declare pidns_list/pidns_tree locally
+> > in nslist_proc_show() and pass them to the callees.
+>
+> That's a good idea.
+> Will changed in the next version.
+
+Good. And I forgot to mention, in this case you do not need pidns_list_lock
+at all afaics.
+
+Oleg.
 
