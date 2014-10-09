@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932339AbaJIVGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:06:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59042 "EHLO
+	id S932385AbaJIVGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:06:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59058 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaJIVG0 (ORCPT
+	with ESMTP id S932357AbaJIVGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:06:26 -0400
+	Thu, 9 Oct 2014 17:06:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Feiner <pfeiner@google.com>, Pavel Emelyanov <xemul@parallels.com>,
-        Jamie Liu <jamieliu@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: John David Anglin <dave.anglin@bell.net>, Helge Deller <deller@gmx.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 146/163] mm: softdirty: keep bit when zapping file pte
-Date: Thu,  9 Oct 2014 14:02:51 -0700
-Message-Id: <1412888588-26755-147-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 140/163] parisc: Only use -mfast-indirect-calls option for 32-bit kernel builds
+Date: Thu,  9 Oct 2014 14:02:45 -0700
+Message-Id: <1412888588-26755-141-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -30,47 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Feiner <pfeiner@google.com>
+From: John David Anglin <dave.anglin@bell.net>
 
-commit dbab31aa2ceec2d201966fa0b552f151310ba5f4 upstream.
+commit d26a7730b5874a5fa6779c62f4ad7c5065a94723 upstream.
 
-This fixes the same bug as b43790eedd31 ("mm: softdirty: don't forget to
-save file map softdiry bit on unmap") and 9aed8614af5a ("mm/memory.c:
-don't forget to set softdirty on file mapped fault") where the return
-value of pte_*mksoft_dirty was being ignored.
+In spite of what the GCC manual says, the -mfast-indirect-calls has
+never been supported in the 64-bit parisc compiler. Indirect calls have
+always been done using function descriptors irrespective of the
+-mfast-indirect-calls option.
 
-To be sure that no other pte/pmd "mk" function return values were being
-ignored, I annotated the functions in arch/x86/include/asm/pgtable.h
-with __must_check and rebuilt.
+Recently, it was noticed that a function descriptor was always requested
+when the -mfast-indirect-calls option was specified. This caused
+problems when the option was used in  application code and doesn't make
+any sense because the whole point of the option is to avoid using a
+function descriptor for indirect calls.
 
-The userspace effect of this bug is that the softdirty mark might be
-lost if a file mapped pte get zapped.
+Fixing this broke 64-bit kernel builds.
 
-Signed-off-by: Peter Feiner <pfeiner@google.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Jamie Liu <jamieliu@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+I will fix GCC but for now we need the attached change. This results in
+the same kernel code as before.
+
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/parisc/Makefile | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index d411f0d..e3c11e4 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1119,7 +1119,7 @@ again:
- 						addr) != page->index) {
- 				pte_t ptfile = pgoff_to_pte(page->index);
- 				if (pte_soft_dirty(ptent))
--					pte_file_mksoft_dirty(ptfile);
-+					ptfile = pte_file_mksoft_dirty(ptfile);
- 				set_pte_at(mm, addr, pte, ptfile);
- 			}
- 			if (PageAnon(page))
+diff --git a/arch/parisc/Makefile b/arch/parisc/Makefile
+index 7187664..5db8882 100644
+--- a/arch/parisc/Makefile
++++ b/arch/parisc/Makefile
+@@ -48,7 +48,12 @@ cflags-y	:= -pipe
+ 
+ # These flags should be implied by an hppa-linux configuration, but they
+ # are not in gcc 3.2.
+-cflags-y	+= -mno-space-regs -mfast-indirect-calls
++cflags-y	+= -mno-space-regs
++
++# -mfast-indirect-calls is only relevant for 32-bit kernels.
++ifndef CONFIG_64BIT
++cflags-y	+= -mfast-indirect-calls
++endif
+ 
+ # Currently we save and restore fpregs on all kernel entry/interruption paths.
+ # If that gets optimized, we might need to disable the use of fpregs in the
 -- 
 1.9.1
 
