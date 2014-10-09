@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaJITPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:15:11 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:39300 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaJITMc (ORCPT
+	id S1754506AbaJITPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:15:23 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:64985 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaJITMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Oct 2014 15:12:32 -0400
 X-Google-Original-Sender: <johan@hovold.com>
@@ -19,9 +19,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
         Johan Hovold <johan@kernel.org>
-Subject: [PATCH 06/12] rtc: omap: use dev_info and dev_dbg
-Date: Thu,  9 Oct 2014 21:06:28 +0200
-Message-Id: <1412881594-25678-7-git-send-email-johan@kernel.org>
+Subject: [PATCH 08/12] rtc: omap: restore irq state after reading TC registers
+Date: Thu,  9 Oct 2014 21:06:30 +0200
+Message-Id: <1412881594-25678-9-git-send-email-johan@kernel.org>
 X-Mailer: git-send-email 2.0.4
 In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
 References: <1412881594-25678-1-git-send-email-johan@kernel.org>
@@ -29,80 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_info and dev_dbg rather than pr_info and pr_debug.
+Make sure to restore local irq state when reading the timer/calendar
+(TC) registers, so that omap_rtc_read_time() can be called with
+interrupts disabled.
 
 Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- drivers/rtc/rtc-omap.c | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+ drivers/rtc/rtc-omap.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index e50ffd7063f5..1c58920b0c88 100644
+index 0ef016553a97..62e2e9a9887a 100644
 --- a/drivers/rtc/rtc-omap.c
 +++ b/drivers/rtc/rtc-omap.c
-@@ -392,13 +392,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+@@ -239,8 +239,10 @@ static void bcd2tm(struct rtc_time *tm)
  
- 	omap_rtc_timer = platform_get_irq(pdev, 0);
- 	if (omap_rtc_timer <= 0) {
--		pr_debug("%s: no update irq?\n", pdev->name);
-+		dev_dbg(&pdev->dev, "no update irq\n");
- 		return -ENOENT;
- 	}
+ static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ {
++	unsigned long flags;
++
+ 	/* we don't report wday/yday/isdst ... */
+-	local_irq_disable();
++	local_irq_save(flags);
+ 	rtc_wait_not_busy();
  
- 	omap_rtc_alarm = platform_get_irq(pdev, 1);
- 	if (omap_rtc_alarm <= 0) {
--		pr_debug("%s: no alarm irq?\n", pdev->name);
-+		dev_dbg(&pdev->dev, "no alarm irq\n");
- 		return -ENOENT;
- 	}
+ 	tm->tm_sec = rtc_read(OMAP_RTC_SECONDS_REG);
+@@ -250,7 +252,7 @@ static int omap_rtc_read_time(struct device *dev, struct rtc_time *tm)
+ 	tm->tm_mon = rtc_read(OMAP_RTC_MONTHS_REG);
+ 	tm->tm_year = rtc_read(OMAP_RTC_YEARS_REG);
  
-@@ -430,8 +430,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	/* clear old status */
- 	reg = rtc_read(OMAP_RTC_STATUS_REG);
- 	if (reg & (u8) OMAP_RTC_STATUS_POWER_UP) {
--		pr_info("%s: RTC power up reset detected\n",
--			pdev->name);
-+		dev_info(&pdev->dev, "RTC power up reset detected\n");
- 		rtc_write(OMAP_RTC_STATUS_POWER_UP, OMAP_RTC_STATUS_REG);
- 	}
- 	if (reg & (u8) OMAP_RTC_STATUS_ALARM)
-@@ -440,22 +439,22 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	/* handle periodic and alarm irqs */
- 	if (devm_request_irq(&pdev->dev, omap_rtc_timer, rtc_irq, 0,
- 			dev_name(&pdev->dev), pdev)) {
--		pr_debug("%s: RTC timer interrupt IRQ%d already claimed\n",
--			pdev->name, omap_rtc_timer);
-+		dev_dbg(&pdev->dev, "RTC timer interrupt IRQ%d already claimed\n",
-+				omap_rtc_timer);
- 		goto fail0;
- 	}
- 	if ((omap_rtc_timer != omap_rtc_alarm) &&
- 		(devm_request_irq(&pdev->dev, omap_rtc_alarm, rtc_irq, 0,
- 			dev_name(&pdev->dev), pdev))) {
--		pr_debug("%s: RTC alarm interrupt IRQ%d already claimed\n",
--			pdev->name, omap_rtc_alarm);
-+		dev_dbg(&pdev->dev, "RTC alarm interrupt IRQ%d already claimed\n",
-+				omap_rtc_alarm);
- 		goto fail0;
- 	}
+-	local_irq_enable();
++	local_irq_restore(flags);
  
- 	/* On boards with split power, RTC_ON_NOFF won't reset the RTC */
- 	reg = rtc_read(OMAP_RTC_CTRL_REG);
- 	if (reg & (u8) OMAP_RTC_CTRL_STOP)
--		pr_info("%s: already running\n", pdev->name);
-+		dev_info(&pdev->dev, "already running\n");
- 
- 	/* force to 24 hour mode */
- 	new_ctrl = reg & (OMAP_RTC_CTRL_SPLIT|OMAP_RTC_CTRL_AUTO_COMP);
-@@ -476,7 +475,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	 */
- 
- 	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
--		pr_info("%s: split power mode\n", pdev->name);
-+		dev_info(&pdev->dev, "split power mode\n");
- 
- 	if (reg != new_ctrl)
- 		rtc_write(new_ctrl, OMAP_RTC_CTRL_REG);
+ 	bcd2tm(tm);
+ 	return 0;
 -- 
 2.0.4
 
