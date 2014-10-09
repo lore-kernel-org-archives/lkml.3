@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167AbaJIVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:30:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59352 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757592AbaJIVJP (ORCPT
+	id S1758550AbaJIVaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:30:30 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:48990 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757557AbaJIVJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:15 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 087/163] ASoC: samsung-i2s: Check secondary DAI exists before referencing
-Date: Thu,  9 Oct 2014 14:01:52 -0700
-Message-Id: <1412888588-26755-88-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 9 Oct 2014 17:09:14 -0400
+Message-ID: <5436F974.6000605@fb.com>
+Date: Thu, 9 Oct 2014 15:09:08 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Kamal Mostafa <kamal@canonical.com>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>, <kernel-team@lists.ubuntu.com>
+CC: Keith Busch <keith.busch@intel.com>
+Subject: Re: [PATCH 3.13 026/163] block: Fix dev_t minor allocation lifetime
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com> <1412888588-26755-27-git-send-email-kamal@canonical.com>
+In-Reply-To: <1412888588-26755-27-git-send-email-kamal@canonical.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-09_08:2014-10-09,2014-10-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.27640050073818e-06 kscore.compositescore=0
+ circleOfTrustscore=25.0022134897655 compositescore=0.998981209195878
+ urlsuspect_oldscore=0.998981209195878 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.998981209195878 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1410090157
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+On 10/09/2014 03:00 PM, Kamal Mostafa wrote:
+> 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+You need this one as well, like I told Greg the other day:
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+commit 46f341ffcfb5d8530f7d1e60f3be06cce6661b62
+Author: Jens Axboe <axboe@fb.com>
+Date:   Tue Sep 16 13:38:51 2014 -0600
 
-commit 133c2681c4a0c1b589d138c2fdd0f131bdce20ed upstream.
+    genhd: fix leftover might_sleep() in blk_free_devt()
 
-In a couple of places the driver is missing a check to ensure there is a
-secondary DAI before it de-references the pointer to it, causing a null
-pointer de-reference. This patch adds a check to avoid this.
+    Commit 2da78092 changed the locking from a mutex to a spinlock,
+    so we now longer sleep in this context. But there was a leftover
+    might_sleep() in there, which now triggers since we do the final
+    free from an RCU callback. Get rid of it.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/soc/samsung/i2s.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+    Reported-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+    Signed-off-by: Jens Axboe <axboe@fb.com>
 
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index 69160f7..81c04c5 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -460,7 +460,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
- 		if (dir == SND_SOC_CLOCK_IN)
- 			rfs = 0;
- 
--		if ((rfs && other->rfs && (other->rfs != rfs)) ||
-+		if ((rfs && other && other->rfs && (other->rfs != rfs)) ||
- 				(any_active(i2s) &&
- 				(((dir == SND_SOC_CLOCK_IN)
- 					&& !(mod & MOD_CDCLKCON)) ||
-@@ -757,7 +757,8 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
- 	} else {
- 		u32 mod = readl(i2s->addr + I2SMOD);
- 		i2s->cdclk_out = !(mod & MOD_CDCLKCON);
--		other->cdclk_out = i2s->cdclk_out;
-+		if (other)
-+			other->cdclk_out = i2s->cdclk_out;
- 	}
- 	/* Reset any constraint on RFS and BFS */
- 	i2s->rfs = 0;
 -- 
-1.9.1
+Jens Axboe
 
