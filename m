@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaJIMcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:32:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59483 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391AbaJIMcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:32:42 -0400
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
-Date: Thu,  9 Oct 2014 14:32:36 +0200
-Message-Id: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 2.1.0
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1755992AbaJIMdm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:33:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25275 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385AbaJIMdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 08:33:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,684,1406617200"; 
+   d="scan'208";a="615764979"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org
+Cc: irina.tirdea@intel.com, daniel.baluta@intel.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v2 0/7] Introduce IIO interface for Android advanced features
+Date: Thu,  9 Oct 2014 15:39:38 +0300
+Message-Id: <1412858385-11954-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The KSZ8021 and KSZ8031 support RMII reference input clocks of 25MHz
-and 50MHz. Both PHYs differ in the default frequency they expect
-after reset. If this differs from the actual input clock, then
-register 0x1f bit 7 must be changed.
+This patchset introduces a new interface for supporting some of the composite
+sensors in Android [1]. First supported sensors are activity and pedometer.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- Documentation/devicetree/bindings/net/micrel.txt |  6 ++++++
- drivers/net/phy/micrel.c                         | 19 +++++++++++++++++--
- include/linux/micrel_phy.h                       |  1 +
- 3 files changed, 24 insertions(+), 2 deletions(-)
+This is a follow up of the discussion about adding new channels to IIO
+initiated some time ago on IIO list [2].
 
-diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-index 98a3e61..e1d99b9 100644
---- a/Documentation/devicetree/bindings/net/micrel.txt
-+++ b/Documentation/devicetree/bindings/net/micrel.txt
-@@ -16,3 +16,9 @@ Optional properties:
- 	      KSZ8051: register 0x1f, bits 5..4
- 
-               See the respective PHY datasheet for the mode values.
-+
-+ - clocks, clock-names: contains clocks according to the common clock bindings.
-+
-+              supported clocks:
-+	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
-+		to determine the XI input clock.
-diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index 011dbda..ca130e9 100644
---- a/drivers/net/phy/micrel.c
-+++ b/drivers/net/phy/micrel.c
-@@ -26,6 +26,7 @@
- #include <linux/phy.h>
- #include <linux/micrel_phy.h>
- #include <linux/of.h>
-+#include <linux/clk.h>
- 
- /* Operation Mode Strap Override */
- #define MII_KSZPHY_OMSO				0x16
-@@ -72,9 +73,12 @@ static int ksz_config_flags(struct phy_device *phydev)
- {
- 	int regval;
- 
--	if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK) {
-+	if (phydev->dev_flags & (MICREL_PHY_50MHZ_CLK | MICREL_PHY_25MHZ_CLK)) {
- 		regval = phy_read(phydev, MII_KSZPHY_CTRL);
--		regval |= KSZ8051_RMII_50MHZ_CLK;
-+		if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK)
-+			regval |= KSZ8051_RMII_50MHZ_CLK;
-+		else
-+			regval &= ~KSZ8051_RMII_50MHZ_CLK;
- 		return phy_write(phydev, MII_KSZPHY_CTRL, regval);
- 	}
- 	return 0;
-@@ -187,9 +191,20 @@ static int kszphy_config_init_led8041(struct phy_device *phydev)
- 
- static int ksz8021_config_init(struct phy_device *phydev)
- {
-+	struct clk *clk;
- 	const u16 val = KSZPHY_OMSO_B_CAST_OFF | KSZPHY_OMSO_RMII_OVERRIDE;
- 	int rc;
- 
-+	clk = devm_clk_get(&phydev->dev, "rmii-ref");
-+	if (!IS_ERR(clk)) {
-+		unsigned long rate = clk_get_rate(clk);
-+
-+		if (rate > 24500000 && rate < 25500000)
-+			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
-+		else if (rate > 49500000 && rate < 50500000)
-+			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
-+	}
-+
- 	rc = kszphy_setup_led(phydev, 0x1f, 4);
- 	if (rc)
- 		dev_err(&phydev->dev, "failed to set led mode\n");
-diff --git a/include/linux/micrel_phy.h b/include/linux/micrel_phy.h
-index 2e5b194..53d33de 100644
---- a/include/linux/micrel_phy.h
-+++ b/include/linux/micrel_phy.h
-@@ -37,6 +37,7 @@
- 
- /* struct phy_device dev_flags definitions */
- #define MICREL_PHY_50MHZ_CLK	0x00000001
-+#define MICREL_PHY_25MHZ_CLK	0x00000002
- 
- #define MICREL_KSZ9021_EXTREG_CTRL	0xB
- #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
+A device that has the activity/pedometer functionality is Freescale's MMA9553L ([3]).
+
+Because we don't have yet the hardware, to demonstrate these new channels we 
+update iio_dummy kernel module and iio_event_monitor test program. We want
+to get an early feedback about extending the IIO interface in the correct
+direction.
+
+[1] http://source.android.com/devices/sensors/composite_sensors.html
+[2] http://marc.info/?l=linux-iio&m=138374342831057&w=2
+[3] http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+
+Changes since v1 (mostly based on comments from Jonathan)
+
+	* introduce TRANSITION event instead of MOTION to better
+	represent multilevel state change
+	* remove pedometer channel type and steps modifier and replace it 
+	with steps channel type
+	* squashed together patches introducing channels and associated events
+	* introduced IIO_EV_DIR_NONE
+	* changed cover letter subject to reflect the changes
+
+Daniel Baluta (4):
+  iio: dummy: Add virtual registers for dummy device
+  iio: core: Introduce IIO_ACTIVITY channel and TRANSITION event
+  iio: dummy: Demonstrate the usage of new channel types
+  iio: event_monitor: Add support for new channel types
+
+Irina Tirdea (3):
+  iio: core: Introduce IIO_EV_DIR_NONE
+  iio: core: Introduce STEPS channel type, ENABLE mask and INSTANCE
+    event
+  iio: core: Introduce HEIGHT channel type
+
+ Documentation/ABI/testing/sysfs-bus-iio            |  75 ++++++++
+ drivers/iio/industrialio-core.c                    |   8 +
+ drivers/iio/industrialio-event.c                   |  14 +-
+ .../staging/iio/Documentation/iio_event_monitor.c  |  25 ++-
+ drivers/staging/iio/iio_dummy_evgen.c              |  16 ++
+ drivers/staging/iio/iio_dummy_evgen.h              |   6 +
+ drivers/staging/iio/iio_simple_dummy.c             | 199 +++++++++++++++++++--
+ drivers/staging/iio/iio_simple_dummy.h             |   7 +
+ drivers/staging/iio/iio_simple_dummy_events.c      |  61 ++++++-
+ include/linux/iio/iio.h                            |   1 +
+ include/linux/iio/types.h                          |  12 +-
+ 11 files changed, 393 insertions(+), 31 deletions(-)
+
 -- 
-2.1.0
+1.9.1
 
