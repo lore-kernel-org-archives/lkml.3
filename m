@@ -1,93 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376AbaJIHx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 03:53:58 -0400
-Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:47712
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750873AbaJIHxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 03:53:51 -0400
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Joseph Lo <josephl@nvidia.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] serial: of-serial: add PM suspend/resume support
-Thread-Topic: [PATCH] serial: of-serial: add PM suspend/resume support
-Thread-Index: AQHP1xCbXYJ2l2dpvUGwFdgTLB6wQZweDemAgAllb4A=
-Date: Thu, 9 Oct 2014 07:53:47 +0000
-Message-ID: <b315028a386e46dca9abd70b65210bb1@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1411461252-8730-1-git-send-email-jingchang.lu@freescale.com>
- <542E5421.5070708@nvidia.com>
-In-Reply-To: <542E5421.5070708@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB466;
-x-exchange-antispam-report-test: UriScan:;
-x-forefront-prvs: 0359162B6D
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(13464003)(41574002)(189002)(199003)(479174003)(377454003)(51704005)(122556002)(40100002)(85306004)(33646002)(2501002)(54356999)(50986999)(76176999)(95666004)(108616004)(99286002)(99396003)(105586002)(107046002)(74316001)(106116001)(106356001)(120916001)(76576001)(101416001)(76482002)(46102003)(80022003)(31966008)(4396001)(20776003)(19580405001)(19580395003)(97736003)(85852003)(2656002)(87936001)(21056001)(66066001)(64706001)(86362001)(92566001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB466;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751334AbaJIH7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 03:59:35 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:48805 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaJIH7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 03:59:25 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
+References: <1412606822-3406-1-git-send-email-muth@cypress.com>
+ <CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
+ <405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
+ <CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com> <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 9 Oct 2014 16:59:04 +0900
+Message-ID: <CAAVeFuLOwcS-p+zHmLoAaxZz8XFyniuYjj76XMWZpezgkD=WQw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
+To: RR <rajaram.officemails@gmail.com>
+Cc: Muthu Mani <muth@cypress.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s997s2xh029053
 
->-----Original Message-----
->From: Joseph Lo [mailto:josephl@nvidia.com]
->Sent: Friday, October 03, 2014 3:46 PM
->To: Lu Jingchang-B35083; gregkh@linuxfoundation.org
->Cc: devicetree@vger.kernel.org; arnd@arndb.de; linux-
->kernel@vger.kernel.org; linux-serial@vger.kernel.org; linux-arm-
->kernel@lists.infradead.org
->Subject: Re: [PATCH] serial: of-serial: add PM suspend/resume support
->
->Hi,
->
->This patch might have a potential issue that cause system hard hung
->immediately when it accesses to registers with no clock. This could happen
->on many chips that mainline kernel supporting with the setting
->"no_console_suspend=1" during suspend time.
->
->On 09/23/2014 04:34 PM, Jingchang Lu wrote:
->> This adds PM suspend/resume support for the of-serial driver to
->> provide power management support on devices attatched to it.
+On Thu, Oct 9, 2014 at 8:46 AM, RR <rajaram.officemails@gmail.com> wrote:
+> On Wed, Oct 8, 2014 at 12:18 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
+>>>> -----Original Message-----
+>>>> From: Alexandre Courbot [mailto:gnurou@gmail.com]
+>>>> Sent: Tuesday, October 07, 2014 3:34 PM
+>>>> To: Muthu Mani
+>>>> Cc: Samuel Ortiz; Lee Jones; Wolfram Sang; Linus Walleij; Greg Kroah-
+>>>> Hartman; linux-i2c@vger.kernel.org; linux-gpio@vger.kernel.org; linux-
+>>>> usb@vger.kernel.org; Linux Kernel Mailing List; Rajaram Regupathy; Johan
+>>>> Hovold
+>>>> Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-
+>>>> GPIO adapter
+>>>>
+>>>> On Mon, Oct 6, 2014 at 11:47 PM, Muthu Mani <muth@cypress.com> wrote:
+>>>> > +
+>>>> > +static int cy_gpio_direction_input(struct gpio_chip *chip,
+>>>> > +                                       unsigned offset) {
+>>>> > +       return 0;
+>>>> > +}
+>>>> > +
+>>>> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
+>>>> > +                                       unsigned offset, int value) {
+>>>> > +       return 0;
+>>>> > +}
+>>>>
+>>>> If that chip is capable of both output and input, shouldn't these functions be
+>>>> implemented? I think this has already been pointed out in a previous version
+>>>> but you did not reply.
+>>>
+>>> Thanks for your inputs.
+>>>
+>>> Only the GPIOs which are configured to be output GPIO can be set.
 >>
->> Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
->> ---
->>   drivers/tty/serial/of_serial.c | 27 +++++++++++++++++++++++++++
->>   1 file changed, 27 insertions(+)
+>> In that case cy_gpio_set() should return an error for GPIOs which are
+>> not configured as outputs. Is that guaranteed by the current
+>> implementation?
 >>
->> diff --git a/drivers/tty/serial/of_serial.c
->> b/drivers/tty/serial/of_serial.c index 27981e2..8bc2563 100644
->> --- a/drivers/tty/serial/of_serial.c
->> +++ b/drivers/tty/serial/of_serial.c
->> @@ -240,6 +240,32 @@ static int of_platform_serial_remove(struct
->platform_device *ofdev)
->>   	return 0;
->>   }
+>>> The set operation would fail trying to set the input or unconfigured GPIOs.
+>>> In this version of driver, this support is not added, it can be introduced in future versions.
+>>> I will add a TODO note in the code.
 >>
->> +#ifdef CONFIG_PM_SLEEP
->> +static int of_serial_suspend(struct device *dev) {
->> +	struct of_serial_info *info = dev_get_drvdata(dev);
->> +
->> +	serial8250_suspend_port(info->line);
->> +	if (info->clk)
->The fix would be something like this.
->	if (info->clk && console_suspend_enabled)
+>> Argh, no TODO please. Actual code that will turn this code into a
+>> solid driver that can be merged.
 >
-Yes, there will be, I will send a fix on this, thanks!
+> Does a driver targeted for a custom device has to implement every
+> functionality in the 1st version ? My understanding is that Linux
+> follows incremental model and allows incremental merge.
 
-Best Regards,
-Jingchang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Certainly, but we are talking about very basic functionality here.
+
+Right now this driver will incorrectly returns success when trying to
+set the direction of a GPIO, even though it did not do anything. There
+is also no hint that _set will return an error if called on an
+input/unconfigured GPIO.
+
+So while we are not asking for a driver to be perfect on the first
+iteration, setting the direction of a GPIO is a very basic
+functionality that is essential for a GPIO driver to just work. Custom
+device or not, this is mainline. The rest of the driver seems to be
+ok, so please take the last few steps that will allow us to merge a
+featured driver.
