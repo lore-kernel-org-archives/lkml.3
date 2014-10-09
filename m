@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398AbaJIVm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:42:57 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:34759 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036AbaJIVmy (ORCPT
+	id S932410AbaJIVGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:06:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59067 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932357AbaJIVGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:42:54 -0400
-Message-ID: <5437015B.3010205@gmail.com>
-Date: Thu, 09 Oct 2014 14:42:51 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-CC: linux-mips@linux-mips.org, Zubair.Kakakhel@imgtec.com,
-        geert+renesas@glider.be, david.daney@cavium.com, peterz@infradead.org,
-        paul.gortmaker@windriver.com, davidlohr@hp.com, macro@linux-mips.org,
-        chenhc@lemote.com, richard@nod.at, zajec5@gmail.com,
-        james.hogan@imgtec.com, keescook@chromium.org, alex@alex-smith.me.uk,
-        tglx@linutronix.de, blogic@openwrt.org, jchandra@broadcom.com,
-        paul.burton@imgtec.com, qais.yousef@imgtec.com,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        markos.chandras@imgtec.com, dengcheng.zhu@imgtec.com,
-        manuel.lauss@gmail.com, akpm@linux-foundation.org,
-        lars.persson@axis.com
-Subject: Re: [PATCH v2 0/3] MIPS executable stack protection
-References: <20141009195030.31230.58695.stgit@linux-yegoshin>
-In-Reply-To: <20141009195030.31230.58695.stgit@linux-yegoshin>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 17:06:40 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 135/163] md/raid1: count resync requests in nr_pending.
+Date: Thu,  9 Oct 2014 14:02:40 -0700
+Message-Id: <1412888588-26755-136-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 01:00 PM, Leonid Yegoshin wrote:
-> The following series implements an executable stack protection in MIPS.
->
-> It sets up a per-thread 'VDSO' page and appropriate TLB support.
-> Page is set write-protected from user and is maintained via kernel VA.
-> MIPS FPU emulation is shifted to new page and stack is relieved for
-> execute protection as is as all data pages in default setup during ELF
-> binary initialization. The real protection is controlled by GLIBC and
-> it can do stack protected now as it is done in other architectures and
-> I learned today that GLIBC team is ready for this.
+3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
-What does it mean to be 'ready'?  If they committed patches before there 
-was kernel support, that it putting the cart before the horse.  GlibC's 
-state cannot be used as valid reason for committing major kernel 
-changes.  There would be no regression in any GLibC based system as a 
-result of not merging this patch.
+------------------
 
->
-> Note: actual execute-protection depends from HW capability, of course.
->
-> This patch is required for MIPS32/64 R2 emulation on MIPS R6 architecture.
-> Without it 'ssh-keygen' crashes pretty fast on attempt to execute instruction
-> in stack.
+From: NeilBrown <neilb@suse.de>
 
-There is much more blocking MIPS32/64 R2 emulation on MIPS R6 than just 
-this patch isn't there?
+commit 34e97f170149bfa14979581c4c748bc9b4b79d5b upstream.
 
-Also, if you are supporting MIPS R6, this patch doesn't even work, 
-because it doesn't handle PC relative instructions at all.
+Both normal IO and resync IO can be retried with reschedule_retry()
+and so be counted into ->nr_queued, but only normal IO gets counted in
+->nr_pending.
 
->
-> v2 changes:
->      - Added an optimization during mmap switch - doesn't switch if the same
->        thread is rescheduled and other threads don't intervene (Peter Zijlstra)
->      - Fixed uMIPS support (Paul Burton)
->      - Added unwinding of VDSO emulation stack at signal handler invocation,
->        hiding an emulation page (Andy Lutomirski note in other patch comments)
->
-> ---
->
-> Leonid Yegoshin (3):
->        MIPS: mips_flush_cache_range is added
->        MIPS: Setup an instruction emulation in VDSO protected page instead of user stack
->        MIPS: set stack/data protection as non-executable
->
+Before the recent improvement to RAID1 resync there could only
+possibly have been one or the other on the queue.  When handling a
+read failure it could only be normal IO.  So when handle_read_error()
+called freeze_array() the fact that freeze_array only compares
+->nr_queued against ->nr_pending was safe.
 
-The recent discussions on this subject, including many comments from 
-Imgtec e-mail addresses, brought to light the need to use an instruction 
-set emulator for newer MIPSr6 ISA processors.
+But now that these two types can interleave, we can have both normal
+and resync IO requests queued, so we need to count them both in
+nr_pending.
 
-In light of this, why does it make sense to merge this patch, instead of 
-taking the approach of emulating the instructions in the delay slot?
+This error can lead to freeze_array() hanging if there is a read
+error, so it is suitable for -stable.
 
-David Daney
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Reported-by: Brassow Jonathan <jbrassow@redhat.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/md/raid1.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-
->
->   arch/mips/include/asm/cacheflush.h   |    3 +
->   arch/mips/include/asm/fpu_emulator.h |    2
->   arch/mips/include/asm/mmu.h          |    3 +
->   arch/mips/include/asm/page.h         |    2
->   arch/mips/include/asm/processor.h    |    2
->   arch/mips/include/asm/switch_to.h    |   14 +++
->   arch/mips/include/asm/thread_info.h  |    3 +
->   arch/mips/include/asm/tlbmisc.h      |    1
->   arch/mips/include/asm/vdso.h         |    3 +
->   arch/mips/kernel/process.c           |    7 ++
->   arch/mips/kernel/signal.c            |    4 +
->   arch/mips/kernel/vdso.c              |   41 +++++++++
->   arch/mips/math-emu/cp1emu.c          |    8 +-
->   arch/mips/math-emu/dsemul.c          |  153 ++++++++++++++++++++++++++++------
->   arch/mips/mm/c-octeon.c              |    8 ++
->   arch/mips/mm/c-r3k.c                 |    8 ++
->   arch/mips/mm/c-r4k.c                 |   43 ++++++++++
->   arch/mips/mm/c-tx39.c                |    9 ++
->   arch/mips/mm/cache.c                 |    4 +
->   arch/mips/mm/fault.c                 |    5 +
->   arch/mips/mm/tlb-r4k.c               |   42 +++++++++
->   21 files changed, 333 insertions(+), 32 deletions(-)
->
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 5ad11da..2cf4f69 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -858,6 +858,7 @@ static void raise_barrier(struct r1conf *conf, sector_t sector_nr)
+ 			     conf->next_resync + RESYNC_SECTORS),
+ 			    conf->resync_lock);
+ 
++	conf->nr_pending++;
+ 	spin_unlock_irq(&conf->resync_lock);
+ }
+ 
+@@ -867,6 +868,7 @@ static void lower_barrier(struct r1conf *conf)
+ 	BUG_ON(conf->barrier <= 0);
+ 	spin_lock_irqsave(&conf->resync_lock, flags);
+ 	conf->barrier--;
++	conf->nr_pending--;
+ 	spin_unlock_irqrestore(&conf->resync_lock, flags);
+ 	wake_up(&conf->wait_barrier);
+ }
+-- 
+1.9.1
 
