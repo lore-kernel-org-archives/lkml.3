@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350AbaJIOmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:42:01 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:62016 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbaJIOlx (ORCPT
+	id S1756256AbaJIOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:44:59 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:62577 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571AbaJIOou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:41:53 -0400
-Message-ID: <54369EAC.5040301@gmail.com>
-Date: Thu, 09 Oct 2014 16:41:48 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
-References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141009163315.2a9e1806@free-electrons.com>
-In-Reply-To: <20141009163315.2a9e1806@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 10:44:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412843614-4537-1-git-send-email-gdjakov@mm-sol.com>
+References: <1412843614-4537-1-git-send-email-gdjakov@mm-sol.com>
+Date: Thu, 9 Oct 2014 07:44:49 -0700
+Message-ID: <CAJAp7Ohi89GSZiHQCxqrHSJw++VtBucUccTyStiUF_MWUJy-YQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: qcom: Increase MMC_BLOCK_MINORS in defconfig
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Georgi Djakov <gdjakov@mm-sol.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 04:33 PM, Thomas Petazzoni wrote:
-> Dear Sebastian Hesselbarth,
+On Thu, Oct 9, 2014 at 1:33 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
+> There are currently more than 16 partitions on the eMMC of all recent
+> Qualcomm devices. Increase the number of minors per block device to
+> detect all available partitions.
 >
-> On Thu,  9 Oct 2014 14:38:58 +0200, Sebastian Hesselbarth wrote:
+> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+
+Good stuff.
+
+Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+
+Regards,
+Bjorn
+
+> ---
+>  arch/arm/configs/qcom_defconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
->> This patch series deals with a removing a IP feature that can be found
->> on all currently supported Marvell Ethernet IP (pxa168_eth, mv643xx_eth,
->> mvneta). The MAC IP allows to automatically perform PHY auto-negotiation
->> without software interaction.
->>
->> However, this feature (a) fundamentally clashes with the way libphy works
->> and (b) is unable to deal with quirky PHYs that require special treatment.
->> In this series, pxa168_eth driver is rewritten to completely disable that
->> feature and properly deal with libphy provided PHYs. The other two drivers
->> are suspect to future patch sets, also removing the code related with it.
+> diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
+> index 8c7da33..cd09e12 100644
+> --- a/arch/arm/configs/qcom_defconfig
+> +++ b/arch/arm/configs/qcom_defconfig
+> @@ -125,7 +125,7 @@ CONFIG_USB_GADGET=y
+>  CONFIG_USB_GADGET_DEBUG_FILES=y
+>  CONFIG_USB_GADGET_VBUS_DRAW=500
+>  CONFIG_MMC=y
+> -CONFIG_MMC_BLOCK_MINORS=16
+> +CONFIG_MMC_BLOCK_MINORS=32
+>  CONFIG_MMC_ARMMMCI=y
+>  CONFIG_MMC_SDHCI=y
+>  CONFIG_MMC_SDHCI_PLTFM=y
+> --
+> 1.7.9.5
 >
-> Hum, in mvneta, we already disabled the automatic negotiation and use
-> libphy. What makes you think the current mvneta driver is wrong in this
-> respect?
-
-I didn't check mvneta, but remember Ezequiel didn't clear all AN bits
-in the barebox driver (which is based on Linux mvneta). Just mentioned
-that I'll have a closer look at it.
-
-But I agree, regarding libphy support mvneta is probably the best
-already.
-
-Sebastian
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
