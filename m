@@ -1,166 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaJIRAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:00:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:59481 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaJIRAB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:00:01 -0400
-Message-ID: <5436BF0C.1030508@arm.com>
-Date: Thu, 09 Oct 2014 17:59:56 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1751608AbaJIRAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:00:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12184 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaJIRAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 13:00:37 -0400
+Date: Thu, 9 Oct 2014 18:57:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
+Message-ID: <20141009165713.GA13118@redhat.com>
+References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com> <20141008183326.GB17495@redhat.com> <20141008193644.GA32055@redhat.com> <1412804248.24248.1.camel@yandex.ru> <20141009145726.GA5604@redhat.com> <20141009151730.GW10832@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: "Joe.C" <yingjoe.chen@mediatek.com>
-CC: "arm@kernel.org" <arm@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        "yingjoe.chen@gmail.com" <yingjoe.chen@gmail.com>,
-        "hc.yen@mediatek.com" <hc.yen@mediatek.com>,
-        "eddie.huang@mediatek.com" <eddie.huang@mediatek.com>,
-        "nathan.chung@mediatek.com" <nathan.chung@mediatek.com>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <Pawel.Moll@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Matt Porter <mporter@linaro.org>, Marc Carino <marc.ceeeee@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Sricharan R <r.sricharan@ti.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 3/7] irqchip: gic: Support hierarchy irq domain.
-References: <1412864980-20273-1-git-send-email-yingjoe.chen@mediatek.com> <1412864980-20273-4-git-send-email-yingjoe.chen@mediatek.com>
-In-Reply-To: <1412864980-20273-4-git-send-email-yingjoe.chen@mediatek.com>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 09 Oct 2014 16:59:58.0117 (UTC) FILETIME=[74F21550:01CFE3E2]
-X-MC-Unique: 114100917595900301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009151730.GW10832@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/14 15:29, Joe.C wrote:
-> From: "Joe.C" <yingjoe.chen@mediatek.com>
-> 
-> Add support to use gic as a parent for stacked irq domain.
-> 
-> Signed-off-by: Joe.C <yingjoe.chen@mediatek.com>
-> ---
->  drivers/irqchip/irq-gic.c | 56 ++++++++++++++++++++++++++++++++++++++++-------
->  1 file changed, 48 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index dda6dbc..17f5aa6 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -767,19 +767,17 @@ void __init gic_init_physaddr(struct device_node *node)
->  static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
->  				irq_hw_number_t hw)
->  {
-> +	irq_domain_set_hwirq_and_chip(d, irq, hw, &gic_chip, d->host_data);
->  	if (hw < 32) {
->  		irq_set_percpu_devid(irq);
-> -		irq_set_chip_and_handler(irq, &gic_chip,
-> -					 handle_percpu_devid_irq);
-> +		irq_set_handler(irq, handle_percpu_devid_irq);
->  		set_irq_flags(irq, IRQF_VALID | IRQF_NOAUTOEN);
->  	} else {
-> -		irq_set_chip_and_handler(irq, &gic_chip,
-> -					 handle_fasteoi_irq);
-> +		irq_set_handler(irq, handle_fasteoi_irq);
->  		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
->  
->  		gic_routable_irq_domain_ops->map(d, irq, hw);
->  	}
-> -	irq_set_chip_data(irq, d->host_data);
->  	return 0;
->  }
->  
-> @@ -795,8 +793,6 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
->  {
->  	unsigned long ret = 0;
->  
-> -	if (d->of_node != controller)
-> -		return -EINVAL;
->  	if (intsize < 3)
->  		return -EINVAL;
->  
-> @@ -839,6 +835,46 @@ static struct notifier_block gic_cpu_notifier = {
->  };
->  #endif
->  
-> +
-> +#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
-> +static int gic_irq_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> +				unsigned int nr_irqs, void *arg)
-> +{
-> +	int i, ret;
-> +	irq_hw_number_t hwirq;
-> +	unsigned int type = IRQ_TYPE_NONE;
-> +	struct of_phandle_args *irq_data = arg;
-> +
-> +	ret = gic_irq_domain_xlate(domain, irq_data->np, irq_data->args,
-> +				   irq_data->args_count, &hwirq, &type);
-> +	if (ret)
-> +		return ret;
-> +
-> +	for (i = 0; i < nr_irqs; i++)
-> +		gic_irq_domain_map(domain, virq+i, hwirq+i);
-> +
-> +	return 0;
-> +}
-> +
-> +static void gic_irq_domain_free(struct irq_domain *domain, unsigned int virq,
-> +				unsigned int nr_irqs)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < nr_irqs; i++) {
-> +		irq_set_handler(virq + i, NULL);
-> +		irq_domain_set_hwirq_and_chip(domain, virq + i, 0, NULL, NULL);
-> +	}
-> +}
-> +
-> +static const struct irq_domain_ops gic_irq_domain_hierarchy_ops = {
-> +	.alloc = gic_irq_domain_alloc,
-> +	.free = gic_irq_domain_free,
-> +};
-> +#else
-> +#define gic_irq_domain_hierarchy_ops 0
-> +#endif /* CONFIG_IRQ_DOMAIN_HIERARCHY */
-> +
->  static const struct irq_domain_ops gic_irq_domain_ops = {
->  	.map = gic_irq_domain_map,
->  	.unmap = gic_irq_domain_unmap,
-> @@ -952,7 +988,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
->  
->  	gic_irqs -= hwirq_base; /* calculate # of irqs to allocate */
->  
-> -	if (of_property_read_u32(node, "arm,routable-irqs",
-> +	if (IS_ENABLED(CONFIG_IRQ_DOMAIN_HIERARCHY) &&
-> +		of_find_property(node, "arm,irq-domain-hierarchy", NULL))
-> +		gic->domain = irq_domain_add_linear(node, gic_irqs,
-> +					&gic_irq_domain_hierarchy_ops, gic);
+Peter,
 
-I really think that looking for a property is the wrong thing to do. If
-"node" is non-NULL, then we're pretty sure that we're initializing from
-DT, and that a pure linear domain should be the right thing, leaving the
-legacy stuff for the few non-DT platforms that are still around.
+let me first say that I understand that cleanups are always subjective.
+So if you do not like it - I won't argue at all.
 
-Thanks,
+On 10/09, Peter Zijlstra wrote:
+>
+> On Thu, Oct 09, 2014 at 04:57:26PM +0200, Oleg Nesterov wrote:
+>
+> > but first we need to remove ->saved_preempt_count.
+>
+> Why do you want to kill that?
 
-	M.
--- 
-Jazz is not dead. It just smells funny...
+Because imo this makes the code a bit simpler. But (perhaps) mostly because
+personally I dislike any "special" member in task_struct/thread_info, and
+it seems to me that ->saved_preempt_count buys nothing. We only need it
+to record/restore the counter before/after switch_to(), a local variably
+looks better to me.
+
+But again, see above. If the maintainer doesn't like the cleanup - then
+it should be counted as uglification ;)
+
+> Your earlier proposal would penalize every
+> !x86 arch by adding extra code to the scheduler core while they already
+> automagically preserve their thread_info::preempt_count.
+
+Sure, and it can't be even compiled on !x86.
+
+But this is simple, just we need a new helper, preempt_count_restore(),
+defined as nop in asm-generic/preempt.h. Well, perhaps another helper
+makes sense, preempt_count_raw() which simply reads the counter, but
+this is minor.
+
+After the patch below we can remove ->saved_preempt_count. Including
+init_task_preempt_count(), it is no longer needed after the change in
+schedule_tail().
+
+No?
+
+Oleg.
+
+
+diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
+index 8f32718..695307f 100644
+--- a/arch/x86/include/asm/preempt.h
++++ b/arch/x86/include/asm/preempt.h
+@@ -27,6 +27,11 @@ static __always_inline void preempt_count_set(int pc)
+ 	raw_cpu_write_4(__preempt_count, pc);
+ }
+ 
++static __always_inline void preempt_count_restore(int pc)
++{
++	preempt_count_set(pc);
++}
++
+ /*
+  * must be macros to avoid header recursion hell
+  */
+diff --git a/include/asm-generic/preempt.h b/include/asm-generic/preempt.h
+index eb6f9e6..14de30e 100644
+--- a/include/asm-generic/preempt.h
++++ b/include/asm-generic/preempt.h
+@@ -20,6 +20,10 @@ static __always_inline void preempt_count_set(int pc)
+ 	*preempt_count_ptr() = pc;
+ }
+ 
++static __always_inline void preempt_count_restore(int pc)
++{
++}
++
+ /*
+  * must be macros to avoid header recursion hell
+  */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index cfe9905..ad8ca02 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2279,6 +2279,8 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
+ {
+ 	struct rq *rq;
+ 
++	preempt_count_set(PREEMPT_DISABLED);
++
+ 	/* finish_task_switch() drops rq->lock and enables preemtion */
+ 	preempt_disable();
+ 	rq = this_rq();
+@@ -2299,6 +2301,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ 	       struct task_struct *next)
+ {
+ 	struct mm_struct *mm, *oldmm;
++	int pc;
+ 
+ 	prepare_task_switch(rq, prev, next);
+ 
+@@ -2333,10 +2336,12 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ #endif
+ 
+ 	context_tracking_task_switch(prev, next);
++
++	pc = preempt_count();
+ 	/* Here we just switch the register state and the stack. */
+ 	switch_to(prev, next, prev);
+-
+ 	barrier();
++	preempt_count_restore(pc);
+ 	/*
+ 	 * this_rq must be evaluated again because prev may have moved
+ 	 * CPUs since it called schedule(), thus the 'rq' on its stack
 
