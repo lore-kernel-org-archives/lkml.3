@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399AbaJIQlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:41:37 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:64759 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaJIQl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:41:28 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Hauke Mehrtens <hauke@hauke-m.de>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH] bcma: Add dependency on OF_ADDRESS
-Date: Thu,  9 Oct 2014 09:41:17 -0700
-Message-Id: <1412872877-1771-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
+	id S1756262AbaJIQnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:43:50 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:65276 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372AbaJIQnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 12:43:41 -0400
+Message-ID: <5436BB39.8030907@nod.at>
+Date: Thu, 09 Oct 2014 18:43:37 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Wei Wang <wangw8210@gmail.com>, linux-mtd@lists.infradead.org
+CC: dedeking1@gmail.com, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: Re: Questions about MTD + flash file system
+References: <CAF-d49R64tbzk_2QnX3uwMc2LnpyzKmdfmY2D4P1=r+_DMi0fg@mail.gmail.com>
+In-Reply-To: <CAF-d49R64tbzk_2QnX3uwMc2LnpyzKmdfmY2D4P1=r+_DMi0fg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2101e533f41a ("bcma: register bcma as device tree driver")
-introduces a hard dependency on OF_ADDRESS into the bcma driver.
-OF_ADDRESS is specifically disabled for the sparc architecture.
-This results in the following error when building sparc64:allmodconfig.
+Am 09.10.2014 18:40, schrieb Wei Wang:
+> Hi all,
+> 
+> I have a question about the MTD device for embedded applications. As typically designers are more likely to use an eMMC or block interface-based flash devices + a block-oriented
+> file system for the storage system on an embedded system, what's the typical use case for the MTD + flash file system? What's the advantage of the later one against eMMC +
+> block-oriented file system?
+> 
+> If an eMMC becomes more powerful, is there any merits that is provided by using an raw flash device + flash file system?
 
-drivers/bcma/main.c: In function 'bcma_of_find_child_device':
-drivers/bcma/main.c:150:3: error: implicit declaration of function 'of_translate_address'
+Power cut resistance.
 
-Fixes: 2101e533f41a ("bcma: register bcma as device tree driver")
-Cc: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/bcma/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks,
+//richard
 
-diff --git a/drivers/bcma/Kconfig b/drivers/bcma/Kconfig
-index 0ee48be..ca4b420 100644
---- a/drivers/bcma/Kconfig
-+++ b/drivers/bcma/Kconfig
-@@ -1,6 +1,6 @@
- config BCMA_POSSIBLE
- 	bool
--	depends on HAS_IOMEM && HAS_DMA
-+	depends on HAS_IOMEM && HAS_DMA && OF_ADDRESS
- 	default y
- 
- menu "Broadcom specific AMBA"
--- 
-1.9.1
 
