@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaJITN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:13:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34753 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaJITNw (ORCPT
+	id S1752555AbaJITPD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:15:03 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:44594 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400AbaJITMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:13:52 -0400
-Date: Thu, 9 Oct 2014 12:13:51 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: "xinhui.pan" <xinhuix.pan@intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        mnipxh <mnipxh@gmail.com>, gnomes@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] tty/n_gsm.c: do not clear gsm_mux entry when the gsm is
- not closed
-Message-ID: <20141009191351.GA4256@kroah.com>
-References: <53D0CF0D.9060103@intel.com>
- <20140727180953.GA7232@kroah.com>
- <53D5F8C9.4070008@intel.com>
- <20140728151324.GA12973@kroah.com>
- <5436DB9A.6040801@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5436DB9A.6040801@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 9 Oct 2014 15:12:33 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+From: Johan Hovold <johan@kernel.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>,
+        AnilKumar Ch <anilkumar@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
+        j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Johan Hovold <johan@kernel.org>
+Subject: [PATCH 10/12] rtc: omap: enable wake-up from power off
+Date: Thu,  9 Oct 2014 21:06:32 +0200
+Message-Id: <1412881594-25678-11-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 03:01:46PM -0400, Peter Hurley wrote:
-> On 07/28/2014 11:13 AM, Greg Kroah-Hartman wrote:
-> > On Mon, Jul 28, 2014 at 03:16:25PM +0800, xinhui.pan wrote:
-> >>> Why can't you do dynamic reference counting of your structure, that
-> >>> would allow you to get rid of your global array, right?
-> >>>
-> >>
-> >> Thanks for your nice comments.
-> >> Struct gsm has a ref-count already. :)
-> > 
-> > Then you should be fine, no need to keep it in an array.
-> > 
-> >> And also adding a ref-count is a little hard to me. :(
-> >> This global array is used to keep tracking the gsms that stands for the gsmttyXX.
-> > 
-> > You shouldn't need that at all, just use a list, you don't care what the
-> > XX number is within the driver, just allocate a new one with the next
-> > available number and you should be fine.
-> > 
-> >> and it can tell us if we can create a new gsm. :)
-> > 
-> > You should always be able to create a new gsm if you need to :)
-> > 
-> >> In gsm_init we set *gsm_tty_driver = alloc_tty_driver(256);*
-> > 
-> > Why limit to 256?  Just use a list, and a idr structure to allocate the
-> > minor number, and all should be good.
-> 
-> Hi Greg,
-> 
-> This is still broken in the gsm driver.
-> 
-> As much as I'd like to see someone take ownership of the gsm driver and
-> do this 'the right way', I think until that happens we should consider
-> fixing the reuse-while-in-use error.
+The ALARM interrupt must not be disabled during shutdown in order to be
+able to power up the system using an RTC alarm.
 
-What happened to the gsm driver maintainers?
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/rtc/rtc-omap.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-> Would you be willing to take a patch from me that just does the bare
-> minimum to keep this from panicking in the cdev code?
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index b0319864dd42..8836c58901b5 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -670,7 +670,15 @@ static SIMPLE_DEV_PM_OPS(omap_rtc_pm_ops, omap_rtc_suspend, omap_rtc_resume);
+ 
+ static void omap_rtc_shutdown(struct platform_device *pdev)
+ {
+-	rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
++	u8 mask;
++
++	/*
++	 * Keep the ALARM interrupt enabled to allow the system to power up on
++	 * alarm events.
++	 */
++	mask = rtc_read(OMAP_RTC_INTERRUPTS_REG);
++	mask &= OMAP_RTC_INTERRUPTS_IT_ALARM;
++	rtc_write(mask, OMAP_RTC_INTERRUPTS_REG);
+ }
+ 
+ MODULE_ALIAS("platform:omap_rtc");
+-- 
+2.0.4
 
-Depends on what the patch looks like :)
-
-Send it on, and I'll be glad to review it.
-
-thanks,
-
-greg k-h
