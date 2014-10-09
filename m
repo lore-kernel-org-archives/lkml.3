@@ -1,111 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaJIWTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 18:19:06 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:5074 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaJIWTE (ORCPT
+	id S1757362AbaJIWUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:20:11 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:57055 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608AbaJIWUJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 18:19:04 -0400
-Message-ID: <543709D0.6000501@imgtec.com>
-Date: Thu, 9 Oct 2014 15:18:56 -0700
-From: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Thu, 9 Oct 2014 18:20:09 -0400
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-CC: <linux-mips@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>,
-        <geert+renesas@glider.be>, <david.daney@cavium.com>,
-        <peterz@infradead.org>, <paul.gortmaker@windriver.com>,
-        <davidlohr@hp.com>, <macro@linux-mips.org>, <chenhc@lemote.com>,
-        <richard@nod.at>, <zajec5@gmail.com>, <james.hogan@imgtec.com>,
-        <keescook@chromium.org>, <alex@alex-smith.me.uk>, <tglx@linutronix.de>,
-        <blogic@openwrt.org>, <jchandra@broadcom.com>,
-        <paul.burton@imgtec.com>, <qais.yousef@imgtec.com>,
-        <linux-kernel@vger.kernel.org>, <ralf@linux-mips.org>,
-        <markos.chandras@imgtec.com>, <dengcheng.zhu@imgtec.com>,
-        <manuel.lauss@gmail.com>, <akpm@linux-foundation.org>,
-        <lars.persson@axis.com>
-Subject: Re: [PATCH v2 0/3] MIPS executable stack protection
-References: <20141009195030.31230.58695.stgit@linux-yegoshin> <5437015B.3010205@gmail.com>
-In-Reply-To: <5437015B.3010205@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.65.146]
+In-Reply-To: <CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
+References: <1412618020-22278-1-git-send-email-sonnyrao@chromium.org>
+ <CAGOxZ53bviLbuA27=1QjNUgxA_WMMP-6siV=DajuN8iSqsasMg@mail.gmail.com> <CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Fri, 10 Oct 2014 03:49:28 +0530
+Message-ID: <CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Reset DMA before enabling IDMAC
+To: =?UTF-8?B?RWRkaWUgQ2FpKOiUoeaeqyk=?= <eddie.cai@rock-chips.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        addy.ke@rock-chips.com, Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Douglas Anderson <dianders@chromium.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 02:42 PM, David Daney wrote:
-> On 10/09/2014 01:00 PM, Leonid Yegoshin wrote:
->> The following series implements an executable stack protection in MIPS.
->>
->> It sets up a per-thread 'VDSO' page and appropriate TLB support.
->> Page is set write-protected from user and is maintained via kernel VA.
->> MIPS FPU emulation is shifted to new page and stack is relieved for
->> execute protection as is as all data pages in default setup during ELF
->> binary initialization. The real protection is controlled by GLIBC and
->> it can do stack protected now as it is done in other architectures and
->> I learned today that GLIBC team is ready for this.
->
-> What does it mean to be 'ready'?  If they committed patches before 
-> there was kernel support, that it putting the cart before the horse.  
-> GlibC's state cannot be used as valid reason for committing major 
-> kernel changes.  There would be no regression in any GLibC based 
-> system as a result of not merging this patch.
-Rich Fuhler said me that they discussed it internally and have a 
-solution to fix their problem (ignoring PT_GNU_STACK on first library 
-load - they need to sort out the logic). But we need to split both issue 
-- right now stack can't be protected because of emulation. If they set 
-stack protected then emulation fails on CPU without FPU.
+Hi Eddie,
 
+On Thu, Oct 9, 2014 at 7:43 PM, Eddie Cai(蔡枫) <eddie.cai@rock-chips.com> wrote:
+> Hi Alim
+>
+> 2014年10月8日 上午4:28于 "Alim Akhtar" <alim.akhtar@gmail.com>写道：
+>
 >
 >>
->> Note: actual execute-protection depends from HW capability, of course.
+>> Hi Sonny/Doug,
 >>
->> This patch is required for MIPS32/64 R2 emulation on MIPS R6 
->> architecture.
->> Without it 'ssh-keygen' crashes pretty fast on attempt to execute 
->> instruction
->> in stack.
+>> On Mon, Oct 6, 2014 at 11:23 PM, Sonny Rao <sonnyrao@chromium.org> wrote:
+>> > We've already got a reset of DMA after it's done.  Add one before we
+>> > start DMA too.  This fixes a data corruption on Rockchip SoCs which
+>> > will get bad data when doing a DMA transfer after doing a PIO transfer.
+>> >
+>> > We tested this on an Exynos 5800 with HS200 and didn't notice any
+>> > difference in sequential read throughput.
+>> >
+>> > Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+>> > Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> > ---
+>> >  drivers/mmc/host/dw_mmc.c | 4 ++++
+>> >  1 file changed, 4 insertions(+)
+>> >
+>> > diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>> > index 69f0cc6..2b5401e 100644
+>> > --- a/drivers/mmc/host/dw_mmc.c
+>> > +++ b/drivers/mmc/host/dw_mmc.c
+>> > @@ -83,6 +83,7 @@ struct idmac_desc {
+>> >  #endif /* CONFIG_MMC_DW_IDMAC */
+>> >
+>> >  static bool dw_mci_reset(struct dw_mci *host);
+>> > +static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
+>> >
+>> >  #if defined(CONFIG_DEBUG_FS)
+>> >  static int dw_mci_req_show(struct seq_file *s, void *v)
+>> > @@ -448,6 +449,9 @@ static void dw_mci_idmac_start_dma(struct dw_mci
+>> > *host, unsigned int sg_len)
+>> >
+>> >         dw_mci_translate_sglist(host, host->data, sg_len);
+>> >
+>> > +       /* Make sure to reset DMA in case we did PIO before this */
+>> > +       dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
+>> > +
+>> Though this is good to do, but this does not look complete to me.
+>> dw_mmc data book does mention that " It is recommended that the host
+>> issue reset to DMA interface by setting DMA_RESET bit of the CTRL
+>> register and then issue a IDMAC software reset."
+>> The above lines are from 'Transmission and reception with internal
+>> DMA' section of the data book.
+>> My suggestion here to add dw_mci_idmac_reset() call after this above
+>> change.
+>>
+>> What is the controller version used in your case?
 >
-> There is much more blocking MIPS32/64 R2 emulation on MIPS R6 than 
-> just this patch isn't there?
-
-This one is critical - ssh-keygen crashes during running MIPS R2. I have 
-a patch in my R6 repository but GLIBC still can't set stack executable 
-and security suffers.
-
+> it just compatible with dw mmc controler but not the same one. it is
+> designed by rockchip.
 >
-> Also, if you are supporting MIPS R6, this patch doesn't even work, 
-> because it doesn't handle PC relative instructions at all.
+Thats fine, I think every vendor (most of them) has a custom
+implementation of dw_mmc, but they do have VERID register to check the
+dw_mmc version.
+The reason why I asked is, I have seen inconsistency in card
+enumeration on few controller version, and this patch alone does not
+help, and adding a call to dw_mci_idmac_reset() after DMA reset is
+needed. And this is what is recommended in the synopsys's data book
+also.
+Do you see any issue/side effect after adding dw_mci_idmac_reset()?
 
-It seems like you missed my statement - adding support for PC-relative 
-instruction is just 5 lines of code. I just refrain from this until 
-toolchain starts generating that.
+>> >         /* Select IDMAC interface */
+>> >         temp = mci_readl(host, CTRL);
+>> >         temp |= SDMMC_CTRL_USE_IDMAC;
+>> > --
+>> > 1.8.3.2
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+>>
+>> --
+>> Regards,
+>> Alim
+>>
+>>
 
-Besides that, this version 2 of patch just passed 20-22 hours on P5600 
-and Virtuoso (no FPU on both) under SOAK test and it gets around 1 per 
-hour of signal right at emulated instruction in VDSO and unwind works 
-(as I can see in debug prints).
 
->
->
-> The recent discussions on this subject, including many comments from 
-> Imgtec e-mail addresses, brought to light the need to use an 
-> instruction set emulator for newer MIPSr6 ISA processors.
 
-In Imgtec I am only one who works on MIPS R6 SW and FPU branch emulation 
-and I say you - it is not needed, this solution is enough.
-
->
-> In light of this, why does it make sense to merge this patch, instead 
-> of taking the approach of emulating the instructions in the delay slot?
-
-Well, because it does exist now. But full MIPS emulator... for all 
-ASEs... for any MIPS vendor... I even doesn't want to estimate an amount 
-of time and code size to develop it.
-
-Besides that, you missed my another statement - we don't force customer 
-to disclose all details of their COP2 instructions.
-
-- Leonid
+-- 
+Regards,
+Alim
