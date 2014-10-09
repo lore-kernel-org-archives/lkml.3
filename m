@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306AbaJIPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:31:09 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:50108 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbaJIPbA (ORCPT
+	id S1757424AbaJIPbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:31:20 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:28372 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751385AbaJIPbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:31:00 -0400
+	Thu, 9 Oct 2014 11:31:13 -0400
+Date: Thu, 9 Oct 2014 11:31:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: trace_printk() broken wrt %pV
+Message-ID: <20141009113111.0ecb175d@gandalf.local.home>
+In-Reply-To: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
+References: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141008224414.GA25262@kroah.com>
-References: <20141002084745.GF23154@mwanda>
-	<1412253146-3568-1-git-send-email-nitinkuppelur@gmail.com>
-	<20141008224414.GA25262@kroah.com>
-Date: Thu, 9 Oct 2014 21:00:58 +0530
-Message-ID: <CAJTjWg8QuvrdwD9rrHYW25LbJ6aq7ttyih1sxGkZEvtoBA8Ntg@mail.gmail.com>
-Subject: Re: [PATCH V3] Staging: rtl8712 removed unnecessary else after return
-From: Nitin Kuppelur <nitinkuppelur@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, 9 Oct 2014 11:01:39 +0200
+Richard Weinberger <richard.weinberger@gmail.com> wrote:
 
-Sorry for noob question. I am still new to Kernel development.
+> Hi Steven,
+> 
+> my code does something like:
+> 
+> void my_printf(const char *fmt, ...)
+> {
+>         struct va_format vaf;
+>         va_list args;
+> 
+>         va_start(args, fmt);
+>         vaf.fmt = fmt;
+>         vaf.va = &args;
+>         trace_printk("%pV", &vaf);
+>         va_end(args);
+> }
+> 
+> While reading from /sys/kernel/debug/tracing/trace a kernel oops happens.
+> 
+> [   54.406617] BUG: unable to handle kernel paging request at ffffffffffffffff
 
-I understood from your comment that the patch did not apply cleanly to
-your tree (may be due to change in the code which I have modified)
+Yep, and as the doctor, I say "don't do that!" ;-)
 
-But what should I do after this?
-1) Send patch on rebased file to same mail chain with (--in-reply-to)
-and [PATCH V4] ? OR
-2) Create new PATCH and start new mail chain done on latest code.
+There's a trace_vprintk(). It has an extra "ip" argument. Just put in
+_THIS_IP_, for that parameter.
 
-Regards,
-Nitin
+The reason is, trace_printk() on something like that will magically
+convert to a trace_bprintk(), that stores the format and parameters on
+the buffer and doesn't do the processing of the format until it needs
+to be printed (read from the trace file).
 
-On Thu, Oct 9, 2014 at 4:14 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Thu, Oct 02, 2014 at 02:32:26PM +0200, Nitin Kuppelur wrote:
->> Removed unnecessary else after return to solve
->> checkpatch.pl warning
->>
->> Signed-off-by: Nitin Kuppelur <nitinkuppelur@gmail.com>
->> ---
->>  drivers/staging/rtl8712/hal_init.c | 7 ++-----
->>  1 file changed, 2 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8712/hal_init.c b/drivers/staging/rtl8712/hal_init.c
->> index 81cd654..fbaba11 100644
->> --- a/drivers/staging/rtl8712/hal_init.c
->> +++ b/drivers/staging/rtl8712/hal_init.c
->> @@ -387,12 +387,9 @@ uint rtl8712_hal_deinit(struct _adapter *padapter)
->>  uint rtl871x_hal_init(struct _adapter *padapter)
->>  {
->>       padapter->hw_init_completed = false;
->> -     if (padapter->halpriv.hal_bus_init == NULL)
->> +     if (padapter->halpriv.hal_bus_init == NULL ||
->> +         padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
->>               return _FAIL;
->> -     else {
->> -             if (padapter->halpriv.hal_bus_init(padapter) != _SUCCESS)
->> -                     return _FAIL;
->> -     }
->>       if (rtl8712_hal_init(padapter) == _SUCCESS)
->>               padapter->hw_init_completed = true;
->>       else {
->
-> This doesn't apply to my tree :(
+In your case, it saved the format "%pV" and the address of the
+va_format vaf. Then when you read from the trace file, it used the
+address of the vaf to process the "%pV", and obviously at that time it
+no longer is valid. It was a pointer to some stack address from the
+past, and thus boom!
+
+
+Use the trace_vprintk(), it will do the format processing at time of
+recording, and lets you get rid of the need of using va_format.
+
+-- Steve
