@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaJIRdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:33:35 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35282 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750903AbaJIRd1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:33:27 -0400
-Date: Thu, 9 Oct 2014 18:32:46 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Frans Klaver <frans.klaver@xsens.com>, Sebastian Reichel <sre@kernel.org>,
-        =?utf-8?B?UmVuw6k=?= Moll <linux@r-moll.nl>,
-        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 2/2] power: reset: document LTC2952 poweroff support
-Message-ID: <20141009173246.GB466@leverpostej>
-References: <1412866242-6474-1-git-send-email-frans.klaver@xsens.com>
- <1412866242-6474-3-git-send-email-frans.klaver@xsens.com>
- <20141009150756.GC18384@leverpostej>
- <20141009160935.GF31987@roeck-us.net>
+	id S1751645AbaJIRfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:35:47 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41229 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaJIRfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 13:35:38 -0400
+Date: Thu, 9 Oct 2014 19:35:29 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Cc: slaoub@gmail.com, Tony Luck <tony.luck@intel.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
+ machine_check_poll() resets it
+Message-ID: <20141009173529.GC17647@pd.tnic>
+References: <1412037578.21488.11.camel@debian>
+ <20140930072553.GA4639@pd.tnic>
+ <1412070991.16556.12.camel@cyc>
+ <20140930100940.GD4639@pd.tnic>
+ <1412138102.21488.20.camel@debian>
+ <20141002131206.GA16452@pd.tnic>
+ <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
+ <5435B206.60402@amd.com>
+ <20141008225750.GH16892@pd.tnic>
+ <20141009165339.GA11360@arav-dinar>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141009160935.GF31987@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141009165339.GA11360@arav-dinar>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 05:09:36PM +0100, Guenter Roeck wrote:
-> On Thu, Oct 09, 2014 at 04:07:56PM +0100, Mark Rutland wrote:
-> > Hi,
-> > 
-> > On Thu, Oct 09, 2014 at 03:50:42PM +0100, Frans Klaver wrote:
-> > > From: René Moll <linux@r-moll.nl>
-> > > 
-> > > Signed-off-by: René Moll <linux@r-moll.nl>
-> > > Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
-> > > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-> > > ---
-> > >  .../bindings/power/reset/ltc2952-poweroff.txt      | 31 ++++++++++++++++++++++
-> > >  1 file changed, 31 insertions(+)
-> > >  create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-> > > new file mode 100644
-> > > index 0000000..c3f3d9e
-> > > --- /dev/null
-> > > +++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-> > > @@ -0,0 +1,31 @@
-> > > +Binding for the LTC2952 PowerPath controller
-> > > +
-> > > +This chip is used to externally trigger a system shut down. Once the trigger
-> > > +has been sent, the chips watchdog has to be reset to gracefully shut down.
-> > 
-> > s/chips/chip's/
-> > 
-> > > If +the Linux systems decides to shut down, it powers off the platform
-> > > via the +poweroff signal.
-> > 
-> > This sentence can go; the binding should describe the hardware rather
-> > than the Linux behaviour.
-> > 
-> Maybe find an operating system independent wording and describe what the
-> implementation should do. Or is that out of scope as well ?
+On Thu, Oct 09, 2014 at 11:53:39AM -0500, Aravind Gopalakrishnan wrote:
+> How do you mean "last error"?
+> The interrupt is only fired upon overflow..
 
-Something like "The platform can be powered off via the poweroff signal"
-would be OK. So long as it's not a description of Linux internals that's
-fine. 
+And? Think about it, what is causing the overflow? A CE, right?
 
-Ideally the binding wouldn't state how the OS should use the device
-either. So if bindings can be worded w.r.t. possible uses of a device
-rather than specific users, that would be preferable unless the entire
-point of the binding is to specify a very specific use.
+There was even a call to machine_check_poll() there which we removed,
+but for another reason. In any case, you should have the error signature
+in the MCA banks of the last error causing the overflow, right? This is
+what I mean with last error.
 
-Thanks,
-Mark.
+However(!),...
+
+> CE error if collected through polling gives proper decoding info. So,
+> why should this be any different for the same CE error for which an
+> interrupt is generated on crossing a threshold?
+
+... we're currently using a special signature to signal the overflow
+with the K8_MCE_THRESHOLD_BASE thing. You simply report a special bank
+and this way you can tell userspace that this is an overflow error. I
+think that was the reason behind the software-defined banks.
+
+Now, we can also drop that and simply log a normal error but make sure
+MASK_OVERFLOW_HI is passed onto userspace so that it can see that the
+error is an overflow error. I.e., something like this:
+
+        mce_setup(&m);
+	// rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus); - not sure about this one - we're not looking at MCGSTATUS for CEs
+        // rdmsrl(address, m.misc); - this MSR can be saved too as we're reading
+	// the MISC register already.
+        rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
+        m.bank = bank;
+        mce_log(&m);
+
+so in the end it'll be something like this:
+
+	mce_setup(&m);
+	m.misc = (high << 32) | low;
+	rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
+	m.bank = bank;
+        mce_log(&m);
+
+so I'm still on the fence about what we want to do and am expecting
+arguments. I like the last one more because it is simpler and tools
+don't need to know about the software-defined banks.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
