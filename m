@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873AbaJITcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:32:01 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:47888 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbaJITby (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:31:54 -0400
+	id S1751854AbaJITfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:35:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9820 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191AbaJITfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 15:35:31 -0400
+Date: Thu, 9 Oct 2014 21:32:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: [PATCH 0/1] sched: make finish_task_switch() return struct rq *
+Message-ID: <20141009193207.GA5408@redhat.com>
+References: <20141007195046.GA28002@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAH6sp9Prq3VVbBGEEgaYACWgKf53_93eq93RhAWbmknw0x95QQ@mail.gmail.com>
-References: <20141009190406.GA5428@localhost>
-	<CAH6sp9Prq3VVbBGEEgaYACWgKf53_93eq93RhAWbmknw0x95QQ@mail.gmail.com>
-Date: Thu, 9 Oct 2014 21:31:52 +0200
-Message-ID: <CAH6sp9MrU7HxYya7jBGHehBXUqey-PLzVDkvfjJbrU5v1P1WyQ@mail.gmail.com>
-Subject: Re: acpitool - /proc/acpi/wakeup
-From: Frans Klaver <fransklaver@gmail.com>
-To: Marc Burkhardt <marc@osknowledge.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141007195046.GA28002@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 9, 2014 at 9:25 PM, Frans Klaver <fransklaver@gmail.com> wrote:
-> Hi,
->
-> On Thu, Oct 9, 2014 at 9:04 PM, Marc Burkhardt <marc@osknowledge.org> wrote:
->> Hi there,
->> I noticed, that 'acpitool -e' doesn't work any longer sind I upgraded to 3.17.
->> The tool stalls at
->>
->>    Device       S-state   Status   Sysfs node
->>   ---------------------------------------
->>   1. LID          S3    *enabled   platform:PNP0C0D:00
->>   2. SLPB         S3    *enabled   platform:PNP0C0E:0
->
-> I see the same thing.
+speaking of minor cleanups...
 
-With which kernel version did it last work properly for you?
+Let me send another once before ->saved_preempt_count removal, it
+looks simple and less subjective.
+
+Again, this is just minor cleanup so please feel free to ignore, but
+somehow to me this duplicated this_rq() (and the comment!) looks a
+bit annoying. Plus it saves a few insns, but this is minor.
+
+Depends on "sched: schedule_tail() should disable preemption".
+
+Oleg.
+
