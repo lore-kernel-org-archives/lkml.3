@@ -1,104 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557AbaJIQhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:37:06 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:49909 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757512AbaJIQgo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:36:44 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v2 12/12] perf/x86: add syfs entry to disable HT bug workaround
-Date: Thu,  9 Oct 2014 18:34:46 +0200
-Message-Id: <1412872486-2930-13-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412872486-2930-1-git-send-email-eranian@google.com>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
+	id S1757569AbaJIQhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:37:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18532 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757550AbaJIQhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 12:37:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,686,1406617200"; 
+   d="scan'208";a="586147612"
+Message-ID: <5436B98E.1070407@intel.com>
+Date: Thu, 09 Oct 2014 09:36:30 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Fengwei Yin <yfw.kernel@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+CC: fengguang.wu@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH] smaps should deal with huge zero page exactly same as
+ normal zero page
+References: <CADUXgx7QTWBMxesxgCet5rjpGu-V-xK_-5f2rX9R+v-ggi902A@mail.gmail.com>
+In-Reply-To: <CADUXgx7QTWBMxesxgCet5rjpGu-V-xK_-5f2rX9R+v-ggi902A@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+On 10/09/2014 02:19 AM, Fengwei Yin wrote:
+> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+> index 80ca4fb..8550b27 100644
+> --- a/fs/proc/task_mmu.c
+> +++ b/fs/proc/task_mmu.c
+> @@ -476,7 +476,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
+>  			mss->nonlinear += ptent_size;
+>  	}
+>  
+> -	if (!page)
+> +	if (!page || is_huge_zero_page(page))
+>  		return;
 
-This patch adds a sysfs entry:
+This really seems like a bit of a hack.  A normal (small) zero page
+won't make it to this point because of the vm_normal_page() check in
+smaps_pte_entry() which hits the _PAGE_SPECIAL bit in the pte.
 
-	/sys/devices/cpu/ht_bug_workaround
+Is there a reason we can't set _PAGE_SPECIAL on the huge_zero_page ptes?
+ If we did that, we wouldn't need a special case here.
 
-to activate/deactivate the PMU HT bug workaround.
+If we can't do that for some reason, can we at least teach
+vm_normal_page() about the huge_zero_page in some other way?
 
-To activate (activated by default):
- # echo 1 > /sys/devices/cpu/ht_bug_workaround
+>  	if (PageAnon(page))
+> @@ -516,7 +516,8 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>  	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
+>  		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
+>  		spin_unlock(ptl);
+> -		mss->anonymous_thp += HPAGE_PMD_SIZE;
+> +		if (!is_huge_zero_pmd(*pmd))
+> +			mss->anonymous_thp += HPAGE_PMD_SIZE;
+>  		return 0;
+>  	}
 
-To deactivate:
- # echo 0 > /sys/devices/cpu/ht_bug_workaround
+How about we just move this hunk in to smaps_pte_entry()?  Something
+along these lines:
 
-Results effective only once there is no more active
-events.
+...
+        if (PageAnon(page)) {
+                mss->anonymous += ptent_size;
++		if (PageTransHuge(page))
++			mss->anonymous_thp += ptent_size;
+	}
 
-Reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+If we do that, plus teaching vm_normal_page() about huge_zero_pages, it
+will help keep the hacks and the extra code due to huge pages to a miniumum.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 9799e9b..3d942d9 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1889,10 +1889,50 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
- }
- 
-+static ssize_t get_attr_xsu(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      char *buf)
-+{
-+	int ff = is_ht_workaround_enabled();
-+
-+	return snprintf(buf, 40, "%d\n", ff);
-+}
-+
-+static ssize_t set_attr_xsu(struct device *cdev,
-+			      struct device_attribute *attr,
-+			      const char *buf, size_t count)
-+{
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	unsigned long val;
-+	int ff = is_ht_workaround_enabled();
-+	ssize_t ret;
-+
-+	/*
-+	 * if workaround, disabled, no effect
-+	 */
-+	if (!cpuc->excl_cntrs)
-+		return count;
-+
-+	ret = kstrtoul(buf, 0, &val);
-+	if (ret)
-+		return ret;
-+
-+	if (!!val != ff) {
-+		if (!val)
-+			x86_pmu.flags &= ~PMU_FL_EXCL_ENABLED;
-+		else
-+			x86_pmu.flags |= PMU_FL_EXCL_ENABLED;
-+	}
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(ht_bug_workaround, S_IRUSR | S_IWUSR, get_attr_xsu, \
-+		   set_attr_xsu);
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_ht_bug_workaround.attr,
- 	NULL,
- };
- 
--- 
-1.9.1
+> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+> index 63579cb..758f569 100644
+> --- a/include/linux/huge_mm.h
+> +++ b/include/linux/huge_mm.h
+> @@ -34,6 +34,10 @@ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+>  			unsigned long addr, pgprot_t newprot,
+>  			int prot_numa);
+>  
+> +extern bool is_huge_zero_page(struct page *page);
+> +
+> +extern bool is_huge_zero_pmd(pmd_t pmd);
+> +
+>  enum transparent_hugepage_flag {
+>  	TRANSPARENT_HUGEPAGE_FLAG,
+>  	TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index d9a21d06..bedc3ae 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -173,12 +173,12 @@ static int start_khugepaged(void)
+>  static atomic_t huge_zero_refcount;
+>  static struct page *huge_zero_page __read_mostly;
+>  
+> -static inline bool is_huge_zero_page(struct page *page)
+> +bool is_huge_zero_page(struct page *page)
+>  {
+>  	return ACCESS_ONCE(huge_zero_page) == page;
+>  }
+>  
+> -static inline bool is_huge_zero_pmd(pmd_t pmd)
+> +bool is_huge_zero_pmd(pmd_t pmd)
+>  {
+>  	return is_huge_zero_page(pmd_page(pmd));
+>  }
 
+^^^ And all these exports.
