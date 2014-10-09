@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaJIUrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 16:47:33 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21394 "EHLO mga02.intel.com"
+	id S1751863AbaJIUrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 16:47:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:47103 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727AbaJIUr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 16:47:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,687,1406617200"; 
-   d="scan'208";a="586293854"
-Date: Thu, 9 Oct 2014 16:47:16 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: Re: [PATCH v1 5/7] dax: Add huge page fault support
-Message-ID: <20141009204716.GQ5098@wil.cx>
-References: <1412774729-23956-1-git-send-email-matthew.r.wilcox@intel.com>
- <1412774729-23956-6-git-send-email-matthew.r.wilcox@intel.com>
- <20141008201100.GB9232@node.dhcp.inet.fi>
+	id S1751324AbaJIUrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 16:47:40 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Kumar Gala <galak@codeaurora.org>
+Cc: Tim Bird <tbird20d@gmail.com>, Tim Bird <tim.bird@sonymobile.com>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: dts: Add initial DTS file for Sony Xperia Z1 phone
+References: <542B338D.2040909@sonymobile.com>
+	<CA+bK7J5x60WyyAp6+hGDf-fyAC=skQu9EdPUabPrzhMCDnOCrA@mail.gmail.com>
+	<6FB01741-5960-45CE-9AB8-20CBE5D9D212@codeaurora.org>
+Date: Thu, 09 Oct 2014 13:47:37 -0700
+In-Reply-To: <6FB01741-5960-45CE-9AB8-20CBE5D9D212@codeaurora.org> (Kumar
+	Gala's message of "Thu, 9 Oct 2014 13:22:37 -0500")
+Message-ID: <7h4mvdnf6e.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008201100.GB9232@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:11:00PM +0300, Kirill A. Shutemov wrote:
-> On Wed, Oct 08, 2014 at 09:25:27AM -0400, Matthew Wilcox wrote:
-> > +	pgoff = ((address - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-> > +	size = (i_size_read(inode) + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > +	if (pgoff >= size)
-> > +		return VM_FAULT_SIGBUS;
-> > +	/* If the PMD would cover blocks out of the file */
-> > +	if ((pgoff | PG_PMD_COLOUR) >= size)
-> > +		return VM_FAULT_FALLBACK;
-> 
-> IIUC, zero pading would work too.
+Hi Kumar,
 
-The blocks after this file might be allocated to another file already.
-I suppose we could ask the filesystem if it wants to allocate them to
-this file.
+Kumar Gala <galak@codeaurora.org> writes:
 
-Dave, Jan, is it acceptable to call get_block() for blocks that extend
-beyond the current i_size?
+> Will not make the 3.18 merge window.  I will queue it up for 3.19.
 
-> > +
-> > +	memset(&bh, 0, sizeof(bh));
-> > +	block = ((sector_t)pgoff & ~PG_PMD_COLOUR) << (PAGE_SHIFT - blkbits);
-> > +
-> > +	/* Start by seeing if we already have an allocated block */
-> > +	bh.b_size = PMD_SIZE;
-> > +	length = get_block(inode, block, &bh, 0);
-> 
-> This makes me confused. get_block() return zero on success, right?
-> Why the var called 'lenght'?
+Yes, it's too late for the merge window proper, but since it's DT only
+support for new platform, you can submit it as a fix to us (arm-soc) for
+v3.18-rc.
 
-Historical reasons.  I can go back and change the name of the variable.
+In fact, if you chose (and if it's known to work for v3.17 and/or
+earlier), you can even mark it for stable.  Greg has said he's OK with
+DT-only changes like this that only affect a specific platform to go
+into stable.
 
-> > +	sector = bh.b_blocknr << (blkbits - 9);
-> > +	length = bdev_direct_access(bh.b_bdev, sector, &kaddr, &pfn, bh.b_size);
-> > +	if (length < 0)
-> > +		goto sigbus;
-> > +	if (length < PMD_SIZE)
-> > +		goto fallback;
-> > +	if (pfn & PG_PMD_COLOUR)
-> > +		goto fallback;	/* not aligned */
-> 
-> So, are you rely on pure luck to make get_block() allocate 2M aligned pfn?
-> Not really productive. You would need assistance from fs and
-> arch_get_unmapped_area() sides.
-
-Certainly ext4 and XFS will align their allocations; if you ask it for a
-2MB block, it will try to allocate a 2MB block aligned on a 2MB boundary.
-
-I started looking into the get_unampped_area (and have the code sitting
-around to align specially marked files on special boundaries), but when
-I mentioned it to the author of the NVM Library, he said "Oh, I'll just
-pick a 1GB aligned area to request it be mapped at", so I haven't taken
-it any further.
-
-The upshot is that (confirmed with debugging code), when the tests run,
-they pretty much always get a correctly aligned block.
+Kevin
