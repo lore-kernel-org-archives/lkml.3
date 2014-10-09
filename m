@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352AbaJIOxC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:53:02 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:45177 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755494AbaJIOwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:52:33 -0400
-X-ASG-Debug-ID: 1412866351-0759e748283143b0002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Sebastian Reichel <sre@kernel.org>
-CC: =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
-        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
-        Frans Klaver <frans.klaver@xsens.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: [PATCH v4 2/2] power: reset: document LTC2952 poweroff support
-Date: Thu, 9 Oct 2014 16:50:42 +0200
-X-ASG-Orig-Subj: [PATCH v4 2/2] power: reset: document LTC2952 poweroff support
-Message-ID: <1412866242-6474-3-git-send-email-frans.klaver@xsens.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412866242-6474-1-git-send-email-frans.klaver@xsens.com>
-References: <1412866242-6474-1-git-send-email-frans.klaver@xsens.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.16.11.125]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1412866351
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10375
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+	id S1757376AbaJIOyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:54:55 -0400
+Received: from pegase1.c-s.fr ([93.17.236.30]:21879 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752706AbaJIOyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 10:54:46 -0400
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Pantelis Antoniou <pantelis.antoniou@gmail.com>,
+        Vitaly Bordug <vbordug@ru.mvista.com>, davem@davemloft.net
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        netdev@vger.kernel.org
+Subject: [PATCH] net: fs_enet: error: 'SCCE_ENET_TXF' undeclared
+Message-Id: <20141009145443.74AD61AB275@localhost.localdomain>
+Date: Thu,  9 Oct 2014 16:54:43 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: René Moll <linux@r-moll.nl>
+[linux-devel:devel-hourly-2014100909 3763/3915] drivers/net/ethernet/freescale/fs_enet/mac-scc.c:119:32: error: 'SCCE_ENET_TXF' undeclared
 
-Signed-off-by: René Moll <linux@r-moll.nl>
-Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Due to patch d43a396 net: fs_enet: Add NAPI TX, it appears that some target
+compilations are broken.
+This is due to the fact that unlike the FEC, the SCC and FCC don't have a TXF
+event (complete Frame transmitted) but only TXB (buffer transmitted).
+
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+
 ---
- .../bindings/power/reset/ltc2952-poweroff.txt      | 31 ++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+ drivers/net/ethernet/freescale/fs_enet/mac-fcc.c | 2 +-
+ drivers/net/ethernet/freescale/fs_enet/mac-scc.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-new file mode 100644
-index 0000000..c3f3d9e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
-@@ -0,0 +1,31 @@
-+Binding for the LTC2952 PowerPath controller
-+
-+This chip is used to externally trigger a system shut down. Once the trigger
-+has been sent, the chips watchdog has to be reset to gracefully shut down. If
-+the Linux systems decides to shut down, it powers off the platform via the
-+poweroff signal.
-+
-+Required properties:
-+
-+- compatible:		Must be: "lltc,ltc2952"
-+- watchdog-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's watchdog line
-+- poweroff-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's kill line
-+
-+Optional properties:
-+
-+- trigger-gpios:	phandle + gpio-specifier for the GPIO connected to the
-+			chip's trigger line. If this property is not set, the
-+			trigger function is ignored and the chip is kept alive
-+			until an explicit kill signal is received
-+
-+Example:
-+
-+ltc2952 {
-+	compatible = "lltc,ltc2952";
-+
-+	trigger-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;
-+	watchdog-gpios = <&gpio1 2 GPIO_ACTIVE_HIGH>;
-+	poweroff-gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
-+};
+diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
+index 2c578db..08f5b91 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
++++ b/drivers/net/ethernet/freescale/fs_enet/mac-fcc.c
+@@ -125,7 +125,7 @@ out:
+ }
+ 
+ #define FCC_NAPI_RX_EVENT_MSK	(FCC_ENET_RXF | FCC_ENET_RXB)
+-#define FCC_NAPI_TX_EVENT_MSK	(FCC_ENET_TXF | FCC_ENET_TXB)
++#define FCC_NAPI_TX_EVENT_MSK	(FCC_ENET_TXB)
+ #define FCC_RX_EVENT		(FCC_ENET_RXF)
+ #define FCC_TX_EVENT		(FCC_ENET_TXB)
+ #define FCC_ERR_EVENT_MSK	(FCC_ENET_TXE)
+diff --git a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
+index 5b592a6..90c9652 100644
+--- a/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
++++ b/drivers/net/ethernet/freescale/fs_enet/mac-scc.c
+@@ -117,7 +117,7 @@ static int do_pd_setup(struct fs_enet_private *fep)
+ }
+ 
+ #define SCC_NAPI_RX_EVENT_MSK	(SCCE_ENET_RXF | SCCE_ENET_RXB)
+-#define SCC_NAPI_TX_EVENT_MSK	(SCCE_ENET_TXF | SCCE_ENET_TXB)
++#define SCC_NAPI_TX_EVENT_MSK	(SCCE_ENET_TXB)
+ #define SCC_RX_EVENT		(SCCE_ENET_RXF)
+ #define SCC_TX_EVENT		(SCCE_ENET_TXB)
+ #define SCC_ERR_EVENT_MSK	(SCCE_ENET_TXE | SCCE_ENET_BSY)
 -- 
 2.1.0
 
