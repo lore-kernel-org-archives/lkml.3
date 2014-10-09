@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648AbaJIVKK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:10:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59434 "EHLO
+	id S1757668AbaJIVKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:10:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757623AbaJIVKG (ORCPT
+	with ESMTP id S1757645AbaJIVKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:06 -0400
+	Thu, 9 Oct 2014 17:10:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 125/163] IB/qib: Correct reference counting in debugfs qp_stats
-Date: Thu,  9 Oct 2014 14:02:30 -0700
-Message-Id: <1412888588-26755-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 111/163] USB: EHCI: unlink QHs even after the controller has stopped
+Date: Thu,  9 Oct 2014 14:02:16 -0700
+Message-Id: <1412888588-26755-112-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,75 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 85cbb7c728bf39c45a9789b88c9471c0d7a58b0e upstream.
+commit 7312b5ddd47fee2356baa78c5516ef8e04eed452 upstream.
 
-This particular reference count is not needed with the rcu protection,
-and the current code leaks a reference count, causing a hang in
-qib_qp_destroy().
+Old code in ehci-hcd tries to expedite disabling endpoints after the
+controller has stopped, by destroying the endpoint's associated QH
+without first unlinking the QH.  This was necessary back when the
+driver wasn't so careful about keeping track of the controller's
+state.
 
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+But now we are careful about it, and the driver knows that when the
+controller isn't running, no unlinking delay is needed.  Furthermore,
+skipping the unlink step will trigger a BUG() in qh_destroy() when the
+preceding QH is released, because the link pointer will be non-NULL.
+
+Removing the lines that skip the unlinking step and go directly to
+QH_STATE_IDLE fixes the problem.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: Joe Lawrence <joe.lawrence@stratus.com>
+Tested-by: Joe Lawrence <joe.lawrence@stratus.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/infiniband/hw/qib/qib_debugfs.c | 3 ++-
- drivers/infiniband/hw/qib/qib_qp.c      | 8 --------
- 2 files changed, 2 insertions(+), 9 deletions(-)
+ drivers/usb/host/ehci-hcd.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/qib/qib_debugfs.c b/drivers/infiniband/hw/qib/qib_debugfs.c
-index 799a0c3..6abd3ed 100644
---- a/drivers/infiniband/hw/qib/qib_debugfs.c
-+++ b/drivers/infiniband/hw/qib/qib_debugfs.c
-@@ -193,6 +193,7 @@ static void *_qp_stats_seq_start(struct seq_file *s, loff_t *pos)
- 	struct qib_qp_iter *iter;
- 	loff_t n = *pos;
- 
-+	rcu_read_lock();
- 	iter = qib_qp_iter_init(s->private);
- 	if (!iter)
- 		return NULL;
-@@ -224,7 +225,7 @@ static void *_qp_stats_seq_next(struct seq_file *s, void *iter_ptr,
- 
- static void _qp_stats_seq_stop(struct seq_file *s, void *iter_ptr)
- {
--	/* nothing for now */
-+	rcu_read_unlock();
- }
- 
- static int _qp_stats_seq_show(struct seq_file *s, void *iter_ptr)
-diff --git a/drivers/infiniband/hw/qib/qib_qp.c b/drivers/infiniband/hw/qib/qib_qp.c
-index 3cca55b..2c018ba 100644
---- a/drivers/infiniband/hw/qib/qib_qp.c
-+++ b/drivers/infiniband/hw/qib/qib_qp.c
-@@ -1324,7 +1324,6 @@ int qib_qp_iter_next(struct qib_qp_iter *iter)
- 	struct qib_qp *pqp = iter->qp;
- 	struct qib_qp *qp;
- 
--	rcu_read_lock();
- 	for (; n < dev->qp_table_size; n++) {
- 		if (pqp)
- 			qp = rcu_dereference(pqp->next);
-@@ -1332,18 +1331,11 @@ int qib_qp_iter_next(struct qib_qp_iter *iter)
- 			qp = rcu_dereference(dev->qp_table[n]);
- 		pqp = qp;
- 		if (qp) {
--			if (iter->qp)
--				atomic_dec(&iter->qp->refcount);
--			atomic_inc(&qp->refcount);
--			rcu_read_unlock();
- 			iter->qp = qp;
- 			iter->n = n;
- 			return 0;
- 		}
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index 4dfd6fb..86e6d39 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -973,8 +973,6 @@ rescan:
  	}
--	rcu_read_unlock();
--	if (iter->qp)
--		atomic_dec(&iter->qp->refcount);
- 	return ret;
- }
  
+ 	qh->exception = 1;
+-	if (ehci->rh_state < EHCI_RH_RUNNING)
+-		qh->qh_state = QH_STATE_IDLE;
+ 	switch (qh->qh_state) {
+ 	case QH_STATE_LINKED:
+ 		WARN_ON(!list_empty(&qh->qtd_list));
 -- 
 1.9.1
 
