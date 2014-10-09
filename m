@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaJIPEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:04:01 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37753 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757401AbaJIPCM (ORCPT
+	id S1757532AbaJIPEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:04:07 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:51561 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757400AbaJIPCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Oct 2014 11:02:12 -0400
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
@@ -12,12 +12,10 @@ To: Mike Turquette <mturquette@linaro.org>
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Stephen Boyd <sboyd@codeaurora.org>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@gmail.com>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 1/8] MIPS: Alchemy: Remove direct access to prepare_count field of struct clk
-Date: Thu,  9 Oct 2014 17:01:09 +0200
-Message-Id: <1412866903-6970-2-git-send-email-tomeu.vizoso@collabora.com>
+Subject: [PATCH v3 2/8] clk: Remove unused function __clk_get_prepare_count
+Date: Thu,  9 Oct 2014 17:01:10 +0200
+Message-Id: <1412866903-6970-3-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1412866903-6970-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1412866903-6970-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -25,40 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replacing it with a call to __clk_is_prepared(), which isn't entirely
-equivalent but in practice shouldn't matter.
-
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/mips/alchemy/common/clock.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/clk/clk.c            | 5 -----
+ include/linux/clk-provider.h | 1 -
+ 2 files changed, 6 deletions(-)
 
-diff --git a/arch/mips/alchemy/common/clock.c b/arch/mips/alchemy/common/clock.c
-index d7557cd..203e440 100644
---- a/arch/mips/alchemy/common/clock.c
-+++ b/arch/mips/alchemy/common/clock.c
-@@ -37,7 +37,6 @@
- #include <linux/io.h>
- #include <linux/clk-provider.h>
- #include <linux/clkdev.h>
--#include <linux/clk-private.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/types.h>
-@@ -397,10 +396,10 @@ static long alchemy_clk_fgcs_detr(struct clk_hw *hw, unsigned long rate,
- 			break;
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 4896ae9..d0712b7 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -574,11 +574,6 @@ unsigned int __clk_get_enable_count(struct clk *clk)
+ 	return !clk ? 0 : clk->enable_count;
+ }
  
- 		/* if this parent is currently unused, remember it.
--		 * XXX: I know it's a layering violation, but it works
--		 * so well.. (if (!clk_has_active_children(pc)) )
-+		 * XXX: we would actually want clk_has_active_children()
-+		 * but this is a good-enough approximation for now.
- 		 */
--		if (pc->prepare_count == 0) {
-+		if (!__clk_is_prepared(pc)) {
- 			if (!free)
- 				free = pc;
- 		}
+-unsigned int __clk_get_prepare_count(struct clk *clk)
+-{
+-	return !clk ? 0 : clk->prepare_count;
+-}
+-
+ unsigned long __clk_get_rate(struct clk *clk)
+ {
+ 	unsigned long ret;
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index be21af1..17fb661 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -545,7 +545,6 @@ u8 __clk_get_num_parents(struct clk *clk);
+ struct clk *__clk_get_parent(struct clk *clk);
+ struct clk *clk_get_parent_by_index(struct clk *clk, u8 index);
+ unsigned int __clk_get_enable_count(struct clk *clk);
+-unsigned int __clk_get_prepare_count(struct clk *clk);
+ unsigned long __clk_get_rate(struct clk *clk);
+ unsigned long __clk_get_accuracy(struct clk *clk);
+ unsigned long __clk_get_flags(struct clk *clk);
 -- 
 1.9.3
 
