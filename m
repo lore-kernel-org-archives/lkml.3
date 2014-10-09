@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210AbaJIMeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:34:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25293 "EHLO mga02.intel.com"
+	id S1757236AbaJIMeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:34:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14708 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755997AbaJIMdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:33:44 -0400
+	id S1755989AbaJIMdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 08:33:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,684,1406617200"; 
-   d="scan'208";a="615765051"
+   d="scan'208";a="615765082"
 From: Daniel Baluta <daniel.baluta@intel.com>
 To: jic23@kernel.org
 Cc: irina.tirdea@intel.com, daniel.baluta@intel.com, linux-iio@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 5/7] iio: core: Introduce HEIGHT channel type
-Date: Thu,  9 Oct 2014 15:39:43 +0300
-Message-Id: <1412858385-11954-6-git-send-email-daniel.baluta@intel.com>
+Subject: [RFC PATCH v2 7/7] iio: event_monitor: Add support for new channel types
+Date: Thu,  9 Oct 2014 15:39:45 +0300
+Message-Id: <1412858385-11954-8-git-send-email-daniel.baluta@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412858385-11954-1-git-send-email-daniel.baluta@intel.com>
 References: <1412858385-11954-1-git-send-email-daniel.baluta@intel.com>
@@ -23,75 +23,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+We have the following testing scenario:
 
-Some devices need the height of the user to compute various
-parameters. One of this devices is Freescale's MMA9553L
-(http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
-that needs the height of the user to compute the stride length which
-is used further to determine distance, speed and activity type.
+$ insmod iio_dummy_evgen.ko
+$ insmod iio_dummy.ko
 
-Introduce a new channel type HEIGHT to export these values.
+./iio_event_monitor /dev/iio:device0
+Event: time: 1412786467971335337, type: activity(running), channel: 0, evtype: transition, direction:
+rising
+Event: time: 1412786530792974091, type: activity(walking), channel: 0, evtype: transition, direction:
+falling
+Event: time: 1412764319184761765, type: steps, channel: 0, evtype: instance
+
+$ echo 1 > /sys/bus/iio/devices/iio_evgen/poke_ev0
+$ echo 2 > /sys/bus/iio/devices/iio_evgen/poke_ev0
+$ echo 3 > /sys/bus/iio/devices/iio_evgen/poke_ev0
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 9 +++++++++
- drivers/iio/industrialio-core.c         | 1 +
- include/linux/iio/types.h               | 1 +
- 3 files changed, 11 insertions(+)
+ .../staging/iio/Documentation/iio_event_monitor.c  | 25 +++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 3557a69..fc027cb 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -256,6 +256,7 @@ What:		/sys/bus/iio/devices/iio:deviceX/out_altvoltageY_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_peak_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_anglvel_scale
-+What:		/sys/bus/iio/devices/iio:deviceX/in_height_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_x_scale
- What:		/sys/bus/iio/devices/iio:deviceX/in_magn_y_scale
-@@ -1010,6 +1011,14 @@ Description:
- 		For a list of available output power modes read
- 		in_accel_power_mode_available.
- 
-+What:		/sys/.../iio:deviceX/in_height_input
-+What:		/sys/.../iio:deviceX/in_height_raw
-+KernelVersion:	3.17
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		This attribute is used to set and read the user's height.
-+		Units after application of scale are centimeters.
-+
- What:		/sys/bus/iio/devices/iio:deviceX/store_eeprom
- KernelVersion:	3.4.0
- Contact:	linux-iio@vger.kernel.org
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 1e060f3..f08b278 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -72,6 +72,7 @@ static const char * const iio_chan_type_name_spec[] = {
+diff --git a/drivers/staging/iio/Documentation/iio_event_monitor.c b/drivers/staging/iio/Documentation/iio_event_monitor.c
+index 569d6f8..47de74b2 100644
+--- a/drivers/staging/iio/Documentation/iio_event_monitor.c
++++ b/drivers/staging/iio/Documentation/iio_event_monitor.c
+@@ -49,6 +49,8 @@ static const char * const iio_chan_type_name_spec[] = {
+ 	[IIO_CCT] = "cct",
+ 	[IIO_PRESSURE] = "pressure",
  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
- 	[IIO_ACTIVITY] = "activity",
- 	[IIO_STEPS] = "steps",
-+	[IIO_HEIGHT] = "height",
++	[IIO_ACTIVITY] = "activity",
++	[IIO_STEPS] = "steps",
  };
  
- static const char * const iio_modifier_names[] = {
-diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index af0b6e0..a23b2e7 100644
---- a/include/linux/iio/types.h
-+++ b/include/linux/iio/types.h
-@@ -32,6 +32,7 @@ enum iio_chan_type {
- 	IIO_HUMIDITYRELATIVE,
- 	IIO_ACTIVITY,
- 	IIO_STEPS,
-+	IIO_HEIGHT,
+ static const char * const iio_ev_type_text[] = {
+@@ -57,6 +59,8 @@ static const char * const iio_ev_type_text[] = {
+ 	[IIO_EV_TYPE_ROC] = "roc",
+ 	[IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
+ 	[IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
++	[IIO_EV_TYPE_TRANSITION] = "transition",
++	[IIO_EV_TYPE_INSTANCE] = "instance",
  };
  
- enum iio_modifier {
+ static const char * const iio_ev_dir_text[] = {
+@@ -79,6 +83,10 @@ static const char * const iio_modifier_names[] = {
+ 	[IIO_MOD_LIGHT_RED] = "red",
+ 	[IIO_MOD_LIGHT_GREEN] = "green",
+ 	[IIO_MOD_LIGHT_BLUE] = "blue",
++	[IIO_MOD_RUNNING] = "running",
++	[IIO_MOD_JOGGING] = "jogging",
++	[IIO_MOD_WALKING] = "walking",
++	[IIO_MOD_STILL] = "still",
+ };
+ 
+ static bool event_is_known(struct iio_event_data *event)
+@@ -108,6 +116,8 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_CCT:
+ 	case IIO_PRESSURE:
+ 	case IIO_HUMIDITYRELATIVE:
++	case IIO_ACTIVITY:
++	case IIO_STEPS:
+ 		break;
+ 	default:
+ 		return false;
+@@ -126,6 +136,10 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_MOD_LIGHT_RED:
+ 	case IIO_MOD_LIGHT_GREEN:
+ 	case IIO_MOD_LIGHT_BLUE:
++	case IIO_MOD_RUNNING:
++	case IIO_MOD_JOGGING:
++	case IIO_MOD_WALKING:
++	case IIO_MOD_STILL:
+ 		break;
+ 	default:
+ 		return false;
+@@ -137,6 +151,8 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_EV_TYPE_ROC:
+ 	case IIO_EV_TYPE_THRESH_ADAPTIVE:
+ 	case IIO_EV_TYPE_MAG_ADAPTIVE:
++	case IIO_EV_TYPE_TRANSITION:
++	case IIO_EV_TYPE_INSTANCE:
+ 		break;
+ 	default:
+ 		return false;
+@@ -146,6 +162,7 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_EV_DIR_EITHER:
+ 	case IIO_EV_DIR_RISING:
+ 	case IIO_EV_DIR_FALLING:
++	case IIO_EV_DIR_NONE:
+ 		break;
+ 	default:
+ 		return false;
+@@ -186,9 +203,11 @@ static void print_event(struct iio_event_data *event)
+ 	else if (chan >= 0)
+ 		printf("channel: %d, ", chan);
+ 
+-	printf("evtype: %s, direction: %s\n",
+-		iio_ev_type_text[ev_type],
+-		iio_ev_dir_text[dir]);
++	printf("evtype: %s", iio_ev_type_text[ev_type]);
++
++	if (dir != IIO_EV_DIR_NONE)
++		printf(", direction: %s", iio_ev_dir_text[dir]);
++	printf("\n");
+ }
+ 
+ int main(int argc, char **argv)
 -- 
 1.9.1
 
