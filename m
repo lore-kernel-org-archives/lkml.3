@@ -1,134 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608AbaJIRAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12184 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030AbaJIRAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:00:37 -0400
-Date: Thu, 9 Oct 2014 18:57:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
-Message-ID: <20141009165713.GA13118@redhat.com>
-References: <20141007195046.GA28002@redhat.com> <20141008080016.GB10832@worktop.programming.kicks-ass.net> <20141008183302.GA17495@redhat.com> <20141008183326.GB17495@redhat.com> <20141008193644.GA32055@redhat.com> <1412804248.24248.1.camel@yandex.ru> <20141009145726.GA5604@redhat.com> <20141009151730.GW10832@worktop.programming.kicks-ass.net>
+	id S1752456AbaJIRBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:01:51 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43272 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbaJIRBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 13:01:42 -0400
+Message-ID: <5436BF5B.5060006@gmail.com>
+Date: Thu, 09 Oct 2014 10:01:15 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141009151730.GW10832@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
+References: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+On 10/09/2014 05:32 AM, Sascha Hauer wrote:
+> The KSZ8021 and KSZ8031 support RMII reference input clocks of 25MHz
+> and 50MHz. Both PHYs differ in the default frequency they expect
+> after reset. If this differs from the actual input clock, then
+> register 0x1f bit 7 must be changed.
 
-let me first say that I understand that cleanups are always subjective.
-So if you do not like it - I won't argue at all.
+Looks reasonable to me, some minor comments below:
 
-On 10/09, Peter Zijlstra wrote:
->
-> On Thu, Oct 09, 2014 at 04:57:26PM +0200, Oleg Nesterov wrote:
->
-> > but first we need to remove ->saved_preempt_count.
->
-> Why do you want to kill that?
+> 
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> ---
+>  Documentation/devicetree/bindings/net/micrel.txt |  6 ++++++
+>  drivers/net/phy/micrel.c                         | 19 +++++++++++++++++--
+>  include/linux/micrel_phy.h                       |  1 +
+>  3 files changed, 24 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
+> index 98a3e61..e1d99b9 100644
+> --- a/Documentation/devicetree/bindings/net/micrel.txt
+> +++ b/Documentation/devicetree/bindings/net/micrel.txt
+> @@ -16,3 +16,9 @@ Optional properties:
+>  	      KSZ8051: register 0x1f, bits 5..4
+>  
+>                See the respective PHY datasheet for the mode values.
+> +
+> + - clocks, clock-names: contains clocks according to the common clock bindings.
+> +
+> +              supported clocks:
+> +	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
+> +		to determine the XI input clock.
+> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+> index 011dbda..ca130e9 100644
+> --- a/drivers/net/phy/micrel.c
+> +++ b/drivers/net/phy/micrel.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/phy.h>
+>  #include <linux/micrel_phy.h>
+>  #include <linux/of.h>
+> +#include <linux/clk.h>
+>  
+>  /* Operation Mode Strap Override */
+>  #define MII_KSZPHY_OMSO				0x16
+> @@ -72,9 +73,12 @@ static int ksz_config_flags(struct phy_device *phydev)
+>  {
+>  	int regval;
+>  
+> -	if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK) {
+> +	if (phydev->dev_flags & (MICREL_PHY_50MHZ_CLK | MICREL_PHY_25MHZ_CLK)) {
+>  		regval = phy_read(phydev, MII_KSZPHY_CTRL);
+> -		regval |= KSZ8051_RMII_50MHZ_CLK;
+> +		if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK)
+> +			regval |= KSZ8051_RMII_50MHZ_CLK;
+> +		else
+> +			regval &= ~KSZ8051_RMII_50MHZ_CLK;
+>  		return phy_write(phydev, MII_KSZPHY_CTRL, regval);
+>  	}
+>  	return 0;
+> @@ -187,9 +191,20 @@ static int kszphy_config_init_led8041(struct phy_device *phydev)
+>  
+>  static int ksz8021_config_init(struct phy_device *phydev)
+>  {
+> +	struct clk *clk;
+>  	const u16 val = KSZPHY_OMSO_B_CAST_OFF | KSZPHY_OMSO_RMII_OVERRIDE;
+>  	int rc;
+>  
+> +	clk = devm_clk_get(&phydev->dev, "rmii-ref");
+> +	if (!IS_ERR(clk)) {
+> +		unsigned long rate = clk_get_rate(clk);
+> +
+> +		if (rate > 24500000 && rate < 25500000)
+> +			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
+> +		else if (rate > 49500000 && rate < 50500000)
+> +			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
+> +	}
 
-Because imo this makes the code a bit simpler. But (perhaps) mostly because
-personally I dislike any "special" member in task_struct/thread_info, and
-it seems to me that ->saved_preempt_count buys nothing. We only need it
-to record/restore the counter before/after switch_to(), a local variably
-looks better to me.
+I suppose that you could move this to the PHY driver probe() callback,
+and perform the rate checking from here, rejecting a clock whose rate is
+out of the acceptable range, and return an error to prevent the PHY
+driver registration? It is really up to you though.
 
-But again, see above. If the maintainer doesn't like the cleanup - then
-it should be counted as uglification ;)
-
-> Your earlier proposal would penalize every
-> !x86 arch by adding extra code to the scheduler core while they already
-> automagically preserve their thread_info::preempt_count.
-
-Sure, and it can't be even compiled on !x86.
-
-But this is simple, just we need a new helper, preempt_count_restore(),
-defined as nop in asm-generic/preempt.h. Well, perhaps another helper
-makes sense, preempt_count_raw() which simply reads the counter, but
-this is minor.
-
-After the patch below we can remove ->saved_preempt_count. Including
-init_task_preempt_count(), it is no longer needed after the change in
-schedule_tail().
-
-No?
-
-Oleg.
-
-
-diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
-index 8f32718..695307f 100644
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -27,6 +27,11 @@ static __always_inline void preempt_count_set(int pc)
- 	raw_cpu_write_4(__preempt_count, pc);
- }
- 
-+static __always_inline void preempt_count_restore(int pc)
-+{
-+	preempt_count_set(pc);
-+}
-+
- /*
-  * must be macros to avoid header recursion hell
-  */
-diff --git a/include/asm-generic/preempt.h b/include/asm-generic/preempt.h
-index eb6f9e6..14de30e 100644
---- a/include/asm-generic/preempt.h
-+++ b/include/asm-generic/preempt.h
-@@ -20,6 +20,10 @@ static __always_inline void preempt_count_set(int pc)
- 	*preempt_count_ptr() = pc;
- }
- 
-+static __always_inline void preempt_count_restore(int pc)
-+{
-+}
-+
- /*
-  * must be macros to avoid header recursion hell
-  */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cfe9905..ad8ca02 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2279,6 +2279,8 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
- {
- 	struct rq *rq;
- 
-+	preempt_count_set(PREEMPT_DISABLED);
-+
- 	/* finish_task_switch() drops rq->lock and enables preemtion */
- 	preempt_disable();
- 	rq = this_rq();
-@@ -2299,6 +2301,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
- 	       struct task_struct *next)
- {
- 	struct mm_struct *mm, *oldmm;
-+	int pc;
- 
- 	prepare_task_switch(rq, prev, next);
- 
-@@ -2333,10 +2336,12 @@ context_switch(struct rq *rq, struct task_struct *prev,
- #endif
- 
- 	context_tracking_task_switch(prev, next);
-+
-+	pc = preempt_count();
- 	/* Here we just switch the register state and the stack. */
- 	switch_to(prev, next, prev);
--
- 	barrier();
-+	preempt_count_restore(pc);
- 	/*
- 	 * this_rq must be evaluated again because prev may have moved
- 	 * CPUs since it called schedule(), thus the 'rq' on its stack
+> +
+>  	rc = kszphy_setup_led(phydev, 0x1f, 4);
+>  	if (rc)
+>  		dev_err(&phydev->dev, "failed to set led mode\n");
+> diff --git a/include/linux/micrel_phy.h b/include/linux/micrel_phy.h
+> index 2e5b194..53d33de 100644
+> --- a/include/linux/micrel_phy.h
+> +++ b/include/linux/micrel_phy.h
+> @@ -37,6 +37,7 @@
+>  
+>  /* struct phy_device dev_flags definitions */
+>  #define MICREL_PHY_50MHZ_CLK	0x00000001
+> +#define MICREL_PHY_25MHZ_CLK	0x00000002
+>  
+>  #define MICREL_KSZ9021_EXTREG_CTRL	0xB
+>  #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
+> 
 
