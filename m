@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaJIU1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 16:27:42 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:45056 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaJIU1f (ORCPT
+	id S1751599AbaJIUaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 16:30:07 -0400
+Received: from outbound-smtp02.blacknight.com ([81.17.249.8]:58267 "EHLO
+	outbound-smtp02.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751064AbaJIUaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 16:27:35 -0400
-Date: Thu, 9 Oct 2014 13:27:33 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/8] clk: Don't try to use a struct clk* after it
- could have been freed
-Message-ID: <20141009202733.GD5493@codeaurora.org>
-References: <1412866903-6970-1-git-send-email-tomeu.vizoso@collabora.com>
- <1412866903-6970-4-git-send-email-tomeu.vizoso@collabora.com>
+	Thu, 9 Oct 2014 16:30:02 -0400
+Message-ID: <5436ECC6.9080704@nexus-software.ie>
+Date: Thu, 09 Oct 2014 21:15:02 +0100
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Reply-To: pure.logic@nexus-software.ie
+Organization: Nexus Software
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412866903-6970-4-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Weike Chen <alvin.chen@intel.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Hock Leong Kweh <hock.leong.kweh@intel.com>,
+        Boon Leong Ong <boon.leong.ong@intel.com>,
+        Raymond Tan <raymond.tan@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: Re: [PATCH 2/2 v3] SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com> <1412783423-9408-3-git-send-email-alvin.chen@intel.com>
+In-Reply-To: <1412783423-9408-3-git-send-email-alvin.chen@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09, Tomeu Vizoso wrote:
-> As __clk_release could call kfree on clk and then we wouldn't have a safe way
-> of getting the module that owns the clock.
-> 
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Hi Alvin,
 
-It would be good to mark this as a "Fixes:".
+Doesn't apply.
 
-> ---
->  drivers/clk/clk.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index d0712b7..40aa7ad 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -2268,14 +2268,16 @@ int __clk_get(struct clk *clk)
->  
->  void __clk_put(struct clk *clk)
->  {
-> +	struct module *owner;
-> +
->  	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
->  		return;
->  
->  	clk_prepare_lock();
-> +	owner = clk->owner;
->  	kref_put(&clk->ref, __clk_release);
-> +	module_put(owner);
->  	clk_prepare_unlock();
-> -
-> -	module_put(clk->owner);
+Applying: SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+error: patch failed: drivers/spi/spi-pxa2xx-pci.c:19
+error: drivers/spi/spi-pxa2xx-pci.c: patch does not apply
+Patch failed at 0002 SPI: spi-pxa2xx: SPI support for Intel Quark X1000
 
-We don't need to move this call under the prepare lock though, right?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+--
+Bryan
