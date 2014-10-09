@@ -1,238 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256AbaJIPCB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:02:01 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37712 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaJIPBx (ORCPT
+	id S1757414AbaJIPCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:02:16 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:42429 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757348AbaJIPCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:01:53 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 01/16] powerpc/cell: Move spu_handle_mm_fault() out of cell platform
-In-Reply-To: <1412758505-23495-2-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-2-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:31:37 +0530
-Message-ID: <87a9552soe.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0005-0000-0000-0000016553B1
+	Thu, 9 Oct 2014 11:02:03 -0400
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
+        Alex Elder <elder@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-omap@vger.kernel.org, Manuel Lauss <manuel.lauss@gmail.com>,
+        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>
+Subject: [PATCH v3 0/8] Per-user clock constraints
+Date: Thu,  9 Oct 2014 17:01:08 +0200
+Message-Id: <1412866903-6970-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
+Hello,
 
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> Currently spu_handle_mm_fault() is in the cell platform.
->
-> This code is generically useful for other non-cell co-processors on powerpc.
->
-> This patch moves this function out of the cell platform into arch/powerpc/mm so
-> that others may use it.
->
+this third version of the series is basically just a rebase on top of linux-next 20141009.
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+The first six patches are just cleanups that should be desirable on their own,
+and that should make easier to review the actual per-user clock patch.
 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/Kconfig                                     |  4 ++++
->  arch/powerpc/include/asm/copro.h                         | 16 ++++++++++++++++
->  arch/powerpc/include/asm/spu.h                           |  5 ++---
->  arch/powerpc/mm/Makefile                                 |  1 +
->  .../{platforms/cell/spu_fault.c => mm/copro_fault.c}     | 14 ++++++--------
->  arch/powerpc/platforms/cell/Kconfig                      |  1 +
->  arch/powerpc/platforms/cell/Makefile                     |  2 +-
->  arch/powerpc/platforms/cell/spufs/fault.c                |  4 ++--
->  8 files changed, 33 insertions(+), 14 deletions(-)
->  create mode 100644 arch/powerpc/include/asm/copro.h
->  rename arch/powerpc/{platforms/cell/spu_fault.c => mm/copro_fault.c} (89%)
->
-> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-> index 4bc7b62..8f094e9 100644
-> --- a/arch/powerpc/Kconfig
-> +++ b/arch/powerpc/Kconfig
-> @@ -603,6 +603,10 @@ config PPC_SUBPAGE_PROT
->  	  to set access permissions (read/write, readonly, or no access)
->  	  on the 4k subpages of each 64k page.
->  
-> +config PPC_COPRO_BASE
-> +	bool
-> +	default n
-> +
->  config SCHED_SMT
->  	bool "SMT (Hyperthreading) scheduler support"
->  	depends on PPC64 && SMP
-> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-> new file mode 100644
-> index 0000000..51cae85
-> --- /dev/null
-> +++ b/arch/powerpc/include/asm/copro.h
-> @@ -0,0 +1,16 @@
-> +/*
-> + * Copyright 2014 IBM Corp.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version
-> + * 2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#ifndef _ASM_POWERPC_COPRO_H
-> +#define _ASM_POWERPC_COPRO_H
-> +
-> +int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
-> +			  unsigned long dsisr, unsigned *flt);
-> +
-> +#endif /* _ASM_POWERPC_COPRO_H */
-> diff --git a/arch/powerpc/include/asm/spu.h b/arch/powerpc/include/asm/spu.h
-> index 37b7ca3..a6e6e2b 100644
-> --- a/arch/powerpc/include/asm/spu.h
-> +++ b/arch/powerpc/include/asm/spu.h
-> @@ -27,6 +27,8 @@
->  #include <linux/workqueue.h>
->  #include <linux/device.h>
->  #include <linux/mutex.h>
-> +#include <asm/reg.h>
-> +#include <asm/copro.h>
->  
->  #define LS_SIZE (256 * 1024)
->  #define LS_ADDR_MASK (LS_SIZE - 1)
-> @@ -277,9 +279,6 @@ void spu_remove_dev_attr(struct device_attribute *attr);
->  int spu_add_dev_attr_group(struct attribute_group *attrs);
->  void spu_remove_dev_attr_group(struct attribute_group *attrs);
->  
-> -int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
-> -		unsigned long dsisr, unsigned *flt);
-> -
->  /*
->   * Notifier blocks:
->   *
-> diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
-> index d0130ff..325e861 100644
-> --- a/arch/powerpc/mm/Makefile
-> +++ b/arch/powerpc/mm/Makefile
-> @@ -34,3 +34,4 @@ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += hugepage-hash64.o
->  obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
->  obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
->  obj-$(CONFIG_HIGHMEM)		+= highmem.o
-> +obj-$(CONFIG_PPC_COPRO_BASE)	+= copro_fault.o
-> diff --git a/arch/powerpc/platforms/cell/spu_fault.c b/arch/powerpc/mm/copro_fault.c
-> similarity index 89%
-> rename from arch/powerpc/platforms/cell/spu_fault.c
-> rename to arch/powerpc/mm/copro_fault.c
-> index 641e727..ba7df14 100644
-> --- a/arch/powerpc/platforms/cell/spu_fault.c
-> +++ b/arch/powerpc/mm/copro_fault.c
-> @@ -1,5 +1,5 @@
->  /*
-> - * SPU mm fault handler
-> + * CoProcessor (SPU/AFU) mm fault handler
->   *
->   * (C) Copyright IBM Deutschland Entwicklung GmbH 2007
->   *
-> @@ -23,16 +23,14 @@
->  #include <linux/sched.h>
->  #include <linux/mm.h>
->  #include <linux/export.h>
-> -
-> -#include <asm/spu.h>
-> -#include <asm/spu_csa.h>
-> +#include <asm/reg.h>
->  
->  /*
->   * This ought to be kept in sync with the powerpc specific do_page_fault
->   * function. Currently, there are a few corner cases that we haven't had
->   * to handle fortunately.
->   */
-> -int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
-> +int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
->  		unsigned long dsisr, unsigned *flt)
->  {
->  	struct vm_area_struct *vma;
-> @@ -58,12 +56,12 @@ int spu_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
->  			goto out_unlock;
->  	}
->  
-> -	is_write = dsisr & MFC_DSISR_ACCESS_PUT;
-> +	is_write = dsisr & DSISR_ISSTORE;
->  	if (is_write) {
->  		if (!(vma->vm_flags & VM_WRITE))
->  			goto out_unlock;
->  	} else {
-> -		if (dsisr & MFC_DSISR_ACCESS_DENIED)
-> +		if (dsisr & DSISR_PROTFAULT)
->  			goto out_unlock;
->  		if (!(vma->vm_flags & (VM_READ | VM_EXEC)))
->  			goto out_unlock;
-> @@ -91,4 +89,4 @@ out_unlock:
->  	up_read(&mm->mmap_sem);
->  	return ret;
->  }
-> -EXPORT_SYMBOL_GPL(spu_handle_mm_fault);
-> +EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-> diff --git a/arch/powerpc/platforms/cell/Kconfig b/arch/powerpc/platforms/cell/Kconfig
-> index 9978f59..870b6db 100644
-> --- a/arch/powerpc/platforms/cell/Kconfig
-> +++ b/arch/powerpc/platforms/cell/Kconfig
-> @@ -86,6 +86,7 @@ config SPU_FS_64K_LS
->  config SPU_BASE
->  	bool
->  	default n
-> +	select PPC_COPRO_BASE
->  
->  config CBE_RAS
->  	bool "RAS features for bare metal Cell BE"
-> diff --git a/arch/powerpc/platforms/cell/Makefile b/arch/powerpc/platforms/cell/Makefile
-> index fe053e7..2d16884 100644
-> --- a/arch/powerpc/platforms/cell/Makefile
-> +++ b/arch/powerpc/platforms/cell/Makefile
-> @@ -20,7 +20,7 @@ spu-manage-$(CONFIG_PPC_CELL_COMMON)	+= spu_manage.o
->  
->  obj-$(CONFIG_SPU_BASE)			+= spu_callbacks.o spu_base.o \
->  					   spu_notify.o \
-> -					   spu_syscalls.o spu_fault.o \
-> +					   spu_syscalls.o \
->  					   $(spu-priv1-y) \
->  					   $(spu-manage-y) \
->  					   spufs/
-> diff --git a/arch/powerpc/platforms/cell/spufs/fault.c b/arch/powerpc/platforms/cell/spufs/fault.c
-> index 8cb6260..e45894a 100644
-> --- a/arch/powerpc/platforms/cell/spufs/fault.c
-> +++ b/arch/powerpc/platforms/cell/spufs/fault.c
-> @@ -138,7 +138,7 @@ int spufs_handle_class1(struct spu_context *ctx)
->  	if (ctx->state == SPU_STATE_RUNNABLE)
->  		ctx->spu->stats.hash_flt++;
->  
-> -	/* we must not hold the lock when entering spu_handle_mm_fault */
-> +	/* we must not hold the lock when entering copro_handle_mm_fault */
->  	spu_release(ctx);
->  
->  	access = (_PAGE_PRESENT | _PAGE_USER);
-> @@ -149,7 +149,7 @@ int spufs_handle_class1(struct spu_context *ctx)
->  
->  	/* hashing failed, so try the actual fault handler */
->  	if (ret)
-> -		ret = spu_handle_mm_fault(current->mm, ea, dsisr, &flt);
-> +		ret = copro_handle_mm_fault(current->mm, ea, dsisr, &flt);
->  
->  	/*
->  	 * This is nasty: we need the state_mutex for all the bookkeeping even
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The seventh patch actually moves the per-clock data that was stored in struct
+clk to a new struct clk_core and adds references to it from both struct clk and
+struct clk_hw. struct clk is now ready to contain information that is specific
+to a given clk consumer.
+
+The eighth patch adds API for setting floor and ceiling constraints and stores
+that information on the per-user struct clk, which is iterable from struct
+clk_core.
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v3
+
+Thanks,
+
+Tomeu
+
+Tomeu Vizoso (8):
+  MIPS: Alchemy: Remove direct access to prepare_count field of struct
+    clk
+  clk: Remove unused function __clk_get_prepare_count
+  clk: Don't try to use a struct clk* after it could have been freed
+  clk: Don't expose __clk_get_accuracy
+  clk: change clk_debugfs_add_file to take a struct clk_hw
+  clk: Change clk_ops->determine_rate to return a clk_hw as the best
+    parent
+  clk: Make clk API return per-user struct clk instances
+  clk: Add floor and ceiling constraints to clock rates
+
+ Documentation/clk.txt                   |   2 +-
+ arch/arm/mach-omap2/cclock3xxx_data.c   | 108 +++--
+ arch/arm/mach-omap2/clock.h             |  11 +-
+ arch/arm/mach-omap2/clock_common_data.c |   5 +-
+ arch/mips/alchemy/common/clock.c        |  17 +-
+ drivers/clk/at91/clk-programmable.c     |   4 +-
+ drivers/clk/bcm/clk-kona.c              |   4 +-
+ drivers/clk/clk-composite.c             |   9 +-
+ drivers/clk/clk.c                       | 748 ++++++++++++++++++++------------
+ drivers/clk/clk.h                       |   5 +
+ drivers/clk/clkdev.c                    |  24 +-
+ drivers/clk/hisilicon/clk-hi3620.c      |   2 +-
+ drivers/clk/qcom/clk-rcg.c              |  20 +-
+ drivers/clk/qcom/clk-rcg2.c             |  28 +-
+ drivers/clk/sunxi/clk-factors.c         |   4 +-
+ drivers/clk/sunxi/clk-sun6i-ar100.c     |   4 +-
+ include/linux/clk-private.h             |  40 +-
+ include/linux/clk-provider.h            |  30 +-
+ include/linux/clk.h                     |  18 +
+ 19 files changed, 717 insertions(+), 366 deletions(-)
+
+-- 
+1.9.3
 
