@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250AbaJIOET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:04:19 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:40288 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaJIOEK (ORCPT
+	id S1757190AbaJIOPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:15:12 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:44959 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975AbaJIOPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:04:10 -0400
-Message-ID: <543695D2.1090504@atmel.com>
-Date: Thu, 9 Oct 2014 16:04:02 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-CC: Russell King <linux@arm.linux.org.uk>, Vinod Koul <vinod.koul@intel.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        <dmaengine@vger.kernel.org>, "Arnd Bergmann" <arnd@arndb.de>,
-        =?UTF-8?B?QW50?= =?UTF-8?B?b2luZSBUw6luYXJ0?= 
-	<antoine@free-electrons.com>,
-        Thomas Petazzoni <thomas@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris@free-electrons.com>,
-        Matt Porter <matt.porter@linaro.org>,
-        "Gregory Clement" <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation
- for the dma controller API
-References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com>	<1411746035-15882-2-git-send-email-maxime.ripard@free-electrons.com>	<7725507.nuHj4C7OxF@avalon>	<5433D9AF.8020508@atmel.com>	<20141007145226.GA17925@lukather> <CAMuHMdUKk1kJwBndjiziRexOtXV-FN7568YJ9K_ZzVecTgmbuw@mail.gmail.com>
-In-Reply-To: <CAMuHMdUKk1kJwBndjiziRexOtXV-FN7568YJ9K_ZzVecTgmbuw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 9 Oct 2014 10:15:05 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] usb: gadget: USB_GADGET_XILINX should depend on HAS_DMA
+Date: Thu,  9 Oct 2014 16:15:05 +0200
+Message-Id: <1412864105-21411-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/10/2014 15:39, Geert Uytterhoeven :
-> On Tue, Oct 7, 2014 at 4:52 PM, Maxime Ripard
-> <maxime.ripard@free-electrons.com> wrote:
->>>>> +These various types will also affect how the source and destination
->>>>> +addresses change over time, as DMA_SLAVE transfers will usually have
->>>>> +one of the addresses that will increment, while the other will not,
->>>>> +DMA_CYCLIC will have one address that will loop, while the other, will
->>>>
->>>> s/the other,/the other/
->>>>
->>>>> +not change, etc.
->>>
->>> This is a little bit vague in my opinion. And usually, it is pretty
->>> implementation specific.
->>
->> Which is why we can't really be more precise. If you have any other
->> wording coming to your mind, I'm all for it :)
-> 
-> Perhaps:
-> 
-> Addresses pointing to RAM are typically incremented (or decremented) after
-> each transfer. In case of a ring buffer, they may loop (DMA_CYCLIC).
-> Addresses pointing to a device's register (e.g. a FIFO) are typically fixed.
+If NO_DMA=y:
 
-+1 ;-)
+drivers/built-in.o: In function `xudc_done':
+udc-xilinx.c:(.text+0x54f4d2): undefined reference to `usb_gadget_unmap_request'
+drivers/built-in.o: In function `xudc_dma_send':
+udc-xilinx.c:(.text+0x54f9f8): undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `xudc_read_fifo':
+udc-xilinx.c:(.text+0x54ff4a): undefined reference to `dma_sync_single_for_cpu'
+drivers/built-in.o: In function `xudc_ep_queue':
+udc-xilinx.c:(.text+0x550e7c): undefined reference to `usb_gadget_map_request'
 
-Bye,
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/usb/gadget/udc/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
+index 3ea287b0e448a1e5..217365d35a2523e6 100644
+--- a/drivers/usb/gadget/udc/Kconfig
++++ b/drivers/usb/gadget/udc/Kconfig
+@@ -357,6 +357,7 @@ config USB_EG20T
+ 
+ config USB_GADGET_XILINX
+ 	tristate "Xilinx USB Driver"
++	depends on HAS_DMA
+ 	depends on OF || COMPILE_TEST
+ 	help
+ 	  USB peripheral controller driver for Xilinx USB2 device.
 -- 
-Nicolas Ferre
+1.9.1
+
