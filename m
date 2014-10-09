@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190AbaJIOPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:15:12 -0400
+	id S1757263AbaJIOPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:15:49 -0400
 Received: from xavier.telenet-ops.be ([195.130.132.52]:44959 "EHLO
 	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaJIOPF (ORCPT
+	with ESMTP id S1751975AbaJIOPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:15:05 -0400
+	Thu, 9 Oct 2014 10:15:39 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: gadget: USB_GADGET_XILINX should depend on HAS_DMA
-Date: Thu,  9 Oct 2014 16:15:05 +0200
-Message-Id: <1412864105-21411-1-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH] net: pxa168_eth: PXA168_ETH should depend on HAS_DMA
+Date: Thu,  9 Oct 2014 16:15:42 +0200
+Message-Id: <1412864142-21468-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,32 +21,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 If NO_DMA=y:
 
-drivers/built-in.o: In function `xudc_done':
-udc-xilinx.c:(.text+0x54f4d2): undefined reference to `usb_gadget_unmap_request'
-drivers/built-in.o: In function `xudc_dma_send':
-udc-xilinx.c:(.text+0x54f9f8): undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `xudc_read_fifo':
-udc-xilinx.c:(.text+0x54ff4a): undefined reference to `dma_sync_single_for_cpu'
-drivers/built-in.o: In function `xudc_ep_queue':
-udc-xilinx.c:(.text+0x550e7c): undefined reference to `usb_gadget_map_request'
+drivers/built-in.o: In function `rxq_deinit':
+pxa168_eth.c:(.text+0x2a2f2e): undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `txq_reclaim':
+pxa168_eth.c:(.text+0x2a3044): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `txq_deinit':
+pxa168_eth.c:(.text+0x2a310a): undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `txq_init':
+pxa168_eth.c:(.text+0x2a3226): undefined reference to `dma_alloc_coherent'
+drivers/built-in.o: In function `rxq_init':
+pxa168_eth.c:(.text+0x2a32d4): undefined reference to `dma_alloc_coherent'
+drivers/built-in.o: In function `init_hash_table':
+pxa168_eth.c:(.text+0x2a3354): undefined reference to `dma_alloc_coherent'
+drivers/built-in.o: In function `rxq_refill':
+pxa168_eth.c:(.text+0x2a345a): undefined reference to `dma_map_single'
+drivers/built-in.o: In function `rxq_process':
+pxa168_eth.c:(.text+0x2a39cc): undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `pxa168_eth_remove':
+pxa168_eth.c:(.text+0x2a3b84): undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `pxa168_eth_start_xmit':
+pxa168_eth.c:(.text+0x2a3e8a): undefined reference to `dma_map_single'
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- drivers/usb/gadget/udc/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/marvell/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/Kconfig
-index 3ea287b0e448a1e5..217365d35a2523e6 100644
---- a/drivers/usb/gadget/udc/Kconfig
-+++ b/drivers/usb/gadget/udc/Kconfig
-@@ -357,6 +357,7 @@ config USB_EG20T
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index b3b72ad92d4a9de4..d323a695dfbcb4e3 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -64,7 +64,8 @@ config MVPP2
  
- config USB_GADGET_XILINX
- 	tristate "Xilinx USB Driver"
-+	depends on HAS_DMA
- 	depends on OF || COMPILE_TEST
- 	help
- 	  USB peripheral controller driver for Xilinx USB2 device.
+ config PXA168_ETH
+ 	tristate "Marvell pxa168 ethernet support"
+-	depends on (CPU_PXA168 || ARCH_BERLIN || COMPILE_TEST) && HAS_IOMEM
++	depends on HAS_IOMEM && HAS_DMA
++	depends on CPU_PXA168 || ARCH_BERLIN || COMPILE_TEST
+ 	select PHYLIB
+ 	---help---
+ 	  This driver supports the pxa168 Ethernet ports.
 -- 
 1.9.1
 
