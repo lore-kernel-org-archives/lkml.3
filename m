@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751298AbaJIGM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 02:12:28 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:15495 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaJIGMQ (ORCPT
+	id S1751191AbaJIGTE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 02:19:04 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:53754 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaJIGS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 02:12:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 08 Oct 2014 23:12:01 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 2/2] ARM: tegra: jetson-tk1: add GK20A GPU DT node
-Date: Thu, 9 Oct 2014 15:11:52 +0900
-Message-ID: <1412835112-7209-2-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
-References: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 9 Oct 2014 02:18:59 -0400
+From: hansechang@gmail.com
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Cc: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Subject: [PATCH] bugfix: free grant table entry in xenkbd_disconnect_backend
+Date: Thu,  9 Oct 2014 14:18:40 +0800
+Message-Id: <1412835520-22981-1-git-send-email-hansechang@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the device-tree node for the GK20A GPU and leave it disabled by
-default. It is the responsability of the bootloader to enable it if the
-VPR registers have been programmed such as the GPU can operate.
+From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+This bug affects live migration.
+
+xenkdb_disconnect_backend uses gnttab_end_foreign_access_ref
+to handle grant table entry which doesn't really free an entry.
+
+Thus every time we do xenkbd_resume, grant table entry increses
+by one. Every 512 times we do xenkdb_resume, grant table pages
+increses by one.
+
+After around 3500 times of live migration, grant table pages
+will increase by 7, causing too many pages to populate and hitting
+max_pages limit when assigning pages.Thus assign_pages will fail,
+so will live migration.
+
+Signed-off-by: Chang Huaixin <huaixin.chx@alibaba-inc.com>
 ---
- arch/arm/boot/dts/tegra124-jetson-tk1.dts | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/input/misc/xen-kbdfront.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-index 029c9a021541..6f84c7e231a0 100644
---- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-+++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
-@@ -50,6 +50,12 @@
- 		};
- 	};
+diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
+index fbfdc10..e2ecfc6 100644
+--- a/drivers/input/misc/xen-kbdfront.c
++++ b/drivers/input/misc/xen-kbdfront.c
+@@ -285,7 +285,7 @@ static int xenkbd_connect_backend(struct xenbus_device *dev,
+  error_evtchan:
+ 	xenbus_free_evtchn(dev, evtchn);
+  error_grant:
+-	gnttab_end_foreign_access_ref(info->gref, 0);
++	gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ 	return ret;
+ }
+@@ -296,7 +296,7 @@ static void xenkbd_disconnect_backend(struct xenkbd_info *info)
+ 		unbind_from_irqhandler(info->irq, info);
+ 	info->irq = -1;
+ 	if (info->gref >= 0)
+-		gnttab_end_foreign_access_ref(info->gref, 0);
++		gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ }
  
-+	gpu@0,57000000 {
-+		status = "disabled";
-+
-+		vdd-supply = <&vdd_gpu>;
-+	};
-+
- 	pinmux: pinmux@0,70000868 {
- 		pinctrl-names = "boot";
- 		pinctrl-0 = <&state_boot>;
-@@ -1560,7 +1566,7 @@
- 					regulator-always-on;
- 				};
- 
--				sd6 {
-+				vdd_gpu: sd6 {
- 					regulator-name = "+VDD_GPU_AP";
- 					regulator-min-microvolt = <650000>;
- 					regulator-max-microvolt = <1200000>;
 -- 
-2.1.2
+1.9.1
 
