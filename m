@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaJIDhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 23:37:16 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:57245 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784AbaJIDhN (ORCPT
+	id S1753742AbaJIDmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 23:42:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54408 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751643AbaJIDmq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 23:37:13 -0400
+	Wed, 8 Oct 2014 23:42:46 -0400
+Date: Wed, 8 Oct 2014 20:41:47 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
+Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
+Message-ID: <20141009034147.GC19906@kroah.com>
+References: <5434AA24.7010600@huawei.com>
+ <20141008091741.GC26140@arm.com>
+ <20141008133147.GC5119@kroah.com>
+ <20141008133802.GO26140@arm.com>
+ <5435FBD8.7020109@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <20141009000123.4379.20957@quantum>
-References: <CAKohpo=7q9bDcHRxLehNLX6A2idGxUy3jEWvQ+EGbKOQG-MH2g@mail.gmail.com>
-	<1412754534-14068-1-git-send-email-mturquette@linaro.org>
-	<CAKohpo=9XG7XiLxBf=yo7=QCruawYxqPctC6kqB+syERFCoT6Q@mail.gmail.com>
-	<20141008101115.1835927a@free-electrons.com>
-	<CAKohpo=7VxrgdK9zPP89Px3aTiGhFihJ3uetC680fONDgE6O8Q@mail.gmail.com>
-	<20141009000123.4379.20957@quantum>
-Date: Thu, 9 Oct 2014 09:07:11 +0530
-Message-ID: <CAKohpomPfq7nZ6MKGHmKcQUy4GP7VfODsvrZW16CKjYz+M2h6w@mail.gmail.com>
-Subject: Re: [PATCH 0/2] allow cpufreq drivers to export flags
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        "pramod.gurav@smartplayin.com" <pramod.gurav@smartplayin.com>,
-        Rob Herring <rob.herring@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Lior Amsalem <alior@marvell.com>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5435FBD8.7020109@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2014 05:31, Mike Turquette <mturquette@linaro.org> wrote:
-> Whether you merge the patches now or later is fine by me. I prefer to
-> get my patches out early and often so I can avoid any surprises later
-> on. If you have a fundamental objection to these patches then please let
-> me know. Otherwise it would be wonderful to have an Ack.
+On Thu, Oct 09, 2014 at 11:07:04AM +0800, zhangzhiqiang wrote:
+> On 2014/10/8 21:38, Will Deacon wrote:
+> > On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
+> >> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
+> >>> On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
+> >>>> hi all,
+> >>>> ----------------------------------------
+> >>>>
+> >>>> ref-cycles event is specially to Intel core, but can still used in arm architecture
+> >>>> with the wrong return value with 3.10 stable. for instance:
+> >>>>
+> >>>>  perf stat -e ref-cycles sleep 1
+> >>>>
+> >>>>  Performance counter stats for 'sleep 1':
+> >>>>
+> >>>>   	0 ref-cycles
+> >>>>
+> >>>>        1.002381916 seconds time elapsed
+> >>>>
+> >>>> this patch fix the bug and make it return NOT SUPPORTED
+> >>>> distinctly.
+> >>>>
+> >>>> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
+> >>>> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
+> >>>> besides we can not simply cherry-pick.
+> >>>
+> >>> I thought I saw Greg pick this up the other day?
+> >>
+> >> Yes, it's in 3.16.4, did I do something wrong by accepting it?
+> > 
+> > Nah, it's a trivial patch that I struggle to get excited about. I'm just not
+> > sure why it's being sent again, after you already accepted it.
+> 
+> Yes, it's in 3.16.4, in my opinion 3.10 need it too, can we put it into 3.10 or
+> do we have the plan?
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Does it apply to 3.10-stable?  Did you test it there and see if it
+resolves your issue?
 
-But I would still ask you to get these merged with scheduler changes. :)
+thanks,
+
+greg k-h
