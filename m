@@ -1,134 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416AbaJIJDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:03:34 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:47717 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaJIJDT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:03:19 -0400
-From: Jia He <hejianet@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jia He <hejianet@gmail.com>
-Subject: [PATCH] staging: rtl8188eu: Fix coding style error problems
-Date: Thu,  9 Oct 2014 17:03:07 +0800
-Message-Id: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	id S1755547AbaJIJDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:03:47 -0400
+Received: from mail-bl2on0144.outbound.protection.outlook.com ([65.55.169.144]:16128
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755377AbaJIJDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 05:03:33 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <dp@opensource.wolfsonmicro.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 0/6] regmap: cache: cleanup and fix bugs.
+Date: Thu, 9 Oct 2014 17:02:51 +0800
+Message-ID: <1412845377-17134-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(31966008)(50226001)(4396001)(47776003)(20776003)(64706001)(97736003)(50466002)(48376002)(93916002)(86362001)(92566001)(26826002)(102836001)(92726001)(85306004)(50986999)(95666004)(84676001)(105606002)(2351001)(107046002)(229853001)(106466001)(81156004)(110136001)(104166001)(104016003)(120916001)(99396003)(89996001)(87936001)(88136002)(85852003)(87286001)(76482002)(46102003)(80022003)(6806004)(44976005)(69596002)(68736004)(21056001)(62966002)(77156001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0617;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0617;
+X-Forefront-PRVS: 0359162B6D
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0873;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jia He <hejianet@gmail.com>
-This fixes all coding style error problems at rtl8188eu which
-makes checkpatch.pl unhappy
----
- drivers/staging/rtl8188eu/hal/bb_cfg.c | 4 ++--
- drivers/staging/rtl8188eu/hal/fw.c     | 4 ++--
- drivers/staging/rtl8188eu/hal/phy.c    | 2 +-
- drivers/staging/rtl8188eu/hal/rf.c     | 4 ++--
- drivers/staging/rtl8188eu/hal/rf_cfg.c | 4 ++--
- 5 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/hal/bb_cfg.c b/drivers/staging/rtl8188eu/hal/bb_cfg.c
-index 80e8cc9..3743a72 100644
---- a/drivers/staging/rtl8188eu/hal/bb_cfg.c
-+++ b/drivers/staging/rtl8188eu/hal/bb_cfg.c
-@@ -173,7 +173,7 @@ static bool set_baseband_agc_config(struct adapter *adapt)
- 		u32 v1 = array[i];
- 		u32 v2 = array[i+1];
- 
--		if (v1 < 0xCDCDCDCD){
-+		if (v1 < 0xCDCDCDCD) {
- 			phy_set_bb_reg(adapt, v1, bMaskDWord, v2);
- 			udelay(1);
- 		}
-@@ -552,7 +552,7 @@ static void store_pwrindex_offset(struct adapter *Adapter, u32 regaddr, u32 bitm
- 	}
- }
- 
--static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask ,u32 data)
-+static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask , u32 data)
- {
- 	if (addr == 0xfe) {
- 		msleep(50);
-diff --git a/drivers/staging/rtl8188eu/hal/fw.c b/drivers/staging/rtl8188eu/hal/fw.c
-index 17b7f37..d6efd54 100644
---- a/drivers/staging/rtl8188eu/hal/fw.c
-+++ b/drivers/staging/rtl8188eu/hal/fw.c
-@@ -193,13 +193,13 @@ int rtl88eu_download_fw(struct adapter *adapt)
- 	u32 fwsize;
- 	int err;
- 
--	if (request_firmware(&fw, fw_name, device)){
-+	if (request_firmware(&fw, fw_name, device)) {
- 		dev_err(device, "Firmware %s not available\n", fw_name);
- 		return -ENOENT;
- 	}
- 
- 	if (fw->size > FW_8188E_SIZE) {
--		dev_err(device,"Firmware size exceed 0x%X. Check it.\n",
-+		dev_err(device, "Firmware size exceed 0x%X. Check it.\n",
- 			 FW_8188E_SIZE);
- 		return -1;
- 	}
-diff --git a/drivers/staging/rtl8188eu/hal/phy.c b/drivers/staging/rtl8188eu/hal/phy.c
-index c4f7f35..3f663fe 100644
---- a/drivers/staging/rtl8188eu/hal/phy.c
-+++ b/drivers/staging/rtl8188eu/hal/phy.c
-@@ -478,7 +478,7 @@ void rtl88eu_dm_txpower_tracking_callback_thermalmeter(struct adapter *adapt)
- 		/* 2.4G, decrease power */
- 		{0, 0, 2, 3, 4, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11},
- 		/* 2.4G, increase power */
--		{0, 0, -1, -2, -3, -4,-4, -4, -4, -5, -7, -8,-9, -9, -10},
-+		{0, 0, -1, -2, -3, -4, -4, -4, -4, -5, -7, -8, -9, -9, -10},
- 	};
- 	u8 thermal_mapping[2][index_mapping_NUM_88E] = {
- 		/* 2.4G, decrease power */
-diff --git a/drivers/staging/rtl8188eu/hal/rf.c b/drivers/staging/rtl8188eu/hal/rf.c
-index c2fac34..8e7a0b1 100644
---- a/drivers/staging/rtl8188eu/hal/rf.c
-+++ b/drivers/staging/rtl8188eu/hal/rf.c
-@@ -102,7 +102,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
- 		}
- 	}
- 	rtl88eu_dm_txpower_track_adjust(&hal_data->odmpriv, 1, &direction,
--				        &pwrtrac_value);
-+					&pwrtrac_value);
- 
- 	if (direction == 1) {
- 		/*  Increase TX power */
-@@ -131,7 +131,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
- /*  powerbase1 for HT MCS rates */
- static void getpowerbase88e(struct adapter *adapt, u8 *pwr_level_ofdm,
- 			    u8 *pwr_level_bw20, u8 *pwr_level_bw40,
--			    u8 channel,u32 *ofdmbase, u32 *mcs_base)
-+			    u8 channel, u32 *ofdmbase, u32 *mcs_base)
- {
- 	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
- 	u32 powerbase0, powerbase1;
-diff --git a/drivers/staging/rtl8188eu/hal/rf_cfg.c b/drivers/staging/rtl8188eu/hal/rf_cfg.c
-index ddc2f55..5dc11ca 100644
---- a/drivers/staging/rtl8188eu/hal/rf_cfg.c
-+++ b/drivers/staging/rtl8188eu/hal/rf_cfg.c
-@@ -164,7 +164,7 @@ do {								\
- #define B3WIREDATALENGTH 0x800
- #define BRFSI_RFENV 0x10
- 
--static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
-+static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath, u32 addr, u32 mask, u32 data)
- {
- 	if (addr == 0xfe) {
- 		mdelay(50);
-@@ -190,7 +190,7 @@ static void rtl8188e_config_rf_reg(struct adapter *adapt,
- 	u32 content = 0x1000; /*RF Content: radio_a_txt*/
- 	u32 maskforphyset = (u32)(content & 0xE000);
- 
--	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
-+	rtl_rfreg_delay(adapt, RF90_PATH_A, addr | maskforphyset,
- 			RFREG_OFFSET_MASK,
- 			data);
- }
+Xiubo Li (6):
+  regmap: cache: Sort include headers alphabetically
+  regmap: cache: cleanup regcache_hw_init().
+  regmap: cache: fix errno in regcache_hw_init()
+  regmap: cache: speed regcache_hw_init() up.
+  regmap: cache: use kmalloc_array instead of kmalloc
+  regmap: cache: Fix possible ZERO_SIZE_PTR pointer dereferencing error.
+
+ drivers/base/regmap/regcache-flat.c   |  2 +-
+ drivers/base/regmap/regcache-lzo.c    |  2 +-
+ drivers/base/regmap/regcache-rbtree.c |  4 +--
+ drivers/base/regmap/regcache.c        | 63 +++++++++++++++++++----------------
+ 4 files changed, 38 insertions(+), 33 deletions(-)
+
 -- 
-1.9.3
+2.1.0.27.g96db324
 
