@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaJITN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:13:29 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:50168 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340AbaJITMb (ORCPT
+	id S1751994AbaJITNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:13:38 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:48353 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaJITMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:12:31 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-From: Johan Hovold <johan@kernel.org>
-To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Colin Foe-Parker <colin.foeparker@logicpd.com>,
-        AnilKumar Ch <anilkumar@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
-        j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 07/12] rtc: omap: silence bogus power-up reset message at probe
-Date: Thu,  9 Oct 2014 21:06:29 +0200
-Message-Id: <1412881594-25678-8-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+	Thu, 9 Oct 2014 15:12:36 -0400
+Message-ID: <5436DE22.7050200@kernel.dk>
+Date: Thu, 09 Oct 2014 13:12:34 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+MIME-Version: 1.0
+To: Jeff Mahoney <jeffm@suse.com>, Ming Lei <ming.lei@canonical.com>
+CC: Jeff Moyer <jmoyer@redhat.com>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: copy bi_vcnt in __bio_clone_fast
+References: <5435C093.5070405@suse.com>	<x4938axz6vd.fsf@segfault.boston.devel.redhat.com>	<54369B13.4030004@suse.com>	<CACVXFVO+LBseOCmQuHaVz5LnK0hgvp1iPPhkGWFZc_iOxjBnfg@mail.gmail.com> <CACVXFVOuS7gj=Dn1R1+hdK3GsaFx5SiR5gRNLK-4a9TA_dMJyw@mail.gmail.com> <5436CCAF.5040100@suse.com>
+In-Reply-To: <5436CCAF.5040100@suse.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some legacy RTC IP revisions has a power-up reset flag in the status
-register that later revisions lack.
+On 10/09/2014 11:58 AM, Jeff Mahoney wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 10/9/14, 12:13 PM, Ming Lei wrote:
+>> On Thu, Oct 9, 2014 at 11:25 PM, Ming Lei <ming.lei@canonical.com>
+>> wrote:
+>>> On Thu, Oct 9, 2014 at 10:26 PM, Jeff Mahoney <jeffm@suse.com>
+>>> wrote:
+>>>> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
+>>>>
+>>>> On 10/9/14, 9:53 AM, Jeff Moyer wrote:
+>>>>> Jeff Mahoney <jeffm@suse.com> writes:
+>>>>>
+>>>>>> Commit 05f1dd53152173 (block: add queue flag for disabling
+>>>>>> SG merging) uses bi_vcnt to assign bio->bi_phys_segments if
+>>>>>> sg merging is disabled. When using device mapper on top of
+>>>>>> a blk-mq device (virtio_blk in my test), we'd end up
+>>>>>> overflowing the scatterlist in __blk_bios_map_sg.
+>>>>>>
+>>>>>> __bio_clone_fast copies bi_iter and bi_io_vec but not
+>>>>>> bi_vcnt, so blk_recount_segments would report
+>>>>>> bi_phys_segments as 0. Since rq->nr_phys_segments is 0 as
+>>>>>> well, the checks to ensure that we don't exceed the queue's
+>>>>>> segment limit end up allowing more bios (and segments) to
+>>>>>> attach the a request until we finally map it. That also
+>>>>>> means we pass the BUG_ON at the beginning of 
+>>>>>> virtio_queue_rq, ultimately causing memory corruption and
+>>>>>> a crash.
+>>>>>>
+>>>>>> If we copy bi_vcnt in __bio_clone_fast, the bios and
+>>>>>> requests properly report the number of segments and
+>>>>>> everything works as expected.
+>>>>>>
+>>>>>> Originally reported at 
+>>>>>> http://bugzilla.opensuse.org/show_bug.cgi?id=888259
+>>>>>
+>>>>> Hi, Jeff,
+>>>>>
+>>>>> Did you manage to reproduce this problem with commit 0738854 
+>>>>> (blk-merge: fix blk_recount_segments) applied?  Or perhaps
+>>>>> with commit 200612e (dm table: propagate
+>>>>> QUEUE_FLAG_NO_SG_MERGE)?
+>>>>
+>>>> Yep. I was able to reproduce it with 3.17. I did try 0738854
+>>>> when I was still using 3.16 since it looked like a good
+>>>> candidate. Neither of those patches affect the problem here.
+>>>> bio->bi_phys_segments never gets a value set in the fast clone
+>>>> case and that translates to req->nr_phys_segments never getting
+>>>> properly accumulated. That might not be a problem except that
+>>>> the NO_SG_MERGE behavior bypasses the iteration that would come
+>>>> up with the correct value. In either case,
+>>>
+>>> This patch may get incorrect rq->nr_phys_segments because bio
+>>> cloning is often used in case of I/O splitting, so could you test
+>>> if the attached patch fixes your problem?
+> 
+> Ah. Right.
+> 
+>> Please ignore last patch and test the attached patch since we still
+>> should use no sg merge to recalculate req's segments for cloned
+>> bio.
+> 
+> Yep, this fix works as expected.
 
-As this flag is always read back as set on later revisions (or is
-overloaded with a different flag), make sure to only clear the flag and
-print the info message on legacy platforms.
+Thanks Ming, I've queued it up (and added Jeff's tested-by).
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- drivers/rtc/rtc-omap.c | 23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index 1c58920b0c88..0ef016553a97 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -118,6 +118,12 @@
-  */
- #define OMAP_RTC_HAS_32KCLK_EN		BIT(2)
- 
-+/*
-+ * Some legacy RTC IP revisions has a power-up reset flag which later
-+ * revisions lack.
-+ */
-+#define OMAP_RTC_HAS_POWER_UP_RESET	BIT(3)
-+
- static void __iomem	*rtc_base;
- 
- #define rtc_read(addr)		readb(rtc_base + (addr))
-@@ -347,6 +353,7 @@ static int omap_rtc_timer;
- static struct platform_device_id omap_rtc_devtype[] = {
- 	{
- 		.name	= DRIVER_NAME,
-+		.driver_data = OMAP_RTC_HAS_POWER_UP_RESET,
- 	},
- 	[OMAP_RTC_DATA_AM3352_IDX] = {
- 		.name	= "am3352-rtc",
-@@ -376,7 +383,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- {
- 	struct resource		*res;
- 	struct rtc_device	*rtc;
--	u8			reg, new_ctrl;
-+	u8			reg, mask, new_ctrl;
- 	const struct platform_device_id *id_entry;
- 	const struct of_device_id *of_id;
- 
-@@ -429,12 +436,16 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 
- 	/* clear old status */
- 	reg = rtc_read(OMAP_RTC_STATUS_REG);
--	if (reg & (u8) OMAP_RTC_STATUS_POWER_UP) {
--		dev_info(&pdev->dev, "RTC power up reset detected\n");
--		rtc_write(OMAP_RTC_STATUS_POWER_UP, OMAP_RTC_STATUS_REG);
-+
-+	mask = OMAP_RTC_STATUS_ALARM;
-+	if (id_entry->driver_data & OMAP_RTC_HAS_POWER_UP_RESET) {
-+		mask |= OMAP_RTC_STATUS_POWER_UP;
-+		if (reg & OMAP_RTC_STATUS_POWER_UP)
-+			dev_info(&pdev->dev, "RTC power up reset detected\n");
- 	}
--	if (reg & (u8) OMAP_RTC_STATUS_ALARM)
--		rtc_write(OMAP_RTC_STATUS_ALARM, OMAP_RTC_STATUS_REG);
-+
-+	if (reg & mask)
-+		rtc_write(reg & mask, OMAP_RTC_STATUS_REG);
- 
- 	/* handle periodic and alarm irqs */
- 	if (devm_request_irq(&pdev->dev, omap_rtc_timer, rtc_irq, 0,
 -- 
-2.0.4
+Jens Axboe
 
