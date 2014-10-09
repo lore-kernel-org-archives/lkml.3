@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085AbaJIVbI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:31:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59338 "EHLO
+	id S1758563AbaJIVbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:31:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59331 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757517AbaJIVJK (ORCPT
+	with ESMTP id S1757559AbaJIVJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:10 -0400
+	Thu, 9 Oct 2014 17:09:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Knibbs <markk@clara.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 114/163] USB: storage: Add quirks for Entrega/Xircom USB to SCSI converters
-Date: Thu,  9 Oct 2014 14:02:19 -0700
-Message-Id: <1412888588-26755-115-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 102/163] NFSv4: nfs4_state_manager() vs. nfs_server_remove_lists()
+Date: Thu,  9 Oct 2014 14:02:07 -0700
+Message-Id: <1412888588-26755-103-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,82 +28,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark <markk@clara.co.uk>
+From: Steve Dickson <steved@redhat.com>
 
-commit c80b4495c61636edc58fe1ce300f09f24db28e10 upstream.
+commit 080af20cc945d110f9912d01cf6b66f94a375b8d upstream.
 
-This patch adds quirks for Entrega Technologies (later Xircom PortGear) USB-
-SCSI converters. They use Shuttle Technology EUSB-01/EUSB-S1 chips. The
-US_FL_SCM_MULT_TARG quirk is needed to allow multiple devices on the SCSI
-chain to be accessed. Without it only the (single) device with SCSI ID 0
-can be used.
+There is a race between nfs4_state_manager() and
+nfs_server_remove_lists() that happens during a nfsv3 mount.
 
-The standalone converter sold by Entrega had model number U1-SC25. Xircom
-acquired Entrega and re-branded the product line PortGear. The PortGear USB
-to SCSI Converter (model PGSCSI) is internally identical to the Entrega
-product, but later models may use a different USB ID. The Entrega-branded
-units have USB ID 1645:0007, as does my Xircom PGSCSI, but the Windows and
-Macintosh drivers also support 085A:0028.
+The v3 mount notices there is already a supper block so
+nfs_server_remove_lists() called which uses the nfs_client_lock
+spin lock to synchronize access to the client list.
 
-Entrega also sold the "Mac USB Dock", which provides two USB ports, a Mac
-(8-pin mini-DIN) serial port and a SCSI port. It appears to the computer as
-a four-port hub, USB-serial, and USB-SCSI converters. The USB-SCSI part may
-have initially used the same ID as the standalone U1-SC25 (1645:0007), but
-later production used 085A:0026.
+At the same time nfs4_state_manager() is running through
+the client list looking for work to do, using the same
+lock. When nfs4_state_manager() wins the race to the
+list, a v3 client pointer is found and not ignored
+properly which causes the panic.
 
-My Xircom PortGear PGSCSI has bcdDevice=0x0100. Units with bcdDevice=0x0133
-probably also exist.
+Moving some protocol checks before the state checking
+avoids the panic.
 
-This patch adds quirks for 1645:0007, 085A:0026 and 085A:0028. The Windows
-driver INF file also mentions 085A:0032 "PortStation SCSI Module", but I
-couldn't find any mention of that actually existing in the wild; perhaps it
-was cancelled before release?
-
-Signed-off-by: Mark Knibbs <markk@clara.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/storage/unusual_devs.h | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ fs/nfs/nfs4client.c | 38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 49d14dc..c1258d9 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1125,6 +1125,18 @@ UNUSUAL_DEV(  0x0851, 0x1543, 0x0200, 0x0200,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NOT_LOCKABLE),
+diff --git a/fs/nfs/nfs4client.c b/fs/nfs/nfs4client.c
+index 4c7bd2c..af6013c 100644
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -485,6 +485,16 @@ int nfs40_walk_client_list(struct nfs_client *new,
  
-+UNUSUAL_DEV(  0x085a, 0x0026, 0x0100, 0x0133,
-+		"Xircom",
-+		"PortGear USB-SCSI (Mac USB Dock)",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
 +
-+UNUSUAL_DEV(  0x085a, 0x0028, 0x0100, 0x0133,
-+		"Xircom",
-+		"PortGear USB to SCSI Converter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
 +
- /* Submitted by Jan De Luyck <lkml@kcore.org> */
- UNUSUAL_DEV(  0x08bd, 0x1100, 0x0000, 0x0000,
- 		"CITIZEN",
-@@ -1964,6 +1976,14 @@ UNUSUAL_DEV(  0x152d, 0x2329, 0x0100, 0x0100,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE | US_FL_SANE_SENSE ),
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos" */
+ 		if (pos->cl_cons_state > NFS_CS_READY) {
+@@ -504,15 +514,6 @@ int nfs40_walk_client_list(struct nfs_client *new,
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
  
-+/* Entrega Technologies U1-SC25 (later Xircom PortGear PGSCSI)
-+ * and Mac USB Dock USB-SCSI */
-+UNUSUAL_DEV(  0x1645, 0x0007, 0x0100, 0x0133,
-+		"Entrega Technologies",
-+		"USB to SCSI Converter",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (pos->cl_clientid != new->cl_clientid)
+ 			continue;
+ 
+@@ -618,6 +619,16 @@ int nfs41_walk_client_list(struct nfs_client *new,
+ 
+ 	spin_lock(&nn->nfs_client_lock);
+ 	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
 +
- /* Reported by Robert Schedel <r.schedel@yahoo.de>
-  * Note: this is a 'super top' device like the above 14cd/6600 device */
- UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
++		if (pos->rpc_ops != new->rpc_ops)
++			continue;
++
++		if (pos->cl_proto != new->cl_proto)
++			continue;
++
++		if (pos->cl_minorversion != new->cl_minorversion)
++			continue;
++
+ 		/* If "pos" isn't marked ready, we can't trust the
+ 		 * remaining fields in "pos", especially the client
+ 		 * ID and serverowner fields.  Wait for CREATE_SESSION
+@@ -643,15 +654,6 @@ int nfs41_walk_client_list(struct nfs_client *new,
+ 		if (pos->cl_cons_state != NFS_CS_READY)
+ 			continue;
+ 
+-		if (pos->rpc_ops != new->rpc_ops)
+-			continue;
+-
+-		if (pos->cl_proto != new->cl_proto)
+-			continue;
+-
+-		if (pos->cl_minorversion != new->cl_minorversion)
+-			continue;
+-
+ 		if (!nfs4_match_clientids(pos, new))
+ 			continue;
+ 
 -- 
 1.9.1
 
