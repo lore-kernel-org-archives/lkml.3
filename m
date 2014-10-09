@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaJIVE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:04:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58948 "EHLO
+	id S1754831AbaJIVEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:04:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58944 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaJIVDa (ORCPT
+	with ESMTP id S1751297AbaJIVD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:03:30 -0400
+	Thu, 9 Oct 2014 17:03:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 018/163] USB: sierra: avoid CDC class functions on "68A3" devices
-Date: Thu,  9 Oct 2014 14:00:43 -0700
-Message-Id: <1412888588-26755-19-git-send-email-kamal@canonical.com>
+Cc: Tony Lindgren <tony@atomide.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 008/163] usb: phy: twl4030-usb: Fix lost interrupts after ID pin goes down
+Date: Thu,  9 Oct 2014 14:00:33 -0700
+Message-Id: <1412888588-26755-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,52 +27,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+From: Tony Lindgren <tony@atomide.com>
 
-commit 049255f51644c1105775af228396d187402a5934 upstream.
+commit 85601b8d81e24ce9ae2d31e93f35468ab7616b18 upstream.
 
-Sierra Wireless Direct IP devices using the 68A3 product ID
-can be configured for modes including a CDC ECM class function.
-The known example uses interface numbers 12 and 13 for the ECM
-control and data interfaces respectively, consistent with CDC
-MBIM function interface numbering on other Sierra devices.
+Commit 249751f22380 ("usb: phy: twl4030-usb: poll for ID disconnect")
+added twl4030_id_workaround_work() to deal with lost interrupts
+after ID pin goes down. Looks like commit f1ddc24c9e33 ("usb: phy:
+twl4030-usb: remove *set_suspend* and *phy_init* ops") changed
+things around for the generic phy framework, and delayed work no
+longer got called except initially during boot.
 
-It seems cleaner to restrict this driver to the ff/ff/ff
-vendor specific interfaces rather than increasing the already
-long interface number blacklist.  This should be more future
-proof if Sierra adds more class functions using interface
-numbers not yet in the blacklist.
+The PHY connect and disconnect interrupts for twl4030-usb are not
+working after disconnecting a USB-A cable from the board, and the
+deeper idle states for omap are blocked as the USB controller
+stays busy.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+The issue can be solved by calling delayed work from twl4030_usb_irq()
+when ID pin is down and the PHY is not asleep like we already do
+in twl4030_id_workaround_work().
+
+But as both twl4030_usb_irq() and twl4030_id_workaround_work()
+already do pretty much the same thing, let's call twl4030_usb_irq()
+from twl4030_id_workaround_work() instead of adding some more
+duplicate code. We also must call sysfs_notify() only when we have
+an interrupt and not from the delayed work as notified by
+Grazvydas Ignotas <notasas@gmail.com>.
+
+Fixes: f1ddc24c9e33 ("usb: phy: twl4030-usb: remove *set_suspend* and *phy_init* ops")
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/sierra.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/phy/phy-twl4030-usb.c | 33 ++++++++++-----------------------
+ 1 file changed, 10 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index b6910b7..aa69283 100644
---- a/drivers/usb/serial/sierra.c
-+++ b/drivers/usb/serial/sierra.c
-@@ -281,14 +281,16 @@ static const struct usb_device_id id_table[] = {
- 	/* Sierra Wireless HSPA Non-Composite Device */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x6892, 0xFF, 0xFF, 0xFF)},
- 	{ USB_DEVICE(0x1199, 0x6893) },	/* Sierra Wireless Device */
--	{ USB_DEVICE(0x1199, 0x68A3), 	/* Sierra Wireless Direct IP modems */
-+	/* Sierra Wireless Direct IP modems */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x1199, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
- 	/* AT&T Direct IP LTE modems */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68AA, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
--	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
-+	/* Airprime/Sierra Wireless Direct IP modems */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x0F3D, 0x68A3, 0xFF, 0xFF, 0xFF),
- 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
- 	},
+diff --git a/drivers/phy/phy-twl4030-usb.c b/drivers/phy/phy-twl4030-usb.c
+index daf65e6..70b513a 100644
+--- a/drivers/phy/phy-twl4030-usb.c
++++ b/drivers/phy/phy-twl4030-usb.c
+@@ -560,7 +560,15 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 		 */
+ 		omap_musb_mailbox(status);
+ 	}
+-	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
++
++	/* don't schedule during sleep - irq works right then */
++	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
++		cancel_delayed_work(&twl->id_workaround_work);
++		schedule_delayed_work(&twl->id_workaround_work, HZ);
++	}
++
++	if (irq)
++		sysfs_notify(&twl->dev->kobj, NULL, "vbus");
  
+ 	return IRQ_HANDLED;
+ }
+@@ -569,29 +577,8 @@ static void twl4030_id_workaround_work(struct work_struct *work)
+ {
+ 	struct twl4030_usb *twl = container_of(work, struct twl4030_usb,
+ 		id_workaround_work.work);
+-	enum omap_musb_vbus_id_status status;
+-	bool status_changed = false;
+-
+-	status = twl4030_usb_linkstat(twl);
+-
+-	spin_lock_irq(&twl->lock);
+-	if (status >= 0 && status != twl->linkstat) {
+-		twl->linkstat = status;
+-		status_changed = true;
+-	}
+-	spin_unlock_irq(&twl->lock);
+-
+-	if (status_changed) {
+-		dev_dbg(twl->dev, "handle missing status change to %d\n",
+-				status);
+-		omap_musb_mailbox(status);
+-	}
+ 
+-	/* don't schedule during sleep - irq works right then */
+-	if (status == OMAP_MUSB_ID_GROUND && !twl->asleep) {
+-		cancel_delayed_work(&twl->id_workaround_work);
+-		schedule_delayed_work(&twl->id_workaround_work, HZ);
+-	}
++	twl4030_usb_irq(0, twl);
+ }
+ 
+ static int twl4030_phy_init(struct phy *phy)
 -- 
 1.9.1
 
