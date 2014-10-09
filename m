@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193AbaJIPft (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:35:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26588 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbaJIPfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:35:40 -0400
-Message-ID: <5436AB4A.1080900@redhat.com>
-Date: Thu, 09 Oct 2014 11:35:38 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1757252AbaJIPix (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:38:53 -0400
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:51913 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaJIPip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 11:38:45 -0400
+Date: Thu, 9 Oct 2014 08:38:36 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
+        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
+        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        openipmi-developer@lists.sourceforge.net,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Perier <romain.perier@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Alexander Graf <agraf@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 01/44] kernel: Add support for poweroff handler call chain
+Message-ID: <20141009153836.GA31987@roeck-us.net>
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+ <1412659726-29957-2-git-send-email-linux@roeck-us.net>
+ <20141009103143.GA6787@amd>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: x86@kernel.org
-Subject: Lockdep warning with init_espfix_ap()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009103143.GA6787@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 09, 2014 at 12:31:43PM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > +/**
+> > + *	register_poweroff_handler_simple - Register function to be called to power off
+> > + *					   the system
+> > + *	@handler:	Function to be called to power off the system
+> > + *	@priority:	Handler priority. For priority guidelines see
+> > + *			register_poweroff_handler.
+> > + *
+> > + *	This is a simplified version of register_poweroff_handler. It does not
+> > + *	take a notifier as argument, but a function pointer. The function
+> > + *	registers a poweroff handler with specified priority. Poweroff
+> > + *	handlers registered with this function can not be unregistered,
+> > + *	and only a single poweroff handler can be installed using it.
+> > + *
+> > + *	This function must not be called from modules and is therefore
+> > + *	not exported.
+> > + *
+> > + *	Returns -EBUSY if a poweroff handler has already been registered
+> > + *	using register_poweroff_handler_simple. Otherwise returns zero,
+> > + *	since atomic_notifier_chain_register() currently always returns zero.
+> > + */
+> > +int register_poweroff_handler_simple(void (*handler)(void), int priority)
+> > +{
+> > +	char symname[KSYM_NAME_LEN];
+> > +
+> > +	if (poweroff_handler_data.handler) {
+> > +		lookup_symbol_name((unsigned long)poweroff_handler_data.handler,
+> > +				   symname);
+> > +		pr_warn("Poweroff function already registered (%s)", symname);
+> > +		lookup_symbol_name((unsigned long)handler, symname);
+> > +		pr_cont(", cannot register %s\n", symname);
+> > +		return -EBUSY;
+> > +	}
+> 
+> Dunno, are you maybe overdoing the debugging infrastructure a bit?
+> This is not going to happen in production, and if it does happen,
+> developer can look the symbol name himself.
 
-Non-fatal warning seen with latest kernel tree during kernel boot.
+On the other side, I don't think it hurts to have that message.
+Anyway, I'll use %ps as suggested by Geert.
 
- WARNING: CPU: 64 PID: 0 at kernel/locking/lockdep.c:2744
-lockdep_trace_alloc+0xdd/0xe0()
- DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
- Modules linked in:
-
- CPU: 64 PID: 0 Comm: swapper/64 Not tainted 3.17.0+ #10
- Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS
-BIVTSDP1.86B.0049.R00.1403081207 03/08/2014
-  0000000000000000 d27b9ea0e3821f35 ffff88084edc3ce0 ffffffff8171cbd8
-  ffff88084edc3d28 ffff88084edc3d18 ffffffff8108424d 0000000000000046
-  0000000000000000 00000000000000d0 0000000000000002 0000000000000000
- Call Trace:
-  [<ffffffff8171cbd8>] dump_stack+0x4d/0x66
-  [<ffffffff8108424d>] warn_slowpath_common+0x7d/0xa0
-  [<ffffffff810842cc>] warn_slowpath_fmt+0x5c/0x80
-  [<ffffffff810e3e2d>] lockdep_trace_alloc+0xdd/0xe0
-  [<ffffffff811c0aaf>] __alloc_pages_nodemask+0x9f/0x4b0
-  [<ffffffff81025365>] ? native_sched_clock+0x35/0xa0
-  [<ffffffff810253d9>] ? sched_clock+0x9/0x10
-  [<ffffffff8120981a>] alloc_page_interleave+0x3a/0x90
-  [<ffffffff8120ae8d>] alloc_pages_current+0x17d/0x1f0
-  [<ffffffff811bab24>] ? __get_free_pages+0x14/0x50
-  [<ffffffff811bab24>] __get_free_pages+0x14/0x50
-  [<ffffffff8102225d>] init_espfix_ap+0x17d/0x320
-  [<ffffffff8105254e>] start_secondary+0x19e/0x350
- ---[ end trace 2b62d796aa7ae001 ]---
-
- Debugging ... but sorta hoping someone else may have already seen it ;)
-
- P.
+Guenter
