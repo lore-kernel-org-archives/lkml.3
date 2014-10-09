@@ -1,350 +1,402 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbaJIHkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 03:40:06 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:43512 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaJIHkA convert rfc822-to-8bit (ORCPT
+	id S1753528AbaJIHkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 03:40:49 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:61130 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753149AbaJIHkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 03:40:00 -0400
-From: Prabu Thangamuthu <Prabu.T@synopsys.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alim Akhtar <alim.akhtar@gmail.com>
-CC: Manjunath M Bettegowda <Manjunath.MB@synopsys.com>,
-        "prabu.t@synopsys.com" <prabu.t@synopsys.com>
-Subject: [PATCH v6] mmc: dw_mmc: Add IDMAC 64-bit address mode support
-Thread-Topic: [PATCH v6] mmc: dw_mmc: Add IDMAC 64-bit address mode support
-Thread-Index: Ac/jk1qr/snYPd5/S8KOP2Bi2Gh6DQ==
-Date: Thu, 9 Oct 2014 07:39:54 +0000
-Message-ID: <705D14B1C7978B40A723277C067CEDE21B3336B2@IN01WEMBXB.internal.synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.144.112.150]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 9 Oct 2014 03:40:39 -0400
+Date: Thu, 9 Oct 2014 08:40:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Muthu Mani <muth@cypress.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, gregkh@linuxfoundation.org,
+        linux-i2c@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+Subject: Re: [PATCH v3 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
+ Bridge controller
+Message-ID: <20141009074029.GL20647@lee--X1>
+References: <1412606587-3323-1-git-send-email-muth@cypress.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412606587-3323-1-git-send-email-muth@cypress.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Synopsys DW_MMC IP core supports Internal DMA Controller with 64-bit address mode from IP version 2.70a onwards.
-Updated the driver to support IDMAC 64-bit addressing mode.
+On Mon, 06 Oct 2014, Muthu Mani wrote:
 
-Tested the features in DW_MMC core v2.70a and v2.40a with HAPS-51 setup and driver is working fine.
+> Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
+> CYUSBS234 USB-Serial Bridge controller.
+> 
+> Details about the device can be found at:
+> http://www.cypress.com/?rID=84126
+> 
+> Signed-off-by: Muthu Mani <muth@cypress.com>
+> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
+> ---
+> Changes since v2:
+> * Used auto mfd id to support multiple devices
+> * Cleaned up the code
+> 
+> Changes since v1:
+> * Identified different serial interface and loaded correct cell driver
+> * Formed a mfd id to support multiple devices
+> * Removed unused platform device
+> 
+>  drivers/mfd/Kconfig           |  12 +++
+>  drivers/mfd/Makefile          |   1 +
+>  drivers/mfd/cyusbs23x.c       | 167 ++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/cyusbs23x.h |  62 ++++++++++++++++
+>  4 files changed, 242 insertions(+)
+>  create mode 100644 drivers/mfd/cyusbs23x.c
+>  create mode 100644 include/linux/mfd/cyusbs23x.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index de5abf2..a31e9e3 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -116,6 +116,18 @@ config MFD_ASIC3
+>  	  This driver supports the ASIC3 multifunction chip found on many
+>  	  PDAs (mainly iPAQ and HTC based ones)
+>  
+> +config MFD_CYUSBS23X
+> +        tristate "Cypress CYUSBS23x USB Serial Bridge controller"
 
-Signed-off-by: Prabu Thangamuthu <prabu.t@synopsys.com>
----
-Change log v6:
-	- Updated with review comment.
+White space issue here.
 
-Change log v5:
-	- Recreated the patch against linux-next as this patch is required for another patch http://www.spinics.net/lists/arm-kernel/msg357985.html
+> +	select MFD_CORE
+> +	depends on USB
+> +	default n
+> +	help
+> +	  Say yes here if you want support for Cypress Semiconductor
+> +	  CYUSBS23x USB-Serial Bridge controller.
+> +
+> +	  This driver can also be built as a module. If so, the module will be
+> +	  called cyusbs23x.
+> +
+>  config PMIC_DA903X
+>  	bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
+>  	depends on I2C=y
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index f001487..fc5bcd1 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -151,6 +151,7 @@ si476x-core-y := si476x-cmd.o si476x-prop.o si476x-i2c.o
+>  obj-$(CONFIG_MFD_SI476X_CORE)	+= si476x-core.o
+>  
+>  obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
+> +obj-$(CONFIG_MFD_CYUSBS23X)     += cyusbs23x.o
+>  obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o omap-usb-tll.o
+>  obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o ssbi.o
+>  obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
+> diff --git a/drivers/mfd/cyusbs23x.c b/drivers/mfd/cyusbs23x.c
+> new file mode 100644
+> index 0000000..c70ea40
+> --- /dev/null
+> +++ b/drivers/mfd/cyusbs23x.c
+> @@ -0,0 +1,167 @@
+> +/*
+> + * Cypress USB-Serial Bridge Controller USB adapter driver
+> + *
+> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
+> + *
+> + * Author:
+> + *   Muthu Mani <muth@cypress.com>
+> + *
+> + * Additional contributors include:
+> + *   Rajaram Regupathy <rera@cypress.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +/*
+> + * This is core MFD driver for Cypress Semiconductor CYUSBS234 USB-Serial
+> + * Bridge controller. CYUSBS234 offers a single channel serial interface
+> + * (I2C/SPI/UART). It can be configured to enable either of I2C, SPI, UART
+> + * interfaces. The GPIOs are also available to access.
+> + * Details about the device can be found at:
+> + *    http://www.cypress.com/?rID=84126
+> + *
+> + * Separate cell drivers are available for I2C and GPIO. SPI and UART are not
+> + * supported yet. All GPIOs are exposed for get operation. However, only
+> + * unused GPIOs can be set.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/errno.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include <linux/mutex.h>
+> +
 
-Change log v4:
-	- Add the dynamic support for 32-bit and 64-bit address mode based on hw configuration.
-	- Removed the CONFIG_MMC_DW_IDMAC_64BIT_ADDRESS macro.
+This '\n' is superfluous, please remove it.
 
- drivers/mmc/host/dw_mmc.c  |  195 +++++++++++++++++++++++++++++++++++---------
- drivers/mmc/host/dw_mmc.h  |   11 +++
- include/linux/mmc/dw_mmc.h |    2 +
- 3 files changed, 170 insertions(+), 38 deletions(-)
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/cyusbs23x.h>
+> +
+> +#include <linux/usb.h>
+> +
+> +static const struct usb_device_id cyusbs23x_usb_table[] = {
+> +	{ USB_DEVICE(0x04b4, 0x0004) },   /* Cypress Semiconductor */
+> +	{ }                               /* Terminating entry */
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 69f0cc6..c3b75a5 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -62,6 +62,24 @@
- 				 SDMMC_IDMAC_INT_FBE | SDMMC_IDMAC_INT_RI | \
- 				 SDMMC_IDMAC_INT_TI)
- 
-+struct idmac_desc_64addr {
-+	u32		des0;	/* Control Descriptor */
-+
-+	u32		des1;	/* Reserved */
-+
-+	u32		des2;	/*Buffer sizes */
-+#define IDMAC_64ADDR_SET_BUFFER1_SIZE(d, s) \
-+	((d)->des2 = ((d)->des2 & 0x03ffe000) | ((s) & 0x1fff))
-+
-+	u32		des3;	/* Reserved */
-+
-+	u32		des4;	/* Lower 32-bits of Buffer Address Pointer 1*/
-+	u32		des5;	/* Upper 32-bits of Buffer Address Pointer 1*/
-+
-+	u32		des6;	/* Lower 32-bits of Next Descriptor Address */
-+	u32		des7;	/* Upper 32-bits of Next Descriptor Address */
-+};
-+
- struct idmac_desc {
- 	u32		des0;	/* Control Descriptor */
- #define IDMAC_DES0_DIC	BIT(1)
-@@ -414,30 +432,66 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
- 				    unsigned int sg_len)
- {
- 	int i;
--	struct idmac_desc *desc = host->sg_cpu;
-+	if (host->dma_64bit_address == 1) {
-+		struct idmac_desc_64addr *desc = host->sg_cpu;
- 
--	for (i = 0; i < sg_len; i++, desc++) {
--		unsigned int length = sg_dma_len(&data->sg[i]);
--		u32 mem_addr = sg_dma_address(&data->sg[i]);
-+		for (i = 0; i < sg_len; i++, desc++) {
-+			unsigned int length = sg_dma_len(&data->sg[i]);
-+			u64 mem_addr = sg_dma_address(&data->sg[i]);
- 
--		/* Set the OWN bit and disable interrupts for this descriptor */
--		desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC | IDMAC_DES0_CH;
-+			/*
-+			 * Set the OWN bit and disable interrupts for this
-+			 * descriptor
-+			 */
-+			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
-+						IDMAC_DES0_CH;
-+			/* Buffer length */
-+			IDMAC_64ADDR_SET_BUFFER1_SIZE(desc, length);
-+
-+			/* Physical address to DMA to/from */
-+			desc->des4 = mem_addr & 0xffffffff;
-+			desc->des5 = mem_addr >> 32;
-+		}
- 
--		/* Buffer length */
--		IDMAC_SET_BUFFER1_SIZE(desc, length);
-+		/* Set first descriptor */
-+		desc = host->sg_cpu;
-+		desc->des0 |= IDMAC_DES0_FD;
- 
--		/* Physical address to DMA to/from */
--		desc->des2 = mem_addr;
--	}
-+		/* Set last descriptor */
-+		desc = host->sg_cpu + (i - 1) *
-+				sizeof(struct idmac_desc_64addr);
-+		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
-+		desc->des0 |= IDMAC_DES0_LD;
-+
-+	} else {
-+		struct idmac_desc *desc = host->sg_cpu;
-+
-+		for (i = 0; i < sg_len; i++, desc++) {
-+			unsigned int length = sg_dma_len(&data->sg[i]);
-+			u32 mem_addr = sg_dma_address(&data->sg[i]);
-+
-+			/*
-+			 * Set the OWN bit and disable interrupts for this
-+			 * descriptor
-+			 */
-+			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
-+						IDMAC_DES0_CH;
-+			/* Buffer length */
-+			IDMAC_SET_BUFFER1_SIZE(desc, length);
-+
-+			/* Physical address to DMA to/from */
-+			desc->des2 = mem_addr;
-+		}
- 
--	/* Set first descriptor */
--	desc = host->sg_cpu;
--	desc->des0 |= IDMAC_DES0_FD;
-+		/* Set first descriptor */
-+		desc = host->sg_cpu;
-+		desc->des0 |= IDMAC_DES0_FD;
- 
--	/* Set last descriptor */
--	desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
--	desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
--	desc->des0 |= IDMAC_DES0_LD;
-+		/* Set last descriptor */
-+		desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
-+		desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
-+		desc->des0 |= IDMAC_DES0_LD;
-+	}
- 
- 	wmb();
- }
-@@ -466,29 +520,67 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
- 
- static int dw_mci_idmac_init(struct dw_mci *host)
- {
--	struct idmac_desc *p;
- 	int i;
- 
--	/* Number of descriptors in the ring buffer */
--	host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
-+	if (host->dma_64bit_address == 1) {
-+		struct idmac_desc_64addr *p;
-+		/* Number of descriptors in the ring buffer */
-+		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc_64addr);
-+
-+		/* Forward link the descriptor list */
-+		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1;
-+								i++, p++) {
-+			p->des6 = (host->sg_dma +
-+					(sizeof(struct idmac_desc_64addr) *
-+							(i + 1))) & 0xffffffff;
-+
-+			p->des7 = (host->sg_dma +
-+					(sizeof(struct idmac_desc_64addr) *
-+							(i + 1))) >> 32;
-+		}
-+
-+		/* Set the last descriptor as the end-of-ring descriptor */
-+		p->des6 = host->sg_dma & 0xffffffff;
-+		p->des7 = host->sg_dma >> 32;
-+		p->des0 = IDMAC_DES0_ER;
-+
-+	} else {
-+		struct idmac_desc *p;
-+		/* Number of descriptors in the ring buffer */
-+		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc);
- 
--	/* Forward link the descriptor list */
--	for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
--		p->des3 = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
-+		/* Forward link the descriptor list */
-+		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
-+			p->des3 = host->sg_dma + (sizeof(struct idmac_desc) *
-+								(i + 1));
- 
--	/* Set the last descriptor as the end-of-ring descriptor */
--	p->des3 = host->sg_dma;
--	p->des0 = IDMAC_DES0_ER;
-+		/* Set the last descriptor as the end-of-ring descriptor */
-+		p->des3 = host->sg_dma;
-+		p->des0 = IDMAC_DES0_ER;
-+	}
- 
- 	dw_mci_idmac_reset(host);
- 
--	/* Mask out interrupts - get Tx & Rx complete only */
--	mci_writel(host, IDSTS, IDMAC_INT_CLR);
--	mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI | SDMMC_IDMAC_INT_RI |
--		   SDMMC_IDMAC_INT_TI);
-+	if (host->dma_64bit_address == 1) {
-+		/* Mask out interrupts - get Tx & Rx complete only */
-+		mci_writel(host, IDSTS64, IDMAC_INT_CLR);
-+		mci_writel(host, IDINTEN64, SDMMC_IDMAC_INT_NI |
-+				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
-+
-+		/* Set the descriptor base address */
-+		mci_writel(host, DBADDRL, host->sg_dma & 0xffffffff);
-+		mci_writel(host, DBADDRU, host->sg_dma >> 32);
-+
-+	} else {
-+		/* Mask out interrupts - get Tx & Rx complete only */
-+		mci_writel(host, IDSTS, IDMAC_INT_CLR);
-+		mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI |
-+				SDMMC_IDMAC_INT_RI | SDMMC_IDMAC_INT_TI);
-+
-+		/* Set the descriptor base address */
-+		mci_writel(host, DBADDR, host->sg_dma);
-+	}
- 
--	/* Set the descriptor base address */
--	mci_writel(host, DBADDR, host->sg_dma);
- 	return 0;
- }
- 
-@@ -2045,11 +2137,22 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
- 
- #ifdef CONFIG_MMC_DW_IDMAC
- 	/* Handle DMA interrupts */
--	pending = mci_readl(host, IDSTS);
--	if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
--		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
--		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
--		host->dma_ops->complete(host);
-+	if (host->dma_64bit_address == 1) {
-+		pending = mci_readl(host, IDSTS64);
-+		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-+			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_TI |
-+							SDMMC_IDMAC_INT_RI);
-+			mci_writel(host, IDSTS64, SDMMC_IDMAC_INT_NI);
-+			host->dma_ops->complete(host);
-+		}
-+	} else {
-+		pending = mci_readl(host, IDSTS);
-+		if (pending & (SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI)) {
-+			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI |
-+							SDMMC_IDMAC_INT_RI);
-+			mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
-+			host->dma_ops->complete(host);
-+		}
- 	}
- #endif
- 
-@@ -2309,6 +2412,22 @@ static void dw_mci_cleanup_slot(struct dw_mci_slot *slot, unsigned int id)
- 
- static void dw_mci_init_dma(struct dw_mci *host)
- {
-+	int addr_config;
-+	/* Check ADDR_CONFIG bit in HCON to find IDMAC address bus width */
-+	addr_config = (mci_readl(host, HCON) >> 27) & 0x01;
-+
-+	if (addr_config == 1) {
-+		/* host supports IDMAC in 64-bit address mode */
-+		host->dma_64bit_address = 1;
-+		dev_info(host->dev, "IDMAC supports 64-bit address mode.\n");
-+		if (!dma_set_mask(host->dev, DMA_BIT_MASK(64)))
-+			dma_set_coherent_mask(host->dev, DMA_BIT_MASK(64));
-+	} else {
-+		/* host supports IDMAC in 32-bit address mode */
-+		host->dma_64bit_address = 0;
-+		dev_info(host->dev, "IDMAC supports 32-bit address mode.\n");
-+	}
-+
- 	/* Alloc memory for sg translation */
- 	host->sg_cpu = dmam_alloc_coherent(host->dev, PAGE_SIZE,
- 					  &host->sg_dma, GFP_KERNEL);
-diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
-index 01b99e8..64b04aa 100644
---- a/drivers/mmc/host/dw_mmc.h
-+++ b/drivers/mmc/host/dw_mmc.h
-@@ -55,6 +55,17 @@
- #define SDMMC_BUFADDR		0x098
- #define SDMMC_CDTHRCTL		0x100
- #define SDMMC_DATA(x)		(x)
-+/*
-+* Registers to support idmac 64-bit address mode
-+*/
-+#define SDMMC_DBADDRL		0x088
-+#define SDMMC_DBADDRU		0x08c
-+#define SDMMC_IDSTS64		0x090
-+#define SDMMC_IDINTEN64		0x094
-+#define SDMMC_DSCADDRL		0x098
-+#define SDMMC_DSCADDRU		0x09c
-+#define SDMMC_BUFADDRL		0x0A0
-+#define SDMMC_BUFADDRU		0x0A4
- 
- /*
-  * Data offset is difference according to Version
-diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
-index 0013669..9e6eabb 100644
---- a/include/linux/mmc/dw_mmc.h
-+++ b/include/linux/mmc/dw_mmc.h
-@@ -54,6 +54,7 @@ struct mmc_data;
-  *	transfer is in progress.
-  * @use_dma: Whether DMA channel is initialized or not.
-  * @using_dma: Whether DMA is in use for the current transfer.
-+ * @dma_64bit_address: Whether DMA supports 64-bit address mode or not.
-  * @sg_dma: Bus address of DMA buffer.
-  * @sg_cpu: Virtual address of DMA buffer.
-  * @dma_ops: Pointer to platform-specific DMA callbacks.
-@@ -140,6 +141,7 @@ struct dw_mci {
- 	/* DMA interface members*/
- 	int			use_dma;
- 	int			using_dma;
-+	int			dma_64bit_address;
- 
- 	dma_addr_t		sg_dma;
- 	void			*sg_cpu;
+This comment is not required, please remove it.
+
+> +};
+> +
+> +MODULE_DEVICE_TABLE(usb, cyusbs23x_usb_table);
+> +
+> +static const struct mfd_cell cyusbs23x_i2c_devs[] = {
+> +	{
+> +		.name = "cyusbs23x-i2c",
+> +	},
+> +	{
+> +		.name = "cyusbs23x-gpio",
+> +	},
+> +};
+> +
+> +static int update_ep_details(struct usb_interface *interface,
+> +				struct cyusbs23x *cyusbs)
+> +{
+> +	struct usb_host_interface *iface_desc;
+> +	struct usb_endpoint_descriptor *ep;
+> +	int i;
+> +
+> +	iface_desc = interface->cur_altsetting;
+> +
+> +	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
+> +
+> +		ep = &iface_desc->endpoint[i].desc;
+> +
+> +		if (!cyusbs->bulk_in_ep_num && usb_endpoint_is_bulk_in(ep))
+> +			cyusbs->bulk_in_ep_num = ep->bEndpointAddress;
+> +		if (!cyusbs->bulk_out_ep_num && usb_endpoint_is_bulk_out(ep))
+> +			cyusbs->bulk_out_ep_num = ep->bEndpointAddress;
+> +		if (!cyusbs->intr_in_ep_num && usb_endpoint_is_int_in(ep))
+> +			cyusbs->intr_in_ep_num = ep->bEndpointAddress;
+> +	}
+
+All of the USB specific code in this driver will require a USB Ack.
+
+> +	dev_dbg(&interface->dev, "%s intr_in=%d, bulk_in=%d, bulk_out=%d\n",
+> +		__func__, cyusbs->intr_in_ep_num ,
+> +		cyusbs->bulk_in_ep_num, cyusbs->bulk_out_ep_num);
+> +
+> +	if (!cyusbs->bulk_in_ep_num || !cyusbs->bulk_out_ep_num ||
+> +		!cyusbs->intr_in_ep_num)
+> +		return -ENODEV;
+> +
+> +	return 0;
+> +}
+> +
+> +static int cyusbs23x_probe(struct usb_interface *interface,
+> +			   const struct usb_device_id *id)
+> +{
+> +	struct cyusbs23x *cyusbs;
+> +	const struct mfd_cell *cyusbs23x_devs;
+> +	int ret, ndevs = 0;
+> +	u8 sub_class;
+> +
+> +	cyusbs = kzalloc(sizeof(*cyusbs), GFP_KERNEL);
+
+Any reason for not using managed resources (devm_*)?
+
+> +	if (cyusbs == NULL)
+
+if (!cyusbs)
+
+> +		return -ENOMEM;
+> +
+> +	cyusbs->usb_dev = usb_get_dev(interface_to_usbdev(interface));
+
+Can you do this last?  Then you can remove the 'error' error path.
+
+> +	cyusbs->usb_intf = interface;
+> +	cyusbs->intf_num = interface->cur_altsetting->desc.bInterfaceNumber;
+
+If you're already saving 'interface' there is no need to save this
+also, just extract it from 'cyusbs->usb_intf' when you need it.
+
+> +	ret = update_ep_details(interface, cyusbs);
+> +	if (ret < 0) {
+
+Can ret be > 0?  If not, just do 'if (ret)'
+
+> +		dev_err(&interface->dev, "invalid interface\n");
+
+If you put the error message in update_ep_details() can you print out
+a more specific error message and remove this line.
+
+> +		goto error;
+> +	}
+> +
+> +	usb_set_intfdata(interface, cyusbs);
+> +
+> +	/* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
+> +	sub_class = interface->cur_altsetting->desc.bInterfaceSubClass;
+> +	switch (sub_class) {
+
+This is a waste of a variable and adds nothing to the code.  Just
+switch() for 'interface->cur_altsetting->desc.bInterfaceSubClass'.
+
+> +	case CY_USBS_SCB_I2C:
+> +		dev_info(&interface->dev, "I2C interface found\n");
+
+Was it even lost?
+
+Would "using I2C interface" be better?
+
+> +		cyusbs23x_devs = cyusbs23x_i2c_devs;
+> +		ndevs = ARRAY_SIZE(cyusbs23x_i2c_devs);
+> +		break;
+
+I assume there will be other interfaces supported at a later date?  If
+not, this switch() is pretty over-the-top.
+
+> +	default:
+> +		dev_err(&interface->dev, "unsupported subclass\n");
+> +		ret = -ENODEV;
+> +		goto error;
+> +	}
+> +
+> +	ret = mfd_add_devices(&interface->dev, PLATFORM_DEVID_AUTO,
+> +				cyusbs23x_devs, ndevs, NULL, 0, NULL);
+> +	if (ret != 0) {
+
+if (ret)
+
+> +		dev_err(&interface->dev, "Failed to add mfd devices to core\n");
+
+"Failed to register devices"
+
+> +		goto error;
+> +	}
+> +
+> +	return 0;
+> +
+> +error:
+> +	usb_put_dev(cyusbs->usb_dev);
+> +	kfree(cyusbs);
+> +
+> +	return ret;
+> +}
+> +
+> +static void cyusbs23x_disconnect(struct usb_interface *interface)
+> +{
+> +	struct cyusbs23x *cyusbs = usb_get_intfdata(interface);
+> +
+> +	mfd_remove_devices(&interface->dev);
+> +	usb_put_dev(cyusbs->usb_dev);
+> +	kfree(cyusbs);
+
+If you use managed resources, you can remove this line.
+
+> +	dev_dbg(&interface->dev, "disconnected\n");
+
+Please remove this line.
+
+> +}
+> +
+> +static struct usb_driver cyusbs23x_usb_driver = {
+> +	.name           = "cyusbs23x",
+> +	.probe          = cyusbs23x_probe,
+> +	.disconnect     = cyusbs23x_disconnect,
+> +	.id_table       = cyusbs23x_usb_table,
+> +};
+> +
+> +module_usb_driver(cyusbs23x_usb_driver);
+> +
+> +MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
+> +MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
+> +MODULE_DESCRIPTION("Cypress CYUSBS23x mfd core driver");
+
+s/mfd/MFD/
+
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/mfd/cyusbs23x.h b/include/linux/mfd/cyusbs23x.h
+> new file mode 100644
+> index 0000000..1580d98
+> --- /dev/null
+> +++ b/include/linux/mfd/cyusbs23x.h
+> @@ -0,0 +1,62 @@
+> +/*
+> + * Cypress USB-Serial Bridge Controller definitions
+> + *
+> + * Copyright (c) 2014 Cypress Semiconductor Corporation.
+> + *
+> + * Author:
+> + *   Muthu Mani <muth@cypress.com>
+> + *
+> + * Additional contributors include:
+> + *   Rajaram Regupathy <rera@cypress.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#ifndef __MFD_CYUSBS23X_H__
+> +#define __MFD_CYUSBS23X_H__
+> +
+> +#include <linux/types.h>
+> +#include <linux/usb.h>
+> +
+> +/* Structure to hold all device specific stuff */
+> +struct cyusbs23x {
+> +	struct usb_device *usb_dev;
+> +	struct usb_interface *usb_intf;
+> +
+> +	u8 intf_num;
+> +	u8 bulk_in_ep_num;
+> +	u8 bulk_out_ep_num;
+> +	u8 intr_in_ep_num;
+> +};
+> +
+> +enum cy_usbs_vendor_cmds {
+> +	CY_I2C_GET_CONFIG_CMD  = 0xC4,
+> +	CY_I2C_SET_CONFIG_CMD  = 0xC5,
+> +	CY_I2C_WRITE_CMD       = 0xC6,
+> +	CY_I2C_READ_CMD        = 0xC7,
+> +	CY_I2C_GET_STATUS_CMD  = 0xC8,
+> +	CY_I2C_RESET_CMD       = 0xC9,
+> +	CY_GPIO_GET_CONFIG_CMD = 0xD8,
+> +	CY_GPIO_SET_CONFIG_CMD = 0xD9,
+> +	CY_GPIO_GET_VALUE_CMD  = 0xDA,
+> +	CY_GPIO_SET_VALUE_CMD  = 0xDB,
+> +};
+> +
+> +/* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
+> +enum cy_scb_modes {
+> +	CY_USBS_SCB_DISABLED = 0,
+> +	CY_USBS_SCB_UART = 1,
+> +	CY_USBS_SCB_SPI = 2,
+> +	CY_USBS_SCB_I2C = 3
+
+No need to number these.
+
+> +};
+> +
+> +/* SCB index shift */
+> +#define CY_SCB_INDEX_SHIFT      15
+> +
+> +#define CY_USBS_CTRL_XFER_TIMEOUT	2000
+> +#define CY_USBS_BULK_XFER_TIMEOUT	5000
+> +#define CY_USBS_INTR_XFER_TIMEOUT	5000
+> +
+> +#endif /* __MFD_CYUSBS23X_H__ */
+
 -- 
-1.7.6.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
