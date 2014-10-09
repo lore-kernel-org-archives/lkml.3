@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751436AbaJIUjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 16:39:37 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:39205 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaJIUje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 16:39:34 -0400
+	id S1751456AbaJIUk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 16:40:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6026 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaJIUkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 16:40:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,687,1406617200"; 
+   d="scan'208";a="483164510"
+Date: Thu, 9 Oct 2014 16:40:26 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v1 2/7] mm: Prepare for DAX huge pages
+Message-ID: <20141009204026.GP5098@wil.cx>
+References: <1412774729-23956-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1412774729-23956-3-git-send-email-matthew.r.wilcox@intel.com>
+ <20141008152124.GA7288@node.dhcp.inet.fi>
+ <20141008155758.GK5098@wil.cx>
+ <20141008194335.GA9232@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <1411659697-27258-1-git-send-email-octavian.purdila@intel.com>
-References: <1411659697-27258-1-git-send-email-octavian.purdila@intel.com>
-Date: Thu, 9 Oct 2014 23:39:33 +0300
-Message-ID: <CAE1zotLYqdV-m6XYo9QKndbyrEUAxgws5uqdNEs+CT_RcWeGHg@mail.gmail.com>
-Subject: Re: [PATCH v4 0/3] mfd: viperboard: fix cache line sharing and cleanups
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-usb@vger.kernel.org, Johan Hovold <johan@kernel.org>,
-        Octavian Purdila <octavian.purdila@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141008194335.GA9232@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 25, 2014 at 6:41 PM, Octavian Purdila
-<octavian.purdila@intel.com> wrote:
-> Changes since v3:
->
->  * undo a whitespace change
->
->  * one more error path cleanup
->
->  * add commit body to the last patch
->
-> Changes since v2:
->
->  * switch to using devm_ allocation
->
->  * remove unused platform_device
->
-> Changes since v1:
->
->  * split cache sharing fix and cleanups into separate patches
->
->
-> Octavian Purdila (3):
->   mfd: viperboard: allocate I/O buffer separately
->   mfd: viperboard: switch to devm_ allocation
->   mfd: viperboard: remove unused platform_device
->
->  drivers/mfd/viperboard.c       | 18 ++++++++----------
->  include/linux/mfd/viperboard.h |  3 +--
->  2 files changed, 9 insertions(+), 12 deletions(-)
->
+On Wed, Oct 08, 2014 at 10:43:35PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Oct 08, 2014 at 11:57:58AM -0400, Matthew Wilcox wrote:
+> > On Wed, Oct 08, 2014 at 06:21:24PM +0300, Kirill A. Shutemov wrote:
+> > > On Wed, Oct 08, 2014 at 09:25:24AM -0400, Matthew Wilcox wrote:
+> > > > From: Matthew Wilcox <willy@linux.intel.com>
+> > > > 
+> > > > DAX wants to use the 'special' bit to mark PMD entries that are not backed
+> > > > by struct page, just as for PTEs. 
+> > > 
+> > > Hm. I don't see where you use PMD without special set.
+> > 
+> > Right ... I don't currently insert PMDs that point to huge pages of DRAM,
+> > only to huge pages of PMEM.
+> 
+> Looks like you don't need pmd_{mk,}special() then. It seems you have all
+> inforamtion you need -- vma -- to find out what's going on. Right?
 
-Hi Lee,
+That would prevent us from putting huge pages of DRAM into a VM_MIXEDMAP |
+VM_HUGEPAGE vma.  Is that acceptable to the wider peanut gallery?
 
-Does these look ok now?
+> > > No private THP pages with THP? Why?
+> > > It should be trivial: we already have a code path for !page case for zero
+> > > page and it shouldn't be too hard to modify do_dax_pmd_fault() to support
+> > > COW.
+> > > 
+> > > I remeber I've mentioned that you don't think it's reasonable to allocate
+> > > 2M page on COW, but that's what we do for anon memory...
+> > 
+> > I agree that it shouldn't be too hard, but I have no evidence that it'll
+> > be a performance win to COW 2MB pages for MAP_PRIVATE.  I'd rather be
+> > cautious for now and we can explore COWing 2MB chunks in a future patch.
+> 
+> I would rather make it other way around: use the same apporoach as for
+> anon memory until data shows it's doesn't make any good. Then consider
+> switching COW for *both* anon and file THP to fallback path.
+> This way we will get consistent behaviour for both types of mappings.
 
-Thanks,
-Tavi
+I'm not sure that we want consistent behaviour for both types of mappings.
+My understanding is that they're used for different purposes, and having
+different bahaviour is acceptable.
