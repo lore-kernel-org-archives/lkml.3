@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758513AbaJIV0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:26:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59447 "EHLO
+	id S932758AbaJIV0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:26:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59444 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757632AbaJIVKJ (ORCPT
+	with ESMTP id S1757628AbaJIVKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:09 -0400
+	Thu, 9 Oct 2014 17:10:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Vagin <avagin@openvz.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Mark Knibbs <markk@clara.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 053/163] fs/notify: don't show f_handle if exportfs_encode_inode_fh failed
-Date: Thu,  9 Oct 2014 14:01:18 -0700
-Message-Id: <1412888588-26755-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 113/163] USB: storage: Add quirk for Ariston Technologies iConnect USB to SCSI adapter
+Date: Thu,  9 Oct 2014 14:02:18 -0700
+Message-Id: <1412888588-26755-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -29,36 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: Mark <markk@clara.co.uk>
 
-commit 7e8824816bda16bb11ff5ff1e1212d642e57b0b3 upstream.
+commit b6a3ed677991558ce09046397a7c4d70530d15b3 upstream.
 
-Currently we handle only ENOSPC.  In case of other errors the file_handle
-variable isn't filled properly and we will show a part of stack.
+Hi,
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The Ariston Technologies iConnect 025 and iConnect 050 (also known as e.g.
+iSCSI-50) are SCSI-USB converters which use Shuttle Technology/SCM
+Microsystems chips. Only the connectors differ; both have the same USB ID.
+The US_FL_SCM_MULT_TARG quirk is required to use SCSI devices with ID other
+than 0.
+
+I don't have one of these, but based on the other entries for Shuttle/
+SCM-based converters this patch is very likely correct. I used 0x0000 and
+0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
+bcdDevice value the products use.
+
+Signed-off-by: Mark Knibbs <markk@clara.co.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/notify/fdinfo.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index 660d33b..9d7e2b9 100644
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
- 	size = f.handle.handle_bytes >> 2;
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index e0fdb52..49d14dc 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1986,6 +1986,12 @@ UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
  
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
--	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
-+	if ((ret == FILEID_INVALID) || (ret < 0)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
- 		return 0;
- 	}
++UNUSUAL_DEV(  0x1822, 0x0001, 0x0000, 0x9999,
++		"Ariston Technologies",
++		"iConnect USB to SCSI adapter",
++		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
++		US_FL_SCM_MULT_TARG ),
++
+ /* Reported by Hans de Goede <hdegoede@redhat.com>
+  * These Appotech controllers are found in Picture Frames, they provide a
+  * (buggy) emulation of a cdrom drive which contains the windows software
 -- 
 1.9.1
 
