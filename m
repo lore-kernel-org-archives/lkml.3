@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445AbaJIJFY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:05:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33207 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436AbaJIJDk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:03:40 -0400
-Message-ID: <1412845410.6809.3.camel@pengutronix.de>
-Subject: Re: [PATCH] reset: socfpga: use arch_initcall for early
- initialization
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: dinguyen@opensource.altera.com
-Cc: dinh.linux@gmail.com, s.trumtrar@pengutronix.de, grant.likely@linaro.org,
-        robh+dt@kernel.org, atull@opensource.altera.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 09 Oct 2014 11:03:30 +0200
-In-Reply-To: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1757186AbaJIJFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:05:35 -0400
+Received: from mail-bn1on0140.outbound.protection.outlook.com ([157.56.110.140]:10080
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751374AbaJIJDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 05:03:38 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <dp@opensource.wolfsonmicro.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 3/6] regmap: cache: fix errno in regcache_hw_init()
+Date: Thu, 9 Oct 2014 17:02:54 +0800
+Message-ID: <1412845377-17134-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 2.1.0.27.g96db324
+In-Reply-To: <1412845377-17134-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1412845377-17134-1-git-send-email-Li.Xiubo@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(104016003)(20776003)(64706001)(47776003)(85852003)(89996001)(110136001)(88136002)(105606002)(81156004)(106466001)(229853001)(107046002)(2351001)(95666004)(85306004)(97736003)(50226001)(4396001)(50466002)(48376002)(76482002)(102836001)(62966002)(26826002)(92726001)(92566001)(93916002)(86362001)(46102003)(80022003)(87936001)(76176999)(104166001)(50986999)(31966008)(84676001)(99396003)(87286001)(21056001)(44976005)(19580395003)(19580405001)(6806004)(69596002)(68736004)(120916001)(77156001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0620;H:az84smr01.freescale.net;FPR:;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0620;
+X-Forefront-PRVS: 0359162B6D
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Li.Xiubo@freescale.com; 
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 08.10.2014, 21:44 -0500 schrieb
-dinguyen@opensource.altera.com:
-> From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> 
-> There are certain drivers that are required to get loaded very early using
-> arch_initcall. An example of such a driver is the SOCFPGA's FPGA bridge driver.
-> This driver has to get loaded early because it needs to enable FPGA components
-> that are connected to the bridge.
-> 
-> This FPGA bridge driver will using the reset controller API to toggle it's
-> reset bits, thus, it needs the reset driver to be loaded as early as possible
-> in order for it to get used properly.
+When kmalloc() fails, we should return -ENOMEM.
 
-Without knowing the details, this sounds like the wrong approach. Can't
-the bridge driver return -EPROBE_DEFER until the reset controller is
-available?
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regcache.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-regards
-Philipp
+diff --git a/drivers/base/regmap/regcache.c b/drivers/base/regmap/regcache.c
+index c13b821..8a7c270 100644
+--- a/drivers/base/regmap/regcache.c
++++ b/drivers/base/regmap/regcache.c
+@@ -44,7 +44,7 @@ static int regcache_hw_init(struct regmap *map)
+ 		map->cache_bypass = 1;
+ 		tmp_buf = kmalloc(map->cache_size_raw, GFP_KERNEL);
+ 		if (!tmp_buf)
+-			return -EINVAL;
++			return -ENOMEM;
+ 		ret = regmap_raw_read(map, 0, tmp_buf,
+ 				      map->num_reg_defaults_raw);
+ 		map->cache_bypass = cache_bypass;
+-- 
+2.1.0.27.g96db324
 
