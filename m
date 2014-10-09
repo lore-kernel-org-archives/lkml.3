@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaJIIxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:53:19 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58319 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750918AbaJIIxO (ORCPT
+	id S1753734AbaJII4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:56:32 -0400
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:41409 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJII40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:53:14 -0400
-Date: Thu, 9 Oct 2014 09:52:58 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Thierry Reding <treding@nvidia.com>, linux-samsung-soc@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] drm/exynos: fix vblank handling during dpms off
-Message-ID: <20141009085258.GI5182@n2100.arm.linux.org.uk>
-References: <542B9A0E.7020206@samsung.com> <1412151287-12845-1-git-send-email-a.hajda@samsung.com> <542D13CC.5000304@samsung.com> <542D2E7C.1020904@samsung.com> <542D3C96.7000400@samsung.com> <54362066.9000504@nvidia.com>
+	Thu, 9 Oct 2014 04:56:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54362066.9000504@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1412695544-17251-2-git-send-email-cristian.stoica@freescale.com>
+References: <1412695544-17251-1-git-send-email-cristian.stoica@freescale.com>
+	<1412695544-17251-2-git-send-email-cristian.stoica@freescale.com>
+Date: Thu, 9 Oct 2014 10:56:24 +0200
+Message-ID: <CAFLxGvxygJY_dQte+wHqWauDYx=datvgX5Z_ckP4znUiPno5Yw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] uio: support memory sizes larger than 32 bits
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Cristian Stoica <cristian.stoica@freescale.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 02:43:02PM +0900, Alexandre Courbot wrote:
-> But there might be another issue, which is that calls to  
-> drm_vblank_get() will return -EINVAL if invoked between drm_blank_off  
-> and drm_blank_on. Is this really the desired behavior? Can it at least  
-> happen? If so, how are drivers supposed to react to this situation?
+On Tue, Oct 7, 2014 at 5:25 PM, Cristian Stoica
+<cristian.stoica@freescale.com> wrote:
+> This is a completion to 27a90700a4275c5178b883b65927affdafa5185c
+> The size field is also increased to allow values larger than 32 bits
+> on platforms that have more than 32 bit physical addresses.
+>
+> Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
+> ---
+>  Documentation/DocBook/uio-howto.tmpl | 2 +-
+>  drivers/uio/uio.c                    | 2 +-
+>  include/linux/uio_driver.h           | 2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
+> index bbe9c1f..1fdc246 100644
+> --- a/Documentation/DocBook/uio-howto.tmpl
+> +++ b/Documentation/DocBook/uio-howto.tmpl
+> @@ -540,7 +540,7 @@ appears in sysfs.
+>  </para></listitem>
+>
+>  <listitem><para>
+> -<varname>unsigned long size</varname>: Fill in the size of the
+> +<varname>resource_size_t size</varname>: Fill in the size of the
+>  memory block that <varname>addr</varname> points to. If <varname>size</varname>
+>  is zero, the mapping is considered unused. Note that you
+>  <emphasis>must</emphasis> initialize <varname>size</varname> with zero for
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index a673e5b..eaa7347 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -73,7 +73,7 @@ static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
+>
+>  static ssize_t map_size_show(struct uio_mem *mem, char *buf)
+>  {
+> -       return sprintf(buf, "0x%lx\n", mem->size);
+> +       return sprintf(buf, "0x%llx\n", (unsigned long long)mem->size);
 
-I've not yet seen the commit which causes this problem, but I hope
-that drm_wait_vblank() isn't affected by this.  In current mainline,
-drm_vblank_get() is used inside drm_wait_vblank(), which is called as
-a result of userspace calling DRM_IOCTL_WAIT_VBLANK.
+We have special printk format strings to handle resource_size_t, please
+see Documentation/printk-formats.txt.
 
-So, what is the effect of this change on user applications making use
-of the vblank wait ioctl - and is that change intended?
+>  }
+>
+>  static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
+> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+> index 1ad4724..df6e42e 100644
+> --- a/include/linux/uio_driver.h
+> +++ b/include/linux/uio_driver.h
+> @@ -35,7 +35,7 @@ struct uio_map;
+>  struct uio_mem {
+>         const char              *name;
+>         phys_addr_t             addr;
+> -       unsigned long           size;
+> +       resource_size_t         size;
+>         int                     memtype;
+>         void __iomem            *internal_addr;
+>         struct uio_map          *map;
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+//richard
