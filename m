@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535AbaJITnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:43:08 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:53489 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbaJITm7 (ORCPT
+	id S1751787AbaJITnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:43:41 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:59933 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555AbaJITne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:42:59 -0400
-In-Reply-To: <CAH6sp9MrU7HxYya7jBGHehBXUqey-PLzVDkvfjJbrU5v1P1WyQ@mail.gmail.com>
-References: <20141009190406.GA5428@localhost> <CAH6sp9Prq3VVbBGEEgaYACWgKf53_93eq93RhAWbmknw0x95QQ@mail.gmail.com> <CAH6sp9MrU7HxYya7jBGHehBXUqey-PLzVDkvfjJbrU5v1P1WyQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: acpitool - /proc/acpi/wakeup
-From: Marc Burkhardt <marc@osknowledge.org>
-Reply-to: marc@osknowledge.org
-Date: Thu, 09 Oct 2014 19:42:54 +0000
-To: Frans Klaver <fransklaver@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <FC674684-FA28-47F3-BB5D-6709D2BFF770@osknowledge.org>
+	Thu, 9 Oct 2014 15:43:34 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] regulator: Include err.h from consumer.h to fix build failure
+Date: Thu,  9 Oct 2014 12:43:27 -0700
+Message-Id: <1412883807-20825-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I upgraded from 3.10 on that machine. 3.12 didn't work for me due to a hibernation bug. The rest was left out...  :/
+sh:sh2007_defconfig fails to build with the following error:
 
-Thanks,
-Marc
+In file included from include/linux/regulator/machine.h:18:0,
+                 from arch/sh/boards/board-sh2007.c:10:
+include/linux/regulator/consumer.h: In function 'regulator_get_optional':
+include/linux/regulator/consumer.h:271:2:
+		error: implicit declaration of function 'ERR_PTR'
+include/linux/err.h: At top level:
+include/linux/err.h:23:35: error: conflicting types for 'ERR_PTR'
+include/linux/regulator/consumer.h:271:9:
+		note: previous implicit declaration of 'ERR_PTR' was here
 
-Am 9. Oktober 2014 21:31:52 MESZ, schrieb Frans Klaver <fransklaver@gmail.com>:
->On Thu, Oct 9, 2014 at 9:25 PM, Frans Klaver <fransklaver@gmail.com>
->wrote:
->> Hi,
->>
->> On Thu, Oct 9, 2014 at 9:04 PM, Marc Burkhardt <marc@osknowledge.org>
->wrote:
->>> Hi there,
->>> I noticed, that 'acpitool -e' doesn't work any longer sind I
->upgraded to 3.17.
->>> The tool stalls at
->>>
->>>    Device       S-state   Status   Sysfs node
->>>   ---------------------------------------
->>>   1. LID          S3    *enabled   platform:PNP0C0D:00
->>>   2. SLPB         S3    *enabled   platform:PNP0C0E:0
->>
->> I see the same thing.
->
->With which kernel version did it last work properly for you?
+Since consumer.h uses ERR_PTR, it should include err.h.
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ include/linux/regulator/consumer.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index d347c80..f540b14 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -35,6 +35,8 @@
+ #ifndef __LINUX_REGULATOR_CONSUMER_H_
+ #define __LINUX_REGULATOR_CONSUMER_H_
+ 
++#include <linux/err.h>
++
+ struct device;
+ struct notifier_block;
+ struct regmap;
+-- 
+1.9.1
 
