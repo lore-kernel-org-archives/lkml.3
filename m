@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaJIMXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:23:07 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:58765 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaJIMW7 (ORCPT
+	id S1755590AbaJIM2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:28:54 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:34821 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbaJIM2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:22:59 -0400
+	Thu, 9 Oct 2014 08:28:46 -0400
+Date: Thu, 9 Oct 2014 17:58:31 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: WANG Chao <wangchao19890207@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Masaru Nomura <massa.nomura@gmail.com>, Peng Tao <bergwolf@gmail.com>,
+        Chi Pham <fempsci@gmail.com>,
+        Fredrick John Berchmans <fredrickprashanth@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH resend] staging, lustre: fix a sparse error
+Message-ID: <20141009122831.GA3300@sudip-PC>
+References: <1412850311-5727-1-git-send-email-wangchao19890207@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPTm99WBE7RnGYNZsCfsenYcR3wNSVYOg--90_s1Ji_=Vj5myA@mail.gmail.com>
-References: <1412051169-9142-1-git-send-email-ankit.jindal@linaro.org>
-	<CAPTm99V-xyXa7WQG2jzDz19gotJ0aQRPk_rb5ukvUpdFyFabfw@mail.gmail.com>
-	<2114579.IN6EpqPdMv@wuerfel>
-	<CAPTm99WBE7RnGYNZsCfsenYcR3wNSVYOg--90_s1Ji_=Vj5myA@mail.gmail.com>
-Date: Thu, 9 Oct 2014 14:22:58 +0200
-Message-ID: <CAFLxGvxkL33_TVaf6dT9joC8dzU9uvJVG-GJdDKXPsMVAvQhvw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/6] UIO driver for APM X-Gene QMTM
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Ankit Jindal <ankit.jindal@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "patches@apm.com" <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412850311-5727-1-git-send-email-wangchao19890207@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 9, 2014 at 2:17 PM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
-> On 9 October 2014 17:36, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Thursday 09 October 2014 14:14:33 Ankit Jindal wrote:
->>> On 30 September 2014 09:56, Ankit Jindal <ankit.jindal@linaro.org> wrote:
->>> > This patchset enables user space access to APM X-Gene QMTM
->>> > using UIO framework.
->>> >
->>> > The patchset also introduces new type UIO_MEM_PHYS_CACHE
->>> > for mem regions because APM X-Gene QMTM device supports
->>> > cache coherency with CPU caches.
->>>
->>
->> I haven't been able to review the patch in detail yet, but I have
->> a very high-level question: how do you decide which driver to use?
->>
->> I understand that the normal use case is for the QMTM to be used by
->> the kernel directly rather than being exported to user space, and
->> that the network driver will just use it if it is there.
->
-> This UIO driver will be disabled by default. When this driver is
-> enabled, the other dependent drivers need to be removed from the
-> config.
+On Thu, Oct 09, 2014 at 06:25:10PM +0800, WANG Chao wrote:
+> This fixes the following sparse error:
+> 
+> drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c:393:9: error:
+> incompatible types in comparison expression (different address spaces)
+> 
+> Signed-off-by: WANG Chao <wangchao19890207@gmail.com>
+> ---
+>  drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> index 245c9d7..1510594 100644
+> --- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> +++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_lib-linux.c
+> @@ -390,7 +390,7 @@ ksocknal_lib_csum_tx(ksock_tx_t *tx)
+>  	__u32	csum;
+>  	void	*base;
+>  
+> -	LASSERT(tx->tx_iov[0].iov_base == (void *)&tx->tx_msg);
+> +	LASSERT((void __force *) tx->tx_iov[0].iov_base == (void *)&tx->tx_msg);
+is it ok? are you not just suppressing the sparse error?
+iov_base is void __user *  
 
-And if the user forgets or creates an allmod/yesconfig we have
-undefined behavior?
+thanks
+sudip
 
--- 
-Thanks,
-//richard
+>  	LASSERT(tx->tx_conn != NULL);
+>  	LASSERT(tx->tx_conn->ksnc_proto == &ksocknal_protocol_v2x);
+>  
+> -- 
+> 1.9.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
