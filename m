@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaJIS2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 14:28:45 -0400
-Received: from hauke-m.de ([5.39.93.123]:59542 "EHLO hauke-m.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065AbaJIS2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 14:28:35 -0400
-Message-ID: <5436D3CF.2030506@hauke-m.de>
-Date: Thu, 09 Oct 2014 20:28:31 +0200
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, Arend van Spriel <arend@broadcom.com>
-CC: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
-References: <1412872877-1771-1-git-send-email-linux@roeck-us.net> <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com> <5436C2B4.6030801@broadcom.com> <5436C367.5080908@broadcom.com> <20141009172924.GD2410@roeck-us.net>
-In-Reply-To: <20141009172924.GD2410@roeck-us.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S1751587AbaJIS3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 14:29:53 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:58400 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaJIS3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 14:29:44 -0400
+From: Rene Kolarik <rene.kolarik@gmail.com>
+To: gregkh@linuxfoundation.org, shawn.guo@freescale.com, kernel@pengutronix.de
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Rene Kolarik <rene.kolarik@gmail.com>
+Subject: [PATCH] drivers: staging: imx-drm driver cleanup
+Date: Thu,  9 Oct 2014 20:29:32 +0200
+Message-Id: <1412879372-2161-1-git-send-email-rene.kolarik@gmail.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 07:29 PM, Guenter Roeck wrote:
-> On Thu, Oct 09, 2014 at 07:18:31PM +0200, Arend van Spriel wrote:
->> On 10/09/14 19:15, Arend van Spriel wrote:
->>> On 10/09/14 18:54, Rafał Miłecki wrote:
->>>> On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net> wrote:
->>>>> Commit 2101e533f41a ("bcma: register bcma as device tree driver")
->>>>> introduces a hard dependency on OF_ADDRESS into the bcma driver.
->>>>> OF_ADDRESS is specifically disabled for the sparc architecture.
->>>>> This results in the following error when building sparc64:allmodconfig.
->>>
->>> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF and
->>> !CONFIG_OF_ADDRESS? Does that makes sense?
->>
->> Is CONFIG_OF is used on sparc to access OpenBoot information?
->>
-> I have no idea. All I know is that the driver doesn't build anymore with OF
-> enabled and OF_ADDRESS disabled.
+Wrapping two too long lines in two files of the imx-drm driver.
 
-Device tree support in bcma is only needed on some SoC, when this is
-used on a PCIe card it is not needed.
+Signed-off-by: Rene Kolarik <rene.kolarik@gmail.com>
+---
+ drivers/staging/imx-drm/imx-drm-core.c | 3 ++-
+ drivers/staging/imx-drm/imx-tve.c      | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-I would just deactivate the parts that are using device tree in bcma
-when it is not available. I will send a patch after having something to eat.
+diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
+index 9cb222e..3ca1acd 100644
+--- a/drivers/staging/imx-drm/imx-drm-core.c
++++ b/drivers/staging/imx-drm/imx-drm-core.c
+@@ -632,7 +632,8 @@ static int imx_drm_platform_probe(struct platform_device *pdev)
+ 				continue;
+ 			}
+ 
+-			component_match_add(&pdev->dev, &match, compare_of, remote);
++			component_match_add(&pdev->dev, &match, compare_of,
++					    remote);
+ 			of_node_put(remote);
+ 		}
+ 		of_node_put(port);
+diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
+index 42c651b..f22b2ac 100644
+--- a/drivers/staging/imx-drm/imx-tve.c
++++ b/drivers/staging/imx-drm/imx-tve.c
+@@ -665,7 +665,8 @@ static int imx_tve_bind(struct device *dev, struct device *master, void *data)
+ 
+ 	ret = regmap_read(tve->regmap, TVE_COM_CONF_REG, &val);
+ 	if (ret < 0) {
+-		dev_err(dev, "failed to read configuration register: %d\n", ret);
++		dev_err(dev, "failed to read configuration register: %d\n",
++			ret);
+ 		return ret;
+ 	}
+ 	if (val != 0x00100000) {
+-- 
+1.9.3
 
-Is there a better method which is compatible with SPARC than using
-of_translate_address() to get the reg address and also take the ranges
-attribute of the bus into account?
-
-Hauke
