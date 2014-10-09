@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645AbaJIRfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:35:47 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41229 "EHLO mail.skyhub.de"
+	id S1751555AbaJIRhn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:37:43 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40111 "EHLO lists.s-osg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855AbaJIRfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:35:38 -0400
-Date: Thu, 9 Oct 2014 19:35:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Cc: slaoub@gmail.com, Tony Luck <tony.luck@intel.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: [PATCH] x86, MCE, AMD: save IA32_MCi_STATUS before
- machine_check_poll() resets it
-Message-ID: <20141009173529.GC17647@pd.tnic>
-References: <1412037578.21488.11.camel@debian>
- <20140930072553.GA4639@pd.tnic>
- <1412070991.16556.12.camel@cyc>
- <20140930100940.GD4639@pd.tnic>
- <1412138102.21488.20.camel@debian>
- <20141002131206.GA16452@pd.tnic>
- <CAOjmkp9qQiTbqU3NUhUDAoQAa8wAPJnE_qXbDuBKrA3ee1_APQ@mail.gmail.com>
- <5435B206.60402@amd.com>
- <20141008225750.GH16892@pd.tnic>
- <20141009165339.GA11360@arav-dinar>
+	id S1751065AbaJIRhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 13:37:36 -0400
+Date: Thu, 9 Oct 2014 14:37:30 -0300
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL for v3.18-rc1] edac updates
+Message-ID: <20141009143730.55abbeb4@recife.lan>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141009165339.GA11360@arav-dinar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:53:39AM -0500, Aravind Gopalakrishnan wrote:
-> How do you mean "last error"?
-> The interrupt is only fired upon overflow..
+Hi Linus,
 
-And? Think about it, what is causing the overflow? A CE, right?
+Please pull from:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac tags/edac/v3.18-rc1
 
-There was even a call to machine_check_poll() there which we removed,
-but for another reason. In any case, you should have the error signature
-in the MCA banks of the last error causing the overflow, right? This is
-what I mean with last error.
+For some EDAC patches. Nothing really exiting here: just one bug fix at
+sb_edac, and some changes to allow other drivers to use some shared PCI
+addresses.
 
-However(!),...
+Regards,
+Mauro
 
-> CE error if collected through polling gives proper decoding info. So,
-> why should this be any different for the same CE error for which an
-> interrupt is generated on crossing a threshold?
+The following changes since commit c91662cb18f00f225c74816353f222b6997131ca:
 
-... we're currently using a special signature to signal the overflow
-with the K8_MCE_THRESHOLD_BASE thing. You simply report a special bank
-and this way you can tell userspace that this is an overflow error. I
-think that was the reason behind the software-defined banks.
+  Merge tag 'edac_for_3.18' of git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp (2014-10-07 20:54:50 -0400)
 
-Now, we can also drop that and simply log a normal error but make sure
-MASK_OVERFLOW_HI is passed onto userspace so that it can see that the
-error is an overflow error. I.e., something like this:
+are available in the git repository at:
 
-        mce_setup(&m);
-	// rdmsrl(MSR_IA32_MCG_STATUS, m.mcgstatus); - not sure about this one - we're not looking at MCGSTATUS for CEs
-        // rdmsrl(address, m.misc); - this MSR can be saved too as we're reading
-	// the MISC register already.
-        rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
-        m.bank = bank;
-        mce_log(&m);
 
-so in the end it'll be something like this:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac tags/edac/v3.18-rc1
 
-	mce_setup(&m);
-	m.misc = (high << 32) | low;
-	rdmsrl(MSR_IA32_MCx_STATUS(bank), m.status);
-	m.bank = bank;
-        mce_log(&m);
+for you to fetch changes up to d0585cd815faef50ce3d12cbe173438eb4d81eb8:
 
-so I'm still on the fence about what we want to do and am expecting
-arguments. I like the last one more because it is simpler and tools
-don't need to know about the software-defined banks.
+  sb_edac: Claim a different PCI device (2014-10-08 17:04:16 -0300)
 
-Thanks.
+----------------------------------------------------------------
+edac updates for v3.18-rc1
 
--- 
-Regards/Gruss,
-    Boris.
+----------------------------------------------------------------
+Andy Lutomirski (2):
+      Move Intel SNB device ids from sb_edac to pci_ids.h
+      sb_edac: Claim a different PCI device
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Seth Jennings (1):
+      sb_edac: avoid INTERNAL ERROR message in EDAC with unspecified channel
+
+ drivers/edac/sb_edac.c  | 40 +++++++---------------------------------
+ include/linux/pci_ids.h | 15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 33 deletions(-)
+
