@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214AbaJIVFh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:05:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59004 "EHLO
+	id S1757292AbaJIVGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:06:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59024 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaJIVFc (ORCPT
+	with ESMTP id S1757250AbaJIVGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:05:32 -0400
+	Thu, 9 Oct 2014 17:06:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: majianpeng <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>,
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 132/163] md/raid1: make sure resync waits for conflicting writes to complete.
-Date: Thu,  9 Oct 2014 14:02:37 -0700
-Message-Id: <1412888588-26755-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 128/163] [media] adv7604: fix inverted condition
+Date: Thu,  9 Oct 2014 14:02:33 -0700
+Message-Id: <1412888588-26755-129-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,66 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit 2f73d3c55d09ce60647b96ad2a9b539c95a530ee upstream.
+commit 77639ff2b3404a913b8037d230a384798b854bae upstream.
 
-The resync/recovery process for raid1 was recently changed
-so that writes could happen in parallel with resync providing
-they were in different regions of the device.
+The log_status function should show HDMI information, but the test checking for
+an HDMI input was inverted. Fix this.
 
-There is a problem though:  While a write request will always
-wait for conflicting resync to complete, a resync request
-will *not* always wait for conflicting writes to complete.
-
-Two changes are needed to fix this:
-
-1/ raise_barrier (which waits until it is safe to do resync)
-   must wait until current_window_requests is zero
-2/ wait_battier (which waits at the start of a new write request)
-   must update current_window_requests if the request could
-   possible conflict with a concurrent resync.
-
-As concurrent writes and resync can lead to data loss,
-this patch is suitable for -stable.
-
-Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
-Cc: majianpeng <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-[ kamal: backport to 3.13-stable: no bi_iter struct ]
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/raid1.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/media/i2c/adv7604.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 2414a79..c85ac43 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -847,10 +847,12 @@ static void raise_barrier(struct r1conf *conf)
- 	 * C: next_resync + RESYNC_SECTORS > start_next_window, meaning
- 	 *    next resync will reach to the window which normal bios are
- 	 *    handling.
-+	 * D: while there are any active requests in the current window.
- 	 */
- 	wait_event_lock_irq(conf->wait_barrier,
- 			    !conf->array_frozen &&
- 			    conf->barrier < RESYNC_DEPTH &&
-+			    conf->current_window_requests == 0 &&
- 			    (conf->start_next_window >=
- 			     conf->next_resync + RESYNC_SECTORS),
- 			    conf->resync_lock);
-@@ -917,8 +919,8 @@ static sector_t wait_barrier(struct r1conf *conf, struct bio *bio)
- 	}
- 
- 	if (bio && bio_data_dir(bio) == WRITE) {
--		if (conf->next_resync + NEXT_NORMALIO_DISTANCE
--		    <= bio->bi_sector) {
-+		if (bio->bi_sector >=
-+		    conf->next_resync) {
- 			if (conf->start_next_window == MaxSector)
- 				conf->start_next_window =
- 					conf->next_resync +
+diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
+index a324106b..20676ae 100644
+--- a/drivers/media/i2c/adv7604.c
++++ b/drivers/media/i2c/adv7604.c
+@@ -1752,7 +1752,7 @@ static int adv7604_log_status(struct v4l2_subdev *sd)
+ 	v4l2_info(sd, "HDCP keys read: %s%s\n",
+ 			(hdmi_read(sd, 0x04) & 0x20) ? "yes" : "no",
+ 			(hdmi_read(sd, 0x04) & 0x10) ? "ERROR" : "");
+-	if (!is_hdmi(sd)) {
++	if (is_hdmi(sd)) {
+ 		bool audio_pll_locked = hdmi_read(sd, 0x04) & 0x01;
+ 		bool audio_sample_packet_detect = hdmi_read(sd, 0x18) & 0x01;
+ 		bool audio_mute = io_read(sd, 0x65) & 0x40;
 -- 
 1.9.1
 
