@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522AbaJIVIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:08:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59280 "EHLO
+	id S1758201AbaJIVdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:33:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59294 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504AbaJIVIs (ORCPT
+	with ESMTP id S1751149AbaJIVIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:48 -0400
+	Thu, 9 Oct 2014 17:08:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>, Ben Skeggs <bskeggs@redhat.com>,
+Cc: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 109/163] drm/nouveau/runpm: fix module unload
-Date: Thu,  9 Oct 2014 14:02:14 -0700
-Message-Id: <1412888588-26755-110-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 098/163] x86, ia64: Move EFI_FB vga_default_device() initialization to pci_vga_fixup()
+Date: Thu,  9 Oct 2014 14:02:03 -0700
+Message-Id: <1412888588-26755-99-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -30,46 +31,199 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
 
-commit 53beaa01e0fe8e4202f43485a03b32fcf5dfea74 upstream.
+commit 20cde694027e7477cc532833e38ab9fcaa83fb64 upstream.
 
-Use the new vga_switcheroo_fini_domain_pm_ops function
-to unregister the pm ops.
+Commit b4aa0163056b ("efifb: Implement vga_default_device() (v2)") added
+efifb vga_default_device() so EFI systems that do not load shadow VBIOS or
+setup VGA get proper value for boot_vga PCI sysfs attribute on the
+corresponding PCI device.
 
-Based on a patch from:
-Pali Rohár <pali.rohar@gmail.com>
+Xorg doesn't detect devices when boot_vga=0, e.g., on some EFI systems such
+as MacBookAir2,1.  Xorg detects the GPU and finds the DRI device but then
+bails out with "no devices detected".
 
-bug:
-https://bugzilla.kernel.org/show_bug.cgi?id=84431
+Note: When vga_default_device() is set boot_vga PCI sysfs attribute
+reflects its state.  When unset this attribute is 1 whenever
+IORESOURCE_ROM_SHADOW flag is set.
 
-Reviewed-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>
+With introduction of sysfb/simplefb/simpledrm efifb is getting obsolete
+while having native drivers for the GPU also makes selecting sysfb/efifb
+optional.
+
+Remove the efifb implementation of vga_default_device() and initialize
+vgaarb's vga_default_device() with the PCI GPU that matches boot
+screen_info in pci_fixup_video().
+
+[bhelgaas: remove unused "dev" in efifb_setup()]
+Fixes: b4aa0163056b ("efifb: Implement vga_default_device() (v2)")
+Tested-by: Anibal Francisco Martinez Cortina <linuxkid.zeuz@gmail.com>
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Matthew Garrett <matthew.garrett@nebula.com>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_vga.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/ia64/pci/fixup.c      | 22 ++++++++++++++++++++++
+ arch/x86/include/asm/vga.h |  6 ------
+ arch/x86/pci/fixup.c       | 21 +++++++++++++++++++++
+ drivers/video/efifb.c      | 39 ---------------------------------------
+ 4 files changed, 43 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_vga.c b/drivers/gpu/drm/nouveau/nouveau_vga.c
-index 81638d7..13790ea 100644
---- a/drivers/gpu/drm/nouveau/nouveau_vga.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_vga.c
-@@ -98,7 +98,16 @@ void
- nouveau_vga_fini(struct nouveau_drm *drm)
+diff --git a/arch/ia64/pci/fixup.c b/arch/ia64/pci/fixup.c
+index 5dc969d..62fb9ba 100644
+--- a/arch/ia64/pci/fixup.c
++++ b/arch/ia64/pci/fixup.c
+@@ -5,6 +5,7 @@
+ 
+ #include <linux/pci.h>
+ #include <linux/init.h>
++#include <linux/screen_info.h>
+ 
+ #include <asm/machvec.h>
+ 
+@@ -38,6 +39,27 @@ static void pci_fixup_video(struct pci_dev *pdev)
+ 	if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+ 		return;
+ 
++	if (!vga_default_device()) {
++		resource_size_t start, end;
++		int i;
++
++		/* Does firmware framebuffer belong to us? */
++		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
++			if (!(pci_resource_flags(pdev, i) & IORESOURCE_MEM))
++				continue;
++
++			start = pci_resource_start(pdev, i);
++			end  = pci_resource_end(pdev, i);
++
++			if (!start || !end)
++				continue;
++
++			if (screen_info.lfb_base >= start &&
++			    (screen_info.lfb_base + screen_info.lfb_size) < end)
++				vga_set_default_device(pdev);
++		}
++	}
++
+ 	/* Is VGA routed to us? */
+ 	bus = pdev->bus;
+ 	while (bus) {
+diff --git a/arch/x86/include/asm/vga.h b/arch/x86/include/asm/vga.h
+index 44282fb..c4b9dc2 100644
+--- a/arch/x86/include/asm/vga.h
++++ b/arch/x86/include/asm/vga.h
+@@ -17,10 +17,4 @@
+ #define vga_readb(x) (*(x))
+ #define vga_writeb(x, y) (*(y) = (x))
+ 
+-#ifdef CONFIG_FB_EFI
+-#define __ARCH_HAS_VGA_DEFAULT_DEVICE
+-extern struct pci_dev *vga_default_device(void);
+-extern void vga_set_default_device(struct pci_dev *pdev);
+-#endif
+-
+ #endif /* _ASM_X86_VGA_H */
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index b046e07..4ee44d4 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -325,6 +325,27 @@ static void pci_fixup_video(struct pci_dev *pdev)
+ 	struct pci_bus *bus;
+ 	u16 config;
+ 
++	if (!vga_default_device()) {
++		resource_size_t start, end;
++		int i;
++
++		/* Does firmware framebuffer belong to us? */
++		for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
++			if (!(pci_resource_flags(pdev, i) & IORESOURCE_MEM))
++				continue;
++
++			start = pci_resource_start(pdev, i);
++			end  = pci_resource_end(pdev, i);
++
++			if (!start || !end)
++				continue;
++
++			if (screen_info.lfb_base >= start &&
++			    (screen_info.lfb_base + screen_info.lfb_size) < end)
++				vga_set_default_device(pdev);
++		}
++	}
++
+ 	/* Is VGA routed to us? */
+ 	bus = pdev->bus;
+ 	while (bus) {
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index cd7c0df..201ab4f 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -19,8 +19,6 @@
+ 
+ static bool request_mem_succeeded = false;
+ 
+-static struct pci_dev *default_vga;
+-
+ static struct fb_var_screeninfo efifb_defined = {
+ 	.activate		= FB_ACTIVATE_NOW,
+ 	.height			= -1,
+@@ -85,23 +83,10 @@ static struct fb_ops efifb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
+ };
+ 
+-struct pci_dev *vga_default_device(void)
+-{
+-	return default_vga;
+-}
+-
+-EXPORT_SYMBOL_GPL(vga_default_device);
+-
+-void vga_set_default_device(struct pci_dev *pdev)
+-{
+-	default_vga = pdev;
+-}
+-
+ static int efifb_setup(char *options)
  {
- 	struct drm_device *dev = drm->dev;
-+	bool runtime = false;
-+
-+	if (nouveau_runtime_pm == 1)
-+		runtime = true;
-+	if ((nouveau_runtime_pm == -1) && (nouveau_is_optimus() || nouveau_is_v1_dsm()))
-+		runtime = true;
-+
- 	vga_switcheroo_unregister_client(dev->pdev);
-+	if (runtime && nouveau_is_v1_dsm() && !nouveau_is_optimus())
-+		vga_switcheroo_fini_domain_pm_ops(drm->dev->dev);
- 	vga_client_register(dev->pdev, NULL, NULL, NULL);
+ 	char *this_opt;
+ 	int i;
+-	struct pci_dev *dev = NULL;
+ 
+ 	if (options && *options) {
+ 		while ((this_opt = strsep(&options, ",")) != NULL) {
+@@ -127,30 +112,6 @@ static int efifb_setup(char *options)
+ 		}
+ 	}
+ 
+-	for_each_pci_dev(dev) {
+-		int i;
+-
+-		if ((dev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
+-			continue;
+-
+-		for (i=0; i < DEVICE_COUNT_RESOURCE; i++) {
+-			resource_size_t start, end;
+-
+-			if (!(pci_resource_flags(dev, i) & IORESOURCE_MEM))
+-				continue;
+-
+-			start = pci_resource_start(dev, i);
+-			end  = pci_resource_end(dev, i);
+-
+-			if (!start || !end)
+-				continue;
+-
+-			if (screen_info.lfb_base >= start &&
+-			    (screen_info.lfb_base + screen_info.lfb_size) < end)
+-				default_vga = dev;
+-		}
+-	}
+-
+ 	return 0;
  }
  
 -- 
