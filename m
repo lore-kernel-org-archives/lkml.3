@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890AbaJILe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 07:34:27 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:44846 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751190AbaJILeC (ORCPT
+	id S1755736AbaJILg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 07:36:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39325 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaJILgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 07:34:02 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-5e-543672a7e311
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/3] ARM: multi_v7_defconfig: Enable clock and RTC driver for
- S2M and S5M
-Date: Thu, 09 Oct 2014 13:32:59 +0200
-Message-id: <1412854379-18875-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1412854379-18875-1-git-send-email-k.kozlowski@samsung.com>
-References: <1412854379-18875-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e/4Zd3lRWYhButWaFr8nXSM3WLjjPWs
-	Fq9fGFr0LrjKZnG26Q27xabH11gtLu+aw2Yx4/w+Jovbl3kt1h65y25x6vpnNgduj5bmHjaP
-	378mMXpsXlLvceVEE6tH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZfxav4W9oJOzYsq6PWwN
-	jM/Zuxg5OSQETCSuN9xlhrDFJC7cW8/WxcjFISSwlFGie/lOKKePSWJr934WkCo2AWOJzcuX
-	gCVEBH4xSmy7epUJxGEWOMooMb33LRNIlbBAtMSy6ffBbBYBVYmGKRsYQWxeAXeJh1u+skHs
-	k5M4eWwyK4jNKeAhsWb+WbB6IaCats5jjBMYeRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vO
-	z93ECAnDLzsYFx+zOsQowMGoxMP74J9piBBrYllxZe4hRgkOZiUR3jdZZiFCvCmJlVWpRfnx
-	RaU5qcWHGJk4OKUaGBnXTkirFJ1twqFysTbmCcPpV99nfFf+43W6efLWqw+ac61/3Dnzv372
-	i9uGm67Of5T81sPnv0HUJQvLxGXLD9sasn1fyesRn9X8TP3zyh8q+skCb35n7L2msKd8r+Sp
-	vA/mIY/nua25MqdJf134nlVG63wv/458opJ6QX+u8Yo0zmM3fVst694psRRnJBpqMRcVJwIA
-	v63H4yECAAA=
+	Thu, 9 Oct 2014 07:36:19 -0400
+Date: Thu, 9 Oct 2014 13:36:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com
+Subject: Re: [PATCH v7 5/7] sched: get CPU's usage statistic
+Message-ID: <20141009113614.GP4750@worktop.programming.kicks-ass.net>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-6-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412684017-16595-6-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The multi_v7 config already enables MFD and regulators drivers for
-Samsung's S2MPS11/S2MPS14 and S5M8767. Enable also drivers for the rest
-of these PMICs features: clock and RTC.
+On Tue, Oct 07, 2014 at 02:13:35PM +0200, Vincent Guittot wrote:
+> Monitor the usage level of each group of each sched_domain level. The usage is
+> the amount of cpu_capacity that is currently used on a CPU or group of CPUs.
+> We use the utilization_load_avg to evaluate the usage level of each group.
+> 
+> The utilization_avg_contrib only takes into account the running time but not
+> the uArch so the utilization_load_avg is in the range [0..SCHED_LOAD_SCALE]
+> to reflect the running load on the CPU. We have to scale the utilization with
+> the capacity of the CPU to get the usage of the latter. The usage can then be
+> compared with the available capacity.
 
-These PMICs are used on Arndale (Exynos 5250 and 5420) and Origen
-(Exynos 4412) evaluation boards, Google Spring, Samsung Gear2 (Exynos
-3250) and some other phones based on Exynos5.
+You say cpu_capacity, but in actual fact you use capacity_orig and fail
+to justify/clarify this.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/configs/multi_v7_defconfig | 2 ++
- 1 file changed, 2 insertions(+)
+> The frequency scaling invariance is not taken into account in this patchset,
+> it will be solved in another patchset
 
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index 3d37e9d2914f..1a60a69f26ad 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -391,6 +391,7 @@ CONFIG_RTC_DRV_SUN6I=y
- CONFIG_RTC_DRV_SUNXI=y
- CONFIG_RTC_DRV_MV=y
- CONFIG_RTC_DRV_TEGRA=y
-+CONFIG_RTC_DRV_S5M=y
- CONFIG_DMADEVICES=y
- CONFIG_DW_DMAC=y
- CONFIG_MV_XOR=y
-@@ -414,6 +415,7 @@ CONFIG_NVEC_POWER=y
- CONFIG_NVEC_PAZ00=y
- CONFIG_QCOM_GSBI=y
- CONFIG_COMMON_CLK_QCOM=y
-+CONFIG_COMMON_CLK_S2MPS11=y
- CONFIG_MSM_GCC_8660=y
- CONFIG_MSM_MMCC_8960=y
- CONFIG_MSM_MMCC_8974=y
--- 
-1.9.1
+Maybe explain what the specific invariance issue is that is skipped over
+for now.
 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> ---
+>  kernel/sched/fair.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index d3e9067..7364ed4 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -4551,6 +4551,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
+>  	return target;
+>  }
+>  
+> +static int get_cpu_usage(int cpu)
+> +{
+> +	unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
+> +	unsigned long capacity = capacity_orig_of(cpu);
+> +
+> +	if (usage >= SCHED_LOAD_SCALE)
+> +		return capacity + 1;
+
+Like Morten I'm confused by that +1 thing.
+
+> +
+> +	return (usage * capacity) >> SCHED_LOAD_SHIFT;
+> +}
+
+A comment with that function that it returns capacity units might
+clarify shift confusion Morten raised the other day.
