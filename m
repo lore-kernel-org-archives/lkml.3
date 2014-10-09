@@ -1,82 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325AbaJINCT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:02:19 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:48070 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244AbaJINBm (ORCPT
+	id S1757343AbaJINC0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:02:26 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:60623 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757192AbaJINBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:01:42 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Thu, 9 Oct 2014 14:58:44 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Johan Hovold <johan@kernel.org>, Muthu Mani <muth@cypress.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, gregkh@linuxfoundation.org,
-        linux-i2c@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rajaram Regupathy <rera@cypress.com>
-Subject: Re: [PATCH v3 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Message-ID: <20141009125844.GM1990@localhost>
-References: <1412606587-3323-1-git-send-email-muth@cypress.com>
- <20141009074029.GL20647@lee--X1>
- <20141009081520.GJ1990@localhost>
- <20141009105950.GP20647@lee--X1>
+	Thu, 9 Oct 2014 09:01:25 -0400
+Subject: [PATCH ftrace/for-next v5 2/5] ftrace,
+ kprobes: Support IPMODIFY flag to find IP modify conflict
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 09 Oct 2014 13:01:13 +0000
+Message-ID: <20141009130113.4698.40425.stgit@kbuild-f20.novalocal>
+In-Reply-To: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
+References: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141009105950.GP20647@lee--X1>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:59:50AM +0100, Lee Jones wrote:
-> On Thu, 09 Oct 2014, Johan Hovold wrote:
-> > On Thu, Oct 09, 2014 at 08:40:29AM +0100, Lee Jones wrote:
-> > > On Mon, 06 Oct 2014, Muthu Mani wrote:
+Introduce FTRACE_OPS_FL_IPMODIFY to avoid conflict among
+ftrace users who may modify regs->ip to change the execution
+path. If two or more users modify the regs->ip on the same
+function entry, one of them will be broken. So they must add
+IPMODIFY flag and make sure that ftrace_set_filter_ip() succeeds.
 
-> > > > diff --git a/include/linux/mfd/cyusbs23x.h b/include/linux/mfd/cyusbs23x.h
-> > 
-> > > > +/* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
-> > > > +enum cy_scb_modes {
-> > > > +	CY_USBS_SCB_DISABLED = 0,
-> > > > +	CY_USBS_SCB_UART = 1,
-> > > > +	CY_USBS_SCB_SPI = 2,
-> > > > +	CY_USBS_SCB_I2C = 3
-> > > 
-> > > No need to number these.
-> > 
-> > As it's not an arbitrary enumeration, I think they should be initialised
-> > explicitly.
-> 
-> No need.  You are protected by the C Standard:
-> 
-> 6.7.2.2 Enumeration specifiers
-> 
-> "If the first enumerator has no =, the value of its enumeration
-> constant is 0. Each subsequent enumerator with no = defines its
-> enumeration constant as the value of the constant expression obtained
-> by adding 1 to the value of the previous enumeration constant."
-> 
-> There's nothing arbitrary about that.
+Note that ftrace doesn't allow ftrace_ops which has IPMODIFY
+flag to have notrace hash, and the ftrace_ops must have a
+filter hash (so that the ftrace_ops can hook only specific
+entries), because it strongly depends on the address and
+must be allowed for only few selected functions.
 
-I obviously wasn't suggesting that the definition of an enum (and the
-values of its constants) in c was arbitrary.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Josh Poimboeuf <jpoimboe@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
 
-My point was that the values of the USB interface subclasses (defined
-through the enum) are not arbitrary. In this case they just happen to be
-zero-based and consecutive. You cannot reorder, or remove an unused
-item, without breaking the driver. By initialising each constant
-explicitly this would become apparent.
+---
+Changes in v5:
+ - Update to the latest ftrace tree.
 
-Using preprocessor defines could be an alternative if you really do not
-like initialised enumeration constants.
+Changes in v4:
+ - Split kprobe's part from this patch.
+ - Add no-notrace hash check.
+ - Reject if the filter_hash is empty. Since IPMODIFY action
+   is very address sensitive, empty hash (means hooking all
+   functions) must not be allowed.
 
-> > They could be defined in the mfd driver though, as they only
-> > appear to be needed during probe.
+Changes in v3:
+ - Update for the latest ftrace/core.
+ - Add a comment about FTRACE_OPS_FL_* attribute flags.
+ - Don't check FTRACE_OPS_FL_SAVE_REGS in
+   __ftrace_hash_update_ipmodify().
+ - Fix comments.
 
-Johan
+Changes in v2:
+ - Add a description how __ftrace_hash_update_ipmodify() will
+   handle the given hashes (NULL and EMPTY_HASH cases).
+ - Clear FTRACE_OPS_FL_ENABLED after calling
+   __unregister_ftrace_function() in error path.
+---
+ Documentation/trace/ftrace.txt |    5 +
+ include/linux/ftrace.h         |   16 ++++-
+ kernel/trace/ftrace.c          |  142 +++++++++++++++++++++++++++++++++++++++-
+ 3 files changed, 159 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/trace/ftrace.txt b/Documentation/trace/ftrace.txt
+index 4da4261..f10f5f5 100644
+--- a/Documentation/trace/ftrace.txt
++++ b/Documentation/trace/ftrace.txt
+@@ -234,6 +234,11 @@ of ftrace. Here is a list of some of the key files:
+ 	will be displayed on the same line as the function that
+ 	is returning registers.
+ 
++	If the callback registered to be traced by a function with
++	the "ip modify" attribute (thus the regs->ip can be changed),
++	an 'I' will be displayed on the same line as the function that
++	can be overridden.
++
+   function_profile_enabled:
+ 
+ 	When set it will enable all functions with either the function
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 662697b..4f52023 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -61,6 +61,11 @@ ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops);
+ /*
+  * FTRACE_OPS_FL_* bits denote the state of ftrace_ops struct and are
+  * set in the flags member.
++ * CONTROL, SAVE_REGS, SAVE_REGS_IF_SUPPORTED, RECURSION_SAFE, STUB and
++ * IPMODIFY are a kind of attribute flags which can be set only before
++ * registering the ftrace_ops, and can not be modified while registered.
++ * Changing those attribute flags after regsitering ftrace_ops will
++ * cause unexpected results.
+  *
+  * ENABLED - set/unset when ftrace_ops is registered/unregistered
+  * DYNAMIC - set when ftrace_ops is registered to denote dynamically
+@@ -94,6 +99,10 @@ ftrace_func_t ftrace_ops_get_func(struct ftrace_ops *ops);
+  * ADDING  - The ops is in the process of being added.
+  * REMOVING - The ops is in the process of being removed.
+  * MODIFYING - The ops is in the process of changing its filter functions.
++ * IPMODIFY - The ops can modify the IP register. This can only be set with
++ *            SAVE_REGS. If another ops is already registered for any of the
++ *            functions that this ops will be registered for, then this ops
++ *            will fail to register or set_filter_ip.
+  */
+ enum {
+ 	FTRACE_OPS_FL_ENABLED			= 1 << 0,
+@@ -108,6 +117,7 @@ enum {
+ 	FTRACE_OPS_FL_ADDING			= 1 << 9,
+ 	FTRACE_OPS_FL_REMOVING			= 1 << 10,
+ 	FTRACE_OPS_FL_MODIFYING			= 1 << 11,
++	FTRACE_OPS_FL_IPMODIFY			= 1 << 12,
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+@@ -297,6 +307,7 @@ extern int ftrace_nr_registered_ops(void);
+  *  ENABLED - the function is being traced
+  *  REGS    - the record wants the function to save regs
+  *  REGS_EN - the function is set up to save regs.
++ *  IPMODIFY - the record allows for the IP address to be changed.
+  *
+  * When a new ftrace_ops is registered and wants a function to save
+  * pt_regs, the rec->flag REGS is set. When the function has been
+@@ -310,10 +321,11 @@ enum {
+ 	FTRACE_FL_REGS_EN	= (1UL << 29),
+ 	FTRACE_FL_TRAMP		= (1UL << 28),
+ 	FTRACE_FL_TRAMP_EN	= (1UL << 27),
++	FTRACE_FL_IPMODIFY	= (1UL << 26),
+ };
+ 
+-#define FTRACE_REF_MAX_SHIFT	27
+-#define FTRACE_FL_BITS		5
++#define FTRACE_REF_MAX_SHIFT	26
++#define FTRACE_FL_BITS		6
+ #define FTRACE_FL_MASKED_BITS	((1UL << FTRACE_FL_BITS) - 1)
+ #define FTRACE_FL_MASK		(FTRACE_FL_MASKED_BITS << FTRACE_REF_MAX_SHIFT)
+ #define FTRACE_REF_MAX		((1UL << FTRACE_REF_MAX_SHIFT) - 1)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index fb186b9..a80597c 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1315,6 +1315,9 @@ ftrace_hash_rec_disable_modify(struct ftrace_ops *ops, int filter_hash);
+ static void
+ ftrace_hash_rec_enable_modify(struct ftrace_ops *ops, int filter_hash);
+ 
++static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
++				       struct ftrace_hash *new_hash);
++
+ static int
+ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+ 		 struct ftrace_hash **dst, struct ftrace_hash *src)
+@@ -1325,8 +1328,13 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+ 	struct ftrace_hash *new_hash;
+ 	int size = src->count;
+ 	int bits = 0;
++	int ret;
+ 	int i;
+ 
++	/* Reject setting notrace hash on IPMODIFY ftrace_ops */
++	if (ops->flags & FTRACE_OPS_FL_IPMODIFY && !enable)
++		return -EINVAL;
++
+ 	/*
+ 	 * If the new source is empty, just free dst and assign it
+ 	 * the empty_hash.
+@@ -1360,6 +1368,16 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+ 	}
+ 
+ update:
++	/* Make sure this can be applied if it is IPMODIFY ftrace_ops */
++	if (enable) {
++		/* IPMODIFY should be updated only when filter_hash updating */
++		ret = ftrace_hash_ipmodify_update(ops, new_hash);
++		if (ret < 0) {
++			free_ftrace_hash(new_hash);
++			return ret;
++		}
++	}
++
+ 	/*
+ 	 * Remove the current set, update the hash and add
+ 	 * them back.
+@@ -1724,6 +1742,114 @@ static void ftrace_hash_rec_enable_modify(struct ftrace_ops *ops,
+ 	ftrace_hash_rec_update_modify(ops, filter_hash, 1);
+ }
+ 
++/*
++ * Try to update IPMODIFY flag on each ftrace_rec. Return 0 if it is OK
++ * or no-needed to update, -EBUSY if it detects a conflict of the flag
++ * on a ftrace_rec, and -EINVAL if the new_hash tries to trace all recs.
++ * Note that old_hash and new_hash has below meanings
++ *  - If the hash is NULL, it hits all recs (if IPMODIFY is set, this is rejected)
++ *  - If the hash is EMPTY_HASH, it hits nothing
++ *  - Anything else hits the recs which match the hash entries.
++ */
++static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
++					 struct ftrace_hash *old_hash,
++					 struct ftrace_hash *new_hash)
++{
++	struct ftrace_page *pg;
++	struct dyn_ftrace *rec, *end = NULL;
++	int in_old, in_new;
++
++	/* Only update if the ops has been registered */
++	if (!(ops->flags & FTRACE_OPS_FL_ENABLED))
++		return 0;
++
++	if (!(ops->flags & FTRACE_OPS_FL_IPMODIFY))
++		return 0;
++
++	/*
++	 * Since the IPMODIFY is very address sensitive action, we do not allow
++	 * ftrace_ops to set all functions to new hash.
++	 */
++	if (!new_hash || !old_hash)
++		return -EINVAL;
++
++	/* Update rec->flags */
++	do_for_each_ftrace_rec(pg, rec) {
++		/* We need to update only differences of filter_hash */
++		in_old = !!ftrace_lookup_ip(old_hash, rec->ip);
++		in_new = !!ftrace_lookup_ip(new_hash, rec->ip);
++		if (in_old == in_new)
++			continue;
++
++		if (in_new) {
++			/* New entries must ensure no others are using it */
++			if (rec->flags & FTRACE_FL_IPMODIFY)
++				goto rollback;
++			rec->flags |= FTRACE_FL_IPMODIFY;
++		} else /* Removed entry */
++			rec->flags &= ~FTRACE_FL_IPMODIFY;
++	} while_for_each_ftrace_rec();
++
++	return 0;
++
++rollback:
++	end = rec;
++
++	/* Roll back what we did above */
++	do_for_each_ftrace_rec(pg, rec) {
++		if (rec == end)
++			goto err_out;
++
++		in_old = !!ftrace_lookup_ip(old_hash, rec->ip);
++		in_new = !!ftrace_lookup_ip(new_hash, rec->ip);
++		if (in_old == in_new)
++			continue;
++
++		if (in_new)
++			rec->flags &= ~FTRACE_FL_IPMODIFY;
++		else
++			rec->flags |= FTRACE_FL_IPMODIFY;
++	} while_for_each_ftrace_rec();
++
++err_out:
++	return -EBUSY;
++}
++
++static int ftrace_hash_ipmodify_enable(struct ftrace_ops *ops)
++{
++	struct ftrace_hash *hash = ops->func_hash->filter_hash;
++
++	if (ftrace_hash_empty(hash))
++		hash = NULL;
++
++	return __ftrace_hash_update_ipmodify(ops, EMPTY_HASH, hash);
++}
++
++/* Disabling always succeeds */
++static void ftrace_hash_ipmodify_disable(struct ftrace_ops *ops)
++{
++	struct ftrace_hash *hash = ops->func_hash->filter_hash;
++
++	if (ftrace_hash_empty(hash))
++		hash = NULL;
++
++	__ftrace_hash_update_ipmodify(ops, hash, EMPTY_HASH);
++}
++
++static int ftrace_hash_ipmodify_update(struct ftrace_ops *ops,
++				       struct ftrace_hash *new_hash)
++{
++	struct ftrace_hash *old_hash = ops->func_hash->filter_hash;
++
++	if (ftrace_hash_empty(old_hash))
++		old_hash = NULL;
++
++	if (ftrace_hash_empty(new_hash))
++		new_hash = NULL;
++
++	return __ftrace_hash_update_ipmodify(ops, old_hash, new_hash);
++}
++
+ static void print_ip_ins(const char *fmt, unsigned char *p)
+ {
+ 	int i;
+@@ -2352,6 +2478,15 @@ static int ftrace_startup(struct ftrace_ops *ops, int command)
+ 	 */
+ 	ops->flags |= FTRACE_OPS_FL_ENABLED | FTRACE_OPS_FL_ADDING;
+ 
++	ret = ftrace_hash_ipmodify_enable(ops);
++	if (ret < 0) {
++		/* Rollback registration process */
++		__unregister_ftrace_function(ops);
++		ftrace_start_up--;
++		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
++		return ret;
++	}
++
+ 	ftrace_hash_rec_enable(ops, 1);
+ 
+ 	ftrace_startup_enable(command);
+@@ -2380,6 +2515,8 @@ static int ftrace_shutdown(struct ftrace_ops *ops, int command)
+ 	 */
+ 	WARN_ON_ONCE(ftrace_start_up < 0);
+ 
++	/* Disabling ipmodify never fails */
++	ftrace_hash_ipmodify_disable(ops);
+ 	ftrace_hash_rec_disable(ops, 1);
+ 
+ 	ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+@@ -2954,9 +3091,10 @@ static int t_show(struct seq_file *m, void *v)
+ 
+ 	seq_printf(m, "%ps", (void *)rec->ip);
+ 	if (iter->flags & FTRACE_ITER_ENABLED) {
+-		seq_printf(m, " (%ld)%s",
++		seq_printf(m, " (%ld)%s%s",
+ 			   ftrace_rec_count(rec),
+-			   rec->flags & FTRACE_FL_REGS ? " R" : "  ");
++			   rec->flags & FTRACE_FL_REGS ? " R" : "  ",
++			   rec->flags & FTRACE_FL_IPMODIFY ? " I" : "  ");
+ 		if (rec->flags & FTRACE_FL_TRAMP_EN) {
+ 			struct ftrace_ops *ops;
+ 
+
+
