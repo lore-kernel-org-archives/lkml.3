@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742AbaJIDmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 23:42:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54408 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbaJIDmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 23:42:46 -0400
-Date: Wed, 8 Oct 2014 20:41:47 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
-Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
-Message-ID: <20141009034147.GC19906@kroah.com>
-References: <5434AA24.7010600@huawei.com>
- <20141008091741.GC26140@arm.com>
- <20141008133147.GC5119@kroah.com>
- <20141008133802.GO26140@arm.com>
- <5435FBD8.7020109@huawei.com>
+	id S1753446AbaJIDuh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 23:50:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14078 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751829AbaJIDua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 23:50:30 -0400
+Date: Wed, 8 Oct 2014 23:49:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: hrtimer deadlock caused by nohz_full
+Message-ID: <20141009034955.GA30661@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20140925141425.GA21702@redhat.com>
+ <alpine.DEB.2.10.1409251630210.4604@nanos>
+ <20140925234657.GB14870@lerouge>
+ <20141002182409.GA29934@redhat.com>
+ <20141007153024.GA14119@lerouge>
+ <20141007173730.GA12147@redhat.com>
+ <alpine.DEB.2.11.1410071942100.4292@nanos>
+ <20141009020240.GA14090@redhat.com>
+ <20141009033017.GA24907@lerouge>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5435FBD8.7020109@huawei.com>
+In-Reply-To: <20141009033017.GA24907@lerouge>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:07:04AM +0800, zhangzhiqiang wrote:
-> On 2014/10/8 21:38, Will Deacon wrote:
-> > On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
-> >> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
-> >>> On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
-> >>>> hi all,
-> >>>> ----------------------------------------
-> >>>>
-> >>>> ref-cycles event is specially to Intel core, but can still used in arm architecture
-> >>>> with the wrong return value with 3.10 stable. for instance:
-> >>>>
-> >>>>  perf stat -e ref-cycles sleep 1
-> >>>>
-> >>>>  Performance counter stats for 'sleep 1':
-> >>>>
-> >>>>   	0 ref-cycles
-> >>>>
-> >>>>        1.002381916 seconds time elapsed
-> >>>>
-> >>>> this patch fix the bug and make it return NOT SUPPORTED
-> >>>> distinctly.
-> >>>>
-> >>>> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
-> >>>> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
-> >>>> besides we can not simply cherry-pick.
-> >>>
-> >>> I thought I saw Greg pick this up the other day?
-> >>
-> >> Yes, it's in 3.16.4, did I do something wrong by accepting it?
-> > 
-> > Nah, it's a trivial patch that I struggle to get excited about. I'm just not
-> > sure why it's being sent again, after you already accepted it.
-> 
-> Yes, it's in 3.16.4, in my opinion 3.10 need it too, can we put it into 3.10 or
-> do we have the plan?
+On Thu, Oct 09, 2014 at 05:30:20AM +0200, Frederic Weisbecker wrote:
 
-Does it apply to 3.10-stable?  Did you test it there and see if it
-resolves your issue?
+ > > Do I miss some other essential patch ?
+ > 
+ > If you have used the diff in that URL then you've missed:
+ > 
+ >      x86: Tell irq work about self IPI support
+ > 
+ > Without that the whole patchset has no effect.
 
-thanks,
+Ok. Thanks, I'll rerun with that.
 
-greg k-h
+	Dave
+
