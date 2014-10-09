@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaJIKaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:30:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53574 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaJIK3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:29:52 -0400
-Date: Thu, 9 Oct 2014 14:29:19 +0400
-From: Andrew Vagin <avagin@parallels.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andy Lutomirski <luto@amacapital.net>, Andrey Vagin <avagin@openvz.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Andrey Vagin <avagin@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] [RFC] mnt: add ability to clone mntns starting with the
- current root
-Message-ID: <20141009102917.GA3257@paralelels.com>
-References: <1412683977-29543-1-git-send-email-avagin@openvz.org>
- <87mw97wqvx.fsf@x220.int.ebiederm.org>
- <20141008110829.GC24908@paralelels.com>
- <CALCETrX4XrgbQNZZa7=1009KqhJ2gT+VBUkC15+59K9yEiTSbQ@mail.gmail.com>
- <87vbnue56f.fsf@x220.int.ebiederm.org>
+	id S1755034AbaJIKbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:31:11 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40052 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaJIKbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 06:31:00 -0400
+Date: Thu, 9 Oct 2014 07:30:52 -0300
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 8 (media/usb/gspca)
+Message-ID: <20141009073052.0ddc3e97@recife.lan>
+In-Reply-To: <1412837128.21441.9.camel@x220>
+References: <20141008174923.76786a03@canb.auug.org.au>
+	<543570C3.9080207@infradead.org>
+	<20141008153105.2fe82fca@recife.lan>
+	<5435A44D.2050609@infradead.org>
+	<20141008225011.2d034c1e@recife.lan>
+	<1412837128.21441.9.camel@x220>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="koi8-r"
-Content-Disposition: inline
-In-Reply-To: <87vbnue56f.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [10.24.24.85]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 12:23:52PM -0700, Eric W. Biederman wrote:
-> Andy Lutomirski <luto@amacapital.net> writes:
+Em Thu, 09 Oct 2014 08:45:28 +0200
+Paul Bolle <pebolle@tiscali.nl> escreveu:
+
+> On Wed, 2014-10-08 at 22:50 -0300, Mauro Carvalho Chehab wrote:
+> > Em Wed, 08 Oct 2014 13:53:33 -0700
+> > Randy Dunlap <rdunlap@infradead.org> escreveu:
+> > > On 10/08/14 11:31, Mauro Carvalho Chehab wrote:
+> > > > From gpsca's PoV, IMHO, it should be fine to disable the webcam buttons if
+> > > > the webcam was compiled as builtin and the input subsystem is compiled as 
+> > > > module. The core feature expected on a camera is to capture streams. 
+> > > > Buttons are just a plus.
+> > > > 
+> > > > Also, most cams don't even have buttons. The gspca subdriver has support 
+> > > > for buttons for the few models that have it.
+> > > > 
+> > > > So, IMHO, it should be ok to have GSPCA=y and INPUT=m, provided that 
+> > > > the buttons will be disabled.
+> > > 
+> > > Then all of the sub-drivers that use IS_ENABLED(CONFIG_INPUT) should be
+> > > changed to use IS_BUILTIN(CONFIG_INPUT).
+> > > 
+> > > But that is too restrictive IMO.  The input subsystem will work fine when
+> > > CONFIG_INPUT=m and the GSPCA drivers are also loadable modules.
+> > 
+> > Agreed.
+> > 
+> > Maybe the solution would be something more complex like 
+> > (for drivers/media/usb/gspca/zc3xx.c):
+> > 
+> > #if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_ZC3XX))
 > 
-> > On Wed, Oct 8, 2014 at 4:08 AM, Andrew Vagin <avagin@parallels.com> wrote:
-> >> On Tue, Oct 07, 2014 at 01:45:22PM -0700, Eric W. Biederman wrote:
-> >>> Andrey Vagin <avagin@openvz.org> writes:
-> >>>
-> >>> > From: Andrey Vagin <avagin@gmail.com>
-> >>> >
-> >>> > Currently when we create a new container with a separate root,
-> >>> > we need to clone the current mount namespace with all mounts and then
-> >>> > clean up it by using pivot_root(). A big part of mountpoints are cloned
-> >>> > only to be umounted.
-> >>>
-> >>> Is the motivation performance?  Because if that is the motivation we
-> >>> need numbers.
-> >>
-> >> The major motivation to create a clean mount namespace which contains
-> >> only required mounts.
-> >>
-> >> Now you want to convince us that there is nothing wrong if we use
-> >> userns, because all inherited mounts are locked. My point is that all
-> >> useless mounts should be umounted.  If the current root isn't on rootfs,
-> >> pivot_root() allows us to umount all useless points. But pivot_root()
-> >> doesn't work, if the current root is on rootfs. How can we umount
-> >> useless points in this case?
+> The above discussion meanders a bit, and I just stumbled onto it, but
+> would
+>     #if IS_BUILTIN(CONFIG_INPUT) || (IS_MODULE(CONFIG_INPUT) && defined(MODULE))
 > 
-> One of your justifications for a new system call was so you could do
-> less.  Doing less to get to where you want to go is only justified when
-> your doing less to get better performance.
-> 
-> >> Maybe we want to say that rootfs should not be used if we are going to
-> >> create containers...
-> 
-> Today it is an assumption of the vfs that rootfs is mounted.  With
-> rootfs mounted and pivot_root at the base of the mount stack you can
-> make as minimal of a set of mounts as the vfs allows.
+> cover your requirements when using macros?
 
-You have misunderstood me.
-For most system /proc/self/mountinfo looks like this:
-[root@dhcp-10-30-23-214 ~]# cat /proc/self/mountinfo 
-17 22 0:3 / /proc rw,relatime - proc proc rw
-18 22 0:0 / /sys rw,relatime - sysfs sysfs rw
-19 22 0:5 / /dev rw,relatime - devtmpfs devtmpfs rw,size=502324k,nr_inodes=125581,mode=755
-20 19 0:11 / /dev/pts rw,relatime - devpts devpts rw,gid=5,mode=620,ptmxmode=000
-21 19 0:17 / /dev/shm rw,nosuid,nodev,noexec,relatime - tmpfs tmpfs rw
-22 1 253:2 / / rw,relatime - ext4 /dev/vda2 rw,barrier=1,data=ordered
-24 22 253:1 / /boot rw,relatime - ext3 /dev/vda1 rw,errors=continue,user_xattr,acl,barrier=1,data=ordered
+No. What we need to do, for all gspca sub-drivers that have optional
+support for buttons is to only enable the buttons support if:
 
-/ isn't a rootfs mount here and pivot_root() works fine in this case. Here is
-no problem for such system.
+	CONFIG_INPUT=y
+or
+	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=m
 
-Now look at the second case:
-hell@android:/ $ cat /proc/self/mountinfo
-1 1 0:1 / / ro,relatime - rootfs rootfs ro
-11 1 0:11 / /dev rw,nosuid,relatime - tmpfs tmpfs rw,mode=755
-12 11 0:9 / /dev/pts rw,relatime - devpts devpts rw,mode=600
-13 1 0:3 / /proc rw,relatime - proc proc rw
-14 1 0:12 / /sys rw,relatime - sysfs sysfs rw
+If we use a reverse logic, we need to disable the code if:
+	# CONFIG_INPUT is not set
+or
+	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=y
 
-Now / is an rootfs mount. pivot_root() doesn't work in this case and we
-need to do some tricks to get a minimal set of mounts.
+The rationale for disabling the code on the last expression is that a
+builtin code cannot call a function inside a module.
 
-Thanks,
-Andrew
+Also, as the submodule is already being compiled, we know that
+CONFIG_USB_GSPCA_submodule is either module or builtin.
+
+So, either one of those expressions should work:
+	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_submodule))
+or
+	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_MODULE(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule) && defined(MODULE))
+or
+	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule))
 
 > 
-> Removing rootfs from the vfs requires an audit of everything that
-> manipulates mounts.  It is not remotely a local excercise.
+> > Probably the best would be to write another macro that would evaluate
+> > like the above.
 > 
-> One of the things that needs to be considered is that if you really want
-> to audit mounts is the code that needs manipulates them needs to be
-> audited every bit as much as the mounts themselves.
 > 
-> > Could we have an extra rootfs-like fs that is always completely empty,
-> > doesn't allow any writes, and can sit at the bottom of container
-> > namespace hierarchies?  If so, and if we add a new syscall that's like
-> > pivot_root (or unshare) but prunes the hierarchy, then we could switch
-> > to that rootfs then.
+> Paul Bolle
 > 
-> Or equally have something that guarantees that rootfs is empty and
-> read-only at the time the normal root filesystem is mounted.  That is
-> certainly a much more localized change if we want to go there.
-> 
-> I am half tempted to suggest that mount --move /some/path / be updated
-> to make the old / just go away (perhaps to be replaced with a read-only
-> empty rootfs).  That gets us into figuring out if we break userspace
-> which is a big challenge.
-> 
-> Eric
