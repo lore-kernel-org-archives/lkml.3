@@ -1,124 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbaJIRBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:01:51 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:43272 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751388AbaJIRBm (ORCPT
+	id S1752694AbaJIRCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:02:21 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:59012 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaJIRCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:01:42 -0400
-Message-ID: <5436BF5B.5060006@gmail.com>
-Date: Thu, 09 Oct 2014 10:01:15 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
-References: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 13:02:15 -0400
+From: Tsung-Han Lin <tsunghan.tw@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: rtl8192u: correct coding style errors
+Date: Fri, 10 Oct 2014 01:02:02 +0800
+Message-Id: <1412874122-7650-1-git-send-email-tsunghan.tw@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 05:32 AM, Sascha Hauer wrote:
-> The KSZ8021 and KSZ8031 support RMII reference input clocks of 25MHz
-> and 50MHz. Both PHYs differ in the default frequency they expect
-> after reset. If this differs from the actual input clock, then
-> register 0x1f bit 7 must be changed.
+Correct some coding style errors in
+drivers/staging/rtl8192u/r819xU_firmware.c.
 
-Looks reasonable to me, some minor comments below:
+Signed-off-by: Tsung-Han Lin <tsunghan.tw@gmail.com>
+---
+ drivers/staging/rtl8192u/r819xU_firmware.c | 65 +++++++++++++++---------------
+ 1 file changed, 33 insertions(+), 32 deletions(-)
 
-> 
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  Documentation/devicetree/bindings/net/micrel.txt |  6 ++++++
->  drivers/net/phy/micrel.c                         | 19 +++++++++++++++++--
->  include/linux/micrel_phy.h                       |  1 +
->  3 files changed, 24 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-> index 98a3e61..e1d99b9 100644
-> --- a/Documentation/devicetree/bindings/net/micrel.txt
-> +++ b/Documentation/devicetree/bindings/net/micrel.txt
-> @@ -16,3 +16,9 @@ Optional properties:
->  	      KSZ8051: register 0x1f, bits 5..4
->  
->                See the respective PHY datasheet for the mode values.
-> +
-> + - clocks, clock-names: contains clocks according to the common clock bindings.
-> +
-> +              supported clocks:
-> +	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
-> +		to determine the XI input clock.
-> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-> index 011dbda..ca130e9 100644
-> --- a/drivers/net/phy/micrel.c
-> +++ b/drivers/net/phy/micrel.c
-> @@ -26,6 +26,7 @@
->  #include <linux/phy.h>
->  #include <linux/micrel_phy.h>
->  #include <linux/of.h>
-> +#include <linux/clk.h>
->  
->  /* Operation Mode Strap Override */
->  #define MII_KSZPHY_OMSO				0x16
-> @@ -72,9 +73,12 @@ static int ksz_config_flags(struct phy_device *phydev)
->  {
->  	int regval;
->  
-> -	if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK) {
-> +	if (phydev->dev_flags & (MICREL_PHY_50MHZ_CLK | MICREL_PHY_25MHZ_CLK)) {
->  		regval = phy_read(phydev, MII_KSZPHY_CTRL);
-> -		regval |= KSZ8051_RMII_50MHZ_CLK;
-> +		if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK)
-> +			regval |= KSZ8051_RMII_50MHZ_CLK;
-> +		else
-> +			regval &= ~KSZ8051_RMII_50MHZ_CLK;
->  		return phy_write(phydev, MII_KSZPHY_CTRL, regval);
->  	}
->  	return 0;
-> @@ -187,9 +191,20 @@ static int kszphy_config_init_led8041(struct phy_device *phydev)
->  
->  static int ksz8021_config_init(struct phy_device *phydev)
->  {
-> +	struct clk *clk;
->  	const u16 val = KSZPHY_OMSO_B_CAST_OFF | KSZPHY_OMSO_RMII_OVERRIDE;
->  	int rc;
->  
-> +	clk = devm_clk_get(&phydev->dev, "rmii-ref");
-> +	if (!IS_ERR(clk)) {
-> +		unsigned long rate = clk_get_rate(clk);
-> +
-> +		if (rate > 24500000 && rate < 25500000)
-> +			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
-> +		else if (rate > 49500000 && rate < 50500000)
-> +			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
-> +	}
-
-I suppose that you could move this to the PHY driver probe() callback,
-and perform the rate checking from here, rejecting a clock whose rate is
-out of the acceptable range, and return an error to prevent the PHY
-driver registration? It is really up to you though.
-
-> +
->  	rc = kszphy_setup_led(phydev, 0x1f, 4);
->  	if (rc)
->  		dev_err(&phydev->dev, "failed to set led mode\n");
-> diff --git a/include/linux/micrel_phy.h b/include/linux/micrel_phy.h
-> index 2e5b194..53d33de 100644
-> --- a/include/linux/micrel_phy.h
-> +++ b/include/linux/micrel_phy.h
-> @@ -37,6 +37,7 @@
->  
->  /* struct phy_device dev_flags definitions */
->  #define MICREL_PHY_50MHZ_CLK	0x00000001
-> +#define MICREL_PHY_25MHZ_CLK	0x00000002
->  
->  #define MICREL_KSZ9021_EXTREG_CTRL	0xB
->  #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
-> 
+diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
+index f66ad8a0dfe0..4c766ab3547e 100644
+--- a/drivers/staging/rtl8192u/r819xU_firmware.c
++++ b/drivers/staging/rtl8192u/r819xU_firmware.c
+@@ -37,7 +37,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 	bool		    rt_status = true;
+ 	u16		    frag_threshold;
+ 	u16		    frag_length, frag_offset = 0;
+-	//u16		    total_size;
++	/* u16		    total_size; */
+ 	int		    i;
+ 
+ 	rt_firmware	    *pfirmware = priv->pFirmware;
+@@ -47,7 +47,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 	u8                  bLastIniPkt;
+ 
+ 	firmware_init_param(dev);
+-	//Fragmentation might be required
++	/* Fragmentation might be required */
+ 	frag_threshold = pfirmware->cmdpacket_frag_thresold;
+ 	do {
+ 		if ((buffer_len - frag_offset) > frag_threshold) {
+@@ -66,7 +66,7 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 		skb  = dev_alloc_skb(USB_HWDESC_HEADER_LEN + frag_length + 4);
+ 		if (!skb)
+ 			return false;
+-		memcpy((unsigned char *)(skb->cb),&dev,sizeof(dev));
++		memcpy((unsigned char *)(skb->cb), &dev, sizeof(dev));
+ 		tcb_desc = (cb_desc *)(skb->cb + MAX_DEV_ADDR_SIZE);
+ 		tcb_desc->queue_index = TXCMD_QUEUE;
+ 		tcb_desc->bCmdOrInit = DESC_PACKET_TYPE_INIT;
+@@ -78,19 +78,19 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 		 * Transform from little endian to big endian
+ 		 * and pending  zero
+ 		 */
+-		for (i=0; i < frag_length; i+=4) {
+-			*seg_ptr++ = ((i+0)<frag_length)?code_virtual_address[i+3]:0;
+-			*seg_ptr++ = ((i+1)<frag_length)?code_virtual_address[i+2]:0;
+-			*seg_ptr++ = ((i+2)<frag_length)?code_virtual_address[i+1]:0;
+-			*seg_ptr++ = ((i+3)<frag_length)?code_virtual_address[i+0]:0;
++		for (i = 0; i < frag_length; i += 4) {
++			*seg_ptr++ = ((i+0) < frag_length)?code_virtual_address[i+3]:0;
++			*seg_ptr++ = ((i+1) < frag_length)?code_virtual_address[i+2]:0;
++			*seg_ptr++ = ((i+2) < frag_length)?code_virtual_address[i+1]:0;
++			*seg_ptr++ = ((i+3) < frag_length)?code_virtual_address[i+0]:0;
+ 		}
+-		tcb_desc->txbuf_size= (u16)i;
++		tcb_desc->txbuf_size = (u16)i;
+ 		skb_put(skb, i);
+ 
+-		if (!priv->ieee80211->check_nic_enough_desc(dev,tcb_desc->queue_index)||
+-			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index]))||\
++		if (!priv->ieee80211->check_nic_enough_desc(dev, tcb_desc->queue_index) ||
++			(!skb_queue_empty(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index])) || \
+ 			(priv->ieee80211->queue_stop)) {
+-			RT_TRACE(COMP_FIRMWARE,"=====================================================> tx full!\n");
++			RT_TRACE(COMP_FIRMWARE, "=====================================================> tx full!\n");
+ 			skb_queue_tail(&priv->ieee80211->skb_waitQ[tcb_desc->queue_index], skb);
+ 		} else {
+ 			priv->ieee80211->softmac_hard_start_xmit(skb, dev);
+@@ -105,19 +105,20 @@ static bool fw_download_code(struct net_device *dev, u8 *code_virtual_address,
+ 
+ }
+ 
+-//-----------------------------------------------------------------------------
+-// Procedure:    Check whether main code is download OK. If OK, turn on CPU
+-//
+-// Description:   CPU register locates in different page against general register.
+-//			    Switch to CPU register in the begin and switch back before return
+-//
+-//
+-// Arguments:   The pointer of the adapter
+-//
+-// Returns:
+-//        NDIS_STATUS_FAILURE - the following initialization process should be terminated
+-//        NDIS_STATUS_SUCCESS - if firmware initialization process success
+-//-----------------------------------------------------------------------------
++/*-----------------------------------------------------------------------------
++ * Procedure:    Check whether main code is download OK. If OK, turn on CPU
++ *
++ * Description:   CPU register locates in different page against general register.
++ *			    Switch to CPU register in the begin and switch back before return
++ *
++ *
++ * Arguments:   The pointer of the adapter
++ *
++ * Returns:
++ *        NDIS_STATUS_FAILURE - the following initialization process should be terminated
++ *        NDIS_STATUS_SUCCESS - if firmware initialization process success
++ *-----------------------------------------------------------------------------
++ */
+ static bool CPUcheck_maincodeok_turnonCPU(struct net_device *dev)
+ {
+ 	bool		rt_status = true;
+@@ -220,7 +221,7 @@ bool init_firmware(struct net_device *dev)
+ 		/* it is called by reset */
+ 		rst_opt = OPT_SYSTEM_RESET;
+ 		starting_state = FW_INIT_STEP0_BOOT;
+-		// TODO: system reset
++		/* TODO: system reset */
+ 
+ 	} else if (pfirmware->firmware_status == FW_STATUS_5_READY) {
+ 		/* it is called by Initialize */
+@@ -240,7 +241,7 @@ bool init_firmware(struct net_device *dev)
+ 		 * or read image file from array. Default load from IMG file
+ 		 */
+ 		if (rst_opt == OPT_SYSTEM_RESET) {
+-			rc = request_firmware(&fw_entry, fw_name[init_step],&priv->udev->dev);
++			rc = request_firmware(&fw_entry, fw_name[init_step], &priv->udev->dev);
+ 			if (rc < 0) {
+ 				RT_TRACE(COMP_ERR, "request firmware fail!\n");
+ 				goto download_firmware_fail;
+@@ -252,12 +253,12 @@ bool init_firmware(struct net_device *dev)
+ 			}
+ 
+ 			if (init_step != FW_INIT_STEP1_MAIN) {
+-				memcpy(pfirmware->firmware_buf,fw_entry->data,fw_entry->size);
++				memcpy(pfirmware->firmware_buf, fw_entry->data, fw_entry->size);
+ 				mapped_file = pfirmware->firmware_buf;
+ 				file_length = fw_entry->size;
+ 			} else {
+ 				memset(pfirmware->firmware_buf, 0, 128);
+-				memcpy(&pfirmware->firmware_buf[128],fw_entry->data,fw_entry->size);
++				memcpy(&pfirmware->firmware_buf[128], fw_entry->data, fw_entry->size);
+ 				mapped_file = pfirmware->firmware_buf;
+ 				file_length = fw_entry->size + 128;
+ 			}
+@@ -289,7 +290,7 @@ bool init_firmware(struct net_device *dev)
+ 			 * will set polling bit when firmware code is also configured
+ 			 */
+ 			pfirmware->firmware_status = FW_STATUS_1_MOVE_BOOT_CODE;
+-			//mdelay(1000);
++			/* mdelay(1000); */
+ 			/*
+ 			 * To initialize IMEM, CPU move code  from 0x80000080,
+ 			 * hence, we send 0x80 byte packet
+@@ -317,7 +318,7 @@ bool init_firmware(struct net_device *dev)
+ 
+ 			rt_status = CPUcheck_firmware_ready(dev);
+ 			if (rt_status != TRUE) {
+-				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n",rt_status);
++				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n", rt_status);
+ 				goto download_firmware_fail;
+ 			}
+ 
+@@ -328,7 +329,7 @@ bool init_firmware(struct net_device *dev)
+ 	}
+ 
+ 	RT_TRACE(COMP_FIRMWARE, "Firmware Download Success\n");
+-	//assert(pfirmware->firmware_status == FW_STATUS_5_READY, ("Firmware Download Fail\n"));
++	/* assert(pfirmware->firmware_status == FW_STATUS_5_READY, ("Firmware Download Fail\n")); */
+ 
+ 	return rt_status;
+ 
+-- 
+1.9.1
 
