@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292AbaJIVGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:06:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59024 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757250AbaJIVGB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757266AbaJIVGB (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 Oct 2014 17:06:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59019 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756512AbaJIVF6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:05:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 128/163] [media] adv7604: fix inverted condition
-Date: Thu,  9 Oct 2014 14:02:33 -0700
-Message-Id: <1412888588-26755-129-git-send-email-kamal@canonical.com>
+Cc: NeilBrown <neilb@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 129/163] md/raid1: intialise start_next_window for READ case to avoid hang
+Date: Thu,  9 Oct 2014 14:02:34 -0700
+Message-Id: <1412888588-26755-130-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,33 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+From: NeilBrown <neilb@suse.de>
 
-commit 77639ff2b3404a913b8037d230a384798b854bae upstream.
+commit f0cc9a057151892b885be21a1d19b0185568281d upstream.
 
-The log_status function should show HDMI information, but the test checking for
-an HDMI input was inverted. Fix this.
+r1_bio->start_next_window is not initialised in the READ
+case, so allow_barrier may incorrectly decrement
+   conf->current_window_requests
+which can cause raise_barrier() to block forever.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Fixes: 79ef3a8aa1cb1523cc231c9a90a278333c21f761
+Reported-by: Brassow Jonathan <jbrassow@redhat.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/i2c/adv7604.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/raid1.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
-index a324106b..20676ae 100644
---- a/drivers/media/i2c/adv7604.c
-+++ b/drivers/media/i2c/adv7604.c
-@@ -1752,7 +1752,7 @@ static int adv7604_log_status(struct v4l2_subdev *sd)
- 	v4l2_info(sd, "HDCP keys read: %s%s\n",
- 			(hdmi_read(sd, 0x04) & 0x20) ? "yes" : "no",
- 			(hdmi_read(sd, 0x04) & 0x10) ? "ERROR" : "");
--	if (!is_hdmi(sd)) {
-+	if (is_hdmi(sd)) {
- 		bool audio_pll_locked = hdmi_read(sd, 0x04) & 0x01;
- 		bool audio_sample_packet_detect = hdmi_read(sd, 0x18) & 0x01;
- 		bool audio_mute = io_read(sd, 0x65) & 0x40;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index f4d5e52..b806da4 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1187,6 +1187,7 @@ read_again:
+ 				   atomic_read(&bitmap->behind_writes) == 0);
+ 		}
+ 		r1_bio->read_disk = rdisk;
++		r1_bio->start_next_window = 0;
+ 
+ 		read_bio = bio_clone_mddev(bio, GFP_NOIO, mddev);
+ 		bio_trim(read_bio, r1_bio->sector - bio->bi_sector,
 -- 
 1.9.1
 
