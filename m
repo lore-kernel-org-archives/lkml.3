@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518AbaJILwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 07:52:21 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:40070 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839AbaJILwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 07:52:13 -0400
-Date: Thu, 9 Oct 2014 08:52:07 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 8 (media/usb/gspca)
-Message-ID: <20141009085207.70d6b1d1@recife.lan>
-In-Reply-To: <1412853970.21441.32.camel@x220>
-References: <20141008174923.76786a03@canb.auug.org.au>
-	<543570C3.9080207@infradead.org>
-	<20141008153105.2fe82fca@recife.lan>
-	<5435A44D.2050609@infradead.org>
-	<20141008225011.2d034c1e@recife.lan>
-	<1412837128.21441.9.camel@x220>
-	<20141009073052.0ddc3e97@recife.lan>
-	<1412853970.21441.32.camel@x220>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1754838AbaJIL6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 07:58:01 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:58963 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbaJIL5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 07:57:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, cltang@codesourcery.com
+Subject: Re: [PATCH v4 21/29] nios2: Time keeping
+Date: Thu, 09 Oct 2014 13:57:36 +0200
+Message-ID: <8312001.XfVQ0Jf4Rn@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410081814380.4292@nanos>
+References: <1412760595-3935-1-git-send-email-lftan@altera.com> <2785501.FjgXQVl8Ik@wuerfel> <alpine.DEB.2.11.1410081814380.4292@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:0H181Ssfh0uIP+umz7Q3woHkthG9rxCg2FvbbssaraB
+ mrNowlTe6nYnJhKrFjQzKRhmrSJFirOL6LMIoXgWNbVLVfKQtb
+ iGHee3iGcQ1OFirl18E9g2fGIXqqoc6h8bAFQrwWJkmblEd9S0
+ wxP9kOMmzdm9DstCjh3PDbnRxk2yGGhDbA6//UhUHGB1y+CzjA
+ YmK+vlWWzfoBjp2T7hORes1yXYXXAIOTg4wGH9uxzXwcKaq++9
+ tSwtiPb1M4MB+zVm2jmC2o3kxE1CKp6pKeSubiHD2aRjZGawS6
+ LHEM8sfLn8VkTVy8lb8GAANN9OSx7t/1I/Qmlmetd+qEiyXjsO
+ saQwgRy8gHRZIxwZloVg=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 09 Oct 2014 13:26:10 +0200
-Paul Bolle <pebolle@tiscali.nl> escreveu:
+On Wednesday 08 October 2014 18:19:52 Thomas Gleixner wrote:
+> Ok, got it. It does not change the fact that the above function is
+> butt ugly and completely non intuitive.
 
-> On Thu, 2014-10-09 at 07:30 -0300, Mauro Carvalho Chehab wrote:
-> > Em Thu, 09 Oct 2014 08:45:28 +0200
-> > Paul Bolle <pebolle@tiscali.nl> escreveu:
-> > > The above discussion meanders a bit, and I just stumbled onto it, but
-> > > would
-> > >     #if IS_BUILTIN(CONFIG_INPUT) || (IS_MODULE(CONFIG_INPUT) && defined(MODULE))
-> > > 
-> > > cover your requirements when using macros?
-> > 
-> > No. What we need to do, for all gspca sub-drivers that have optional
-> > support for buttons is to only enable the buttons support if:
-> > 
-> > 	CONFIG_INPUT=y
-> > or
-> > 	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=m
-> > 
-> > If we use a reverse logic, we need to disable the code if:
-> > 	# CONFIG_INPUT is not set
-> > or
-> > 	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=y
-> > 
-> > The rationale for disabling the code on the last expression is that a
-> > builtin code cannot call a function inside a module.
-> > 
-> > Also, as the submodule is already being compiled, we know that
-> > CONFIG_USB_GSPCA_submodule is either module or builtin.
-> > 
-> > So, either one of those expressions should work:
-> > 	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_submodule))
-> > or
-> > 	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_MODULE(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule) && defined(MODULE))
-> 
-> I thought MODULE was only defined for code that will be part of a
-> module. So "IS_MODULE(CONFIG_USB_GSPCA_submodule)" and "defined(MODULE)"
-> should be equal when used _inside_ [...]/usb/gspca/that_submodule.c,
+Agreed, it could at least use a comment to explain the logic behind it.
 
-Ah, I didn't know that. In such case, your suggestion is indeed better,
-as it is easier to write the patch.
+> I also do not agree, that the DT should not tell which of the timers
+> should be used as a clockevent device and which one as a
+> clocksource. If you have a better suited clockevent device in your
+> FPGA, you cannot use a single instance of the timer thingy as it will
+> be registered as a clockevent and not as a clocksource. So explicit
+> match values for particular hardware instances would be more flexible,
+> but I don't have strong feelings about it either.
 
-> shouldn't they? That would make this option basically identical to my
-> suggestion. Or are you thinking about using these tests outside of these
-> submodules themselves?
+Right, things can get arbitrarily complicated when this is combined
+with other (optional) timer hardware, as we've seen on ARM before.
+I think we have discussed the issue for some ARM timers in length
+before and not found a good solution.
 
-> 
-> > or
-> > 	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule))
-> 
-> I think it's clearer to use
->     IS_BUILTIN(CONFIG_FOO) || (IS_MODULE(CONFIG_FOO) && [...])
-> 
-> Ditto above. Perhaps just a matter of taste.
-> 
-> (Depending on INPUT is apparently not possible for these submodules. 
+The clps711x driver has tried to work around this problem by using
+aliases, and it has been discussed for other drivers before.
 
-No, because the main functionality (webcam support) doesn't depend on
-INPUT.
+The main problem with encoding the use of the timer blocks in DT
+is that it gets really ugly if we ever want to use a third timer
+hardware block in the kernel, e.g. to separate the timer wheel
+from the hrtimer, if we decide to expose a particular HW
+timer to in-kernel or userland interfaces, or if someone wants
+to run an OS on the same hardware that uses the timer hardware
+in a completely different way.
 
-> So
-> obviously any solution needs to check whether input is available, say
-> like
->     if (IS_MODULE(CONFIG_INPUT))
->         if (!is_input_loaded())
->             goto no_input;
-> 
-> Doesn't it?)
-
-Yeah, but the thing is that it breaks at compilation time, because
-the builtin module would try to use some symbols that are defined only
-at runtime.
-
-So, the above won't solve the issue.
-
-One possibility for future Kernels would be to add some logic that would
-automatically load the module if a call to one of those symbols defined
-inside a module happens inside a builtin module.
-
-The DVB subsystem actually does that for I2C frontend drivers, 
-using those macros:
-
-#define dvb_attach(FUNCTION, ARGS...) ({ \
-	void *__r = NULL; \
-	typeof(&FUNCTION) __a = symbol_request(FUNCTION); \
-	if (__a) { \
-		__r = (void *) __a(ARGS); \
-		if (__r == NULL) \
-			symbol_put(FUNCTION); \
-	} else { \
-		printk(KERN_ERR "DVB: Unable to find symbol "#FUNCTION"()\n"); \
-	} \
-	__r; \
-})
-
-#define dvb_detach(FUNC)	symbol_put_addr(FUNC)
-
-The above works reasonably fine when there's just one symbol needed
-from the module driver.
-
-There are, however, some issues with such approach:
-
-1) as symbol_request increments refcount, this works very badly when
-   there's more than one symbol needed, as symbol_put() would need
-   to be called as many times as symbol_request() is called;
-
-2) lsmod doesn't list what module is actually requesting such symbol
-   (if the caller is also a module). It just increments refcounting.
-    There were some patches meant to fix that, send a long time ago,
-    but were never merged. Can't remember why:
-	http://linuxtv.org/pipermail/linux-dvb/2006-August/012322.html
-
-Due to the above issues, and because we want to better use the I2C
-binding model, we're currently trying to get rid of such approach for
-the DVB subsystem, but there are too many changes to get rid of it.
-So, the migration is slow.
-
-Anyway, IMHO, having such sort of logic would help to solve the issues
-with some weird configs like INPUT=m.
-
-Regards,
-Mauro
+	Arnd
