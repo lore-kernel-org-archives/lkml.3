@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477AbaJIVXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:23:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59498 "EHLO
+	id S932740AbaJIVYc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:24:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59479 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757725AbaJIVKe (ORCPT
+	with ESMTP id S1757702AbaJIVK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:34 -0400
+	Thu, 9 Oct 2014 17:10:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Mark Brown <broonie@kernel.org>,
+Cc: John Sung <penmount.touch@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 083/163] ASoC: davinci-mcasp: Correct rx format unit configuration
-Date: Thu,  9 Oct 2014 14:01:48 -0700
-Message-Id: <1412888588-26755-84-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 048/163] Input: serport - add compat handling for SPIOCSTYPE ioctl
+Date: Thu,  9 Oct 2014 14:01:13 -0700
+Message-Id: <1412888588-26755-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,51 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+From: John Sung <penmount.touch@gmail.com>
 
-commit fe0a29e163a5d045c73faab682a8dac71c2f8012 upstream.
+commit a80d8b02751060a178bb1f7a6b7a93645a7a308b upstream.
 
-In case of capture we should not use rotation. The reverse and mask is
-enough to get the data align correctly from the bus to MCU:
-Format	  data from bus    after reverse (XRBUF)
-S16_LE:  |LSB|MSB|xxx|xxx|  |xxx|xxx|MSB|LSB|
-S24_3LE: |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S24_LE:  |LSB|DAT|MSB|xxx|  |xxx|MSB|DAT|LSB|
-S32_LE:  |LSB|DAT|DAT|MSB|  |MSB|DAT|DAT|LSB|
+When running a 32-bit inputattach utility in a 64-bit system, there will be
+error code "inputattach: can't set device type". This is caused by the
+serport device driver not supporting compat_ioctl, so that SPIOCSTYPE ioctl
+fails.
 
-With this patch all supported formats will work for playback and capture.
-
-Reported-by: Jyri Sarha <jsarha@ti.com> (broken S24_3LE capture)
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: John Sung <penmount.touch@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/davinci/davinci-mcasp.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/input/serio/serport.c | 45 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 38 insertions(+), 7 deletions(-)
 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 71e14bb3..9de1fe6 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -632,8 +632,17 @@ static int davinci_config_channel_size(struct davinci_audio_dev *dev,
- {
- 	u32 fmt;
- 	u32 tx_rotate = (word_length / 4) & 0x7;
--	u32 rx_rotate = (32 - word_length) / 4;
- 	u32 mask = (1ULL << word_length) - 1;
-+	/*
-+	 * For captured data we should not rotate, inversion and masking is
-+	 * enoguh to get the data to the right position:
-+	 * Format	  data from bus		after reverse (XRBUF)
-+	 * S16_LE:	|LSB|MSB|xxx|xxx|	|xxx|xxx|MSB|LSB|
-+	 * S24_3LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S24_LE:	|LSB|DAT|MSB|xxx|	|xxx|MSB|DAT|LSB|
-+	 * S32_LE:	|LSB|DAT|DAT|MSB|	|MSB|DAT|DAT|LSB|
-+	 */
-+	u32 rx_rotate = 0;
+diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
+index 8755f5f..e4ecf3b 100644
+--- a/drivers/input/serio/serport.c
++++ b/drivers/input/serio/serport.c
+@@ -21,6 +21,7 @@
+ #include <linux/init.h>
+ #include <linux/serio.h>
+ #include <linux/tty.h>
++#include <linux/compat.h>
  
- 	/*
- 	 * if s BCLK-to-LRCLK ratio has been configured via the set_clkdiv()
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("Input device TTY line discipline");
+@@ -196,28 +197,55 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
+ 	return 0;
+ }
+ 
++static void serport_set_type(struct tty_struct *tty, unsigned long type)
++{
++	struct serport *serport = tty->disc_data;
++
++	serport->id.proto = type & 0x000000ff;
++	serport->id.id    = (type & 0x0000ff00) >> 8;
++	serport->id.extra = (type & 0x00ff0000) >> 16;
++}
++
+ /*
+  * serport_ldisc_ioctl() allows to set the port protocol, and device ID
+  */
+ 
+-static int serport_ldisc_ioctl(struct tty_struct * tty, struct file * file, unsigned int cmd, unsigned long arg)
++static int serport_ldisc_ioctl(struct tty_struct *tty, struct file *file,
++			       unsigned int cmd, unsigned long arg)
+ {
+-	struct serport *serport = (struct serport*) tty->disc_data;
+-	unsigned long type;
+-
+ 	if (cmd == SPIOCSTYPE) {
++		unsigned long type;
++
+ 		if (get_user(type, (unsigned long __user *) arg))
+ 			return -EFAULT;
+ 
+-		serport->id.proto = type & 0x000000ff;
+-		serport->id.id	  = (type & 0x0000ff00) >> 8;
+-		serport->id.extra = (type & 0x00ff0000) >> 16;
++		serport_set_type(tty, type);
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
++#ifdef CONFIG_COMPAT
++#define COMPAT_SPIOCSTYPE	_IOW('q', 0x01, compat_ulong_t)
++static long serport_ldisc_compat_ioctl(struct tty_struct *tty,
++				       struct file *file,
++				       unsigned int cmd, unsigned long arg)
++{
++	if (cmd == COMPAT_SPIOCSTYPE) {
++		void __user *uarg = compat_ptr(arg);
++		compat_ulong_t compat_type;
++
++		if (get_user(compat_type, (compat_ulong_t __user *)uarg))
++			return -EFAULT;
+ 
++		serport_set_type(tty, compat_type);
+ 		return 0;
+ 	}
+ 
+ 	return -EINVAL;
+ }
++#endif
+ 
+ static void serport_ldisc_write_wakeup(struct tty_struct * tty)
+ {
+@@ -241,6 +269,9 @@ static struct tty_ldisc_ops serport_ldisc = {
+ 	.close =	serport_ldisc_close,
+ 	.read =		serport_ldisc_read,
+ 	.ioctl =	serport_ldisc_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl =	serport_ldisc_compat_ioctl,
++#endif
+ 	.receive_buf =	serport_ldisc_receive,
+ 	.write_wakeup =	serport_ldisc_write_wakeup
+ };
 -- 
 1.9.1
 
