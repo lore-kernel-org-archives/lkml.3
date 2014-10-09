@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbaJILO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 07:14:28 -0400
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:34719 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaJILOY (ORCPT
+	id S1754558AbaJILTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 07:19:38 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:44050 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaJILT2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 07:14:24 -0400
-Message-ID: <1412853258.21384.0.camel@phoenix>
-Subject: [PATCH RESEND] regulator: Add stub for devm_regulator_get_exclusive
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 09 Oct 2014 19:14:18 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 07:19:28 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-9e-54366f39e004
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping update for v3.18
+Date: Thu, 09 Oct 2014 13:19:17 +0200
+Message-id: <1412853557-14574-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAJMWRmVeSWpSXmKPExsVy+t/xq7qW+WYhBntmiVtc3jWHzWLtkbvs
+	Fo/63rI7MHucmPGbxaNvyypGj8+b5AKYo7hsUlJzMstSi/TtErgybn3Yw1Twgbvi97XXLA2M
+	Tzi7GDk5JARMJOau3MQIYYtJXLi3nq2LkYtDSGApo8TxCb2MEE4fk8Sh3YuZQKrYBAwlut52
+	sYHYIgJGEp9fXGEFsZkFfCXuvFrFAmILCxhIvHu0F6yeRUBVYt+vP2A1vAIeElfuP2GB2CYn
+	8f/lCqYJjNwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoT4+ssOxsXHrA4xCnAwKvHw
+	PvhnGiLEmlhWXJl7iFGCg1lJhPdNllmIEG9KYmVValF+fFFpTmrxIUYmDk6pBsb12fkKl8s3
+	6jG/6/31JOSe3YZFrf4bJZ/uE3dcL7p615xfq1qC3jrLMClt4sjZfaNcY2E1a4Dsio5rhyMW
+	C/870fPjqHprxYoXbP6Pd655uFaX4auPefftpBPcl3zLOm5v6i2/p2q2+H/Uu+Xi/7d/UnQ9
+	/itk4tXqlZa6u14t7+J663Pnz6NFSizFGYmGWsxFxYkAt6310dMBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also makes regulator_get_exclusive and devm_regulator_get_exclusive stub
-functions return error pointer.
+Hi Linus,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Mark,
-I hit below build error and then found this patch is still not yet upstream.
-So here is a resend.
+I would like to ask You for pulling patches for dma-mapping subsystem
+for v3.18.
 
-  CC [M]  drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.o
-drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c: In function 'mdp4_kms_init':
-drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:2: error: implicit declaration of function 'devm_regulator_get_exclusive' [-Werror=implicit-function-declaration]
-drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:16: error: assignment makes pointer from integer without a cast [-Werror]
-cc1: all warnings being treated as errors
-make[4]: *** [drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.o] Error 1
-make[3]: *** [drivers/gpu/drm/msm] Error 2
-make[2]: *** [drivers/gpu/drm] Error 2
-make[1]: *** [drivers/gpu] Error 2
-make: *** [drivers] Error 2
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
- include/linux/regulator/consumer.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index d347c80..f124c08 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -282,7 +282,13 @@ devm_regulator_get(struct device *dev, const char *id)
- static inline struct regulator *__must_check
- regulator_get_exclusive(struct device *dev, const char *id)
- {
--	return NULL;
-+	return ERR_PTR(-ENODEV);
-+}
-+
-+static inline struct regulator *__must_check
-+devm_regulator_get_exclusive(struct device *dev, const char *id)
-+{
-+	return ERR_PTR(-ENODEV);
- }
- 
- static inline struct regulator *__must_check
--- 
-1.9.1
+are available in the git repository at:
 
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.18
 
+for you to fetch changes up to b4bbb107d73bbc0d92c9ae7fd8e69580aa9381e7:
 
+  dma-mapping: Provide write-combine allocations (2014-08-26 07:39:13 +0200)
+
+----------------------------------------------------------------
+Thierry Reding (2):
+      s390: Implement dma_{alloc,free}_attrs()
+      dma-mapping: Provide write-combine allocations
+
+ arch/arm/include/asm/dma-mapping.h       | 16 ----------------
+ arch/s390/Kconfig                        |  5 +----
+ arch/s390/include/asm/dma-mapping.h      | 31 +++++++++++++++++++++----------
+ include/asm-generic/dma-mapping-common.h |  8 --------
+ include/linux/dma-mapping.h              | 26 ++++++++++++++++++++++++++
+ 5 files changed, 48 insertions(+), 38 deletions(-)
+----------------------------------------------------------------
+
+This pull request contains patches, which provide dma write coherent api
+(available previously on ARM architecture) for all other architectures,
+which use dma_ops-based dma mapping implementation. This lets one to use
+the same code in the device drivers regardless of the selected
+architecture.
+
+Thanks!
+
+Best regards
+Marek Szyprowski
+Samsung R&D Institute Poland
