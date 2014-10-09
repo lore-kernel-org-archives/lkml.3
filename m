@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261AbaJIDDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 23:03:31 -0400
-Received: from mail-bl2on0060.outbound.protection.outlook.com ([65.55.169.60]:55641
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754314AbaJIDDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 23:03:22 -0400
-From: <dinguyen@opensource.altera.com>
-To: <p.zabel@pengutronix.de>
-CC: <dinh.linux@gmail.com>, <s.trumtrar@pengutronix.de>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <atull@opensource.altera.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCH] reset: socfpga: use arch_initcall for early initialization
-Date: Wed, 8 Oct 2014 21:44:06 -0500
-Message-ID: <1412822646-11257-1-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
+	id S1754780AbaJIDHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 23:07:22 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:15048 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaJIDHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 23:07:18 -0400
+Message-ID: <5435FBD8.7020109@huawei.com>
+Date: Thu, 9 Oct 2014 11:07:04 +0800
+From: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR08CA0064.namprd08.prod.outlook.com (10.141.200.44) To
- DM2PR0301MB1200.namprd03.prod.outlook.com (25.160.217.15)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1200;
-X-Forefront-PRVS: 0359162B6D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(86362001)(64706001)(92726001)(120916001)(80022003)(97736003)(46102003)(101416001)(19580395003)(85306004)(4396001)(2351001)(69596002)(107046002)(53416004)(50226001)(99396003)(93916002)(50466002)(19580405001)(66066001)(48376002)(81156004)(86152002)(95666004)(105586002)(122386002)(106356001)(40100002)(50986999)(76482002)(77096002)(104166001)(47776003)(92566001)(229853001)(20776003)(89996001)(87286001)(88136002)(87976001)(21056001)(77156001)(42186005)(31966008)(110136001)(85852003)(33646002)(102836001)(62966002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1200;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+To: Will Deacon <will.deacon@arm.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "wangnan0@huawei.com" <wangnan0@huawei.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
+References: <5434AA24.7010600@huawei.com> <20141008091741.GC26140@arm.com> <20141008133147.GC5119@kroah.com> <20141008133802.GO26140@arm.com>
+In-Reply-To: <20141008133802.GO26140@arm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.58.157]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+On 2014/10/8 21:38, Will Deacon wrote:
+> On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
+>> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
+>>> On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
+>>>> hi all,
+>>>> ----------------------------------------
+>>>>
+>>>> ref-cycles event is specially to Intel core, but can still used in arm architecture
+>>>> with the wrong return value with 3.10 stable. for instance:
+>>>>
+>>>>  perf stat -e ref-cycles sleep 1
+>>>>
+>>>>  Performance counter stats for 'sleep 1':
+>>>>
+>>>>   	0 ref-cycles
+>>>>
+>>>>        1.002381916 seconds time elapsed
+>>>>
+>>>> this patch fix the bug and make it return NOT SUPPORTED
+>>>> distinctly.
+>>>>
+>>>> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
+>>>> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
+>>>> besides we can not simply cherry-pick.
+>>>
+>>> I thought I saw Greg pick this up the other day?
+>>
+>> Yes, it's in 3.16.4, did I do something wrong by accepting it?
+> 
+> Nah, it's a trivial patch that I struggle to get excited about. I'm just not
+> sure why it's being sent again, after you already accepted it.
 
-There are certain drivers that are required to get loaded very early using
-arch_initcall. An example of such a driver is the SOCFPGA's FPGA bridge driver.
-This driver has to get loaded early because it needs to enable FPGA components
-that are connected to the bridge.
+Yes, it's in 3.16.4, in my opinion 3.10 need it too, can we put it into 3.10 or
+do we have the plan?
 
-This FPGA bridge driver will using the reset controller API to toggle it's
-reset bits, thus, it needs the reset driver to be loaded as early as possible
-in order for it to get used properly.
 
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
- drivers/reset/reset-socfpga.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/reset/reset-socfpga.c b/drivers/reset/reset-socfpga.c
-index 79c32ca..a5e8d37 100644
---- a/drivers/reset/reset-socfpga.c
-+++ b/drivers/reset/reset-socfpga.c
-@@ -139,7 +139,20 @@ static struct platform_driver socfpga_reset_driver = {
- 		.of_match_table	= socfpga_reset_dt_ids,
- 	},
- };
--module_platform_driver(socfpga_reset_driver);
-+
-+static int __init socfpga_reset_init(void)
-+{
-+	return platform_driver_probe(&socfpga_reset_driver,
-+					socfpga_reset_probe);
-+}
-+
-+static void __exit socfpga_reset_exit(void)
-+{
-+	platform_driver_unregister(&socfpga_reset_driver);
-+}
-+
-+arch_initcall(socfpga_reset_init);
-+module_exit(socfpga_reset_exit);
- 
- MODULE_AUTHOR("Steffen Trumtrar <s.trumtrar@pengutronix.de");
- MODULE_DESCRIPTION("Socfpga Reset Controller Driver");
--- 
-2.0.3
 
