@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502AbaJIVIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:08:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59269 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757482AbaJIVIm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757485AbaJIVIm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 9 Oct 2014 17:08:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59253 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757459AbaJIVIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:08:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Denis Ciocca <denis.ciocca@st.com>, Jonathan Cameron <jic23@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 106/163] drm/radeon: don't reset dma on r6xx-evergreen init
-Date: Thu,  9 Oct 2014 14:02:11 -0700
-Message-Id: <1412888588-26755-107-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 093/163] iio:magnetometer: bugfix magnetometers gain values
+Date: Thu,  9 Oct 2014 14:01:58 -0700
+Message-Id: <1412888588-26755-94-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,40 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Denis CIOCCA <denis.ciocca@st.com>
 
-commit c1789a2e66a4209fe5035eca11fdd729b2ffdd82 upstream.
+commit a31d0928999fbf33b3a6042e8bcb7b7f7e07d094 upstream.
 
-Otherwise we may lose the DMA golden settings which can
-lead to hangs, etc.
+This patch fix gains values. The first driver was designed using
+engineering samples, in mass production the values are changed.
 
-Reviewed-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Denis Ciocca <denis.ciocca@st.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/r600_dma.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ drivers/iio/magnetometer/st_magn_core.c | 52 +++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_dma.c b/drivers/gpu/drm/radeon/r600_dma.c
-index 7844d15..616d37a 100644
---- a/drivers/gpu/drm/radeon/r600_dma.c
-+++ b/drivers/gpu/drm/radeon/r600_dma.c
-@@ -116,15 +116,6 @@ int r600_dma_resume(struct radeon_device *rdev)
- 	u32 rb_bufsz;
- 	int r;
+diff --git a/drivers/iio/magnetometer/st_magn_core.c b/drivers/iio/magnetometer/st_magn_core.c
+index 52bbcfa..476aa13 100644
+--- a/drivers/iio/magnetometer/st_magn_core.c
++++ b/drivers/iio/magnetometer/st_magn_core.c
+@@ -42,7 +42,8 @@
+ #define ST_MAGN_FS_AVL_5600MG			5600
+ #define ST_MAGN_FS_AVL_8000MG			8000
+ #define ST_MAGN_FS_AVL_8100MG			8100
+-#define ST_MAGN_FS_AVL_10000MG			10000
++#define ST_MAGN_FS_AVL_12000MG			12000
++#define ST_MAGN_FS_AVL_16000MG			16000
  
--	/* Reset dma */
--	if (rdev->family >= CHIP_RV770)
--		WREG32(SRBM_SOFT_RESET, RV770_SOFT_RESET_DMA);
--	else
--		WREG32(SRBM_SOFT_RESET, SOFT_RESET_DMA);
--	RREG32(SRBM_SOFT_RESET);
--	udelay(50);
--	WREG32(SRBM_SOFT_RESET, 0);
--
- 	WREG32(DMA_SEM_INCOMPLETE_TIMER_CNTL, 0);
- 	WREG32(DMA_SEM_WAIT_FAIL_TIMER_CNTL, 0);
+ /* CUSTOM VALUES FOR SENSOR 1 */
+ #define ST_MAGN_1_WAI_EXP			0x3c
+@@ -69,20 +70,20 @@
+ #define ST_MAGN_1_FS_AVL_4700_VAL		0x05
+ #define ST_MAGN_1_FS_AVL_5600_VAL		0x06
+ #define ST_MAGN_1_FS_AVL_8100_VAL		0x07
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		1100
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		855
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		670
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		450
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		400
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		330
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		230
+-#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		980
+-#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		760
+-#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		600
+-#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		400
+-#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		355
+-#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		295
+-#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		205
++#define ST_MAGN_1_FS_AVL_1300_GAIN_XY		909
++#define ST_MAGN_1_FS_AVL_1900_GAIN_XY		1169
++#define ST_MAGN_1_FS_AVL_2500_GAIN_XY		1492
++#define ST_MAGN_1_FS_AVL_4000_GAIN_XY		2222
++#define ST_MAGN_1_FS_AVL_4700_GAIN_XY		2500
++#define ST_MAGN_1_FS_AVL_5600_GAIN_XY		3030
++#define ST_MAGN_1_FS_AVL_8100_GAIN_XY		4347
++#define ST_MAGN_1_FS_AVL_1300_GAIN_Z		1020
++#define ST_MAGN_1_FS_AVL_1900_GAIN_Z		1315
++#define ST_MAGN_1_FS_AVL_2500_GAIN_Z		1666
++#define ST_MAGN_1_FS_AVL_4000_GAIN_Z		2500
++#define ST_MAGN_1_FS_AVL_4700_GAIN_Z		2816
++#define ST_MAGN_1_FS_AVL_5600_GAIN_Z		3389
++#define ST_MAGN_1_FS_AVL_8100_GAIN_Z		4878
+ #define ST_MAGN_1_MULTIREAD_BIT			false
  
+ /* CUSTOM VALUES FOR SENSOR 2 */
+@@ -105,10 +106,12 @@
+ #define ST_MAGN_2_FS_MASK			0x60
+ #define ST_MAGN_2_FS_AVL_4000_VAL		0x00
+ #define ST_MAGN_2_FS_AVL_8000_VAL		0x01
+-#define ST_MAGN_2_FS_AVL_10000_VAL		0x02
+-#define ST_MAGN_2_FS_AVL_4000_GAIN		430
+-#define ST_MAGN_2_FS_AVL_8000_GAIN		230
+-#define ST_MAGN_2_FS_AVL_10000_GAIN		230
++#define ST_MAGN_2_FS_AVL_12000_VAL		0x02
++#define ST_MAGN_2_FS_AVL_16000_VAL		0x03
++#define ST_MAGN_2_FS_AVL_4000_GAIN		146
++#define ST_MAGN_2_FS_AVL_8000_GAIN		292
++#define ST_MAGN_2_FS_AVL_12000_GAIN		438
++#define ST_MAGN_2_FS_AVL_16000_GAIN		584
+ #define ST_MAGN_2_MULTIREAD_BIT			false
+ #define ST_MAGN_2_OUT_X_L_ADDR			0x28
+ #define ST_MAGN_2_OUT_Y_L_ADDR			0x2a
+@@ -266,9 +269,14 @@ static const struct st_sensors st_magn_sensors[] = {
+ 					.gain = ST_MAGN_2_FS_AVL_8000_GAIN,
+ 				},
+ 				[2] = {
+-					.num = ST_MAGN_FS_AVL_10000MG,
+-					.value = ST_MAGN_2_FS_AVL_10000_VAL,
+-					.gain = ST_MAGN_2_FS_AVL_10000_GAIN,
++					.num = ST_MAGN_FS_AVL_12000MG,
++					.value = ST_MAGN_2_FS_AVL_12000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_12000_GAIN,
++				},
++				[3] = {
++					.num = ST_MAGN_FS_AVL_16000MG,
++					.value = ST_MAGN_2_FS_AVL_16000_VAL,
++					.gain = ST_MAGN_2_FS_AVL_16000_GAIN,
+ 				},
+ 			},
+ 		},
 -- 
 1.9.1
 
