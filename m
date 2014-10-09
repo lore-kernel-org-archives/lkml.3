@@ -1,163 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757437AbaJIP2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:28:52 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38277 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757085AbaJIP2n (ORCPT
+	id S1757296AbaJIPag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:30:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40805 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaJIPa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:28:43 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 09/16] powerpc/mm: Add new hash_page_mm()
-In-Reply-To: <1412758505-23495-10-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-10-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:58:32 +0530
-Message-ID: <87tx3d1cv3.fsf@linux.vnet.ibm.com>
+	Thu, 9 Oct 2014 11:30:28 -0400
+Date: Thu, 9 Oct 2014 17:30:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
+Subject: Re: [PATCH v7 2/7] sched: move cfs task on a CPU with higher capacity
+Message-ID: <20141009153025.GY10832@worktop.programming.kicks-ass.net>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-3-git-send-email-vincent.guittot@linaro.org>
+ <20141009112352.GO4750@worktop.programming.kicks-ass.net>
+ <CAKfTPtABoQFQfufYK+hTd96ufQT83uypedzuZOeWjnUd51AbaQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0013-0000-0000-000000545E25
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtABoQFQfufYK+hTd96ufQT83uypedzuZOeWjnUd51AbaQ@mail.gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
+On Thu, Oct 09, 2014 at 04:59:36PM +0200, Vincent Guittot wrote:
+> On 9 October 2014 13:23, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, Oct 07, 2014 at 02:13:32PM +0200, Vincent Guittot wrote:
+> >> +++ b/kernel/sched/fair.c
+> >> @@ -5896,6 +5896,18 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+> >>  }
+> >>
+> >>  /*
+> >> + * Check whether the capacity of the rq has been noticeably reduced by side
+> >> + * activity. The imbalance_pct is used for the threshold.
+> >> + * Return true is the capacity is reduced
+> >> + */
+> >> +static inline int
+> >> +check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
+> >> +{
+> >> +     return ((rq->cpu_capacity * sd->imbalance_pct) <
+> >> +                             (rq->cpu_capacity_orig * 100));
+> >> +}
+> >> +
+> >> +/*
+> >>   * Group imbalance indicates (and tries to solve) the problem where balancing
+> >>   * groups is inadequate due to tsk_cpus_allowed() constraints.
+> >>   *
+> >> @@ -6567,6 +6579,14 @@ static int need_active_balance(struct lb_env *env)
+> >>                */
+> >>               if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
+> >>                       return 1;
+> >> +
+> >> +             /*
+> >> +              * The src_cpu's capacity is reduced because of other
+> >> +              * sched_class or IRQs, we trig an active balance to move the
+> >> +              * task
+> >> +              */
+> >> +             if (check_cpu_capacity(env->src_rq, sd))
+> >> +                     return 1;
+> >>       }
+> >
+> > So does it make sense to first check if there's a better candidate at
+> > all? By this time we've already iterated the current SD while trying
+> > regular load balancing, so we could know this.
+> 
+> i'm not sure to completely catch your point.
+> Normally, f_b_g and f_b_q have already looked at the best candidate
+> when we call need_active_balance. And src_cpu has been elected.
+> Or i have missed your point ?
 
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> This adds a new function hash_page_mm() based on the existing hash_page().
-> This version allows any struct mm to be passed in, rather than assuming
-> current. This is useful for servicing co-processor faults which are not in the
-> context of the current running process.
->
-> We need to be careful here as the current hash_page() assumes current in a few
-> places.
+Yep you did indeed miss my point.
 
-if you move cxl_slbia patch before this, then we could add additonal
-information here.
+So I've always disliked this patch for its arbitrary nature, why
+unconditionally try and active balance every time there is 'some' RT/IRQ
+usage, it could be all CPUs are over that arbitrary threshold and we'll
+end up active balancing for no point.
 
-1) We use this to insert hpte entries on-behalf of co-processor.
-2) we don't need to flush cpu slb entries when adding new hpte entries
-3) We do flush the co-processor slb cache, if adding hpte entry result
-in a segement demotion or have mmu_ci_restrictions enabled.
-4) We do update the slice array to indicate the new base page size
-5) w.r.t co-processor on segment miss we look at slice array and add new slb entry
-using newly added copro_calculate_slb "powerpc/cell: Move data segment faulting code out of cell platform"
+So, since we've already iterated all CPUs in our domain back in
+update_sd_lb_stats() we could have computed the CFS fraction:
 
->
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/include/asm/mmu-hash64.h |  1 +
->  arch/powerpc/mm/hash_utils_64.c       | 24 +++++++++++++++++-------
->  2 files changed, 18 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> index aeabd02..764e141 100644
-> --- a/arch/powerpc/include/asm/mmu-hash64.h
-> +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> @@ -324,6 +324,7 @@ extern int __hash_page_64K(unsigned long ea, unsigned long access,
->  			   unsigned int local, int ssize);
->  struct mm_struct;
->  unsigned int hash_page_do_lazy_icache(unsigned int pp, pte_t pte, int trap);
-> +extern int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap);
->  extern int hash_page(unsigned long ea, unsigned long access, unsigned long trap);
->  int __hash_page_huge(unsigned long ea, unsigned long access, unsigned long vsid,
->  		     pte_t *ptep, unsigned long trap, int local, int ssize,
-> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index bbdb054..698834d 100644
-> --- a/arch/powerpc/mm/hash_utils_64.c
-> +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -904,7 +904,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
->  		return;
->  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
->  	copro_flush_all_slbs(mm);
-> -	if (get_paca_psize(addr) != MMU_PAGE_4K) {
-> +	if ((get_paca_psize(addr) != MMU_PAGE_4K) && (current->mm == mm)) {
->  		get_paca()->context = mm->context;
->  		slb_flush_and_rebolt();
->  	}
-> @@ -989,12 +989,11 @@ static void check_paca_psize(unsigned long ea, struct mm_struct *mm,
->   * -1 - critical hash insertion error
->   * -2 - access not permitted by subpage protection mechanism
->   */
-> -int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +int hash_page_mm(struct mm_struct *mm, unsigned long ea, unsigned long access, unsigned long trap)
->  {
->  	enum ctx_state prev_state = exception_enter();
->  	pgd_t *pgdir;
->  	unsigned long vsid;
-> -	struct mm_struct *mm;
->  	pte_t *ptep;
->  	unsigned hugeshift;
->  	const struct cpumask *tmp;
-> @@ -1008,7 +1007,6 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->   	switch (REGION_ID(ea)) {
->  	case USER_REGION_ID:
->  		user_region = 1;
-> -		mm = current->mm;
->  		if (! mm) {
->  			DBG_LOW(" user region with no mm !\n");
->  			rc = 1;
-> @@ -1019,7 +1017,6 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  		vsid = get_vsid(mm->context.id, ea, ssize);
->  		break;
->  	case VMALLOC_REGION_ID:
-> -		mm = &init_mm;
->  		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
->  		if (ea < VMALLOC_END)
->  			psize = mmu_vmalloc_psize;
-> @@ -1104,7 +1101,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  			WARN_ON(1);
->  		}
->  #endif
-> -		check_paca_psize(ea, mm, psize, user_region);
-> +		if (current->mm == mm)
-> +			check_paca_psize(ea, mm, psize, user_region);
->  
->  		goto bail;
->  	}
-> @@ -1145,7 +1143,8 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
->  		}
->  	}
->  
-> -	check_paca_psize(ea, mm, psize, user_region);
-> +	if (current->mm == mm)
-> +		check_paca_psize(ea, mm, psize, user_region);
->  #endif /* CONFIG_PPC_64K_PAGES */
->  
->  #ifdef CONFIG_PPC_HAS_HASH_64K
-> @@ -1180,6 +1179,17 @@ bail:
->  	exception_exit(prev_state);
->  	return rc;
->  }
-> +EXPORT_SYMBOL_GPL(hash_page_mm);
-> +
-> +int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> +{
-> +	struct mm_struct *mm = current->mm;
-> +
-> +	if (REGION_ID(ea) == VMALLOC_REGION_ID)
-> +		mm = &init_mm;
-> +
-> +	return hash_page_mm(mm, ea, access, trap);
-> +}
->  EXPORT_SYMBOL_GPL(hash_page);
->  
->  void hash_preload(struct mm_struct *mm, unsigned long ea,
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	1024 * capacity / capacity_orig
+
+for every cpu and collected the min/max of this. Then we can compute if
+src is significantly (and there I suppose we can indeed use imb)
+affected compared to others.
+
 
