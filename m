@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774AbaJIIdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:33:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38327 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaJIIdE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:33:04 -0400
-Date: Thu, 9 Oct 2014 10:32:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: lizefan@huawei.com, anton@samba.org, tj@kernel.org,
-        svaidy@linux.vnet.ibm.com, rjw@rjwysocki.net,
-        paulmck@linux.vnet.ibm.com, mingo@kernel.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks
- hotplug invariant
-Message-ID: <20141009083259.GQ10832@worktop.programming.kicks-ass.net>
-References: <20141008070739.1170.33313.stgit@preeti.in.ibm.com>
- <20141008080706.GC10832@worktop.programming.kicks-ass.net>
- <543505EF.7070804@linux.vnet.ibm.com>
- <20141008101828.GG10832@worktop.programming.kicks-ass.net>
- <54364564.3090305@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54364564.3090305@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1750967AbaJIIdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:33:40 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:35485 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaJIIdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 04:33:35 -0400
+From: Georgi Djakov <gdjakov@mm-sol.com>
+To: galak@codeaurora.org
+Cc: linux@arm.linux.org.uk, sboyd@codeaurora.org, olof@lixom.net,
+        khilman@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        joshc@codeaurora.org, Georgi Djakov <gdjakov@mm-sol.com>
+Subject: [PATCH] ARM: qcom: Increase MMC_BLOCK_MINORS in defconfig
+Date: Thu,  9 Oct 2014 11:33:34 +0300
+Message-Id: <1412843614-4537-1-git-send-email-gdjakov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 01:50:52PM +0530, Preeti U Murthy wrote:
-> >> SMT 8 on Power8 can help/hinder workloads. Hence we dynamically switch
-> >> the modes at runtime.
-> > 
-> > That's just a horrible piece of crap hack and you deserve any and all
-> > pain you get from doing it.
-> > 
-> > Randomly removing/adding cpus like that is horrible and makes a mockery
-> > of all the affinity interfaces we have.
-> 
-> We observed this on ubuntu kernel, in which systemd explicitly mounts
-> cgroup controllers under a child cgroup identified by the user pid.
-> Since we had not observed this additional cgroup being added under the
-> hood, it came as a surprise to us that cgroup/cpuset handling in the
-> kernel should indeed kick in.
-> 
-> At best we expect hotplug to be handled well if the users have not
-> explicitly configured cpusets, hence implicitly specifying that task
-> affinity is for all online cpus. This is indeed the case today, so that
-> is good.
-> 
-> However what remains to be answered is that the V2 of cgroup design -
-> the default hierarchy, tracks hotplug operations for children cgroups as
-> well. Tejun, Li, will not the concerns that Peter raised above hold for
-> the default hierarchy as well?
+There are currently more than 16 partitions on the eMMC of all recent
+Qualcomm devices. Increase the number of minors per block device to
+detect all available partitions.
 
-None of this addresses the piece of crap thing you did with power8. You
-cannot just make CPUs go away at random.
+Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+---
+ arch/arm/configs/qcom_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/qcom_defconfig b/arch/arm/configs/qcom_defconfig
+index 8c7da33..cd09e12 100644
+--- a/arch/arm/configs/qcom_defconfig
++++ b/arch/arm/configs/qcom_defconfig
+@@ -125,7 +125,7 @@ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_DEBUG_FILES=y
+ CONFIG_USB_GADGET_VBUS_DRAW=500
+ CONFIG_MMC=y
+-CONFIG_MMC_BLOCK_MINORS=16
++CONFIG_MMC_BLOCK_MINORS=32
+ CONFIG_MMC_ARMMMCI=y
+ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+-- 
+1.7.9.5
+
