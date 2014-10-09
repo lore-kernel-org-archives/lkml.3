@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968AbaJIVkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:40:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59155 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757331AbaJIVID (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Murali Karicheri <m-karicheri2@ti.com>, Tejun Heo <tj@kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 031/163] ahci: add pcid for Marvel 0x9182 controller
-Date: Thu,  9 Oct 2014 14:00:56 -0700
-Message-Id: <1412888588-26755-32-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	id S1758212AbaJIVkI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:40:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33317 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753422AbaJIVIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:08:01 -0400
+Date: Thu, 9 Oct 2014 16:07:15 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Rabin Vincent <rabin@rab.in>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, <josh@joshtriplett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141009210715.GH25729@saruman>
+Reply-To: <balbi@ti.com>
+References: <20140904192535.GJ13421@saruman.home>
+ <20140904200403.GL13421@saruman.home>
+ <20140905213216.GD5001@linux.vnet.ibm.com>
+ <20141008171322.GH22688@saruman>
+ <20141008175707.GI22688@saruman>
+ <20141008212938.GP22688@saruman>
+ <20141009160138.GA2396@cmpxchg.org>
+ <20141009162656.GE16002@saruman>
+ <20141009204101.GA25955@debian>
+ <20141009204637.GE25729@saruman>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6cMF9JLEeZkfJjkP"
+Content-Disposition: inline
+In-Reply-To: <20141009204637.GE25729@saruman>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+--6cMF9JLEeZkfJjkP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi,
 
-From: Murali Karicheri <m-karicheri2@ti.com>
+On Thu, Oct 09, 2014 at 03:46:37PM -0500, Felipe Balbi wrote:
+> On Thu, Oct 09, 2014 at 10:41:01PM +0200, Rabin Vincent wrote:
+> > On Thu, Oct 09, 2014 at 11:26:56AM -0500, Felipe Balbi wrote:
+> > > alright, it's pretty deterministic however. Always on the same test, =
+no
+> > > matter which USB controller, no matter if backing store is RAM or MMC.
+> > >=20
+> > > Those two undefined instructions on the disassembly caught my attenti=
+on,
+> > > perhaps I'm facing a GCC bug ?
+> >=20
+> > The undefined instructions are just ARM's BUG() implementation.
+> >=20
+> > But did you see the question I asked you yesterday in your other thread?
+> > http://www.spinics.net/lists/arm-kernel/msg368634.html
+>=20
+> hmm, completely missed that, sorry. I'm using 4.8.2, will try something
+> else.
 
-commit c5edfff9db6f4d2c35c802acb4abe0df178becee upstream.
+seems to be working fine now, thanks. I'll leave test running overnight
+just in case.
 
-Keystone K2E EVM uses Marvel 0x9182 controller. This requires support
-for the ID in the ahci driver.
+thanks again, and sorry for the noise.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/ata/ahci.c | 2 ++
- 1 file changed, 2 insertions(+)
+PS: I wonder if we should a warning message to the build system if we're
+building with known broken versions of GCC.
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 95c297b..e455090 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -449,6 +449,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x917a),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9172),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9182 */
-+	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9182),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_MARVELL_EXT, 0x9192),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 on some Gigabyte */
--- 
-1.9.1
+--=20
+balbi
 
+--6cMF9JLEeZkfJjkP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUNvkDAAoJEIaOsuA1yqREEVsP/2SxJIVCFQ/Ulti5FMBUKRs/
+MTOe7euqjdN8apn1xHhG/5TLuxLiV5t4rLCXBxEmmySxuN+0CzOWGYaoGWxr+2RT
+HucKWC1+alYTgV+W+uI2t+77ZAjjWe9+rkuWl3n+JP/eCZ/okFWS6vF+vG9k++Y2
+tqluQNOA9tmZk0GiQ5a/tyF/27vfnVqSook+TPuV5UEYCghxyGHG/UWzKn3fUY0D
+e+n6Mqsq8E7R+ilnue9aJjTcWiAv14do1rDWNu+ZPl6Kx3u4jnW+Ok4IZE2xTdp3
+OBLTK9weBNBJwqSp2m0zU8wXc2BEKBgMgQcAAfkbUxy/brI+gDnGtbUif5QsSy+t
+dDu3e68KflwJHqhwbzg67I7Z89KZASFbt4+gqq86dSZnV82Jn6lrvgiFB3vroDO7
+AJMYRGmj6faT41doDkiyrqjxRVJmBjUspgBsQASMRyAWGtoKWfa5h5Bq6Au0M9Uf
+lUXcdz1pJsXldll/bpr0fwYAZZiah1arkVZ5uN1+KxoJRmrbnvdWN97BCK6Rm6i1
+oBJjhysNEKOD/aY1FayFjwEUZ/jksujSqaR5YjT3ci21tYBUGrqe1DwGqyQLEg1R
+h+ZKElR6JcsBUYO8nK3Xm1zGQ3IkHkutGn/rLIwpC5ZpSEfe6O9vxch1dOwsH8Dq
+HGwP0I+2mUZfSlJHhqU0
+=QSKq
+-----END PGP SIGNATURE-----
+
+--6cMF9JLEeZkfJjkP--
