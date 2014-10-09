@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257AbaJIVfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:35:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59244 "EHLO
+	id S1758600AbaJIVfm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:35:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59242 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757440AbaJIVIe (ORCPT
+	with ESMTP id S1757436AbaJIVIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 9 Oct 2014 17:08:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Jander <david@protonic.nl>, Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 122/163] can: flexcan: implement workaround for errata ERR005829
-Date: Thu,  9 Oct 2014 14:02:27 -0700
-Message-Id: <1412888588-26755-123-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 103/163] NFSv4: Fix another bug in the close/open_downgrade code
+Date: Thu,  9 Oct 2014 14:02:08 -0700
+Message-Id: <1412888588-26755-104-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,73 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jander <david@protonic.nl>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 25e924450fcb23c11c07c95ea8964dd9f174652e upstream.
+commit cd9288ffaea4359d5cfe2b8d264911506aed26a4 upstream.
 
-This patch implements the workaround mentioned in ERR005829:
+James Drew reports another bug whereby the NFS client is now sending
+an OPEN_DOWNGRADE in a situation where it should really have sent a
+CLOSE: the client is opening the file for O_RDWR, but then trying to
+do a downgrade to O_RDONLY, which is not allowed by the NFSv4 spec.
 
-    ERR005829: FlexCAN: FlexCAN does not transmit a message that is enabled to
-    be transmitted in a specific moment during the arbitration process.
-
-Workaround: The workaround consists of two extra steps after setting up a
-message for transmission:
-
-Step 8: Reserve the first valid mailbox as an inactive mailbox (CODE=0b1000).
-If RX FIFO is disabled, this mailbox must be message buffer 0. Otherwise, the
-first valid mailbox can be found using the "RX FIFO filters" table in the
-FlexCAN chapter of the chip reference manual.
-
-Step 9: Write twice INACTIVE code (0b1000) into the first valid mailbox.
-
-Signed-off-by: David Jander <david@protonic.nl>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Reported-by: James Drews <drews@engr.wisc.edu>
+Link: http://lkml.kernel.org/r/541AD7E5.8020409@engr.wisc.edu
+Fixes: aee7af356e15 (NFSv4: Fix problems with close in the presence...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/can/flexcan.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index 6360356..3a1859b 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -125,7 +125,9 @@
- 	 FLEXCAN_ESR_BOFF_INT | FLEXCAN_ESR_ERR_INT)
- 
- /* FLEXCAN interrupt flag register (IFLAG) bits */
--#define FLEXCAN_TX_BUF_ID		8
-+/* Errata ERR005829 step7: Reserve first valid MB */
-+#define FLEXCAN_TX_BUF_RESERVED		8
-+#define FLEXCAN_TX_BUF_ID		9
- #define FLEXCAN_IFLAG_BUF(x)		BIT(x)
- #define FLEXCAN_IFLAG_RX_FIFO_OVERFLOW	BIT(7)
- #define FLEXCAN_IFLAG_RX_FIFO_WARN	BIT(6)
-@@ -383,6 +385,14 @@ static int flexcan_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	flexcan_write(can_id, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_id);
- 	flexcan_write(ctrl, &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
- 
-+	/* Errata ERR005829 step8:
-+	 * Write twice INACTIVE(0x8) code to first MB.
-+	 */
-+	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
-+		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
-+	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
-+		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 663ab1d..b6ed520 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -2557,23 +2557,23 @@ static void nfs4_close_prepare(struct rpc_task *task, void *data)
+ 	is_rdwr = test_bit(NFS_O_RDWR_STATE, &state->flags);
+ 	is_rdonly = test_bit(NFS_O_RDONLY_STATE, &state->flags);
+ 	is_wronly = test_bit(NFS_O_WRONLY_STATE, &state->flags);
+-	/* Calculate the current open share mode */
+-	calldata->arg.fmode = 0;
+-	if (is_rdonly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_READ;
+-	if (is_wronly || is_rdwr)
+-		calldata->arg.fmode |= FMODE_WRITE;
+ 	/* Calculate the change in open mode */
++	calldata->arg.fmode = 0;
+ 	if (state->n_rdwr == 0) {
+-		if (state->n_rdonly == 0) {
+-			call_close |= is_rdonly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_READ;
+-		}
+-		if (state->n_wronly == 0) {
+-			call_close |= is_wronly || is_rdwr;
+-			calldata->arg.fmode &= ~FMODE_WRITE;
+-		}
+-	}
++		if (state->n_rdonly == 0)
++			call_close |= is_rdonly;
++		else if (is_rdonly)
++			calldata->arg.fmode |= FMODE_READ;
++		if (state->n_wronly == 0)
++			call_close |= is_wronly;
++		else if (is_wronly)
++			calldata->arg.fmode |= FMODE_WRITE;
++	} else if (is_rdwr)
++		calldata->arg.fmode |= FMODE_READ|FMODE_WRITE;
 +
- 	return NETDEV_TX_OK;
- }
- 
-@@ -827,6 +837,10 @@ static int flexcan_chip_start(struct net_device *dev)
- 			      &regs->cantxfg[i].can_ctrl);
- 	}
- 
-+	/* Errata ERR005829: mark first TX mailbox as INACTIVE */
-+	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
-+		      &regs->cantxfg[FLEXCAN_TX_BUF_RESERVED].can_ctrl);
++	if (calldata->arg.fmode == 0)
++		call_close |= is_rdwr;
 +
- 	/* mark TX mailbox as INACTIVE */
- 	flexcan_write(FLEXCAN_MB_CODE_TX_INACTIVE,
- 		      &regs->cantxfg[FLEXCAN_TX_BUF_ID].can_ctrl);
+ 	if (!nfs4_valid_open_stateid(state))
+ 		call_close = 0;
+ 	spin_unlock(&state->owner->so_lock);
 -- 
 1.9.1
 
