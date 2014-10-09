@@ -1,106 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaJIBpb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 21:45:31 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:35659 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaJIBpX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 21:45:23 -0400
-Message-ID: <5435E8AB.7030103@hitachi.com>
-Date: Thu, 09 Oct 2014 10:45:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753064AbaJIBuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 21:50:22 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:40019 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370AbaJIBuT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 21:50:19 -0400
+Date: Wed, 8 Oct 2014 22:50:11 -0300
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
+        linux-media <linux-media@vger.kernel.org>
+Subject: Re: linux-next: Tree for Oct 8 (media/usb/gspca)
+Message-ID: <20141008225011.2d034c1e@recife.lan>
+In-Reply-To: <5435A44D.2050609@infradead.org>
+References: <20141008174923.76786a03@canb.auug.org.au>
+	<543570C3.9080207@infradead.org>
+	<20141008153105.2fe82fca@recife.lan>
+	<5435A44D.2050609@infradead.org>
+Organization: Samsung
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Chuck Ebbert <cebbert.lkml@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>,
-        Ingo Molnar <mingo@kernel.org>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: i915.ko WC writes are slow after ea8596bb2d8d379
-References: <20141008090336.GD12897@nuc-i3427.alporthouse.com> <20141008124705.793d652d@as>
-In-Reply-To: <20141008124705.793d652d@as>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/09 2:47), Chuck Ebbert wrote:
-> On Wed, 8 Oct 2014 10:03:36 +0100
-> Chris Wilson <chris@chris-wilson.co.uk> wrote:
+Em Wed, 08 Oct 2014 13:53:33 -0700
+Randy Dunlap <rdunlap@infradead.org> escreveu:
+
+> On 10/08/14 11:31, Mauro Carvalho Chehab wrote:
+> > Em Wed, 08 Oct 2014 10:13:39 -0700
+> > Randy Dunlap <rdunlap@infradead.org> escreveu:
+> > 
+> >> On 10/07/14 23:49, Stephen Rothwell wrote:
+> >>> Hi all,
+> >>>
+> >>> Please do not add any material intended for v3.19 to you linux-next
+> >>> included trees until after v3.18-rc1 has been released.
+> >>>
+> >>> Changes since 20141007:
+> >>>
+> >>
+> >> I saw these build errors in gspca when CONFIG_INPUT=m but the gspca
+> >> sub-drivers are builtin:
+> >>
+> >> drivers/built-in.o: In function `gspca_dev_probe2':
+> >> (.text+0x10ef43): undefined reference to `input_allocate_device'
+> >> drivers/built-in.o: In function `gspca_dev_probe2':
+> >> (.text+0x10efdd): undefined reference to `input_register_device'
+> >> drivers/built-in.o: In function `gspca_dev_probe2':
+> >> (.text+0x10f002): undefined reference to `input_free_device'
+> >> drivers/built-in.o: In function `gspca_dev_probe2':
+> >> (.text+0x10f0ac): undefined reference to `input_unregister_device'
+> >> drivers/built-in.o: In function `gspca_disconnect':
+> >> (.text+0x10f186): undefined reference to `input_unregister_device'
+> >> drivers/built-in.o: In function `sd_int_pkt_scan':
+> >> se401.c:(.text+0x11373d): undefined reference to `input_event'
+> >> se401.c:(.text+0x11374e): undefined reference to `input_event'
+> >> drivers/built-in.o: In function `sd_pkt_scan':
+> >> t613.c:(.text+0x119f0e): undefined reference to `input_event'
+> >> t613.c:(.text+0x119f1f): undefined reference to `input_event'
+> >> drivers/built-in.o: In function `sd_stopN':
+> >> t613.c:(.text+0x11a047): undefined reference to `input_event'
+> >> drivers/built-in.o:t613.c:(.text+0x11a058): more undefined references to `input_event' follow
+> >>
+> >> These could be fixed in Kconfig by something like (for each sub-driver that tests
+> >> CONFIG_INPUT):
+> >>
+> >> 	depends on INPUT || INPUT=n
+> >>
+> >> Do you have another preference for fixing this?
+> > 
+> > Hmm... The code at the gspca subdrivers looks like:
+> > 
+> > #if IS_ENABLED(CONFIG_INPUT)
 > 
->> and adding that back into the current build, e.g.
->>
->> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> index 3632743..48a8a69 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -87,6 +87,7 @@ config X86
->>         select HAVE_USER_RETURN_NOTIFIER
->>         select ARCH_BINFMT_ELF_RANDOMIZE_PIE
->>         select HAVE_ARCH_JUMP_LABEL
->> +       select STOP_MACHINE
->>         select ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE
->>         select SPARSE_IRQ
->>         select GENERIC_FIND_FIRST_BIT
->>
->> fixes the regression.
->>
+> For builtin only, that should be
 > 
-> Looking closer at this, it seems most configs work by accident,
-> because they have MOD_UNLOAD and/or HOTPLUG_CPU enabled. I take it
-> you disabled both of those? stop_machine() is called from all kinds
-> of places and almost none of them make sure STOP_MACHINE is selected.
-
-I guess most of them expects stop_machine() is not a configurable
-feature...
-If some of them requires stop_machine(), it should enable it on its
-kconfig entry (including ftrace, kprobes).
-
-> $ find -name Kconf\* | xargs grep STOP_MACHINE
-> ./init/Kconfig:config STOP_MACHINE
+> #if IS_BUILTIN(CONFIG_INPUT)
 > 
-> All these places use stop_machine():
+> > 		if (data[0] & 0x20) {
+> > 			input_report_key(gspca_dev->input_dev, KEY_CAMERA, 1);
+> > 			input_sync(gspca_dev->input_dev);
+> > 			input_report_key(gspca_dev->input_dev, KEY_CAMERA, 0);
+> > 			input_sync(gspca_dev->input_dev);
+> > 		}
+> > #endif
+> > 
+> > As we never got any report about such bug, and this is there for a long
+> > time, I suspect that maybe the IS_ENABLED() macro had some changes on
+> > its behavior. So, IMHO, we should first check if something changed there.
 > 
->     mm/page_alloc.c, line 3886
->     drivers/xen/manage.c, line 130
->     drivers/char/hw_random/intel-rng.c, line 373
->     arch/powerpc/mm/numa.c:
->         line 1616
->         line 1623 
->     arch/powerpc/platforms/powernv/subcore.c, line 324
->     arch/arm/kernel/kprobes.c, line 165
->     arch/arm/kernel/patch.c:
->         line 64
->         line 71 
->     arch/s390/kernel/jump_label.c, line 61
->     arch/s390/kernel/kprobes.c:
->         line 311
->         line 320 
->     arch/s390/kernel/time.c:
->         line 820
->         line 1590 
->     arch/x86/kernel/cpu/mtrr/main.c, line 231
->     arch/arm64/kernel/insn.c, line 181
->     kernel/time/timekeeping.c, line 892
->     kernel/trace/ftrace.c, line 2219
->     kernel/module.c:
->         line 770
->         line 1861 
+> I don't see any changes in <linux/kconfig.h>.
+
+Perhaps some changes at the Kbuild source code or scripts badly affected it.
+
 > 
+> > From gpsca's PoV, IMHO, it should be fine to disable the webcam buttons if
+> > the webcam was compiled as builtin and the input subsystem is compiled as 
+> > module. The core feature expected on a camera is to capture streams. 
+> > Buttons are just a plus.
+> > 
+> > Also, most cams don't even have buttons. The gspca subdriver has support 
+> > for buttons for the few models that have it.
+> > 
+> > So, IMHO, it should be ok to have GSPCA=y and INPUT=m, provided that 
+> > the buttons will be disabled.
+> 
+> Then all of the sub-drivers that use IS_ENABLED(CONFIG_INPUT) should be
+> changed to use IS_BUILTIN(CONFIG_INPUT).
+> 
+> But that is too restrictive IMO.  The input subsystem will work fine when
+> CONFIG_INPUT=m and the GSPCA drivers are also loadable modules.
 
-BTW, as I sent a series of patches, the last two can be removed.
-https://lkml.org/lkml/2014/8/25/142
+Agreed.
 
-Thank you,
+Maybe the solution would be something more complex like 
+(for drivers/media/usb/gspca/zc3xx.c):
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_ZC3XX))
 
+Probably the best would be to write another macro that would evaluate
+like the above.
 
+> That's simple to express in Kconfig language but probly more messy in CPP.
+> 
+> 
+> Thanks.
+> 
+> 
