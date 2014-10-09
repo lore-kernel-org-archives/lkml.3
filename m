@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaJIVJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:09:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59297 "EHLO
+	id S1757573AbaJIVJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:09:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59321 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757517AbaJIVIy (ORCPT
+	with ESMTP id S1757517AbaJIVJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:54 -0400
+	Thu, 9 Oct 2014 17:09:01 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhaowei Yuan <zhaowei.yuan@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 127/163] [media] vb2: fix plane index sanity check in vb2_plane_cookie()
-Date: Thu,  9 Oct 2014 14:02:32 -0700
-Message-Id: <1412888588-26755-128-git-send-email-kamal@canonical.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 107/163] vgaswitcheroo: add vga_switcheroo_fini_domain_pm_ops
+Date: Thu,  9 Oct 2014 14:02:12 -0700
+Message-Id: <1412888588-26755-108-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,33 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhaowei Yuan <zhaowei.yuan@samsung.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a9ae4692eda4b99f85757b15d60971ff78a0a0e2 upstream.
+commit 766a53d059d1500c9755c8af017bd411bd8f1b20 upstream.
 
-It's also invalid when plane_no is equal to vb->num_planes
+Drivers should call this on unload to unregister pmops.
 
-Signed-off-by: Zhaowei Yuan <zhaowei.yuan@samsung.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Bug:
+https://bugzilla.kernel.org/show_bug.cgi?id=84431
+
+Reviewed-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/v4l2-core/videobuf2-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/vga/vga_switcheroo.c | 6 ++++++
+ include/linux/vga_switcheroo.h   | 2 ++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 0edc165..7db9b5b 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -885,7 +885,7 @@ void *vb2_plane_cookie(struct vb2_buffer *vb, unsigned int plane_no)
+diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
+index 6866448..37ac7b5 100644
+--- a/drivers/gpu/vga/vga_switcheroo.c
++++ b/drivers/gpu/vga/vga_switcheroo.c
+@@ -660,6 +660,12 @@ int vga_switcheroo_init_domain_pm_ops(struct device *dev, struct dev_pm_domain *
+ }
+ EXPORT_SYMBOL(vga_switcheroo_init_domain_pm_ops);
+ 
++void vga_switcheroo_fini_domain_pm_ops(struct device *dev)
++{
++	dev->pm_domain = NULL;
++}
++EXPORT_SYMBOL(vga_switcheroo_fini_domain_pm_ops);
++
+ static int vga_switcheroo_runtime_resume_hdmi_audio(struct device *dev)
  {
- 	struct vb2_queue *q = vb->vb2_queue;
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+diff --git a/include/linux/vga_switcheroo.h b/include/linux/vga_switcheroo.h
+index 502073a..b483abd 100644
+--- a/include/linux/vga_switcheroo.h
++++ b/include/linux/vga_switcheroo.h
+@@ -64,6 +64,7 @@ int vga_switcheroo_get_client_state(struct pci_dev *dev);
+ void vga_switcheroo_set_dynamic_switch(struct pci_dev *pdev, enum vga_switcheroo_state dynamic);
  
--	if (plane_no > vb->num_planes || !vb->planes[plane_no].mem_priv)
-+	if (plane_no >= vb->num_planes || !vb->planes[plane_no].mem_priv)
- 		return NULL;
+ int vga_switcheroo_init_domain_pm_ops(struct device *dev, struct dev_pm_domain *domain);
++void vga_switcheroo_fini_domain_pm_ops(struct device *dev);
+ int vga_switcheroo_init_domain_pm_optimus_hdmi_audio(struct device *dev, struct dev_pm_domain *domain);
+ #else
  
- 	return call_memop(q, cookie, vb->planes[plane_no].mem_priv);
+@@ -82,6 +83,7 @@ static inline int vga_switcheroo_get_client_state(struct pci_dev *dev) { return
+ static inline void vga_switcheroo_set_dynamic_switch(struct pci_dev *pdev, enum vga_switcheroo_state dynamic) {}
+ 
+ static inline int vga_switcheroo_init_domain_pm_ops(struct device *dev, struct dev_pm_domain *domain) { return -EINVAL; }
++static inline void vga_switcheroo_fini_domain_pm_ops(struct device *dev) {}
+ static inline int vga_switcheroo_init_domain_pm_optimus_hdmi_audio(struct device *dev, struct dev_pm_domain *domain) { return -EINVAL; }
+ 
+ #endif
 -- 
 1.9.1
 
