@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034AbaJIKbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:31:11 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:40052 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaJIKbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:31:00 -0400
-Date: Thu, 9 Oct 2014 07:30:52 -0300
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        linux-media <linux-media@vger.kernel.org>
-Subject: Re: linux-next: Tree for Oct 8 (media/usb/gspca)
-Message-ID: <20141009073052.0ddc3e97@recife.lan>
-In-Reply-To: <1412837128.21441.9.camel@x220>
-References: <20141008174923.76786a03@canb.auug.org.au>
-	<543570C3.9080207@infradead.org>
-	<20141008153105.2fe82fca@recife.lan>
-	<5435A44D.2050609@infradead.org>
-	<20141008225011.2d034c1e@recife.lan>
-	<1412837128.21441.9.camel@x220>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1754941AbaJIKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:31:57 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46930 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664AbaJIKbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 06:31:49 -0400
+Date: Thu, 9 Oct 2014 12:31:43 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, adi-buildroot-devel@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, devicetree@vger.kernel.org,
+        lguest@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
+        linux-cris-kernel@axis.com, linux-efi@vger.kernel.org,
+        linux-hexagon@vger.kernel.org, linux-m32r-ja@ml.linux-m32r.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        openipmi-developer@lists.sourceforge.net,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-ia64@vger.kernel.org, linux-m68k@vger.kernel.org,
+        linux-metag@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-parisc@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Perier <romain.perier@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Alexander Graf <agraf@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 01/44] kernel: Add support for poweroff handler call chain
+Message-ID: <20141009103143.GA6787@amd>
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+ <1412659726-29957-2-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412659726-29957-2-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 09 Oct 2014 08:45:28 +0200
-Paul Bolle <pebolle@tiscali.nl> escreveu:
+Hi!
 
-> On Wed, 2014-10-08 at 22:50 -0300, Mauro Carvalho Chehab wrote:
-> > Em Wed, 08 Oct 2014 13:53:33 -0700
-> > Randy Dunlap <rdunlap@infradead.org> escreveu:
-> > > On 10/08/14 11:31, Mauro Carvalho Chehab wrote:
-> > > > From gpsca's PoV, IMHO, it should be fine to disable the webcam buttons if
-> > > > the webcam was compiled as builtin and the input subsystem is compiled as 
-> > > > module. The core feature expected on a camera is to capture streams. 
-> > > > Buttons are just a plus.
-> > > > 
-> > > > Also, most cams don't even have buttons. The gspca subdriver has support 
-> > > > for buttons for the few models that have it.
-> > > > 
-> > > > So, IMHO, it should be ok to have GSPCA=y and INPUT=m, provided that 
-> > > > the buttons will be disabled.
-> > > 
-> > > Then all of the sub-drivers that use IS_ENABLED(CONFIG_INPUT) should be
-> > > changed to use IS_BUILTIN(CONFIG_INPUT).
-> > > 
-> > > But that is too restrictive IMO.  The input subsystem will work fine when
-> > > CONFIG_INPUT=m and the GSPCA drivers are also loadable modules.
-> > 
-> > Agreed.
-> > 
-> > Maybe the solution would be something more complex like 
-> > (for drivers/media/usb/gspca/zc3xx.c):
-> > 
-> > #if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_ZC3XX))
-> 
-> The above discussion meanders a bit, and I just stumbled onto it, but
-> would
->     #if IS_BUILTIN(CONFIG_INPUT) || (IS_MODULE(CONFIG_INPUT) && defined(MODULE))
-> 
-> cover your requirements when using macros?
+> +/**
+> + *	register_poweroff_handler_simple - Register function to be called to power off
+> + *					   the system
+> + *	@handler:	Function to be called to power off the system
+> + *	@priority:	Handler priority. For priority guidelines see
+> + *			register_poweroff_handler.
+> + *
+> + *	This is a simplified version of register_poweroff_handler. It does not
+> + *	take a notifier as argument, but a function pointer. The function
+> + *	registers a poweroff handler with specified priority. Poweroff
+> + *	handlers registered with this function can not be unregistered,
+> + *	and only a single poweroff handler can be installed using it.
+> + *
+> + *	This function must not be called from modules and is therefore
+> + *	not exported.
+> + *
+> + *	Returns -EBUSY if a poweroff handler has already been registered
+> + *	using register_poweroff_handler_simple. Otherwise returns zero,
+> + *	since atomic_notifier_chain_register() currently always returns zero.
+> + */
+> +int register_poweroff_handler_simple(void (*handler)(void), int priority)
+> +{
+> +	char symname[KSYM_NAME_LEN];
+> +
+> +	if (poweroff_handler_data.handler) {
+> +		lookup_symbol_name((unsigned long)poweroff_handler_data.handler,
+> +				   symname);
+> +		pr_warn("Poweroff function already registered (%s)", symname);
+> +		lookup_symbol_name((unsigned long)handler, symname);
+> +		pr_cont(", cannot register %s\n", symname);
+> +		return -EBUSY;
+> +	}
 
-No. What we need to do, for all gspca sub-drivers that have optional
-support for buttons is to only enable the buttons support if:
-
-	CONFIG_INPUT=y
-or
-	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=m
-
-If we use a reverse logic, we need to disable the code if:
-	# CONFIG_INPUT is not set
-or
-	CONFIG_INPUT=m and CONFIG_USB_GSPCA_submodule=y
-
-The rationale for disabling the code on the last expression is that a
-builtin code cannot call a function inside a module.
-
-Also, as the submodule is already being compiled, we know that
-CONFIG_USB_GSPCA_submodule is either module or builtin.
-
-So, either one of those expressions should work:
-	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && !IS_BUILTIN(CONFIG_USB_GSPCA_submodule))
-or
-	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_MODULE(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule) && defined(MODULE))
-or
-	#if (IS_BUILTIN(CONFIG_INPUT)) || (IS_ENABLED(CONFIG_INPUT) && IS_MODULE(CONFIG_USB_GSPCA_submodule))
-
-> 
-> > Probably the best would be to write another macro that would evaluate
-> > like the above.
-> 
-> 
-> Paul Bolle
-> 
+Dunno, are you maybe overdoing the debugging infrastructure a bit?
+This is not going to happen in production, and if it does happen,
+developer can look the symbol name himself.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
