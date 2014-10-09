@@ -1,195 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751506AbaJIHVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 03:21:23 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:64144 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaJIHVN (ORCPT
+	id S1752597AbaJIHVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 03:21:35 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:45065 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463AbaJIHVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 03:21:13 -0400
+	Thu, 9 Oct 2014 03:21:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <5435AA82.5010707@mleia.com>
-References: <1412665916-3957-1-git-send-email-pramod.gurav@smartplayin.com>
-	<5435AA82.5010707@mleia.com>
-Date: Thu, 9 Oct 2014 12:51:10 +0530
-Message-ID: <CAMf-jSmdDqO9EWK2xOazn6NDzfFuE6egGReTbPO7OBzzfvvxYQ@mail.gmail.com>
-Subject: Re: [PATCH v2] thermal: ti-soc-thermal: Switch to using managed resources
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
-To: Vladimir Zapolskiy <vz@mleia.com>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
+In-Reply-To: <5435E5B0.90900@codeaurora.org>
+References: <1412695334-2608-1-git-send-email-tomeu.vizoso@collabora.com> <5435E5B0.90900@codeaurora.org>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Thu, 9 Oct 2014 09:21:01 +0200
+X-Google-Sender-Auth: k97r5snLsIAw7JIWaYctHxpbH0Y
+Message-ID: <CAAObsKBZ8irmk0fdEQUvT60ffu0oytVdJTu5s3+BXMCPaosPDQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] Per-user clock constraints
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alex Elder <elder@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+        linux-mips@linux-mips.org, linux-omap@vger.kernel.org,
+        Manuel Lauss <manuel.lauss@gmail.com>,
+        Matt Porter <mporter@linaro.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Zhangfei Gao <zhangfei.gao@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 9, 2014 at 2:50 AM, Vladimir Zapolskiy <vz@mleia.com> wrote:
-> On 07.10.2014 10:11, Pramod Gurav wrote:
+On 9 October 2014 03:32, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> On 10/07/2014 08:21 AM, Tomeu Vizoso wrote:
 >>
->> This change switches to managed resource APIs to allocated resources
->> such as irq, clock. Hence does away with release statements of the
->> same resorces in error lables and remove function.
+>> Hello,
 >>
->> Cc: Eduardo Valentin<edubezval@gmail.com>
->> Cc: Zhang Rui<rui.zhang@intel.com>
->> Cc: linux-pm@vger.kernel.org
->> Signed-off-by: Pramod Gurav<pramod.gurav@smartplayin.com>
->> ---
->> Change since v1:
+>> this second version of the series adds several cleanups that were
+>> suggested by
+>> Stephen Boyd and contains several improvements to the seventh patch (clk:
+>> Make
+>> clk API return per-user struct clk instances) that were suggested by him
+>> during
+>> the review of v1.
 >>
->> Passing struct device to devm_clk_get was missing. Fix the same in v2.
+>> The first six patches are just cleanups that should be desirable on their
+>> own,
+>> and that should make easier to review the actual per-user clock patch.
 >>
->>   drivers/thermal/ti-soc-thermal/ti-bandgap.c |   46
->> +++++++--------------------
->>   1 file changed, 12 insertions(+), 34 deletions(-)
+>> The seventh patch actually moves the per-clock data that was stored in
+>> struct
+>> clk to a new struct clk_core and adds references to it from both struct
+>> clk and
+>> struct clk_hw. struct clk is now ready to contain information that is
+>> specific
+>> to a given clk consumer.
 >>
->> diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> index 634b6ce..22013ef 100644
->> --- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> +++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
->> @@ -1060,7 +1060,7 @@ static int ti_bandgap_tshut_init(struct ti_bandgap
->> *bgp,
->>         int status;
+>> The eighth patch adds API for setting floor and ceiling constraints and
+>> stores
+>> that information on the per-user struct clk, which is iterable from struct
+>> clk_core.
 >>
->>         /* Request for gpio_86 line */
->> -       status = gpio_request(gpio_nr, "tshut");
->> +       status = devm_gpio_request(&pdev->dev, gpio_nr, "tshut");
->>         if (status<  0) {
->>                 dev_err(bgp->dev, "Could not request for TSHUT GPIO:%i\n",
->> 86);
->>                 return status;
->> @@ -1071,11 +1071,12 @@ static int ti_bandgap_tshut_init(struct ti_bandgap
->> *bgp,
->>                 return status;
->>         }
 >>
->> -       status = request_irq(gpio_to_irq(gpio_nr),
->> ti_bandgap_tshut_irq_handler,
->> -                            IRQF_TRIGGER_RISING, "tshut", NULL);
->> +       status = devm_request_irq(&pdev->dev, gpio_to_irq(gpio_nr),
->> +                                 ti_bandgap_tshut_irq_handler,
->> +                                 IRQF_TRIGGER_RISING, "tshut", NULL);
->>         if (status) {
->> -               gpio_free(gpio_nr);
->>                 dev_err(bgp->dev, "request irq failed for TSHUT");
->> +               return status;
->>         }
->>
->>         return 0;
 >
->
-> Remove two more lines:
->
->         if (status)
->                 dev_err(bgp->dev, "request irq failed for TSHUT");
->
->         return status;
-Thanks fore comment. Will do this here. Same can be done in another
-function which requests one more irq.
+> As said in the patches, can you please indicate which baseline this is on?
 
->
->
->> @@ -1104,7 +1105,7 @@ static int ti_bandgap_talert_init(struct ti_bandgap
->> *bgp,
->>                 dev_err(&pdev->dev, "get_irq failed\n");
->>                 return bgp->irq;
->>         }
->> -       ret = request_threaded_irq(bgp->irq, NULL,
->> +       ret = devm_request_threaded_irq(&pdev->dev, bgp->irq, NULL,
->>                                    ti_bandgap_talert_irq_handler,
->>                                    IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
->>                                    "talert", bgp);
->> @@ -1212,21 +1213,17 @@ int ti_bandgap_probe(struct platform_device *pdev)
->>                 }
->>         }
->>
->> -       bgp->fclock = clk_get(NULL, bgp->conf->fclock_name);
->> -       ret = IS_ERR(bgp->fclock);
->> -       if (ret) {
->> +       bgp->fclock = devm_clk_get(&pdev->dev, NULL,
->> bgp->conf->fclock_name);
->> +       if (IS_ERR(bgp->fclock)) {
->>                 dev_err(&pdev->dev, "failed to request fclock
->> reference\n");
->> -               ret = PTR_ERR(bgp->fclock);
->> -               goto free_irqs;
->> +               return PTR_ERR(bgp->fclock);
->>         }
->>
->> -       bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
->> -       ret = IS_ERR(bgp->div_clk);
->> -       if (ret) {
->> +       bgp->div_clk = devm_clk_get(&pdev->dev, NULL,
->> bgp->conf->div_ck_name);
->> +       if (IS_ERR(bgp->div_clk)) {
->>                 dev_err(&pdev->dev,
->>                         "failed to request div_ts_ck clock ref\n");
->> -               ret = PTR_ERR(bgp->div_clk);
->> -               goto free_irqs;
->> +               return PTR_ERR(bgp->div_clk);
->>         }
->>
->>         for (i = 0; i<  bgp->conf->sensor_count; i++) {
->> @@ -1251,7 +1248,6 @@ int ti_bandgap_probe(struct platform_device *pdev)
->>             clk_rate<= 0) {
->>                 ret = -ENODEV;
->>                 dev_err(&pdev->dev, "wrong clock rate (%d)\n", clk_rate);
->> -               goto put_clks;
->>         }
->>
->>         ret = clk_set_rate(bgp->div_clk, clk_rate);
->
->
-> Fallback, rewriting ret value and attempting to set wrong clk_rate?
->
-My wrong. will return -ENODEV in error case in v3.
+Sure, this was based on v3.17. Also available at:
 
->
->> @@ -1357,14 +1353,6 @@ remove_sensors:
->>   disable_clk:
->>         if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
->>                 clk_disable_unprepare(bgp->fclock);
->> -put_clks:
->> -       clk_put(bgp->fclock);
->> -       clk_put(bgp->div_clk);
->> -free_irqs:
->> -       if (TI_BANDGAP_HAS(bgp, TSHUT)) {
->> -               free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
->> -               gpio_free(bgp->tshut_gpio);
->> -       }
->>
->>         return ret;
->>   }
->> @@ -1388,16 +1376,6 @@ int ti_bandgap_remove(struct platform_device *pdev)
->>
->>         if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
->>                 clk_disable_unprepare(bgp->fclock);
->> -       clk_put(bgp->fclock);
->> -       clk_put(bgp->div_clk);
->> -
->> -       if (TI_BANDGAP_HAS(bgp, TALERT))
->> -               free_irq(bgp->irq, bgp);
->> -
->> -       if (TI_BANDGAP_HAS(bgp, TSHUT)) {
->> -               free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
->> -               gpio_free(bgp->tshut_gpio);
->> -       }
->>
->>         return 0;
->>   }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=per-user-clk-constraints-v2
 
+> Also can you rebase onto clk-next if you send again before that is merged
+> into 3.18-rc1? There are some changes in the debugfs part that will
+> conflict. I'll review the more complicated parts in detail soon.
 
+Ack.
 
--- 
-Thanks and Regards
-Pramod
+Thanks,
+
+Tomeu
