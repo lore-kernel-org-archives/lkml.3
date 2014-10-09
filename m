@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734AbaJII4c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:56:32 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:41409 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaJII40 (ORCPT
+	id S1754786AbaJII4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:56:55 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:58034 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaJII4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:56:26 -0400
+	Thu, 9 Oct 2014 04:56:50 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris@free-electrons.com>,
+        Matt Porter <matt.porter@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Subject: Re: [PATCH v2 2/2] Documentation: dmaengine: Add a documentation for the dma controller API
+Date: Thu, 09 Oct 2014 11:56:50 +0300
+Message-ID: <2833617.unopUXe32J@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <20141008121902.GU1638@intel.com>
+References: <1411746035-15882-1-git-send-email-maxime.ripard@free-electrons.com> <2491176.7TIClHxUkE@avalon> <20141008121902.GU1638@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1412695544-17251-2-git-send-email-cristian.stoica@freescale.com>
-References: <1412695544-17251-1-git-send-email-cristian.stoica@freescale.com>
-	<1412695544-17251-2-git-send-email-cristian.stoica@freescale.com>
-Date: Thu, 9 Oct 2014 10:56:24 +0200
-Message-ID: <CAFLxGvxygJY_dQte+wHqWauDYx=datvgX5Z_ckP4znUiPno5Yw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] uio: support memory sizes larger than 32 bits
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Cristian Stoica <cristian.stoica@freescale.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 5:25 PM, Cristian Stoica
-<cristian.stoica@freescale.com> wrote:
-> This is a completion to 27a90700a4275c5178b883b65927affdafa5185c
-> The size field is also increased to allow values larger than 32 bits
-> on platforms that have more than 32 bit physical addresses.
->
-> Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-> ---
->  Documentation/DocBook/uio-howto.tmpl | 2 +-
->  drivers/uio/uio.c                    | 2 +-
->  include/linux/uio_driver.h           | 2 +-
->  3 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
-> index bbe9c1f..1fdc246 100644
-> --- a/Documentation/DocBook/uio-howto.tmpl
-> +++ b/Documentation/DocBook/uio-howto.tmpl
-> @@ -540,7 +540,7 @@ appears in sysfs.
->  </para></listitem>
->
->  <listitem><para>
-> -<varname>unsigned long size</varname>: Fill in the size of the
-> +<varname>resource_size_t size</varname>: Fill in the size of the
->  memory block that <varname>addr</varname> points to. If <varname>size</varname>
->  is zero, the mapping is considered unused. Note that you
->  <emphasis>must</emphasis> initialize <varname>size</varname> with zero for
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index a673e5b..eaa7347 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -73,7 +73,7 @@ static ssize_t map_addr_show(struct uio_mem *mem, char *buf)
->
->  static ssize_t map_size_show(struct uio_mem *mem, char *buf)
->  {
-> -       return sprintf(buf, "0x%lx\n", mem->size);
-> +       return sprintf(buf, "0x%llx\n", (unsigned long long)mem->size);
+Hi Vinod,
 
-We have special printk format strings to handle resource_size_t, please
-see Documentation/printk-formats.txt.
+On Wednesday 08 October 2014 17:49:02 Vinod Koul wrote:
+> On Tue, Oct 07, 2014 at 06:05:15PM +0300, Laurent Pinchart wrote:
+> >>> Beware, it can be confusing when mixing "descriptors" and "hardware
+> >>> descriptors". The ones used by the DMA controller itself to describe
+> >>> the
+> >>> chunks of data (hardware descriptors) and the ones that would
+> >>> represent
+> >>> them in the driver (tx descriptors). However, it's true that both must
+> >>> be prepared by this set of functions.
+> >> 
+> >> There's a few "hardware" missing indeed, but we can't really avoid the
+> >> confusion here, since it does rely also on a dma_async_tx_descriptor.
+> > 
+> > How about always specifying whether we refer to a "hardware descriptor" or
+> > a "transaction descriptor" ?
+> > 
+> >>>>> +     - You'll also need to set two fields in this structure:
+> >>>>> +       + flags:
+> >>>>> +		TODO: Can it be modified by the driver itself, or
+> >>>>> +		should it be always the flags passed in the arguments
+> >>>>> +
+> >>>>> +       + tx_submit:	A pointer to a function you have to implement,
+> >>>>> +			that is supposed to push the current descriptor
+> >>>>> +			to a pending queue, waiting for issue_pending to
+> >>>>> +			be called.
+> >>> 
+> >>> The question remains: why wait when all the information is already
+> >>> prepared and available for the DMA controller to start the job?
+> >>> Actually, we don't wait in at_hdmac, just to be more efficient, but I
+> >>> known that we kind of break this "requirement"... But sorry, it is
+> >>> another discussion which should be lead elsewhere.
+> > 
+> > From my recollection of a discussion I've had with Russell King, I believe
+> > the main reason to separate transaction submission (queueing) issue
+> > (start) is to let DMA engine drivers issuing several queued requests in
+> > one go when hardware supports chaining requests only when none of them
+> > are running. It's thus just an optimization. Russell, could you confirm
+> > (or infirm) that ?
+> 
+> There are few reasons
+> - Allow the dmaengine driver to collect and issue all pending txns in shot
+> (which is not happening today with drivers)
 
->  }
->
->  static ssize_t map_offset_show(struct uio_mem *mem, char *buf)
-> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-> index 1ad4724..df6e42e 100644
-> --- a/include/linux/uio_driver.h
-> +++ b/include/linux/uio_driver.h
-> @@ -35,7 +35,7 @@ struct uio_map;
->  struct uio_mem {
->         const char              *name;
->         phys_addr_t             addr;
-> -       unsigned long           size;
-> +       resource_size_t         size;
->         int                     memtype;
->         void __iomem            *internal_addr;
->         struct uio_map          *map;
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Right, that's what I was trying to explain.
 
+> - Allow clients to prepare the txns ahead of time and send them when ready
 
+That's how I would have liked the DMA engine API to work, with the prep calls 
+being allowed to sleep, and client drivers preparing transactions in advance. 
+As all prep calls must be allowed from atomic context this pretty much defeats 
+the purpose.
+
+> > > It's just a guess, but maybe you might not be able to schedule the
+> > > transfer right away? Think about a very dumb 1-channel (or a more
+> > > realistic more-DRQ-than-channel) device. You might have all the
+> > > channels busy doing some other transfers, and it's not really part of
+> > > the client driver job to address that kind of contention: it just
+> > > wants to queue some work for a later transfer.
 
 -- 
-Thanks,
-//richard
+Regards,
+
+Laurent Pinchart
+
