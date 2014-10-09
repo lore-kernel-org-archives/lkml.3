@@ -1,48 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636AbaJILDh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 07:03:37 -0400
-Received: from afflict.kos.to ([92.243.29.197]:42206 "EHLO afflict.kos.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942AbaJILD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 07:03:29 -0400
-X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Oct 2014 07:03:29 EDT
-From: Riku Voipio <riku.voipio@linaro.org>
-To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, Riku Voipio <riku.voipio@linaro.org>
-Subject: [PATCH] gcov: add ARM64 to GCOV_PROFILE_ALL
-Date: Thu,  9 Oct 2014 13:54:59 +0300
-Message-Id: <1412852099-23099-1-git-send-email-riku.voipio@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754299AbaJILId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 07:08:33 -0400
+Received: from mail.fortaleza.ce.gov.br ([200.223.251.138]:60286 "EHLO
+	mail.fortaleza.ce.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaJILIY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 07:08:24 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Oct 2014 07:08:23 EDT
+Date: Thu, 9 Oct 2014 07:48:45 -0300 (BRT)
+From: "Mr. Kyu Kim" <crono.ipem@fortaleza.ce.gov.br>
+Reply-To: "Mr. Kyu Kim" <2095494028@qq.com>
+Message-ID: <9563275.1617046.1412851725060.JavaMail.root@mail.fortaleza.ce.gov.br>
+Subject: CRUDE OIL PARTNERSHIP OPPORTUNITY
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.203.67.141]
+X-Mailer: Zimbra 7.1.4_GA_2555 (zclient/7.1.4_GA_2555)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following up the arm testing of gcov, turns out gcov on ARM64
-works fine as well. Only change needed is adding ARM64 to Kconfig
-depends.
+Hello,
 
-Tested with qemu and mach-virt
 
-Signed-off-by: Riku Voipio <riku.voipio@linaro.org>
----
- kernel/gcov/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The Project is about the exportation of 100,000 barrels of Light Crude Oil daily out from Iraq to Turkey through my client's company in Iraq at the rate of $100.00 a barrel. This amount to $10,000,000 daily. I ask for your support as a foreigner to handle this business project with my client, and you are not expected to invest in Iraq, due to the current violent crisis going on in Iraq, If yes? let me know and we will discuss this project further.
 
-diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
-index cf66c5c..3b74087 100644
---- a/kernel/gcov/Kconfig
-+++ b/kernel/gcov/Kconfig
-@@ -35,7 +35,7 @@ config GCOV_KERNEL
- config GCOV_PROFILE_ALL
- 	bool "Profile entire Kernel"
- 	depends on GCOV_KERNEL
--	depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM
-+	depends on SUPERH || S390 || X86 || PPC || MICROBLAZE || ARM || ARM64
- 	default n
- 	---help---
- 	This options activates profiling for the entire kernel.
--- 
-2.0.1
 
+Regards,
+Kim.
+Contact Email :   2818574801@qq.com
