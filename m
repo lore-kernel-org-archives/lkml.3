@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235AbaJIVSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:18:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59640 "EHLO
+	id S1758249AbaJIVSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:18:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59638 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757907AbaJIVLc (ORCPT
+	with ESMTP id S1757897AbaJIVLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:11:32 -0400
+	Thu, 9 Oct 2014 17:11:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 077/163] iio: meter: ade7758: Fix indio_dev->trig assignment
-Date: Thu,  9 Oct 2014 14:01:42 -0700
-Message-Id: <1412888588-26755-78-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 068/163] be careful with nd->inode in path_init() and follow_dotdot_rcu()
+Date: Thu,  9 Oct 2014 14:01:33 -0700
+Message-Id: <1412888588-26755-69-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,36 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 0495081179212b758775df752e657ea71dcae020 upstream.
+commit 4023bfc9f351a7994fb6a7d515476c320f94a574 upstream.
 
-This can result in wrong reference count for trigger device, call
-iio_trigger_get to increment reference.
-Refer to http://www.spinics.net/lists/linux-iio/msg13669.html for discussion
-with Jonathan.
+in the former we simply check if dentry is still valid after picking
+its ->d_inode; in the latter we fetch ->d_inode in the same places
+where we fetch dentry and its ->d_seq, under the same checks.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/iio/meter/ade7758_trigger.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/namei.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/iio/meter/ade7758_trigger.c b/drivers/staging/iio/meter/ade7758_trigger.c
-index 7a94ddd..8c4f289 100644
---- a/drivers/staging/iio/meter/ade7758_trigger.c
-+++ b/drivers/staging/iio/meter/ade7758_trigger.c
-@@ -85,7 +85,7 @@ int ade7758_probe_trigger(struct iio_dev *indio_dev)
- 	ret = iio_trigger_register(st->trig);
+diff --git a/fs/namei.c b/fs/namei.c
+index aed3458..eaabb52 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1119,6 +1119,7 @@ static bool __follow_mount_rcu(struct nameidata *nd, struct path *path,
  
- 	/* select default trigger */
--	indio_dev->trig = st->trig;
-+	indio_dev->trig = iio_trigger_get(st->trig);
- 	if (ret)
- 		goto error_free_irq;
+ static int follow_dotdot_rcu(struct nameidata *nd)
+ {
++	struct inode *inode = nd->inode;
+ 	if (!nd->root.mnt)
+ 		set_root_rcu(nd);
  
+@@ -1132,6 +1133,7 @@ static int follow_dotdot_rcu(struct nameidata *nd)
+ 			struct dentry *parent = old->d_parent;
+ 			unsigned seq;
+ 
++			inode = parent->d_inode;
+ 			seq = read_seqcount_begin(&parent->d_seq);
+ 			if (read_seqcount_retry(&old->d_seq, nd->seq))
+ 				goto failed;
+@@ -1141,6 +1143,7 @@ static int follow_dotdot_rcu(struct nameidata *nd)
+ 		}
+ 		if (!follow_up_rcu(&nd->path))
+ 			break;
++		inode = nd->path.dentry->d_inode;
+ 		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
+ 	}
+ 	while (d_mountpoint(nd->path.dentry)) {
+@@ -1150,11 +1153,12 @@ static int follow_dotdot_rcu(struct nameidata *nd)
+ 			break;
+ 		nd->path.mnt = &mounted->mnt;
+ 		nd->path.dentry = mounted->mnt.mnt_root;
++		inode = nd->path.dentry->d_inode;
+ 		nd->seq = read_seqcount_begin(&nd->path.dentry->d_seq);
+ 		if (!read_seqretry(&mount_lock, nd->m_seq))
+ 			goto failed;
+ 	}
+-	nd->inode = nd->path.dentry->d_inode;
++	nd->inode = inode;
+ 	return 0;
+ 
+ failed:
+@@ -1883,7 +1887,14 @@ static int path_init(int dfd, const char *name, unsigned int flags,
+ 	}
+ 
+ 	nd->inode = nd->path.dentry->d_inode;
+-	return 0;
++	if (!(flags & LOOKUP_RCU))
++		return 0;
++	if (likely(!read_seqcount_retry(&nd->path.dentry->d_seq, nd->seq)))
++		return 0;
++	if (!(nd->flags & LOOKUP_ROOT))
++		nd->root.mnt = NULL;
++	rcu_read_unlock();
++	return -ECHILD;
+ }
+ 
+ static inline int lookup_last(struct nameidata *nd, struct path *path)
 -- 
 1.9.1
 
