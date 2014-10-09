@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaJIR23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:28:29 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:55131 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaJIR2X (ORCPT
+	id S1752618AbaJIR2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:28:54 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:57531 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaJIR2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:28:23 -0400
-Date: Thu, 9 Oct 2014 10:28:17 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
-Message-ID: <20141009172817.GC2410@roeck-us.net>
-References: <1412872877-1771-1-git-send-email-linux@roeck-us.net>
- <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com>
- <5436C2B4.6030801@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5436C2B4.6030801@broadcom.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 9 Oct 2014 13:28:47 -0400
+Message-ID: <5436C5C6.3020406@gmail.com>
+Date: Thu, 09 Oct 2014 19:28:38 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: devicetree@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        netdev@vger.kernel.org,
+        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
+References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141009163315.2a9e1806@free-electrons.com> <54369EAC.5040301@gmail.com> <20141009164704.7286fc3f@free-electrons.com> <5436A8B2.1030200@gmail.com> <5436BE7F.7000603@gmail.com>
+In-Reply-To: <5436BE7F.7000603@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 07:15:32PM +0200, Arend van Spriel wrote:
-> On 10/09/14 18:54, Rafał Miłecki wrote:
-> >On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net>  wrote:
-> >>Commit 2101e533f41a ("bcma: register bcma as device tree driver")
-> >>introduces a hard dependency on OF_ADDRESS into the bcma driver.
-> >>OF_ADDRESS is specifically disabled for the sparc architecture.
-> >>This results in the following error when building sparc64:allmodconfig.
-> 
-> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF
-> and !CONFIG_OF_ADDRESS? Does that makes sense?
-> 
-> btw. the OF_ADDRESS dependency was introduced by commit "bcma: get
-> IRQ numbers from dt".
+On 10/09/2014 06:57 PM, Florian Fainelli wrote:
+> On 10/09/2014 08:24 AM, Sebastian Hesselbarth wrote:
+>> Yeah, but that HW PHY stuff really only works properly with standard
+>> compliant PHYs. In particular, the integrated Marvell PHY in Marvell
+>> Berlin SoCs does not seem to reflect PHY status on BMCR properly /sigh/.
+>> Anyway, I think we can live with PHY polling.
+>>
+>> BTW, one thing I noticed here is that libphy calls adjust_link
+>> over-and-over again although nothing has changed. I guess we can just
+>> add some before/after comparison in the libphy state machine and only
+>> call adjust_link when something has changed. I'll have to look closer
+>> at the state machine first and maybe Florian can comment on this,
+>> too.
+>
+> There's basically nothing built in the generic libphy that would try to
+> limit the number of times the adjust_link() callback is invoked, some
+> changes went in the bcmgenet driver to avoid that, I have yet to see how
+> much of this logic is transferable to the libphy layer.
 
-Looking into the code again: Really ? git blame tells me otherwise.
-Also, I don't see the commit you refer to in the upstream kernel.
-Maybe I am missing something.
+Ok, thanks for the clarification. I guess for the final patch series,
+I'll add a check for both registers modified in foo_adjust_link to bail
+out if there is no change. That will save the two register writes per
+second or so and also allow to phy_print_status() after the writels.
 
-Guenter
+Sebastian
