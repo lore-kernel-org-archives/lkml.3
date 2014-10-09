@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041AbaJINML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:12:11 -0400
-Received: from mx02.posteo.de ([89.146.194.165]:53024 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959AbaJINME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:12:04 -0400
-Message-ID: <5436893D.5050804@posteo.de>
-Date: Thu, 09 Oct 2014 15:10:21 +0200
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.8.1
+	id S1755866AbaJINNv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:13:51 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:52570 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754656AbaJINNl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 09:13:41 -0400
+Date: Thu, 9 Oct 2014 15:13:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the percpu tree with the tip tree
+Message-ID: <20141009131328.GB25790@lerouge>
+References: <20141009155018.0b8f26f6@canb.auug.org.au>
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: arnd@arndb.de, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] misc: always assign miscdevice to file->private_data
- in open()
-References: <1412758074-7882-1-git-send-email-martink@posteo.de> <20141008134307.GA6099@kroah.com>
-In-Reply-To: <20141008134307.GA6099@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009155018.0b8f26f6@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-10-08 15:43, schrieb Greg KH:
-> On Wed, Oct 08, 2014 at 10:47:54AM +0200, Martin Kepplinger wrote:
->> As of now, a miscdevice driver has to provide an implementation of
->> the open() file operation if it wants to have misc_open() assign a
->> pointer to struct miscdevice to file->private_data for other file
->> operations to use (given the user calls open()).
->>
->> This leads to situations where a miscdevice driver that doesn't need
->> internal operations during open() has to implement open() that only
->> returns immediately, in order to use the data in private_data in other
->> fops.
+On Thu, Oct 09, 2014 at 03:50:18PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Yeah, that's messy, do we have any in-kernel misc drivers that do this?
+> Today's linux-next merge of the percpu tree got a conflict in
+> kernel/irq_work.c between commit 76a33061b932 ("irq_work: Force raised
+> irq work to run on irq work interrupt") from the tip tree and commit
+> 22127e93c587 ("time: Replace __get_cpu_var uses") from the percpu tree.
 > 
->> This change provides consistent behaviour for miscdevice developers by
->> always providing the pointer in private_data. A driver's open() fop would,
->> of course, just overwrite it, when using private_data itself.
->>
->> Signed-off-by: Martin Kepplinger <martink@posteo.de>
->> ---
->> This is really only a question: Do I understand this correctly, and,
->> could this change then hurt any existing driver?
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 > 
-> I don't know, take a look at the existing ones and see please.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
->> As a driver developer it took me a while to figure out what happens here,
->> and in my situation it would have been nice to just have this feature as
->> part of the miscdevice API. Possibly documented somewhere?
-> 
-> Patches always accepted for documentation :)
+> diff --cc kernel/irq_work.c
+> index 385b85aded19,345d19edcdae..000000000000
+> --- a/kernel/irq_work.c
+> +++ b/kernel/irq_work.c
+> @@@ -113,12 -113,10 +113,12 @@@ bool irq_work_needs_cpu(void
+>   {
+>   	struct llist_head *raised, *lazy;
+>   
+> - 	raised = &__get_cpu_var(raised_list);
+> - 	lazy = &__get_cpu_var(lazy_list);
+> + 	raised = this_cpu_ptr(&raised_list);
+> + 	lazy = this_cpu_ptr(&lazy_list);
 
-What would be a good place for this?
-Documentation/driver-model/device.txt or
-Documentation/filesystem/vfs.txt like so? I'm not sure.
+Ah thanks! The conflict is compile time rather than merge time, thanks
+for spotting it!
 
->From facd10cfa7539755e960dec8cc009934200e68ec Mon Sep 17 00:00:00 2001
-From: Martin Kepplinger <martink@posteo.de>
-Date: Thu, 9 Oct 2014 14:54:28 +0200
-Subject: [PATCH] documentation: misc_open sets private_data for driver's
- open()
+Should we notify Linus about it? That's certainly something that should
+be applied with the percpu tree.
 
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
----
- Documentation/filesystems/vfs.txt |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+>  -	if (llist_empty(raised) && llist_empty(lazy))
+>  -		return false;
+>  +
+>  +	if (llist_empty(raised) || arch_irq_work_has_interrupt())
+>  +		if (llist_empty(lazy))
+>  +			return false;
+>   
+>   	/* All work should have been flushed before going offline */
+>   	WARN_ON_ONCE(cpu_is_offline(smp_processor_id()));
 
-diff --git a/Documentation/filesystems/vfs.txt
-b/Documentation/filesystems/vfs.txt
-index 61d65cc..06df9d9 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -869,7 +869,8 @@ otherwise noted.
- 	done the way it is because it makes filesystems simpler to
- 	implement. The open() method is a good place to initialize the
- 	"private_data" member in the file structure if you want to point
--	to a device structure
-+	to a device structure. In the case of "struct miscdevice", when
-+	you implement open() this is done automatically.
-
-   flush: called by the close(2) system call to flush a file
-
--- 
-1.7.10.4
-
-
-> 
->> misc_open() is called in any case, on open(). As long as miscdevice drivers
->> don't explicitly rely on private_data being NULL exactly IF they don't
->> implement an open() fop (which I wouldn't imagine), this would make things
->> even more convenient.
-> 
-> I agree, but it would be great if you can audit the existing misc
-> drivers to ensure we don't break anything with this change.  Can you do
-> that please?
-> 
-
-I would grep -r "struct miscdevice" ./drivers/; and look at struct
-file_operations of these results, see how their open() looks like, and
-where they assign something to private_data.
-
-If you have an idea for a script that lists all relevant files for me,
-please tell me.
-
-I queue this up but can't tell at all when it actually gets scheduled in ;)
-
-I guess some do this work on their own because they don't know that
-misc_open() already does it for them. It would probably be too much to
-check what drivers could then just drop their open(). Interesting though
-;) But in the short term, I think the appended documentation would help.
-
-                              martin
 
