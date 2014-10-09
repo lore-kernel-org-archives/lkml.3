@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720AbaJIVM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:12:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59735 "EHLO
+	id S1754974AbaJIVMe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:12:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59766 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaJIVMU (ORCPT
+	with ESMTP id S1751915AbaJIVM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:12:20 -0400
+	Thu, 9 Oct 2014 17:12:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Nathan Lynch <nathan_lynch@mentor.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 155/163] mm: numa: Do not mark PTEs pte_numa when splitting huge pages
-Date: Thu,  9 Oct 2014 14:03:00 -0700
-Message-Id: <1412888588-26755-156-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 152/163] ARM: 8178/1: fix set_tls for !CONFIG_KUSER_HELPERS
+Date: Thu,  9 Oct 2014 14:02:57 -0700
+Message-Id: <1412888588-26755-153-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,64 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Nathan Lynch <nathan_lynch@mentor.com>
 
-commit abc40bd2eeb77eb7c2effcaf63154aad929a1d5f upstream.
+commit 9cc6d9e5daaa147a9a3e31557efcb331989e77be upstream.
 
-This patch reverts 1ba6e0b50b ("mm: numa: split_huge_page: transfer the
-NUMA type from the pmd to the pte"). If a huge page is being split due
-a protection change and the tail will be in a PROT_NONE vma then NUMA
-hinting PTEs are temporarily created in the protected VMA.
+Joachim Eastwood reports that commit fbfb872f5f41 "ARM: 8148/1: flush
+TLS and thumbee register state during exec" causes a boot-time crash
+on a Cortex-M4 nommu system:
 
- VM_RW|VM_PROTNONE
-|-----------------|
-      ^
-      split here
+Freeing unused kernel memory: 68K (281e5000 - 281f6000)
+Unhandled exception: IPSR = 00000005 LR = fffffff1
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
+task: 29834000 ti: 29832000 task.ti: 29832000
+PC is at flush_thread+0x2e/0x40
+LR is at flush_thread+0x21/0x40
+pc : [<2800954a>] lr : [<2800953d>] psr: 4100000b
+sp : 29833d60 ip : 00000000 fp : 00000001
+r10: 00003cf8 r9 : 29b1f000 r8 : 00000000
+r7 : 29b0bc00 r6 : 29834000 r5 : 29832000 r4 : 29832000
+r3 : ffff0ff0 r2 : 29832000 r1 : 00000000 r0 : 282121f0
+xPSR: 4100000b
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.17.0-rc6-00313-gd2205fa30aa7 #191
+[<2800afa5>] (unwind_backtrace) from [<2800a327>] (show_stack+0xb/0xc)
+[<2800a327>] (show_stack) from [<2800a963>] (__invalid_entry+0x4b/0x4c)
 
-In the specific case above, it should get fixed up by change_pte_range()
-but there is a window of opportunity for weirdness to happen. Similarly,
-if a huge page is shrunk and split during a protection update but before
-pmd_numa is cleared then a pte_numa can be left behind.
+The problem is that set_tls is attempting to clear the TLS location in
+the kernel-user helper page, which isn't set up on V7M.
 
-Instead of adding complexity trying to deal with the case, this patch
-will not mark PTEs NUMA when splitting a huge page. NUMA hinting faults
-will not be triggered which is marginal in comparison to the complexity
-in dealing with the corner cases during THP split.
+Fix this by guarding the write to the kuser helper page with
+a CONFIG_KUSER_HELPERS ifdef.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: fbfb872f5f41 ARM: 8148/1: flush TLS and thumbee register state during exec
+
+Reported-by: Joachim Eastwood <manabian@gmail.com>
+Tested-by: Joachim Eastwood <manabian@gmail.com>
+Signed-off-by: Nathan Lynch <nathan_lynch@mentor.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/huge_memory.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/tls.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index a2256e0..64a7f9c 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1823,6 +1823,11 @@ static int __split_huge_page_map(struct page *page,
- 		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
- 			pte_t *pte, entry;
- 			BUG_ON(PageCompound(page+i));
-+			/*
-+			 * Note that pmd_numa is not transferred deliberately
-+			 * to avoid any possibility that pte_numa leaks to
-+			 * a PROT_NONE VMA by accident.
-+			 */
- 			entry = mk_pte(page + i, vma->vm_page_prot);
- 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
- 			if (!pmd_write(*pmd))
-@@ -1831,8 +1836,6 @@ static int __split_huge_page_map(struct page *page,
- 				BUG_ON(page_mapcount(page) != 1);
- 			if (!pmd_young(*pmd))
- 				entry = pte_mkold(entry);
--			if (pmd_numa(*pmd))
--				entry = pte_mknuma(entry);
- 			pte = pte_offset_map(&_pmd, haddr);
- 			BUG_ON(!pte_none(*pte));
- 			set_pte_at(mm, haddr, pte, entry);
+diff --git a/arch/arm/include/asm/tls.h b/arch/arm/include/asm/tls.h
+index 36172ad..5f833f7 100644
+--- a/arch/arm/include/asm/tls.h
++++ b/arch/arm/include/asm/tls.h
+@@ -81,6 +81,7 @@ static inline void set_tls(unsigned long val)
+ 			asm("mcr p15, 0, %0, c13, c0, 3"
+ 			    : : "r" (val));
+ 		} else {
++#ifdef CONFIG_KUSER_HELPERS
+ 			/*
+ 			 * User space must never try to access this
+ 			 * directly.  Expect your app to break
+@@ -89,6 +90,7 @@ static inline void set_tls(unsigned long val)
+ 			 * entry-armv.S for details)
+ 			 */
+ 			*((unsigned int *)0xffff0ff0) = val;
++#endif
+ 		}
+ 
+ 	}
 -- 
 1.9.1
 
