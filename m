@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618AbaJIR2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 13:28:54 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:57531 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751540AbaJIR2r (ORCPT
+	id S1751818AbaJIR2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 13:28:48 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37878 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298AbaJIR2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 13:28:47 -0400
-Message-ID: <5436C5C6.3020406@gmail.com>
-Date: Thu, 09 Oct 2014 19:28:38 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: devicetree@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        netdev@vger.kernel.org,
-        =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
-References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141009163315.2a9e1806@free-electrons.com> <54369EAC.5040301@gmail.com> <20141009164704.7286fc3f@free-electrons.com> <5436A8B2.1030200@gmail.com> <5436BE7F.7000603@gmail.com>
-In-Reply-To: <5436BE7F.7000603@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 13:28:39 -0400
+Date: Thu, 9 Oct 2014 19:28:34 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] sched: schedule_tail() should disable preemption
+Message-ID: <20141009172834.GZ10832@worktop.programming.kicks-ass.net>
+References: <20141007195046.GA28002@redhat.com>
+ <20141008080016.GB10832@worktop.programming.kicks-ass.net>
+ <20141008183302.GA17495@redhat.com>
+ <20141008183326.GB17495@redhat.com>
+ <20141008193644.GA32055@redhat.com>
+ <1412804248.24248.1.camel@yandex.ru>
+ <20141009145726.GA5604@redhat.com>
+ <20141009151730.GW10832@worktop.programming.kicks-ass.net>
+ <20141009165713.GA13118@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009165713.GA13118@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 06:57 PM, Florian Fainelli wrote:
-> On 10/09/2014 08:24 AM, Sebastian Hesselbarth wrote:
->> Yeah, but that HW PHY stuff really only works properly with standard
->> compliant PHYs. In particular, the integrated Marvell PHY in Marvell
->> Berlin SoCs does not seem to reflect PHY status on BMCR properly /sigh/.
->> Anyway, I think we can live with PHY polling.
->>
->> BTW, one thing I noticed here is that libphy calls adjust_link
->> over-and-over again although nothing has changed. I guess we can just
->> add some before/after comparison in the libphy state machine and only
->> call adjust_link when something has changed. I'll have to look closer
->> at the state machine first and maybe Florian can comment on this,
->> too.
->
-> There's basically nothing built in the generic libphy that would try to
-> limit the number of times the adjust_link() callback is invoked, some
-> changes went in the bcmgenet driver to avoid that, I have yet to see how
-> much of this logic is transferable to the libphy layer.
+On Thu, Oct 09, 2014 at 06:57:13PM +0200, Oleg Nesterov wrote:
+> > Your earlier proposal would penalize every
+> > !x86 arch by adding extra code to the scheduler core while they already
+> > automagically preserve their thread_info::preempt_count.
+> 
+> Sure, and it can't be even compiled on !x86.
+> 
+> But this is simple, just we need a new helper, preempt_count_restore(),
+> defined as nop in asm-generic/preempt.h. Well, perhaps another helper
+> makes sense, preempt_count_raw() which simply reads the counter, but
+> this is minor.
+> 
+> After the patch below we can remove ->saved_preempt_count. Including
+> init_task_preempt_count(), it is no longer needed after the change in
+> schedule_tail().
 
-Ok, thanks for the clarification. I guess for the final patch series,
-I'll add a check for both registers modified in foo_adjust_link to bail
-out if there is no change. That will save the two register writes per
-second or so and also allow to phy_print_status() after the writels.
+Ah, right, this makes more sense.
 
-Sebastian
+> @@ -2333,10 +2336,12 @@ context_switch(struct rq *rq, struct task_struct *prev,
+>  #endif
+>  
+>  	context_tracking_task_switch(prev, next);
+> +
+> +	pc = preempt_count();
+
+The only problem here is that you can loose PREEMPT_NEED_RESCHED, I
+haven't thought about whether that is a problem here or not.
+
+>  	/* Here we just switch the register state and the stack. */
+>  	switch_to(prev, next, prev);
+> -
+>  	barrier();
+> +	preempt_count_restore(pc);
+>  	/*
+>  	 * this_rq must be evaluated again because prev may have moved
+>  	 * CPUs since it called schedule(), thus the 'rq' on its stack
+> 
