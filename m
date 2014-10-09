@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537AbaJIIkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:40:23 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:55694 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaJIIkQ (ORCPT
+	id S1752470AbaJIIoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:44:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33914 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaJIIoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:40:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Wen Xiong <wenxiong@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] vfio/pci: make MSI handling optional
-Date: Thu, 09 Oct 2014 10:40:07 +0200
-Message-ID: <6188781.C8VgeYvZpD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Mt2cTlD7JyalATexpoeQzFb6CXrvMfgCMx9C+aqIF6E
- XVmlfbsVs6UMa6YAOIYDWBDdj98klxoy7s16zA4VaX5A0mJFxm
- Rnx98LTIeDzjFzRRkHqEgx2YEdSGTZkrw0BD+gGSLJwN8t0dcf
- mIp2noHLoUCM1ihECK40Mmvey0IyVYYMa/1fYunHdEjuZsHhxw
- hCuGCVIaz/3Jn/5/jU1ZpkDRNU1gbLpmonZWmAHPXEwjoog48v
- +9Kid7aQBwU16XfFCuyghfYo647rx4TzYFWdVhQkgnzgwP8c4W
- fHxoOJ6Hx1tvGItTgPLeIdJJHCxS2AUZuS6ABr5YB2U2sPW7T9
- 8hqoMF8QZyKHv9FH6ljQ=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 9 Oct 2014 04:44:06 -0400
+Message-ID: <1412844240.6809.1.camel@pengutronix.de>
+Subject: Re: [PATCH] reset: add reset_control_status helper function
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: dinguyen@opensource.altera.com
+Cc: dinh.linux@gmail.com, atull@opensource.altera.com,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Oct 2014 10:44:00 +0200
+In-Reply-To: <1412808351-4598-1-git-send-email-dinguyen@opensource.altera.com>
+References: <1412808351-4598-1-git-send-email-dinguyen@opensource.altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recent bug fix to the MSIx handling in vfio added references
-to functions that may not be defined if MSI is disabled in the kernel,
-resulting in this link error:
+Hi Dinh,
 
-drivers/built-in.o: In function `vfio_msi_set_vector_signal':
-:(.text+0x450808): undefined reference to `get_cached_msi_msg'
-:(.text+0x45080c): undefined reference to `write_msi_msg'
+thank you for the patch. Just two small issues below:
 
->From what I can tell, all the MSI specific ioctl handling can
-be made optional in this case, which also reduces the code size
-for the vfo driver. This patches does so using a build-time
-IS_ENABLED() check, which leaves all the build coverage testing
-present but avoids the link error.
+Am Mittwoch, den 08.10.2014, 17:45 -0500 schrieb dinguyen@opensource.altera.com:
+[...]
+> @@ -126,6 +126,19 @@ int reset_control_deassert(struct reset_control *rstc)
+>  EXPORT_SYMBOL_GPL(reset_control_deassert);
+>  
+>  /**
+> + * reset_control_status - returns a status of a reset bit
+> + * @rstc: reset controller
+> + */
+> +unsigned int reset_control_status(struct reset_control *rstc)
+> +{
+> +	if (rstc->rcdev->ops->status)
+> +		return rstc->rcdev->ops->status(rstc->rcdev, rstc->id);
+> +
+> +	return -ENOSYS;
+> +}
+> +EXPORT_SYMBOL_GPL(reset_control_status);
 
-A side-effect of this is that the driver now returns -ENOTTY instead
-of -EINVAL if user space calls VFIO_PCI_MSI_IRQ_INDEX on a kernel
-without MSI support, which seems to be the best behavior, but
-the approach could easily be changed if we want to preserve the
-existing behavior for compatibility reasons.
+Since this function can return negative error numbers, please make the
+return value of reset_control_status int. That also means that drivers
+must not set the MSB when returning status.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Fixes: b8f02af096b1 ("vfio/pci: Restore MSIx message prior to enabling")
----
-Found using randconfig build testing on ARM.
+> +
+> +/**
+>   * of_reset_control_get - Lookup and obtain a reference to a reset controller.
+>   * @node: device to be reset by the controller
+>   * @id: reset line name
+> diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
+> index 41a4695..8e659d5 100644
+> --- a/include/linux/reset-controller.h
+> +++ b/include/linux/reset-controller.h
+> @@ -17,6 +17,7 @@ struct reset_control_ops {
+>  	int (*reset)(struct reset_controller_dev *rcdev, unsigned long id);
+>  	int (*assert)(struct reset_controller_dev *rcdev, unsigned long id);
+>  	int (*deassert)(struct reset_controller_dev *rcdev, unsigned long id);
+> +	unsigned int (*status)(struct reset_controller_dev *rcdev, unsigned long id);
+>  };
 
-diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
-index 553212f037c3..1117f96b8556 100644
---- a/drivers/vfio/pci/vfio_pci_intrs.c
-+++ b/drivers/vfio/pci/vfio_pci_intrs.c
-@@ -827,6 +827,9 @@ int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev, uint32_t flags,
- 		break;
- 	case VFIO_PCI_MSI_IRQ_INDEX:
- 	case VFIO_PCI_MSIX_IRQ_INDEX:
-+		if (!IS_ENABLED(CONFIG_PCI_MSI))
-+			break;
-+
- 		switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
- 		case VFIO_IRQ_SET_ACTION_MASK:
- 		case VFIO_IRQ_SET_ACTION_UNMASK:
+Please change the return value of the status callback to int and
+describe it in the kerneldoc comment above. It should probably be
+mentioned that the returned status value must be >= 0 except in error
+cases.
+ 
+regards
+Philipp
 
