@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758454AbaJIVnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:43:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59079 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaJIVGs (ORCPT
+	id S1758609AbaJIVnb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:43:31 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:49881 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758470AbaJIVn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:06:48 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Varun Sethi <Varun.Sethi@freescale.com>, Joerg Roedel <jroedel@suse.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 030/163] iommu/fsl: Fix warning resulting from adding PCI device twice
-Date: Thu,  9 Oct 2014 14:00:55 -0700
-Message-Id: <1412888588-26755-31-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 9 Oct 2014 17:43:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: arm64 non-SMP build error in latest upstream kernel
+Date: Thu, 09 Oct 2014 23:43:15 +0200
+Message-ID: <40742923.rBODTfznrZ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141009213427.GA27232@roeck-us.net>
+References: <20141009213427.GA27232@roeck-us.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:2JWjSaeiJZjmdXC7XDYYsEOtruA1yDWG+KlUfqIOSyM
+ 1vkjxzeHwzSyIKm9ZJsnvmUt2pi77rfKGK4aR5fyKsbIHnV6it
+ tupsFqHnb+mwsAzbnrSCy6JthiiTnmjha0LcefIJUfeyiYSqPE
+ /MUh39P2DZeQf6LuOTlSFNJ8HCsXjCrbDhge+pCbu7ANbaAthI
+ 7PlNJrcpj2LWnn3/MTgeFPSBIS9wCLu0EiafvqN3sXeleTPlJu
+ fpKT0H4S0W4F3P8IwN6uFdNAHNZCpCcTDVNxxZigKVLe23NECi
+ CO+z4hUHWiWsGN7YV4k89WP9EZWwnukBJIQT+BTx1T5D1Oof2P
+ UXZmOpvU6X8i1YGbGjrQ=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
+On Thursday 09 October 2014 14:34:27 Guenter Roeck wrote:
+> Configuration: arm64 defconfig, -SMP
+> 
+> Error:
+> 
+> In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+>                  from include/linux/irq_work.h:46,
+>                  from include/linux/perf_event.h:49,
+>                  from include/linux/hw_breakpoint.h:4,
+>                  from arch/arm64/kernel/process.c:43:
+> ./arch/arm64/include/asm/smp.h:24:3: error: #error "<asm/smp.h> included in non-SMP build"
+>  # error "<asm/smp.h> included in non-SMP build"
+>    ^
+> ./arch/arm64/include/asm/smp.h:27:0: warning: "raw_smp_processor_id" redefined [enabled by default]
+>  #define raw_smp_processor_id() (current_thread_info()->cpu)
+>  ^
+> In file included from include/linux/sched.h:34:0,
+>                  from ./arch/arm64/include/asm/compat.h:25,
+>                  from ./arch/arm64/include/asm/stat.h:23,
+>                  from include/linux/stat.h:5,
+>                  from include/linux/compat.h:10,
+>                  from arch/arm64/kernel/process.c:23:
+> include/linux/smp.h:129:0: note: this is the location of the previous definition
+>  #define raw_smp_processor_id()   0
+> 
+> This is just one example; the error is seen multiple times.
+> 
+> Let me know if you need me to bisect.
 
-------------------
+It must be caused by 3631073659d0a ("arm64: Tell irq work about self
+IPI support"), which recently added the asm/irq_work.h file. 
 
-From: Varun Sethi <Varun.Sethi@freescale.com>
+Reverting that patch makes it build again.
 
-commit 5a9137a66b521d667236e95c307b92af532fe600 upstream.
-
-iommu_group_get_for_dev determines the iommu group for the PCI device and adds
-the device to the group.
-
-In the PAMU driver we were again adding the device to the same group without checking
-if the device already had an iommu group. This resulted in the following warning.
-
-sysfs: cannot create duplicate filename '/devices/ffe200000.pcie/pci0000:00/0000:00:00.0/iommu_group'
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:31
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-00002-g7505cea-dirty #126
-task: c0000001fe0a0000 ti: c0000001fe044000 task.ti: c0000001fe044000
-NIP: c00000000018879c LR: c000000000188798 CTR: c00000000001ea50
-REGS: c0000001fe047040 TRAP: 0700   Not tainted  (3.17.0-rc3-00002-g7505cea-dirty)
-MSR: 0000000080029000 <CE,EE,ME>  CR: 24ad8e22  XER: 20000000
-SOFTE: 1
-GPR00: c000000000188798 c0000001fe0472c0 c0000000009a52e0 0000000000000065
-GPR04: 0000000000000001 0000000000000000 3a30303a00000000 0000000027000000
-GPR08: 2f696f6d00000000 c0000000008d3830 c0000000009b3938 c0000000009bb3d0
-GPR12: 0000000028ad8e24 c00000000fff4000 c00000000000205c 0000000000000000
-GPR16: 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-GPR20: 0000000000000000 0000000000000000 0000000000000000 c0000000008a4c70
-GPR24: c0000000007e9010 c0000001fe0140a8 ffffffffffffffef 0000000000000001
-GPR28: c0000001fe22ebb8 c0000000007e9010 c00000000090bf10 c0000001fe220000
-NIP [c00000000018879c] .sysfs_warn_dup+0x74/0xa4
-LR [c000000000188798] .sysfs_warn_dup+0x70/0xa4
-Call Trace:
-[c0000001fe0472c0] [c000000000188798] .sysfs_warn_dup+0x70/0xa4 (unreliable)
-[c0000001fe047350] [c000000000188d34] .sysfs_do_create_link_sd.clone.2+0x168/0x174
-[c0000001fe047400] [c0000000004b3cf8] .iommu_group_add_device+0x78/0x244
-[c0000001fe0474b0] [c0000000004b6964] .fsl_pamu_add_device+0x88/0x1a8
-[c0000001fe047570] [c0000000004b3960] .iommu_bus_notifier+0xdc/0x15c
-[c0000001fe047600] [c000000000059848] .notifier_call_chain+0x8c/0xe8
-[c0000001fe0476a0] [c000000000059d04] .__blocking_notifier_call_chain+0x58/0x84
-[c0000001fe047750] [c00000000036619c] .device_add+0x464/0x5c8
-[c0000001fe047820] [c000000000300ebc] .pci_device_add+0x14c/0x17c
-[c0000001fe0478c0] [c000000000300fbc] .pci_scan_single_device+0xd0/0xf4
-[c0000001fe047970] [c00000000030104c] .pci_scan_slot+0x6c/0x18c
-[c0000001fe047a10] [c00000000030226c] .pci_scan_child_bus+0x40/0x114
-[c0000001fe047ac0] [c000000000021974] .pcibios_scan_phb+0x240/0x2c8
-[c0000001fe047b70] [c00000000085a970] .pcibios_init+0x64/0xc8
-[c0000001fe047c00] [c000000000001884] .do_one_initcall+0xbc/0x224
-[c0000001fe047d00] [c000000000852d50] .kernel_init_freeable+0x14c/0x21c
-[c0000001fe047db0] [c000000000002078] .kernel_init+0x1c/0xfa4
-[c0000001fe047e30] [c000000000000884] .ret_from_kernel_thread+0x58/0xd4
-Instruction dump:
-7c7f1b79 4182001c 7fe4fb78 7f83e378 38a01000 4bffc905 60000000 7c641b78
-e87e8008 7fa5eb78 48482ff5 60000000 <0fe00000> 7fe3fb78 4bf7bd39 60000000
-
-Signed-off-by: Varun Sethi <Varun.Sethi@freescale.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/iommu/fsl_pamu_domain.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/iommu/fsl_pamu_domain.c b/drivers/iommu/fsl_pamu_domain.c
-index c857c30..42bebf9 100644
---- a/drivers/iommu/fsl_pamu_domain.c
-+++ b/drivers/iommu/fsl_pamu_domain.c
-@@ -1050,7 +1050,7 @@ static int fsl_pamu_add_device(struct device *dev)
- 	struct iommu_group *group = NULL;
- 	struct pci_dev *pdev;
- 	const u32 *prop;
--	int ret, len;
-+	int ret = 0, len;
- 
- 	/*
- 	 * For platform devices we allocate a separate group for
-@@ -1073,7 +1073,13 @@ static int fsl_pamu_add_device(struct device *dev)
- 	if (!group || IS_ERR(group))
- 		return PTR_ERR(group);
- 
--	ret = iommu_group_add_device(group, dev);
-+	/*
-+	 * Check if device has already been added to an iommu group.
-+	 * Group could have already been created for a PCI device in
-+	 * the iommu_group_get_for_dev path.
-+	 */
-+	if (!dev->iommu_group)
-+		ret = iommu_group_add_device(group, dev);
- 
- 	iommu_group_put(group);
- 	return ret;
--- 
-1.9.1
-
+	Arnd
