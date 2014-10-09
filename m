@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaJIK3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:29:00 -0400
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:56578 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaJIK2y (ORCPT
+	id S1752407AbaJIK3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:29:11 -0400
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:54872 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaJIK3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:28:54 -0400
+	Thu, 9 Oct 2014 06:29:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141009102341.GU23154@mwanda>
-References: <20141009044011.GA999@devel>
-	<20141009094902.GA4333@sudip-PC>
-	<20141009102341.GU23154@mwanda>
-Date: Thu, 9 Oct 2014 19:28:53 +0900
-Message-ID: <CAHb8M2DG77BD7=8CuK2AcRPMW5cBbZfBwPqO+ofN3=fONFM_Hg@mail.gmail.com>
-Subject: Re: [PATCH V2] staging: dgap: introduce dgap_stop()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        devel <devel@driverdev.osuosl.org>,
-        Lidza Louina <lidza.louina@gmail.com>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
+In-Reply-To: <CAFp+6iFeiwhXurrZ+bWz0Ht87SX4gPGkOEipCPHgYS2Z0_hocA@mail.gmail.com>
+References: <1410786785-9838-1-git-send-email-gautam.vivek@samsung.com>
+	<CAEC9eQPMNcGxUZVAh6ou6a=6V9bAgmwZAn5ra4=EkoosNURWPg@mail.gmail.com>
+	<CAFp+6iFeiwhXurrZ+bWz0Ht87SX4gPGkOEipCPHgYS2Z0_hocA@mail.gmail.com>
+Date: Thu, 9 Oct 2014 15:59:03 +0530
+Message-ID: <CAEC9eQMdL7vAou2Mn6vpxHR=Dd9++dnMoM+Xzk3O_W0F7n1CBQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] drm-exynos-dp/phy-exynos-dp: Refactor to use
+ pmu-system-controller and dp driver cleanup
+From: Ajay kumar <ajaynumb@gmail.com>
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: InKi Dae <inki.dae@samsung.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Sean Paul <seanpaul@google.com>,
+        kishon <kishon@ti.com>, Ajay Kumar <ajaykumar.rs@samsung.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-2014-10-09 19:23 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Thu, Oct 09, 2014 at 03:19:03PM +0530, Sudip Mukherjee wrote:
->> On Thu, Oct 09, 2014 at 01:40:11PM +0900, Daeseok Youn wrote:
->> > The dgap_init_module() need to unwind for cleanup variables properly.
->> > Because dgap_init_module() calls dgap_cleanup_module() for freeing
->> > variables but this function is possible to free variables
->> > which are not allocated.
->> >
->> > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> > ---
->> > V2: change ulong which is non-standard to "unsigned long".
->> I think , Dan, in his review of your v1 , asked you to rearrange the functions and get rid of the forward declarations.
+On Thu, Oct 9, 2014 at 3:56 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Ajay,
+>
+>
+> On Thu, Oct 9, 2014 at 3:48 PM, Ajay kumar <ajaynumb@gmail.com> wrote:
+>> Hi,
 >>
+>> On Mon, Sep 15, 2014 at 6:43 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>>> These patches are based on 'for-next' branch of kgene's linux-samsung tree.
+>>>
+>>> Refactoring the exynos-dp-video phy to use pmu-system-controller handle
+>>> and access the register using mfd-syscon and regmap.
+>>> Simultaneously, removing the support for older dptx-phy, since it's obsolete
+>>> now and noone uses it.
+>>>
+>>> Vivek Gautam (3):
+>>>   phy: exynos-dp-video: Use syscon support to control pmu register
+>>>   drm/exynos: dp: Remove support for unused dptx-phy
+>>>   arm: dts: Exynos5: Use pmu_system_controller phandle for dp phy
+>>>
+>>>  .../devicetree/bindings/phy/samsung-phy.txt        |    7 +-
+>>>  arch/arm/boot/dts/exynos5250.dtsi                  |    2 +-
+>>>  arch/arm/boot/dts/exynos5420.dtsi                  |    4 +-
+>>>  drivers/gpu/drm/exynos/exynos_dp_core.c            |   58 ++++-----------
+>>>  drivers/gpu/drm/exynos/exynos_dp_core.h            |    2 -
+>>>  drivers/phy/phy-exynos-dp-video.c                  |   76 ++++++++++++++------
+>>>  6 files changed, 75 insertions(+), 74 deletions(-)
+>>>
+>>> --
+>>> 1.7.10.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>> I have tested this patchset on exynos5800-peach-pi, and I can see DP
+>> display with the above patches.
 >
-> I was fine with v1 actually...  It's a bug fix, and this is staging and
-> there are tons of forward declarations already.  Eventually we need to
-> get rid of them but it can be done later.
-Yes, I will cleanup as your review.
+> we expect "Tested-by", if you have tested please give the same.
+Tested-by: Ajay Kumar <ajaykumar.rs@samsung.com>
 
-thanks.
-
-regards,
-Daeseok Youn.
-
->
-> regards,
-> dan carpenter
->
+Ajay
