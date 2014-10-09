@@ -1,92 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaJIJBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:01:48 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:59220 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755039AbaJIJBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:01:41 -0400
+	id S1755245AbaJIJCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:02:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58335 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754791AbaJIJC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 05:02:28 -0400
+Message-ID: <54364F08.8050006@ti.com>
+Date: Thu, 9 Oct 2014 12:02:00 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Date: Thu, 9 Oct 2014 11:01:39 +0200
-Message-ID: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
-Subject: trace_printk() broken wrt %pV
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Maarten ter Huurne <maarten@treewalker.org>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Apelete Seketeli <apelete@seketeli.net>, <linux-fbdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fonts: Add 6x10 font
+References: <1410263188-10532-1-git-send-email-maarten@treewalker.org> <542A7ADA.4010500@ti.com> <2514574.0C4va8fPM6@hyperion>
+In-Reply-To: <2514574.0C4va8fPM6@hyperion>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="RxETiIJSvocTGLEBTqkDprtIi3qonpnCk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+--RxETiIJSvocTGLEBTqkDprtIi3qonpnCk
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-my code does something like:
+On 08/10/14 10:25, Maarten ter Huurne wrote:
+> On Tuesday 30 September 2014 12:41:46 Tomi Valkeinen wrote:
+>> Hi,
+>>
+>> On 09/09/14 14:46, Maarten ter Huurne wrote:
+>>> This font is suitable for framebuffer consoles on devices with a
+>>> 320x240 screen, to get a reasonable number of characters (53x24) that=
 
-void my_printf(const char *fmt, ...)
-{
-        struct va_format vaf;
-        va_list args;
+>>> are still at a readable size.
+>>>
+>>> The font is derived from the existing 6x11 font, but gets 3 extra
+>>> lines without sacrificing readability. Also I redesigned a some glyhp=
+s
+>>> so they are more distinct and better fill the available space.
+>>>
+>>> Signed-off-by: Maarten ter Huurne <maarten@treewalker.org>
+>>> ---
+>>>
+>>>  include/linux/font.h  |    4 +-
+>>>  lib/fonts/Kconfig     |    9 +
+>>>  lib/fonts/Makefile    |    1 +
+>>>  lib/fonts/font_6x10.c | 3086
+>>>  +++++++++++++++++++++++++++++++++++++++++++++++++ lib/fonts/fonts.c =
+ =20
+>>>   |    4 +
+>>>  5 files changed, 3103 insertions(+), 1 deletion(-)
+>>>  create mode 100644 lib/fonts/font_6x10.c
+>>
+>> I think the patch is fine, but there hasn't been any comments or acks
+>> for this. I'm a bit reluctant to add this much data to the kernel if
+>> there are no users (except you) for this.
+>=20
+> Are you counting end users, developers or projects? We've got at least =
 
-        va_start(args, fmt);
-        vaf.fmt = fmt;
-        vaf.va = &args;
-        trace_printk("%pV", &vaf);
-        va_end(args);
-}
+> several thousand end users in OpenDingux for Dingoo A320 and GCW Zero=20
+> combined. I could ask a few fellow developers for signed-off-by lines, =
+if=20
+> that helps. But it's all from the same project.
+>=20
+> I think the font fills a space that is currently unoccupied: the 4x6 fo=
+nt is=20
+> space efficient but barely readable, the 8x8 font gets only 40 columns =
+on=20
+> 320x240 and the 6x11 font doesn't use the vertical space efficiently.
 
-While reading from /sys/kernel/debug/tracing/trace a kernel oops happens.
+Ok, sounds good enough for me. Queueing for 3.18.
 
-[   54.406617] BUG: unable to handle kernel paging request at ffffffffffffffff
-[   54.407078] IP: [<ffffffff81358f3c>] pointer.isra.18+0x1fc/0x450
-[   54.407078] PGD 1e14067 PUD 1e16067 PMD 0
-[   54.407078] Oops: 0000 [#1] PREEMPT SMP
-[   54.407078] Modules linked in:
-[   54.407078] CPU: 1 PID: 2700 Comm: cat Not tainted 3.17.0-rc6+ #274
-[   54.407078] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
-BIOS rel-1.7.5-0-ge51488c-20140816_022509-build35 04/01/2014
-[   54.407078] task: ffff8800391c1660 ti: ffff880035fe4000 task.ti:
-ffff880035fe4000
-[   54.407078] RIP: 0010:[<ffffffff81358f3c>]  [<ffffffff81358f3c>]
-pointer.isra.18+0x1fc/0x450
-[   54.407078] RSP: 0018:ffff880035fe7d20  EFLAGS: 00010283
-[   54.407078] RAX: ffffffffffffffff RBX: 0000000000000010 RCX: ffff880035fe7d38
-[   54.407078] RDX: ffff880035fea0fb RSI: ffff880035fe9137 RDI: ffff880035fe9137
-[   54.407078] RBP: ffff880035fe7d78 R08: 0000000000000000 R09: 000000000000000a
-[   54.407078] R10: 0000000000000014 R11: ffffffff815633e0 R12: ffff88000013fdd0
-[   54.407078] R13: ffff880035fe9137 R14: ffff880035fea0fb R15: ffff880035fe9137
-[   54.407078] FS:  00007f4c7627f700(0000) GS:ffff88003e000000(0000)
-knlGS:0000000000000000
-[   54.407078] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   54.407078] CR2: ffffffffffffffff CR3: 0000000038459000 CR4: 00000000000006e0
-[   54.407078] Stack:
-[   54.407078]  ffff880035fea0fb ffff880035fe7d90 ffffffff81359414
-000000000000ffff
-[   54.407078]  fffffffdff0a0003 0000000000000002 ffff880035fea0fb
-ffff88003cfac03c
-[   54.407078]  ffffffff81cefe16 ffffffff81cefe16 ffff880035fe9137
-ffff880035fe7de8
-[   54.407078] Call Trace:
-[   54.407078]  [<ffffffff81359414>] ? vsnprintf+0x284/0x590
-[   54.407078]  [<ffffffff8135990c>] bstr_printf+0xcc/0x3e0
-[   54.407078]  [<ffffffff810fed03>] ? trace_seq_printf+0x83/0xd0
-[   54.407078]  [<ffffffff810fedfb>] trace_seq_bprintf+0x4b/0x90
-[   54.407078]  [<ffffffff810fe413>] trace_bprint_print+0x63/0x90
-[   54.407078]  [<ffffffff810fadc3>] print_trace_line+0x183/0x440
-[   54.407078]  [<ffffffff810fba3b>] s_show+0x2b/0xc0
-[   54.407078]  [<ffffffff81199df6>] seq_read+0x226/0x3a0
-[   54.407078]  [<ffffffff81175576>] vfs_read+0x96/0x180
-[   54.407078]  [<ffffffff81176214>] SyS_read+0x44/0xb0
-[   54.407078]  [<ffffffff818fa892>] system_call_fastpath+0x16/0x1b
-[   54.407078] Code: 10 4c 89 e2 48 89 3c 24 4c 89 f6 4c 89 ef e8 8c
-f2 ff ff e9 8f fe ff ff 0f 1f 80 00 00 00 00 49 8b 44 24 08 48 8d 4d
-c0 4c 89 ef <48> 8b 10 48 89 55 c0 48 8b 50 08 48 89 55 c8 48 8b 40 10
-49 8b
-[   54.407078] RIP  [<ffffffff81358f3c>] pointer.isra.18+0x1fc/0x450
-[   54.407078]  RSP <ffff880035fe7d20>
-[   54.407078] CR2: ffffffffffffffff
-[   54.407078] ---[ end trace 2e14557c4e24855c ]---
+ Tomi
 
--- 
-Thanks,
-//richard
+
+
+--RxETiIJSvocTGLEBTqkDprtIi3qonpnCk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUNk8QAAoJEPo9qoy8lh71+c4QAIERTWJLSUw5ofr6DP2ogM8C
+Fg0KpwAt+e2S8bUHKVskZ3tg861WjAgYw5hniqFGlExtBgXb/IFGe8rkQY83i6Oc
+JARaO8c+39w+BHlDZy+xgHxU9XDH8GogrzPq+yBzwc1tQce1P8gTUi0eq7cRXmdC
+A2uoQtxZxk6haVphVG3kiuU7wsqDyyyBN3Wh7XIclS84JFtv793zDkC9Fzqp+ytu
+7p65nw1uQxEJKQNRshCZ8ZgroGx8duyed96Gcssrn6G5RuuEtZ+dDDOk0VhRh3z4
+g/kGcDs2pb19DPTqzUqerSyziJ+MQJ7nafzaLnw7K0l0Y96RmncMIrkfZ3CPNo4h
+PULdk45qvwk3o0QMvobXbOhmIY8GQ8YfY3GSCgaQCVcjzuwrWkmxHDsnmJdWPfjx
+cTl4zcUP/VJo1gF/fhy8IQ6jGRKgVPg+wt4UaN0gFKb6nQ5Y5FdJcNA5pKh+rUKY
+Pe/FKXbcRdbaoX/QF8xDv9u5/UegO80upErfRaW/sOD6DxOCL/n3qiCQloEyzZlf
++xo3gQE3n+OfS+C0ub+JeLJUxHKchYr7gBiX/v7Xgr2SDi7eXIlBONaSwIrlZcGS
+EZU4VIXurKO+6RpcfZKVzwawBrixBlQFjUa5Zl8dDKDveSplQ/sc53LK6XahA27T
+otacEa/aLSvRlAx4t95S
+=bbNi
+-----END PGP SIGNATURE-----
+
+--RxETiIJSvocTGLEBTqkDprtIi3qonpnCk--
