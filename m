@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605AbaJIPFd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:05:33 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57558 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640AbaJIPFK (ORCPT
+	id S1757624AbaJIPFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:05:43 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:61397 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757609AbaJIPFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:05:10 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 05/16] powerpc/mm: Export mmu_kernel_ssize and mmu_linear_psize
-In-Reply-To: <1412758505-23495-6-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-6-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:35:02 +0530
-Message-ID: <871tqh2sip.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0017-0000-0000-0000019056EF
+	Thu, 9 Oct 2014 11:05:37 -0400
+From: John Ledbetter <john@throttle.io>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        John Ledbetter <john@throttle.io>
+Subject: [PATCH] staging: rtl8192e: Fix pointer type declaration style errors
+Date: Thu,  9 Oct 2014 11:05:08 -0400
+Message-Id: <1412867108-10200-1-git-send-email-john@throttle.io>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
+This fixes the following checkpatch.pl errors:
 
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> Export mmu_kernel_ssize and mmu_linear_psize.  These are needed by the cxl
-> driver which has it's own MMU.  To setup the MMU cxl needs access to these.
->
+drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1290 error: "foo* bar"
+should be "foo *bar"
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c:1305 error: "foo * bar"
+should be "foo *bar"
 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/mm/hash_utils_64.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> index 5c0738d..bbdb054 100644
-> --- a/arch/powerpc/mm/hash_utils_64.c
-> +++ b/arch/powerpc/mm/hash_utils_64.c
-> @@ -98,6 +98,7 @@ unsigned long htab_size_bytes;
->  unsigned long htab_hash_mask;
->  EXPORT_SYMBOL_GPL(htab_hash_mask);
->  int mmu_linear_psize = MMU_PAGE_4K;
-> +EXPORT_SYMBOL_GPL(mmu_linear_psize);
->  int mmu_virtual_psize = MMU_PAGE_4K;
->  int mmu_vmalloc_psize = MMU_PAGE_4K;
->  #ifdef CONFIG_SPARSEMEM_VMEMMAP
-> @@ -105,6 +106,7 @@ int mmu_vmemmap_psize = MMU_PAGE_4K;
->  #endif
->  int mmu_io_psize = MMU_PAGE_4K;
->  int mmu_kernel_ssize = MMU_SEGSIZE_256M;
-> +EXPORT_SYMBOL_GPL(mmu_kernel_ssize);
->  int mmu_highuser_ssize = MMU_SEGSIZE_256M;
->  u16 mmu_slb_size = 64;
->  EXPORT_SYMBOL_GPL(mmu_slb_size);
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: John Ledbetter <john@throttle.io>
+---
+ drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c b/drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c
+index 0ffed2d..552d943 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c
++++ b/drivers/staging/rtl8192e/rtl8192e/r8192E_dev.c
+@@ -1287,7 +1287,7 @@ void  rtl8192_tx_fill_desc(struct net_device *dev, struct tx_desc *pdesc,
+ 
+ void  rtl8192_tx_fill_cmd_desc(struct net_device *dev,
+ 			       struct tx_desc_cmd *entry,
+-			       struct cb_desc *cb_desc, struct sk_buff* skb)
++			       struct cb_desc *cb_desc, struct sk_buff *skb)
+ {
+ 	struct r8192_priv *priv = rtllib_priv(dev);
+ 	dma_addr_t mapping = pci_map_single(priv->pdev, skb->data, skb->len,
+@@ -1302,7 +1302,7 @@ void  rtl8192_tx_fill_cmd_desc(struct net_device *dev,
+ 	if (cb_desc->bCmdOrInit == DESC_PACKET_TYPE_INIT) {
+ 		entry->CmdInit = DESC_PACKET_TYPE_INIT;
+ 	} else {
+-		struct tx_desc * entry_tmp = (struct tx_desc *)entry;
++		struct tx_desc *entry_tmp = (struct tx_desc *)entry;
+ 
+ 		entry_tmp->CmdInit = DESC_PACKET_TYPE_NORMAL;
+ 		entry_tmp->Offset = sizeof(struct tx_fwinfo_8190pci) + 8;
+-- 
+2.1.2
 
