@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757828AbaJIVLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:11:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59559 "EHLO
+	id S1758338AbaJIVUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:20:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59583 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757797AbaJIVK6 (ORCPT
+	with ESMTP id S1757827AbaJIVLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:58 -0400
+	Thu, 9 Oct 2014 17:11:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Iooss <nicolas.iooss_linux@m4x.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 050/163] eventpoll: fix uninitialized variable in epoll_ctl
-Date: Thu,  9 Oct 2014 14:01:15 -0700
-Message-Id: <1412888588-26755-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 051/163] kcmp: fix standard comparison bug
+Date: Thu,  9 Oct 2014 14:01:16 -0700
+Message-Id: <1412888588-26755-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,59 +29,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-commit c680e41b3a2e944185c74bf60531e3d316d3ecc4 upstream.
+commit acbbe6fbb240a927ee1f5994f04d31267d422215 upstream.
 
-When calling epoll_ctl with operation EPOLL_CTL_DEL, structure epds is
-not initialized but ep_take_care_of_epollwakeup reads its event field.
-When this unintialized field has EPOLLWAKEUP bit set, a capability check
-is done for CAP_BLOCK_SUSPEND in ep_take_care_of_epollwakeup.  This
-produces unexpected messages in the audit log, such as (on a system
-running SELinux):
+The C operator <= defines a perfectly fine total ordering on the set of
+values representable in a long.  However, unlike its namesake in the
+integers, it is not translation invariant, meaning that we do not have
+"b <= c" iff "a+b <= a+c" for all a,b,c.
 
-    type=AVC msg=audit(1408212798.866:410): avc:  denied
-    { block_suspend } for  pid=7754 comm="dbus-daemon" capability=36
-    scontext=unconfined_u:unconfined_r:unconfined_t
-    tcontext=unconfined_u:unconfined_r:unconfined_t
-    tclass=capability2 permissive=1
+This means that it is always wrong to try to boil down the relationship
+between two longs to a question about the sign of their difference,
+because the resulting relation [a LEQ b iff a-b <= 0] is neither
+anti-symmetric or transitive.  The former is due to -LONG_MIN==LONG_MIN
+(take any two a,b with a-b = LONG_MIN; then a LEQ b and b LEQ a, but a !=
+b).  The latter can either be seen observing that x LEQ x+1 for all x,
+implying x LEQ x+1 LEQ x+2 ...  LEQ x-1 LEQ x; or more directly with the
+simple example a=LONG_MIN, b=0, c=1, for which a-b < 0, b-c < 0, but a-c >
+0.
 
-    type=SYSCALL msg=audit(1408212798.866:410): arch=c000003e syscall=233
-    success=yes exit=0 a0=3 a1=2 a2=9 a3=7fffd4d66ec0 items=0 ppid=1
-    pid=7754 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0
-    fsgid=0 tty=(none) ses=3 comm="dbus-daemon"
-    exe="/usr/bin/dbus-daemon"
-    subj=unconfined_u:unconfined_r:unconfined_t key=(null)
+Note that it makes absolutely no difference that a transmogrying bijection
+has been applied before the comparison is done.  In fact, had the
+obfuscation not been done, one could probably not observe the bug
+(assuming all values being compared always lie in one half of the address
+space, the mathematical value of a-b is always representable in a long).
+As it stands, one can easily obtain three file descriptors exhibiting the
+non-transitivity of kcmp().
 
-("arch=c000003e syscall=233 a1=2" means "epoll_ctl(op=EPOLL_CTL_DEL)")
+Side note 1: I can't see that ensuring the MSB of the multiplier is
+set serves any purpose other than obfuscating the obfuscating code.
 
-Remove use of epds in epoll_ctl when op == EPOLL_CTL_DEL.
+Side note 2:
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
+#include <sys/syscall.h>
 
-Fixes: 4d7e30d98939 ("epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready")
-Signed-off-by: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Arve Hjønnevåg <arve@android.com>
+enum kcmp_type {
+        KCMP_FILE,
+        KCMP_VM,
+        KCMP_FILES,
+        KCMP_FS,
+        KCMP_SIGHAND,
+        KCMP_IO,
+        KCMP_SYSVSEM,
+        KCMP_TYPES,
+};
+pid_t pid;
+
+int kcmp(pid_t pid1, pid_t pid2, int type,
+	 unsigned long idx1, unsigned long idx2)
+{
+	return syscall(SYS_kcmp, pid1, pid2, type, idx1, idx2);
+}
+int cmp_fd(int fd1, int fd2)
+{
+	int c = kcmp(pid, pid, KCMP_FILE, fd1, fd2);
+	if (c < 0) {
+		perror("kcmp");
+		exit(1);
+	}
+	assert(0 <= c && c < 3);
+	return c;
+}
+int cmp_fdp(const void *a, const void *b)
+{
+	static const int normalize[] = {0, -1, 1};
+	return normalize[cmp_fd(*(int*)a, *(int*)b)];
+}
+#define MAX 100 /* This is plenty; I've seen it trigger for MAX==3 */
+int main(int argc, char *argv[])
+{
+	int r, s, count = 0;
+	int REL[3] = {0,0,0};
+	int fd[MAX];
+	pid = getpid();
+	while (count < MAX) {
+		r = open("/dev/null", O_RDONLY);
+		if (r < 0)
+			break;
+		fd[count++] = r;
+	}
+	printf("opened %d file descriptors\n", count);
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+	qsort(fd, count, sizeof(fd[0]), cmp_fdp);
+	memset(REL, 0, sizeof(REL));
+
+	for (r = 0; r < count; ++r) {
+		for (s = r+1; s < count; ++s) {
+			REL[cmp_fd(fd[r], fd[s])]++;
+		}
+	}
+	printf("== %d\t< %d\t> %d\n", REL[0], REL[1], REL[2]);
+	return (REL[0] + REL[2] != 0);
+}
+
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
+"Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/eventpoll.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/kcmp.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index ead0046..f50d79e 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1852,7 +1852,8 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
- 		goto error_tgt_fput;
+diff --git a/kernel/kcmp.c b/kernel/kcmp.c
+index e30ac0f..0aa69ea 100644
+--- a/kernel/kcmp.c
++++ b/kernel/kcmp.c
+@@ -44,11 +44,12 @@ static long kptr_obfuscate(long v, int type)
+  */
+ static int kcmp_ptr(void *v1, void *v2, enum kcmp_type type)
+ {
+-	long ret;
++	long t1, t2;
  
- 	/* Check if EPOLLWAKEUP is allowed */
--	ep_take_care_of_epollwakeup(&epds);
-+	if (ep_op_has_event(op))
-+		ep_take_care_of_epollwakeup(&epds);
+-	ret = kptr_obfuscate((long)v1, type) - kptr_obfuscate((long)v2, type);
++	t1 = kptr_obfuscate((long)v1, type);
++	t2 = kptr_obfuscate((long)v2, type);
  
- 	/*
- 	 * We have to check that the file structure underneath the file descriptor
+-	return (ret < 0) | ((ret > 0) << 1);
++	return (t1 < t2) | ((t1 > t2) << 1);
+ }
+ 
+ /* The caller must have pinned the task */
 -- 
 1.9.1
 
