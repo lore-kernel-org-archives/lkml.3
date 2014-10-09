@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373AbaJIQfo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:35:44 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39126 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757310AbaJIQfb (ORCPT
+	id S1757405AbaJIQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:35:58 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39010 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757310AbaJIQfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:35:31 -0400
+	Thu, 9 Oct 2014 12:35:47 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v2 03/12] perf/x86: add 3 new scheduling callbacks
-Date: Thu,  9 Oct 2014 18:34:37 +0200
-Message-Id: <1412872486-2930-4-git-send-email-eranian@google.com>
+Subject: [PATCH v2 05/12] perf/x86: add cross-HT counter exclusion infrastructure
+Date: Thu,  9 Oct 2014 18:34:39 +0200
+Message-Id: <1412872486-2930-6-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412872486-2930-1-git-send-email-eranian@google.com>
 References: <1412872486-2930-1-git-send-email-eranian@google.com>
@@ -23,76 +23,197 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 
-This patch adds 3 new PMU model specific callbacks
-during the event scheduling done by x86_schedule_events().
-
-- start_scheduling: invoked when entering the schedule routine.
-- stop_scheduling: invoked at the end of the schedule routine
-- commit_scheduling: invoked for each committed event
-
-To be used optionally by model-specific code.
+This patch adds a new shared_regs style structure to the
+per-cpu x86 state (cpuc). It is used to coordinate access
+between counters which must be used with exclusion across
+HyperThreads on Intel processors. This new struct is not
+needed on each PMU, thus is is allocated on demand.
 
 Reviewed-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 ---
- arch/x86/kernel/cpu/perf_event.c | 9 +++++++++
- arch/x86/kernel/cpu/perf_event.h | 9 +++++++++
- 2 files changed, 18 insertions(+)
+ arch/x86/kernel/cpu/perf_event.h       | 32 +++++++++++++++
+ arch/x86/kernel/cpu/perf_event_intel.c | 71 +++++++++++++++++++++++++++++++---
+ 2 files changed, 98 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 542435f..ca44ba2 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -734,6 +734,9 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 
- 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
- 
-+	if (x86_pmu.start_scheduling)
-+		x86_pmu.start_scheduling(cpuc);
-+
- 	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
- 		hwc = &cpuc->event_list[i]->hw;
- 		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
-@@ -780,6 +783,8 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 		for (i = 0; i < n; i++) {
- 			e = cpuc->event_list[i];
- 			e->hw.flags |= PERF_X86_EVENT_COMMITTED;
-+			if (x86_pmu.commit_scheduling)
-+				x86_pmu.commit_scheduling(cpuc, e, assign[i]);
- 		}
- 	}
- 	/*
-@@ -800,6 +805,10 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
- 				x86_pmu.put_event_constraints(cpuc, e);
- 		}
- 	}
-+
-+	if (x86_pmu.stop_scheduling)
-+		x86_pmu.stop_scheduling(cpuc);
-+
- 	return num ? -EINVAL : 0;
- }
- 
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 4c5a00c..b6848c3 100644
+index 667a185..c985270 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -447,6 +447,15 @@ struct x86_pmu {
+@@ -71,6 +71,7 @@ struct event_constraint {
+ #define PERF_X86_EVENT_COMMITTED	0x8 /* event passed commit_txn */
+ #define PERF_X86_EVENT_PEBS_LD_HSW	0x10 /* haswell style datala, load */
+ #define PERF_X86_EVENT_PEBS_NA_HSW	0x20 /* haswell style datala, unknown */
++#define PERF_X86_EVENT_EXCL		0x40 /* HT exclusivity on counter */
  
- 	void		(*put_event_constraints)(struct cpu_hw_events *cpuc,
- 						 struct perf_event *event);
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
+@@ -121,6 +122,26 @@ struct intel_shared_regs {
+ 	unsigned                core_id;	/* per-core: core id */
+ };
+ 
++enum intel_excl_state_type {
++	INTEL_EXCL_UNUSED    = 0, /* counter is unused */
++	INTEL_EXCL_SHARED    = 1, /* counter can be used by both threads */
++	INTEL_EXCL_EXCLUSIVE = 2, /* counter can be used by one thread only */
++};
 +
-+	void		(*commit_scheduling)(struct cpu_hw_events *cpuc,
-+					     struct perf_event *event,
-+					     int cntr);
++struct intel_excl_states {
++	enum intel_excl_state_type init_state[X86_PMC_IDX_MAX];
++	enum intel_excl_state_type state[X86_PMC_IDX_MAX];
++};
 +
-+	void		(*start_scheduling)(struct cpu_hw_events *cpuc);
++struct intel_excl_cntrs {
++	spinlock_t	lock;
 +
-+	void		(*stop_scheduling)(struct cpu_hw_events *cpuc);
++	struct intel_excl_states states[2];
 +
- 	struct event_constraint *event_constraints;
- 	struct x86_pmu_quirk *quirks;
- 	int		perfctr_second_write;
++	int		refcnt;		/* per-core: #HT threads */
++	unsigned	core_id;	/* per-core: core id */
++};
++
+ #define MAX_LBR_ENTRIES		16
+ 
+ enum {
+@@ -183,6 +204,12 @@ struct cpu_hw_events {
+ 	 * used on Intel NHM/WSM/SNB
+ 	 */
+ 	struct intel_shared_regs	*shared_regs;
++	/*
++	 * manage exclusive counter access between hyperthread
++	 */
++	struct event_constraint *constraint_list; /* in enable order */
++	struct intel_excl_cntrs		*excl_cntrs;
++	int excl_thread_id; /* 0 or 1 */
+ 
+ 	/*
+ 	 * AMD specific bits
+@@ -206,6 +233,10 @@ struct cpu_hw_events {
+ #define EVENT_CONSTRAINT(c, n, m)	\
+ 	__EVENT_CONSTRAINT(c, n, m, HWEIGHT(n), 0, 0)
+ 
++#define INTEL_EXCLEVT_CONSTRAINT(c, n)	\
++	__EVENT_CONSTRAINT(c, n, ARCH_PERFMON_EVENTSEL_EVENT, HWEIGHT(n),\
++			   0, PERF_X86_EVENT_EXCL)
++
+ /*
+  * The overlap flag marks event constraints with overlapping counter
+  * masks. This is the case if the counter mask of such an event is not
+@@ -540,6 +571,7 @@ do {									\
+  */
+ #define PMU_FL_NO_HT_SHARING	0x1 /* no hyper-threading resource sharing */
+ #define PMU_FL_HAS_RSP_1	0x2 /* has 2 equivalent offcore_rsp regs   */
++#define PMU_FL_EXCL_CNTRS	0x4 /* has exclusive counter requirements  */
+ 
+ #define EVENT_VAR(_id)  event_attr_##_id
+ #define EVENT_PTR(_id) &event_attr_##_id.attr.attr
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 64bbb57..0eece24 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -2131,16 +2131,52 @@ struct intel_shared_regs *allocate_shared_regs(int cpu)
+ 	return regs;
+ }
+ 
++struct intel_excl_cntrs *allocate_excl_cntrs(int cpu)
++{
++	struct intel_excl_cntrs *c;
++	int i;
++
++	c = kzalloc_node(sizeof(struct intel_excl_cntrs),
++			 GFP_KERNEL, cpu_to_node(cpu));
++	if (c) {
++		spin_lock_init(&c->lock);
++		for (i = 0; i < X86_PMC_IDX_MAX; i++) {
++			c->states[0].state[i] = INTEL_EXCL_UNUSED;
++			c->states[0].init_state[i] = INTEL_EXCL_UNUSED;
++
++			c->states[1].state[i] = INTEL_EXCL_UNUSED;
++			c->states[1].init_state[i] = INTEL_EXCL_UNUSED;
++		}
++		c->core_id = -1;
++	}
++	return c;
++}
++
+ static int intel_pmu_cpu_prepare(int cpu)
+ {
+ 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+ 
+-	if (!(x86_pmu.extra_regs || x86_pmu.lbr_sel_map))
+-		return NOTIFY_OK;
++	if (x86_pmu.extra_regs || x86_pmu.lbr_sel_map) {
++		cpuc->shared_regs = allocate_shared_regs(cpu);
++		if (!cpuc->shared_regs)
++			return NOTIFY_BAD;
++	}
+ 
+-	cpuc->shared_regs = allocate_shared_regs(cpu);
+-	if (!cpuc->shared_regs)
+-		return NOTIFY_BAD;
++	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
++		size_t sz = X86_PMC_IDX_MAX * sizeof(struct event_constraint);
++
++		cpuc->constraint_list = kzalloc(sz, GFP_KERNEL);
++		if (!cpuc->constraint_list)
++			return NOTIFY_BAD;
++
++		cpuc->excl_cntrs = allocate_excl_cntrs(cpu);
++		if (!cpuc->excl_cntrs) {
++			kfree(cpuc->constraint_list);
++			kfree(cpuc->shared_regs);
++			return NOTIFY_BAD;
++		}
++		cpuc->excl_thread_id = 0;
++	}
+ 
+ 	return NOTIFY_OK;
+ }
+@@ -2181,12 +2217,29 @@ static void intel_pmu_cpu_starting(int cpu)
+ 
+ 	if (x86_pmu.lbr_sel_map)
+ 		cpuc->lbr_sel = &cpuc->shared_regs->regs[EXTRA_REG_LBR];
++
++	if (x86_pmu.flags & PMU_FL_EXCL_CNTRS) {
++		for_each_cpu(i, topology_thread_cpumask(cpu)) {
++			struct intel_excl_cntrs *c;
++
++			c = per_cpu(cpu_hw_events, i).excl_cntrs;
++			if (c && c->core_id == core_id) {
++				cpuc->kfree_on_online[1] = cpuc->excl_cntrs;
++				cpuc->excl_cntrs = c;
++				cpuc->excl_thread_id = 1;
++				break;
++			}
++		}
++		cpuc->excl_cntrs->core_id = core_id;
++		cpuc->excl_cntrs->refcnt++;
++	}
+ }
+ 
+ static void intel_pmu_cpu_dying(int cpu)
+ {
+ 	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
+ 	struct intel_shared_regs *pc;
++	struct intel_excl_cntrs *c;
+ 
+ 	pc = cpuc->shared_regs;
+ 	if (pc) {
+@@ -2194,6 +2247,14 @@ static void intel_pmu_cpu_dying(int cpu)
+ 			kfree(pc);
+ 		cpuc->shared_regs = NULL;
+ 	}
++	c = cpuc->excl_cntrs;
++	if (c) {
++		if (c->core_id == -1 || --c->refcnt == 0)
++			kfree(c);
++		cpuc->excl_cntrs = NULL;
++		kfree(cpuc->constraint_list);
++		cpuc->constraint_list = NULL;
++	}
+ 
+ 	fini_debug_store_on_cpu(cpu);
+ }
 -- 
 1.9.1
 
