@@ -1,100 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483AbaJIATT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 20:19:19 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42804 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753478AbaJIATJ (ORCPT
+	id S1755293AbaJIAXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 20:23:24 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46089 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaJIAXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 20:19:09 -0400
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: mpe <mpe@ellerman.id.au>
-Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
-        benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
-        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
-        imunsie <imunsie@au1.ibm.com>,
-        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] CXL: Fix afu_read() not doing finish_wait() on signal or non-blocking
-Date: Thu,  9 Oct 2014 11:17:46 +1100
-Message-Id: <1412813866-22717-1-git-send-email-imunsie@au.ibm.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1412764803-sup-6790@delenn.ozlabs.ibm.com>
-References: <1412764803-sup-6790@delenn.ozlabs.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100900-0021-0000-0000-0000004F5BB4
+	Wed, 8 Oct 2014 20:23:16 -0400
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, martin.petersen@oracle.com,
+        dm-devel@redhat.com
+Subject: Re: [PATCH v2] block: fix alignment_offset math that assumes io_min is a power-of-2
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <to=1412805952-15316-1-git-send-email-snitzer@redhat.com>
+	<1412807173-15541-1-git-send-email-snitzer@redhat.com>
+Date: Wed, 08 Oct 2014 20:23:10 -0400
+In-Reply-To: <1412807173-15541-1-git-send-email-snitzer@redhat.com> (Mike
+	Snitzer's message of "Wed, 8 Oct 2014 18:26:13 -0400")
+Message-ID: <yq1iojudrbl.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+>>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
 
-If afu_read() returned due to a signal or the AFU file descriptor being
-opened non-blocking it would not call finish_wait() before returning,
-which could lead to a crash later when something else wakes up the wait
-queue.
+Mike> The math in both blk_stack_limits() and
+Mike> queue_limit_alignment_offset() assume that a block device's io_min
+Mike> (aka minimum_io_size) is always a power-of-2.  Fix the math such
+Mike> that it works for non-power-of-2 io_min.
 
-This patch restructures the wait logic to ensure that the cleanup is
-done correctly.
+Mike> This issue (of alignment_offset != 0) became apparent when testing
+Mike> dm-thinp with a thinp blocksize that matches a RAID6 stripesize of
+Mike> 1280K.  Commit fdfb4c8c1 ("dm thin: set minimum_io_size to pool's
+Mike> data block size") unlocked the potential for alignment_offset != 0
+Mike> due to the dm-thin-pool's io_min possibly being a non-power-of-2.
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
+Looks good to me, Mike.
 
-Resending with correct whitespace as my mailer decided to replace tabs with
-spaces on the last try.
+Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
 
- drivers/misc/cxl/file.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/misc/cxl/file.c b/drivers/misc/cxl/file.c
-index 847b7e6..378b099 100644
---- a/drivers/misc/cxl/file.c
-+++ b/drivers/misc/cxl/file.c
-@@ -273,6 +273,7 @@ static ssize_t afu_read(struct file *file, char __user *buf, size_t count,
- 	struct cxl_context *ctx = file->private_data;
- 	struct cxl_event event;
- 	unsigned long flags;
-+	int rc;
- 	DEFINE_WAIT(wait);
- 
- 	if (count < CXL_READ_MIN_SIZE)
-@@ -285,13 +286,17 @@ static ssize_t afu_read(struct file *file, char __user *buf, size_t count,
- 		if (ctx_event_pending(ctx))
- 			break;
- 
--		spin_unlock_irqrestore(&ctx->lock, flags);
--		if (file->f_flags & O_NONBLOCK)
--			return -EAGAIN;
-+		if (file->f_flags & O_NONBLOCK) {
-+			rc = -EAGAIN;
-+			goto out;
-+		}
- 
--		if (signal_pending(current))
--			return -ERESTARTSYS;
-+		if (signal_pending(current)) {
-+			rc = -ERESTARTSYS;
-+			goto out;
-+		}
- 
-+		spin_unlock_irqrestore(&ctx->lock, flags);
- 		pr_devel("afu_read going to sleep...\n");
- 		schedule();
- 		pr_devel("afu_read woken up\n");
-@@ -336,6 +341,11 @@ static ssize_t afu_read(struct file *file, char __user *buf, size_t count,
- 	if (copy_to_user(buf, &event, event.header.size))
- 		return -EFAULT;
- 	return event.header.size;
-+
-+out:
-+	finish_wait(&ctx->wq, &wait);
-+	spin_unlock_irqrestore(&ctx->lock, flags);
-+	return rc;
- }
- 
- static const struct file_operations afu_fops = {
 -- 
-2.1.0
-
+Martin K. Petersen	Oracle Linux Engineering
