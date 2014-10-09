@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655AbaJIVJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:09:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59389 "EHLO
+	id S932673AbaJIVJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:09:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59412 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932607AbaJIVJ3 (ORCPT
+	with ESMTP id S932607AbaJIVJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:29 -0400
+	Thu, 9 Oct 2014 17:09:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Andrey Vagin <avagin@openvz.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 110/163] [SCSI] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
-Date: Thu,  9 Oct 2014 14:02:15 -0700
-Message-Id: <1412888588-26755-111-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 052/163] fsnotify/fdinfo: use named constants instead of hardcoded values
+Date: Thu,  9 Oct 2014 14:01:17 -0700
+Message-Id: <1412888588-26755-53-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,54 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: Andrey Vagin <avagin@openvz.org>
 
-commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
+commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
 
-This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
-This function is used by iscsi drivers and userspace to send iscsi PDUs/
-commands. For login commands, we have a set buffer size. For all other
-commands we do not support data buffers.
+MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
+bytes, so exportfs_encode_inode_fh can return an error.
 
-This was reported by Dan Carpenter here:
-http://www.spinics.net/lists/linux-scsi/msg66838.html
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/libiscsi.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ fs/notify/fdinfo.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
-index e399561..b69b233 100644
---- a/drivers/scsi/libiscsi.c
-+++ b/drivers/scsi/libiscsi.c
-@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
- 			return NULL;
- 		}
+diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
+index 238a593..660d33b 100644
+--- a/fs/notify/fdinfo.c
++++ b/fs/notify/fdinfo.c
+@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
+ {
+ 	struct {
+ 		struct file_handle handle;
+-		u8 pad[64];
++		u8 pad[MAX_HANDLE_SZ];
+ 	} f;
+ 	int size, ret, i;
  
-+		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
-+			return NULL;
-+		}
-+
- 		task = conn->login_task;
- 	} else {
- 		if (session->state != ISCSI_STATE_LOGGED_IN)
- 			return NULL;
+@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
+ 	size = f.handle.handle_bytes >> 2;
  
-+		if (data_size != 0) {
-+			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
-+			return NULL;
-+		}
-+
- 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
- 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
- 
+ 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
+-	if ((ret == 255) || (ret == -ENOSPC)) {
++	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
+ 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
+ 		return 0;
+ 	}
 -- 
 1.9.1
 
