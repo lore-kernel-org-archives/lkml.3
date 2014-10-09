@@ -1,68 +1,546 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059AbaJITaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:30:08 -0400
-Received: from mail-bn1bon0058.outbound.protection.outlook.com ([157.56.111.58]:20848
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751605AbaJIT34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:29:56 -0400
-X-Greylist: delayed 985 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Oct 2014 15:29:55 EDT
-From: Vince Bridgers <vbridger@opensource.altera.com>
-To: <peppe.cavallaro@st.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <vbridger@altera.com>, <vbridger@opensource.altera.com>
-Subject: [PATCH net] stmmac: correct mc_filter local variable in set_filter and set_mac_addr call
-Date: Thu, 9 Oct 2014 10:10:36 -0500
-Message-ID: <1412867436-22153-1-git-send-email-vbridger@opensource.altera.com>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR08CA0044.namprd08.prod.outlook.com (10.141.200.24) To
- BN1PR0301MB0626.namprd03.prod.outlook.com (25.160.171.11)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0626;
-X-Forefront-PRVS: 0359162B6D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(50226001)(229853001)(102836001)(99396003)(85852003)(77096002)(88136002)(101416001)(2201001)(87286001)(92726001)(64706001)(47776003)(20776003)(76482002)(50466002)(85306004)(21056001)(92566001)(107046002)(86362001)(93916002)(48376002)(95666004)(87976001)(122386002)(19580405001)(19580395003)(89996001)(77156001)(106356001)(31966008)(97736003)(80022003)(50986999)(46102003)(69596002)(104166001)(81156004)(42186005)(62966002)(105586002)(40100002)(33646002)(53416004)(4396001)(120916001)(66066001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR0301MB0626;H:vince-HP-Z620-Workstation2.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+	id S1752618AbaJITaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:30:16 -0400
+Received: from static.88-198-24-112.clients.your-server.de ([88.198.24.112]:45256
+	"EHLO nbd.name" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751849AbaJIT35 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 15:29:57 -0400
+From: John Crispin <blogic@openwrt.org>
+To: Ralf Baechle <ralf@linux-mips.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: [PATCH 2/4] pinctrl: ralink: add a pinctrl driver for the rt2880 family of SoCs
+Date: Thu,  9 Oct 2014 04:55:25 +0200
+Message-Id: <1412823327-10296-3-git-send-email-blogic@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1412823327-10296-1-git-send-email-blogic@openwrt.org>
+References: <1412823327-10296-1-git-send-email-blogic@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Testing revealed that the local variable mc_filter was dimensioned
-incorrectly for all possible configurations and get_mac_addr should
-have been set_mac_addr (a typo). Make sure mc_filter is dimensioned
-to 8 32-bit unsigned longs - the largest size of the Synopsys
-multicast filter register set.
+These Socs have 1-3 banks of 8-32 gpios. Rather then setting the muxing of each
+pin individually, these socs have mux groups that when set will effect 1-N pins.
+Pin groups have a 2, 4 or 8 different muxes.
 
-Signed-off-by: Vince Bridgers <vbridger@opensource.altera.com>
+Signed-off-by: John Crispin <blogic@openwrt.org>
 ---
- drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pinctrl/Kconfig          |    5 +
+ drivers/pinctrl/Makefile         |    1 +
+ drivers/pinctrl/pinctrl-rt2880.c |  474 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 480 insertions(+)
+ create mode 100644 drivers/pinctrl/pinctrl-rt2880.c
 
-diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-index 5efe60e..0adcf73 100644
---- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-@@ -134,7 +134,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
- 	void __iomem *ioaddr = (void __iomem *)dev->base_addr;
- 	unsigned int value = 0;
- 	unsigned int perfect_addr_number = hw->unicast_filter_entries;
--	u32 mc_filter[2];
-+	u32 mc_filter[8];
- 	int mcbitslog2 = hw->mcast_bits_log2;
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index bfd2c2e..2447088 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -192,6 +192,11 @@ config PINCTRL_LANTIQ
+ 	select PINMUX
+ 	select PINCONF
  
- 	pr_debug("%s: # mcasts %d, # unicast %d\n", __func__,
-@@ -182,7 +182,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
- 		struct netdev_hw_addr *ha;
- 
- 		netdev_for_each_uc_addr(ha, dev) {
--			stmmac_get_mac_addr(ioaddr, ha->addr,
-+			stmmac_set_mac_addr(ioaddr, ha->addr,
- 					    GMAC_ADDR_HIGH(reg),
- 					    GMAC_ADDR_LOW(reg));
- 			reg++;
++config PINCTRL_RT2880
++	bool
++	depends on RALINK
++	select PINMUX
++
+ config PINCTRL_FALCON
+ 	bool
+ 	depends on SOC_FALCON
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index 05d2275..6273f86 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -36,6 +36,7 @@ obj-$(CONFIG_PINCTRL_IMX25)	+= pinctrl-imx25.o
+ obj-$(CONFIG_PINCTRL_IMX28)	+= pinctrl-imx28.o
+ obj-$(CONFIG_PINCTRL_PALMAS)	+= pinctrl-palmas.o
+ obj-$(CONFIG_PINCTRL_ROCKCHIP)	+= pinctrl-rockchip.o
++obj-$(CONFIG_PINCTRL_RT2880)	+= pinctrl-rt2880.o
+ obj-$(CONFIG_PINCTRL_SINGLE)	+= pinctrl-single.o
+ obj-$(CONFIG_PINCTRL_SIRF)	+= sirf/
+ obj-$(CONFIG_PINCTRL_TEGRA)	+= pinctrl-tegra.o
+diff --git a/drivers/pinctrl/pinctrl-rt2880.c b/drivers/pinctrl/pinctrl-rt2880.c
+new file mode 100644
+index 0000000..fb76b10
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-rt2880.c
+@@ -0,0 +1,474 @@
++/*
++ *  linux/drivers/pinctrl/pinctrl-rt2880.c
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  publishhed by the Free Software Foundation.
++ *
++ *  Copyright (C) 2013 John Crispin <blogic@openwrt.org>
++ */
++
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinconf.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pinctrl/consumer.h>
++#include <linux/pinctrl/machine.h>
++
++#include <asm/mach-ralink/ralink_regs.h>
++#include <asm/mach-ralink/pinmux.h>
++#include <asm/mach-ralink/mt7620.h>
++
++#include "core.h"
++
++#define SYSC_REG_GPIO_MODE	0x60
++
++struct rt2880_priv {
++	struct device *dev;
++
++	struct pinctrl_pin_desc *pads;
++	struct pinctrl_desc *desc;
++
++	struct rt2880_pmx_func **func;
++	int func_count;
++
++	struct rt2880_pmx_group *groups;
++	const char **group_names;
++	int group_count;
++
++	uint8_t *gpio;
++	int max_pins;
++};
++
++struct rt2880_pmx_group *rt2880_pinmux_data = NULL;
++
++static int rt2880_get_group_count(struct pinctrl_dev *pctrldev)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	return p->group_count;
++}
++
++static const char *rt2880_get_group_name(struct pinctrl_dev *pctrldev,
++					 unsigned group)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	if (group >= p->group_count)
++		return NULL;
++
++	return p->group_names[group];
++}
++
++static int rt2880_get_group_pins(struct pinctrl_dev *pctrldev,
++				 unsigned group,
++				 const unsigned **pins,
++				 unsigned *num_pins)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	if (group >= p->group_count)
++		return -EINVAL;
++
++	*pins = p->groups[group].func[0].pins;
++	*num_pins = p->groups[group].func[0].pin_count;
++
++	return 0;
++}
++
++static void rt2880_pinctrl_dt_free_map(struct pinctrl_dev *pctrldev,
++				    struct pinctrl_map *map, unsigned num_maps)
++{
++	int i;
++
++	for (i = 0; i < num_maps; i++)
++		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN ||
++		    map[i].type == PIN_MAP_TYPE_CONFIGS_GROUP)
++			kfree(map[i].data.configs.configs);
++	kfree(map);
++}
++
++static void rt2880_pinctrl_pin_dbg_show(struct pinctrl_dev *pctrldev,
++					struct seq_file *s,
++					unsigned offset)
++{
++	seq_puts(s, "ralink pio");
++}
++
++static void rt2880_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctrldev,
++				struct device_node *np,
++				struct pinctrl_map **map)
++{
++	const char *function;
++	int func = of_property_read_string(np, "ralink,function", &function);
++	int grps = of_property_count_strings(np, "ralink,group");
++	int i;
++
++	if (func || !grps)
++		return;
++
++	for (i = 0; i < grps; i++) {
++		const char *group;
++
++		of_property_read_string_index(np, "ralink,group", i, &group);
++
++		(*map)->type = PIN_MAP_TYPE_MUX_GROUP;
++		(*map)->name = function;
++		(*map)->data.mux.group = group;
++		(*map)->data.mux.function = function;
++		(*map)++;
++	}
++}
++
++static int rt2880_pinctrl_dt_node_to_map(struct pinctrl_dev *pctrldev,
++				struct device_node *np_config,
++				struct pinctrl_map **map,
++				unsigned *num_maps)
++{
++	int max_maps = 0;
++	struct pinctrl_map *tmp;
++	struct device_node *np;
++
++	for_each_child_of_node(np_config, np) {
++		int ret = of_property_count_strings(np, "ralink,group");
++
++		if (ret >= 0)
++			max_maps += ret;
++	}
++
++	if (!max_maps)
++		return max_maps;
++
++	*map = kzalloc(max_maps * sizeof(struct pinctrl_map),
++					GFP_KERNEL);
++	if (!*map)
++		return -ENOMEM;
++
++	tmp = *map;
++
++	for_each_child_of_node(np_config, np)
++		rt2880_pinctrl_dt_subnode_to_map(pctrldev, np, &tmp);
++	*num_maps = max_maps;
++
++	return 0;
++}
++
++static const struct pinctrl_ops rt2880_pctrl_ops = {
++	.get_groups_count	= rt2880_get_group_count,
++	.get_group_name		= rt2880_get_group_name,
++	.get_group_pins		= rt2880_get_group_pins,
++	.pin_dbg_show		= rt2880_pinctrl_pin_dbg_show,
++	.dt_node_to_map		= rt2880_pinctrl_dt_node_to_map,
++	.dt_free_map		= rt2880_pinctrl_dt_free_map,
++};
++
++static int rt2880_pmx_func_count(struct pinctrl_dev *pctrldev)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	return p->func_count;
++}
++
++static const char *rt2880_pmx_func_name(struct pinctrl_dev *pctrldev,
++					 unsigned func)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	return p->func[func]->name;
++}
++
++static int rt2880_pmx_group_get_groups(struct pinctrl_dev *pctrldev,
++				unsigned func,
++				const char * const **groups,
++				unsigned * const num_groups)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	if (p->func[func]->group_count == 1)
++		*groups = &p->group_names[p->func[func]->groups[0]];
++	else
++		*groups = p->group_names;
++
++	*num_groups = p->func[func]->group_count;
++
++	return 0;
++}
++
++static int rt2880_pmx_group_enable(struct pinctrl_dev *pctrldev,
++				unsigned func,
++				unsigned group)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++	u32 mode = 0;
++	int i;
++
++	/* dont allow double use */
++	if (p->groups[group].enabled) {
++		dev_err(p->dev, "%s is already enabled\n",
++				p->groups[group].name);
++		return -EBUSY;
++	}
++
++	p->groups[group].enabled = 1;
++	p->func[func]->enabled = 1;
++
++	mode = rt_sysc_r32(SYSC_REG_GPIO_MODE);
++	mode &= ~(p->groups[group].mask << p->groups[group].shift);
++
++	/* mark the pins as gpio */
++	for (i = 0; i < p->groups[group].func[0].pin_count; i++)
++		p->gpio[p->groups[group].func[0].pins[i]] = 1;
++
++	/* function 0 is gpio and needs special handling */
++	if (func == 0) {
++		mode |= p->groups[group].gpio << p->groups[group].shift;
++	} else {
++		for (i = 0; i < p->func[func]->pin_count; i++)
++			p->gpio[p->func[func]->pins[i]] = 0;
++		mode |= p->func[func]->value << p->groups[group].shift;
++	}
++	rt_sysc_w32(mode, SYSC_REG_GPIO_MODE);
++
++
++	return 0;
++}
++
++static int rt2880_pmx_group_gpio_request_enable(struct pinctrl_dev *pctrldev,
++				struct pinctrl_gpio_range *range,
++				unsigned pin)
++{
++	struct rt2880_priv *p = pinctrl_dev_get_drvdata(pctrldev);
++
++	if (!p->gpio[pin]) {
++		dev_err(p->dev, "pin %d is not set to gpio mux\n", pin);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static const struct pinmux_ops rt2880_pmx_group_ops = {
++	.get_functions_count	= rt2880_pmx_func_count,
++	.get_function_name	= rt2880_pmx_func_name,
++	.get_function_groups	= rt2880_pmx_group_get_groups,
++	.enable			= rt2880_pmx_group_enable,
++	.gpio_request_enable	= rt2880_pmx_group_gpio_request_enable,
++};
++
++static struct pinctrl_desc rt2880_pctrl_desc = {
++	.owner		= THIS_MODULE,
++	.name		= "rt2880-pinmux",
++	.pctlops	= &rt2880_pctrl_ops,
++	.pmxops		= &rt2880_pmx_group_ops,
++};
++
++static struct rt2880_pmx_func gpio_func = {
++	.name = "gpio",
++};
++
++static int rt2880_pinmux_index(struct rt2880_priv *p)
++{
++	struct rt2880_pmx_func **f;
++	struct rt2880_pmx_group *mux = p->groups;
++	int i, j, c = 0;
++
++	/* count the mux functions */
++	while (mux->name) {
++		p->group_count++;
++		mux++;
++	}
++
++	/* allocate the group names array needed by the gpio function */
++	p->group_names = devm_kzalloc(p->dev,
++		sizeof(char *) * p->group_count, GFP_KERNEL);
++	if (!p->group_names)
++		return -1;
++
++	for (i = 0; i < p->group_count; i++) {
++		p->group_names[i] = p->groups[i].name;
++		p->func_count += p->groups[i].func_count;
++	}
++
++	/* we have a dummy function[0] for gpio */
++	p->func_count++;
++
++	/* allocate our function and group mapping index buffers */
++	f = p->func = devm_kzalloc(p->dev,
++		sizeof(struct rt2880_pmx_func) * p->func_count, GFP_KERNEL);
++	gpio_func.groups = devm_kzalloc(p->dev, sizeof(int) * p->group_count,
++		GFP_KERNEL);
++	if (!f || !gpio_func.groups)
++		return -1;
++
++	/* add a backpointer to the function so it knows its group */
++	gpio_func.group_count = p->group_count;
++	for (i = 0; i < gpio_func.group_count; i++)
++		gpio_func.groups[i] = i;
++
++	f[c] = &gpio_func;
++	c++;
++
++	/* add remaining functions */
++	for (i = 0; i < p->group_count; i++) {
++		for (j = 0; j < p->groups[i].func_count; j++) {
++			f[c] = &p->groups[i].func[j];
++			f[c]->groups = devm_kzalloc(p->dev, sizeof(int),
++								GFP_KERNEL);
++			f[c]->groups[0] = i;
++			f[c]->group_count = 1;
++			c++;
++		}
++	}
++	return 0;
++}
++
++static int rt2880_pinmux_pins(struct rt2880_priv *p)
++{
++	int i, j;
++
++	/* loop over the functions and initialize the pins array */
++	for (i = 0; i < p->func_count; i++) {
++		int pin;
++
++		if (!p->func[i]->pin_count)
++			continue;
++
++		p->func[i]->pins = devm_kzalloc(p->dev,
++			sizeof(int) * p->func[i]->pin_count, GFP_KERNEL);
++		for (j = 0; j < p->func[i]->pin_count; j++)
++			p->func[i]->pins[j] = p->func[i]->pin_first + j;
++
++		pin = p->func[i]->pin_first + p->func[i]->pin_count;
++		if (pin > p->max_pins)
++			p->max_pins = pin;
++	}
++
++	/* the buffer that tells us which pins are gpio */
++	p->gpio = devm_kzalloc(p->dev, sizeof(uint8_t) * p->max_pins,
++		GFP_KERNEL);
++	/* the pads needed to tell pinctrl about our pins */
++	p->pads = devm_kzalloc(p->dev,
++		sizeof(struct pinctrl_pin_desc) * p->max_pins,
++		GFP_KERNEL);
++	if (!p->pads || !p->gpio) {
++		dev_err(p->dev, "Failed to allocate gpio data\n");
++		return -ENOMEM;
++	}
++
++	memset(p->gpio, 1, sizeof(uint8_t) * p->max_pins);
++	for (i = 0; i < p->func_count; i++) {
++		if (!p->func[i]->pin_count)
++			continue;
++
++		for (j = 0; j < p->func[i]->pin_count; j++)
++			p->gpio[p->func[i]->pins[j]] = 0;
++	}
++
++	/* pin 0 is always a gpio */
++	p->gpio[0] = 1;
++
++	/* set the pads */
++	for (i = 0; i < p->max_pins; i++) {
++		/* strlen("ioXY") + 1 = 5 */
++		char *name = devm_kzalloc(p->dev, 5, GFP_KERNEL);
++
++		if (!name)
++			return -ENOMEM;
++
++		snprintf(name, 5, "io%d", i);
++		p->pads[i].number = i;
++		p->pads[i].name = name;
++	}
++	p->desc->pins = p->pads;
++	p->desc->npins = p->max_pins;
++
++	return 0;
++}
++
++static int rt2880_pinmux_probe(struct platform_device *pdev)
++{
++	struct rt2880_priv *p;
++	struct pinctrl_dev *dev;
++	struct device_node *np;
++
++	if (!rt2880_pinmux_data)
++		return -ENOSYS;
++
++	/* setup the private data */
++	p = devm_kzalloc(&pdev->dev, sizeof(struct rt2880_priv), GFP_KERNEL);
++	if (!p)
++		return -ENOMEM;
++
++	p->dev = &pdev->dev;
++	p->desc = &rt2880_pctrl_desc;
++	p->groups = rt2880_pinmux_data;
++	platform_set_drvdata(pdev, p);
++
++	/* init the device */
++	if (rt2880_pinmux_index(p)) {
++		dev_err(&pdev->dev, "failed to load index\n");
++		return -EINVAL;
++	}
++	if (rt2880_pinmux_pins(p)) {
++		dev_err(&pdev->dev, "failed to load pins\n");
++		return -EINVAL;
++	}
++	dev = pinctrl_register(p->desc, &pdev->dev, p);
++	if (IS_ERR(dev))
++		return PTR_ERR(dev);
++
++	/* finalize by adding gpio ranges for enables gpio controllers */
++	for_each_compatible_node(np, NULL, "ralink,rt2880-gpio") {
++		const __be32 *ngpio, *gpiobase;
++		struct pinctrl_gpio_range *range;
++		char *name;
++
++		if (!of_device_is_available(np))
++			continue;
++
++		ngpio = of_get_property(np, "ralink,num-gpios", NULL);
++		gpiobase = of_get_property(np, "ralink,gpio-base", NULL);
++		if (!ngpio || !gpiobase) {
++			dev_err(&pdev->dev, "failed to load chip info\n");
++			return -EINVAL;
++		}
++
++		range = devm_kzalloc(p->dev,
++			sizeof(struct pinctrl_gpio_range) + 4, GFP_KERNEL);
++		range->name = name = (char *) &range[1];
++		sprintf(name, "pio");
++		range->npins = __be32_to_cpu(*ngpio);
++		range->base = __be32_to_cpu(*gpiobase);
++		range->pin_base = range->base;
++		pinctrl_add_gpio_range(dev, range);
++	}
++
++	return 0;
++}
++
++static const struct of_device_id rt2880_pinmux_match[] = {
++	{ .compatible = "ralink,rt2880-pinmux" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, rt2880_pinmux_match);
++
++static struct platform_driver rt2880_pinmux_driver = {
++	.probe = rt2880_pinmux_probe,
++	.driver = {
++		.name = "rt2880-pinmux",
++		.owner = THIS_MODULE,
++		.of_match_table = rt2880_pinmux_match,
++	},
++};
++
++int __init rt2880_pinmux_init(void)
++{
++	return platform_driver_register(&rt2880_pinmux_driver);
++}
++
++core_initcall_sync(rt2880_pinmux_init);
 -- 
-1.9.1
+1.7.10.4
 
