@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196AbaJINcu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:32:50 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:35041 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919AbaJINcl (ORCPT
+	id S1757240AbaJINfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:35:04 -0400
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:52948 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755673AbaJINez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:32:41 -0400
-Date: Thu, 9 Oct 2014 09:32:37 -0400
-From: Tejun Heo <tj@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 1/2] sysfs/kernfs: allow attributes to request write
- buffer be pre-allocated.
-Message-ID: <20141009133237.GC14387@htj.dyndns.org>
-References: <20141008234119.19126.4182.stgit@notabene.brown>
- <20141008235706.19126.68493.stgit@notabene.brown>
+	Thu, 9 Oct 2014 09:34:55 -0400
+Date: Thu, 9 Oct 2014 14:33:55 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "lguest@lists.ozlabs.org" <lguest@lists.ozlabs.org>,
+        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
+        "linux-hexagon@vger.kernel.org" <linux-hexagon@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "adi-buildroot-devel@lists.sourceforge.net" 
+	<adi-buildroot-devel@lists.sourceforge.net>,
+        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
+        "linux-am33-list@redhat.com" <linux-am33-list@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>,
+        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
+        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 12/44] mfd: ab8500-sysctrl: Register with kernel poweroff
+ handler
+Message-ID: <20141009133355.GQ20647@lee--X1>
+References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
+ <1412659726-29957-13-git-send-email-linux@roeck-us.net>
+ <20141007080048.GB25331@lee--X1>
+ <20141009103656.GF17836@e104818-lin.cambridge.arm.com>
+ <20141009104927.GN20647@lee--X1>
+ <54368D16.40404@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141008235706.19126.68493.stgit@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54368D16.40404@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 10:57:06AM +1100, NeilBrown wrote:
-> md/raid allows metadata management to be performed in user-space.
-> A various times, particularly on device failure, the metadata needs
-> to be updated before further writes can be permitted.
-> This means that the user-space program which updates metadata much
-> not block on writeout, and so must not allocate memory.
+On Thu, 09 Oct 2014, Guenter Roeck wrote:
+
+> On 10/09/2014 03:49 AM, Lee Jones wrote:
+> >On Thu, 09 Oct 2014, Catalin Marinas wrote:
+> >
+> >>On Tue, Oct 07, 2014 at 09:00:48AM +0100, Lee Jones wrote:
+> >>>On Mon, 06 Oct 2014, Guenter Roeck wrote:
+> >>>>--- a/drivers/mfd/ab8500-sysctrl.c
+> >>>>+++ b/drivers/mfd/ab8500-sysctrl.c
+> >>>>@@ -6,6 +6,7 @@
+> >>>
+> >>>[...]
+> >>>
+> >>>>+static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
+> >>>>+			    void *unused2)
+> >>>>  {
+> >>>>  	sigset_t old;
+> >>>>  	sigset_t all;
+> >>>>@@ -34,11 +36,6 @@ static void ab8500_power_off(void)
+> >>>>  	struct power_supply *psy;
+> >>>>  	int ret;
+> >>>>
+> >>>>-	if (sysctrl_dev == NULL) {
+> >>>>-		pr_err("%s: sysctrl not initialized\n", __func__);
+> >>>>-		return;
+> >>>>-	}
+> >>>
+> >>>Can you explain the purpose of this change please?
+> >>
+> >>I guess it's because the sysctrl_dev is already initialised when
+> >>registering the power_off handler, so there isn't a way to call the
+> >>above function with a NULL sysctrl_dev. Probably even with the original
+> >>code you didn't need this check (after some race fix in
+> >>ab8500_sysctrl_remove but races is one of the things Guenter's patches
+> >>try to address).
+> >
+> >Sounds reasonable, although I think this change should be part of
+> >another patch.
+> >
+> Sure, no problem. I'll split this into two patches.
 > 
-> mlockall(MCL_CURRENT|MCL_FUTURE) and pre-allocation can avoid all
-> memory allocation issues for user-memory, but that does not help
-> kernel memory.
-> Several kernel objects can be pre-allocated.  e.g. files opened before
-> any writes to the array are permitted.
-> However some kernel allocation happens in places that cannot be
-> pre-allocated.
-> In particular, writes to sysfs files (to tell md that it can now
-> allow writes to the array) allocate a buffer using GFP_KERNEL.
-> 
-> This patch allows attributes to be marked as "PREALLOC".  In that case
-> the maximal buffer is allocated when the file is opened, and then used
-> on each write instead of allocating a new buffer.
-> 
-> As the same buffer is now shared for all writes on the same file
-> description, the mutex is extended to cover full use of the buffer
-> including the copy_from_user().
-> 
-> The new __ATTR_PREALLOC() 'or's a new flag in to the 'mode', which is
-> inspected by sysfs_add_file_mode_ns() to determine if the file should be
-> marked as requiring prealloc.
-> 
-> Signed-off-by: NeilBrown  <neilb@suse.de>
+> Since we are at it, any idea what to do with the restart function
+> in the same file ? It is not used anywhere.
 
-Reviewed-by: Tejun Heo <tj@kernel.org>
-
-A trivial nitpick follows.
-
-> @@ -685,6 +690,13 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
->  	 */
->  	of->atomic_write_len = ops->atomic_write_len;
->  
-> +	if (ops->prealloc) {
-> +		int len = of->atomic_write_len ?: PAGE_SIZE;
-> +		of->prealloc_buf = kmalloc(len + 1, GFP_KERNEL);
-> +		error = -ENOMEM;
-> +		if (!of->prealloc_buf)
-> +			goto err_free;
-> +	}
-
-We prolly want a new line here for style consistency?
-
->  	/*
->  	 * Always instantiate seq_file even if read access doesn't use
->  	 * seq_file or is not requested.  This unifies private data access
-
-Thanks.
+You can strip it out with Linus Walleij's Ack.  Or I'll be happy to do
+it?
 
 -- 
-tejun
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
