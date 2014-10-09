@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014AbaJIJBb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:01:31 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:57519 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754719AbaJIJB0 (ORCPT
+	id S1755174AbaJIJBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:01:48 -0400
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:59220 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755039AbaJIJBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:01:26 -0400
-X-IronPort-AV: E=Sophos;i="5.04,683,1406563200"; 
-   d="scan'208";a="37005236"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: Richard Weinberger <richard@nod.at>,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: RE: [PATCHv4] procfs: show hierarchy of pid namespace
-Thread-Topic: [PATCHv4] procfs: show hierarchy of pid namespace
-Thread-Index: AQHP4uOJLRNNrORQX06m7Z2hZe7Ft5wncYSg
-Date: Thu, 9 Oct 2014 09:01:21 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E5E1460@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1412762198-21825-1-git-send-email-chenhanxiao@cn.fujitsu.com>
- <5435134E.1080802@nod.at>
-In-Reply-To: <5435134E.1080802@nod.at>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 9 Oct 2014 05:01:41 -0400
 MIME-Version: 1.0
+Date: Thu, 9 Oct 2014 11:01:39 +0200
+Message-ID: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
+Subject: trace_printk() broken wrt %pV
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9991Yu5029323
 
+Hi Steven,
 
+my code does something like:
 
-> -----Original Message-----
-> From: Richard Weinberger [mailto:richard@nod.at]
-> Sent: Wednesday, October 08, 2014 6:35 PM
-> To: Chen, Hanxiao/Èôà ÊôóÈúÑ; containers@lists.linux-foundation.org;
-> linux-kernel@vger.kernel.org
-> Cc: Serge Hallyn; Eric W. Biederman; Oleg Nesterov; David Howells; Richard
-> Weinberger; Pavel Emelyanov; Vasiliy Kulikov; Mateusz Guzik
-> Subject: Re: [PATCHv4] procfs: show hierarchy of pid namespace
-> 
-> Am 08.10.2014 11:56, schrieb Chen Hanxiao:
-> > This patch will show the hierarchy of pid namespace
-> > by /proc/pidns_hierarchy like:
-> >
-> > [root@localhost ~]#cat /proc/pidns_hierarchy
-> > /proc/18060/ns/pid /proc/18102/ns/pid /proc/1534/ns/pid
-> > /proc/18060/ns/pid /proc/18102/ns/pid /proc/1600/ns/pid
-> > /proc/1550/ns/pid
-> 
-> A proc file that prints paths of other proc files, srsly? ;)
+void my_printf(const char *fmt, ...)
+{
+        struct va_format vaf;
+        va_list args;
 
-Yes, sounds weird  though.
+        va_start(args, fmt);
+        vaf.fmt = fmt;
+        vaf.va = &args;
+        trace_printk("%pV", &vaf);
+        va_end(args);
+}
 
-> I didn't follow the whole discussion but why is this not
-> a directory containing symbolic links to other pid files in /proc/<PID>/ns/pid?
+While reading from /sys/kernel/debug/tracing/trace a kernel oops happens.
 
-In the v1 version it‚Äôs a directory, and contained symlinks to /proc/<PID>/ns/pid
-But we found that is not so easy to use:
-a) dirs looks like a snapshot
-refreshing it needs a lot of unnecessary codes.
+[   54.406617] BUG: unable to handle kernel paging request at ffffffffffffffff
+[   54.407078] IP: [<ffffffff81358f3c>] pointer.isra.18+0x1fc/0x450
+[   54.407078] PGD 1e14067 PUD 1e16067 PMD 0
+[   54.407078] Oops: 0000 [#1] PREEMPT SMP
+[   54.407078] Modules linked in:
+[   54.407078] CPU: 1 PID: 2700 Comm: cat Not tainted 3.17.0-rc6+ #274
+[   54.407078] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996),
+BIOS rel-1.7.5-0-ge51488c-20140816_022509-build35 04/01/2014
+[   54.407078] task: ffff8800391c1660 ti: ffff880035fe4000 task.ti:
+ffff880035fe4000
+[   54.407078] RIP: 0010:[<ffffffff81358f3c>]  [<ffffffff81358f3c>]
+pointer.isra.18+0x1fc/0x450
+[   54.407078] RSP: 0018:ffff880035fe7d20  EFLAGS: 00010283
+[   54.407078] RAX: ffffffffffffffff RBX: 0000000000000010 RCX: ffff880035fe7d38
+[   54.407078] RDX: ffff880035fea0fb RSI: ffff880035fe9137 RDI: ffff880035fe9137
+[   54.407078] RBP: ffff880035fe7d78 R08: 0000000000000000 R09: 000000000000000a
+[   54.407078] R10: 0000000000000014 R11: ffffffff815633e0 R12: ffff88000013fdd0
+[   54.407078] R13: ffff880035fe9137 R14: ffff880035fea0fb R15: ffff880035fe9137
+[   54.407078] FS:  00007f4c7627f700(0000) GS:ffff88003e000000(0000)
+knlGS:0000000000000000
+[   54.407078] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   54.407078] CR2: ffffffffffffffff CR3: 0000000038459000 CR4: 00000000000006e0
+[   54.407078] Stack:
+[   54.407078]  ffff880035fea0fb ffff880035fe7d90 ffffffff81359414
+000000000000ffff
+[   54.407078]  fffffffdff0a0003 0000000000000002 ffff880035fea0fb
+ffff88003cfac03c
+[   54.407078]  ffffffff81cefe16 ffffffff81cefe16 ffff880035fe9137
+ffff880035fe7de8
+[   54.407078] Call Trace:
+[   54.407078]  [<ffffffff81359414>] ? vsnprintf+0x284/0x590
+[   54.407078]  [<ffffffff8135990c>] bstr_printf+0xcc/0x3e0
+[   54.407078]  [<ffffffff810fed03>] ? trace_seq_printf+0x83/0xd0
+[   54.407078]  [<ffffffff810fedfb>] trace_seq_bprintf+0x4b/0x90
+[   54.407078]  [<ffffffff810fe413>] trace_bprint_print+0x63/0x90
+[   54.407078]  [<ffffffff810fadc3>] print_trace_line+0x183/0x440
+[   54.407078]  [<ffffffff810fba3b>] s_show+0x2b/0xc0
+[   54.407078]  [<ffffffff81199df6>] seq_read+0x226/0x3a0
+[   54.407078]  [<ffffffff81175576>] vfs_read+0x96/0x180
+[   54.407078]  [<ffffffff81176214>] SyS_read+0x44/0xb0
+[   54.407078]  [<ffffffff818fa892>] system_call_fastpath+0x16/0x1b
+[   54.407078] Code: 10 4c 89 e2 48 89 3c 24 4c 89 f6 4c 89 ef e8 8c
+f2 ff ff e9 8f fe ff ff 0f 1f 80 00 00 00 00 49 8b 44 24 08 48 8d 4d
+c0 4c 89 ef <48> 8b 10 48 89 55 c0 48 8b 50 08 48 89 55 c8 48 8b 40 10
+49 8b
+[   54.407078] RIP  [<ffffffff81358f3c>] pointer.isra.18+0x1fc/0x450
+[   54.407078]  RSP <ffff880035fe7d20>
+[   54.407078] CR2: ffffffffffffffff
+[   54.407078] ---[ end trace 2e14557c4e24855c ]---
 
-b) dirs did not provide more info than proc file
-	What we really need is the <PID>, and we could get it from
-	proc file.
-	When we read the file, we refresh it at that time.
-
+-- 
 Thanks,
-- Chen
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+//richard
