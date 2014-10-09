@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaJITNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:13:45 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:50897 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaJITNQ (ORCPT
+	id S1752106AbaJITN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:13:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34753 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaJITNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:13:16 -0400
-Date: Thu, 9 Oct 2014 21:13:07 +0200
-From: Marc Burkhardt <marc@osknowledge.org>
-To: Marc Burkhardt <marc@osknowledge.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: acpitool - /proc/acpi/wakeup
-Message-ID: <20141009191307.GB5428@localhost>
-References: <20141009190406.GA5428@localhost>
+	Thu, 9 Oct 2014 15:13:52 -0400
+Date: Thu, 9 Oct 2014 12:13:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: "xinhui.pan" <xinhuix.pan@intel.com>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        mnipxh <mnipxh@gmail.com>, gnomes@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] tty/n_gsm.c: do not clear gsm_mux entry when the gsm is
+ not closed
+Message-ID: <20141009191351.GA4256@kroah.com>
+References: <53D0CF0D.9060103@intel.com>
+ <20140727180953.GA7232@kroah.com>
+ <53D5F8C9.4070008@intel.com>
+ <20140728151324.GA12973@kroah.com>
+ <5436DB9A.6040801@hurleysoftware.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141009190406.GA5428@localhost>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://marc.ngoe.de/pubkey.asc
-X-Operating-System: Linux marc 3.17.0-desper
+In-Reply-To: <5436DB9A.6040801@hurleysoftware.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marc Burkhardt <marc@osknowledge.org> [2014-10-09 21:04:06 +0200]:
-
-Just another note: the process uses 100% CPU while 'waiting' for further data it
-seems...
-
-strace shows nothing suspicious.
-
-Thanks,
-Marc
-
-> Hi there,
-> I noticed, that 'acpitool -e' doesn't work any longer sind I upgraded to 3.17.
-> The tool stalls at
+On Thu, Oct 09, 2014 at 03:01:46PM -0400, Peter Hurley wrote:
+> On 07/28/2014 11:13 AM, Greg Kroah-Hartman wrote:
+> > On Mon, Jul 28, 2014 at 03:16:25PM +0800, xinhui.pan wrote:
+> >>> Why can't you do dynamic reference counting of your structure, that
+> >>> would allow you to get rid of your global array, right?
+> >>>
+> >>
+> >> Thanks for your nice comments.
+> >> Struct gsm has a ref-count already. :)
+> > 
+> > Then you should be fine, no need to keep it in an array.
+> > 
+> >> And also adding a ref-count is a little hard to me. :(
+> >> This global array is used to keep tracking the gsms that stands for the gsmttyXX.
+> > 
+> > You shouldn't need that at all, just use a list, you don't care what the
+> > XX number is within the driver, just allocate a new one with the next
+> > available number and you should be fine.
+> > 
+> >> and it can tell us if we can create a new gsm. :)
+> > 
+> > You should always be able to create a new gsm if you need to :)
+> > 
+> >> In gsm_init we set *gsm_tty_driver = alloc_tty_driver(256);*
+> > 
+> > Why limit to 256?  Just use a list, and a idr structure to allocate the
+> > minor number, and all should be good.
 > 
->    Device       S-state   Status   Sysfs node
->   ---------------------------------------
->   1. LID          S3    *enabled   platform:PNP0C0D:00
->   2. SLPB         S3    *enabled   platform:PNP0C0E:0
+> Hi Greg,
 > 
-> Before there were 11 entries shown.
+> This is still broken in the gsm driver.
 > 
-> Can I help investigate it?
-> 
-> Thanks,
-> Marc
-> 
-> -- 
-> Marc Burkhardt
+> As much as I'd like to see someone take ownership of the gsm driver and
+> do this 'the right way', I think until that happens we should consider
+> fixing the reuse-while-in-use error.
 
--- 
-Marc Burkhardt
+What happened to the gsm driver maintainers?
+
+> Would you be willing to take a patch from me that just does the bare
+> minimum to keep this from panicking in the cdev code?
+
+Depends on what the patch looks like :)
+
+Send it on, and I'll be glad to review it.
+
+thanks,
+
+greg k-h
