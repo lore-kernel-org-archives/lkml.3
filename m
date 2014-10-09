@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804AbaJIMay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:30:54 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:56206 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573AbaJIMar (ORCPT
+	id S1755814AbaJIMcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:32:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59483 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391AbaJIMcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:30:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFLxGvxkL33_TVaf6dT9joC8dzU9uvJVG-GJdDKXPsMVAvQhvw@mail.gmail.com>
-References: <1412051169-9142-1-git-send-email-ankit.jindal@linaro.org>
- <CAPTm99V-xyXa7WQG2jzDz19gotJ0aQRPk_rb5ukvUpdFyFabfw@mail.gmail.com>
- <2114579.IN6EpqPdMv@wuerfel> <CAPTm99WBE7RnGYNZsCfsenYcR3wNSVYOg--90_s1Ji_=Vj5myA@mail.gmail.com>
- <CAFLxGvxkL33_TVaf6dT9joC8dzU9uvJVG-GJdDKXPsMVAvQhvw@mail.gmail.com>
-From: Ankit Jindal <ankit.jindal@linaro.org>
-Date: Thu, 9 Oct 2014 18:00:26 +0530
-Message-ID: <CAPTm99WWP+FoEAL4N5vcSfNue5vEcL9hPcVfP6zmmvNUviRcuA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/6] UIO driver for APM X-Gene QMTM
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "patches@apm.com" <patches@apm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Tushar Jagad <tushar.jagad@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 9 Oct 2014 08:32:42 -0400
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCH] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
+Date: Thu,  9 Oct 2014 14:32:36 +0200
+Message-Id: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
+X-Mailer: git-send-email 2.1.0
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2014 17:52, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Thu, Oct 9, 2014 at 2:17 PM, Ankit Jindal <ankit.jindal@linaro.org> wrote:
->> On 9 October 2014 17:36, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Thursday 09 October 2014 14:14:33 Ankit Jindal wrote:
->>>> On 30 September 2014 09:56, Ankit Jindal <ankit.jindal@linaro.org> wrote:
->>>> > This patchset enables user space access to APM X-Gene QMTM
->>>> > using UIO framework.
->>>> >
->>>> > The patchset also introduces new type UIO_MEM_PHYS_CACHE
->>>> > for mem regions because APM X-Gene QMTM device supports
->>>> > cache coherency with CPU caches.
->>>>
->>>
->>> I haven't been able to review the patch in detail yet, but I have
->>> a very high-level question: how do you decide which driver to use?
->>>
->>> I understand that the normal use case is for the QMTM to be used by
->>> the kernel directly rather than being exported to user space, and
->>> that the network driver will just use it if it is there.
->>
->> This UIO driver will be disabled by default. When this driver is
->> enabled, the other dependent drivers need to be removed from the
->> config.
->
-> And if the user forgets or creates an allmod/yesconfig we have
-> undefined behavior?
+The KSZ8021 and KSZ8031 support RMII reference input clocks of 25MHz
+and 50MHz. Both PHYs differ in the default frequency they expect
+after reset. If this differs from the actual input clock, then
+register 0x1f bit 7 must be changed.
 
-When the conflicting drivers will be added to kernel, necessary
-options (depends on not) needs to be added to the Kconfig.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+ Documentation/devicetree/bindings/net/micrel.txt |  6 ++++++
+ drivers/net/phy/micrel.c                         | 19 +++++++++++++++++--
+ include/linux/micrel_phy.h                       |  1 +
+ 3 files changed, 24 insertions(+), 2 deletions(-)
 
->
-> --
-> Thanks,
-> //richard
+diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
+index 98a3e61..e1d99b9 100644
+--- a/Documentation/devicetree/bindings/net/micrel.txt
++++ b/Documentation/devicetree/bindings/net/micrel.txt
+@@ -16,3 +16,9 @@ Optional properties:
+ 	      KSZ8051: register 0x1f, bits 5..4
+ 
+               See the respective PHY datasheet for the mode values.
++
++ - clocks, clock-names: contains clocks according to the common clock bindings.
++
++              supported clocks:
++	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
++		to determine the XI input clock.
+diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+index 011dbda..ca130e9 100644
+--- a/drivers/net/phy/micrel.c
++++ b/drivers/net/phy/micrel.c
+@@ -26,6 +26,7 @@
+ #include <linux/phy.h>
+ #include <linux/micrel_phy.h>
+ #include <linux/of.h>
++#include <linux/clk.h>
+ 
+ /* Operation Mode Strap Override */
+ #define MII_KSZPHY_OMSO				0x16
+@@ -72,9 +73,12 @@ static int ksz_config_flags(struct phy_device *phydev)
+ {
+ 	int regval;
+ 
+-	if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK) {
++	if (phydev->dev_flags & (MICREL_PHY_50MHZ_CLK | MICREL_PHY_25MHZ_CLK)) {
+ 		regval = phy_read(phydev, MII_KSZPHY_CTRL);
+-		regval |= KSZ8051_RMII_50MHZ_CLK;
++		if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK)
++			regval |= KSZ8051_RMII_50MHZ_CLK;
++		else
++			regval &= ~KSZ8051_RMII_50MHZ_CLK;
+ 		return phy_write(phydev, MII_KSZPHY_CTRL, regval);
+ 	}
+ 	return 0;
+@@ -187,9 +191,20 @@ static int kszphy_config_init_led8041(struct phy_device *phydev)
+ 
+ static int ksz8021_config_init(struct phy_device *phydev)
+ {
++	struct clk *clk;
+ 	const u16 val = KSZPHY_OMSO_B_CAST_OFF | KSZPHY_OMSO_RMII_OVERRIDE;
+ 	int rc;
+ 
++	clk = devm_clk_get(&phydev->dev, "rmii-ref");
++	if (!IS_ERR(clk)) {
++		unsigned long rate = clk_get_rate(clk);
++
++		if (rate > 24500000 && rate < 25500000)
++			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
++		else if (rate > 49500000 && rate < 50500000)
++			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
++	}
++
+ 	rc = kszphy_setup_led(phydev, 0x1f, 4);
+ 	if (rc)
+ 		dev_err(&phydev->dev, "failed to set led mode\n");
+diff --git a/include/linux/micrel_phy.h b/include/linux/micrel_phy.h
+index 2e5b194..53d33de 100644
+--- a/include/linux/micrel_phy.h
++++ b/include/linux/micrel_phy.h
+@@ -37,6 +37,7 @@
+ 
+ /* struct phy_device dev_flags definitions */
+ #define MICREL_PHY_50MHZ_CLK	0x00000001
++#define MICREL_PHY_25MHZ_CLK	0x00000002
+ 
+ #define MICREL_KSZ9021_EXTREG_CTRL	0xB
+ #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
+-- 
+2.1.0
 
-Thanks,
-Ankit
