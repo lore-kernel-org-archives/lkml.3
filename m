@@ -1,102 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574AbaJIPE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:04:59 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53970 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785AbaJIPEl (ORCPT
+	id S1757590AbaJIPFS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:05:18 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:35786 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757360AbaJIPEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:04:41 -0400
-Message-ID: <5436A403.1050109@collabora.co.uk>
-Date: Thu, 09 Oct 2014 17:04:35 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 9 Oct 2014 11:04:53 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
+        mpe@ellerman.id.au, benh@kernel.crashing.org
+Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
+        cbe-oss-dev@lists.ozlabs.org
+Subject: Re: [PATCH v4 03/16] powerpc/cell: Make spu_flush_all_slbs() generic
+In-Reply-To: <1412758505-23495-4-git-send-email-mikey@neuling.org>
+References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-4-git-send-email-mikey@neuling.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
+Date: Thu, 09 Oct 2014 20:34:44 +0530
+Message-ID: <874mvd2sj7.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-CC: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/5] regulator: dt-bindings: Add regulator-initial-mode
- support
-References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk> <1412775847-15213-4-git-send-email-javier.martinez@collabora.co.uk> <1412844355.1316.15.camel@AMDC1943>
-In-Reply-To: <1412844355.1316.15.camel@AMDC1943>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14100915-0013-0000-0000-0000019E1127
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+Michael Neuling <mikey@neuling.org> writes:
 
-Thanks a lot for your feedback.
-
-On 10/09/2014 10:45 AM, Krzysztof Kozlowski wrote:
-> On śro, 2014-10-08 at 15:44 +0200, Javier Martinez Canillas wrote:
->> --- a/Documentation/devicetree/bindings/regulator/regulator.txt
->> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
->> @@ -23,6 +23,14 @@ Optional properties:
->>    state among following defined suspend states:
->>    <3>: PM_SUSPEND_MEM - Setup regulator according to regulator-state-mem
->>    <4>: PM_SUSPEND_MAX - Setup regulator according to regulator-state-disk
->> +- regulator-initial-mode: initial regulator operating mode. One of following:
->> +	<1>: REGULATOR_MODE_FAST    - Regulator can handle fast changes.
->> +	<2>: REGULATOR_MODE_NORMAL  - Normal regulator power supply mode.
->> +	<4>: REGULATOR_MODE_IDLE    - Regulator runs in a more efficient mode.
->> +	<8>: REGULATOR_MODE_STANDBY - Regulator runs in the most efficient mode.
->> +  modes are defined in the dt-bindings/regulator/regulator.h header and can be
->> +  used in device tree sources files. If no mode is defined, then the OS will not
->> +  manage the operating mode and the HW default values will be used instead.
->>  - regulator-state-mem sub-root node for Suspend-to-RAM mode
->>    : suspend to memory, the device goes to sleep, but all data stored in memory,
->>    only some external interrupt can wake the device.
-> 
-> I agree with the need and the idea of generic bindings for operating
-> modes for regulators. At least for Exynos-based boards the PMICs have
-> quite similar opmodes.
-> 
-> However the regulator mode from consumer.h (and in above doc) does not
-> match well with these opmodes. Example is yours patch 4/5:
->  - idle ("more efficient mode") maps to "low power mode in suspend",
->  - standby ("the most efficient mode") maps to "OFF in suspend".
-> 
-> Actually we are not enable "efficient modes" but we configure how the
-> regulator will behave when AP says - I'm suspending.
+> From: Ian Munsie <imunsie@au1.ibm.com>
+>
+> This moves spu_flush_all_slbs() into a generic call copro_flush_all_slbs().
+>
+> This will be useful when we add cxl which also needs a similar SLB flush call.
 >
 
-Agree, Mark also pointed out that there is a difference between changing
-how the regulator will behave on runtime vs changing how the regulator
-will behave during system suspend. AFAIU from his explanation, the modes
-defined in consumer.h only applies to the former and conceptually there
-should be a difference between those two cases even when the Maxim PMIC
-seems to mix it both in the data-sheet and by using the same field.
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-I answered Mark on patch #5 with a suggestion on how to handle this in
-a generic way to avoid each driver having their own custom DT binding
-and duplicating the parsing code.
-
-Could you please answer there with your thoughts?
- 
-> 
-> Another issue: is "initial_state" not doing all this already?
-> 
-
-One of the options I indeed evaluated was if using initial_state could be
-possible. But currently the .set_suspend_mode function handler is only
-called for the STANDBY, MEM and MAX suspend modes. While is true that this
-could be extended to also support PM_SUSPEND_ON, I don't think that it
-makes sense conceptually. Since is not the same to set a mode to be used
-at runtime than setting a mode to be used during suspend.
-
-AFAIU that is the reason why there are separate .set_suspend_mode and
-.set_mode operations and that's why there are both an .initial_state
-and an .initial_mode.
-
-> Best regards,
-> Krzysztof
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> Signed-off-by: Michael Neuling <mikey@neuling.org>
+> ---
+>  arch/powerpc/include/asm/copro.h |  6 ++++++
+>  arch/powerpc/mm/copro_fault.c    |  9 +++++++++
+>  arch/powerpc/mm/hash_utils_64.c  | 10 +++-------
+>  arch/powerpc/mm/slice.c          | 10 +++-------
+>  4 files changed, 21 insertions(+), 14 deletions(-)
 >
+> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
+> index b0e6a18..ce216df 100644
+> --- a/arch/powerpc/include/asm/copro.h
+> +++ b/arch/powerpc/include/asm/copro.h
+> @@ -20,4 +20,10 @@ int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
+>  
+>  int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
+>  
+> +
+> +#ifdef CONFIG_PPC_COPRO_BASE
+> +void copro_flush_all_slbs(struct mm_struct *mm);
+> +#else
+> +static inline void copro_flush_all_slbs(struct mm_struct *mm) {}
+> +#endif
+>  #endif /* _ASM_POWERPC_COPRO_H */
+> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
+> index a15a23e..f2aa5a8 100644
+> --- a/arch/powerpc/mm/copro_fault.c
+> +++ b/arch/powerpc/mm/copro_fault.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/export.h>
+>  #include <asm/reg.h>
+>  #include <asm/copro.h>
+> +#include <asm/spu.h>
+>  
+>  /*
+>   * This ought to be kept in sync with the powerpc specific do_page_fault
+> @@ -136,3 +137,11 @@ int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL_GPL(copro_calculate_slb);
+> +
+> +void copro_flush_all_slbs(struct mm_struct *mm)
+> +{
+> +#ifdef CONFIG_SPU_BASE
+> +	spu_flush_all_slbs(mm);
+> +#endif
+> +}
+> +EXPORT_SYMBOL_GPL(copro_flush_all_slbs);
+> diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+> index daee7f4..5c0738d 100644
+> --- a/arch/powerpc/mm/hash_utils_64.c
+> +++ b/arch/powerpc/mm/hash_utils_64.c
+> @@ -51,7 +51,7 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/cputable.h>
+>  #include <asm/sections.h>
+> -#include <asm/spu.h>
+> +#include <asm/copro.h>
+>  #include <asm/udbg.h>
+>  #include <asm/code-patching.h>
+>  #include <asm/fadump.h>
+> @@ -901,9 +901,7 @@ void demote_segment_4k(struct mm_struct *mm, unsigned long addr)
+>  	if (get_slice_psize(mm, addr) == MMU_PAGE_4K)
+>  		return;
+>  	slice_set_range_psize(mm, addr, 1, MMU_PAGE_4K);
+> -#ifdef CONFIG_SPU_BASE
+> -	spu_flush_all_slbs(mm);
+> -#endif
+> +	copro_flush_all_slbs(mm);
+>  	if (get_paca_psize(addr) != MMU_PAGE_4K) {
+>  		get_paca()->context = mm->context;
+>  		slb_flush_and_rebolt();
+> @@ -1141,9 +1139,7 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
+>  			       "to 4kB pages because of "
+>  			       "non-cacheable mapping\n");
+>  			psize = mmu_vmalloc_psize = MMU_PAGE_4K;
+> -#ifdef CONFIG_SPU_BASE
+> -			spu_flush_all_slbs(mm);
+> -#endif
+> +			copro_flush_all_slbs(mm);
+>  		}
+>  	}
+>  
+> diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
+> index b0c75cc..a81791c 100644
+> --- a/arch/powerpc/mm/slice.c
+> +++ b/arch/powerpc/mm/slice.c
+> @@ -32,7 +32,7 @@
+>  #include <linux/export.h>
+>  #include <asm/mman.h>
+>  #include <asm/mmu.h>
+> -#include <asm/spu.h>
+> +#include <asm/copro.h>
+>  
+>  /* some sanity checks */
+>  #if (PGTABLE_RANGE >> 43) > SLICE_MASK_SIZE
+> @@ -232,9 +232,7 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
+>  
+>  	spin_unlock_irqrestore(&slice_convert_lock, flags);
+>  
+> -#ifdef CONFIG_SPU_BASE
+> -	spu_flush_all_slbs(mm);
+> -#endif
+> +	copro_flush_all_slbs(mm);
+>  }
+>  
+>  /*
+> @@ -671,9 +669,7 @@ void slice_set_psize(struct mm_struct *mm, unsigned long address,
+>  
+>  	spin_unlock_irqrestore(&slice_convert_lock, flags);
+>  
+> -#ifdef CONFIG_SPU_BASE
+> -	spu_flush_all_slbs(mm);
+> -#endif
+> +	copro_flush_all_slbs(mm);
+>  }
+>  
+>  void slice_set_range_psize(struct mm_struct *mm, unsigned long start,
+> -- 
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Best regards,
-Javier
