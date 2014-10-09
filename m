@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411AbaJIQOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:14:09 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:59813 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456AbaJIQOE (ORCPT
+	id S1757472AbaJIQO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:14:57 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:42781 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaJIQOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:14:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com
-Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
-Date: Thu, 09 Oct 2014 18:13:51 +0200
-Message-ID: <8784556.BJJ4i5hv9b@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412867594.13107.28.camel@jarvis.lan>
-References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com> <2518561.k9qJZyWstd@wuerfel> <1412867594.13107.28.camel@jarvis.lan>
+	Thu, 9 Oct 2014 12:14:49 -0400
+Date: Thu, 9 Oct 2014 09:14:44 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
+Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
+ container
+Message-ID: <20141009161444.GG31987@roeck-us.net>
+References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
+ <20141008223403.GA24828@roeck-us.net>
+ <20141008223601.GP4609@sirena.org.uk>
+ <20141008225912.GA25134@roeck-us.net>
+ <20141008234541.GQ4609@sirena.org.uk>
+ <20141009000555.GA27476@roeck-us.net>
+ <20141009001213.GS4609@sirena.org.uk>
+ <20141009002531.GA27920@roeck-us.net>
+ <20141009155440.GV4609@sirena.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:tZ6AW6iwOUTcleE1Yv7yWybp23FZQNoPShiKCN7xC29
- VzCL1gmGg3ERErucpV9FWpmnwzRDYfitCcGiupdngbt2o+/3Up
- pmsJj6oqiZp22HkdhyFABpgtRXCwATQb8y7bG3Jsm5ksSH9qR6
- FB4OE6q0nQQ0u89T7hVOYtMi4avYcRJaxuW/z+sGVAgjN7wNbP
- Ev712MDkJtMZAqGu6OsVJOiEo8GoZ4jbOO6GUxCvXTWFiduFXm
- CtVADiQxi3YGot8l1gZbtTqaNlFqvJR9x8kNwTc+s6gaeZoAFC
- DeSpYxqqf1/HRcokoAZox4ps4CIs6qiIjmHQKEWoysEbcmUYfv
- QVuMbN3krcN4fmU+hlS4=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009155440.GV4609@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 October 2014 08:13:14 James Bottomley wrote:
-> On Thu, 2014-10-09 at 16:29 +0200, Arnd Bergmann wrote:
-> > On Thursday 09 October 2014 06:40:26 James Bottomley wrote:
-> > > On Wed, 2014-10-08 at 22:58 +0200, Arnd Bergmann wrote:
-> > > > On Wednesday 08 October 2014 13:44:55 James Bottomley wrote:
-> > > > > > diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
-> > > > > > index 45b9566..ff2a0b3 100644
-> > > > > > --- a/drivers/scsi/ips.h
-> > > > > > +++ b/drivers/scsi/ips.h
-> > > > > > @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
-> > > > > >     uint8_t            active;
-> > > > > >     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
-> > > > > >     uint16_t           reset_count;        /* number of resets           */
-> > > > > > -   time_t             last_ffdc;          /* last time we sent ffdc info*/
-> > > > > > +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
-> > > > > >     uint8_t            slot_num;           /* PCI Slot Number            */
-> > > > > >     int                ioctl_len;          /* size of ioctl buffer       */
-> > > > > >     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
-> > > > > 
-> > > > > This is completely pointless, isn't it?  All the ips driver cares about
-> > > > > is that we send a FFDC time update every eight hours or so, so we can
-> > > > > happily truncate the number of seconds to 32 bits for that calculation
-> > > > > just keep the variable at 32 bits and do a time_after thing for the
-> > > > > comparison.
-> > > > 
-> > > > Good point. The same has come up in a few other places, so I wonder if we
-> > > > should introduce a proper way to do it that doesn't involve time_t.
-> > > 
-> > > We have, it's jiffies ... that's why I'm slightly non-plussed that this
-> > > driver is using gettimeofday for something like this ... it was clearly
-> > > a review failure when we put it in.
-> > 
-> > Actually there is more to it, as I just found upon reading the code
-> > again (I had noticed it before when I first looked at the driver but
-> > then forgotten about it):
-> > 
-> > ips_fix_ffdc_time() needs the correct current wall-clock time, no overflow
-> > allowed, to stick the year/month/day/hour/minute/second value into
-> > the ffdc command.
+On Thu, Oct 09, 2014 at 04:54:40PM +0100, Mark Brown wrote:
+> On Wed, Oct 08, 2014 at 05:25:31PM -0700, Guenter Roeck wrote:
+> > On Thu, Oct 09, 2014 at 01:12:13AM +0100, Mark Brown wrote:
 > 
-> true, but we could call do_gettimeofday() in the routine when we know
-> we're sending it.  And it only does this once every 8 hours.  My
-> complaint is the do_gettimeofday() sitting in the fast path to see if
-> the eight hours since the last time we sent the ffdc timestamp have
-> elapsed.
-
-Ok, fair enough.
-
-> Actually, isn't there a version of the syscall that does return what
-> this firmware is looking for (the year, month, day, hour, seconds
-> values)?
-
-Maybe rtc_ktime_to_tm()?
-
-We would need a time64_t version of that anyway.
-
-
-> > It's still slightly more expensive to do the function call and use a 64-bit
-> > number on a 32-bit CPU, but it's not on the scale of doing a system call
-> > here. You can probably judge best if it's worth the increase in complexity
-> > to use jiffies for determining whether to send the update and then
-> > use get_seconds64 (or similar) to read the wall-clock time, or whether
-> > always using get_seconds64 would be good enough.
+> > > We'll do something, just a question of what and what the default is.
 > 
-> heh, well we need to correct ips_fix_ffdc_time() somehow.  I think
-> converting the trigger mechanism to jiffies makes sense because the
-> interval is so small and we already have the jiffies code overflow safe.
+> > Ok. Note that a boot parameter would not work well for our use case,
+> > so it would be great if we can find something else.
+> 
+> Could you explain why please?
+> 
+Some of the system are loaded from u-boot. We can technically change the
+environment, but that would not be persistent. Product requirement is that the
+default (hard-coded) environment has to be the one that is used. And changing
+u-boot in those systems is more difficult than getting an audience with the
+Pope - believe me, we went through that. Unless there is a fatal problem,
+it simply won't be approved.
 
-Ok. Ebru, can you have a look at doing this? I guess we have two separate
-issues now, you can do one of them first:
+On x86 systems, which are booted through grub, we have a similar problem.
+The boot menu is secured and for all practical purposes untouchable.
 
-a) replacing the use of do_gettimeofday() from ips_next() with jiffies
-   comparison
+All that makes it much simpler to carry a one-line patch to remove the output
+from the log. I may try to do without it and keep the message, but I am quite
+sure that someone will complain and we'll have to do it.
 
-b) fixing ips_fix_ffdc_time() to use 64-bit time, possibly using
-   rtc_ktime_to_tm(ktime_get_real()) in the process to simplify the
-   code.
+> > > Shove a dev_name() on the front if we get a collision?  I have to say
+> > > I've never cared, the debugfs isn't that important so it doesn't matter
+> > > too much if it fails.
+> 
+> > Sure, but, again, I am getting lots and lots of those error messages.
+> > I probably would not care either (and probably not even have noticed)
+> > if not for those messages.
+> 
+> > Want me to submit a patch with the dev_name solution ?
+> 
+> Yes, please.
 
-	Arnd
+Ok, will do.
+
+Thanks,
+Guenter
