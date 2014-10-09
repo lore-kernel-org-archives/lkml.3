@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420AbaJIN56 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:57:58 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:35840 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755094AbaJIN5t (ORCPT
+	id S1757308AbaJIN7V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:59:21 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:50861 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaJIN7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:57:49 -0400
+	Thu, 9 Oct 2014 09:59:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141009113614.GP4750@worktop.programming.kicks-ass.net>
-References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
- <1412684017-16595-6-git-send-email-vincent.guittot@linaro.org> <20141009113614.GP4750@worktop.programming.kicks-ass.net>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Thu, 9 Oct 2014 15:57:28 +0200
-Message-ID: <CAKfTPtDtfhQDWNjU5i-YpX4-Ak3nT3uaOCvhqgNP-u=-La7_gw@mail.gmail.com>
-Subject: Re: [PATCH v7 5/7] sched: get CPU's usage statistic
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20141008182123.GH4609@sirena.org.uk>
+References: <rjui@broadcom.com>
+	<1412743127-4523-1-git-send-email-rjui@broadcom.com>
+	<20141008112143.GT4609@sirena.org.uk>
+	<543562EB.8060300@broadcom.com>
+	<20141008182123.GH4609@sirena.org.uk>
+Date: Thu, 9 Oct 2014 15:59:05 +0200
+X-Google-Sender-Auth: o_H8wFrdVrTSE9kbb7HwZoVnK6I
+Message-ID: <CAMuHMdUyP-caZxTNWTTF1Z84+=RWzi673LdRbmd_Bovr_G0kqA@mail.gmail.com>
+Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Ray Jui <rjui@broadcom.com>, Grant Likely <grant.likely@linaro.org>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 October 2014 13:36, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Oct 07, 2014 at 02:13:35PM +0200, Vincent Guittot wrote:
->> Monitor the usage level of each group of each sched_domain level. The usage is
->> the amount of cpu_capacity that is currently used on a CPU or group of CPUs.
->> We use the utilization_load_avg to evaluate the usage level of each group.
->>
->> The utilization_avg_contrib only takes into account the running time but not
->> the uArch so the utilization_load_avg is in the range [0..SCHED_LOAD_SCALE]
->> to reflect the running load on the CPU. We have to scale the utilization with
->> the capacity of the CPU to get the usage of the latter. The usage can then be
->> compared with the available capacity.
+On Wed, Oct 8, 2014 at 8:21 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Oct 08, 2014 at 09:14:35AM -0700, Ray Jui wrote:
+>> Thanks for the reply. It looks like you are also the maintainer of spidev.
+>> In this case, could you please help to confirm that you expect spidev to use
+>> separate buffers for TX and RX? If so, I can go ahead and make the change in
+>> spidev.
 >
-> You say cpu_capacity, but in actual fact you use capacity_orig and fail
-> to justify/clarify this.
+> Yes, that would be my expectation for maximum robustness (or if it is
+> going to use one buffer it explicitly maps it for mixed use but I'd
+> expect that to be asking for trouble).
 
-you're right it's cpu_capacity_orig no cpu_capacity
+Having two separate buffers avoids false successes when running
+"spidev_test --loop" on a buggy SPI master driver.
+Been there, done that ;-)
 
-cpu_capacity is the compute capacity available for CFS task once we
-have removed the capacity that is used by RT tasks.
+Gr{oetje,eeting}s,
 
-We want to compare the utilization of the CPU (utilization_avg_contrib
-which is in the range [0..SCHED_LOAD_SCALE]) with available capacity
-(cpu_capacity which is in the range [0..cpu_capacity_orig])
-An utilization_avg_contrib equals to SCHED_LOAD_SCALE means that the
-CPU is fully utilized so all cpu_capacity_orig are used. so we scale
-the utilization_avg_contrib from [0..SCHED_LOAD_SCALE] into cpu_usage
-in the range [0..cpu_capacity_orig]
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
->
->> The frequency scaling invariance is not taken into account in this patchset,
->> it will be solved in another patchset
->
-> Maybe explain what the specific invariance issue is that is skipped over
-> for now.
-
-ok. I can add description on the fact that if the core run slower, the
-tasks will use more running time of the CPU for the same job so the
-usage of the cpu which is based on the amount of time, will increase
-
->
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  kernel/sched/fair.c | 13 +++++++++++++
->>  1 file changed, 13 insertions(+)
->>
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->> index d3e9067..7364ed4 100644
->> --- a/kernel/sched/fair.c
->> +++ b/kernel/sched/fair.c
->> @@ -4551,6 +4551,17 @@ static int select_idle_sibling(struct task_struct *p, int target)
->>       return target;
->>  }
->>
->> +static int get_cpu_usage(int cpu)
->> +{
->> +     unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
->> +     unsigned long capacity = capacity_orig_of(cpu);
->> +
->> +     if (usage >= SCHED_LOAD_SCALE)
->> +             return capacity + 1;
->
-> Like Morten I'm confused by that +1 thing.
-
-ok. the goal was to point out the erroneous case where usage is out of
-the range but if it generates confusion, it can remove it
-
->
->> +
->> +     return (usage * capacity) >> SCHED_LOAD_SHIFT;
->> +}
->
-> A comment with that function that it returns capacity units might
-> clarify shift confusion Morten raised the other day.
-
-ok. i will add a comment
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
