@@ -1,96 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaJIIA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:00:26 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:52817 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293AbaJIIAW (ORCPT
+	id S1752614AbaJIIC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:02:57 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:33791 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaJIICp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:00:22 -0400
-Date: Thu, 9 Oct 2014 10:00:18 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com,
-        Thierry Reding <treding@nvidia.com>
-Subject: Re: [PATCH 1/2] ARM: tegra: venice2: add GK20A GPU DT node
-Message-ID: <20141009080016.GA1203@ulmo>
-References: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
- <20141009074326.GA1010@ulmo>
- <54363DE8.9030102@nvidia.com>
+	Thu, 9 Oct 2014 04:02:45 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-In-Reply-To: <54363DE8.9030102@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140926133920.GG7422@leverpostej>
+References: <1394052739-8589-1-git-send-email-marek@goldelico.com>
+	<1394052739-8589-4-git-send-email-marek@goldelico.com>
+	<20140922110320.GI3290@leverpostej>
+	<CAAfyv352GrgTzKf-XxPNthtoR9rdhssnOSdx1mZ-q=D4okBSAA@mail.gmail.com>
+	<20140926133920.GG7422@leverpostej>
+Date: Thu, 9 Oct 2014 10:02:43 +0200
+Message-ID: <CAAfyv35EdDo5=9HPctzmovH4CQoaGoKmJDgZLUKz1ZVzEsS2Lw@mail.gmail.com>
+Subject: Re: [PATCH v2] Documentation: DT: Document twl4030-madc-battery bindings.
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "robh+dt@kernel.org" <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "hns@goldelico.com" <hns@goldelico.com>,
+        "sre@debian.org" <sre@debian.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Sep 26, 2014 at 3:39 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Mon, Sep 22, 2014 at 09:35:03PM +0100, Belisko Marek wrote:
+>> Hi Mark,
+>>
+>> On Mon, Sep 22, 2014 at 1:03 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> > Hi,
+>> >
+>> > On Wed, Mar 05, 2014 at 08:52:19PM +0000, Marek Belisko wrote:
+>> >> Signed-off-by: Marek Belisko <marek@goldelico.com>
+>> >> ---
+>> >>  .../bindings/power_supply/twl4030_madc_battery.txt | 43 ++++++++++++++++++++++
+>> >>  1 file changed, 43 insertions(+)
+>> >>  create mode 100644 Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+>> >>
+>> >> diff --git a/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+>> >> new file mode 100644
+>> >> index 0000000..fd0b6d2
+>> >> --- /dev/null
+>> >> +++ b/Documentation/devicetree/bindings/power_supply/twl4030_madc_battery.txt
+>> >> @@ -0,0 +1,43 @@
+>> >> +twl4030_madc_battery
+>> >> +
+>> >> +Required properties:
+>> >> + - compatible : "ti,twl4030-madc-battery"
+>> >
+>> > I'm rather confused by this; the code seems to have stripped away all
+>> > the twl4030 dependencies and this now seems to be a generic ADC battery
+>> > status driver. So why does this need to be specific to twl4030?
+>> You are right. Also possibly driver name is incorrect :). Better name could be
+>> ti, madc-battery.
+>
+> Ok.
+>
+>> >
+>> >> + - capacity : battery capacity in uAh
+>> >
+>> > I would make the units explicit in the name; "capacity" can be measured
+>> > in many ways.
+>> OK capacity_uAh should be fine I believe.
+>
+> Well, "capacity-uah" to match naming conventions.
+OK.
+>
+>> >
+>> >> + - charging-calibration-data : list of voltage(mV):level(%) values
+>> >> +     for charging calibration (see example)
+>> >> + - discharging-calibration-data : list of voltage(mV):level(%) values
+>> >> +     for discharging calibration (see example)
+>> >
+>> > Regardless of the prefixing of these property names, the specifics are
+>> > unclear to me.
+>> Do you suggest to rename it completely or is enough to add "ti, " prefix?
+>
+> I'm not suggesting prefixing. I'm suggesting that "calibration data"
+> could mean a variety of things, so having a more specific name would be
+> beneficial.
+Charging and discharging data are used for some kind of interpolation
+within voltage interval.
+So we get volume from ADC and then convert it according
+charging/discharging table to some value
+which is then useded in various battery properties (status,
+charge_now, capacity, time_to_empty_now).
+So maybe battery-charging/discharging-calibration-data could be property name?
 
-On Thu, Oct 09, 2014 at 04:48:56PM +0900, Alexandre Courbot wrote:
-> On 10/09/2014 04:43 PM, Thierry Reding wrote:
-> >* PGP Signed by an unknown key
-> >
-> >On Thu, Oct 09, 2014 at 03:11:51PM +0900, Alexandre Courbot wrote:
-> >>From: Thierry Reding <treding@nvidia.com>
-> >>
-> >>Add the device-tree node for the GK20A GPU and leave it disabled by
-> >>default. It is the responsability of the bootloader to enable it if the
-> >>VPR registers have been programmed such as the GPU can operate.
-> >>
-> >>Signed-off-by: Thierry Reding <treding@nvidia.com>
-> >>Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> >>---
-> >>  arch/arm/boot/dts/tegra124-venice2.dts | 8 +++++++-
-> >>  1 file changed, 7 insertions(+), 1 deletion(-)
-> >
-> >Are you going to send the corresponding patches for U-Boot to update
-> >the status property if it's initialized VPR?
->=20
-> Yes. But maybe I should wait until upstream Nouveau actually works proper=
-ly
-> for that? Right now it will probe successfully, but will crash as soon as
-> the GPU is used because there still are memory coherency problems.
+>
+>> > Does this apply to vbat?
+>> Yes bat is read and then interpolation algorithm is applied for
+>> various power properties.
+>> So mapping from voltage to percentage is defined in table.
+>> >
+>> > Is vbat guaranteed to read in mV?
+>> Yes.
+>> >
+>> > Is any particular order required? The example seems to go be in
+>> > descending percentage values.
+>> There is done sorting in driver so ordering it's not necessary.
+>> >
+>> > Is any particular interpolation expected on behalf of the OS, or is this
+>> > just an informative set of measurements that hte OS can use as it sees
+>> > fit?
+>> >
+>> >> + - io-channels: Should contain IIO channel specifiers
+>> >> +     for each element in io-channel-names.
+>> >> +- io-channel-names: Should contain the following values:
+>> All 3 statements was copied from rx51-battery and documentation is the same.
+>> There is not unit for all channels just raw values which are then
+>> converted in driver.
+>
+> I don't understand. How do you figure out the mapping of those raw
+> values to sensible units? Surely you need additional information to do
+> so?
+Yes mapping from raw values is done in driver. Like current read from
+iio channel_ichg
+is multiplied by 1000 or read from channel_temp is multiplied by 10 to
+have proper values for
+battery properties.
+>
+> Mark.
 
-I think the same really goes for these patches. Applying these will make
-the node available to U-Boot, so technically some future U-Boot version
-could modify a kernel DTB and boot a version where nouveau didn't yet
-work out-of-the-box.
+BR,
 
-There's also still the issue about firmware loading and so on, so maybe
-holding off on applying these patches until gk20a is fully enabled is a
-good idea. Normally I guess this would be done by not adding the kernel
-driver until it's expected to be at least usable to some degree, but I
-guess it is a bit late for that now.
+marek
 
-Thierry
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUNkCQAAoJEN0jrNd/PrOhaFcP/jUwxaWn7XzNHTI4DcDQHA4c
-hqof2BJH1eYXH7cQprEBwlukZEG+Qiy2wf2t+d8bjel3M1xbfHKDoJw3eKhzrs5L
-5+qgjkurBuLG3Nv2+KqV96SWUw+7vALvWclw83ZqnoqDu2haMoPv6yuDsxuq81ST
-JWsoQDugJ+D4rWLcNDsX7uC58bqDXUGkcuzT94ym04h4QGYdHebXHY+Yxb8ie7rP
-V59BkpSZNQ9naEuVdcUgBgRqT4DmmG/MxO5xQSrie+RGpIzv567njoPXEP9cbZqr
-p5KeqUUNMYR2jP/drjtJVPx1HQcA3FHobZ4zN6v1lrt/G7wq6Vy8bZZUACLx1T9O
-3fZ171Qebzt+j6+NDKUqhobAKy6nEAm/ClMnT+hrx4TiEV++8wulwcxTEGBbyYv3
-fcAotpTLzyzuBu7Z1LEAvvaHtVEYuR1SA8AAou4zNmDaeAV3AHD9gSTBGehlpPDr
-BgH5bA/JfeK3oJJK7f06KFUEHndJ5jI3+bASYIQvnCRlXIrU/XsisjGa3FuxkvRi
-7yzucFhuIr/z2kgbICp5HWUkMzzrxCixz3obptHgTAu7DigjZG2/cVzc748gEb8/
-0yUsyX/HMaI9BKD6dZdyU49nI1TNiVx7sfrsS8U/R3422usTymwjDYcADTrJB0Yx
-Dnq14z/DrrqH7AB+x2zG
-=XWKp
------END PGP SIGNATURE-----
-
---ZPt4rx8FFjLCG7dd--
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
