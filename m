@@ -1,110 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbaJIJt3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:49:29 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:32915 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaJIJtP (ORCPT
+	id S1752961AbaJIJ4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:56:14 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:58136 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaJIJ4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:49:15 -0400
-Date: Thu, 9 Oct 2014 15:19:03 +0530
+	Thu, 9 Oct 2014 05:56:07 -0400
+Date: Thu, 9 Oct 2014 15:25:58 +0530
 From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, dan.carpenter@oracle.com
-Subject: Re: [PATCH V2] staging: dgap: introduce dgap_stop()
-Message-ID: <20141009094902.GA4333@sudip-PC>
-References: <20141009044011.GA999@devel>
+To: Jia He <hejianet@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8188eu: Fix coding style error problems
+Message-ID: <20141009095558.GB4333@sudip-PC>
+References: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141009044011.GA999@devel>
+In-Reply-To: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 01:40:11PM +0900, Daeseok Youn wrote:
-> The dgap_init_module() need to unwind for cleanup variables properly.
-> Because dgap_init_module() calls dgap_cleanup_module() for freeing
-> variables but this function is possible to free variables
-> which are not allocated.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
-> V2: change ulong which is non-standard to "unsigned long".
-I think , Dan, in his review of your v1 , asked you to rearrange the functions and get rid of the forward declarations.
+On Thu, Oct 09, 2014 at 05:03:07PM +0800, Jia He wrote:
+> Signed-off-by: Jia He <hejianet@gmail.com>
+> This fixes all coding style error problems at rtl8188eu which
+> makes checkpatch.pl unhappy
+
+your commit message should be above your Signed-off line.
+
+mention what type of error you are fixing.
+
+you are doing multiple types of error fix in this patch,
+usually we do only a single type of fix in one patch and if you want
+to do multiple fix then better send a series of patch , and in each patch
+mention what type of error it fixes.
 
 thanks
 sudip
 
+> ---
+>  drivers/staging/rtl8188eu/hal/bb_cfg.c | 4 ++--
+>  drivers/staging/rtl8188eu/hal/fw.c     | 4 ++--
+>  drivers/staging/rtl8188eu/hal/phy.c    | 2 +-
+>  drivers/staging/rtl8188eu/hal/rf.c     | 4 ++--
+>  drivers/staging/rtl8188eu/hal/rf_cfg.c | 4 ++--
+>  5 files changed, 9 insertions(+), 9 deletions(-)
 > 
->  drivers/staging/dgap/dgap.c |   27 ++++++++++++++++++++++-----
->  1 files changed, 22 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/dgap/dgap.c b/drivers/staging/dgap/dgap.c
-> index 7c79fe6..290ca3b 100644
-> --- a/drivers/staging/dgap/dgap.c
-> +++ b/drivers/staging/dgap/dgap.c
-> @@ -71,6 +71,7 @@ MODULE_DESCRIPTION("Driver for the Digi International EPCA PCI based product lin
->  MODULE_SUPPORTED_DEVICE("dgap");
+> diff --git a/drivers/staging/rtl8188eu/hal/bb_cfg.c b/drivers/staging/rtl8188eu/hal/bb_cfg.c
+> index 80e8cc9..3743a72 100644
+> --- a/drivers/staging/rtl8188eu/hal/bb_cfg.c
+> +++ b/drivers/staging/rtl8188eu/hal/bb_cfg.c
+> @@ -173,7 +173,7 @@ static bool set_baseband_agc_config(struct adapter *adapt)
+>  		u32 v1 = array[i];
+>  		u32 v2 = array[i+1];
 >  
->  static int dgap_start(void);
-> +static void dgap_stop(void);
->  static void dgap_init_globals(void);
->  static struct board_t *dgap_found_board(struct pci_dev *pdev, int id,
->  					int boardnum);
-> @@ -479,19 +480,20 @@ static int dgap_init_module(void)
->  
->  	rc = pci_register_driver(&dgap_driver);
->  	if (rc)
-> -		goto err_cleanup;
-> +		goto err_stop;
->  
->  	rc = dgap_create_driver_sysfiles(&dgap_driver);
->  	if (rc)
-> -		goto err_cleanup;
-> +		goto err_unregister;
->  
->  	dgap_driver_state = DRIVER_READY;
->  
->  	return 0;
->  
-> -err_cleanup:
-> -
-> -	dgap_cleanup_module();
-> +err_unregister:
-> +	pci_unregister_driver(&dgap_driver);
-> +err_stop:
-> +	dgap_stop();
->  
->  	return rc;
->  }
-> @@ -561,6 +563,21 @@ failed_class:
->  	return rc;
+> -		if (v1 < 0xCDCDCDCD){
+> +		if (v1 < 0xCDCDCDCD) {
+>  			phy_set_bb_reg(adapt, v1, bMaskDWord, v2);
+>  			udelay(1);
+>  		}
+> @@ -552,7 +552,7 @@ static void store_pwrindex_offset(struct adapter *Adapter, u32 regaddr, u32 bitm
+>  	}
 >  }
 >  
-> +static void dgap_stop(void)
-> +{
-> +	unsigned long lock_flags;
-> +
-> +	spin_lock_irqsave(&dgap_poll_lock, lock_flags);
-> +	dgap_poll_stop = 1;
-> +	spin_unlock_irqrestore(&dgap_poll_lock, lock_flags);
-> +
-> +	del_timer_sync(&dgap_poll_timer);
-> +
-> +	device_destroy(dgap_class, MKDEV(DIGI_DGAP_MAJOR, 0));
-> +	class_destroy(dgap_class);
-> +	unregister_chrdev(DIGI_DGAP_MAJOR, "dgap");
-> +}
-> +
->  static int dgap_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+> -static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask ,u32 data)
+> +static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask , u32 data)
 >  {
->  	int rc;
+>  	if (addr == 0xfe) {
+>  		msleep(50);
+> diff --git a/drivers/staging/rtl8188eu/hal/fw.c b/drivers/staging/rtl8188eu/hal/fw.c
+> index 17b7f37..d6efd54 100644
+> --- a/drivers/staging/rtl8188eu/hal/fw.c
+> +++ b/drivers/staging/rtl8188eu/hal/fw.c
+> @@ -193,13 +193,13 @@ int rtl88eu_download_fw(struct adapter *adapt)
+>  	u32 fwsize;
+>  	int err;
+>  
+> -	if (request_firmware(&fw, fw_name, device)){
+> +	if (request_firmware(&fw, fw_name, device)) {
+>  		dev_err(device, "Firmware %s not available\n", fw_name);
+>  		return -ENOENT;
+>  	}
+>  
+>  	if (fw->size > FW_8188E_SIZE) {
+> -		dev_err(device,"Firmware size exceed 0x%X. Check it.\n",
+> +		dev_err(device, "Firmware size exceed 0x%X. Check it.\n",
+>  			 FW_8188E_SIZE);
+>  		return -1;
+>  	}
+> diff --git a/drivers/staging/rtl8188eu/hal/phy.c b/drivers/staging/rtl8188eu/hal/phy.c
+> index c4f7f35..3f663fe 100644
+> --- a/drivers/staging/rtl8188eu/hal/phy.c
+> +++ b/drivers/staging/rtl8188eu/hal/phy.c
+> @@ -478,7 +478,7 @@ void rtl88eu_dm_txpower_tracking_callback_thermalmeter(struct adapter *adapt)
+>  		/* 2.4G, decrease power */
+>  		{0, 0, 2, 3, 4, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11},
+>  		/* 2.4G, increase power */
+> -		{0, 0, -1, -2, -3, -4,-4, -4, -4, -5, -7, -8,-9, -9, -10},
+> +		{0, 0, -1, -2, -3, -4, -4, -4, -4, -5, -7, -8, -9, -9, -10},
+>  	};
+>  	u8 thermal_mapping[2][index_mapping_NUM_88E] = {
+>  		/* 2.4G, decrease power */
+> diff --git a/drivers/staging/rtl8188eu/hal/rf.c b/drivers/staging/rtl8188eu/hal/rf.c
+> index c2fac34..8e7a0b1 100644
+> --- a/drivers/staging/rtl8188eu/hal/rf.c
+> +++ b/drivers/staging/rtl8188eu/hal/rf.c
+> @@ -102,7 +102,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
+>  		}
+>  	}
+>  	rtl88eu_dm_txpower_track_adjust(&hal_data->odmpriv, 1, &direction,
+> -				        &pwrtrac_value);
+> +					&pwrtrac_value);
+>  
+>  	if (direction == 1) {
+>  		/*  Increase TX power */
+> @@ -131,7 +131,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
+>  /*  powerbase1 for HT MCS rates */
+>  static void getpowerbase88e(struct adapter *adapt, u8 *pwr_level_ofdm,
+>  			    u8 *pwr_level_bw20, u8 *pwr_level_bw40,
+> -			    u8 channel,u32 *ofdmbase, u32 *mcs_base)
+> +			    u8 channel, u32 *ofdmbase, u32 *mcs_base)
+>  {
+>  	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
+>  	u32 powerbase0, powerbase1;
+> diff --git a/drivers/staging/rtl8188eu/hal/rf_cfg.c b/drivers/staging/rtl8188eu/hal/rf_cfg.c
+> index ddc2f55..5dc11ca 100644
+> --- a/drivers/staging/rtl8188eu/hal/rf_cfg.c
+> +++ b/drivers/staging/rtl8188eu/hal/rf_cfg.c
+> @@ -164,7 +164,7 @@ do {								\
+>  #define B3WIREDATALENGTH 0x800
+>  #define BRFSI_RFENV 0x10
+>  
+> -static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
+> +static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath, u32 addr, u32 mask, u32 data)
+>  {
+>  	if (addr == 0xfe) {
+>  		mdelay(50);
+> @@ -190,7 +190,7 @@ static void rtl8188e_config_rf_reg(struct adapter *adapt,
+>  	u32 content = 0x1000; /*RF Content: radio_a_txt*/
+>  	u32 maskforphyset = (u32)(content & 0xE000);
+>  
+> -	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
+> +	rtl_rfreg_delay(adapt, RF90_PATH_A, addr | maskforphyset,
+>  			RFREG_OFFSET_MASK,
+>  			data);
+>  }
 > -- 
-> 1.7.1
+> 1.9.3
 > 
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
