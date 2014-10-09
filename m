@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916AbaJITPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:15:47 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:44629 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaJITMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:12:31 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-From: Johan Hovold <johan@kernel.org>
-To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Colin Foe-Parker <colin.foeparker@logicpd.com>,
-        AnilKumar Ch <anilkumar@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
-        j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Johan Hovold <johan@kernel.org>
-Subject: [PATCH 11/12] ARM: dts: am33xx: update rtc node compatible property
-Date: Thu,  9 Oct 2014 21:06:33 +0200
-Message-Id: <1412881594-25678-12-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+	id S1751726AbaJITWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:22:44 -0400
+Received: from mga03.intel.com ([134.134.136.65]:3707 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128AbaJITWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 15:22:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,686,1406617200"; 
+   d="scan'208";a="483146899"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org
+Cc: arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [PATCH v7 0/4]  mfd: add support for Diolan DLN-2
+Date: Thu,  9 Oct 2014 22:22:17 +0300
+Message-Id: <1412882541-10934-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable am33xx specific RTC features (e.g. PMIC control) by adding
-"ti,am3352-rtc" to the compatible property of the rtc node.
+Changes since v6:
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- arch/arm/boot/dts/am33xx.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+* MFD: make sure DLN2_HANDLE_EVENT stays 0, move a few operations out
+  of the lock block, renamed one missed _rx_callback function to
+  _event_callback, speed-up disconnect by checking for it in
+  find_free_slot, remove the URB submit helper and simplify URB
+  resubmit code, use mfd_add_hotplug_devices, change the driver name
+  to dln2 (from usb-dln2), initialize disconnect_lock
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index 3a0a161342ba..098e53602d5c 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -411,7 +411,7 @@
- 		};
- 
- 		rtc: rtc@44e3e000 {
--			compatible = "ti,da830-rtc";
-+			compatible = "ti,am3352-rtc", "ti,da830-rtc";
- 			reg = <0x44e3e000 0x1000>;
- 			interrupts = <75
- 				      76>;
+* GPIO: no changes
+
+* I2C: keep sorting in Kconfig and Makefile, add warning for transfers
+  bigger then DLN2_I2C_MAX_XFER_SIZE, remove frequency code - I will
+  send a separate patch that moves this to i2c core, revert to using
+  tx structures for dln2_i2c_enable
+
+
+
+Daniel Baluta (1):
+  gpio: add support for the Diolan DLN-2 USB GPIO driver
+
+Laurentiu Palcu (1):
+  i2c: add support for Diolan DLN-2 USB-I2C adapter
+
+Octavian Purdila (2):
+  mfd: add support for Diolan DLN-2 devices
+  gpiolib: add irq_not_threaded flag to gpio_chip
+
+ drivers/gpio/Kconfig          |  12 +
+ drivers/gpio/Makefile         |   1 +
+ drivers/gpio/gpio-dln2.c      | 555 +++++++++++++++++++++++++++++++
+ drivers/gpio/gpiolib.c        |   2 +-
+ drivers/i2c/busses/Kconfig    |  10 +
+ drivers/i2c/busses/Makefile   |   1 +
+ drivers/i2c/busses/i2c-dln2.c | 275 +++++++++++++++
+ drivers/mfd/Kconfig           |   9 +
+ drivers/mfd/Makefile          |   1 +
+ drivers/mfd/dln2.c            | 755 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/gpio/driver.h   |   3 +
+ include/linux/mfd/dln2.h      |  67 ++++
+ 12 files changed, 1690 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/gpio/gpio-dln2.c
+ create mode 100644 drivers/i2c/busses/i2c-dln2.c
+ create mode 100644 drivers/mfd/dln2.c
+ create mode 100644 include/linux/mfd/dln2.h
+
 -- 
-2.0.4
+1.9.1
 
