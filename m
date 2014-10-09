@@ -1,158 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbaJIJ4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 05:56:14 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:58136 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024AbaJIJ4H (ORCPT
+	id S1754719AbaJIJ5x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 05:57:53 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59588 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751137AbaJIJ5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 05:56:07 -0400
-Date: Thu, 9 Oct 2014 15:25:58 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jia He <hejianet@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8188eu: Fix coding style error problems
-Message-ID: <20141009095558.GB4333@sudip-PC>
-References: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
+	Thu, 9 Oct 2014 05:57:44 -0400
+Date: Thu, 9 Oct 2014 10:56:49 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        David Paris <david.paris@st.com>
+Subject: Re: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for
+ ST's LPC Watchdog driver
+Message-ID: <20141009095649.GC3869@leverpostej>
+References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
+ <1412760810-23199-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412845387-17668-1-git-send-email-hejianet@gmail.com>
+In-Reply-To: <1412760810-23199-4-git-send-email-lee.jones@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 05:03:07PM +0800, Jia He wrote:
-> Signed-off-by: Jia He <hejianet@gmail.com>
-> This fixes all coding style error problems at rtl8188eu which
-> makes checkpatch.pl unhappy
-
-your commit message should be above your Signed-off line.
-
-mention what type of error you are fixing.
-
-you are doing multiple types of error fix in this patch,
-usually we do only a single type of fix in one patch and if you want
-to do multiple fix then better send a series of patch , and in each patch
-mention what type of error it fixes.
-
-thanks
-sudip
-
+On Wed, Oct 08, 2014 at 10:33:29AM +0100, Lee Jones wrote:
+> Cc: devicetree@vger.kernel.org
+> Signed-off-by: David Paris <david.paris@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 > ---
->  drivers/staging/rtl8188eu/hal/bb_cfg.c | 4 ++--
->  drivers/staging/rtl8188eu/hal/fw.c     | 4 ++--
->  drivers/staging/rtl8188eu/hal/phy.c    | 2 +-
->  drivers/staging/rtl8188eu/hal/rf.c     | 4 ++--
->  drivers/staging/rtl8188eu/hal/rf_cfg.c | 4 ++--
->  5 files changed, 9 insertions(+), 9 deletions(-)
+>  .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 30 ++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
 > 
-> diff --git a/drivers/staging/rtl8188eu/hal/bb_cfg.c b/drivers/staging/rtl8188eu/hal/bb_cfg.c
-> index 80e8cc9..3743a72 100644
-> --- a/drivers/staging/rtl8188eu/hal/bb_cfg.c
-> +++ b/drivers/staging/rtl8188eu/hal/bb_cfg.c
-> @@ -173,7 +173,7 @@ static bool set_baseband_agc_config(struct adapter *adapt)
->  		u32 v1 = array[i];
->  		u32 v2 = array[i+1];
->  
-> -		if (v1 < 0xCDCDCDCD){
-> +		if (v1 < 0xCDCDCDCD) {
->  			phy_set_bb_reg(adapt, v1, bMaskDWord, v2);
->  			udelay(1);
->  		}
-> @@ -552,7 +552,7 @@ static void store_pwrindex_offset(struct adapter *Adapter, u32 regaddr, u32 bitm
->  	}
->  }
->  
-> -static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask ,u32 data)
-> +static void rtl_addr_delay(struct adapter *adapt, u32 addr, u32 bit_mask , u32 data)
->  {
->  	if (addr == 0xfe) {
->  		msleep(50);
-> diff --git a/drivers/staging/rtl8188eu/hal/fw.c b/drivers/staging/rtl8188eu/hal/fw.c
-> index 17b7f37..d6efd54 100644
-> --- a/drivers/staging/rtl8188eu/hal/fw.c
-> +++ b/drivers/staging/rtl8188eu/hal/fw.c
-> @@ -193,13 +193,13 @@ int rtl88eu_download_fw(struct adapter *adapt)
->  	u32 fwsize;
->  	int err;
->  
-> -	if (request_firmware(&fw, fw_name, device)){
-> +	if (request_firmware(&fw, fw_name, device)) {
->  		dev_err(device, "Firmware %s not available\n", fw_name);
->  		return -ENOENT;
->  	}
->  
->  	if (fw->size > FW_8188E_SIZE) {
-> -		dev_err(device,"Firmware size exceed 0x%X. Check it.\n",
-> +		dev_err(device, "Firmware size exceed 0x%X. Check it.\n",
->  			 FW_8188E_SIZE);
->  		return -1;
->  	}
-> diff --git a/drivers/staging/rtl8188eu/hal/phy.c b/drivers/staging/rtl8188eu/hal/phy.c
-> index c4f7f35..3f663fe 100644
-> --- a/drivers/staging/rtl8188eu/hal/phy.c
-> +++ b/drivers/staging/rtl8188eu/hal/phy.c
-> @@ -478,7 +478,7 @@ void rtl88eu_dm_txpower_tracking_callback_thermalmeter(struct adapter *adapt)
->  		/* 2.4G, decrease power */
->  		{0, 0, 2, 3, 4, 4, 5, 6, 7, 7, 8, 9, 10, 10, 11},
->  		/* 2.4G, increase power */
-> -		{0, 0, -1, -2, -3, -4,-4, -4, -4, -5, -7, -8,-9, -9, -10},
-> +		{0, 0, -1, -2, -3, -4, -4, -4, -4, -5, -7, -8, -9, -9, -10},
->  	};
->  	u8 thermal_mapping[2][index_mapping_NUM_88E] = {
->  		/* 2.4G, decrease power */
-> diff --git a/drivers/staging/rtl8188eu/hal/rf.c b/drivers/staging/rtl8188eu/hal/rf.c
-> index c2fac34..8e7a0b1 100644
-> --- a/drivers/staging/rtl8188eu/hal/rf.c
-> +++ b/drivers/staging/rtl8188eu/hal/rf.c
-> @@ -102,7 +102,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
->  		}
->  	}
->  	rtl88eu_dm_txpower_track_adjust(&hal_data->odmpriv, 1, &direction,
-> -				        &pwrtrac_value);
-> +					&pwrtrac_value);
->  
->  	if (direction == 1) {
->  		/*  Increase TX power */
-> @@ -131,7 +131,7 @@ void rtl88eu_phy_rf6052_set_cck_txpower(struct adapter *adapt, u8 *powerlevel)
->  /*  powerbase1 for HT MCS rates */
->  static void getpowerbase88e(struct adapter *adapt, u8 *pwr_level_ofdm,
->  			    u8 *pwr_level_bw20, u8 *pwr_level_bw40,
-> -			    u8 channel,u32 *ofdmbase, u32 *mcs_base)
-> +			    u8 channel, u32 *ofdmbase, u32 *mcs_base)
->  {
->  	struct hal_data_8188e *hal_data = GET_HAL_DATA(adapt);
->  	u32 powerbase0, powerbase1;
-> diff --git a/drivers/staging/rtl8188eu/hal/rf_cfg.c b/drivers/staging/rtl8188eu/hal/rf_cfg.c
-> index ddc2f55..5dc11ca 100644
-> --- a/drivers/staging/rtl8188eu/hal/rf_cfg.c
-> +++ b/drivers/staging/rtl8188eu/hal/rf_cfg.c
-> @@ -164,7 +164,7 @@ do {								\
->  #define B3WIREDATALENGTH 0x800
->  #define BRFSI_RFENV 0x10
->  
-> -static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath,u32 addr, u32 mask, u32 data)
-> +static void rtl_rfreg_delay(struct adapter *adapt, enum rf_radio_path rfpath, u32 addr, u32 mask, u32 data)
->  {
->  	if (addr == 0xfe) {
->  		mdelay(50);
-> @@ -190,7 +190,7 @@ static void rtl8188e_config_rf_reg(struct adapter *adapt,
->  	u32 content = 0x1000; /*RF Content: radio_a_txt*/
->  	u32 maskforphyset = (u32)(content & 0xE000);
->  
-> -	rtl_rfreg_delay(adapt, RF90_PATH_A, addr| maskforphyset,
-> +	rtl_rfreg_delay(adapt, RF90_PATH_A, addr | maskforphyset,
->  			RFREG_OFFSET_MASK,
->  			data);
->  }
+> diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+> new file mode 100644
+> index 0000000..520ce90
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
+> @@ -0,0 +1,30 @@
+> +STMicroelectronics LPC Watchdog
+> +===============================
+> +
+> +Required properties
+> +
+> +- compatible 	: Must be one of:
+> +			"st,stih407-watchdog"
+> +			"st,stih416-watchdog"
+> +			"st,stih415-watchdog"
+> +			"st,stid127-watchdog"
+> +- reg		: LPC registers base address + range
+
+s/range/size/
+
+Please append something like "one entryfor each entry in reg-names".
+
+> +- reg-names	: Register map "base" and "syscfg-en" are compulsory. "type" is
+> +		  platform dependent and not required for the STiH407
+
+I don't understand the mention of "type".
+
+Additionally, "syscfg-en" looks to be a portion of another device
+(shared system controller?), and probably should be described by
+reference.
+
+> +- clock-names 	: Should be "lpc_wdt"
+> +- clocks	: Clock used by LPC device
+> +- timeout-sec	: Watchdog timeout in seconds
+> +- st,syscfg	: Syscfg node used to configure CPU reset type and mask
+
+Does this relate to the syscfg-en entry in the reg proeprty?
+
+> +- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
+
+s/_/-/ in property names.
+
+Why does this need to be in the binding? It seems like a choice rather
+than a property of the system.
+
+Mark.
+
+> +
+> +Example:
+> +	watchdog@fde05000 {
+> +		compatible	= "st,stih416-lpc-watchdog";
+> +		reg		= <0xfde05000 0x1000> <0x204 0x4>;
+> +		reg-names	= "base", "syscfg-en"
+> +		clock-names	= "lpc_wdt";
+> +		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
+> +		timeout-sec	= <600>;
+> +		st,syscfg	= <&syscfg_core>;
+> +		st,warm_reset;
+> +	};
 > -- 
-> 1.9.3
+> 1.9.1
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
