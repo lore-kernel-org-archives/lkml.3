@@ -1,113 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569AbaJIQhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:37:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18532 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757550AbaJIQhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:37:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,686,1406617200"; 
-   d="scan'208";a="586147612"
-Message-ID: <5436B98E.1070407@intel.com>
-Date: Thu, 09 Oct 2014 09:36:30 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Fengwei Yin <yfw.kernel@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-CC: fengguang.wu@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH] smaps should deal with huge zero page exactly same as
- normal zero page
-References: <CADUXgx7QTWBMxesxgCet5rjpGu-V-xK_-5f2rX9R+v-ggi902A@mail.gmail.com>
-In-Reply-To: <CADUXgx7QTWBMxesxgCet5rjpGu-V-xK_-5f2rX9R+v-ggi902A@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1757579AbaJIQhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:37:55 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59939 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757408AbaJIQgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 12:36:12 -0400
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
+Subject: [PATCH v2 08/12] perf/x86: enforce HT bug workaround with PEBS for SNB/IVB/HSW
+Date: Thu,  9 Oct 2014 18:34:42 +0200
+Message-Id: <1412872486-2930-9-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412872486-2930-1-git-send-email-eranian@google.com>
+References: <1412872486-2930-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 02:19 AM, Fengwei Yin wrote:
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index 80ca4fb..8550b27 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -476,7 +476,7 @@ static void smaps_pte_entry(pte_t ptent, unsigned long addr,
->  			mss->nonlinear += ptent_size;
->  	}
->  
-> -	if (!page)
-> +	if (!page || is_huge_zero_page(page))
->  		return;
+From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 
-This really seems like a bit of a hack.  A normal (small) zero page
-won't make it to this point because of the vm_normal_page() check in
-smaps_pte_entry() which hits the _PAGE_SPECIAL bit in the pte.
+This patch modifies the PEBS constraint tables for SNB/IVB/HSW
+such that corrupting events supporting PEBS activate the HT
+workaround.
 
-Is there a reason we can't set _PAGE_SPECIAL on the huge_zero_page ptes?
- If we did that, we wouldn't need a special case here.
+Reviewed-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event.h          | 20 +++++++++++++++++++-
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 28 ++++++++++++++++++----------
+ 2 files changed, 37 insertions(+), 11 deletions(-)
 
-If we can't do that for some reason, can we at least teach
-vm_normal_page() about the huge_zero_page in some other way?
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index bd5c381..edf5b84 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -320,22 +320,40 @@ struct cpu_hw_events {
+ 
+ /* Check flags and event code, and set the HSW load flag */
+ #define INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(code, n) \
+-	__EVENT_CONSTRAINT(code, n, 			\
++	__EVENT_CONSTRAINT(code, n,			\
+ 			  ARCH_PERFMON_EVENTSEL_EVENT|X86_ALL_EVENT_FLAGS, \
+ 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LD_HSW)
+ 
++#define INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(code, n) \
++	__EVENT_CONSTRAINT(code, n,			\
++			  ARCH_PERFMON_EVENTSEL_EVENT|X86_ALL_EVENT_FLAGS, \
++			  HWEIGHT(n), 0, \
++			  PERF_X86_EVENT_PEBS_LD_HSW|PERF_X86_EVENT_EXCL)
++
+ /* Check flags and event code/umask, and set the HSW store flag */
+ #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(code, n) \
+ 	__EVENT_CONSTRAINT(code, n, 			\
+ 			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+ 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST_HSW)
+ 
++#define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(code, n) \
++	__EVENT_CONSTRAINT(code, n,			\
++			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
++			  HWEIGHT(n), 0, \
++			  PERF_X86_EVENT_PEBS_ST_HSW|PERF_X86_EVENT_EXCL)
++
+ /* Check flags and event code/umask, and set the HSW load flag */
+ #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(code, n) \
+ 	__EVENT_CONSTRAINT(code, n, 			\
+ 			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
+ 			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LD_HSW)
+ 
++#define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(code, n) \
++	__EVENT_CONSTRAINT(code, n,			\
++			  INTEL_ARCH_EVENT_MASK|X86_ALL_EVENT_FLAGS, \
++			  HWEIGHT(n), 0, \
++			  PERF_X86_EVENT_PEBS_LD_HSW|PERF_X86_EVENT_EXCL)
++
+ /* Check flags and event code/umask, and set the HSW N/A flag */
+ #define INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_NA(code, n) \
+ 	__EVENT_CONSTRAINT(code, n, 			\
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index b1553d0..291f15b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -611,6 +611,10 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+ 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
++        INTEL_EXCLEVT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
++        INTEL_EXCLEVT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
++        INTEL_EXCLEVT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++        INTEL_EXCLEVT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	/* Allow all events as PEBS with no flags */
+ 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
+ 	EVENT_CONSTRAINT_END
+@@ -622,6 +626,10 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+ 	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+ 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
++	INTEL_EXCLEVT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
++	INTEL_EXCLEVT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EXCLEVT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
++	INTEL_EXCLEVT_CONSTRAINT(0xd3, 0xf),    /* MEM_LOAD_UOPS_LLC_MISS_RETIRED.* */
+ 	/* Allow all events as PEBS with no flags */
+ 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
+         EVENT_CONSTRAINT_END
+@@ -633,16 +641,16 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	/* UOPS_RETIRED.ALL, inv=1, cmask=16 (cycles:p). */
+ 	INTEL_FLAGS_EVENT_CONSTRAINT(0x108001c2, 0xf),
+ 	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_NA(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_LD(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
+-	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_ST(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+-	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+-	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd2, 0xf),    /* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
+-	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_LD(0xd3, 0xf),    /* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x11d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_LOADS */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x21d0, 0xf), /* MEM_UOPS_RETIRED.LOCK_LOADS */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x41d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_LOADS */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XLD(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x12d0, 0xf), /* MEM_UOPS_RETIRED.STLB_MISS_STORES */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x42d0, 0xf), /* MEM_UOPS_RETIRED.SPLIT_STORES */
++	INTEL_FLAGS_UEVENT_CONSTRAINT_DATALA_XST(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
++	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd2, 0xf),    /* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
++	INTEL_FLAGS_EVENT_CONSTRAINT_DATALA_XLD(0xd3, 0xf),    /* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
+ 	/* Allow all events as PEBS with no flags */
+ 	INTEL_ALL_EVENT_CONSTRAINT(0, 0xf),
+ 	EVENT_CONSTRAINT_END
+-- 
+1.9.1
 
->  	if (PageAnon(page))
-> @@ -516,7 +516,8 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
->  	if (pmd_trans_huge_lock(pmd, vma, &ptl) == 1) {
->  		smaps_pte_entry(*(pte_t *)pmd, addr, HPAGE_PMD_SIZE, walk);
->  		spin_unlock(ptl);
-> -		mss->anonymous_thp += HPAGE_PMD_SIZE;
-> +		if (!is_huge_zero_pmd(*pmd))
-> +			mss->anonymous_thp += HPAGE_PMD_SIZE;
->  		return 0;
->  	}
-
-How about we just move this hunk in to smaps_pte_entry()?  Something
-along these lines:
-
-...
-        if (PageAnon(page)) {
-                mss->anonymous += ptent_size;
-+		if (PageTransHuge(page))
-+			mss->anonymous_thp += ptent_size;
-	}
-
-If we do that, plus teaching vm_normal_page() about huge_zero_pages, it
-will help keep the hacks and the extra code due to huge pages to a miniumum.
-
-> diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-> index 63579cb..758f569 100644
-> --- a/include/linux/huge_mm.h
-> +++ b/include/linux/huge_mm.h
-> @@ -34,6 +34,10 @@ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
->  			unsigned long addr, pgprot_t newprot,
->  			int prot_numa);
->  
-> +extern bool is_huge_zero_page(struct page *page);
-> +
-> +extern bool is_huge_zero_pmd(pmd_t pmd);
-> +
->  enum transparent_hugepage_flag {
->  	TRANSPARENT_HUGEPAGE_FLAG,
->  	TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index d9a21d06..bedc3ae 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -173,12 +173,12 @@ static int start_khugepaged(void)
->  static atomic_t huge_zero_refcount;
->  static struct page *huge_zero_page __read_mostly;
->  
-> -static inline bool is_huge_zero_page(struct page *page)
-> +bool is_huge_zero_page(struct page *page)
->  {
->  	return ACCESS_ONCE(huge_zero_page) == page;
->  }
->  
-> -static inline bool is_huge_zero_pmd(pmd_t pmd)
-> +bool is_huge_zero_pmd(pmd_t pmd)
->  {
->  	return is_huge_zero_page(pmd_page(pmd));
->  }
-
-^^^ And all these exports.
