@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465AbaJIVIh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:08:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59235 "EHLO
+	id S1757502AbaJIVIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:08:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59269 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757432AbaJIVIc (ORCPT
+	with ESMTP id S1757482AbaJIVIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:32 -0400
+	Thu, 9 Oct 2014 17:08:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 090/163] Input: i8042 - add Fujitsu U574 to no_timeout dmi table
-Date: Thu,  9 Oct 2014 14:01:55 -0700
-Message-Id: <1412888588-26755-91-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 106/163] drm/radeon: don't reset dma on r6xx-evergreen init
+Date: Thu,  9 Oct 2014 14:02:11 -0700
+Message-Id: <1412888588-26755-107-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,38 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit cc18a69c92d0972bc2fc5a047ee3be1e8398171b upstream.
+commit c1789a2e66a4209fe5035eca11fdd729b2ffdd82 upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=69731
+Otherwise we may lose the DMA golden settings which can
+lead to hangs, etc.
 
-Reported-by: Jason Robinson <mail@jasonrobinson.me>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/gpu/drm/radeon/r600_dma.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 0ec9abb..dc37b32 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -601,6 +601,14 @@ static const struct dmi_system_id __initconst i8042_dmi_notimeout_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv4 Notebook PC"),
- 		},
- 	},
-+	{
-+		/* Fujitsu U574 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK U574"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/drivers/gpu/drm/radeon/r600_dma.c b/drivers/gpu/drm/radeon/r600_dma.c
+index 7844d15..616d37a 100644
+--- a/drivers/gpu/drm/radeon/r600_dma.c
++++ b/drivers/gpu/drm/radeon/r600_dma.c
+@@ -116,15 +116,6 @@ int r600_dma_resume(struct radeon_device *rdev)
+ 	u32 rb_bufsz;
+ 	int r;
+ 
+-	/* Reset dma */
+-	if (rdev->family >= CHIP_RV770)
+-		WREG32(SRBM_SOFT_RESET, RV770_SOFT_RESET_DMA);
+-	else
+-		WREG32(SRBM_SOFT_RESET, SOFT_RESET_DMA);
+-	RREG32(SRBM_SOFT_RESET);
+-	udelay(50);
+-	WREG32(SRBM_SOFT_RESET, 0);
+-
+ 	WREG32(DMA_SEM_INCOMPLETE_TIMER_CNTL, 0);
+ 	WREG32(DMA_SEM_WAIT_FAIL_TIMER_CNTL, 0);
  
 -- 
 1.9.1
