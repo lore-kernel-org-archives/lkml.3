@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177AbaJIVRL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:17:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59691 "EHLO
+	id S1758190AbaJIVRb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:17:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59682 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757947AbaJIVLz (ORCPT
+	with ESMTP id S1757939AbaJIVLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:11:55 -0400
+	Thu, 9 Oct 2014 17:11:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 150/163] cpufreq: integrator: fix integrator_cpufreq_remove return type
-Date: Thu,  9 Oct 2014 14:02:55 -0700
-Message-Id: <1412888588-26755-151-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 159/163] mm: page_alloc: fix zone allocation fairness on UP
+Date: Thu,  9 Oct 2014 14:03:04 -0700
+Message-Id: <1412888588-26755-160-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit d62dbf77f7dfaa6fb455b4b9828069a11965929c upstream.
+commit abe5f972912d086c080be4bde67750630b6fb38b upstream.
 
-When building this driver as a module, we get a helpful warning
-about the return type:
+The zone allocation batches can easily underflow due to higher-order
+allocations or spills to remote nodes.  On SMP that's fine, because
+underflows are expected from concurrency and dealt with by returning 0.
+But on UP, zone_page_state will just return a wrapped unsigned long, which
+will get past the <= 0 check and then consider the zone eligible until its
+watermarks are hit.
 
-drivers/cpufreq/integrator-cpufreq.c:232:2: warning: initialization from incompatible pointer type
-  .remove = __exit_p(integrator_cpufreq_remove),
+3a025760fc15 ("mm: page_alloc: spill to remote nodes before waking
+kswapd") already made the counter-resetting use atomic_long_read() to
+accomodate underflows from remote spills, but it didn't go all the way
+with it.  Make it clear that these batches are expected to go negative
+regardless of concurrency, and use atomic_long_read() everywhere.
 
-If the remove callback returns void, the caller gets an undefined
-value as it expects an integer to be returned. This fixes the
-problem by passing down the value from cpufreq_unregister_driver.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 81c0a2bb515f ("mm: page_alloc: fair zone allocator policy")
+Reported-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Leon Romanovsky <leon@leon.nu>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+[ kamal: Johannes' 3.12 backport applied to 3.13-stable ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/cpufreq/integrator-cpufreq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ mm/page_alloc.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/cpufreq/integrator-cpufreq.c b/drivers/cpufreq/integrator-cpufreq.c
-index 7d8ab000d..572955f 100644
---- a/drivers/cpufreq/integrator-cpufreq.c
-+++ b/drivers/cpufreq/integrator-cpufreq.c
-@@ -212,9 +212,9 @@ static int __init integrator_cpufreq_probe(struct platform_device *pdev)
- 	return cpufreq_register_driver(&integrator_driver);
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9aad4f1..38dca81 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1932,7 +1932,7 @@ zonelist_scan:
+ 		if (alloc_flags & ALLOC_FAIR) {
+ 			if (!zone_local(preferred_zone, zone))
+ 				continue;
+-			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
++			if (atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]) <= 0)
+ 				continue;
+ 		}
+ 		/*
+@@ -5599,9 +5599,8 @@ static void __setup_per_zone_wmarks(void)
+ 		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
  
--static void __exit integrator_cpufreq_remove(struct platform_device *pdev)
-+static int __exit integrator_cpufreq_remove(struct platform_device *pdev)
- {
--	cpufreq_unregister_driver(&integrator_driver);
-+	return cpufreq_unregister_driver(&integrator_driver);
- }
+ 		__mod_zone_page_state(zone, NR_ALLOC_BATCH,
+-				      high_wmark_pages(zone) -
+-				      low_wmark_pages(zone) -
+-				      zone_page_state(zone, NR_ALLOC_BATCH));
++			high_wmark_pages(zone) - low_wmark_pages(zone) -
++			atomic_long_read(&zone->vm_stat[NR_ALLOC_BATCH]));
  
- static const struct of_device_id integrator_cpufreq_match[] = {
+ 		setup_zone_migrate_reserve(zone);
+ 		spin_unlock_irqrestore(&zone->lock, flags);
 -- 
 1.9.1
 
