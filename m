@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaJIUqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 16:46:10 -0400
-Received: from mail-by2on0077.outbound.protection.outlook.com ([207.46.100.77]:10993
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750855AbaJIUqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 16:46:08 -0400
-X-Greylist: delayed 4671 seconds by postgrey-1.27 at vger.kernel.org; Thu, 09 Oct 2014 16:46:08 EDT
-From: Vince Bridgers <vbridger@opensource.altera.com>
-To: <akpm@linux-foundation.org>, <davem@davemloft.net>,
-        <gregkh@linuxfoundation.org>, <joe@perches.com>,
-        <m.chehab@samsung.com>, <crope@iki.fi>, <linux-kernel@vger.kernel.org>
-CC: <vbridger@opensource.altera.com>, <vbridger@altera.com>
-Subject: [PATCH] MAINTAINERS: Update contact information for Vince Bridgers
-Date: Thu, 9 Oct 2014 10:08:42 -0500
-Message-ID: <1412867322-22094-1-git-send-email-vbridger@opensource.altera.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751695AbaJIUrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 16:47:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59999 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751261AbaJIUrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 16:47:16 -0400
+Date: Thu, 9 Oct 2014 15:46:37 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Rabin Vincent <rabin@rab.in>
+CC: Felipe Balbi <balbi@ti.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>, <josh@joshtriplett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: RCU bug with v3.17-rc3 ?
+Message-ID: <20141009204637.GE25729@saruman>
+Reply-To: <balbi@ti.com>
+References: <20140904191642.GJ5001@linux.vnet.ibm.com>
+ <20140904192535.GJ13421@saruman.home>
+ <20140904200403.GL13421@saruman.home>
+ <20140905213216.GD5001@linux.vnet.ibm.com>
+ <20141008171322.GH22688@saruman>
+ <20141008175707.GI22688@saruman>
+ <20141008212938.GP22688@saruman>
+ <20141009160138.GA2396@cmpxchg.org>
+ <20141009162656.GE16002@saruman>
+ <20141009204101.GA25955@debian>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BN1PR08CA0043.namprd08.prod.outlook.com (10.242.217.171) To
- BN1PR0301MB0627.namprd03.prod.outlook.com (25.160.171.12)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0627;
-X-Forefront-PRVS: 0359162B6D
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(120916001)(66066001)(104166001)(76482002)(64706001)(77156001)(102836001)(47776003)(42186005)(20776003)(85852003)(87976001)(87286001)(101416001)(223583001)(99396003)(89996001)(19580405001)(122386002)(19580395003)(62966002)(40100002)(88136002)(31966008)(50986999)(77096002)(85306004)(229853001)(107046002)(86362001)(95666004)(575784001)(93916002)(92726001)(81156004)(106356001)(46102003)(2201001)(92566001)(105586002)(80022003)(33646002)(50466002)(21056001)(69596002)(48376002)(53416004)(50226001)(4396001)(97736003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR0301MB0627;H:vince-HP-Z620-Workstation2.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="19uQFt6ulqmgNgg1"
+Content-Disposition: inline
+In-Reply-To: <20141009204101.GA25955@debian>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Vince Bridgers <vbridger@opensource.altera.com>
----
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+--19uQFt6ulqmgNgg1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9e315a4..c0c7fe6 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -564,7 +564,7 @@ L:	linux-alpha@vger.kernel.org
- F:	arch/alpha/
- 
- ALTERA TRIPLE SPEED ETHERNET DRIVER
--M:	Vince Bridgers <vbridgers2013@gmail.com>
-+M:	Vince Bridgers <vbridger@opensource.altera.com>
- L:	netdev@vger.kernel.org
- L:	nios2-dev@lists.rocketboards.org (moderated for non-subscribers)
- S:	Maintained
--- 
-1.9.1
+Hi,
 
+On Thu, Oct 09, 2014 at 10:41:01PM +0200, Rabin Vincent wrote:
+> On Thu, Oct 09, 2014 at 11:26:56AM -0500, Felipe Balbi wrote:
+> > alright, it's pretty deterministic however. Always on the same test, no
+> > matter which USB controller, no matter if backing store is RAM or MMC.
+> >=20
+> > Those two undefined instructions on the disassembly caught my attention,
+> > perhaps I'm facing a GCC bug ?
+>=20
+> The undefined instructions are just ARM's BUG() implementation.
+>=20
+> But did you see the question I asked you yesterday in your other thread?
+> http://www.spinics.net/lists/arm-kernel/msg368634.html
+
+hmm, completely missed that, sorry. I'm using 4.8.2, will try something
+else.
+
+--=20
+balbi
+
+--19uQFt6ulqmgNgg1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUNvQtAAoJEIaOsuA1yqREylQP/0Xz2mxKi04305vCKFevaefK
+PLGF+pyX3OsF+LaoFU0GrL7Itdx4JD+2ZNFYoBGmSsWLRj1PRosSJWDY7TH3ojtn
+wsRSP/CVRsXLOWsdBIkcq2/9cqfST4KJwmORgA3lTwx627vyvrb0ASfOby3n1gm4
+HQMrQwiF7I+3N+HaD9e/bn8eeTJ1evVNvDHbJFyc0FkJU6Sj2Lu/K8DyuOId6gmA
+bZhJHV3Z1P6RViCkEfxBFdogWT0xTS9kma++9nF/0L6peL+65MF+/hu+m25jpvR+
+heNU5j1BjYFvP1Welxv7z87PETZ7r2CcJJEaXPpwJaFBc2YJHXkkKg8ohSt6oUyE
+1PS8mbzDpYMfUn+TIv+mKeAm6LRiXg6e1rSCIK2xXv1Ti8tq1qzBEBqApKCDU8mE
+lCA931lLkrWlMnFItiDjdXmaNMLy3OP3VTn08Oqk9iduCc17PvURyVEoFElesJ8k
+6lddvGGW2QkKb6rx7IGmD9n27ZzaynYif4Kc3H2Tq0jS6FrOBG1kwAe0qiET2l1m
+UhOlYZuXWxuhmHTpTTbGbJLQxBGj38p23ep7/n5wB6SgsVqL55VSJaU/DWH59d46
+XcwYn/uPe9uabgTASrXUrKYY1lpLMmcBIPQPy6S1FfpS+1I1rx0u3hkuOkpoEROq
+AQLpNLW4YEEbUAnvkdX2
+=CTwi
+-----END PGP SIGNATURE-----
+
+--19uQFt6ulqmgNgg1--
