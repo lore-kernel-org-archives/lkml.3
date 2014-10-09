@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523AbaJIVHq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:07:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59114 "EHLO
+	id S1758326AbaJIVmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:42:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59108 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391AbaJIVHl (ORCPT
+	with ESMTP id S1757326AbaJIVHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:07:41 -0400
+	Thu, 9 Oct 2014 17:07:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, Felipe Balbi <balbi@ti.com>,
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 023/163] usb: gadget: fusb300_udc.h: Fix typo in include guard
-Date: Thu,  9 Oct 2014 14:00:48 -0700
-Message-Id: <1412888588-26755-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 039/163] imx-drm: ipuv3-plane: fix ipu_plane_dpms()
+Date: Thu,  9 Oct 2014 14:01:04 -0700
+Message-Id: <1412888588-26755-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,34 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit f0798d6a04867ad8db8b41ddea45627d2c8cffe3 upstream.
+commit 3a44a2058747d71385eb69691c7f977cb58cc293 upstream.
 
-Clearly this was meant to be an include guard, but a trailing
-underscore was missing. It has been this way since the file was
-introduced in 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver").
+When unbinding imx-drm, the following oops was observed:
 
-Fixes: 0fe6f1d1 ("usb: udc: add Faraday fusb300 driver")
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Unable to handle kernel NULL pointer dereference at virtual address 00000004
+pgd = e995c000
+[00000004] *pgd=4fea5831
+Internal error: Oops: 817 [#1] SMP ARM
+Modules linked in: bnep rfcomm bluetooth nfsd exportfs hid_cypress brcmfmac brcmutil snd_soc_fsl_ssi snd_soc_fsl_spdif imx_pcm_fiq imx_pcm_dma snd_soc_sgtl5000 imx_sdma imx2_wdt imx_ldb(C) imx_thermal snd_soc_imx_sgtl5000 snd_soc_imx_spdif snd_soc_imx_audmux
+CPU: 1 PID: 779 Comm: bash Tainted: G         C    3.16.0-rc2+ #1230
+task: ea9eb180 ti: ea378000 task.ti: ea378000
+PC is at ipu_dp_put+0x10/0x18
+LR is at ipu_plane_dpms+0x60/0x8c
+pc : [<c0350d20>]    lr : [<c04bd9e8>]    psr: 200f0013
+sp : ea379d80  ip : ea379d90  fp : ea379d8c
+r10: 00100100  r9 : 00000000  r8 : 00200200
+r7 : e9ba0264  r6 : e9ba01f8  r5 : 00000000  r4 : ea34b800
+r3 : 00000000  r2 : 00000000  r1 : 0000009b  r0 : 00000000
+Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c53c7d  Table: 3995c04a  DAC: 00000015
+Process bash (pid: 779, stack limit = 0xea378240)
+Stack: (0xea379d80 to 0xea37a000)
+...
+Backtrace:
+[<c0350d10>] (ipu_dp_put) from [<c04bd9e8>] (ipu_plane_dpms+0x60/0x8c)
+[<c04bd988>] (ipu_plane_dpms) from [<c04bda40>] (ipu_disable_plane+0x2c/0x60)
+[<c04bda14>] (ipu_disable_plane) from [<c04bda9c>] (ipu_plane_destroy+0x28/0x60)
+[<c04bda74>] (ipu_plane_destroy) from [<c033ff84>] (drm_mode_config_cleanup+0x1b8/0x250)
+[<c033fdcc>] (drm_mode_config_cleanup) from [<c04bc234>] (imx_drm_driver_unload+0x44/0x4c)
+[<c04bc1f0>] (imx_drm_driver_unload) from [<c03394a4>] (drm_dev_unregister+0x2c/0xa0)
+[<c0339478>] (drm_dev_unregister) from [<c0339f8c>] (drm_put_dev+0x30/0x6c)
+[<c0339f5c>] (drm_put_dev) from [<c04bc1cc>] (imx_drm_unbind+0x14/0x18)
+[<c04bc1b8>] (imx_drm_unbind) from [<c03530b4>] (component_master_del+0xbc/0xd8)
+...
+Code: e1a0c00d e92dd800 e24cb004 e3a03000 (e5c03004)
+
+This is caused by a missing check in ipu_plane_dpms for a NULL pointer.
+
+Fixes: b8d181e408af ("staging: drm/imx: add drm plane support")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/gadget/fusb300_udc.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/imx-drm/ipuv3-plane.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/fusb300_udc.h b/drivers/usb/gadget/fusb300_udc.h
-index ae811d8..ad39f89 100644
---- a/drivers/usb/gadget/fusb300_udc.h
-+++ b/drivers/usb/gadget/fusb300_udc.h
-@@ -12,7 +12,7 @@
+diff --git a/drivers/staging/imx-drm/ipuv3-plane.c b/drivers/staging/imx-drm/ipuv3-plane.c
+index d97454a..69ed0d9 100644
+--- a/drivers/staging/imx-drm/ipuv3-plane.c
++++ b/drivers/staging/imx-drm/ipuv3-plane.c
+@@ -269,7 +269,8 @@ static void ipu_plane_dpms(struct ipu_plane *ipu_plane, int mode)
  
- 
- #ifndef __FUSB300_UDC_H__
--#define __FUSB300_UDC_H_
-+#define __FUSB300_UDC_H__
- 
- #include <linux/kernel.h>
+ 		ipu_idmac_put(ipu_plane->ipu_ch);
+ 		ipu_dmfc_put(ipu_plane->dmfc);
+-		ipu_dp_put(ipu_plane->dp);
++		if (ipu_plane->dp)
++			ipu_dp_put(ipu_plane->dp);
+ 	}
+ }
  
 -- 
 1.9.1
