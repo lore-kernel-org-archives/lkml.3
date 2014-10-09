@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755AbaJIVYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:24:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59474 "EHLO
+	id S1758004AbaJIVZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:25:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59463 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757699AbaJIVK1 (ORCPT
+	with ESMTP id S1757677AbaJIVKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:27 -0400
+	Thu, 9 Oct 2014 17:10:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Pointner <johannes.pointner@br-automation.com>,
-        Jonathan Cameron <jic23@kernel.org>,
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 069/163] iio:inkern: fix overwritten -EPROBE_DEFER in of_iio_channel_get_by_name
-Date: Thu,  9 Oct 2014 14:01:34 -0700
-Message-Id: <1412888588-26755-70-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 126/163] [media] videobuf2-dma-sg: fix for wrong GFP mask to sg_alloc_table_from_pages
+Date: Thu,  9 Oct 2014 14:02:31 -0700
+Message-Id: <1412888588-26755-127-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,36 +28,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Pointner <johannes.pointner@gmail.com>
+From: Hans Verkuil <hverkuil@xs4all.nl>
 
-commit 872687f626e033b4ddfaec1e410057cfc6636d77 upstream.
+commit 47bc59c52b005f546343c373370a7eec6a2b0f84 upstream.
 
-Fixes: a2c12493ed7e ('iio: of_iio_channel_get_by_name() returns non-null pointers for error legs')
+sg_alloc_table_from_pages() only allocates a sg_table, so it should just use
+GFP_KERNEL, not gfp_flags. If gfp_flags contains __GFP_DMA32 then mm/sl[au]b.c
+will call BUG_ON:
 
-which improperly assumes that of_iio_channel_get_by_name must always
-return NULL and thus now hides -EPROBE_DEFER.
+[  358.027515] ------------[ cut here ]------------
+[  358.027546] kernel BUG at mm/slub.c:1416!
+[  358.027558] invalid opcode: 0000 [#1] PREEMPT SMP
+[  358.027576] Modules linked in: mt2131 s5h1409 tda8290 tuner cx25840 cx23885 btcx_risc altera_ci tda18271 altera_stapl videobuf2_dvb tveeprom cx2341x videobuf2_dma_sg dvb_core rc_core videobuf2_memops videobuf2_core nouveau zr36067 videocodec v4l2_common videodev media x86_pkg_temp_thermal cfbfillrect cfbimgblt cfbcopyarea ttm drm_kms_helper processor button isci
+[  358.027712] CPU: 19 PID: 3654 Comm: cat Not tainted 3.16.0-rc6-telek #167
+[  358.027723] Hardware name: ASUSTeK COMPUTER INC. Z9PE-D8 WS/Z9PE-D8 WS, BIOS 5404 02/10/2014
+[  358.027741] task: ffff880897c7d960 ti: ffff88089b4d4000 task.ti: ffff88089b4d4000
+[  358.027753] RIP: 0010:[<ffffffff81196040>]  [<ffffffff81196040>] new_slab+0x280/0x320
+[  358.027776] RSP: 0018:ffff88089b4d7ae8  EFLAGS: 00010002
+[  358.027787] RAX: ffff880897c7d960 RBX: 0000000000000000 RCX: ffff88089b4d7b50
+[  358.027798] RDX: 00000000ffffffff RSI: 0000000000000004 RDI: ffff88089f803b00
+[  358.027809] RBP: ffff88089b4d7bb8 R08: 0000000000000000 R09: 0000000100400040
+[  358.027821] R10: 0000160000000000 R11: ffff88109bc02c40 R12: 0000000000000001
+[  358.027832] R13: ffff88089f8000c0 R14: ffff88089f803b00 R15: ffff8810bfcf4be0
+[  358.027845] FS:  00007f83fe5c0700(0000) GS:ffff8810bfce0000(0000) knlGS:0000000000000000
+[  358.027858] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  358.027868] CR2: 0000000001dfd568 CR3: 0000001097d5a000 CR4: 00000000000407e0
+[  358.027878] Stack:
+[  358.027885]  ffffffff81198860 ffff8810bfcf4be0 ffff880897c7d960 0000000000001b00
+[  358.027905]  ffff880897c7d960 0000000000000000 ffff8810bfcf4bf0 0000000000000000
+[  358.027924]  0000000000000000 0000000100000100 ffffffff813ef84a 00000004ffffffff
+[  358.027944] Call Trace:
+[  358.027956]  [<ffffffff81198860>] ? __slab_alloc+0x400/0x4e0
+[  358.027973]  [<ffffffff813ef84a>] ? sg_kmalloc+0x1a/0x30
+[  358.027985]  [<ffffffff81198f17>] __kmalloc+0x127/0x150
+[  358.027997]  [<ffffffff813ef84a>] ? sg_kmalloc+0x1a/0x30
+[  358.028009]  [<ffffffff813ef84a>] sg_kmalloc+0x1a/0x30
+[  358.028023]  [<ffffffff813eff84>] __sg_alloc_table+0x74/0x180
+[  358.028035]  [<ffffffff813ef830>] ? sg_kfree+0x20/0x20
+[  358.028048]  [<ffffffff813f00af>] sg_alloc_table+0x1f/0x60
+[  358.028061]  [<ffffffff813f0174>] sg_alloc_table_from_pages+0x84/0x1f0
+[  358.028077]  [<ffffffffa007c3f9>] vb2_dma_sg_alloc+0x159/0x230 [videobuf2_dma_sg]
+[  358.028095]  [<ffffffffa003d55a>] __vb2_queue_alloc+0x10a/0x680 [videobuf2_core]
+[  358.028113]  [<ffffffffa003e110>] __reqbufs.isra.14+0x220/0x3e0 [videobuf2_core]
+[  358.028130]  [<ffffffffa003e79d>] __vb2_init_fileio+0xbd/0x380 [videobuf2_core]
+[  358.028147]  [<ffffffffa003f563>] __vb2_perform_fileio+0x5b3/0x6e0 [videobuf2_core]
+[  358.028164]  [<ffffffffa003f871>] vb2_fop_read+0xb1/0x100 [videobuf2_core]
+[  358.028184]  [<ffffffffa06dd2e5>] v4l2_read+0x65/0xb0 [videodev]
+[  358.028198]  [<ffffffff811a243f>] vfs_read+0x8f/0x170
+[  358.028210]  [<ffffffff811a30a1>] SyS_read+0x41/0xb0
+[  358.028224]  [<ffffffff818f02e9>] system_call_fastpath+0x16/0x1b
+[  358.028234] Code: 66 90 e9 dc fd ff ff 0f 1f 40 00 41 8b 4d 68 e9 d5 fe ff ff 0f 1f 80 00 00 00 00 f0 41 80 4d 00 40 e9 03 ff ff ff 0f 1f 44 00 00 <0f> 0b 66 0f 1f 44 00 00 44 89 c6 4c 89 45 d0 e8 0c 82 ff ff 48
+[  358.028415] RIP  [<ffffffff81196040>] new_slab+0x280/0x320
+[  358.028432]  RSP <ffff88089b4d7ae8>
+[  358.032208] ---[ end trace 6443240199c706e4 ]---
 
-Signed-off-by: Johannes Pointner <johannes.pointner@br-automation.com>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/iio/inkern.c | 2 +-
+ drivers/media/v4l2-core/videobuf2-dma-sg.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
-index 1e8e94d..4fc88e6 100644
---- a/drivers/iio/inkern.c
-+++ b/drivers/iio/inkern.c
-@@ -178,7 +178,7 @@ static struct iio_channel *of_iio_channel_get_by_name(struct device_node *np,
- 			index = of_property_match_string(np, "io-channel-names",
- 							 name);
- 		chan = of_iio_channel_get(np, index);
--		if (!IS_ERR(chan))
-+		if (!IS_ERR(chan) || PTR_ERR(chan) == -EPROBE_DEFER)
- 			break;
- 		else if (name && index >= 0) {
- 			pr_err("ERROR: could not get IIO channel %s:%s(%i)\n",
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+index 0d3a8ff..2970d76 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -112,7 +112,7 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
+ 		goto fail_pages_alloc;
+ 
+ 	ret = sg_alloc_table_from_pages(&buf->sg_table, buf->pages,
+-			buf->num_pages, 0, size, gfp_flags);
++			buf->num_pages, 0, size, GFP_KERNEL);
+ 	if (ret)
+ 		goto fail_table_alloc;
+ 
 -- 
 1.9.1
 
