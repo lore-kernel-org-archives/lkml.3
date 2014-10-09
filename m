@@ -1,285 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561AbaJIPEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:04:48 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43374 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291AbaJIPEf (ORCPT
+	id S1757574AbaJIPE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:04:59 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:53970 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785AbaJIPEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:04:35 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Michael Neuling <mikey@neuling.org>, greg@kroah.com, arnd@arndb.de,
-        mpe@ellerman.id.au, benh@kernel.crashing.org
-Cc: mikey@neuling.org, anton@samba.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, jk@ozlabs.org, imunsie@au1.ibm.com,
-        cbe-oss-dev@lists.ozlabs.org
-Subject: Re: [PATCH v4 02/16] powerpc/cell: Move data segment faulting code out of cell platform
-In-Reply-To: <1412758505-23495-3-git-send-email-mikey@neuling.org>
-References: <1412758505-23495-1-git-send-email-mikey@neuling.org> <1412758505-23495-3-git-send-email-mikey@neuling.org>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.3.91.1 (x86_64-unknown-linux-gnu)
-Date: Thu, 09 Oct 2014 20:34:26 +0530
-Message-ID: <877g092sjp.fsf@linux.vnet.ibm.com>
+	Thu, 9 Oct 2014 11:04:41 -0400
+Message-ID: <5436A403.1050109@collabora.co.uk>
+Date: Thu, 09 Oct 2014 17:04:35 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100915-0033-0000-0000-000002320BD2
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+CC: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/5] regulator: dt-bindings: Add regulator-initial-mode
+ support
+References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk> <1412775847-15213-4-git-send-email-javier.martinez@collabora.co.uk> <1412844355.1316.15.camel@AMDC1943>
+In-Reply-To: <1412844355.1316.15.camel@AMDC1943>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Neuling <mikey@neuling.org> writes:
+Hello Krzysztof,
 
-> From: Ian Munsie <imunsie@au1.ibm.com>
->
-> __spu_trap_data_seg() currently contains code to determine the VSID and ESID
-> required for a particular EA and mm struct.
->
-> This code is generically useful for other co-processors. This moves the code of
-> the cell platform so it can be used by other powerpc code. It also adds 1TB
-> segment handling which Cell didn't support.  The new function is called
-> copro_calculate_slb().
->
-> This also moves the internal struct spu_slb to a generic struct copro_slb which
-> is now used in the Cell and copro code.  We use this new struct instead of
-> passing around esid and vsid parameters.
+Thanks a lot for your feedback.
+
+On 10/09/2014 10:45 AM, Krzysztof Kozlowski wrote:
+> On śro, 2014-10-08 at 15:44 +0200, Javier Martinez Canillas wrote:
+>> --- a/Documentation/devicetree/bindings/regulator/regulator.txt
+>> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
+>> @@ -23,6 +23,14 @@ Optional properties:
+>>    state among following defined suspend states:
+>>    <3>: PM_SUSPEND_MEM - Setup regulator according to regulator-state-mem
+>>    <4>: PM_SUSPEND_MAX - Setup regulator according to regulator-state-disk
+>> +- regulator-initial-mode: initial regulator operating mode. One of following:
+>> +	<1>: REGULATOR_MODE_FAST    - Regulator can handle fast changes.
+>> +	<2>: REGULATOR_MODE_NORMAL  - Normal regulator power supply mode.
+>> +	<4>: REGULATOR_MODE_IDLE    - Regulator runs in a more efficient mode.
+>> +	<8>: REGULATOR_MODE_STANDBY - Regulator runs in the most efficient mode.
+>> +  modes are defined in the dt-bindings/regulator/regulator.h header and can be
+>> +  used in device tree sources files. If no mode is defined, then the OS will not
+>> +  manage the operating mode and the HW default values will be used instead.
+>>  - regulator-state-mem sub-root node for Suspend-to-RAM mode
+>>    : suspend to memory, the device goes to sleep, but all data stored in memory,
+>>    only some external interrupt can wake the device.
+> 
+> I agree with the need and the idea of generic bindings for operating
+> modes for regulators. At least for Exynos-based boards the PMICs have
+> quite similar opmodes.
+> 
+> However the regulator mode from consumer.h (and in above doc) does not
+> match well with these opmodes. Example is yours patch 4/5:
+>  - idle ("more efficient mode") maps to "low power mode in suspend",
+>  - standby ("the most efficient mode") maps to "OFF in suspend".
+> 
+> Actually we are not enable "efficient modes" but we configure how the
+> regulator will behave when AP says - I'm suspending.
 >
 
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Agree, Mark also pointed out that there is a difference between changing
+how the regulator will behave on runtime vs changing how the regulator
+will behave during system suspend. AFAIU from his explanation, the modes
+defined in consumer.h only applies to the former and conceptually there
+should be a difference between those two cases even when the Maxim PMIC
+seems to mix it both in the data-sheet and by using the same field.
 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
-> Signed-off-by: Michael Neuling <mikey@neuling.org>
-> ---
->  arch/powerpc/include/asm/copro.h       |  7 +++++
->  arch/powerpc/include/asm/mmu-hash64.h  |  7 +++++
->  arch/powerpc/mm/copro_fault.c          | 46 ++++++++++++++++++++++++++++
->  arch/powerpc/mm/slb.c                  |  3 --
->  arch/powerpc/platforms/cell/spu_base.c | 55 ++++++----------------------------
->  5 files changed, 69 insertions(+), 49 deletions(-)
+I answered Mark on patch #5 with a suggestion on how to handle this in
+a generic way to avoid each driver having their own custom DT binding
+and duplicating the parsing code.
+
+Could you please answer there with your thoughts?
+ 
+> 
+> Another issue: is "initial_state" not doing all this already?
+> 
+
+One of the options I indeed evaluated was if using initial_state could be
+possible. But currently the .set_suspend_mode function handler is only
+called for the STANDBY, MEM and MAX suspend modes. While is true that this
+could be extended to also support PM_SUSPEND_ON, I don't think that it
+makes sense conceptually. Since is not the same to set a mode to be used
+at runtime than setting a mode to be used during suspend.
+
+AFAIU that is the reason why there are separate .set_suspend_mode and
+.set_mode operations and that's why there are both an .initial_state
+and an .initial_mode.
+
+> Best regards,
+> Krzysztof
 >
-> diff --git a/arch/powerpc/include/asm/copro.h b/arch/powerpc/include/asm/copro.h
-> index 51cae85..b0e6a18 100644
-> --- a/arch/powerpc/include/asm/copro.h
-> +++ b/arch/powerpc/include/asm/copro.h
-> @@ -10,7 +10,14 @@
->  #ifndef _ASM_POWERPC_COPRO_H
->  #define _ASM_POWERPC_COPRO_H
->  
-> +struct copro_slb
-> +{
-> +	u64 esid, vsid;
-> +};
-> +
->  int copro_handle_mm_fault(struct mm_struct *mm, unsigned long ea,
->  			  unsigned long dsisr, unsigned *flt);
->  
-> +int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb);
-> +
->  #endif /* _ASM_POWERPC_COPRO_H */
-> diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-> index d765144..aeabd02 100644
-> --- a/arch/powerpc/include/asm/mmu-hash64.h
-> +++ b/arch/powerpc/include/asm/mmu-hash64.h
-> @@ -190,6 +190,13 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
->  
->  #ifndef __ASSEMBLY__
->  
-> +static inline int slb_vsid_shift(int ssize)
-> +{
-> +	if (ssize == MMU_SEGSIZE_256M)
-> +		return SLB_VSID_SHIFT;
-> +	return SLB_VSID_SHIFT_1T;
-> +}
-> +
->  static inline int segment_shift(int ssize)
->  {
->  	if (ssize == MMU_SEGSIZE_256M)
-> diff --git a/arch/powerpc/mm/copro_fault.c b/arch/powerpc/mm/copro_fault.c
-> index ba7df14..a15a23e 100644
-> --- a/arch/powerpc/mm/copro_fault.c
-> +++ b/arch/powerpc/mm/copro_fault.c
-> @@ -24,6 +24,7 @@
->  #include <linux/mm.h>
->  #include <linux/export.h>
->  #include <asm/reg.h>
-> +#include <asm/copro.h>
->  
->  /*
->   * This ought to be kept in sync with the powerpc specific do_page_fault
-> @@ -90,3 +91,48 @@ out_unlock:
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(copro_handle_mm_fault);
-> +
-> +int copro_calculate_slb(struct mm_struct *mm, u64 ea, struct copro_slb *slb)
-> +{
-> +	u64 vsid;
-> +	int psize, ssize;
-> +
-> +	slb->esid = (ea & ESID_MASK) | SLB_ESID_V;
-> +
-> +	switch (REGION_ID(ea)) {
-> +	case USER_REGION_ID:
-> +		pr_devel("%s: 0x%llx -- USER_REGION_ID\n", __func__, ea);
-> +		psize = get_slice_psize(mm, ea);
-> +		ssize = user_segment_size(ea);
-> +		vsid = get_vsid(mm->context.id, ea, ssize);
-> +		break;
-> +	case VMALLOC_REGION_ID:
-> +		pr_devel("%s: 0x%llx -- VMALLOC_REGION_ID\n", __func__, ea);
-> +		if (ea < VMALLOC_END)
-> +			psize = mmu_vmalloc_psize;
-> +		else
-> +			psize = mmu_io_psize;
-> +		ssize = mmu_kernel_ssize;
-> +		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
-> +		break;
-> +	case KERNEL_REGION_ID:
-> +		pr_devel("%s: 0x%llx -- KERNEL_REGION_ID\n", __func__, ea);
-> +		psize = mmu_linear_psize;
-> +		ssize = mmu_kernel_ssize;
-> +		vsid = get_kernel_vsid(ea, mmu_kernel_ssize);
-> +		break;
-> +	default:
-> +		pr_debug("%s: invalid region access at %016llx\n", __func__, ea);
-> +		return 1;
-> +	}
-> +
-> +	vsid = (vsid << slb_vsid_shift(ssize)) | SLB_VSID_USER;
-> +
-> +	vsid |= mmu_psize_defs[psize].sllp |
-> +		((ssize == MMU_SEGSIZE_1T) ? SLB_VSID_B_1T : 0);
-> +
 
-s/0/SLB_VSID_B_256M/ 
-
-> +	slb->vsid = vsid;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(copro_calculate_slb);
-> diff --git a/arch/powerpc/mm/slb.c b/arch/powerpc/mm/slb.c
-> index 0399a67..6e450ca 100644
-> --- a/arch/powerpc/mm/slb.c
-> +++ b/arch/powerpc/mm/slb.c
-> @@ -46,9 +46,6 @@ static inline unsigned long mk_esid_data(unsigned long ea, int ssize,
->  	return (ea & slb_esid_mask(ssize)) | SLB_ESID_V | slot;
->  }
->  
-> -#define slb_vsid_shift(ssize)	\
-> -	((ssize) == MMU_SEGSIZE_256M? SLB_VSID_SHIFT: SLB_VSID_SHIFT_1T)
-> -
->  static inline unsigned long mk_vsid_data(unsigned long ea, int ssize,
->  					 unsigned long flags)
->  {
-> diff --git a/arch/powerpc/platforms/cell/spu_base.c b/arch/powerpc/platforms/cell/spu_base.c
-> index 2930d1e..ffcbd24 100644
-> --- a/arch/powerpc/platforms/cell/spu_base.c
-> +++ b/arch/powerpc/platforms/cell/spu_base.c
-> @@ -76,10 +76,6 @@ static LIST_HEAD(spu_full_list);
->  static DEFINE_SPINLOCK(spu_full_list_lock);
->  static DEFINE_MUTEX(spu_full_list_mutex);
->  
-> -struct spu_slb {
-> -	u64 esid, vsid;
-> -};
-> -
->  void spu_invalidate_slbs(struct spu *spu)
->  {
->  	struct spu_priv2 __iomem *priv2 = spu->priv2;
-> @@ -149,7 +145,7 @@ static void spu_restart_dma(struct spu *spu)
->  	}
->  }
->  
-> -static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
-> +static inline void spu_load_slb(struct spu *spu, int slbe, struct copro_slb *slb)
->  {
->  	struct spu_priv2 __iomem *priv2 = spu->priv2;
->  
-> @@ -167,45 +163,12 @@ static inline void spu_load_slb(struct spu *spu, int slbe, struct spu_slb *slb)
->  
->  static int __spu_trap_data_seg(struct spu *spu, unsigned long ea)
->  {
-> -	struct mm_struct *mm = spu->mm;
-> -	struct spu_slb slb;
-> -	int psize;
-> -
-> -	pr_debug("%s\n", __func__);
-> -
-> -	slb.esid = (ea & ESID_MASK) | SLB_ESID_V;
-> +	struct copro_slb slb;
-> +	int ret;
->  
-> -	switch(REGION_ID(ea)) {
-> -	case USER_REGION_ID:
-> -#ifdef CONFIG_PPC_MM_SLICES
-> -		psize = get_slice_psize(mm, ea);
-> -#else
-> -		psize = mm->context.user_psize;
-> -#endif
-> -		slb.vsid = (get_vsid(mm->context.id, ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_USER;
-> -		break;
-> -	case VMALLOC_REGION_ID:
-> -		if (ea < VMALLOC_END)
-> -			psize = mmu_vmalloc_psize;
-> -		else
-> -			psize = mmu_io_psize;
-> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
-> -		break;
-> -	case KERNEL_REGION_ID:
-> -		psize = mmu_linear_psize;
-> -		slb.vsid = (get_kernel_vsid(ea, MMU_SEGSIZE_256M)
-> -				<< SLB_VSID_SHIFT) | SLB_VSID_KERNEL;
-> -		break;
-> -	default:
-> -		/* Future: support kernel segments so that drivers
-> -		 * can use SPUs.
-> -		 */
-> -		pr_debug("invalid region access at %016lx\n", ea);
-> -		return 1;
-> -	}
-> -	slb.vsid |= mmu_psize_defs[psize].sllp;
-> +	ret = copro_calculate_slb(spu->mm, ea, &slb);
-> +	if (ret)
-> +		return ret;
->  
->  	spu_load_slb(spu, spu->slb_replace, &slb);
->  
-> @@ -253,7 +216,7 @@ static int __spu_trap_data_map(struct spu *spu, unsigned long ea, u64 dsisr)
->  	return 0;
->  }
->  
-> -static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
-> +static void __spu_kernel_slb(void *addr, struct copro_slb *slb)
->  {
->  	unsigned long ea = (unsigned long)addr;
->  	u64 llp;
-> @@ -272,7 +235,7 @@ static void __spu_kernel_slb(void *addr, struct spu_slb *slb)
->   * Given an array of @nr_slbs SLB entries, @slbs, return non-zero if the
->   * address @new_addr is present.
->   */
-> -static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
-> +static inline int __slb_present(struct copro_slb *slbs, int nr_slbs,
->  		void *new_addr)
->  {
->  	unsigned long ea = (unsigned long)new_addr;
-> @@ -297,7 +260,7 @@ static inline int __slb_present(struct spu_slb *slbs, int nr_slbs,
->  void spu_setup_kernel_slbs(struct spu *spu, struct spu_lscsa *lscsa,
->  		void *code, int code_size)
->  {
-> -	struct spu_slb slbs[4];
-> +	struct copro_slb slbs[4];
->  	int i, nr_slbs = 0;
->  	/* start and end addresses of both mappings */
->  	void *addrs[] = {
-> -- 
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Best regards,
+Javier
