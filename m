@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673AbaJIVJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:09:46 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59412 "EHLO
+	id S1757625AbaJIVKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:10:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59419 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932607AbaJIVJm (ORCPT
+	with ESMTP id S1751041AbaJIVJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:42 -0400
+	Thu, 9 Oct 2014 17:09:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andrey Vagin <avagin@openvz.org>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: David Dueck <davidcdueck@googlemail.com>,
+        Anthony Harivel <anthony.harivel@emtrion.de>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 052/163] fsnotify/fdinfo: use named constants instead of hardcoded values
-Date: Thu,  9 Oct 2014 14:01:17 -0700
-Message-Id: <1412888588-26755-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 124/163] can: at91_can: add missing prepare and unprepare of the clock
+Date: Thu,  9 Oct 2014 14:02:29 -0700
+Message-Id: <1412888588-26755-125-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -29,45 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrey Vagin <avagin@openvz.org>
+From: David Dueck <davidcdueck@googlemail.com>
 
-commit 1fc98d11cac6dd66342e5580cb2687e5b1e9a613 upstream.
+commit e77980e50bc2850599d4d9c0192b67a9ffd6daac upstream.
 
-MAX_HANDLE_SZ is equal to 128, but currently the size of pad is only 64
-bytes, so exportfs_encode_inode_fh can return an error.
+In order to make the driver work with the common clock framework, this patch
+converts the clk_enable()/clk_disable() to
+clk_prepare_enable()/clk_disable_unprepare(). While there, add the missing
+error handling.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Dueck <davidcdueck@googlemail.com>
+Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/notify/fdinfo.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/can/at91_can.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index 238a593..660d33b 100644
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -42,7 +42,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
- {
- 	struct {
- 		struct file_handle handle;
--		u8 pad[64];
-+		u8 pad[MAX_HANDLE_SZ];
- 	} f;
- 	int size, ret, i;
+diff --git a/drivers/net/can/at91_can.c b/drivers/net/can/at91_can.c
+index cf0f63e..5e76a95 100644
+--- a/drivers/net/can/at91_can.c
++++ b/drivers/net/can/at91_can.c
+@@ -1120,7 +1120,9 @@ static int at91_open(struct net_device *dev)
+ 	struct at91_priv *priv = netdev_priv(dev);
+ 	int err;
  
-@@ -50,7 +50,7 @@ static int show_mark_fhandle(struct seq_file *m, struct inode *inode)
- 	size = f.handle.handle_bytes >> 2;
+-	clk_enable(priv->clk);
++	err = clk_prepare_enable(priv->clk);
++	if (err)
++		return err;
  
- 	ret = exportfs_encode_inode_fh(inode, (struct fid *)f.handle.f_handle, &size, 0);
--	if ((ret == 255) || (ret == -ENOSPC)) {
-+	if ((ret == FILEID_INVALID) || (ret == -ENOSPC)) {
- 		WARN_ONCE(1, "Can't encode file handler for inotify: %d\n", ret);
- 		return 0;
- 	}
+ 	/* check or determine and set bittime */
+ 	err = open_candev(dev);
+@@ -1146,7 +1148,7 @@ static int at91_open(struct net_device *dev)
+  out_close:
+ 	close_candev(dev);
+  out:
+-	clk_disable(priv->clk);
++	clk_disable_unprepare(priv->clk);
+ 
+ 	return err;
+ }
+@@ -1163,7 +1165,7 @@ static int at91_close(struct net_device *dev)
+ 	at91_chip_stop(dev, CAN_STATE_STOPPED);
+ 
+ 	free_irq(dev->irq, dev);
+-	clk_disable(priv->clk);
++	clk_disable_unprepare(priv->clk);
+ 
+ 	close_candev(dev);
+ 
 -- 
 1.9.1
 
