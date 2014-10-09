@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471AbaJIPWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:22:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:21183 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752628AbaJIPWA (ORCPT
+	id S1755797AbaJIPYt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:24:49 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:36845 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618AbaJIPYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:22:00 -0400
-Date: Thu, 9 Oct 2014 11:21:57 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH ftrace/for-next v5 0/5] ftrace, kprobes: Introduce
- IPMODIFY flag for ftrace_ops to detect conflicts
-Message-ID: <20141009112157.17a52571@gandalf.local.home>
-In-Reply-To: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
-References: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 9 Oct 2014 11:24:40 -0400
+Message-ID: <5436A8B2.1030200@gmail.com>
+Date: Thu, 09 Oct 2014 17:24:34 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+CC: devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
+References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141009163315.2a9e1806@free-electrons.com> <54369EAC.5040301@gmail.com> <20141009164704.7286fc3f@free-electrons.com>
+In-Reply-To: <20141009164704.7286fc3f@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Oct 2014 13:00:59 +0000
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On 10/09/2014 04:47 PM, Thomas Petazzoni wrote:
+> Well, I initially remember that the original driver coming from Marvell
+> was using the HW PHY stuff, and that I changed that because it would
+> not integrate well with the kernel libphy.
+>
+> A drawback of this is that because the hardware has built-in PHY
+> polling which triggers a MAC interrupt when the PHY status changes, they
+> typically don't wire up the PHY interrupt. Therefore, since we're not
+> able to use the MAC interrupt for PHY event notifications, we rely on
+> software PHY polling, which means that link up / link down events take
+> a few seconds to be noticed by the kernel. Unfortunately, I don't think
+> the hardware allows to use the hardware PHY polling to get link changes
+> interrupt, but not let the hardware configure the PHY itself.
 
-> Hi,
-> 
-> Here is the 5th version of the series of patches which introduces
-> IPMODIFY flag for ftrace_ops to detect conflicts of ftrace users
-> who can modify regs->ip in their handler.
-> 
-> The previous version is here;
->  https://lkml.org/lkml/2014/7/28/13
-> 
-> This version is basically an update of previous version to the
-> latest ftrace tree, and adding a test code to selftest.
-> 
-> Currently, only kprobes can change the regs->ip in the handler,
-> but recently kpatch is also want to change it. Moreover, since
-> the ftrace itself exported to modules, it might be considerable
-> senario.
-> 
-> Here we talked on github.
->  https://github.com/dynup/kpatch/issues/47
-> 
-> To protect modified regs-ip from each other, this series
-> introduces FTRACE_OPS_FL_IPMODIFY flag and ftrace now ensures
-> the flag can be set on each function entry location. If there
-> is someone who already reserve regs->ip on target function
-> entry, ftrace_set_filter_ip or register_ftrace_function will
-> return -EBUSY. Users must handle that.
-> The ftrace_ops with IPMODIFY flag requires at least one
-> entry for filter hash, and its notrace_hash must be empty,
-> because the IPMODIFY action is very address sensitve and
-> user must consider the ip address.
-> 
-> The 3rd patch adds a special reservation of IPMODIFY on the
-> jprobed address, since it is the only user who will change
-> the regs->ip. Other kprobes do not change it anymore. 
-> 
-> Thank you,
-> 
+Yeah, but that HW PHY stuff really only works properly with standard
+compliant PHYs. In particular, the integrated Marvell PHY in Marvell
+Berlin SoCs does not seem to reflect PHY status on BMCR properly /sigh/.
+Anyway, I think we can live with PHY polling.
 
-Masami,
+BTW, one thing I noticed here is that libphy calls adjust_link
+over-and-over again although nothing has changed. I guess we can just
+add some before/after comparison in the libphy state machine and only
+call adjust_link when something has changed. I'll have to look closer
+at the state machine first and maybe Florian can comment on this,
+too.
 
-Thanks for sending this. I'm going to look at it after Dusseldorf. It's
-too late to get it into 3.18, but it looks like a good fit for the work
-I have for 3.19.
+Sebastian
 
-Just don't let me forget you sent this :-)  Even though I tagged it as
-important, I'm sure I'll be tagging a lot of other emails as important
-in the next week.
-
-Also, my main test box has finally died. I ordered a new motherboard
-(thanks Linus for the suggestion!) and unfortunately it is due to
-arrive tomorrow. That's the same day I leave and I don't trust my wife
-to install it for me ;-)
-
-This means I can not do my tests that I like to run before adding to
-linux-next.
-
--- Steve
