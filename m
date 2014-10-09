@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaJIVJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:09:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59370 "EHLO
+	id S932655AbaJIVJl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:09:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59389 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586AbaJIVJX (ORCPT
+	with ESMTP id S932607AbaJIVJ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:09:23 -0400
+	Thu, 9 Oct 2014 17:09:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Knibbs <markk@clara.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
+        James Bottomley <JBottomley@Parallels.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 112/163] USB: storage: Add quirk for Adaptec USBConnect 2000 USB-to-SCSI Adapter
-Date: Thu,  9 Oct 2014 14:02:17 -0700
-Message-Id: <1412888588-26755-113-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 110/163] [SCSI] libiscsi: fix potential buffer overrun in __iscsi_conn_send_pdu
+Date: Thu,  9 Oct 2014 14:02:15 -0700
+Message-Id: <1412888588-26755-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,43 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark <markk@clara.co.uk>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 67d365a57a51fb9dece6a5ceb504aa381cae1e5b upstream.
+commit db9bfd64b14a3a8f1868d2164518fdeab1b26ad1 upstream.
 
-The Adaptec USBConnect 2000 is another SCSI-USB converter which uses
-Shuttle Technology/SCM Microsystems chips. The US_FL_SCM_MULT_TARG quirk is
-required to use SCSI devices with ID other than 0.
+This patches fixes a potential buffer overrun in __iscsi_conn_send_pdu.
+This function is used by iscsi drivers and userspace to send iscsi PDUs/
+commands. For login commands, we have a set buffer size. For all other
+commands we do not support data buffers.
 
-I don't have a USBConnect 2000, but based on the other entries for Shuttle/
-SCM-based converters this patch is very likely correct. I used 0x0000 and
-0x9999 for bcdDeviceMin and bcdDeviceMax because I'm not sure which
-bcdDevice value the product uses.
+This was reported by Dan Carpenter here:
+http://www.spinics.net/lists/linux-scsi/msg66838.html
 
-Signed-off-by: Mark Knibbs <markk@clara.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Reviewed-by: Sagi Grimberg <sagig@mellanox.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/storage/unusual_devs.h | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/scsi/libiscsi.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index d168f51..e0fdb52 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -101,6 +101,12 @@ UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x0001,
- 		"PhotoSmart R707",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index e399561..b69b233 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -717,11 +717,21 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
+ 			return NULL;
+ 		}
  
-+UNUSUAL_DEV(  0x03f3, 0x0001, 0x0000, 0x9999,
-+		"Adaptec",
-+		"USBConnect 2000",
-+		USB_SC_DEVICE, USB_PR_DEVICE, usb_stor_euscsi_init,
-+		US_FL_SCM_MULT_TARG ),
++		if (data_size > ISCSI_DEF_MAX_RECV_SEG_LEN) {
++			iscsi_conn_printk(KERN_ERR, conn, "Invalid buffer len of %u for login task. Max len is %u\n", data_size, ISCSI_DEF_MAX_RECV_SEG_LEN);
++			return NULL;
++		}
 +
- /* Reported by Sebastian Kapfer <sebastian_kapfer@gmx.net>
-  * and Olaf Hering <olh@suse.de> (different bcd's, same vendor/product)
-  * for USB floppies that need the SINGLE_LUN enforcement.
+ 		task = conn->login_task;
+ 	} else {
+ 		if (session->state != ISCSI_STATE_LOGGED_IN)
+ 			return NULL;
+ 
++		if (data_size != 0) {
++			iscsi_conn_printk(KERN_ERR, conn, "Can not send data buffer of len %u for op 0x%x\n", data_size, opcode);
++			return NULL;
++		}
++
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_INITIAL_STAGE);
+ 		BUG_ON(conn->c_stage == ISCSI_CONN_STOPPED);
+ 
 -- 
 1.9.1
 
