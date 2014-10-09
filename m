@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755121AbaJIK15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:27:57 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60178 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750942AbaJIK1t (ORCPT
+	id S1755226AbaJIK3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:29:00 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:56578 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236AbaJIK2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:27:49 -0400
-Date: Thu, 9 Oct 2014 11:27:17 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/5] regulator: of: Add regulator-initial-mode parse
- support
-Message-ID: <20141009102717.GG3869@leverpostej>
-References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
- <1412775847-15213-2-git-send-email-javier.martinez@collabora.co.uk>
- <20141008142511.GA4609@sirena.org.uk>
- <54354C7D.7090104@collabora.co.uk>
- <20141008151220.GE4609@sirena.org.uk>
- <54356666.4090003@collabora.co.uk>
+	Thu, 9 Oct 2014 06:28:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54356666.4090003@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141009102341.GU23154@mwanda>
+References: <20141009044011.GA999@devel>
+	<20141009094902.GA4333@sudip-PC>
+	<20141009102341.GU23154@mwanda>
+Date: Thu, 9 Oct 2014 19:28:53 +0900
+Message-ID: <CAHb8M2DG77BD7=8CuK2AcRPMW5cBbZfBwPqO+ofN3=fONFM_Hg@mail.gmail.com>
+Subject: Re: [PATCH V2] staging: dgap: introduce dgap_stop()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
+        devel <devel@driverdev.osuosl.org>,
+        Lidza Louina <lidza.louina@gmail.com>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 05:29:26PM +0100, Javier Martinez Canillas wrote:
-> On 10/08/2014 05:12 PM, Mark Brown wrote:
-> > On Wed, Oct 08, 2014 at 04:38:53PM +0200, Javier Martinez Canillas wrote:
-> >> On 10/08/2014 04:25 PM, Mark Brown wrote:
-> > 
-> >> > That doesn't mean that the definition of those modes is something we can
-> >> > sensibly provide in generic code, especially in a completely
-> >> > undocumented fashion (perhaps you've done that later in the patch series
-> >> > but bisection also applies to reviewability).
-> > 
-> >> As a general question, now that the convention is for DT binding docs to go
-> >> in a separate patch, should the DT documentation be added before or after
-> >> that code using these bindings is added?
-> > 
-> > It fairly obviously needs to go before so that reviewers can tell if the
-> > code is actually implementing the binding.
-> > 
-> 
-> Well, is not fairly obvious to me. One can also say the opposite, why the
-> kernel is documenting a DT binding that is not (currently) implemented?
+Hi,
 
-Checkpatch will complain regarding undocumented bindings, so from a
-pragmatic point of view the binding must come first.
+2014-10-09 19:23 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> On Thu, Oct 09, 2014 at 03:19:03PM +0530, Sudip Mukherjee wrote:
+>> On Thu, Oct 09, 2014 at 01:40:11PM +0900, Daeseok Youn wrote:
+>> > The dgap_init_module() need to unwind for cleanup variables properly.
+>> > Because dgap_init_module() calls dgap_cleanup_module() for freeing
+>> > variables but this function is possible to free variables
+>> > which are not allocated.
+>> >
+>> > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> > ---
+>> > V2: change ulong which is non-standard to "unsigned long".
+>> I think , Dan, in his review of your v1 , asked you to rearrange the functions and get rid of the forward declarations.
+>>
+>
+> I was fine with v1 actually...  It's a bug fix, and this is staging and
+> there are tons of forward declarations already.  Eventually we need to
+> get rid of them but it can be done later.
+Yes, I will cleanup as your review.
 
-Personally, when I read a patch series I do an initial pass in-order,
-and having the binding first makes things clearer. I might have some
-questions regarding the binding that the driver answers later, and it makes it
-easier to spot undocumented properties or conventions used by the
-driver. Doing so the other way around usually leaves me with more
-questions at the end.
+thanks.
 
-> That's why what makes the most sense for me is what the old convention did,
-> add the DT binding docs in the same patch that implements the binding.
+regards,
+Daeseok Youn.
 
-Having a separate patch for the binding is very helpful for those of us
-doing review. For one thing it helps us to find the binding document,
-which can be important when a driver is thousands of lines long. For
-another it means that we can be clear that our Acked-by, Reviewed-by,
-etc apply to the binding and not necessarily the rest of the code.
-
-For small patches, this is obviously less of a concern.
-
-Thanks,
-Mark.
+>
+> regards,
+> dan carpenter
+>
