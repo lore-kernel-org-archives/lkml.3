@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449AbaJIV55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:57:57 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:54247 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757219AbaJIV54 (ORCPT
+	id S1751147AbaJIWM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 18:12:28 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:57514 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600AbaJIWM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:57:56 -0400
-Date: Thu, 9 Oct 2014 14:57:50 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
-Message-ID: <20141009215750.GB20103@roeck-us.net>
-References: <1412872877-1771-1-git-send-email-linux@roeck-us.net>
- <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com>
- <5436C2B4.6030801@broadcom.com>
- <5436C367.5080908@broadcom.com>
- <20141009172924.GD2410@roeck-us.net>
- <5436D3CF.2030506@hauke-m.de>
- <20141009192520.GA6552@roeck-us.net>
- <54370298.2040502@hauke-m.de>
+	Thu, 9 Oct 2014 18:12:26 -0400
+Message-ID: <543707BB.1040603@gmail.com>
+Date: Fri, 10 Oct 2014 02:10:03 +0400
+From: Dmitry Osipenko <digetx@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
+To: swarren@wwwdotorg.org, josephl@nvidia.com, thierry.reding@gmail.com,
+        balbi@ti.com
+CC: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2] ARM: tegra: Re-add removed SoC id macro to tegra_resume()
+References: <20141008190432.GN22688@saruman> <1412796255-10589-1-git-send-email-digetx@gmail.com>
+In-Reply-To: <1412796255-10589-1-git-send-email-digetx@gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <54370298.2040502@hauke-m.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:48:08PM +0200, Hauke Mehrtens wrote:
-> On 10/09/2014 09:25 PM, Guenter Roeck wrote:
-> > On Thu, Oct 09, 2014 at 08:28:31PM +0200, Hauke Mehrtens wrote:
-> >> On 10/09/2014 07:29 PM, Guenter Roeck wrote:
-> >>> On Thu, Oct 09, 2014 at 07:18:31PM +0200, Arend van Spriel wrote:
-> >>>> On 10/09/14 19:15, Arend van Spriel wrote:
-> >>>>> On 10/09/14 18:54, Rafał Miłecki wrote:
-> >>>>>> On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net> wrote:
-> >>>>>>> Commit 2101e533f41a ("bcma: register bcma as device tree driver")
-> >>>>>>> introduces a hard dependency on OF_ADDRESS into the bcma driver.
-> >>>>>>> OF_ADDRESS is specifically disabled for the sparc architecture.
-> >>>>>>> This results in the following error when building sparc64:allmodconfig.
-> >>>>>
-> >>>>> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF and
-> >>>>> !CONFIG_OF_ADDRESS? Does that makes sense?
-> >>>>
-> >>>> Is CONFIG_OF is used on sparc to access OpenBoot information?
-> >>>>
-> >>> I have no idea. All I know is that the driver doesn't build anymore with OF
-> >>> enabled and OF_ADDRESS disabled.
-> >>
-> >> Device tree support in bcma is only needed on some SoC, when this is
-> >> used on a PCIe card it is not needed.
-> >>
-> >> I would just deactivate the parts that are using device tree in bcma
-> >> when it is not available. I will send a patch after having something to eat.
-> >>
-> > Devicetree dependency is already covered with #ifdef CONFIG_OF. Problem is
-> > that it really needs #ifdef CONFIG_OF_ADDRESS. Though even that might be
-> > better than my patch, since it would at least build the driver on sparc
-> > as it used to do.
-> > 
-> >> Is there a better method which is compatible with SPARC than using
-> >> of_translate_address() to get the reg address and also take the ranges
-> >> attribute of the bus into account?
-> >>
-> > No idea, sorry. Can you by any chance use pcie device information
-> > instead of depending on devicetree data ?
+08.10.2014 23:24, Dmitry Osipenko пишет:
+> Commit d127e9c5c5bc1ee22a7b1fe804397cddd132f756 ("ARM: tegra: make tegra_resume
+> can work with current and later chips") removed tegra_get_soc_id macro leaving
+> used cpu register unassigned and as result causing execution of unintended code
+> on tegra20. Fix it by re-adding macro.
 > 
-> Device tree is not used for PCIe devices in bcma. We only use it when
-> bcma is used for the system bus on some Broadcom SoCs, currently there
-> is no plan to use device tree for PCIe devices in bcma. I think bcma is
-> only used on wifi cards connected via PCIe on Sparc systems.
+> Fixes: d127e9c (ARM: tegra: make tegra_resume can work with current and later chips)
+> Cc: <stable@vger.kernel.org> # v3.13+
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+> ---
+> V2: added Cc's for lakml and stable, added "Reviewed-by:" Felipe Balbi
 > 
-Ok. Well, with your patch the code is as good or as bad as it was prior to
-adding devicetree support to the driver, so hopefully should work.
+>  arch/arm/mach-tegra/reset-handler.S | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
+> index 7b2baab..71be4af 100644
+> --- a/arch/arm/mach-tegra/reset-handler.S
+> +++ b/arch/arm/mach-tegra/reset-handler.S
+> @@ -51,6 +51,7 @@ ENTRY(tegra_resume)
+>   THUMB(	it	ne )
+>  	bne	cpu_resume			@ no
+>  
+> +	tegra_get_soc_id TEGRA_APB_MISC_BASE, r6
+>  	/* Are we on Tegra20? */
+>  	cmp	r6, #TEGRA20
+>  	beq	1f				@ Yes
+> 
+Ugh, I just noticed that r6 is expected to be SoC id func argument. It was bug
+in my emulator that blinded me, so please drop that patch.
+But, seems tegra20_lp1_reset() doesn't set r6, at least for now I don't see
+where. I'll check it on real hw and send patch if needed.
 
-Guenter
+-- 
+Dmitry
