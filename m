@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800AbaJIVK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:10:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59543 "EHLO
+	id S1757843AbaJIVLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:11:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59555 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757776AbaJIVKy (ORCPT
+	with ESMTP id S1757781AbaJIVK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:54 -0400
+	Thu, 9 Oct 2014 17:10:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Sharvil Nanavati <sharvil@google.com>,
-        Richard Larocque <rlarocque@google.com>,
-        John Stultz <john.stultz@linaro.org>,
+Cc: Guy Martin <gmsoft@tuxicoman.be>, Helge Deller <deller@gmx.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 063/163] alarmtimer: Return relative times in timer_gettime
-Date: Thu,  9 Oct 2014 14:01:28 -0700
-Message-Id: <1412888588-26755-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 066/163] parisc: Implement new LWS CAS supporting 64 bit operations.
+Date: Thu,  9 Oct 2014 14:01:31 -0700
+Message-Id: <1412888588-26755-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -32,67 +27,285 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Larocque <rlarocque@google.com>
+From: Guy Martin <gmsoft@tuxicoman.be>
 
-commit e86fea764991e00a03ff1e56409ec9cacdbda4c9 upstream.
+commit 89206491201cbd1571009b36292af781cef74c1b upstream.
 
-Returns the time remaining for an alarm timer, rather than the time at
-which it is scheduled to expire.  If the timer has already expired or it
-is not currently scheduled, the it_value's members are set to zero.
+The current LWS cas only works correctly for 32bit. The new LWS allows
+for CAS operations of variable size.
 
-This new behavior matches that of the other posix-timers and the POSIX
-specifications.
-
-This is a change in user-visible behavior, and may break existing
-applications.  Hopefully, few users rely on the old incorrect behavior.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Sharvil Nanavati <sharvil@google.com>
-Signed-off-by: Richard Larocque <rlarocque@google.com>
-[jstultz: minor style tweak]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Guy Martin <gmsoft@tuxicoman.be>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/time/alarmtimer.c | 18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ arch/parisc/kernel/syscall.S | 233 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 229 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index fe75444..6745174 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -541,18 +541,22 @@ static int alarm_timer_create(struct k_itimer *new_timer)
-  * @new_timer: k_itimer pointer
-  * @cur_setting: itimerspec data to fill
-  *
-- * Copies the itimerspec data out from the k_itimer
-+ * Copies out the current itimerspec data
-  */
- static void alarm_timer_get(struct k_itimer *timr,
- 				struct itimerspec *cur_setting)
- {
--	memset(cur_setting, 0, sizeof(struct itimerspec));
-+	ktime_t relative_expiry_time =
-+		alarm_expires_remaining(&(timr->it.alarm.alarmtimer));
+diff --git a/arch/parisc/kernel/syscall.S b/arch/parisc/kernel/syscall.S
+index 8387860..7ef22e3 100644
+--- a/arch/parisc/kernel/syscall.S
++++ b/arch/parisc/kernel/syscall.S
+@@ -74,7 +74,7 @@ ENTRY(linux_gateway_page)
+ 	/* ADDRESS 0xb0 to 0xb8, lws uses two insns for entry */
+ 	/* Light-weight-syscall entry must always be located at 0xb0 */
+ 	/* WARNING: Keep this number updated with table size changes */
+-#define __NR_lws_entries (2)
++#define __NR_lws_entries (3)
  
--	cur_setting->it_interval =
--			ktime_to_timespec(timr->it.alarm.interval);
--	cur_setting->it_value =
--		ktime_to_timespec(timr->it.alarm.alarmtimer.node.expires);
--	return;
-+	if (ktime_to_ns(relative_expiry_time) > 0) {
-+		cur_setting->it_value = ktime_to_timespec(relative_expiry_time);
-+	} else {
-+		cur_setting->it_value.tv_sec = 0;
-+		cur_setting->it_value.tv_nsec = 0;
-+	}
+ lws_entry:
+ 	gate	lws_start, %r0		/* increase privilege */
+@@ -502,7 +502,7 @@ lws_exit:
+ 
+ 	
+ 	/***************************************************
+-		Implementing CAS as an atomic operation:
++		Implementing 32bit CAS as an atomic operation:
+ 
+ 		%r26 - Address to examine
+ 		%r25 - Old value to check (old)
+@@ -659,6 +659,230 @@ cas_action:
+ 	ASM_EXCEPTIONTABLE_ENTRY(2b-linux_gateway_page, 3b-linux_gateway_page)
+ 
+ 
++	/***************************************************
++		New CAS implementation which uses pointers and variable size
++		information. The value pointed by old and new MUST NOT change
++		while performing CAS. The lock only protect the value at %r26.
 +
-+	cur_setting->it_interval = ktime_to_timespec(timr->it.alarm.interval);
- }
++		%r26 - Address to examine
++		%r25 - Pointer to the value to check (old)
++		%r24 - Pointer to the value to set (new)
++		%r23 - Size of the variable (0/1/2/3 for 8/16/32/64 bit)
++		%r28 - Return non-zero on failure
++		%r21 - Kernel error code
++
++		%r21 has the following meanings:
++
++		EAGAIN - CAS is busy, ldcw failed, try again.
++		EFAULT - Read or write failed.
++
++		Scratch: r20, r22, r28, r29, r1, fr4 (32bit for 64bit CAS only)
++
++	****************************************************/
++
++	/* ELF32 Process entry path */
++lws_compare_and_swap_2:
++#ifdef CONFIG_64BIT
++	/* Clip the input registers */
++	depdi	0, 31, 32, %r26
++	depdi	0, 31, 32, %r25
++	depdi	0, 31, 32, %r24
++	depdi	0, 31, 32, %r23
++#endif
++
++	/* Check the validity of the size pointer */
++	subi,>>= 4, %r23, %r0
++	b,n	lws_exit_nosys
++
++	/* Jump to the functions which will load the old and new values into
++	   registers depending on the their size */
++	shlw	%r23, 2, %r29
++	blr	%r29, %r0
++	nop
++
++	/* 8bit load */
++4:	ldb	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++5:	ldb	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 16bit load */
++6:	ldh	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++7:	ldh	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 32bit load */
++8:	ldw	0(%sr3,%r25), %r25
++	b	cas2_lock_start
++9:	ldw	0(%sr3,%r24), %r24
++	nop
++	nop
++	nop
++	nop
++	nop
++
++	/* 64bit load */
++#ifdef CONFIG_64BIT
++10:	ldd	0(%sr3,%r25), %r25
++11:	ldd	0(%sr3,%r24), %r24
++#else
++	/* Load new value into r22/r23 - high/low */
++10:	ldw	0(%sr3,%r25), %r22
++11:	ldw	4(%sr3,%r25), %r23
++	/* Load new value into fr4 for atomic store later */
++12:	flddx	0(%sr3,%r24), %fr4
++#endif
++
++cas2_lock_start:
++	/* Load start of lock table */
++	ldil	L%lws_lock_start, %r20
++	ldo	R%lws_lock_start(%r20), %r28
++
++	/* Extract four bits from r26 and hash lock (Bits 4-7) */
++	extru  %r26, 27, 4, %r20
++
++	/* Find lock to use, the hash is either one of 0 to
++	   15, multiplied by 16 (keep it 16-byte aligned)
++	   and add to the lock table offset. */
++	shlw	%r20, 4, %r20
++	add	%r20, %r28, %r20
++
++	rsm	PSW_SM_I, %r0			/* Disable interrupts */
++	/* COW breaks can cause contention on UP systems */
++	LDCW	0(%sr2,%r20), %r28		/* Try to acquire the lock */
++	cmpb,<>,n	%r0, %r28, cas2_action	/* Did we get it? */
++cas2_wouldblock:
++	ldo	2(%r0), %r28			/* 2nd case */
++	ssm	PSW_SM_I, %r0
++	b	lws_exit			/* Contended... */
++	ldo	-EAGAIN(%r0), %r21		/* Spin in userspace */
++
++	/*
++		prev = *addr;
++		if ( prev == old )
++		  *addr = new;
++		return prev;
++	*/
++
++	/* NOTES:
++		This all works becuse intr_do_signal
++		and schedule both check the return iasq
++		and see that we are on the kernel page
++		so this process is never scheduled off
++		or is ever sent any signal of any sort,
++		thus it is wholly atomic from usrspaces
++		perspective
++	*/
++cas2_action:
++	/* Jump to the correct function */
++	blr	%r29, %r0
++	/* Set %r28 as non-zero for now */
++	ldo	1(%r0),%r28
++
++	/* 8bit CAS */
++13:	ldb,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++14:	stb,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 16bit CAS */
++15:	ldh,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++16:	sth,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 32bit CAS */
++17:	ldw,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++18:	stw,ma	%r24, 0(%sr3,%r26)
++	b	cas2_end
++	copy	%r0, %r28
++	nop
++	nop
++
++	/* 64bit CAS */
++#ifdef CONFIG_64BIT
++19:	ldd,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r25, %r0
++	b,n	cas2_end
++20:	std,ma	%r24, 0(%sr3,%r26)
++	copy	%r0, %r28
++#else
++	/* Compare first word */
++19:	ldw,ma	0(%sr3,%r26), %r29
++	sub,=	%r29, %r22, %r0
++	b,n	cas2_end
++	/* Compare second word */
++20:	ldw,ma	4(%sr3,%r26), %r29
++	sub,=	%r29, %r23, %r0
++	b,n	cas2_end
++	/* Perform the store */
++21:	fstdx	%fr4, 0(%sr3,%r26)
++	copy	%r0, %r28
++#endif
++
++cas2_end:
++	/* Free lock */
++	stw,ma	%r20, 0(%sr2,%r20)
++	/* Enable interrupts */
++	ssm	PSW_SM_I, %r0
++	/* Return to userspace, set no error */
++	b	lws_exit
++	copy	%r0, %r21
++
++22:
++	/* Error occurred on load or store */
++	/* Free lock */
++	stw	%r20, 0(%sr2,%r20)
++	ssm	PSW_SM_I, %r0
++	ldo	1(%r0),%r28
++	b	lws_exit
++	ldo	-EFAULT(%r0),%r21	/* set errno */
++	nop
++	nop
++	nop
++
++	/* Exception table entries, for the load and store, return EFAULT.
++	   Each of the entries must be relocated. */
++	ASM_EXCEPTIONTABLE_ENTRY(4b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(5b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(6b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(7b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(8b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(9b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(10b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(11b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(13b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(14b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(15b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(16b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(17b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(18b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(19b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(20b-linux_gateway_page, 22b-linux_gateway_page)
++#ifndef CONFIG_64BIT
++	ASM_EXCEPTIONTABLE_ENTRY(12b-linux_gateway_page, 22b-linux_gateway_page)
++	ASM_EXCEPTIONTABLE_ENTRY(21b-linux_gateway_page, 22b-linux_gateway_page)
++#endif
++
+ 	/* Make sure nothing else is placed on this page */
+ 	.align PAGE_SIZE
+ END(linux_gateway_page)
+@@ -675,8 +899,9 @@ ENTRY(end_linux_gateway_page)
+ 	/* Light-weight-syscall table */
+ 	/* Start of lws table. */
+ ENTRY(lws_table)
+-	LWS_ENTRY(compare_and_swap32)	/* 0 - ELF32 Atomic compare and swap */
+-	LWS_ENTRY(compare_and_swap64)	/* 1 - ELF64 Atomic compare and swap */
++	LWS_ENTRY(compare_and_swap32)		/* 0 - ELF32 Atomic 32bit CAS */
++	LWS_ENTRY(compare_and_swap64)		/* 1 - ELF64 Atomic 32bit CAS */
++	LWS_ENTRY(compare_and_swap_2)		/* 2 - ELF32 Atomic 64bit CAS */
+ END(lws_table)
+ 	/* End of lws table */
  
- /**
 -- 
 1.9.1
 
