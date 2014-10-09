@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbaJIMwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 08:52:51 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:48852 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbaJIMwm (ORCPT
+	id S1755612AbaJIM5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 08:57:38 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:44226 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbaJIM52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 08:52:42 -0400
-Date: Thu, 9 Oct 2014 07:44:16 -0500
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Jason Baron <jbaron@akamai.com>, yrl.pp-manager.tt@hitachi.com,
-        Borislav Petkov <bpetkov@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: i915.ko WC writes are slow after ea8596bb2d8d379
-Message-ID: <20141009074416.1480426a@as>
-In-Reply-To: <20141009065331.GG12897@nuc-i3427.alporthouse.com>
-References: <20141008090336.GD12897@nuc-i3427.alporthouse.com>
-	<20141008051059.65566251@as>
-	<20141008194955.GF12897@nuc-i3427.alporthouse.com>
-	<5435AE71.60304@linux.intel.com>
-	<20141009065331.GG12897@nuc-i3427.alporthouse.com>
+	Thu, 9 Oct 2014 08:57:28 -0400
+Date: Thu, 9 Oct 2014 14:57:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, stable <stable@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] timers/nohz updates for v3.18
+Message-ID: <20141009125721.GA25790@lerouge>
+References: <20141009064813.GA20517@gmail.com>
+ <CA+55aFy5RDVOy79J-XkKVgpZhh8ph42pPeSFtFmWjFhyx-G8Yw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy5RDVOy79J-XkKVgpZhh8ph42pPeSFtFmWjFhyx-G8Yw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Oct 2014 07:53:31 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
-
-> # cat /proc/mtrr 
-> reg00: base=0x000000000 (    0MB), size= 2048MB, count=1: write-back
-> reg01: base=0x080000000 ( 2048MB), size=  256MB, count=1: write-back
-> reg02: base=0x08e000000 ( 2272MB), size=   32MB, count=1: uncachable
-> reg03: base=0x08d000000 ( 2256MB), size=   16MB, count=1: uncachable
-> reg04: base=0x100000000 ( 4096MB), size= 2048MB, count=1: write-back
-> reg05: base=0x170000000 ( 5888MB), size=  256MB, count=1: uncachable
-> reg06: base=0x16f000000 ( 5872MB), size=   16MB, count=1: uncachable
-> reg07: base=0x16e800000 ( 5864MB), size=    8MB, count=1: uncachable
-> reg08: base=0x16e600000 ( 5862MB), size=    2MB, count=1: uncachable
+On Thu, Oct 09, 2014 at 06:34:26AM -0400, Linus Torvalds wrote:
+> Hmm..
 > 
+> On Thu, Oct 9, 2014 at 2:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > Please pull the latest timers-nohz-for-linus git tree from:
+> >
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-nohz-for-linus
+> >
+> >    # HEAD: 9b01f5bf3999a3db5b1bbd9fdfd80d8d304e94ee nohz: nohz full depends on irq work self IPI support
+> >
+> > Main changes:
+> >
+> >  - Fix the deadlock reported by Dave Jones et al
+> >  - Clean up and fix nohz_full interaction with arch abilities
+> >  - nohz init code consolidation/cleanup
+> 
+> Ok, pulled. But none of these are marked for stable, yet the deadlock
+> people are seeing is in 3.17. Is there a separate line of minimal
+> fixes just for that? Or was the lack of stable tags just an oversight?
 
-Well that's what the kernel thinks is in every CPU.
-Could you try installing x86info and running "x86info --mtrr
---all-cpus" while running the broken kernel?
+It was first intended because the patchset is quite invasive and nohz full has
+no known users, or perhaps there is one... So I thought that backporting
+could be more dangerous than anything.
+
+Now thinking more about it I could isolate the following patches for
+stable:
+
+      irq_work: Introduce arch_irq_work_has_interrupt()
+      irq_work: Force raised irq work to run on irq work interrupt
+      x86: Tell irq work about self IPI support
+      arm: Tell irq work about self IPI support
+
+Sending these to stable@vger.kernel.org would catch up, right? I
+can still do that.
+
+Thanks.
