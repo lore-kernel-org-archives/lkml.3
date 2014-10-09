@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446AbaJIQJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:09:09 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:52665 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751197AbaJIQI7 (ORCPT
+	id S1757491AbaJIQJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:09:50 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:60788 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaJIQJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:08:59 -0400
-Message-ID: <5436B317.3060208@hurleysoftware.com>
-Date: Thu, 09 Oct 2014 12:08:55 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	Thu, 9 Oct 2014 12:09:42 -0400
+Date: Thu, 9 Oct 2014 09:09:36 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Frans Klaver <frans.klaver@xsens.com>, Sebastian Reichel <sre@kernel.org>,
+        =?iso-8859-1?Q?Ren=E9?= Moll <linux@r-moll.nl>,
+        Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v4 2/2] power: reset: document LTC2952 poweroff support
+Message-ID: <20141009160935.GF31987@roeck-us.net>
+References: <1412866242-6474-1-git-send-email-frans.klaver@xsens.com>
+ <1412866242-6474-3-git-send-email-frans.klaver@xsens.com>
+ <20141009150756.GC18384@leverpostej>
 MIME-Version: 1.0
-To: Francesco Ruggeri <fruggeri@aristanetworks.com>, jslaby@suse.cz,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-CC: fruggeri@arista.com
-Subject: Re: [PATCH 1/1] tty: Fix pty master poll() after slave closes
-References: <20141008192746.5F9C8485A77@fruggeri-Arora18.sjc.aristanetworks.com>
-In-Reply-To: <20141008192746.5F9C8485A77@fruggeri-Arora18.sjc.aristanetworks.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141009150756.GC18384@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 03:27 PM, Francesco Ruggeri wrote:
-> Commit f95499c3030f ("n_tty: Don't wait for buffer work in read() loop")
-> introduces a race window where a pty master can be signalled that the pty
-> slave was closed before all the data that the slave wrote is delivered.
-> Commit f8747d4a466a ("tty: Fix pty master read() after slave closes") fixed the
-> problem in case of n_tty_read, but the problem still exists for n_tty_poll.
-
-Hi Francesco,
-
-Thanks for the report and the patch.
-
-I've been testing a different approach for about week now which waits in
-pty_close() for input processing to complete before setting TTY_OTHER_CLOSED.
-This change also gets rid of the nested sleep problem in n_tty_read().
-
-But this required some extensive changes, including inverting an existing
-lock order (which needed to be done anyway), so won't be appropriate for stable.
-In which case, something like this patch might be.
-
-Comments below.
-
-> This can be seen by running 'for ((i=0; i<100;i++));do ./test.py ;done'
-> where test.py is:
+On Thu, Oct 09, 2014 at 04:07:56PM +0100, Mark Rutland wrote:
+> Hi,
 > 
-> import os, select, pty
+> On Thu, Oct 09, 2014 at 03:50:42PM +0100, Frans Klaver wrote:
+> > From: René Moll <linux@r-moll.nl>
+> > 
+> > Signed-off-by: René Moll <linux@r-moll.nl>
+> > Signed-off-by: Tjerk Hofmeijer <tjerk.hofmeijer@xsens.com>
+> > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> > ---
+> >  .../bindings/power/reset/ltc2952-poweroff.txt      | 31 ++++++++++++++++++++++
+> >  1 file changed, 31 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > new file mode 100644
+> > index 0000000..c3f3d9e
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/power/reset/ltc2952-poweroff.txt
+> > @@ -0,0 +1,31 @@
+> > +Binding for the LTC2952 PowerPath controller
+> > +
+> > +This chip is used to externally trigger a system shut down. Once the trigger
+> > +has been sent, the chips watchdog has to be reset to gracefully shut down.
 > 
-> (pid, pty_fd) = pty.fork()
+> s/chips/chip's/
 > 
-> if pid == 0:
->    os.write(1, 'This string should be received by parent')
-> else:
->    poller = select.epoll()
->    poller.register( pty_fd, select.EPOLLIN )
->    ready = poller.poll( 1 * 1000 )
->    for fd, events in ready:
->       if not events & select.EPOLLIN:
->          print 'missed POLLIN event'
->       else:
->          print os.read(fd, 100)
->    poller.close()
+> > If +the Linux systems decides to shut down, it powers off the platform
+> > via the +poweroff signal.
 > 
-> The string from the slave is missed several times.
-> This patch takes the same approach as the fix for read and special cases
-> this condition for poll.
-> Tested on 3.16.
+> This sentence can go; the binding should describe the hardware rather
+> than the Linux behaviour.
 > 
-> Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
-> ---
->  drivers/tty/n_tty.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-> index f44f1ba..cf16aeb 100644
-> --- a/drivers/tty/n_tty.c
-> +++ b/drivers/tty/n_tty.c
-> @@ -2413,14 +2413,16 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
->  
->  	poll_wait(file, &tty->read_wait, wait);
->  	poll_wait(file, &tty->write_wait, wait);
-> -	if (input_available_p(tty, 1))
-> -		mask |= POLLIN | POLLRDNORM;
->  	if (tty->packet && tty->link->ctrl_status)
->  		mask |= POLLPRI | POLLIN | POLLRDNORM;
->  	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
->  		mask |= POLLHUP;
->  	if (tty_hung_up_p(file))
->  		mask |= POLLHUP;
-> +	if (mask & POLLHUP)
-> +		tty_flush_to_ldisc(tty);
+Maybe find an operating system independent wording and describe what the
+implementation should do. Or is that out of scope as well ?
 
-This isn't necessary for the tty_hung_up_p() case because, when the
-poll() is woken from hangup, the read buffer has already been flushed (ie.,
-cleared).
-
-Plus, this waits even if input_available_p() would already return true.
-
-So, I think either
-1. setting both POLLIN and POLLHUP when TTY_OTHER_CLOSED is set (which would
-at least prompt a subsequent read() which would wait for input processing to
-complete), or,
-2. performing the tty_flush_to_ldisc() only if TTY_OTHER_CLOSED is set, and
-then re-checking input_available_p(), just as n_tty_read() does
-
-Regards,
-Peter Hurley
-
-> +	if (input_available_p(tty, 1))
-> +		mask |= POLLIN | POLLRDNORM;
->  	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
->  		if (MIN_CHAR(tty) && !TIME_CHAR(tty))
->  			ldata->minimum_to_wake = MIN_CHAR(tty);
-> 
-
+Thanks,
+Guenter
