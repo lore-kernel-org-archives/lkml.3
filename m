@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755AbaJIViL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:38:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59198 "EHLO
+	id S932929AbaJIVii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:38:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59186 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757349AbaJIVIT (ORCPT
+	with ESMTP id S1757344AbaJIVIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:19 -0400
+	Thu, 9 Oct 2014 17:08:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anssi Hannula <anssi.hannula@iki.fi>, Mike Snitzer <snitzer@redhat.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/163] dm cache: fix race causing dirty blocks to be marked as clean
-Date: Thu,  9 Oct 2014 14:01:11 -0700
-Message-Id: <1412888588-26755-47-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 038/163] drm/radeon: add connector quirk for fujitsu board
+Date: Thu,  9 Oct 2014 14:01:03 -0700
+Message-Id: <1412888588-26755-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,100 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 40aa978eccec61347cd47b97c598df49acde8be5 upstream.
+commit 1952f24d0fa6292d65f886887af87ba8ac79b3ba upstream.
 
-When a writeback or a promotion of a block is completed, the cell of
-that block is removed from the prison, the block is marked as clean, and
-the clear_dirty() callback of the cache policy is called.
+Vbios connector table lists non-existent VGA port.
 
-Unfortunately, performing those actions in this order allows an incoming
-new write bio for that block to come in before clearing the dirty status
-is completed and therefore possibly causing one of these two scenarios:
+Bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=83184
 
-Scenario A:
-
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called,
-.                               but block already dirty
-.                               => it does nothing
-clear_dirty()                 .
-- block marked clean          .
-- policy clear_dirty() called .
-
-Result: Block is marked clean even though it is actually dirty. No
-writeback will occur.
-
-Scenario B:
-
-Thread 1                      Thread 2
-cell_defer()                  .
-- cell removed from prison    .
-- detained bios queued        .
-clear_dirty()                 .
-- block marked clean          .
-.                             incoming write bio
-.                             remapped to cache
-.                             set_dirty() called
-.                             - block marked dirty
-.                             - policy set_dirty() called
-- policy clear_dirty() called .
-
-Result: Block is properly marked as dirty, but policy thinks it is clean
-and therefore never asks us to writeback it.
-This case is visible in "dmsetup status" dirty block count (which
-normally decreases to 0 on a quiet device).
-
-Fix these issues by calling clear_dirty() before calling cell_defer().
-Incoming bios for that block will then be detained in the cell and
-released only after clear_dirty() has completed, so the race will not
-occur.
-
-Found by inspecting the code after noticing spurious dirty counts
-(scenario B).
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-cache-target.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_atombios.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index ae73ee5..99474ef 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -881,8 +881,8 @@ static void migration_success_pre_commit(struct dm_cache_migration *mg)
- 	struct cache *cache = mg->cache;
- 
- 	if (mg->writeback) {
--		cell_defer(cache, mg->old_ocell, false);
- 		clear_dirty(cache, mg->old_oblock, mg->cblock);
-+		cell_defer(cache, mg->old_ocell, false);
- 		cleanup_migration(mg);
- 		return;
- 
-@@ -937,13 +937,13 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
+diff --git a/drivers/gpu/drm/radeon/radeon_atombios.c b/drivers/gpu/drm/radeon/radeon_atombios.c
+index 4af5a78..9e53064 100644
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -464,6 +464,13 @@ static bool radeon_atom_apply_quirks(struct drm_device *dev,
  		}
- 
- 	} else {
-+		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		if (mg->requeue_holder)
- 			cell_defer(cache, mg->new_ocell, true);
- 		else {
- 			bio_endio(mg->new_ocell->holder, 0);
- 			cell_defer(cache, mg->new_ocell, false);
- 		}
--		clear_dirty(cache, mg->new_oblock, mg->cblock);
- 		cleanup_migration(mg);
  	}
+ 
++	/* Fujitsu D3003-S2 board lists DVI-I as DVI-I and VGA */
++	if ((dev->pdev->device == 0x9805) &&
++	    (dev->pdev->subsystem_vendor == 0x1734) &&
++	    (dev->pdev->subsystem_device == 0x11bd)) {
++		if (*connector_type == DRM_MODE_CONNECTOR_VGA)
++			return false;
++	}
+ 
+ 	return true;
  }
 -- 
 1.9.1
