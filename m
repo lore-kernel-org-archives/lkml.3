@@ -1,54 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757794AbaJIVlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:41:14 -0400
-Received: from hauke-m.de ([5.39.93.123]:59715 "EHLO hauke-m.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608AbaJIVkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:40:00 -0400
-From: Hauke Mehrtens <hauke@hauke-m.de>
-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org
-Cc: zajec5@gmail.com, arend@broadcom.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux@roeck-us.net,
-        Hauke Mehrtens <hauke@hauke-m.de>
-Subject: [PATCH] bcma: fix build when CONFIG_OF_ADDRESS is not set
-Date: Thu,  9 Oct 2014 23:39:41 +0200
-Message-Id: <1412890781-24160-1-git-send-email-hauke@hauke-m.de>
+	id S1758322AbaJIVlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:41:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59125 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525AbaJIVHr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:07:47 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 034/163] drm/i915: Evict CS TLBs between batches
+Date: Thu,  9 Oct 2014 14:00:59 -0700
+Message-Id: <1412888588-26755-35-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <5436D3CF.2030506@hauke-m.de>
-References: <5436D3CF.2030506@hauke-m.de>
+In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2101e533f41a ("bcma: register bcma as device tree driver")
-introduces a hard dependency on OF_ADDRESS into the bcma driver.
-OF_ADDRESS is specifically disabled for the sparc architecture.
-This results in the following error when building sparc64:allmodconfig.
+3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
-drivers/bcma/main.c: In function 'bcma_of_find_child_device':
-drivers/bcma/main.c:150:3: error: implicit declaration of function 'of_translate_address'
+------------------
 
-Fixes: 2101e533f41a ("bcma: register bcma as device tree driver")
-Reported-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+
+commit c4d69da167fa967749aeb70bc0e94a457e5d00c1 upstream.
+
+Running igt, I was encountering the invalid TLB bug on my 845g, despite
+that it was using the CS workaround. Examining the w/a buffer in the
+error state, showed that the copy from the user batch into the
+workaround itself was suffering from the invalid TLB bug (the first
+cacheline was broken with the first two words reversed). Time to try a
+fresh approach. This extends the workaround to write into each page of
+our scratch buffer in order to overflow the TLB and evict the invalid
+entries. This could be refined to only do so after we update the GTT,
+but for simplicity, we do it before each batch.
+
+I suspect this supersedes our current workaround, but for safety keep
+doing both.
+
+v2: The magic number shall be 2.
+
+This doesn't conclusively prove that it is the mythical TLB bug we've
+been trying to workaround for so long, that it requires touching a number
+of pages to prevent the corruption indicates to me that it is TLB
+related, but the corruption (the reversed cacheline) is more subtle than
+a TLB bug, where we would expect it to read the wrong page entirely.
+
+Oh well, it prevents a reliable hang for me and so probably for others
+as well.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+[ kamal: backport to 3.13-stable: context ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/bcma/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h         | 12 ++++--
+ drivers/gpu/drm/i915/intel_ringbuffer.c | 66 +++++++++++++++++++--------------
+ 2 files changed, 47 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/bcma/main.c b/drivers/bcma/main.c
-index d1656c2..1000955 100644
---- a/drivers/bcma/main.c
-+++ b/drivers/bcma/main.c
-@@ -132,7 +132,7 @@ static bool bcma_is_core_needed_early(u16 core_id)
- 	return false;
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 7047e35..6d637e7 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -300,16 +300,20 @@
+ #define GFX_OP_DESTBUFFER_INFO	 ((0x3<<29)|(0x1d<<24)|(0x8e<<16)|1)
+ #define GFX_OP_DRAWRECT_INFO     ((0x3<<29)|(0x1d<<24)|(0x80<<16)|(0x3))
+ #define GFX_OP_DRAWRECT_INFO_I965  ((0x7900<<16)|0x2)
+-#define SRC_COPY_BLT_CMD                ((2<<29)|(0x43<<22)|4)
++
++#define COLOR_BLT_CMD			(2<<29 | 0x40<<22 | (5-2))
++#define SRC_COPY_BLT_CMD		((2<<29)|(0x43<<22)|4)
+ #define XY_SRC_COPY_BLT_CMD		((2<<29)|(0x53<<22)|6)
+ #define XY_MONO_SRC_COPY_IMM_BLT	((2<<29)|(0x71<<22)|5)
+-#define XY_SRC_COPY_BLT_WRITE_ALPHA	(1<<21)
+-#define XY_SRC_COPY_BLT_WRITE_RGB	(1<<20)
++#define   BLT_WRITE_A			(2<<20)
++#define   BLT_WRITE_RGB			(1<<20)
++#define   BLT_WRITE_RGBA		(BLT_WRITE_RGB | BLT_WRITE_A)
+ #define   BLT_DEPTH_8			(0<<24)
+ #define   BLT_DEPTH_16_565		(1<<24)
+ #define   BLT_DEPTH_16_1555		(2<<24)
+ #define   BLT_DEPTH_32			(3<<24)
+-#define   BLT_ROP_GXCOPY		(0xcc<<16)
++#define   BLT_ROP_SRC_COPY		(0xcc<<16)
++#define   BLT_ROP_COLOR_COPY		(0xf0<<16)
+ #define XY_SRC_COPY_BLT_SRC_TILED	(1<<15) /* 965+ only */
+ #define XY_SRC_COPY_BLT_DST_TILED	(1<<11) /* 965+ only */
+ #define CMD_OP_DISPLAYBUFFER_INFO ((0x0<<29)|(0x14<<23)|2)
+diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
+index dfb8546..a4ec035 100644
+--- a/drivers/gpu/drm/i915/intel_ringbuffer.c
++++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
+@@ -1180,54 +1180,66 @@ i965_dispatch_execbuffer(struct intel_ring_buffer *ring,
+ 
+ /* Just userspace ABI convention to limit the wa batch bo to a resonable size */
+ #define I830_BATCH_LIMIT (256*1024)
++#define I830_TLB_ENTRIES (2)
++#define I830_WA_SIZE max(I830_TLB_ENTRIES*4096, I830_BATCH_LIMIT)
+ static int
+ i830_dispatch_execbuffer(struct intel_ring_buffer *ring,
+ 				u32 offset, u32 len,
+ 				unsigned flags)
+ {
++	u32 cs_offset = ring->scratch.gtt_offset;
+ 	int ret;
+ 
+-	if (flags & I915_DISPATCH_PINNED) {
+-		ret = intel_ring_begin(ring, 4);
+-		if (ret)
+-			return ret;
++	ret = intel_ring_begin(ring, 6);
++	if (ret)
++		return ret;
+ 
+-		intel_ring_emit(ring, MI_BATCH_BUFFER);
+-		intel_ring_emit(ring, offset | (flags & I915_DISPATCH_SECURE ? 0 : MI_BATCH_NON_SECURE));
+-		intel_ring_emit(ring, offset + len - 8);
+-		intel_ring_emit(ring, MI_NOOP);
+-		intel_ring_advance(ring);
+-	} else {
+-		u32 cs_offset = ring->scratch.gtt_offset;
++	/* Evict the invalid PTE TLBs */
++	intel_ring_emit(ring, COLOR_BLT_CMD | BLT_WRITE_RGBA);
++	intel_ring_emit(ring, BLT_DEPTH_32 | BLT_ROP_COLOR_COPY | 4096);
++	intel_ring_emit(ring, I830_TLB_ENTRIES << 16 | 4); /* load each page */
++	intel_ring_emit(ring, cs_offset);
++	intel_ring_emit(ring, 0xdeadbeef);
++	intel_ring_emit(ring, MI_NOOP);
++	intel_ring_advance(ring);
+ 
++	if ((flags & I915_DISPATCH_PINNED) == 0) {
+ 		if (len > I830_BATCH_LIMIT)
+ 			return -ENOSPC;
+ 
+-		ret = intel_ring_begin(ring, 9+3);
++		ret = intel_ring_begin(ring, 6 + 2);
+ 		if (ret)
+ 			return ret;
+-		/* Blit the batch (which has now all relocs applied) to the stable batch
+-		 * scratch bo area (so that the CS never stumbles over its tlb
+-		 * invalidation bug) ... */
+-		intel_ring_emit(ring, XY_SRC_COPY_BLT_CMD |
+-				XY_SRC_COPY_BLT_WRITE_ALPHA |
+-				XY_SRC_COPY_BLT_WRITE_RGB);
+-		intel_ring_emit(ring, BLT_DEPTH_32 | BLT_ROP_GXCOPY | 4096);
+-		intel_ring_emit(ring, 0);
+-		intel_ring_emit(ring, (DIV_ROUND_UP(len, 4096) << 16) | 1024);
++
++		/* Blit the batch (which has now all relocs applied) to the
++		 * stable batch scratch bo area (so that the CS never
++		 * stumbles over its tlb invalidation bug) ...
++		 */
++		intel_ring_emit(ring, SRC_COPY_BLT_CMD | BLT_WRITE_RGBA);
++		intel_ring_emit(ring, BLT_DEPTH_32 | BLT_ROP_SRC_COPY | 4096);
++		intel_ring_emit(ring, DIV_ROUND_UP(len, 4096) << 16 | 1024);
+ 		intel_ring_emit(ring, cs_offset);
+-		intel_ring_emit(ring, 0);
+ 		intel_ring_emit(ring, 4096);
+ 		intel_ring_emit(ring, offset);
++
+ 		intel_ring_emit(ring, MI_FLUSH);
++		intel_ring_emit(ring, MI_NOOP);
++		intel_ring_advance(ring);
+ 
+ 		/* ... and execute it. */
+-		intel_ring_emit(ring, MI_BATCH_BUFFER);
+-		intel_ring_emit(ring, cs_offset | (flags & I915_DISPATCH_SECURE ? 0 : MI_BATCH_NON_SECURE));
+-		intel_ring_emit(ring, cs_offset + len - 8);
+-		intel_ring_advance(ring);
++		offset = cs_offset;
+ 	}
+ 
++	ret = intel_ring_begin(ring, 4);
++	if (ret)
++		return ret;
++
++	intel_ring_emit(ring, MI_BATCH_BUFFER);
++	intel_ring_emit(ring, offset | (flags & I915_DISPATCH_SECURE ? 0 : MI_BATCH_NON_SECURE));
++	intel_ring_emit(ring, offset + len - 8);
++	intel_ring_emit(ring, MI_NOOP);
++	intel_ring_advance(ring);
++
+ 	return 0;
  }
  
--#ifdef CONFIG_OF
-+#if defined(CONFIG_OF) && defined(CONFIG_OF_ADDRESS)
- static struct device_node *bcma_of_find_child_device(struct platform_device *parent,
- 						     struct bcma_device *core)
- {
+@@ -1953,7 +1965,7 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
+ 		struct drm_i915_gem_object *obj;
+ 		int ret;
+ 
+-		obj = i915_gem_alloc_object(dev, I830_BATCH_LIMIT);
++		obj = i915_gem_alloc_object(dev, I830_WA_SIZE);
+ 		if (obj == NULL) {
+ 			DRM_ERROR("Failed to allocate batch bo\n");
+ 			return -ENOMEM;
 -- 
 1.9.1
 
