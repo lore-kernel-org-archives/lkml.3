@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148AbaJIAMr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 20:12:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41528 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaJIAMj (ORCPT
+	id S1755399AbaJIAS3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 20:18:29 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34219 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaJIAST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 20:12:39 -0400
-Date: Thu, 9 Oct 2014 01:12:13 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
-Message-ID: <20141009001213.GS4609@sirena.org.uk>
-References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
- <20141008223403.GA24828@roeck-us.net>
- <20141008223601.GP4609@sirena.org.uk>
- <20141008225912.GA25134@roeck-us.net>
- <20141008234541.GQ4609@sirena.org.uk>
- <20141009000555.GA27476@roeck-us.net>
+	Wed, 8 Oct 2014 20:18:19 -0400
+Message-ID: <5435D449.5030403@infradead.org>
+Date: Wed, 08 Oct 2014 17:18:17 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oc4Z9ongRuk6y2kD"
-Content-Disposition: inline
-In-Reply-To: <20141009000555.GA27476@roeck-us.net>
-X-Cookie: Everything you know is wrong!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
- container
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andy Lutomirski <luto@amacapital.net>, Peter Foley <pefoley2@pefoley.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Chuck Ebbert <cebbert.lkml@gmail.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>, Jiri Kosina <jkosina@suse.cz>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: vdso_standalone_test_x86.c build failure on Linus' tree
+References: <CA+5PVA5BeRMd28CUZPj+G2VbcwT0pG7gERk65xdMLXSp_59-RA@mail.gmail.com> <CALCETrUDkHH-FLwq9ZJ0wFeOkQVWUjTh-cJPL4Jq28sHCqhfFA@mail.gmail.com> <20141008154659.31f46436@as> <5435A4A4.1070101@zytor.com> <20141008160956.7584d303@as> <5435AABC.2010902@zytor.com> <CAOFdcFN4jBvATfBNbccpARf4DRXAhCy1wf8FNKLhudKnutPd6Q@mail.gmail.com> <CALCETrUCLw5si9S4LZT9dbO=UsftjJ63Q4vshfq3t=B2sywbZg@mail.gmail.com>
+In-Reply-To: <CALCETrUCLw5si9S4LZT9dbO=UsftjJ63Q4vshfq3t=B2sywbZg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/08/14 16:18, Andy Lutomirski wrote:
+> On Wed, Oct 8, 2014 at 4:11 PM, Peter Foley <pefoley2@pefoley.com> wrote:
+>> On Wed, Oct 8, 2014 at 5:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> That we can't solve, but it is not okay to break the kernel build.
+>>
+>> Should I just make CONFIG_BUILD_DOCSRC depend on CROSS_COMPILE=""?
+>> I'm not sure how much value would be added by implementing targetprogs
+>> in kbuild, simply to increase build testing of Documentation/
+> 
+> Yes, IMO.  Let the kselftest people solve it, because they might have
+> extra requirements.
+> 
+> --Andy
 
---oc4Z9ongRuk6y2kD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+As I have said in the past, there are probably lots of source files in
+Documentation/ that should be in tools/ or tools/testing/ instead.
 
-On Wed, Oct 08, 2014 at 05:05:55PM -0700, Guenter Roeck wrote:
-> On Thu, Oct 09, 2014 at 12:45:41AM +0100, Mark Brown wrote:
 
-> > definitely at least add a boot argument or something to suppress them,
-> > let me have a think if we want to do that by default.
-
-> It is a nuisance, so I might just disable it in our tree if we don't
-> find some other solution.
-
-We'll do something, just a question of what and what the default is.
-
-> Did you notice the problem with debugfs I had mentioned earlier ?
-> With all those regulators, not all of them being used, I end up with
-> many having the same name. This causes issues with debugfs, which is
-> trying to create the same file several times.
-
-> Any idea how we could solve this ? The constraints message is annoying,
-> but this one is a real issue.
-
-Shove a dev_name() on the front if we get a collision?  I have to say
-I've never cared, the debugfs isn't that important so it doesn't matter
-too much if it fails.
-
---oc4Z9ongRuk6y2kD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUNdLcAAoJECTWi3JdVIfQO0gH/375904cx2UyWec9ZZd5Z++2
-0XrvUX6OnzXZjrvEI9zQcD/CaTrHWNkNJ9CNp3vmKAOR9XrXS13YH5vuLFqlTlX4
-wF0dxORaYmUziIY0zIyUne/lwo5a7YufxmIr/mVr2Fa52cv3IfZugQxMjlGXOBAF
-0Pna0DM542EY5mHFcqISQ/RLZ3/YHHfV8Ls5+FHc7jsjIcxB0fyAuVZzsq8TuJgC
-kk8s+V7XmYz8J05nvERwHID3/gYkJ0+eTV9UecGqFU0sKKqxypnMF+LubtYQGZMR
-1SchoEU8eTytFz9LEPn7nWhngLrS/mCbQfb2SAd46Q2GkVS4Lk/JzQmux25Yf+Y=
-=/Fdn
------END PGP SIGNATURE-----
-
---oc4Z9ongRuk6y2kD--
+-- 
+~Randy
