@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758062AbaJIV0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:26:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59432 "EHLO
+	id S932778AbaJIV1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:27:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59423 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652AbaJIVKE (ORCPT
+	with ESMTP id S1751030AbaJIVKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:04 -0400
+	Thu, 9 Oct 2014 17:10:02 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Eyal Shapira <eyalx.shapira@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 061/163] futex: Unlock hb->lock in futex_wait_requeue_pi() error path
-Date: Thu,  9 Oct 2014 14:01:26 -0700
-Message-Id: <1412888588-26755-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 118/163] iwlwifi: mvm: treat EAPOLs like mgmt frames wrt rate
+Date: Thu,  9 Oct 2014 14:02:23 -0700
+Message-Id: <1412888588-26755-119-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -28,51 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Eyal Shapira <eyal@wizery.com>
 
-commit 13c42c2f43b19aab3195f2d357db00d1e885eaa8 upstream.
+commit aa11bbf3df026d6b1c6b528bef634fd9de7c2619 upstream.
 
-futex_wait_requeue_pi() calls futex_wait_setup(). If
-futex_wait_setup() succeeds it returns with hb->lock held and
-preemption disabled. Now the sanity check after this does:
+Using the LQ table which is initially set according to
+the rssi could lead to EAPOLs being sent in high legacy
+rates like 54mbps.
+It's better to avoid sending EAPOLs in high rates as it reduces
+the chances of a successful 4-Way handshake.
+Avoid this and treat them like other mgmt frames which would
+initially get sent at the basic rate.
 
-        if (match_futex(&q.key, &key2)) {
-	   	ret = -EINVAL;
-		goto out_put_keys;
-	}
-
-which releases the keys but does not release hb->lock.
-
-So we happily return to user space with hb->lock held and therefor
-preemption disabled.
-
-Unlock hb->lock before taking the exit route.
-
-Reported-by: Dave "Trinity" Jones <davej@redhat.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Darren Hart <dvhart@linux.intel.com>
-Reviewed-by: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.10.1409112318500.4178@nanos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ kamal: backport to 3.13-stable: queue_unlock() args ]
+Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/futex.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/mvm/tx.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index c265aac..4741b1f 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -2465,6 +2465,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
- 	 * shared futexes. We need to compare the keys:
+diff --git a/drivers/net/wireless/iwlwifi/mvm/tx.c b/drivers/net/wireless/iwlwifi/mvm/tx.c
+index c8f6974..edf9f7b 100644
+--- a/drivers/net/wireless/iwlwifi/mvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
+@@ -173,10 +173,14 @@ static void iwl_mvm_set_tx_cmd_rate(struct iwl_mvm *mvm,
+ 
+ 	/*
+ 	 * for data packets, rate info comes from the table inside the fw. This
+-	 * table is controlled by LINK_QUALITY commands
++	 * table is controlled by LINK_QUALITY commands. Exclude ctrl port
++	 * frames like EAPOLs which should be treated as mgmt frames. This
++	 * avoids them being sent initially in high rates which increases the
++	 * chances for completion of the 4-Way handshake.
  	 */
- 	if (match_futex(&q.key, &key2)) {
-+		queue_unlock(&q, hb);
- 		ret = -EINVAL;
- 		goto out_put_keys;
- 	}
+ 
+-	if (ieee80211_is_data(fc) && sta) {
++	if (ieee80211_is_data(fc) && sta &&
++	    !(info->control.flags & IEEE80211_TX_CTRL_PORT_CTRL_PROTO)) {
+ 		tx_cmd->initial_rate_index = 0;
+ 		tx_cmd->tx_flags |= cpu_to_le32(TX_CMD_FLG_STA_RATE);
+ 		return;
 -- 
 1.9.1
 
