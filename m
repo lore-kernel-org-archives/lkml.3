@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987AbaJINwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:52:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59738 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaJINw1 (ORCPT
+	id S1757300AbaJINww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:52:52 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:62140 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975AbaJINwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:52:27 -0400
-Date: Thu, 9 Oct 2014 06:51:30 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
-Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
-Message-ID: <20141009135130.GB13089@kroah.com>
-References: <5434AA24.7010600@huawei.com>
- <20141008091741.GC26140@arm.com>
- <20141008133147.GC5119@kroah.com>
- <20141008133802.GO26140@arm.com>
- <5435FBD8.7020109@huawei.com>
- <20141009034147.GC19906@kroah.com>
- <5436357C.3020300@huawei.com>
+	Thu, 9 Oct 2014 09:52:41 -0400
+Date: Thu, 9 Oct 2014 09:52:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 2/2] sysfs/kernfs: make read requests on pre-alloc files
+ use the buffer.
+Message-ID: <20141009135237.GD14387@htj.dyndns.org>
+References: <20141008234119.19126.4182.stgit@notabene.brown>
+ <20141008235706.19126.82634.stgit@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5436357C.3020300@huawei.com>
+In-Reply-To: <20141008235706.19126.82634.stgit@notabene.brown>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 03:13:00PM +0800, zhangzhiqiang wrote:
-> On 2014/10/9 11:41, gregkh@linuxfoundation.org wrote:
-> > On Thu, Oct 09, 2014 at 11:07:04AM +0800, zhangzhiqiang wrote:
-> >> On 2014/10/8 21:38, Will Deacon wrote:
-> >>> On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
-> >>>> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
-> >>>>> On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
-> >>>>>> hi all,
-> >>>>>> ----------------------------------------
-> >>>>>>
-> >>>>>> ref-cycles event is specially to Intel core, but can still used in arm architecture
-> >>>>>> with the wrong return value with 3.10 stable. for instance:
-> >>>>>>
-> >>>>>>  perf stat -e ref-cycles sleep 1
-> >>>>>>
-> >>>>>>  Performance counter stats for 'sleep 1':
-> >>>>>>
-> >>>>>>   	0 ref-cycles
-> >>>>>>
-> >>>>>>        1.002381916 seconds time elapsed
-> >>>>>>
-> >>>>>> this patch fix the bug and make it return NOT SUPPORTED
-> >>>>>> distinctly.
-> >>>>>>
-> >>>>>> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
-> >>>>>> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
-> >>>>>> besides we can not simply cherry-pick.
-> >>>>>
-> >>>>> I thought I saw Greg pick this up the other day?
-> >>>>
-> >>>> Yes, it's in 3.16.4, did I do something wrong by accepting it?
-> >>>
-> >>> Nah, it's a trivial patch that I struggle to get excited about. I'm just not
-> >>> sure why it's being sent again, after you already accepted it.
-> >>
-> >> Yes, it's in 3.16.4, in my opinion 3.10 need it too, can we put it into 3.10 or
-> >> do we have the plan?
-> > 
-> > Does it apply to 3.10-stable?  Did you test it there and see if it
-> > resolves your issue?
+On Thu, Oct 09, 2014 at 10:57:06AM +1100, NeilBrown wrote:
+> To match the previous patch which used the pre-alloc buffer for
+> writes, this patch causes reads to use the same buffer.
+> This is not strictly necessary as the current seq_read() will allocate
+> on first read, so user-space can trigger the required pre-alloc.  But
+> consistency is valuable.
 > 
-> I have tested in 3.10.56, the bug is still existing and the patch is apply to 3.10-stable.
-> Follow is the result without/with this patch based on 3.10.56.
+> The read function is somewhat simpler than seq_read() and, for example,
+> does not support reading from an offset into the file: reads must be
+> at the start of the file.
 > 
-> 3.10.56 without the patch:
-> bash-4.2# perf stat -e ref-cycles sleep 1
+> As seq_read() does not use the prealloc buffer, ->seq_show is
+> incompatible with ->prealloc and caused an EINVAL return from open().
+> sysfs code which calls into kernfs always chooses the correct function.
 > 
->  Performance counter stats for 'sleep 1':
+> As the buffer is shared with writes and other reads, the mutex is
+> extended to cover the copy_to_user.
 > 
->                  0 ref-cycles
-> 
->        1.002461500 seconds time elapsed
-> 
-> 3.10.56 with the patch:
-> bash-4.2# perf stat -e ref-cycles sleep 1
-> 
->  Performance counter stats for 'sleep 1':
-> 
->    <not supported> ref-cycles
-> 
->        1.002385243 seconds time elapsed
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-Given I have no idea what the patch even does, or is supposed to be
-doing, I don't know how to answer this, except it looks like I shouldn't
-be applying this to the 3.10-stable kernel series :)
+Reviewed-by: Tejun Heo <tj@kernel.org>
 
-sorry,
+Some nitpicks.
 
-greg k-h
+> @@ -690,6 +694,12 @@ static int kernfs_fop_open(struct inode *inode, struct file *file)
+>  	 */
+>  	of->atomic_write_len = ops->atomic_write_len;
+>  
+> +	error = -EINVAL;
+> +	if (ops->prealloc && ops->seq_show)
+> +		/* ->seq_show is incompatible with ->prealloc,
+> +		 * ->read must be used instead.
+> +		 */
+> +		goto err_free;
+
+Let's please use fully-winged comments.  If it looks weird inside the
+if block, it can just be located right on top, I think.  Also,
+wouldn't it be better if the comment explained the reason for the
+incompatibility?  Along the same line, I think it'd be better if this
+is also explicitly explained where ->prealloc is defined.
+
+> +/* kernfs read callback for regular sysfs files with pre-alloc */
+> +static ssize_t sysfs_kf_read(struct kernfs_open_file *of, char *buf,
+> +                            size_t count, loff_t pos)
+> +{
+> +       const struct sysfs_ops *ops = sysfs_file_ops(of->kn);
+> +       struct kobject *kobj = of->kn->parent->priv;
+> +
+> +       if (pos || buf != of->prealloc_buf)
+> +	       /* If buf != of->prealloc_buf, we don't know how
+> +		* large it is, so cannot safely pass it to ->show
+> +		*/
+> +               return 0;
+> +       return ops->show(kobj, of->kn->priv, buf);
+> +}
+
+Ditto on the comment formatting also shouldn't the latter condition be
+a WARN_ON_ONCE()?
+
+Thanks.
+
+-- 
+tejun
