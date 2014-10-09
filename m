@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776AbaJIV5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:57:09 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:54402 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015AbaJIV5G (ORCPT
+	id S1757449AbaJIV55 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:57:57 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:54247 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757219AbaJIV54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:57:06 -0400
-Message-ID: <543704AB.4030805@collabora.co.uk>
-Date: Thu, 09 Oct 2014 23:56:59 +0200
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Thu, 9 Oct 2014 17:57:56 -0400
+Date: Thu, 9 Oct 2014 14:57:50 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
+Message-ID: <20141009215750.GB20103@roeck-us.net>
+References: <1412872877-1771-1-git-send-email-linux@roeck-us.net>
+ <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com>
+ <5436C2B4.6030801@broadcom.com>
+ <5436C367.5080908@broadcom.com>
+ <20141009172924.GD2410@roeck-us.net>
+ <5436D3CF.2030506@hauke-m.de>
+ <20141009192520.GA6552@roeck-us.net>
+ <54370298.2040502@hauke-m.de>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Doug Anderson <dianders@chromium.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Chris Zhong <zyw@rock-chips.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/5] regulator: dt-bindings: Add regulator-initial-mode
- support
-References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk> <1412775847-15213-4-git-send-email-javier.martinez@collabora.co.uk> <1412844355.1316.15.camel@AMDC1943> <5436A403.1050109@collabora.co.uk> <20141009190107.GY4609@sirena.org.uk>
-In-Reply-To: <20141009190107.GY4609@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54370298.2040502@hauke-m.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 09:01 PM, Mark Brown wrote:
-> On Thu, Oct 09, 2014 at 05:04:35PM +0200, Javier Martinez Canillas wrote:
+On Thu, Oct 09, 2014 at 11:48:08PM +0200, Hauke Mehrtens wrote:
+> On 10/09/2014 09:25 PM, Guenter Roeck wrote:
+> > On Thu, Oct 09, 2014 at 08:28:31PM +0200, Hauke Mehrtens wrote:
+> >> On 10/09/2014 07:29 PM, Guenter Roeck wrote:
+> >>> On Thu, Oct 09, 2014 at 07:18:31PM +0200, Arend van Spriel wrote:
+> >>>> On 10/09/14 19:15, Arend van Spriel wrote:
+> >>>>> On 10/09/14 18:54, Rafał Miłecki wrote:
+> >>>>>> On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net> wrote:
+> >>>>>>> Commit 2101e533f41a ("bcma: register bcma as device tree driver")
+> >>>>>>> introduces a hard dependency on OF_ADDRESS into the bcma driver.
+> >>>>>>> OF_ADDRESS is specifically disabled for the sparc architecture.
+> >>>>>>> This results in the following error when building sparc64:allmodconfig.
+> >>>>>
+> >>>>> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF and
+> >>>>> !CONFIG_OF_ADDRESS? Does that makes sense?
+> >>>>
+> >>>> Is CONFIG_OF is used on sparc to access OpenBoot information?
+> >>>>
+> >>> I have no idea. All I know is that the driver doesn't build anymore with OF
+> >>> enabled and OF_ADDRESS disabled.
+> >>
+> >> Device tree support in bcma is only needed on some SoC, when this is
+> >> used on a PCIe card it is not needed.
+> >>
+> >> I would just deactivate the parts that are using device tree in bcma
+> >> when it is not available. I will send a patch after having something to eat.
+> >>
+> > Devicetree dependency is already covered with #ifdef CONFIG_OF. Problem is
+> > that it really needs #ifdef CONFIG_OF_ADDRESS. Though even that might be
+> > better than my patch, since it would at least build the driver on sparc
+> > as it used to do.
+> > 
+> >> Is there a better method which is compatible with SPARC than using
+> >> of_translate_address() to get the reg address and also take the ranges
+> >> attribute of the bus into account?
+> >>
+> > No idea, sorry. Can you by any chance use pcie device information
+> > instead of depending on devicetree data ?
 > 
->> Agree, Mark also pointed out that there is a difference between changing
->> how the regulator will behave on runtime vs changing how the regulator
->> will behave during system suspend. AFAIU from his explanation, the modes
->> defined in consumer.h only applies to the former and conceptually there
->> should be a difference between those two cases even when the Maxim PMIC
->> seems to mix it both in the data-sheet and by using the same field.
+> Device tree is not used for PCIe devices in bcma. We only use it when
+> bcma is used for the system bus on some Broadcom SoCs, currently there
+> is no plan to use device tree for PCIe devices in bcma. I think bcma is
+> only used on wifi cards connected via PCIe on Sparc systems.
 > 
-> No, that's not accurate at all - you're still not getting the concepts
-> of modes or suspend handling in the regulator API.  I really think you
-> need to take a step back and try to understand what's currently there
-> before trying to make changes here.  We've got a set of operations we
-> can use to change the regulator configuration, if you look at the
-> existing driver interface you'll see that these are matched with
-> equivalent operations for setting the behaviour when in suspend
-> (including a set_suspend_mode() operation).  
-> 
+Ok. Well, with your patch the code is as good or as bad as it was prior to
+adding devicetree support to the driver, so hopefully should work.
 
-I tried to say that there is a difference between the need to change
-within the kernel a regulator configuration (e.g: change opmode from
-normal to low power) when the system is going to enter in suspend state
-vs setting a register at probe time that will force the PMIC to change
-the regulator to low power mode on suspend without kernel intervention.
-
-> Like I keep saying abstractions are really important to making sure the
-> code is maintainable.
-> 
-
-Agree, I'll try to come up with a more sensible solution by using the
-existing abstractions from the regulator framework.
-
-Best regards,
-Javier
+Guenter
