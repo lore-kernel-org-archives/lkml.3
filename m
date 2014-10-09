@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637AbaJIVwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:52:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37197 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466AbaJIVw3 (ORCPT
+	id S1751633AbaJIVDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:03:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58914 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaJIVD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:52:29 -0400
-Date: Thu, 9 Oct 2014 14:52:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jslaby@suse.cz, heiko@sntech.de,
-        yingjoe.chen@gmail.com, ibanezchen@gmail.com,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] tty: serial: 8250_mtk: Fix quot calculation
-Message-ID: <20141009215228.GA23507@kroah.com>
-References: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412871811-5986-1-git-send-email-matthias.bgg@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 9 Oct 2014 17:03:27 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Johannes Berg <johannes.berg@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 012/163] Revert "mac80211: disable uAPSD if all ACs are under ACM"
+Date: Thu,  9 Oct 2014 14:00:37 -0700
+Message-Id: <1412888588-26755-13-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 06:23:31PM +0200, Matthias Brugger wrote:
-> The calculation of value quot for highspeed register set to three
-> was wrong. This patch fixes the calculation so that the serial port
-> for baudrates bigger then 576000 baud is working correctly.
-> 
-> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> ---
->  drivers/tty/serial/8250/8250_mtk.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
-> index 1c4b4bf..4376c48 100644
-> --- a/drivers/tty/serial/8250/8250_mtk.c
-> +++ b/drivers/tty/serial/8250/8250_mtk.c
-> @@ -81,7 +81,7 @@ mtk8250_set_termios(struct uart_port *port, struct ktermios *termios,
->  		/* Set to highest baudrate supported */
->  		if (baud >= 1152000)
->  			baud = 921600;
-> -		quot = DIV_ROUND_CLOSEST(port->uartclk, 256 * baud);
-> +		quot = (port->uartclk / (256 * baud)) + 1;
->  	}
->  
->  	/*
+3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
-Has this always been incorrect, or was it caused by a specific patch?
-Should it go to the stable kernels?  If so, how far back?
+------------------
 
-thanks,
+From: Johannes Berg <johannes.berg@intel.com>
 
-greg k-h
+commit bb512ad0732232f1d2693bb68f31a76bed8f22ae upstream.
+
+This reverts commit 24aa11ab8ae03292d38ec0dbd9bc2ac49fe8a6dd.
+
+That commit was wrong since it uses data that hasn't even been set
+up yet, but might be a hold-over from a previous connection.
+
+Additionally, it seems like a driver-specific workaround that
+shouldn't have been in mac80211 to start with.
+
+Fixes: 24aa11ab8ae0 ("mac80211: disable uAPSD if all ACs are under ACM")
+Reviewed-by: Luciano Coelho <luciano.coelho@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/mac80211/mlme.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+index fcdd5de..6c126fc 100644
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -4219,8 +4219,7 @@ int ieee80211_mgd_assoc(struct ieee80211_sub_if_data *sdata,
+ 	rcu_read_unlock();
+ 
+ 	if (bss->wmm_used && bss->uapsd_supported &&
+-	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD) &&
+-	    sdata->wmm_acm != 0xff) {
++	    (sdata->local->hw.flags & IEEE80211_HW_SUPPORTS_UAPSD)) {
+ 		assoc_data->uapsd = true;
+ 		ifmgd->flags |= IEEE80211_STA_UAPSD_ENABLED;
+ 	} else {
+-- 
+1.9.1
+
