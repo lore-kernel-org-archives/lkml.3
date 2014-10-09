@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555AbaJIKt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:49:56 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:44673 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158AbaJIKti (ORCPT
+	id S932254AbaJIKuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:50:19 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:59936 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaJIKuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:49:38 -0400
-Date: Thu, 9 Oct 2014 11:49:27 +0100
+	Thu, 9 Oct 2014 06:50:13 -0400
+Date: Thu, 9 Oct 2014 11:50:07 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Guenter Roeck <linux@roeck-us.net>,
-        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "lguest@lists.ozlabs.org" <lguest@lists.ozlabs.org>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "linux-hexagon@vger.kernel.org" <linux-hexagon@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
-        "linux-am33-list@redhat.com" <linux-am33-list@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>,
-        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 12/44] mfd: ab8500-sysctrl: Register with kernel poweroff
- handler
-Message-ID: <20141009104927.GN20647@lee--X1>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-13-git-send-email-linux@roeck-us.net>
- <20141007080048.GB25331@lee--X1>
- <20141009103656.GF17836@e104818-lin.cambridge.arm.com>
+        "kernel@stlinux.com" <kernel@stlinux.com>,
+        David Paris <david.paris@st.com>, "wim@iguana.be" <wim@iguana.be>,
+        "linux@roeck-us.net" <linux@roeck-us.net>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC
+ Watchdog
+Message-ID: <20141009105007.GO20647@lee--X1>
+References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
+ <1412760810-23199-5-git-send-email-lee.jones@linaro.org>
+ <20141009100115.GD3869@leverpostej>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141009103656.GF17836@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20141009100115.GD3869@leverpostej>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Oct 2014, Catalin Marinas wrote:
+On Thu, 09 Oct 2014, Mark Rutland wrote:
 
-> On Tue, Oct 07, 2014 at 09:00:48AM +0100, Lee Jones wrote:
-> > On Mon, 06 Oct 2014, Guenter Roeck wrote:
-> > > --- a/drivers/mfd/ab8500-sysctrl.c
-> > > +++ b/drivers/mfd/ab8500-sysctrl.c
-> > > @@ -6,6 +6,7 @@
-> > 
-> > [...]
-> > 
-> > > +static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
-> > > +			    void *unused2)
-> > >  {
-> > >  	sigset_t old;
-> > >  	sigset_t all;
-> > > @@ -34,11 +36,6 @@ static void ab8500_power_off(void)
-> > >  	struct power_supply *psy;
-> > >  	int ret;
-> > >  
-> > > -	if (sysctrl_dev == NULL) {
-> > > -		pr_err("%s: sysctrl not initialized\n", __func__);
-> > > -		return;
-> > > -	}
-> > 
-> > Can you explain the purpose of this change please?
+> > +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "syscfg-type");
 > 
-> I guess it's because the sysctrl_dev is already initialised when
-> registering the power_off handler, so there isn't a way to call the
-> above function with a NULL sysctrl_dev. Probably even with the original
-> code you didn't need this check (after some race fix in
-> ab8500_sysctrl_remove but races is one of the things Guenter's patches
-> try to address).
+> This wasn't mentioned in the binding. A comment mentioned "type", but
+> there was no explicit mention of "syscfg-type" in reg-names.
 
-Sounds reasonable, although I think this change should be part of
-another patch.
+Thanks Mark, I'll fixup.
 
 -- 
 Lee Jones
