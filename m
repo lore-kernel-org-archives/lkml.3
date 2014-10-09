@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaJIPYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:24:49 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:36845 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618AbaJIPYk (ORCPT
+	id S1757438AbaJIPZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:25:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56859 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaJIPZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:24:40 -0400
-Message-ID: <5436A8B2.1030200@gmail.com>
-Date: Thu, 09 Oct 2014 17:24:34 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>, netdev@vger.kernel.org,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFT 0/8] Marvell PXA168 libphy handling and Berlin Ethernet
-References: <1412858346-11334-1-git-send-email-sebastian.hesselbarth@gmail.com> <20141009163315.2a9e1806@free-electrons.com> <54369EAC.5040301@gmail.com> <20141009164704.7286fc3f@free-electrons.com>
-In-Reply-To: <20141009164704.7286fc3f@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 11:25:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <54369B13.4030004@suse.com>
+References: <5435C093.5070405@suse.com>
+	<x4938axz6vd.fsf@segfault.boston.devel.redhat.com>
+	<54369B13.4030004@suse.com>
+Date: Thu, 9 Oct 2014 23:25:22 +0800
+Message-ID: <CACVXFVO+LBseOCmQuHaVz5LnK0hgvp1iPPhkGWFZc_iOxjBnfg@mail.gmail.com>
+Subject: Re: [PATCH] block: copy bi_vcnt in __bio_clone_fast
+From: Ming Lei <ming.lei@canonical.com>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a11408c6a818a7b0504ff0aae
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 04:47 PM, Thomas Petazzoni wrote:
-> Well, I initially remember that the original driver coming from Marvell
-> was using the HW PHY stuff, and that I changed that because it would
-> not integrate well with the kernel libphy.
+--001a11408c6a818a7b0504ff0aae
+Content-Type: text/plain; charset=UTF-8
+
+On Thu, Oct 9, 2014 at 10:26 PM, Jeff Mahoney <jeffm@suse.com> wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
 >
-> A drawback of this is that because the hardware has built-in PHY
-> polling which triggers a MAC interrupt when the PHY status changes, they
-> typically don't wire up the PHY interrupt. Therefore, since we're not
-> able to use the MAC interrupt for PHY event notifications, we rely on
-> software PHY polling, which means that link up / link down events take
-> a few seconds to be noticed by the kernel. Unfortunately, I don't think
-> the hardware allows to use the hardware PHY polling to get link changes
-> interrupt, but not let the hardware configure the PHY itself.
+> On 10/9/14, 9:53 AM, Jeff Moyer wrote:
+>> Jeff Mahoney <jeffm@suse.com> writes:
+>>
+>>> Commit 05f1dd53152173 (block: add queue flag for disabling SG
+>>> merging) uses bi_vcnt to assign bio->bi_phys_segments if sg
+>>> merging is disabled. When using device mapper on top of a blk-mq
+>>> device (virtio_blk in my test), we'd end up overflowing the
+>>> scatterlist in __blk_bios_map_sg.
+>>>
+>>> __bio_clone_fast copies bi_iter and bi_io_vec but not bi_vcnt,
+>>> so blk_recount_segments would report bi_phys_segments as 0.
+>>> Since rq->nr_phys_segments is 0 as well, the checks to ensure
+>>> that we don't exceed the queue's segment limit end up allowing
+>>> more bios (and segments) to attach the a request until we finally
+>>> map it. That also means we pass the BUG_ON at the beginning of
+>>> virtio_queue_rq, ultimately causing memory corruption and a
+>>> crash.
+>>>
+>>> If we copy bi_vcnt in __bio_clone_fast, the bios and requests
+>>> properly report the number of segments and everything works as
+>>> expected.
+>>>
+>>> Originally reported at
+>>> http://bugzilla.opensuse.org/show_bug.cgi?id=888259
+>>
+>> Hi, Jeff,
+>>
+>> Did you manage to reproduce this problem with commit 0738854
+>> (blk-merge: fix blk_recount_segments) applied?  Or perhaps with
+>> commit 200612e (dm table: propagate QUEUE_FLAG_NO_SG_MERGE)?
+>
+> Yep. I was able to reproduce it with 3.17. I did try 0738854 when I
+> was still using 3.16 since it looked like a good candidate. Neither of
+> those patches affect the problem here. bio->bi_phys_segments never
+> gets a value set in the fast clone case and that translates to
+> req->nr_phys_segments never getting properly accumulated. That might
+> not be a problem except that the NO_SG_MERGE behavior bypasses the
+> iteration that would come up with the correct value. In either case,
 
-Yeah, but that HW PHY stuff really only works properly with standard
-compliant PHYs. In particular, the integrated Marvell PHY in Marvell
-Berlin SoCs does not seem to reflect PHY status on BMCR properly /sigh/.
-Anyway, I think we can live with PHY polling.
+This patch may get incorrect rq->nr_phys_segments because
+bio cloning is often used in case of I/O splitting, so could you
+test if the attached patch fixes your problem?
 
-BTW, one thing I noticed here is that libphy calls adjust_link
-over-and-over again although nothing has changed. I guess we can just
-add some before/after comparison in the libphy state machine and only
-call adjust_link when something has changed. I'll have to look closer
-at the state machine first and maybe Florian can comment on this,
-too.
+Thanks,
+--
+Ming Lei
 
-Sebastian
+--001a11408c6a818a7b0504ff0aae
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-blk-merge-don-t-compute-bi_phys_segments-from-bi_vcn.patch"
+Content-Disposition: attachment; 
+	filename="0001-blk-merge-don-t-compute-bi_phys_segments-from-bi_vcn.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1297v110
 
+RnJvbSBkMzk0NmRiOTNjOGViMWRhNGEwYzMyMjQ5ZDYwM2Y0MTVmZWJmMDllIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBNaW5nIExlaSA8bWluZy5sZWlAY2Fub25pY2FsLmNvbT4KRGF0
+ZTogVGh1LCA5IE9jdCAyMDE0IDIzOjE3OjM1ICswODAwClN1YmplY3Q6IFtQQVRDSF0gYmxrLW1l
+cmdlOiBkb24ndCBjb21wdXRlIGJpX3BoeXNfc2VnbWVudHMgZnJvbSBiaV92Y250IGZvcgogY2xv
+bmVkIGJpbwoKSXQgaXNuJ3QgY29ycmVjdCB0byBmaWd1cmUgb3V0IHJlcS0+YmlfcGh5c19zZWdt
+ZW50cyBmcm9tIGJpby0+YmlfdmNudAppZiB0aGUgYmlvIGlzIGNsb25lZC4KClNpZ25lZC1vZmYt
+Ynk6IE1pbmcgTGVpIDxtaW5nLmxlaUBjYW5vbmljYWwuY29tPgotLS0KIGJsb2NrL2Jsay1tZXJn
+ZS5jIHwgICAgMSArCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKykKCmRpZmYgLS1naXQg
+YS9ibG9jay9ibGstbWVyZ2UuYyBiL2Jsb2NrL2Jsay1tZXJnZS5jCmluZGV4IGY3MWJhZDMuLmQ1
+Y2FkMWEgMTAwNjQ0Ci0tLSBhL2Jsb2NrL2Jsay1tZXJnZS5jCisrKyBiL2Jsb2NrL2Jsay1tZXJn
+ZS5jCkBAIC05OCw2ICs5OCw3IEBAIHZvaWQgYmxrX3JlY2FsY19ycV9zZWdtZW50cyhzdHJ1Y3Qg
+cmVxdWVzdCAqcnEpCiB2b2lkIGJsa19yZWNvdW50X3NlZ21lbnRzKHN0cnVjdCByZXF1ZXN0X3F1
+ZXVlICpxLCBzdHJ1Y3QgYmlvICpiaW8pCiB7CiAJaWYgKHRlc3RfYml0KFFVRVVFX0ZMQUdfTk9f
+U0dfTUVSR0UsICZxLT5xdWV1ZV9mbGFncykgJiYKKwkJCSFiaW9fZmxhZ2dlZChiaW8sIEJJT19D
+TE9ORUQpICYmCiAJCQliaW8tPmJpX3ZjbnQgPCBxdWV1ZV9tYXhfc2VnbWVudHMocSkpCiAJCWJp
+by0+YmlfcGh5c19zZWdtZW50cyA9IGJpby0+YmlfdmNudDsKIAllbHNlIHsKLS0gCjEuNy45LjUK
+Cg==
+--001a11408c6a818a7b0504ff0aae--
