@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaJIHln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 03:41:43 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:15469 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750824AbaJIHld (ORCPT
+	id S1751421AbaJIHnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 03:43:39 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:47141 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839AbaJIHna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 03:41:33 -0400
-X-AuditID: cbfee61b-f79d76d0000024d6-9a-54363c27f39d
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com, andrzej.p@samsung.com,
-        m.szyprowski@samsung.com, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] usb: gadget: f_fs: remove redundant ffs_data_get()
-Date: Thu, 09 Oct 2014 09:41:16 +0200
-Message-id: <1412840476-2767-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t9jAV11G7MQg729WhazXrazWBy8X2/R
-	vHg9m8XlXXPYLBYta2W2WHvkLrvFguMtrBYPDu9kd+Dw2D93DbvHuj+vmDz6tqxi9Dh+YzuT
-	x+dNcgGsUVw2Kak5mWWpRfp2CVwZK45EF8zhrLjct4a5gfEVexcjB4eEgInE5iajLkZOIFNM
-	4sK99WxdjFwcQgKLGCUeH2hngXDamSRWf73MBlLFJqAjseX7BEYQW0RAQGL9i0vsIEXMAscZ
-	JRZuOQBWJCzgLHFo0mVWEJtFQFVi25QZTCA2r4CLxP7LC9gg1slJnDw2mXUCI/cCRoZVjKKp
-	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHB8kx6B+OqBotDjAIcjEo8vA/+mYYIsSaWFVfmHmKU
-	4GBWEuFV/QoU4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnV
-	wCjOPPtVV4GXwJfXOUGfNxb853qSeyNrerT+Q0GdXul1CQ6s/zlXWm7plf/nU1OwbWqJnH3I
-	p0Uva76qKIR95j9/OXvF4qy7eS8iN/rr3zbWmWq8e3blEpsL+sf+1kT8b7qteP8zi+DiT853
-	5CUZgmcJcop2xx07tY5/r1hH2fTPZ3+FXX94X0aJpTgj0VCLuag4EQAL77KSEgIAAA==
+	Thu, 9 Oct 2014 03:43:30 -0400
+Date: Thu, 9 Oct 2014 09:43:27 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: [PATCH 1/2] ARM: tegra: venice2: add GK20A GPU DT node
+Message-ID: <20141009074326.GA1010@ulmo>
+References: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+In-Reply-To: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During FunctionFS bind, ffs_data_get() function was called twice
-(in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
-ffs_data_put() was called once (in functionfs_unbind() function).
-In result refcount never reached value 0, and ffs memory resources has
-been never released.
 
-Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
-and not neccessary, we remove it to have equal number of gets ans puts,
-and free allocated memory after refcount reach 0.
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/gadget/function/f_fs.c | 2 --
- 1 file changed, 2 deletions(-)
+On Thu, Oct 09, 2014 at 03:11:51PM +0900, Alexandre Courbot wrote:
+> From: Thierry Reding <treding@nvidia.com>
+>=20
+> Add the device-tree node for the GK20A GPU and leave it disabled by
+> default. It is the responsability of the bootloader to enable it if the
+> VPR registers have been programmed such as the GPU can operate.
+>=20
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  arch/arm/boot/dts/tegra124-venice2.dts | 8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
-index 7c6771d..12dbdaf 100644
---- a/drivers/usb/gadget/function/f_fs.c
-+++ b/drivers/usb/gadget/function/f_fs.c
-@@ -2663,8 +2663,6 @@ static inline struct f_fs_opts *ffs_do_functionfs_bind(struct usb_function *f,
- 	func->conf = c;
- 	func->gadget = c->cdev->gadget;
- 
--	ffs_data_get(func->ffs);
--
- 	/*
- 	 * in drivers/usb/gadget/configfs.c:configfs_composite_bind()
- 	 * configurations are bound in sequence with list_for_each_entry,
--- 
-1.9.1
+Are you going to send the corresponding patches for U-Boot to update
+the status property if it's initialized VPR?
 
+Thierry
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUNjyeAAoJEN0jrNd/PrOhwJwQAKPejMRAURt41D8ikCOk/YkU
+9kB6r3GtKcLTJLsutbnkscdQmLFO6e00wg7oDicUMsnDkv8YKeFKrdgPCAvEjVXk
+F7e2UZ5T+P9sLdVqhJyU7IHgU8/KvCESwApxIlRVrh4Vm5eN5fcH7o/cFnkvmpnu
+NtlVJGG4OOV5S04DTgtmQlnGZMoXYKetZ9EVDDLefx/x4/wNhHmakHmQZqeN3vvN
+qqcBPO2GT49zd2+BmGEhhIkw7vLW0RRKhQyzGVScXDobn/n6teGJKD8Jz9+eDC3i
+QWitD7bgRssmb07ms6H0ys3kCAOrYeHtO1B7EUYB/LQrwpQQCG8wjwdqde6YkZ3n
+XVJ3TQNiOqPEyeLXSJKGlJ9z3X3jvF+6b9vyyZFsTy01CYmdDqr4QIUzA05vLHSp
+FwBZE3N4HElB8GyC+WDX9vJrCaxUhh39XTr/r0yEi5RGRfFlC15ZmKlc9pKVCx8b
+e+yT24BeIIT5WUZZ/yxcd7r8oYl3KC/78OlEJfjqw+Y+VnKqy3JcIcQ7WJhuOwhF
++NtOgtQwaOG695saZ2K14WwsJnTWKtSd2CbPNcZpVkBkoHGLQV4R4FEy7N0d+k2S
+w5R1qJn9TJ+LLTbGD+cq9L+J8rWRU+BsOQwrVrwFS0EaDgwNCDJF54n/EE9bDgjS
+94mPClY7xtG4yrLWZdAa
+=xumw
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
