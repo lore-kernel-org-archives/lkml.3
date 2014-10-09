@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254AbaJIKuT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 06:50:19 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:59936 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaJIKuN (ORCPT
+	id S932264AbaJIKuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 06:50:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39098 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500AbaJIKuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 06:50:13 -0400
-Date: Thu, 9 Oct 2014 11:50:07 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        David Paris <david.paris@st.com>, "wim@iguana.be" <wim@iguana.be>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC
- Watchdog
-Message-ID: <20141009105007.GO20647@lee--X1>
-References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
- <1412760810-23199-5-git-send-email-lee.jones@linaro.org>
- <20141009100115.GD3869@leverpostej>
+	Thu, 9 Oct 2014 06:50:39 -0400
+Date: Thu, 9 Oct 2014 12:50:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andres Lagar-Cavilla <andreslc@google.com>,
+        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
+        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>
+Subject: Re: [PATCH 2/4] mm: gup: add get_user_pages_locked and
+ get_user_pages_unlocked
+Message-ID: <20141009105037.GM4750@worktop.programming.kicks-ass.net>
+References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
+ <1412153797-6667-3-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141009100115.GD3869@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412153797-6667-3-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Oct 2014, Mark Rutland wrote:
+On Wed, Oct 01, 2014 at 10:56:35AM +0200, Andrea Arcangeli wrote:
 
-> > +       res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "syscfg-type");
-> 
-> This wasn't mentioned in the binding. A comment mentioned "type", but
-> there was no explicit mention of "syscfg-type" in reg-names.
+> +static inline long __get_user_pages_locked(struct task_struct *tsk,
+> +					   struct mm_struct *mm,
+> +					   unsigned long start,
+> +					   unsigned long nr_pages,
+> +					   int write, int force,
+> +					   struct page **pages,
+> +					   struct vm_area_struct **vmas,
+> +					   int *locked,
+> +					   bool notify_drop)
+> +{
 
-Thanks Mark, I'll fixup.
+> +	if (notify_drop && lock_dropped && *locked) {
+> +		/*
+> +		 * We must let the caller know we temporarily dropped the lock
+> +		 * and so the critical section protected by it was lost.
+> +		 */
+> +		up_read(&mm->mmap_sem);
+> +		*locked = 0;
+> +	}
+> +	return pages_done;
+> +}
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> +long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
+> +			   unsigned long start, unsigned long nr_pages,
+> +			   int write, int force, struct page **pages,
+> +			   int *locked)
+> +{
+> +	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+> +				       pages, NULL, locked, true);
+> +}
+
+> +long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
+> +			     unsigned long start, unsigned long nr_pages,
+> +			     int write, int force, struct page **pages)
+> +{
+> +	long ret;
+> +	int locked = 1;
+> +	down_read(&mm->mmap_sem);
+> +	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+> +				      pages, NULL, &locked, false);
+> +	if (locked)
+> +		up_read(&mm->mmap_sem);
+> +	return ret;
+> +}
+
+>  long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  		unsigned long start, unsigned long nr_pages, int write,
+>  		int force, struct page **pages, struct vm_area_struct **vmas)
+>  {
+> +	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+> +				       pages, vmas, NULL, false);
+>  }
+
+I'm wondering about that notify_drop parameter, what's the added
+benefit? If you look at these 3 callers we can do away with it, since in
+the second called where we have locked but !notify_drop we seem to do
+the exact same thing afterwards anyway.
