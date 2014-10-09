@@ -1,106 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753326AbaJIIVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 04:21:19 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:35554 "EHLO e7.ny.us.ibm.com"
+	id S1753999AbaJIIXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 04:23:39 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:56935 "EHLO sipsolutions.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaJIIVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 04:21:11 -0400
-Message-ID: <54364564.3090305@linux.vnet.ibm.com>
-Date: Thu, 09 Oct 2014 13:50:52 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, lizefan@huawei.com, anton@samba.org,
-        tj@kernel.org
-CC: svaidy@linux.vnet.ibm.com, rjw@rjwysocki.net, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks hotplug
- invariant
-References: <20141008070739.1170.33313.stgit@preeti.in.ibm.com> <20141008080706.GC10832@worktop.programming.kicks-ass.net> <543505EF.7070804@linux.vnet.ibm.com> <20141008101828.GG10832@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141008101828.GG10832@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751147AbaJIIX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 04:23:28 -0400
+Message-ID: <1412843005.1828.14.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 1/4] mac80211: OCB mode + join and leave handling
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Rostislav Lisovy <lisovy@gmail.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de, burak.simsek@volkswagen.de,
+        Emmanuel Thierry <emmanuel.thierry@yogoko.fr>,
+        laszlo.virag@commsignia.com,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Date: Thu, 09 Oct 2014 10:23:25 +0200
+In-Reply-To: <1410445822-6559-2-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140911_163047_025105_09D86D44)
+References: <1410445822-6559-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 <1410445822-6559-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	 (sfid-20140911_163047_025105_09D86D44)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14100908-0025-0000-0000-000000B49C6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2014 03:48 PM, Peter Zijlstra wrote:
-> On Wed, Oct 08, 2014 at 03:07:51PM +0530, Preeti U Murthy wrote:
-> 
->>> I still completely hate all that.. It basically makes cpusets useless,
->>> they no longer guarantee anything, it makes then an optional placement
->>> hint instead.
->>
->> Why do you say they don't guarantee anything? We ensure that we always
->> run on the cpus in our cpuset which are online. We do not run in any
->> arbitrary cpuset. We also do not wait unreasonably on an offline cpu to
->> come back. What we are doing is ensuring that if the resources that we
->> began with are available we use them. Why is this not a logical thing to
->> expect?
-> 
-> Because if you randomly hotplug cpus your tasks can randomly flip
-> between sets.
-> 
-> Therefore there is no strict containment and no guarantees.
-> 
->>> You also break long standing behaviour.
->>
->> Which is? As I understand cpusets are meant to ensure a dedicated set of
->> resources to some tasks. We cannot scheduler the tasks anywhere outside
->> this set as long as they are available. And when they are not, currently
->> we move them to their parents,
-> 
-> No currently we hard break affinity and never look back. That move to
-> parent and back crap is all new fangled stuff, and broken because of the
-> above argument.
-> 
->> but you had also suggested killing the
->> task. Maybe this can be debated. But what behavior are we changing by
->> ensuring that we retain our original configuration at all times?
-> 
-> See above, by pretending hotplug is a sane operation you loose all
-> guarantees.
+On Thu, 2014-09-11 at 16:30 +0200, Rostislav Lisovy wrote:
 
-Ok I see the point. The kernel must not be bothered about keeping
-cpusets and hotplug operations consistent when both of these are user
-initiated actions specifying affinity with the former and breaking the
-same with the latter.
+[...]
 
-> 
->>> Also, power is insane if it needs/uses hotplug for operational crap
->>> like that.
->>
->> SMT 8 on Power8 can help/hinder workloads. Hence we dynamically switch
->> the modes at runtime.
-> 
-> That's just a horrible piece of crap hack and you deserve any and all
-> pain you get from doing it.
-> 
-> Randomly removing/adding cpus like that is horrible and makes a mockery
-> of all the affinity interfaces we have.
+Nice work. Let me (finally) look in more detail ...
 
-We observed this on ubuntu kernel, in which systemd explicitly mounts
-cgroup controllers under a child cgroup identified by the user pid.
-Since we had not observed this additional cgroup being added under the
-hood, it came as a surprise to us that cgroup/cpuset handling in the
-kernel should indeed kick in.
 
-At best we expect hotplug to be handled well if the users have not
-explicitly configured cpusets, hence implicitly specifying that task
-affinity is for all online cpus. This is indeed the case today, so that
-is good.
+> +++ b/include/uapi/linux/nl80211.h
+> @@ -2031,6 +2031,8 @@ enum nl80211_attrs {
+>   *	and therefore can't be created in the normal ways, use the
+>   *	%NL80211_CMD_START_P2P_DEVICE and %NL80211_CMD_STOP_P2P_DEVICE
+>   *	commands to create and destroy one
+> + * @NL80211_IF_TYPE_OCB: Outside Context of a BSS
+> + *	this mode corresponds to the MIB variable dot11OCBActivated=true
 
-However what remains to be answered is that the V2 of cgroup design -
-the default hierarchy, tracks hotplug operations for children cgroups as
-well. Tejun, Li, will not the concerns that Peter raised above hold for
-the default hierarchy as well?
+This change should be part of the cfg80211 patch, as a consequence that
+patch must come first in the series.
 
-Regards
-Preeti U Murthy
-> 
+> +++ b/net/mac80211/cfg.c
+> @@ -229,6 +229,7 @@ static int ieee80211_add_key(struct wiphy *wiphy, struct net_device *dev,
+>  	case NUM_NL80211_IFTYPES:
+>  	case NL80211_IFTYPE_P2P_CLIENT:
+>  	case NL80211_IFTYPE_P2P_GO:
+> +	case NL80211_IFTYPE_OCB:
+>  		/* shouldn't happen */
+
+There's no encryption in OCB at all?
+
+> +++ b/net/mac80211/ieee80211_i.h
+> @@ -82,6 +82,8 @@ struct ieee80211_fragment_entry {
+>  	u8 last_pn[6]; /* PN of the last fragment if CCMP was used */
+>  };
+>  
+> +/* Used in OCB mode */
+> +static const u8 bssid_wildcard[ETH_ALEN] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+Please don't put data into header files, it'll be duplicated all over.
+You can put an extern definition here, or just static const
+definition(s) where needed.
+ 
+> +struct ieee80211_if_ocb {
+> +	struct timer_list housekeeping_timer;
+> +	unsigned long wrkq_flags;
+> +
+> +	spinlock_t incomplete_lock;
+> +	struct list_head incomplete_stations;
+> +};
+
+Please add some comments explaining the purpose of the fields.
+
+> +void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
+> +			     const u8 *bssid, const u8 *addr,
+> +			     u32 supp_rates)
+
+Does this have to be visible outside the file? I may have missed the
+reference(s) but it seems maybe it doesn't have to.
+
+> +/* TODO: Almost the same as ieee80211_ibss_finish_sta()
+> + *       Maybe use the same function for both?
+> + */
+> +static struct sta_info *ieee80211_ocb_finish_sta(struct sta_info *sta)
+> +	__acquires(RCU)
+> +{
+> +	struct ieee80211_sub_if_data *sdata = sta->sdata;
+> +	u8 addr[ETH_ALEN];
+> +
+> +	ether_addr_copy(addr, sta->sta.addr);
+
+for ether_addr_copy() you need alignment on addr:
+
+u8 addr[ETH_ALEN] __aligned(2);
+
+> +int ieee80211_ocb_join(struct ieee80211_sub_if_data *sdata,
+> +		       struct ocb_setup *setup)
+> +{
+> +	struct ieee80211_local *local = sdata->local;
+> +	struct ieee80211_if_ocb *ifocb = &sdata->u.ocb;
+> +	u32 changed = BSS_CHANGED_OCB;
+> +	int err;
+> +
+> +	sdata->flags |= IEEE80211_SDATA_OPERATING_GMODE;
+> +	sdata->smps_mode = IEEE80211_SMPS_OFF;
+> +	sdata->needed_rx_chains = sdata->local->rx_chains;
+> +
+> +	mutex_lock(&sdata->local->mtx);
+> +	err = ieee80211_vif_use_channel(sdata, &setup->chandef,
+> +					IEEE80211_CHANCTX_EXCLUSIVE);
+
+Do you really need to use the channel context exclusively? I see no
+reason for that since the channel is fixed, and doesn't change like in
+IBSS, afaict? IBSS needs this, but only because it might change the
+channel on the fly.
+
+> +#if 0 /* TODO */
+> +	drv_leave_ocb(local, sdata);
+> +#endif
+
+I'd just remove that for now - probably no current driver needs it?
+
+> +	mutex_lock(&sdata->local->mtx);
+> +	ieee80211_vif_release_channel(sdata);
+> +	mutex_unlock(&sdata->local->mtx);
+> +
+> +	skb_queue_purge(&sdata->skb_queue);
+> +
+> +	del_timer_sync(&sdata->u.ocb.housekeeping_timer);
+
+That might call the timer - is it safe if that happens here? Looks like
+maybe the housekeeping would still get triggered or so.
+
+> +	} else if (rx->sdata->vif.type == NL80211_IFTYPE_OCB) {
+> +		u8 *bssid = ieee80211_get_bssid(hdr, rx->skb->len,
+> +						NL80211_IFTYPE_OCB);
+> +		if (ieee80211_bssid_match(bssid, bssid_wildcard))
+> +			sta->last_rx = jiffies;
+
+Calling ieee80211_bssid_match() here is rather pointless - see what it
+does. You really just want is_broadcast_ether_addr(bssid) instead of the
+ether_addr_equal() that does exactly the same thing.
+
+> @@ -3130,6 +3137,32 @@ static bool prepare_for_handlers(struct ieee80211_rx_data *rx,
+>  						 BIT(rate_idx));
+>  		}
+>  		break;
+> +	case NL80211_IFTYPE_OCB:
+> +		if (!bssid)
+> +			return false;
+> +		if (ieee80211_is_beacon(hdr->frame_control)) {
+> +			return false;
+> +		} else if (!ieee80211_bssid_match(bssid, bssid_wildcard)) {
+> +			ocb_dbg(sdata, "BSSID mismatch in OCB mode!\n");
+> +			return false;
+
+same here.
+
+And then I guess you don't need bssid_wildcard at all any more (see
+previous comments)
+
+> +		} else if (!multicast &&
+> +			   !ether_addr_equal(sdata->dev->dev_addr, hdr->addr1)) {
+> +			/* if we are in promisc mode we also accept
+> +			 * packets not destined for us
+> +			 */
+> +			if (!(sdata->dev->flags & IFF_PROMISC))
+> +				return false;
+> +			rx->flags &= ~IEEE80211_RX_RA_MATCH;
+> +		} else if (!rx->sta) {
+> +			int rate_idx;
+> +			if (status->flag & RX_FLAG_HT)
+> +				rate_idx = 0; /* TODO: HT rates */
+> +			else
+> +				rate_idx = status->rate_idx;
+> +			ieee80211_ocb_rx_no_sta(sdata, bssid, hdr->addr2,
+> +						BIT(rate_idx));
+> +		}
+
+This isn't safe - ocb_rx_no_sta() used GFP_KERNEL, that's clearly not
+allowed in this context. But it does answer my previous question about
+the function being exported - I had assumed that you wouldn't call it
+here since it would be unsafe :)
+
+> +	case NL80211_IFTYPE_OCB:
+> +		/* DA SA BSSID */
+> +		memcpy(hdr.addr1, skb->data, ETH_ALEN);
+> +		memcpy(hdr.addr2, skb->data + ETH_ALEN, ETH_ALEN);
+> +		memset(hdr.addr3, 0xff, ETH_ALEN);
+
+Use eth_broadcast_addr(), which really is the same but more expressive.
+
+johannes
 
