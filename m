@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432AbaJIVXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:23:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59517 "EHLO
+	id S932582AbaJIVXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:23:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59496 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757744AbaJIVKj (ORCPT
+	with ESMTP id S1757721AbaJIVKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:10:39 -0400
+	Thu, 9 Oct 2014 17:10:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Cooper <alcooperx@gmail.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Sharvil Nanavati <sharvil@google.com>,
+        Richard Larocque <rlarocque@google.com>,
+        John Stultz <john.stultz@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 057/163] usb: xhci: Fix OOPS in xhci error handling code
-Date: Thu,  9 Oct 2014 14:01:22 -0700
-Message-Id: <1412888588-26755-58-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 064/163] alarmtimer: Do not signal SIGEV_NONE timers
+Date: Thu,  9 Oct 2014 14:01:29 -0700
+Message-Id: <1412888588-26755-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -29,39 +32,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Cooper <alcooperx@gmail.com>
+From: Richard Larocque <rlarocque@google.com>
 
-commit 0eda06c7c17ae48d7db69beef57f6e2b20bc3c72 upstream.
+commit 265b81d23a46c39df0a735a3af4238954b41a4c2 upstream.
 
-The xhci driver will OOPS on resume from S2/S3 if dma_alloc_coherent()
-is out of memory. This is a result of two things:
-1. xhci_mem_cleanup() in xhci-mem.c free's xhci->lpm_command if
-it's not NULL, but doesn't set it to NULL after the free.
-2. xhci_mem_cleanup() is called twice on resume, once for normal
-restart and once from xhci_mem_init() if dma_alloc_coherent() fails,
-resulting in a free of xhci->lpm_command that has already been freed.
-The fix is to set xhci->lpm_command to NULL after freeing it.
+Avoids sending a signal to alarm timers created with sigev_notify set to
+SIGEV_NONE by checking for that special case in the timeout callback.
 
-Signed-off-by: Al Cooper <alcooperx@gmail.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+The regular posix timers avoid sending signals to SIGEV_NONE timers by
+not scheduling any callbacks for them in the first place.  Although it
+would be possible to do something similar for alarm timers, it's simpler
+to handle this as a special case in the timeout.
+
+Prior to this patch, the alarm timer would ignore the sigev_notify value
+and try to deliver signals to the process anyway.  Even worse, the
+sanity check for the value of sigev_signo is skipped when SIGEV_NONE was
+specified, so the signal number could be bogus.  If sigev_signo was an
+unitialized value (as it often would be if SIGEV_NONE is used), then
+it's hard to predict which signal will be sent.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Sharvil Nanavati <sharvil@google.com>
+Signed-off-by: Richard Larocque <rlarocque@google.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-mem.c | 1 +
- 1 file changed, 1 insertion(+)
+ kernel/time/alarmtimer.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 837c333..06d0d1e 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1711,6 +1711,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+index 6745174..f7bdb14 100644
+--- a/kernel/time/alarmtimer.c
++++ b/kernel/time/alarmtimer.c
+@@ -466,8 +466,10 @@ static enum alarmtimer_restart alarm_handle_timer(struct alarm *alarm,
+ {
+ 	struct k_itimer *ptr = container_of(alarm, struct k_itimer,
+ 						it.alarm.alarmtimer);
+-	if (posix_timer_event(ptr, 0) != 0)
+-		ptr->it_overrun++;
++	if ((ptr->it_sigev_notify & ~SIGEV_THREAD_ID) != SIGEV_NONE) {
++		if (posix_timer_event(ptr, 0) != 0)
++			ptr->it_overrun++;
++	}
  
- 	if (xhci->lpm_command)
- 		xhci_free_command(xhci, xhci->lpm_command);
-+	xhci->lpm_command = NULL;
- 	xhci->cmd_ring_reserved_trbs = 0;
- 	if (xhci->cmd_ring)
- 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	/* Re-add periodic timers */
+ 	if (ptr->it.alarm.interval.tv64) {
 -- 
 1.9.1
 
