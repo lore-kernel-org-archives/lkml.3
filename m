@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaJITLy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 15:11:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47692 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008AbaJITLu (ORCPT
+	id S1751492AbaJITMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 15:12:38 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:43230 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbaJITM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 15:11:50 -0400
-Message-ID: <5436DDEB.5090004@oracle.com>
-Date: Thu, 09 Oct 2014 15:11:39 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, mgorman@suse.de
-Subject: Re: [PATCH 0/5] mm: poison critical mm/ structs
-References: <1412041639-23617-1-git-send-email-sasha.levin@oracle.com> <20141001140725.fd7f1d0cf933fbc2aa9fc1b1@linux-foundation.org> <542C749B.1040103@oracle.com> <alpine.LSU.2.11.1410020154500.6444@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.11.1410020154500.6444@eggly.anvils>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 9 Oct 2014 15:12:29 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+From: Johan Hovold <johan@kernel.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>,
+        AnilKumar Ch <anilkumar@ti.com>, nsekhar@ti.com, t-kristo@ti.com,
+        j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        Johan Hovold <johan@kernel.org>, stable <stable@vger.kernel.org>
+Subject: [PATCH 02/12] rtc: omap: fix missing wakealarm attribute
+Date: Thu,  9 Oct 2014 21:06:24 +0200
+Message-Id: <1412881594-25678-3-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1412881594-25678-1-git-send-email-johan@kernel.org>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/02/2014 05:23 AM, Hugh Dickins wrote:
-> I'm glad to hear they've confirmed some vm_area_struct corruption:
-> any ideas on where that's coming from?
+The platform device must be registered as wakeup capable before
+registering the class device, or the wakealarm attribute will not be
+created.
 
-Hugh,
+Also make sure to unregister the wakeup source on probe errors.
 
-I think that what we're seeing isn't a corruption of vm_area_struct
-per-se, but something weirder.
+Fixes: 1d2e2b65d098 ("rtc: omap: restore back (hard-code) wakeup support")
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <johan@kernel.org>
+---
+ drivers/rtc/rtc-omap.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-I've poisoned every spot where vm_area_struct is allocated, and yet
-there seems to be nothing that's hitting that field before we end
-up using a "zeroed out" vm_area_struct.
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index f842c216f2dd..828cb9983cc2 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -416,6 +416,8 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
+ 	}
+ 
++	device_init_wakeup(&pdev->dev, true);
++
+ 	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+ 			&omap_rtc_ops, THIS_MODULE);
+ 	if (IS_ERR(rtc)) {
+@@ -484,8 +486,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	 *    is write-only, and always reads as zero...)
+ 	 */
+ 
+-	device_init_wakeup(&pdev->dev, true);
+-
+ 	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
+ 		pr_info("%s: split power mode\n", pdev->name);
+ 
+@@ -495,6 +495,7 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ fail0:
++	device_init_wakeup(&pdev->dev, false);
+ 	if (id_entry->driver_data & OMAP_RTC_HAS_KICKER)
+ 		rtc_writel(0, OMAP_RTC_KICK0_REG);
+ 	pm_runtime_put_sync(&pdev->dev);
+-- 
+2.0.4
 
-The results are the same both with and without kasan, there seems
-to be no corruption happening anywhere, but we somehow end up with
-an empty vm_area_struct.
-
-It also somewhat makes sense considering that we're seeing no slub
-corruption either. Either something is zeroing out *exactly*
-vm_area_struct, or it's not really corruption...
-
-
-Thanks,
-Sasha
