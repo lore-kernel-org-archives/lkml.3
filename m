@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780AbaJIDHW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 8 Oct 2014 23:07:22 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15048 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236AbaJIDHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 8 Oct 2014 23:07:18 -0400
-Message-ID: <5435FBD8.7020109@huawei.com>
-Date: Thu, 9 Oct 2014 11:07:04 +0800
-From: zhangzhiqiang <zhangzhiqiang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "cov@codeaurora.org" <cov@codeaurora.org>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "wangnan0@huawei.com" <wangnan0@huawei.com>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: armv7: perf: fix armv7 ref-cycles error
-References: <5434AA24.7010600@huawei.com> <20141008091741.GC26140@arm.com> <20141008133147.GC5119@kroah.com> <20141008133802.GO26140@arm.com>
-In-Reply-To: <20141008133802.GO26140@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1754501AbaJIDO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 8 Oct 2014 23:14:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63299 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125AbaJIDOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 8 Oct 2014 23:14:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="397417801"
+Message-ID: <1412824458.13621.5.camel@rzhang1-toshiba>
+Subject: Re: [PATCH 1/3] thermal: step_wise: fix: Prevent from binary
+ overflow when trend is dropping
+From: Zhang Rui <rui.zhang@intel.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Eduardo Valentin <edubezval@gmail.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 09 Oct 2014 11:14:18 +0800
+In-Reply-To: <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
+References: <1411547232-21493-1-git-send-email-l.majewski@samsung.com>
+	 <1411547232-21493-2-git-send-email-l.majewski@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.58.157]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/8 21:38, Will Deacon wrote:
-> On Wed, Oct 08, 2014 at 02:31:47PM +0100, gregkh@linuxfoundation.org wrote:
->> On Wed, Oct 08, 2014 at 10:17:41AM +0100, Will Deacon wrote:
->>> On Wed, Oct 08, 2014 at 04:06:12AM +0100, zhangzhiqiang wrote:
->>>> hi all,
->>>> ----------------------------------------
->>>>
->>>> ref-cycles event is specially to Intel core, but can still used in arm architecture
->>>> with the wrong return value with 3.10 stable. for instance:
->>>>
->>>>  perf stat -e ref-cycles sleep 1
->>>>
->>>>  Performance counter stats for 'sleep 1':
->>>>
->>>>   	0 ref-cycles
->>>>
->>>>        1.002381916 seconds time elapsed
->>>>
->>>> this patch fix the bug and make it return NOT SUPPORTED
->>>> distinctly.
->>>>
->>>> In upstream this bug has been fixed by other way(not primary for the bug), which changes more than one file
->>>> and more than 1000 lines. the primary commit is 6b7658ec8a100b608e59e3cde353434db51f5be0.
->>>> besides we can not simply cherry-pick.
->>>
->>> I thought I saw Greg pick this up the other day?
->>
->> Yes, it's in 3.16.4, did I do something wrong by accepting it?
+On Wed, 2014-09-24 at 10:27 +0200, Lukasz Majewski wrote:
+> It turns out that some boards can have instance->lower greater than 0 and
+> when thermal trend is dropping it results with next_target equal to -1.
 > 
-> Nah, it's a trivial patch that I struggle to get excited about. I'm just not
-> sure why it's being sent again, after you already accepted it.
+> Since the next_target is defined as unsigned long it is interpreted as
+> 0xFFFFFFFF and larger than instance->upper.
+> As a result the next_target is set to instance->upper which ramps up to
+> maximal cooling device target when the temperature is steadily decreasing.
+> 
+> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 
-Yes, it's in 3.16.4, in my opinion 3.10 need it too, can we put it into 3.10 or
-do we have the plan?
+applied.
 
-
+thanks,
+rui
+> ---
+>  drivers/thermal/step_wise.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> index 3b54c2c..fdd1f52 100644
+> --- a/drivers/thermal/step_wise.c
+> +++ b/drivers/thermal/step_wise.c
+> @@ -77,7 +77,7 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>  			next_target = instance->upper;
+>  		break;
+>  	case THERMAL_TREND_DROPPING:
+> -		if (cur_state == instance->lower) {
+> +		if (cur_state <= instance->lower) {
+>  			if (!throttle)
+>  				next_target = THERMAL_NO_TARGET;
+>  		} else {
 
 
