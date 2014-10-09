@@ -1,272 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980AbaJINCG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:02:06 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:46916 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757228AbaJINBh (ORCPT
+	id S1757325AbaJINCT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:02:19 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:48070 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244AbaJINBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:01:37 -0400
-Subject: [PATCH ftrace/for-next v5 4/5] kprobes: Set IPMODIFY flag only if
- the probe can change regs->ip
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 09 Oct 2014 13:01:26 +0000
-Message-ID: <20141009130126.4698.16130.stgit@kbuild-f20.novalocal>
-In-Reply-To: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
-References: <20141009130059.4698.21616.stgit@kbuild-f20.novalocal>
-User-Agent: StGit/0.17-dirty
+	Thu, 9 Oct 2014 09:01:42 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 9 Oct 2014 14:58:44 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Johan Hovold <johan@kernel.org>, Muthu Mani <muth@cypress.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, gregkh@linuxfoundation.org,
+        linux-i2c@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajaram Regupathy <rera@cypress.com>
+Subject: Re: [PATCH v3 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
+ Bridge controller
+Message-ID: <20141009125844.GM1990@localhost>
+References: <1412606587-3323-1-git-send-email-muth@cypress.com>
+ <20141009074029.GL20647@lee--X1>
+ <20141009081520.GJ1990@localhost>
+ <20141009105950.GP20647@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009105950.GP20647@lee--X1>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set FTRACE_OPS_FL_IPMODIFY flag only for the probes which can change
-regs->ip, which has kprobe->break_handler.
-Currently we can not put jprobe and another ftrace handler which
-changes regs->ip on the same function because all kprobes have
-FTRACE_OPS_FL_IPMODIFY flag. This removes FTRACE_OPS_FL_IPMODIFY
-flag from kprobes and only when the user uses jprobe (or the
-kprobe.break_handler != NULL) we add additinal ftrace_ops with
-FTRACE_OPS_FL_IPMODIFY on target function.
+On Thu, Oct 09, 2014 at 11:59:50AM +0100, Lee Jones wrote:
+> On Thu, 09 Oct 2014, Johan Hovold wrote:
+> > On Thu, Oct 09, 2014 at 08:40:29AM +0100, Lee Jones wrote:
+> > > On Mon, 06 Oct 2014, Muthu Mani wrote:
 
-Note about the implementation: This uses a dummy ftrace_ops to
-reserve IPMODIFY flag on the given ftrace address, for the case
-that we have a enabled kprobe on a function entry and a jprobe
-is added on the same point. In that case, we already have a
-ftrace_ops without IPMODIFY flag on the entry, and we have to
-add another ftrace_ops with IPMODIFY on the same address.
-If we put a same handler on both ftrace_ops, the handler can
-be called twice on that entry until the first one is removed.
-This means that the kprobe and the jprobe are called twice too,
-and that will not what kprobes expected.
-Thus I added a dummy ftrace_ops just for reserving IPMODIFY flag.
+> > > > diff --git a/include/linux/mfd/cyusbs23x.h b/include/linux/mfd/cyusbs23x.h
+> > 
+> > > > +/* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
+> > > > +enum cy_scb_modes {
+> > > > +	CY_USBS_SCB_DISABLED = 0,
+> > > > +	CY_USBS_SCB_UART = 1,
+> > > > +	CY_USBS_SCB_SPI = 2,
+> > > > +	CY_USBS_SCB_I2C = 3
+> > > 
+> > > No need to number these.
+> > 
+> > As it's not an arbitrary enumeration, I think they should be initialised
+> > explicitly.
+> 
+> No need.  You are protected by the C Standard:
+> 
+> 6.7.2.2 Enumeration specifiers
+> 
+> "If the first enumerator has no =, the value of its enumeration
+> constant is 0. Each subsequent enumerator with no = defines its
+> enumeration constant as the value of the constant expression obtained
+> by adding 1 to the value of the previous enumeration constant."
+> 
+> There's nothing arbitrary about that.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
----
-Changes in v4:
- - Increment refcounter after succeeded to register ftrace_ops.
+I obviously wasn't suggesting that the definition of an enum (and the
+values of its constants) in c was arbitrary.
 
-Changes in v3:
- - Update __ftrace_add/remove_filter_ip() according to
-   Namhyng's comments (thanks!)
- - Split out regs->ip recovering code from this patch.
----
- Documentation/kprobes.txt |   12 ++--
- kernel/kprobes.c          |  125 +++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 114 insertions(+), 23 deletions(-)
+My point was that the values of the USB interface subclasses (defined
+through the enum) are not arbitrary. In this case they just happen to be
+zero-based and consecutive. You cannot reorder, or remove an unused
+item, without breaking the driver. By initialising each constant
+explicitly this would become apparent.
 
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 4bbeca8..177f051 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -264,15 +264,13 @@ stop-machine method that ksplice uses for supporting a CONFIG_PREEMPT=y
- kernel.
- 
- NOTE for geeks:
--The jump optimization changes the kprobe's pre_handler behavior.
--Without optimization, the pre_handler can change the kernel's execution
-+The jump optimization (and ftrace-based kprobes) changes the kprobe's
-+pre_handler behavior.
-+Without optimizations, the pre_handler can change the kernel's execution
- path by changing regs->ip and returning 1.  However, when the probe
- is optimized, that modification is ignored.  Thus, if you want to
--tweak the kernel's execution path, you need to suppress optimization,
--using one of the following techniques:
--- Specify an empty function for the kprobe's post_handler or break_handler.
-- or
--- Execute 'sysctl -w debug.kprobes_optimization=n'
-+tweak the kernel's execution path, you need to suppress optimization or
-+notify your handler will modify regs->ip by setting p->break_handler.
- 
- 1.5 Blacklist
- 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 831978c..4b4b7c5 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -915,10 +915,93 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- #ifdef CONFIG_KPROBES_ON_FTRACE
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
--	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS,
- };
- static int kprobe_ftrace_enabled;
- 
-+static void kprobe_ftrace_stub(unsigned long a0, unsigned long a1,
-+			struct ftrace_ops *op, struct pt_regs *regs)
-+{
-+	/* Do nothing. This is just a dummy handler */
-+}
-+
-+/* This is only for checking conflict with other ftrace users */
-+static struct ftrace_ops kprobe_ipmod_ftrace_ops __read_mostly = {
-+	.func = kprobe_ftrace_stub,
-+	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-+};
-+static int kprobe_ipmod_ftrace_enabled;
-+
-+static int __ftrace_add_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				  int *ref)
-+{
-+	int ret;
-+
-+	/* Try to set given ip to filter */
-+	ret = ftrace_set_filter_ip(ops, ip, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (*ref == 0) {
-+		ret = register_ftrace_function(ops);
-+		if (ret < 0) {
-+			/* Rollback the filter */
-+			ftrace_set_filter_ip(ops, ip, 1, 0);
-+			goto out;
-+		}
-+	}
-+	(*ref)++;
-+
-+out:
-+	return ret;
-+}
-+
-+static int __ftrace_remove_filter_ip(struct ftrace_ops *ops, unsigned long ip,
-+				     int *ref)
-+{
-+	int ret;
-+
-+	if (*ref == 1) {
-+		ret = unregister_ftrace_function(ops);
-+		if (ret < 0)
-+			return ret;
-+		/*Ignore failure, because it is already unregistered */
-+		ftrace_set_filter_ip(ops, ip, 1, 0);
-+	} else {
-+		/* Try to remove given ip to filter */
-+		ret = ftrace_set_filter_ip(ops, ip, 1, 0);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	(*ref)--;
-+
-+	return 0;
-+}
-+
-+static int try_reserve_ftrace_ipmodify(struct kprobe *p)
-+{
-+	if (!p->break_handler)
-+		return 0;
-+
-+	return __ftrace_add_filter_ip(&kprobe_ipmod_ftrace_ops,
-+				      (unsigned long)p->addr,
-+				      &kprobe_ipmod_ftrace_enabled);
-+}
-+
-+static void release_ftrace_ipmodify(struct kprobe *p)
-+{
-+	int ret;
-+
-+	if (p->break_handler) {
-+		ret = __ftrace_remove_filter_ip(&kprobe_ipmod_ftrace_ops,
-+						(unsigned long)p->addr,
-+						&kprobe_ipmod_ftrace_enabled);
-+		WARN(ret < 0, "Failed to release ftrace at %p (%d)\n",
-+		     p->addr, ret);
-+	}
-+}
-+
- /* Must ensure p->addr is really on ftrace */
- static int prepare_kprobe(struct kprobe *p)
- {
-@@ -933,14 +1016,10 @@ static void arm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--				   (unsigned long)p->addr, 0, 0);
-+	ret = __ftrace_add_filter_ip(&kprobe_ftrace_ops,
-+				     (unsigned long)p->addr,
-+				     &kprobe_ftrace_enabled);
- 	WARN(ret < 0, "Failed to arm kprobe-ftrace at %p (%d)\n", p->addr, ret);
--	kprobe_ftrace_enabled++;
--	if (kprobe_ftrace_enabled == 1) {
--		ret = register_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
- }
- 
- /* Caller must lock kprobe_mutex */
-@@ -948,17 +1027,16 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
- {
- 	int ret;
- 
--	kprobe_ftrace_enabled--;
--	if (kprobe_ftrace_enabled == 0) {
--		ret = unregister_ftrace_function(&kprobe_ftrace_ops);
--		WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
--	}
--	ret = ftrace_set_filter_ip(&kprobe_ftrace_ops,
--			   (unsigned long)p->addr, 1, 0);
--	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
-+	ret = __ftrace_remove_filter_ip(&kprobe_ftrace_ops,
-+					(unsigned long)p->addr,
-+					&kprobe_ftrace_enabled);
-+	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n",
-+	     p->addr, ret);
- }
- #else	/* !CONFIG_KPROBES_ON_FTRACE */
- #define prepare_kprobe(p)	arch_prepare_kprobe(p)
-+#define try_reserve_ftrace_ipmodify(p)	(0)
-+#define release_ftrace_ipmodify(p)	do {} while (0)
- #define arm_kprobe_ftrace(p)	do {} while (0)
- #define disarm_kprobe_ftrace(p)	do {} while (0)
- #endif
-@@ -1502,6 +1580,14 @@ int register_kprobe(struct kprobe *p)
- 	mutex_lock(&kprobe_mutex);
- 
- 	old_p = get_kprobe(p->addr);
-+
-+	/* Try to reserve ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p) && (!old_p || !old_p->break_handler)) {
-+		ret = try_reserve_ftrace_ipmodify(p);
-+		if (ret < 0)
-+			goto out_noreserve;
-+	}
-+
- 	if (old_p) {
- 		/* Since this may unoptimize old_p, locking text_mutex. */
- 		ret = register_aggr_kprobe(old_p, p);
-@@ -1525,6 +1611,9 @@ int register_kprobe(struct kprobe *p)
- 	try_to_optimize_kprobe(p);
- 
- out:
-+	if (ret < 0 && kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+out_noreserve:
- 	mutex_unlock(&kprobe_mutex);
- 
- 	if (probed_mod)
-@@ -1639,6 +1728,10 @@ static void __unregister_kprobe_bottom(struct kprobe *p)
- {
- 	struct kprobe *ap;
- 
-+	/* Release reserved ftrace ipmodify if needed */
-+	if (kprobe_ftrace(p))
-+		release_ftrace_ipmodify(p);
-+
- 	if (list_empty(&p->list))
- 		/* This is an independent kprobe */
- 		arch_remove_kprobe(p);
+Using preprocessor defines could be an alternative if you really do not
+like initialised enumeration constants.
 
+> > They could be defined in the mfd driver though, as they only
+> > appear to be needed during probe.
 
+Johan
