@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501AbaJIQgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 12:36:38 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:37281 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387AbaJIQg2 (ORCPT
+	id S1757525AbaJIQgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 12:36:47 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:38494 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757448AbaJIQgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 12:36:28 -0400
+	Thu, 9 Oct 2014 12:36:20 -0400
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
         kan.liang@intel.com, bp@alien8.de, maria.n.dimakopoulou@gmail.com
-Subject: [PATCH v2 10/12] watchdog: add watchdog enable/disable all functions
-Date: Thu,  9 Oct 2014 18:34:44 +0200
-Message-Id: <1412872486-2930-11-git-send-email-eranian@google.com>
+Subject: [PATCH v2 09/12] perf/x86: fix intel_get_event_constraints() for dynamic constraints
+Date: Thu,  9 Oct 2014 18:34:43 +0200
+Message-Id: <1412872486-2930-10-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412872486-2930-1-git-send-email-eranian@google.com>
 References: <1412872486-2930-1-git-send-email-eranian@google.com>
@@ -21,69 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds two new functions to enable/disable
-the watchdog across all CPUs.
+With dynamic constraint, we need to restart from the static
+constraints each time the intel_get_event_constraints() is called.
 
+Reviewed-by: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/watchdog.h |  3 +++
- kernel/watchdog.c        | 28 ++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index 2a3038e..b89b414 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -142,4 +142,7 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
- extern int watchdog_register_device(struct watchdog_device *);
- extern void watchdog_unregister_device(struct watchdog_device *);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 041dec7..674f296 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1989,20 +1989,25 @@ static struct event_constraint *
+ intel_get_event_constraints(struct cpu_hw_events *cpuc, int idx,
+ 			    struct perf_event *event)
+ {
+-	struct event_constraint *c = event->hw.constraint;
++	struct event_constraint *c1 = event->hw.constraint;
++	struct event_constraint *c2;
  
-+void watchdog_nmi_disable_all(void);
-+void watchdog_nmi_enable_all(void);
-+
- #endif  /* ifndef _LINUX_WATCHDOG_H */
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 8759d0b..6aa5b8f 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -514,9 +514,37 @@ static void watchdog_nmi_disable(unsigned int cpu)
- 		cpu0_err = 0;
- 	}
+ 	/*
+ 	 * first time only
+ 	 * - static constraint: no change across incremental scheduling calls
+ 	 * - dynamic constraint: handled by intel_get_excl_constraints()
+ 	 */
+-	if (!c)
+-		c = __intel_get_event_constraints(cpuc, idx, event);
++	c2 = __intel_get_event_constraints(cpuc, idx, event);
++	if (c1 && (c1->flags & PERF_X86_EVENT_DYNAMIC)) {
++		bitmap_copy(c1->idxmsk, c2->idxmsk, X86_PMC_IDX_MAX);
++		c1->weight = c2->weight;
++		c2 = c1;
++	}
+ 
+ 	if (cpuc->excl_cntrs)
+-		return intel_get_excl_constraints(cpuc, event, idx, c);
++		return intel_get_excl_constraints(cpuc, event, idx, c2);
+ 
+-	return c;
++	return c2;
  }
-+
-+void watchdog_nmi_enable_all(void)
-+{
-+	int cpu;
-+
-+	if (!watchdog_user_enabled)
-+		return;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu)
-+		watchdog_nmi_enable(cpu);
-+	put_online_cpus();
-+}
-+
-+void watchdog_nmi_disable_all(void)
-+{
-+	int cpu;
-+
-+	if (!watchdog_running)
-+		return;
-+
-+	get_online_cpus();
-+	for_each_online_cpu(cpu)
-+		watchdog_nmi_disable(cpu);
-+	put_online_cpus();
-+}
- #else
- static int watchdog_nmi_enable(unsigned int cpu) { return 0; }
- static void watchdog_nmi_disable(unsigned int cpu) { return; }
-+void watchdog_nmi_enable_all(void) {}
-+void watchdog_nmi_disable_all(void) {}
- #endif /* CONFIG_HARDLOCKUP_DETECTOR */
  
- static struct smp_hotplug_thread watchdog_threads = {
+ static void intel_put_excl_constraints(struct cpu_hw_events *cpuc,
 -- 
 1.9.1
 
