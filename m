@@ -1,119 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284AbaJIOaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 10:30:09 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:59383 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557AbaJIOaB (ORCPT
+	id S1754806AbaJIOaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 10:30:46 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.137]:5494 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754557AbaJIOag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 10:30:01 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Ebru Akagunduz <ebru.akagunduz@gmail.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, opw-kernel@googlegroups.com
-Subject: Re: [PATCH] scsi: ips.c: use 64-bit time types
-Date: Thu, 09 Oct 2014 16:29:52 +0200
-Message-ID: <2518561.k9qJZyWstd@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412862026.32718.19.camel@jarvis>
-References: <1412799248-17181-1-git-send-email-ebru.akagunduz@gmail.com> <9985506.Mg7cltjCP9@wuerfel> <1412862026.32718.19.camel@jarvis>
+	Thu, 9 Oct 2014 10:30:36 -0400
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-15.tower-178.messagelabs.com!1412864959!36206235!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.2; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Support Opensource" <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH 3/8] iio: Add support for DA9150 GPADC
+Thread-Topic: [PATCH 3/8] iio: Add support for DA9150 GPADC
+Thread-Index: AQHP1xygEywc6IiNg0GMK98+C7G0f5wUwoQAgA/5qRCAAFDZAIAC3wyw
+Date: Thu, 9 Oct 2014 14:29:17 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A0337AB5194A4@SW-EX-MBX01.diasemi.com>
+References: <cover.1411396718.git.Adam.Thomson.Opensource@diasemi.com>
+ <ee4c56931f326d8ee9c1313c44456bce2dec8b8c.1411396719.git.Adam.Thomson.Opensource@diasemi.com>
+ <5426964A.3050407@kernel.org>
+ <2E89032DDAA8B9408CB92943514A0337AB518D23@SW-EX-MBX01.diasemi.com>
+ <3B049606-083E-4220-ADBF-71D74C0A9D9F@kernel.org>
+In-Reply-To: <3B049606-083E-4220-ADBF-71D74C0A9D9F@kernel.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.15]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:FlQoWbgiQoM3NX34yRUzbXQ7TQy7mbk+X15Jza5ChLC
- E50DXoACzD9mXBVQhMrnYzwRAI4JmQ9HWudBAYbb4qReftmQJo
- LC/DG07O5n1j7IJr1FT0LzOzsWz4m66eOx/ys+MgXDLBzmrddg
- JxBxG2uKQfYpv23Q1JVjGRv8I+o2bUW+TpAgsGcQPpLVCVWJwL
- HbQSyePU0WMDCmFqBPVBnT+Hz4ObajRaGbLBv+h0fM3AMb6Ebk
- eThNufYK7JYusRYfLz8c19k1Wl3lc1dKnonWirDPvoWsMxqhK4
- XMONZy00M1zYsG5umb9k1bIaboU8pdXspM76swak3LgtAaX5qb
- VF4jrLNdDbmrmMOGyitg=
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s99EUoMH030994
 
-On Thursday 09 October 2014 06:40:26 James Bottomley wrote:
-> On Wed, 2014-10-08 at 22:58 +0200, Arnd Bergmann wrote:
-> > On Wednesday 08 October 2014 13:44:55 James Bottomley wrote:
-> > > > diff --git a/drivers/scsi/ips.h b/drivers/scsi/ips.h
-> > > > index 45b9566..ff2a0b3 100644
-> > > > --- a/drivers/scsi/ips.h
-> > > > +++ b/drivers/scsi/ips.h
-> > > > @@ -1054,7 +1054,7 @@ typedef struct ips_ha {
-> > > >     uint8_t            active;
-> > > >     int                ioctl_reset;        /* IOCTL Requested Reset Flag */
-> > > >     uint16_t           reset_count;        /* number of resets           */
-> > > > -   time_t             last_ffdc;          /* last time we sent ffdc info*/
-> > > > +   time64_t             last_ffdc;          /* last time we sent ffdc info*/
-> > > >     uint8_t            slot_num;           /* PCI Slot Number            */
-> > > >     int                ioctl_len;          /* size of ioctl buffer       */
-> > > >     dma_addr_t         ioctl_busaddr;      /* dma address of ioctl buffer*/
-> > > 
-> > > This is completely pointless, isn't it?  All the ips driver cares about
-> > > is that we send a FFDC time update every eight hours or so, so we can
-> > > happily truncate the number of seconds to 32 bits for that calculation
-> > > just keep the variable at 32 bits and do a time_after thing for the
-> > > comparison.
-> > 
-> > Good point. The same has come up in a few other places, so I wonder if we
-> > should introduce a proper way to do it that doesn't involve time_t.
+On October 7, 2014 20:37, Jonathan Cameron wrote:
+
+> On October 7, 2014 3:55:55 PM GMT+01:00, "Opensource [Adam Thomson]"
+> <Adam.Thomson.Opensource@diasemi.com> wrote:
+> >On September 27, 2014 11:50, Jonathan Cameron wrote:
+> >
+> >> On 23/09/14 11:53, Adam Thomson wrote:
+> >> > This patch adds support for DA9150 Charger & Fuel-Gauge IC GPADC.
+> >
+> >> > +
+> >> > +static inline int da9150_gpadc_gpio_6v_voltage_now(int raw_val)
+> >> > +{
+> >> > +	/* Convert to mV */
+> >> > +	return (6 * ((raw_val * 1000) + 500)) / 1024;
+> >> These could all be expressed as raw values with offsets
+> >> and scales (and that would be preferred).
+> >> E.g. This one has offset 500000 and scale 6000/1024 or even
+> >> better use IIO_VAL_FRACTIONAL_LOG2 for scale with val1 = 6000
+> >> and val2 = (log_2 1024) = 10.
+> >>
+> >
+> >What you've suggested isn't correct. The problem here is that the
+> >offset is
+> >added first to the raw ADC reading, without factoring the ADC value
+> >accordingly
+> >to match the factor of the offset. If we take the original equation
+> >provided for
+> >this channel of the ADC, the offset is actually 0.5 which should be
+> >added to the
+> >raw ADC value. This doesn't fit into the implementation in the kernel
+> >as we
+> >can't use floating point. If we multiply the offset but not the raw ADC
+> >value,
+> >then add them before applying the scale factor, then the result is
+> >wrong at the
+> >end. Basically you need a scale for the raw ADC value to match the
+> >offset scale
+> >so you can achieve the correct results, which is what my calculation
+> >does.
+> >But that seems impossible with the current raw|offset|scale method.
+> Oops got that wrong.  The fixed point maths to fix the in kernel interface isn't exactly
+>  difficult but indeed it does not handle this currently.
+
+I did have a quick look when I had a spare moment, and I guess you could do
+something like having an offset scale/factor which can be applied to the raw
+reading, prior to adding the offset. May be an option but I think this would
+also have to be exposed to user-space as I believe the same problem would reside
+there as well.
+
+> >
+> >> > +	ret = iio_map_array_register(indio_dev,
+> >da9150_gpadc_default_maps);
+> >> > +	if (ret) {
+> >> > +		dev_err(dev, "Failed to register IIO maps: %d\n", ret);
+> >> > +		return ret;
+> >> > +	}
+> >> I'd suggest doing the devm_request_thread_irq before the
+> >iio_map_array
+> >> stuff.  This is purely to avoid the order during remove not being
+> >> obviously correct as it isn't the reverse of during probe.
+> >
+> >Ok, should still work ok that way so can update.
+> >
+> >> > +static int da9150_gpadc_remove(struct platform_device *pdev)
+> >> > +{
+> >> > +	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+> >> > +
+> >> > +	iio_map_array_unregister(indio_dev);
+> >> Twice in one day.  I'm definitely thinking we should add a
+> >> devm version of iio_map_array_register...
+> >
+> >I assume you mean here that iio_device_unregister() should come first?
+> >Will
+> >update.
+> Nope just that such a new function might be useful.
+
+:) Ok fair enough.
+
 > 
-> We have, it's jiffies ... that's why I'm slightly non-plussed that this
-> driver is using gettimeofday for something like this ... it was clearly
-> a review failure when we put it in.
-
-Actually there is more to it, as I just found upon reading the code
-again (I had noticed it before when I first looked at the driver but
-then forgotten about it):
-
-ips_fix_ffdc_time() needs the correct current wall-clock time, no overflow
-allowed, to stick the year/month/day/hour/minute/second value into
-the ffdc command.
-
-My comment to Ebru about ktime_get_ts64 for monotonic time was unfortunately
-completely wrong, since that would break whatever timekeeping it is
-in the hardware that wants the correct year/month/day/hour/minute/second
-values.
-
-> or are you thinking we need a time_t_time_before doing for time_t what
-> we do for jiffies?
-
-The part I'm interested in is getting rid of any mention of time_t,
-timespec and timeval in the kernel by replacing each use with something
-that is known to be y2038-safe. Using jiffies correctly would solve
-a number of them, but is not sufficient for this driver because of the
-ffdc command.
-
-We could use jiffies to test whether we need to send ffdc but then
-we still need to read the correct time.
-
-> > While the current code works, we will have to audit 2000 other locations
-> > in which time_t/timespec/timeval are used in the kernel, so we are going
-> > to need some form of annotation to make sure we don't get everyone to
-> > look at the driver again just to come to the same conclusion after working
-> > on a patch first.
-> > 
-> > > However, what the code *should* be doing is using jiffies and
-> > > time_before/after since the interval is so tiny rather than a
-> > > do_gettimeofday() call in the fast path.
-> > 
-> > Yes, this would probably be best for this particular driver, it also
-> > means we end up with a monotonic clock source rather than a wall-clock.
-> 
-> Right, and it's a 32 bit read instead of a system call every time the
-> thing dispatches a command ... to be honest the overhead of 64 bit
-> arithmetic is peanuts to making a syscall in the fast path.
-
-It's not a system call, all we need is a simple function call that reads
-tk->xtime_sec. We can use get_seconds() today, but it returns an
-'unsigned long', so that won't be enough on 32-bit architectures.
-
-It's still slightly more expensive to do the function call and use a 64-bit
-number on a 32-bit CPU, but it's not on the scale of doing a system call
-here. You can probably judge best if it's worth the increase in complexity
-to use jiffies for determining whether to send the update and then
-use get_seconds64 (or similar) to read the wall-clock time, or whether
-always using get_seconds64 would be good enough.
-
-	Arnd
+> --
+> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
