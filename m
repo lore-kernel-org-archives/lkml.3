@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860AbaJIVgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:36:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59222 "EHLO
+	id S1751709AbaJIVIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:08:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59195 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757413AbaJIVI1 (ORCPT
+	with ESMTP id S1757387AbaJIVIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:08:27 -0400
+	Thu, 9 Oct 2014 17:08:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thierry Reding <treding@nvidia.com>, Felipe Balbi <balbi@ti.com>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 024/163] usb: phy: tegra: Avoid use of sizeof(void)
-Date: Thu,  9 Oct 2014 14:00:49 -0700
-Message-Id: <1412888588-26755-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 036/163] lockd: fix rpcbind crash on lockd startup failure
+Date: Thu,  9 Oct 2014 14:01:01 -0700
+Message-Id: <1412888588-26755-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
 References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
@@ -27,42 +27,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Reding <treding@nvidia.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 9ce9ec95fb9b82e09b55a52f1bb8a362bf8f74d8 upstream.
+commit 7c17705e77b12b20fb8afb7c1b15dcdb126c0c12 upstream.
 
-The PHY configuration is stored in an opaque "config" field, but when
-allocating the structure, its proper size needs to be known. In the case
-of UTMI, the proper structure is tegra_utmip_config of which a local
-variable already exists, so we can use that to obtain the size from.
+Nikita Yuschenko reported that booting a kernel with init=/bin/sh and
+then nfs mounting without portmap or rpcbind running using a busybox
+mount resulted in:
 
-Fixes the following warning from the sparse checker:
+  # mount -t nfs 10.30.130.21:/opt /mnt
+  svc: failed to register lockdv1 RPC service (errno 111).
+  lockd_up: makesock failed, error=-111
+  Unable to handle kernel paging request for data at address 0x00000030
+  Faulting instruction address: 0xc055e65c
+  Oops: Kernel access of bad area, sig: 11 [#1]
+  MPC85xx CDS
+  Modules linked in:
+  CPU: 0 PID: 1338 Comm: mount Not tainted 3.10.44.cge #117
+  task: cf29cea0 ti: cf35c000 task.ti: cf35c000
+  NIP: c055e65c LR: c0566490 CTR: c055e648
+  REGS: cf35dad0 TRAP: 0300   Not tainted  (3.10.44.cge)
+  MSR: 00029000 <CE,EE,ME>  CR: 22442488  XER: 20000000
+  DEAR: 00000030, ESR: 00000000
 
-	drivers/usb/phy/phy-tegra-usb.c:882:17: warning: expression using sizeof(void)
+  GPR00: c05606f4 cf35db80 cf29cea0 cf0ded80 cf0dedb8 00000001 1dec3086
+  00000000
+  GPR08: 00000000 c07b1640 00000007 1dec3086 22442482 100b9758 00000000
+  10090ae8
+  GPR16: 00000000 000186a5 00000000 00000000 100c3018 bfa46edc 100b0000
+  bfa46ef0
+  GPR24: cf386ae0 c07834f0 00000000 c0565f88 00000001 cf0dedb8 00000000
+  cf0ded80
+  NIP [c055e65c] call_start+0x14/0x34
+  LR [c0566490] __rpc_execute+0x70/0x250
+  Call Trace:
+  [cf35db80] [00000080] 0x80 (unreliable)
+  [cf35dbb0] [c05606f4] rpc_run_task+0x9c/0xc4
+  [cf35dbc0] [c0560840] rpc_call_sync+0x50/0xb8
+  [cf35dbf0] [c056ee90] rpcb_register_call+0x54/0x84
+  [cf35dc10] [c056f24c] rpcb_register+0xf8/0x10c
+  [cf35dc70] [c0569e18] svc_unregister.isra.23+0x100/0x108
+  [cf35dc90] [c0569e38] svc_rpcb_cleanup+0x18/0x30
+  [cf35dca0] [c0198c5c] lockd_up+0x1dc/0x2e0
+  [cf35dcd0] [c0195348] nlmclnt_init+0x2c/0xc8
+  [cf35dcf0] [c015bb5c] nfs_start_lockd+0x98/0xec
+  [cf35dd20] [c015ce6c] nfs_create_server+0x1e8/0x3f4
+  [cf35dd90] [c0171590] nfs3_create_server+0x10/0x44
+  [cf35dda0] [c016528c] nfs_try_mount+0x158/0x1e4
+  [cf35de20] [c01670d0] nfs_fs_mount+0x434/0x8c8
+  [cf35de70] [c00cd3bc] mount_fs+0x20/0xbc
+  [cf35de90] [c00e4f88] vfs_kern_mount+0x50/0x104
+  [cf35dec0] [c00e6e0c] do_mount+0x1d0/0x8e0
+  [cf35df10] [c00e75ac] SyS_mount+0x90/0xd0
+  [cf35df40] [c000ccf4] ret_from_syscall+0x0/0x3c
 
-Fixes: 81d5dfe6d8b3 (usb: phy: tegra: Read UTMIP parameters from device tree)
-Signed-off-by: Thierry Reding <treding@nvidia.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+The addition of svc_shutdown_net() resulted in two calls to
+svc_rpcb_cleanup(); the second is no longer necessary and crashes when
+it calls rpcb_register_call with clnt=NULL.
+
+Reported-by: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Fixes: 679b033df484 "lockd: ensure we tear down any live sockets when socket creation fails during lockd_up"
+Acked-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/phy/phy-tegra-usb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/lockd/svc.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index bbe4f8e..8834b70 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -881,8 +881,8 @@ static int utmi_phy_probe(struct tegra_usb_phy *tegra_phy,
- 		return -ENOMEM;
- 	}
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index 6bf06a0..223e1cb 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -253,13 +253,11 @@ static int lockd_up_net(struct svc_serv *serv, struct net *net)
  
--	tegra_phy->config = devm_kzalloc(&pdev->dev,
--		sizeof(*tegra_phy->config), GFP_KERNEL);
-+	tegra_phy->config = devm_kzalloc(&pdev->dev, sizeof(*config),
-+					 GFP_KERNEL);
- 	if (!tegra_phy->config) {
- 		dev_err(&pdev->dev,
- 			"unable to allocate memory for USB UTMIP config\n");
+ 	error = make_socks(serv, net);
+ 	if (error < 0)
+-		goto err_socks;
++		goto err_bind;
+ 	set_grace_period(net);
+ 	dprintk("lockd_up_net: per-net data created; net=%p\n", net);
+ 	return 0;
+ 
+-err_socks:
+-	svc_rpcb_cleanup(serv, net);
+ err_bind:
+ 	ln->nlmsvc_users--;
+ 	return error;
 -- 
 1.9.1
 
