@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424AbaJIPbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:31:20 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:28372 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751385AbaJIPbN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:31:13 -0400
-Date: Thu, 9 Oct 2014 11:31:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: trace_printk() broken wrt %pV
-Message-ID: <20141009113111.0ecb175d@gandalf.local.home>
-In-Reply-To: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
-References: <CAFLxGvyMO-HCaVOghrjXZkAEtmytrDgi4CqiRs0nFzQSnvg4UA@mail.gmail.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	id S1757193AbaJIPft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:35:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975AbaJIPfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 11:35:40 -0400
+Message-ID: <5436AB4A.1080900@redhat.com>
+Date: Thu, 09 Oct 2014 11:35:38 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+CC: x86@kernel.org
+Subject: Lockdep warning with init_espfix_ap()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 9 Oct 2014 11:01:39 +0200
-Richard Weinberger <richard.weinberger@gmail.com> wrote:
 
-> Hi Steven,
-> 
-> my code does something like:
-> 
-> void my_printf(const char *fmt, ...)
-> {
->         struct va_format vaf;
->         va_list args;
-> 
->         va_start(args, fmt);
->         vaf.fmt = fmt;
->         vaf.va = &args;
->         trace_printk("%pV", &vaf);
->         va_end(args);
-> }
-> 
-> While reading from /sys/kernel/debug/tracing/trace a kernel oops happens.
-> 
-> [   54.406617] BUG: unable to handle kernel paging request at ffffffffffffffff
+Non-fatal warning seen with latest kernel tree during kernel boot.
 
-Yep, and as the doctor, I say "don't do that!" ;-)
+ WARNING: CPU: 64 PID: 0 at kernel/locking/lockdep.c:2744
+lockdep_trace_alloc+0xdd/0xe0()
+ DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags))
+ Modules linked in:
 
-There's a trace_vprintk(). It has an extra "ip" argument. Just put in
-_THIS_IP_, for that parameter.
+ CPU: 64 PID: 0 Comm: swapper/64 Not tainted 3.17.0+ #10
+ Hardware name: Intel Corporation BRICKLAND/BRICKLAND, BIOS
+BIVTSDP1.86B.0049.R00.1403081207 03/08/2014
+  0000000000000000 d27b9ea0e3821f35 ffff88084edc3ce0 ffffffff8171cbd8
+  ffff88084edc3d28 ffff88084edc3d18 ffffffff8108424d 0000000000000046
+  0000000000000000 00000000000000d0 0000000000000002 0000000000000000
+ Call Trace:
+  [<ffffffff8171cbd8>] dump_stack+0x4d/0x66
+  [<ffffffff8108424d>] warn_slowpath_common+0x7d/0xa0
+  [<ffffffff810842cc>] warn_slowpath_fmt+0x5c/0x80
+  [<ffffffff810e3e2d>] lockdep_trace_alloc+0xdd/0xe0
+  [<ffffffff811c0aaf>] __alloc_pages_nodemask+0x9f/0x4b0
+  [<ffffffff81025365>] ? native_sched_clock+0x35/0xa0
+  [<ffffffff810253d9>] ? sched_clock+0x9/0x10
+  [<ffffffff8120981a>] alloc_page_interleave+0x3a/0x90
+  [<ffffffff8120ae8d>] alloc_pages_current+0x17d/0x1f0
+  [<ffffffff811bab24>] ? __get_free_pages+0x14/0x50
+  [<ffffffff811bab24>] __get_free_pages+0x14/0x50
+  [<ffffffff8102225d>] init_espfix_ap+0x17d/0x320
+  [<ffffffff8105254e>] start_secondary+0x19e/0x350
+ ---[ end trace 2b62d796aa7ae001 ]---
 
-The reason is, trace_printk() on something like that will magically
-convert to a trace_bprintk(), that stores the format and parameters on
-the buffer and doesn't do the processing of the format until it needs
-to be printed (read from the trace file).
+ Debugging ... but sorta hoping someone else may have already seen it ;)
 
-In your case, it saved the format "%pV" and the address of the
-va_format vaf. Then when you read from the trace file, it used the
-address of the vaf to process the "%pV", and obviously at that time it
-no longer is valid. It was a pointer to some stack address from the
-past, and thus boom!
-
-
-Use the trace_vprintk(), it will do the format processing at time of
-recording, and lets you get rid of the need of using va_format.
-
--- Steve
+ P.
