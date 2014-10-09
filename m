@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933033AbaJIVt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:49:58 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:50088 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757655AbaJIVtt (ORCPT
+	id S1752436AbaJIVEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:04:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58951 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaJIVDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:49:49 -0400
-Date: Thu, 9 Oct 2014 22:49:22 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "xinhui.pan" <xinhuix.pan@intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        mnipxh <mnipxh@gmail.com>
-Subject: Re: [PATCH] tty/n_gsm.c: do not clear gsm_mux entry when the gsm is
- not closed
-Message-ID: <20141009224922.1eeecf63@alan.etchedpixels.co.uk>
-In-Reply-To: <5436E0C5.3060907@hurleysoftware.com>
-References: <53D0CF0D.9060103@intel.com>
-	<20140727180953.GA7232@kroah.com>
-	<53D5F8C9.4070008@intel.com>
-	<20140728151324.GA12973@kroah.com>
-	<5436DB9A.6040801@hurleysoftware.com>
-	<20141009191351.GA4256@kroah.com>
-	<5436E0C5.3060907@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 9 Oct 2014 17:03:30 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Olav Haugan <ohaugan@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 020/163] iommu/arm-smmu: fix programming of SMMU_CBn_TCR for stage 1
+Date: Thu,  9 Oct 2014 14:00:45 -0700
+Message-Id: <1412888588-26755-21-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > What happened to the gsm driver maintainers?
-> 
-> hahaha
-> 
-> $ ./scripts/get_maintainer.pl -f drivers/tty/n_gsm.c 
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:TTY LAYER)
-> Jiri Slaby <jslaby@suse.cz> (supporter:TTY LAYER)
-> linux-kernel@vger.kernel.org (open list)
+3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-We have a bunch of folks in Intel working on some improvements to it. I'll
-poke them tomorrow since I think we are one of the main users.
+From: Olav Haugan <ohaugan@codeaurora.org>
 
-Alan
+commit 1fc870c7efa364862c3bc792cfbdb38afea26742 upstream.
+
+Stage-1 context banks do not have the SMMU_CBn_TCR[SL0] field since it
+is only applicable to stage-2 context banks.
+
+This patch ensures that we don't set the reserved TCR bits for stage-1
+translations.
+
+Signed-off-by: Olav Haugan <ohaugan@codeaurora.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/iommu/arm-smmu.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/arm-smmu.c b/drivers/iommu/arm-smmu.c
+index 0d3e4e6..91739bf 100644
+--- a/drivers/iommu/arm-smmu.c
++++ b/drivers/iommu/arm-smmu.c
+@@ -793,8 +793,11 @@ static void arm_smmu_init_context_bank(struct arm_smmu_domain *smmu_domain)
+ 	reg |= TTBCR_EAE |
+ 	      (TTBCR_SH_IS << TTBCR_SH0_SHIFT) |
+ 	      (TTBCR_RGN_WBWA << TTBCR_ORGN0_SHIFT) |
+-	      (TTBCR_RGN_WBWA << TTBCR_IRGN0_SHIFT) |
+-	      (TTBCR_SL0_LVL_1 << TTBCR_SL0_SHIFT);
++	      (TTBCR_RGN_WBWA << TTBCR_IRGN0_SHIFT);
++
++	if (!stage1)
++		reg |= (TTBCR_SL0_LVL_1 << TTBCR_SL0_SHIFT);
++
+ 	writel_relaxed(reg, cb_base + ARM_SMMU_CB_TTBCR);
+ 
+ 	/* MAIR0 (stage-1 only) */
+-- 
+1.9.1
+
