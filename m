@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308AbaJIN7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 09:59:21 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50861 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014AbaJIN7L (ORCPT
+	id S1757363AbaJIN7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 09:59:38 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:41034 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaJIN71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 09:59:11 -0400
+	Thu, 9 Oct 2014 09:59:27 -0400
+Date: Thu, 9 Oct 2014 09:59:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, lizefan@huawei.com,
+        anton@samba.org, svaidy@linux.vnet.ibm.com, rjw@rjwysocki.net,
+        paulmck@linux.vnet.ibm.com, mingo@kernel.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpusets: Make cpus_allowed and mems_allowed masks
+ hotplug invariant
+Message-ID: <20141009135924.GE14387@htj.dyndns.org>
+References: <20141008070739.1170.33313.stgit@preeti.in.ibm.com>
+ <20141008080706.GC10832@worktop.programming.kicks-ass.net>
+ <543505EF.7070804@linux.vnet.ibm.com>
+ <20141008101828.GG10832@worktop.programming.kicks-ass.net>
+ <54364564.3090305@linux.vnet.ibm.com>
+ <20141009130611.GA14387@htj.dyndns.org>
+ <20141009134758.GU10832@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-In-Reply-To: <20141008182123.GH4609@sirena.org.uk>
-References: <rjui@broadcom.com>
-	<1412743127-4523-1-git-send-email-rjui@broadcom.com>
-	<20141008112143.GT4609@sirena.org.uk>
-	<543562EB.8060300@broadcom.com>
-	<20141008182123.GH4609@sirena.org.uk>
-Date: Thu, 9 Oct 2014 15:59:05 +0200
-X-Google-Sender-Auth: o_H8wFrdVrTSE9kbb7HwZoVnK6I
-Message-ID: <CAMuHMdUyP-caZxTNWTTF1Z84+=RWzi673LdRbmd_Bovr_G0kqA@mail.gmail.com>
-Subject: Re: [PATCH] spi: pl022: Fix broken spidev when DMA is enabled
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Ray Jui <rjui@broadcom.com>, Grant Likely <grant.likely@linaro.org>,
-        linux-spi <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        JD Zheng <jdzheng@broadcom.com>, Scott Branden <sbranden@broadcom.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141009134758.GU10832@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 8, 2014 at 8:21 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Oct 08, 2014 at 09:14:35AM -0700, Ray Jui wrote:
->> Thanks for the reply. It looks like you are also the maintainer of spidev.
->> In this case, could you please help to confirm that you expect spidev to use
->> separate buffers for TX and RX? If so, I can go ahead and make the change in
->> spidev.
->
-> Yes, that would be my expectation for maximum robustness (or if it is
-> going to use one buffer it explicitly maps it for mixed use but I'd
-> expect that to be asking for trouble).
+Hello, Peter.
 
-Having two separate buffers avoids false successes when running
-"spidev_test --loop" on a buggy SPI master driver.
-Been there, done that ;-)
+On Thu, Oct 09, 2014 at 03:47:58PM +0200, Peter Zijlstra wrote:
+> You do know we disagree on this :-)
 
-Gr{oetje,eeting}s,
+Yeap. :)
 
-                        Geert
+...
+> And while you all can try and pretend hotplug is a 'normal' and 'sane'
+> operation with cpusets, the same failure more very much still exists
+> with the regular affinity controls. So you can pretend all you want, but
+> its a clear and utter fail.
+> 
+> You cannot give the kernel contradictory instructions and then pretend
+> all is well and dandy.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+But even if you view it that way, the current legacy implementation is
+deficient to say the least.  It puts way too much trust in the
+userland while not giving it mechanisms to deal with the situation.
+It's not like the userland is an all-knowing entity and short of the
+printk there's no way to detect such automatic migrations or to know
+the previous state.  If this actually was seen as a configuration
+failure, it would have made a lot more sense to just not run those
+tasks unless they're SIGKILL'd.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+This is all moot tho.  We can't change the behavior for the legacy
+hierarchies and we can't auto-migrate for the unified hierarchy, so
+there isn't much left to decide.
+
+Thanks.
+
+-- 
+tejun
