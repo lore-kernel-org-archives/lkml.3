@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915AbaJIVh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 17:37:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932899AbaJIVhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 17:37:24 -0400
-Date: Thu, 9 Oct 2014 23:34:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-Cc: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: Re: [PATCHv4] procfs: show hierarchy of pid namespace
-Message-ID: <20141009213414.GA10705@redhat.com>
-References: <1412762198-21825-1-git-send-email-chenhanxiao@cn.fujitsu.com> <20141008151328.GB4835@redhat.com> <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5871495633F38949900D2BF2DC04883E5E1649@G08CNEXMBPEKD02.g08.fujitsu.local>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757755AbaJIViL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 17:38:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59198 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349AbaJIVIT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 9 Oct 2014 17:08:19 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Anssi Hannula <anssi.hannula@iki.fi>, Mike Snitzer <snitzer@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 046/163] dm cache: fix race causing dirty blocks to be marked as clean
+Date: Thu,  9 Oct 2014 14:01:11 -0700
+Message-Id: <1412888588-26755-47-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+References: <1412888588-26755-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09, Chen, Hanxiao wrote:
->
-> > From: Oleg Nesterov [mailto:oleg@redhat.com]
-> >
-> > Hmm. We only want the tasks from our namespace, yes? Perhaps find_ge_pid()
-> > makes more sense?
->
-> Only tasks from our ns is valid.
-> But how could find_ge_pid() do that?
->
-> nr = 1;
-> while (nr < PID_MAX_LIMIT) {
-> 	find_ge_pid(nr, curr_ns);
-> 	list_add();
-> 	nr++;
-> }
+3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
 
-something like this, except list_add() should obviously depend on
-is_child_reaper() check.
+------------------
 
-This can be more optimal in sub-namespaces, you do not need to abuse
-the global process list.
+From: Anssi Hannula <anssi.hannula@iki.fi>
 
-And if you change this code to use get_pid/put_pid, then you do not
-need to hold rcu_read_lock() throughout, you only need it around
-find_ge_pid + get_pid.
+commit 40aa978eccec61347cd47b97c598df49acde8be5 upstream.
 
-At the same time, for_each_process() in the global namespace can be
-faster if there are a lot of sub-threads.
+When a writeback or a promotion of a block is completed, the cell of
+that block is removed from the prison, the block is marked as clean, and
+the clear_dirty() callback of the cache policy is called.
 
-> Perhaps that's not a good way.
+Unfortunately, performing those actions in this order allows an incoming
+new write bio for that block to come in before clearing the dirty status
+is completed and therefore possibly causing one of these two scenarios:
 
-OK, I won't insist.
+Scenario A:
 
-although it would be nice to know why do you think this is bad.
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called,
+.                               but block already dirty
+.                               => it does nothing
+clear_dirty()                 .
+- block marked clean          .
+- policy clear_dirty() called .
 
-> > > +		pid = task_pid(p);
-> >
-> > Well, in theory you need barrier() here. Or perhaps we should add
-> > ACCESS_ONCE() into task_pid()...
->
-> You mean modify task_pid as:
-> return ACCESS_ONCE(task->pids[PIDTYPE_PID].pid;);
+Result: Block is marked clean even though it is actually dirty. No
+writeback will occur.
 
-Yes. But not now an not in this patch of course. I'd suggest to add
-barrier() just in case.
+Scenario B:
 
+Thread 1                      Thread 2
+cell_defer()                  .
+- cell removed from prison    .
+- detained bios queued        .
+clear_dirty()                 .
+- block marked clean          .
+.                             incoming write bio
+.                             remapped to cache
+.                             set_dirty() called
+.                             - block marked dirty
+.                             - policy set_dirty() called
+- policy clear_dirty() called .
 
-> > And imho it would be better to declare pidns_list/pidns_tree locally
-> > in nslist_proc_show() and pass them to the callees.
->
-> That's a good idea.
-> Will changed in the next version.
+Result: Block is properly marked as dirty, but policy thinks it is clean
+and therefore never asks us to writeback it.
+This case is visible in "dmsetup status" dirty block count (which
+normally decreases to 0 on a quiet device).
 
-Good. And I forgot to mention, in this case you do not need pidns_list_lock
-at all afaics.
+Fix these issues by calling clear_dirty() before calling cell_defer().
+Incoming bios for that block will then be detained in the cell and
+released only after clear_dirty() has completed, so the race will not
+occur.
 
-Oleg.
+Found by inspecting the code after noticing spurious dirty counts
+(scenario B).
+
+Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/md/dm-cache-target.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
+index ae73ee5..99474ef 100644
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -881,8 +881,8 @@ static void migration_success_pre_commit(struct dm_cache_migration *mg)
+ 	struct cache *cache = mg->cache;
+ 
+ 	if (mg->writeback) {
+-		cell_defer(cache, mg->old_ocell, false);
+ 		clear_dirty(cache, mg->old_oblock, mg->cblock);
++		cell_defer(cache, mg->old_ocell, false);
+ 		cleanup_migration(mg);
+ 		return;
+ 
+@@ -937,13 +937,13 @@ static void migration_success_post_commit(struct dm_cache_migration *mg)
+ 		}
+ 
+ 	} else {
++		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		if (mg->requeue_holder)
+ 			cell_defer(cache, mg->new_ocell, true);
+ 		else {
+ 			bio_endio(mg->new_ocell->holder, 0);
+ 			cell_defer(cache, mg->new_ocell, false);
+ 		}
+-		clear_dirty(cache, mg->new_oblock, mg->cblock);
+ 		cleanup_migration(mg);
+ 	}
+ }
+-- 
+1.9.1
 
