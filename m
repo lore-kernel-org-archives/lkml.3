@@ -1,106 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281AbaJIPyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 11:54:18 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:45836 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975AbaJIPyK (ORCPT
+	id S1757406AbaJIPzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 11:55:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42677 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755682AbaJIPy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 11:54:10 -0400
-Date: Thu, 9 Oct 2014 08:54:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-m32r-ja@ml.linux-m32r.org" <linux-m32r-ja@ml.linux-m32r.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "lguest@lists.ozlabs.org" <lguest@lists.ozlabs.org>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "linux-hexagon@vger.kernel.org" <linux-hexagon@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "adi-buildroot-devel@lists.sourceforge.net" 
-	<adi-buildroot-devel@lists.sourceforge.net>,
-        "linux-m68k@vger.kernel.org" <linux-m68k@vger.kernel.org>,
-        "linux-am33-list@redhat.com" <linux-am33-list@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>,
-        "linux-metag@vger.kernel.org" <linux-metag@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-parisc@vger.kernel.org" <linux-parisc@vger.kernel.org>,
-        "linux-cris-kernel@axis.com" <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-alpha@vger.kernel.org" <linux-alpha@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH 12/44] mfd: ab8500-sysctrl: Register with kernel poweroff
- handler
-Message-ID: <20141009155404.GC31987@roeck-us.net>
-References: <1412659726-29957-1-git-send-email-linux@roeck-us.net>
- <1412659726-29957-13-git-send-email-linux@roeck-us.net>
- <20141007080048.GB25331@lee--X1>
- <20141009103656.GF17836@e104818-lin.cambridge.arm.com>
- <20141009104927.GN20647@lee--X1>
+	Thu, 9 Oct 2014 11:54:58 -0400
+Date: Thu, 9 Oct 2014 16:54:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, atull@opensource.altera.com
+Message-ID: <20141009155440.GV4609@sirena.org.uk>
+References: <1412806199-5363-1-git-send-email-broonie@kernel.org>
+ <20141008223403.GA24828@roeck-us.net>
+ <20141008223601.GP4609@sirena.org.uk>
+ <20141008225912.GA25134@roeck-us.net>
+ <20141008234541.GQ4609@sirena.org.uk>
+ <20141009000555.GA27476@roeck-us.net>
+ <20141009001213.GS4609@sirena.org.uk>
+ <20141009002531.GA27920@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hK5WMeVMNp/FmgOI"
 Content-Disposition: inline
-In-Reply-To: <20141009104927.GN20647@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141009002531.GA27920@roeck-us.net>
+X-Cookie: Everything you know is wrong!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: of: Lower the severity of the error with no
+ container
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 11:49:27AM +0100, Lee Jones wrote:
-> On Thu, 09 Oct 2014, Catalin Marinas wrote:
-> 
-> > On Tue, Oct 07, 2014 at 09:00:48AM +0100, Lee Jones wrote:
-> > > On Mon, 06 Oct 2014, Guenter Roeck wrote:
-> > > > --- a/drivers/mfd/ab8500-sysctrl.c
-> > > > +++ b/drivers/mfd/ab8500-sysctrl.c
-> > > > @@ -6,6 +6,7 @@
-> > > 
-> > > [...]
-> > > 
-> > > > +static int ab8500_power_off(struct notifier_block *this, unsigned long unused1,
-> > > > +			    void *unused2)
-> > > >  {
-> > > >  	sigset_t old;
-> > > >  	sigset_t all;
-> > > > @@ -34,11 +36,6 @@ static void ab8500_power_off(void)
-> > > >  	struct power_supply *psy;
-> > > >  	int ret;
-> > > >  
-> > > > -	if (sysctrl_dev == NULL) {
-> > > > -		pr_err("%s: sysctrl not initialized\n", __func__);
-> > > > -		return;
-> > > > -	}
-> > > 
-> > > Can you explain the purpose of this change please?
-> > 
-> > I guess it's because the sysctrl_dev is already initialised when
-> > registering the power_off handler, so there isn't a way to call the
-> > above function with a NULL sysctrl_dev. Probably even with the original
-> > code you didn't need this check (after some race fix in
-> > ab8500_sysctrl_remove but races is one of the things Guenter's patches
-> > try to address).
-> 
-> Sounds reasonable, although I think this change should be part of
-> another patch.
-> 
-Turns out the options are to either drop the check or to use the device
-managed function to register the poweroff handler. I decided to keep
-the check and use the device managed function.
 
-Guenter
+--hK5WMeVMNp/FmgOI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Oct 08, 2014 at 05:25:31PM -0700, Guenter Roeck wrote:
+> On Thu, Oct 09, 2014 at 01:12:13AM +0100, Mark Brown wrote:
+
+> > We'll do something, just a question of what and what the default is.
+
+> Ok. Note that a boot parameter would not work well for our use case,
+> so it would be great if we can find something else.
+
+Could you explain why please?
+
+> > Shove a dev_name() on the front if we get a collision?  I have to say
+> > I've never cared, the debugfs isn't that important so it doesn't matter
+> > too much if it fails.
+
+> Sure, but, again, I am getting lots and lots of those error messages.
+> I probably would not care either (and probably not even have noticed)
+> if not for those messages.
+
+> Want me to submit a patch with the dev_name solution ?
+
+Yes, please.
+
+--hK5WMeVMNp/FmgOI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUNq+/AAoJECTWi3JdVIfQKJUH/0QaJHCpq1t4e+UPRJEiA/91
+Yu/42hjSFBGEFAiT7dED1vvqGfi3nlP9y+i6vGx06RoTDO689jjMuQz/sW2HYsTI
+Z0dqCTX928VBFOq9JxWCznnPksK6KZ+qzDyAbh3B06yYsBFDM+jxZZGHoV6k+cwA
+U80h9Ql6nvLIbE1Sajht2jGdGtzBW6ck9mr67UEloOSOl/GWh8qS/6Ly/RMO/Uqj
+y5ZoYPJAVWZd+qeXsKpznEmrF/D0F9M1CZL+LfrBqLEerUEXqcyGotHia++nDsPS
+ffsJH5EJdAlY/c+SzD+Sxu9OChDhVJuRAA0dUxHGOS/5w+vwtZFDRUFMFWhvJoE=
+=5vYd
+-----END PGP SIGNATURE-----
+
+--hK5WMeVMNp/FmgOI--
