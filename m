@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaJJTkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 15:40:21 -0400
-Received: from sidious.london.02.net ([82.132.130.152]:35686 "EHLO
-	mail.o2.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751703AbaJJTkT (ORCPT
+	id S1755001AbaJJTm2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 15:42:28 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:57961 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbaJJTm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 15:40:19 -0400
-Date: Fri, 10 Oct 2014 20:34:04 +0100
-From: Bernd Porr <mail@berndporr.me.uk>
-To: Ian Abbott <abbotti@mev.co.uk>,
-        Hartley Sweeten <HartleyS@visionengravers.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: [PATCH 2/3] staging: comedi: usbdux: updated contact details /
- comments
-Message-ID: <20141010193404.GA29546@bp1-Dimension-9100>
+	Fri, 10 Oct 2014 15:42:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
+Subject: Re: [RFC] drop owner assignment from platform_drivers
+Date: Fri, 10 Oct 2014 21:42:21 +0200
+Message-ID: <2769473.KEN6DZKnT7@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141010182604.GC6075@katana>
+References: <20141010072439.GA1741@katana> <20141010083627.GL5182@n2100.arm.linux.org.uk> <20141010182604.GC6075@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:pu5tzLrr4qYg6fmRxJIo9ukHzmW7+oMbBS63dkdp4iv
+ EKKAF6ooGe6qgjfP8iWgNwu2+lvUhEpgMOMsDDhLzmuSbaKwcd
+ ZwdD/tlLdzrbqK3LOlKMiGdLclzMV9wpZwtWpMtCnMtICXL7RA
+ YZjdSB4khBrgsHMJx5v3/dPHBhnfMN3s9gDp9SZYyGjQByrvxr
+ NyYYR1sXSe5+eAVwEpfyPFekROz05JBAZDJ8h1LSiP3cTB08lM
+ i3oizJUPmCTCo4AIJJYc5O2sfm15xs0KXnb+1LawSCQoNsAN8r
+ RGoGALKsNiqy68pyQkYrw4+nscRoqVZVDitcrb/g7RmUoEzPMC
+ q27iJmqJmR5V76PjE5mM=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've updated my contact details and removed obsolete comments. 
+On Friday 10 October 2014 20:26:05 Wolfram Sang wrote:
+> 
+> You got me wondering, though, that it could not be correct to call
+> platform_driver_register() from the platform core instead of module
+> init. I will check tomorrow. Still, this would be a bug independent of
+> my series. Although I'd need to respin it if platform_driver_probe()
+> needed a fix.
 
-Signed-off-by: Bernd Porr <mail@berndporr.me.uk>
----
- drivers/staging/comedi/drivers/usbdux.c | 59 ++++++++++++++++-----------------
- 1 file changed, 28 insertions(+), 31 deletions(-)
+Right, this seems to be a preexisting bug. platform_create_bundle 
+and platform_driver_probe will both overwrite the .owner field with
+NULL since they live in builtin code. They need to be replaced with
+__platform_driver_probe and __platform_driver_register that both
+take an extra owner argument passed down from the caller in the driver
+module.
 
-diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index 053bc50..24fa9f66 100644
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -1,37 +1,34 @@
- /*
--   comedi/drivers/usbdux.c
--   Copyright (C) 2003-2007 Bernd Porr, Bernd.Porr@f2s.com
--
--   This program is free software; you can redistribute it and/or modify
--   it under the terms of the GNU General Public License as published by
--   the Free Software Foundation; either version 2 of the License, or
--   (at your option) any later version.
--
--   This program is distributed in the hope that it will be useful,
--   but WITHOUT ANY WARRANTY; without even the implied warranty of
--   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--   GNU General Public License for more details.
-+ * usbdux.c
-+ * Copyright (C) 2003-2014 Bernd Porr, mail@berndporr.me.uk
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-  */
-+
- /*
--Driver: usbdux
--Description: University of Stirling USB DAQ & INCITE Technology Limited
--Devices: [ITL] USB-DUX (usbdux.o)
--Author: Bernd Porr <BerndPorr@f2s.com>
--Updated: 8 Dec 2008
--Status: Stable
--Configuration options:
--  You have to upload firmware with the -i option. The
--  firmware is usually installed under /usr/share/usb or
--  /usr/local/share/usb or /lib/firmware.
--
--Connection scheme for the counter at the digital port:
--  0=/CLK0, 1=UP/DOWN0, 2=RESET0, 4=/CLK1, 5=UP/DOWN1, 6=RESET1.
--  The sampling rate of the counter is approximately 500Hz.
--
--Please note that under USB2.0 the length of the channel list determines
--the max sampling rate. If you sample only one channel you get 8kHz
--sampling rate. If you sample two channels you get 4kHz and so on.
--*/
-+ * Driver: usbdux
-+ * Description: University of Stirling USB DAQ & INCITE Technology Limited
-+ * Devices: (ITL) USB-DUX [usbdux]
-+ * Author: Bernd Porr <mail@berndporr.me.uk>
-+ * Updated: 10 Oct 2014
-+ * Status: Stable
-+ * Connection scheme for the counter at the digital port:
-+ * 0=/CLK0, 1=UP/DOWN0, 2=RESET0, 4=/CLK1, 5=UP/DOWN1, 6=RESET1.
-+ * The sampling rate of the counter is approximately 500Hz.
-+ *
-+ * Note that under USB2.0 the length of the channel list determines
-+ * the max sampling rate. If you sample only one channel you get 8kHz
-+ * sampling rate. If you sample two channels you get 4kHz and so on.
-+ */
-+
- /*
-  * I must give credit here to Chris Baugher who
-  * wrote the driver for AT-MIO-16d. I used some parts of this
--- 
-1.9.1
-
+	Arnd
