@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746AbaJJN65 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 09:58:57 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:59611 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670AbaJJN6y (ORCPT
+	id S1754230AbaJJOB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:01:56 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39624 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752614AbaJJOBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 09:58:54 -0400
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com
-Subject: [PATCH] goldfish: fixed sparse warning
-Date: Fri, 10 Oct 2014 19:28:45 +0530
-Message-Id: <1412949525-17561-1-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 10 Oct 2014 10:01:52 -0400
+Date: Fri, 10 Oct 2014 16:01:48 +0200
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andreas Henriksson <andreas.henriksson@endian.se>
+Subject: Re: [PATCH] ARM: at91/dt: sam9263: fix PLLB frequencies
+Message-ID: <20141010160148.57290e20@bbrezillon>
+In-Reply-To: <1412949021-15150-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1412949021-15150-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fixed sparse warning of Using plain integer as NULL pointer
+On Fri, 10 Oct 2014 15:50:21 +0200
+Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
- drivers/tty/goldfish.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> From: Boris Brezillon <boris.brezillon@free-electrons.com>
+> 
+> PLLB input and output ranges were wrongly copied from at91sam9261 as the
+> datasheet didn't mention explicitly PLLB. Correct their values.
+> 
+> This fixes USB.
+> 
+> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-diff --git a/drivers/tty/goldfish.c b/drivers/tty/goldfish.c
-index 09495f5..c24b963 100644
---- a/drivers/tty/goldfish.c
-+++ b/drivers/tty/goldfish.c
-@@ -157,7 +157,7 @@ static int goldfish_tty_console_setup(struct console *co, char *options)
- {
- 	if ((unsigned)co->index > goldfish_tty_line_count)
- 		return -ENODEV;
--	if (goldfish_ttys[co->index].base == 0)
-+	if (!goldfish_ttys[co->index].base)
- 		return -ENODEV;
- 	return 0;
- }
-@@ -317,7 +317,7 @@ static int goldfish_tty_remove(struct platform_device *pdev)
- 	unregister_console(&qtty->console);
- 	tty_unregister_device(goldfish_tty_driver, pdev->id);
- 	iounmap(qtty->base);
--	qtty->base = 0;
-+	qtty->base = NULL;
- 	free_irq(qtty->irq, pdev);
- 	goldfish_tty_current_line_count--;
- 	if (goldfish_tty_current_line_count == 0)
+Thanks for sending this patch.
+
+Just adding Andreas in Cc and adding his Reported and Tested-by.
+
+Reported-by: Andreas Henriksson <andreas.henriksson@endian.se>
+Tested-by: Andreas Henriksson <andreas.henriksson@endian.se>
+
+> ---
+>  arch/arm/boot/dts/at91sam9263.dtsi | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+> index d68b3c4862bc..51416c7d0625 100644
+> --- a/arch/arm/boot/dts/at91sam9263.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9263.dtsi
+> @@ -122,9 +122,10 @@
+>  					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
+>  					clocks = <&main>;
+>  					reg = <1>;
+> -					atmel,clk-input-range = <1000000 5000000>;
+> +					atmel,clk-input-range = <1000000 32000000>;
+>  					#atmel,pll-clk-output-range-cells = <4>;
+> -					atmel,pll-clk-output-ranges = <70000000 130000000 1 1>;
+> +					atmel,pll-clk-output-ranges = <80000000 200000000 0 1>,
+> +								<190000000 240000000 2 1>;
+>  				};
+>  
+>  				mck: masterck {
+
+
+
 -- 
-1.8.1.2
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
