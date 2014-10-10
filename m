@@ -1,52 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbaJJFgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:36:09 -0400
-Received: from 1wt.eu ([62.212.114.60]:17074 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788AbaJJFgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:36:07 -0400
-X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Oct 2014 01:36:06 EDT
-Date: Fri, 10 Oct 2014 07:30:48 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3.13 163/163] lzo: check for length overrun in variable length encoding.
-Message-ID: <20141010053048.GD3594@1wt.eu>
-References: <1412888588-26755-1-git-send-email-kamal@canonical.com> <1412888588-26755-164-git-send-email-kamal@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412888588-26755-164-git-send-email-kamal@canonical.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1751342AbaJJFpy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:45:54 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:33685 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaJJFpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 01:45:51 -0400
+From: Vineeth Vijayan <vvijayan@mvista.com>
+To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: mpe@ellerman.id.au, Vineeth Vijayan <vvijayan@mvista.com>
+Subject: [PATCH] powerpc: Fix Text randomization
+Date: Fri, 10 Oct 2014 11:15:26 +0530
+Message-Id: <1412919926-13123-1-git-send-email-vvijayan@mvista.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kamal,
+Right now there is no way to disable TEXT randomization on a PPC32
+machine. text randomization happens even in the case of "echo 0 >
+/proc/sys/kernel/randomize_va_space"
 
-[ removed Don Bailey from the CC who's certainly not interested in this ]
+This happens due to the incorrect definition of ELF_ET_DYN_BASE at
+arch/powerpc/include/asm/elf.h
 
-On Thu, Oct 09, 2014 at 02:03:08PM -0700, Kamal Mostafa wrote:
-> 3.13.11.9 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Willy Tarreau <w@1wt.eu>
-> 
-> commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+Signed-off-by: Vineeth Vijayan <vvijayan@mvista.com>
+---
+Test details:
 
-(...)
+#include <stdio.h>
 
-This one (and the accompanying revert) are still not present in more
-recent stable kernels, so I find it surprizing that you're proposing
-to integrate them now. If someone upgrades from 3.13.11.9 to 3.14.21
-or 3.16.5, they'd expect to keep all fixes but will lose this one, so
-this is a bit confusing. Is there any reason you're not tracking fixes
-from more recent versions like Jiri, Li, Ben and I are doing ?
+int main(int argc,char *argv)
+{
+        printf("main = %p\n",main);
+        return 0;
+}
 
-Thanks,
-Willy
+Compile the same as position-independent executable
+
+Results without Patch:
+
+p5040ds:~# gcc test.c -o test -fPIE -pie
+p5040ds:~# echo 2 > /proc/sys/kernel/randomize_va_space 
+p5040ds:~# ./test 
+main = 0xb7e9681c
+p5040ds:~# ./test 
+main = 0xb7aba81c
+p5040ds:~# ./test 
+main = 0xb7fac81c
+p5040ds:~# ./test 
+main = 0xb7f4c81c
+p5040ds:~# echo 0 > /proc/sys/kernel/randomize_va_space                                                                                                                                              
+p5040ds:~# ./test 
+main = 0x2010281c
+p5040ds:~# ./test 
+main = 0x2018d81c
+p5040ds:~# ./test 
+main = 0x206a981c
+p5040ds:~# ./test 
+main = 0x2036681c
+
+
+Results with Patch:
+
+p5040ds:~# gcc test.c -o test -fPIE -pie
+p5040ds:~# 
+p5040ds:~# echo 2 > /proc/sys/kernel/randomize_va_space 
+p5040ds:~# 
+p5040ds:~# ./test 
+main = 0xb78a581c
+p5040ds:~# ./test 
+main = 0xb792c81c
+p5040ds:~# ./test 
+main = 0xb79de81c
+p5040ds:~# ./test 
+main = 0xb78ae81c
+p5040ds:~# echo 0 > /proc/sys/kernel/randomize_va_space                                                                                                                                              
+p5040ds:~# 
+p5040ds:~# ./test 
+main = 0x2000081c
+p5040ds:~# ./test 
+main = 0x2000081c
+p5040ds:~# ./test 
+main = 0x2000081c
+p5040ds:~# ./test 
+main = 0x2000081c
+
+
+ arch/powerpc/Kconfig           |    1 +
+ arch/powerpc/include/asm/elf.h |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 4bc7b62..f99ddae 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -88,6 +88,7 @@ config PPC
+ 	select ARCH_MIGHT_HAVE_PC_PARPORT
+ 	select ARCH_MIGHT_HAVE_PC_SERIO
+ 	select BINFMT_ELF
++	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
+ 	select OF
+ 	select OF_EARLY_FLATTREE
+ 	select OF_RESERVED_MEM
+diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
+index 888d8f3..162813b 100644
+--- a/arch/powerpc/include/asm/elf.h
++++ b/arch/powerpc/include/asm/elf.h
+@@ -29,7 +29,7 @@
+    that it will "exec", and that there is sufficient room for the brk.  */
+ 
+ extern unsigned long randomize_et_dyn(unsigned long base);
+-#define ELF_ET_DYN_BASE		(randomize_et_dyn(0x20000000))
++#define ELF_ET_DYN_BASE		(0x20000000)
+ 
+ #define ELF_CORE_EFLAGS (is_elf2_task() ? 2 : 0)
+ 
+-- 
+1.7.9.5
 
