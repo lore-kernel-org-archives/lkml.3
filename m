@@ -1,119 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbaJJK4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:56:10 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:61598 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaJJK4G (ORCPT
+	id S1753643AbaJJK4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:56:25 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:44968 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaJJK4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:56:06 -0400
-Date: Fri, 10 Oct 2014 11:56:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH fixes v2] mfd: max77693: Fix always masked MUIC interrupts
-Message-ID: <20141010105600.GL26795@lee--X1>
-References: <1412938115-11606-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 10 Oct 2014 06:56:22 -0400
+Date: Fri, 10 Oct 2014 12:56:14 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Wanpeng Li <wanpeng.li@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Juri Lelli <juri.lelli@arm.com>, Kirill V Tkhai <tkhai@yandex.ru>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/deadline: do not try to push tasks if pinned task
+ switches to dl
+Message-ID: <20141010105614.GA3343@worktop.programming.kicks-ass.net>
+References: <1412908997-15396-1-git-send-email-wanpeng.li@linux.intel.com>
+ <20141010101016.GJ10832@worktop.programming.kicks-ass.net>
+ <5437B462.4050102@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412938115-11606-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5437B462.4050102@gmail.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014, Krzysztof Kozlowski wrote:
+On Fri, Oct 10, 2014 at 06:26:42PM +0800, Wanpeng Li wrote:
+> 
+> 于 10/10/14, 6:10 PM, Peter Zijlstra 写道:
+> >On Fri, Oct 10, 2014 at 10:43:17AM +0800, Wanpeng Li wrote:
+> >>As Kirill mentioned(https://lkml.org/lkml/2013/1/29/118):
+> >>| If rq has already had 2 or more pushable tasks and we try to add a
+> >>| pinned task then call of push_rt_task will just waste a time.
+> >>
+> >>Just switched pinned task is not able to be pushed. If the rq had had
+> >>several dl tasks before they have already been considered as candidates
+> >>to be pushed (or pulled). This patch does the same behavior as rt class
+> >>which introduced by commit 104479 (sched/rt: Do not try to push tasks
+> >>if pinned task switches to RT).
+> >Checkpatch rightly complains:
+> >
+> >ERROR: Please use 12 or more chars for the git commit ID like: 'commit 10447917551e ("sched/rt: Do not try to push tasks if pinned task switches to RT")'
+> >#12:
+> >which introduced by commit 104479 (sched/rt: Do not try to push tasks
+> 
+> I also got this warning before send out the patch, however, I check 6 chars
+> is enough for this commit. Anyway, I will send a newer version later.
 
-> All interrupts coming from MUIC were ignored because interrupt source
-> register was masked.
-> 
-> The Maxim 77693 has a "interrupt source" - a separate register and interrupts
-> which give information about PMIC block triggering the individual
-> interrupt (charger, topsys, MUIC, flash LED).
-> 
-> By default bootloader could initialize this register to "mask all"
-> value. In such case (observed on Trats2 board) MUIC interrupts won't be
-> generated regardless of their mask status. Regmap irq chip was unmasking
-> individual MUIC interrupts but the source was masked
-> 
-> Before introducing regmap irq chip this interrupt source was unmasked,
-> read and acked. Reading and acking is not necessary but unmasking is.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: <stable@vger.kernel.org>
-> Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
-
-Applied to -fixes until someone complains.
-
-> ---
-> 
-> Changes since v1:
-> 1. Do the unmasking in main MFD driver. Additionally unmask all
->    interrupts, not only MUIC. Suggested by Chanwoo Choi.
-> ---
->  drivers/mfd/max77693.c               | 12 ++++++++++++
->  include/linux/mfd/max77693-private.h |  7 +++++++
->  2 files changed, 19 insertions(+)
-> 
-> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> index 4b54da1ff7ab..4e4e6a1a6301 100644
-> --- a/drivers/mfd/max77693.c
-> +++ b/drivers/mfd/max77693.c
-> @@ -253,6 +253,17 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
->  		goto err_irq_muic;
->  	}
->  
-> +	/* Unmask interrupts from all blocks in interrupt source register */
-> +	ret = regmap_update_bits(max77693->regmap,
-> +				MAX77693_PMIC_REG_INTSRC_MASK,
-> +				SRC_IRQ_ALL, ~SRC_IRQ_ALL);
-> +	if (ret < 0) {
-> +		dev_err(max77693->dev,
-> +			"Could not unmask interrupts in INTSRC: %d\n",
-> +			ret);
-> +		goto err_intsrc;
-> +	}
-> +
->  	pm_runtime_set_active(max77693->dev);
->  
->  	ret = mfd_add_devices(max77693->dev, -1, max77693_devs,
-> @@ -264,6 +275,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
->  
->  err_mfd:
->  	mfd_remove_devices(max77693->dev);
-> +err_intsrc:
->  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_muic);
->  err_irq_muic:
->  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_charger);
-> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-> index e1b2b61285b9..15fed5365a20 100644
-> --- a/include/linux/mfd/max77693-private.h
-> +++ b/include/linux/mfd/max77693-private.h
-> @@ -438,6 +438,13 @@ enum max77693_irq_source {
->  	MAX77693_IRQ_GROUP_NR,
->  };
->  
-> +#define SRC_IRQ_CHARGER			BIT(0)
-> +#define SRC_IRQ_TOP			BIT(1)
-> +#define SRC_IRQ_FLASH			BIT(2)
-> +#define SRC_IRQ_MUIC			BIT(3)
-> +#define SRC_IRQ_ALL			(SRC_IRQ_CHARGER | SRC_IRQ_TOP \
-> +						| SRC_IRQ_FLASH | SRC_IRQ_MUIC)
-> +
->  #define LED_IRQ_FLED2_OPEN		BIT(0)
->  #define LED_IRQ_FLED2_SHORT		BIT(1)
->  #define LED_IRQ_FLED1_OPEN		BIT(2)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+It is currently, it might not be in the future. I've already had hash
+collisions with 8 char hashes. And the fact thats it in the changelog
+means it can (and therefore) will be referenced at some point in the
+future. If by that point there is a collision...
