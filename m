@@ -1,80 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbaJJLys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:54:48 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44297 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaJJLym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:54:42 -0400
-Date: Fri, 10 Oct 2014 12:53:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: PERIER Romain <romain.perier@gmail.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, robh <robh@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Message-ID: <20141010115359.GE18557@sirena.org.uk>
-References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com>
- <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com>
- <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
+	id S1753937AbaJJLyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:54:22 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:39753 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753244AbaJJLyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:54:15 -0400
+X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
+   d="scan'208";a="180114191"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 5/7] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+Date: Fri, 10 Oct 2014 12:51:46 +0100
+Message-ID: <1412941908-5850-5-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y1L3PTX8QE8cb2T+"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get
- "poweroff-source" property
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Merge xen/mm32.c into xen/mm.c.
+As a consequence the code gets compiled on arm64 too: introduce a few
+compat functions to actually be able to compile it.
 
---Y1L3PTX8QE8cb2T+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/arm/xen/Makefile                      |    2 +-
+ arch/arm/xen/mm.c                          |  123 ++++++++++++++++++++++++++++
+ arch/arm/xen/mm32.c                        |  110 -------------------------
+ arch/arm64/include/asm/xen/page-coherent.h |   44 +---------
+ 4 files changed, 125 insertions(+), 154 deletions(-)
+ delete mode 100644 arch/arm/xen/mm32.c
 
-On Fri, Oct 10, 2014 at 12:47:08PM +0100, Grant Likely wrote:
+diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
+index 1f85bfe..1296952 100644
+--- a/arch/arm/xen/Makefile
++++ b/arch/arm/xen/Makefile
+@@ -1 +1 @@
+-obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o mm32.o
++obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o
+diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
+index b0e77de..9d460e0 100644
+--- a/arch/arm/xen/mm.c
++++ b/arch/arm/xen/mm.c
+@@ -1,5 +1,8 @@
++#include <linux/cpu.h>
++#include <linux/dma-mapping.h>
+ #include <linux/bootmem.h>
+ #include <linux/gfp.h>
++#include <linux/highmem.h>
+ #include <linux/export.h>
+ #include <linux/slab.h>
+ #include <linux/types.h>
+@@ -16,6 +19,126 @@
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/interface.h>
+ 
++
++#ifdef CONFIG_ARM64
++static inline void dmac_map_area(const void *start, size_t size, int dir)
++{
++	return __dma_map_area(start, size, dir);
++}
++
++static inline void dmac_unmap_area(const void *start, size_t size, int dir)
++{
++	return __dma_unmap_area(start, size, dir);
++}
++
++static inline bool cache_is_vipt_nonaliasing(void)
++{
++	return true;
++}
++
++static inline void *kmap_high_get(struct page *page)
++{
++	return NULL;
++}
++
++static inline void kunmap_high(struct page *page) {}
++#endif
++
++
++/* functions called by SWIOTLB */
++
++static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
++	size_t size, enum dma_data_direction dir,
++	void (*op)(const void *, size_t, int))
++{
++	unsigned long pfn;
++	size_t left = size;
++
++	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
++	offset %= PAGE_SIZE;
++
++	do {
++		size_t len = left;
++		void *vaddr;
++	
++		if (!pfn_valid(pfn))
++		{
++			/* TODO: cache flush */
++		} else {
++			struct page *page = pfn_to_page(pfn);
++
++			if (PageHighMem(page)) {
++				if (len + offset > PAGE_SIZE)
++					len = PAGE_SIZE - offset;
++
++				if (cache_is_vipt_nonaliasing()) {
++					vaddr = kmap_atomic(page);
++					op(vaddr + offset, len, dir);
++					kunmap_atomic(vaddr);
++				} else {
++					vaddr = kmap_high_get(page);
++					if (vaddr) {
++						op(vaddr + offset, len, dir);
++						kunmap_high(page);
++					}
++				}
++			} else {
++				vaddr = page_address(page) + offset;
++				op(vaddr, len, dir);
++			}
++		}
++
++		offset = 0;
++		pfn++;
++		left -= len;
++	} while (left);
++}
++
++static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++	/* Cannot use __dma_page_dev_to_cpu because we don't have a
++	 * struct page for handle */
++
++	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
++}
++
++static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir)
++{
++
++	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
++}
++
++void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
++		size_t size, enum dma_data_direction dir,
++		struct dma_attrs *attrs)
++
++{
++	if (is_dma_coherent(hwdev))
++		return;
++	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
++		return;
++
++	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
++}
++
++void xen_dma_sync_single_for_cpu(struct device *hwdev,
++		dma_addr_t handle, size_t size, enum dma_data_direction dir)
++{
++	if (is_dma_coherent(hwdev))
++		return;
++	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
++}
++
++void xen_dma_sync_single_for_device(struct device *hwdev,
++		dma_addr_t handle, size_t size, enum dma_data_direction dir)
++{
++	if (is_dma_coherent(hwdev))
++		return;
++	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
++}
++
+ int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
+ 				 unsigned int address_bits,
+ 				 dma_addr_t *dma_handle)
+diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
+deleted file mode 100644
+index c7fa673..0000000
+--- a/arch/arm/xen/mm32.c
++++ /dev/null
+@@ -1,110 +0,0 @@
+-#include <linux/cpu.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/gfp.h>
+-#include <linux/highmem.h>
+-
+-#include <xen/features.h>
+-
+-
+-/* functions called by SWIOTLB */
+-
+-static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
+-	size_t size, enum dma_data_direction dir,
+-	void (*op)(const void *, size_t, int))
+-{
+-	unsigned long pfn;
+-	size_t left = size;
+-
+-	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
+-	offset %= PAGE_SIZE;
+-
+-	do {
+-		size_t len = left;
+-		void *vaddr;
+-	
+-		if (!pfn_valid(pfn))
+-		{
+-			/* TODO: cache flush */
+-		} else {
+-			struct page *page = pfn_to_page(pfn);
+-
+-			if (PageHighMem(page)) {
+-				if (len + offset > PAGE_SIZE)
+-					len = PAGE_SIZE - offset;
+-
+-				if (cache_is_vipt_nonaliasing()) {
+-					vaddr = kmap_atomic(page);
+-					op(vaddr + offset, len, dir);
+-					kunmap_atomic(vaddr);
+-				} else {
+-					vaddr = kmap_high_get(page);
+-					if (vaddr) {
+-						op(vaddr + offset, len, dir);
+-						kunmap_high(page);
+-					}
+-				}
+-			} else {
+-				vaddr = page_address(page) + offset;
+-				op(vaddr, len, dir);
+-			}
+-		}
+-
+-		offset = 0;
+-		pfn++;
+-		left -= len;
+-	} while (left);
+-}
+-
+-static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir)
+-{
+-	/* Cannot use __dma_page_dev_to_cpu because we don't have a
+-	 * struct page for handle */
+-
+-	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
+-}
+-
+-static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir)
+-{
+-
+-	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
+-}
+-
+-void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir,
+-		struct dma_attrs *attrs)
+-
+-{
+-	if (is_dma_coherent(hwdev))
+-		return;
+-	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
+-		return;
+-
+-	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
+-}
+-
+-void xen_dma_sync_single_for_cpu(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-	if (is_dma_coherent(hwdev))
+-		return;
+-	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
+-}
+-
+-void xen_dma_sync_single_for_device(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-	if (is_dma_coherent(hwdev))
+-		return;
+-	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
+-}
+-
+-int __init xen_mm32_init(void)
+-{
+-	if (!xen_initial_domain())
+-		return 0;
+-
+-	return 0;
+-}
+-arch_initcall(xen_mm32_init);
+diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
+index dde3fc9..2052102 100644
+--- a/arch/arm64/include/asm/xen/page-coherent.h
++++ b/arch/arm64/include/asm/xen/page-coherent.h
+@@ -1,43 +1 @@
+-#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
+-#define _ASM_ARM64_XEN_PAGE_COHERENT_H
+-
+-#include <asm/page.h>
+-#include <linux/dma-attrs.h>
+-#include <linux/dma-mapping.h>
+-
+-static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
+-		dma_addr_t *dma_handle, gfp_t flags,
+-		struct dma_attrs *attrs)
+-{
+-	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
+-}
+-
+-static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
+-		void *cpu_addr, dma_addr_t dma_handle,
+-		struct dma_attrs *attrs)
+-{
+-	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
+-}
+-
+-static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
+-	     unsigned long offset, size_t size, enum dma_data_direction dir,
+-	     struct dma_attrs *attrs)
+-{
+-}
+-
+-static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
+-		size_t size, enum dma_data_direction dir,
+-		struct dma_attrs *attrs)
+-{
+-}
+-
+-static inline void xen_dma_sync_single_for_cpu(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-}
+-
+-static inline void xen_dma_sync_single_for_device(struct device *hwdev,
+-		dma_addr_t handle, size_t size, enum dma_data_direction dir)
+-{
+-}
+-#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
++#include <../../arm/include/asm/xen/page-coherent.h>
+-- 
+1.7.10.4
 
-> This is an extremely simple wrapper. It may be best to simply make it
-> a static inline. It is also generic enough that I don't have a problem
-> with it living in include/linux/of.h; but of_regulator.h would be fine
-> too.
-
-I think of.h might be a better idea - it's not something that needs to
-be regulator specific, system power controllers could provide the same
-functionality but may not offer any regulator control to Linux.
-
---Y1L3PTX8QE8cb2T+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUN8jWAAoJECTWi3JdVIfQL84H/1LIL/5/DYEQwAMprFKH8pLv
-BfFv863V5x1QtGRxC+OiDANdj61PBIrAB78PswZ5tPpX13mca3WbEqqOFSnIGdeA
-AbtMTWiznlEdQoO04vwm7lbGkAH3M7KKjq9EMIDsGnQJ4Qi+JyxTNKuwbPRIFL6e
-CiRnwPuz180PeBsUWw2b4oqcK8CPk/Bq4txHz/9Q7C59IBdzd9q62oFtLf5l6C9Y
-lqspLR7EiZOzXx3DkJ6+Jphq7SN84MZwFYoyI9WvP1MxpSzp1XLrNOXnBeyHDoSl
-7bCr0uVL8YtxUdGAKFAdWZ/IqVh9zAvct5YTw6MKNhYumkHuTrfYWRzU8p7s+zA=
-=Illa
------END PGP SIGNATURE-----
-
---Y1L3PTX8QE8cb2T+--
