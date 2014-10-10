@@ -1,288 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338AbaJJDnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 23:43:50 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39637 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaJJDnr (ORCPT
+	id S1751297AbaJJDyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 23:54:12 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:57837 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaJJDyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 23:43:47 -0400
-From: Kelvin Cheung <keguang.zhang@gmail.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: rjw@rjwysocki.net, viresh.kumar@linaro.org, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, Kelvin Cheung <keguang.zhang@gmail.com>
-Subject: [PATCH 6/6] cpufreq: Loongson1: Add cpufreq driver for Loongson1B
-Date: Fri, 10 Oct 2014 11:43:28 +0800
-Message-Id: <1412912608-6195-1-git-send-email-keguang.zhang@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 9 Oct 2014 23:54:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141008000956.GN16469@dtor-ws>
+References: <1412051189-22643-1-git-send-email-mranostay@gmail.com>
+	<1412051189-22643-3-git-send-email-mranostay@gmail.com>
+	<20141008000956.GN16469@dtor-ws>
+Date: Thu, 9 Oct 2014 20:54:07 -0700
+Message-ID: <CAKzfze9XhuwL0W0vcYjqP1Dqm5yib7xd=UOvvW2_iE1BJzH4CQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] cap11xx: Add support for various cap11xx devices
+From: Matt Ranostay <mranostay@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Kumar Gala <galak@codeaurora.org>, Daniel Mack <zonque@gmail.com>,
+        linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kelvin Cheung <keguang.zhang@gmail.com>
----
- drivers/cpufreq/Kconfig        |  10 ++
- drivers/cpufreq/Makefile       |   1 +
- drivers/cpufreq/ls1x-cpufreq.c | 217 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 228 insertions(+)
- create mode 100644 drivers/cpufreq/ls1x-cpufreq.c
+Oh good catch! Will resubmitted with v5.
 
-diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-index ffe350f..99464d7 100644
---- a/drivers/cpufreq/Kconfig
-+++ b/drivers/cpufreq/Kconfig
-@@ -250,6 +250,16 @@ config LOONGSON2_CPUFREQ
- 
- 	  If in doubt, say N.
- 
-+config LOONGSON1_CPUFREQ
-+	tristate "Loongson1 CPUFreq Driver"
-+	help
-+	  This option adds a CPUFreq driver for loongson1 processors which
-+	  support software configurable cpu frequency.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq/>.
-+
-+	  If in doubt, say N.
-+
- endmenu
- 
- menu "PowerPC CPU frequency scaling drivers"
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index db6d9a2..aca7bd3 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -98,6 +98,7 @@ obj-$(CONFIG_CRIS_MACH_ARTPEC3)		+= cris-artpec3-cpufreq.o
- obj-$(CONFIG_ETRAXFS)			+= cris-etraxfs-cpufreq.o
- obj-$(CONFIG_IA64_ACPI_CPUFREQ)		+= ia64-acpi-cpufreq.o
- obj-$(CONFIG_LOONGSON2_CPUFREQ)		+= loongson2_cpufreq.o
-+obj-$(CONFIG_LOONGSON1_CPUFREQ)		+= ls1x-cpufreq.o
- obj-$(CONFIG_SH_CPU_FREQ)		+= sh-cpufreq.o
- obj-$(CONFIG_SPARC_US2E_CPUFREQ)	+= sparc-us2e-cpufreq.o
- obj-$(CONFIG_SPARC_US3_CPUFREQ)		+= sparc-us3-cpufreq.o
-diff --git a/drivers/cpufreq/ls1x-cpufreq.c b/drivers/cpufreq/ls1x-cpufreq.c
-new file mode 100644
-index 0000000..3d9a410
---- /dev/null
-+++ b/drivers/cpufreq/ls1x-cpufreq.c
-@@ -0,0 +1,217 @@
-+/*
-+ * CPU Frequency Scaling for Loongson 1 SoC
-+ *
-+ * Copyright (C) 2014 Zhang, Keguang <keguang.zhang@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/cpu.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+#include <cpufreq.h>
-+#include <loongson1.h>
-+
-+static struct {
-+	struct clk *clk;	/* CPU clk */
-+	struct clk *mux_clk;	/* MUX of CPU clk */
-+	struct clk *pll_clk;	/* PLL clk */
-+	struct clk *osc_clk;	/* OSC clk */
-+	unsigned int max_freq;
-+	unsigned int min_freq;
-+	struct cpufreq_frequency_table *freq_tbl;
-+} ls1x_cpufreq;
-+
-+static int ls1x_cpufreq_notifier(struct notifier_block *nb,
-+				 unsigned long val, void *data)
-+{
-+	if (val == CPUFREQ_POSTCHANGE)
-+		current_cpu_data.udelay_val = loops_per_jiffy;
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block ls1x_cpufreq_notifier_block = {
-+	.notifier_call = ls1x_cpufreq_notifier
-+};
-+
-+static int ls1x_cpufreq_target(struct cpufreq_policy *policy,
-+			       unsigned int index)
-+{
-+	struct device *dev = get_cpu_device(policy->cpu);
-+	unsigned int old_freq, new_freq;
-+
-+	old_freq = policy->cur;
-+	new_freq = ls1x_cpufreq.freq_tbl[index].frequency;
-+
-+	/*
-+	 * The procedure of reconfiguring CPU clk is as below.
-+	 *
-+	 *  - Reparent CPU clk to OSC clk
-+	 *  - Reset CPU clock (very important)
-+	 *  - Reconfigure CPU DIV
-+	 *  - Reparent CPU clk back to CPU DIV clk
-+	 */
-+
-+	dev_dbg(dev, "%u KHz --> %u KHz\n", old_freq, new_freq);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.osc_clk);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) | RST_CPU_EN | RST_CPU,
-+		     LS1X_CLK_PLL_DIV);
-+	__raw_writel(__raw_readl(LS1X_CLK_PLL_DIV) & ~(RST_CPU_EN | RST_CPU),
-+		     LS1X_CLK_PLL_DIV);
-+	clk_set_rate(ls1x_cpufreq.mux_clk, new_freq * 1000);
-+	clk_set_parent(policy->clk, ls1x_cpufreq.mux_clk);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_init(struct cpufreq_policy *policy)
-+{
-+	struct device *dev = get_cpu_device(policy->cpu);
-+	struct cpufreq_frequency_table *freq_tbl;
-+	unsigned int pll_freq, freq;
-+	int steps, i;
-+
-+	pll_freq = clk_get_rate(ls1x_cpufreq.pll_clk) / 1000;
-+
-+	steps = 1 << DIV_CPU_WIDTH;
-+	freq_tbl = kzalloc(sizeof(*freq_tbl) * steps, GFP_KERNEL);
-+	if (!freq_tbl) {
-+		dev_err(dev, "failed to alloc cpufreq_frequency_table\n");
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < (steps - 1); i++) {
-+		freq = pll_freq / (i + 1);
-+		if ((freq < ls1x_cpufreq.min_freq) ||
-+		    (freq > ls1x_cpufreq.max_freq))
-+			freq_tbl[i].frequency = CPUFREQ_ENTRY_INVALID;
-+		else
-+			freq_tbl[i].frequency = freq;
-+		dev_dbg(dev, "cpufreq table: index %d: frequency %d\n", i,
-+			freq_tbl[i].frequency);
-+	}
-+	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
-+	ls1x_cpufreq.freq_tbl = freq_tbl;
-+
-+	policy->clk = ls1x_cpufreq.clk;
-+	return cpufreq_generic_init(policy, ls1x_cpufreq.freq_tbl, 0);
-+}
-+
-+static struct cpufreq_driver ls1x_cpufreq_driver = {
-+	.name		= "cpufreq-ls1x",
-+	.flags		= CPUFREQ_STICKY | CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify		= cpufreq_generic_frequency_table_verify,
-+	.target_index	= ls1x_cpufreq_target,
-+	.get		= cpufreq_generic_get,
-+	.init		= ls1x_cpufreq_init,
-+	.attr		= cpufreq_generic_attr,
-+};
-+
-+static int ls1x_cpufreq_remove(struct platform_device *pdev)
-+{
-+	cpufreq_unregister_notifier(&ls1x_cpufreq_notifier_block,
-+				    CPUFREQ_TRANSITION_NOTIFIER);
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+	clk_put(ls1x_cpufreq.osc_clk);
-+	clk_put(ls1x_cpufreq.clk);
-+
-+	return 0;
-+}
-+
-+static int ls1x_cpufreq_probe(struct platform_device *pdev)
-+{
-+	struct plat_ls1x_cpufreq *pdata = pdev->dev.platform_data;
-+	struct clk *clk;
-+	int ret;
-+
-+	if (!pdata && !pdata->clk_name && !pdata->osc_clk_name) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	clk = clk_get(NULL, pdata->clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "unable to get %s clock\n",
-+			pdata->clk_name);
-+		ret = PTR_ERR(clk);
-+		goto out;
-+	}
-+	ls1x_cpufreq.clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.clk));
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.mux_clk = clk;
-+
-+	clk = clk_get_parent(clk);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "unable to get parent of %s clock\n",
-+			__clk_get_name(ls1x_cpufreq.mux_clk));
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.pll_clk = clk;
-+
-+	clk = clk_get(NULL, pdata->osc_clk_name);
-+	if (IS_ERR(clk)) {
-+		dev_err(&pdev->dev, "unable to get %s clock\n",
-+			pdata->osc_clk_name);
-+		ret = PTR_ERR(clk);
-+		goto err_mux;
-+	}
-+	ls1x_cpufreq.osc_clk = clk;
-+
-+	ls1x_cpufreq.max_freq = pdata->max_freq;
-+	ls1x_cpufreq.min_freq = pdata->min_freq;
-+
-+	ret = cpufreq_register_driver(&ls1x_cpufreq_driver);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to register cpufreq driver: %d\n",
-+			ret);
-+		goto err_driver;
-+	}
-+
-+	ret = cpufreq_register_notifier(&ls1x_cpufreq_notifier_block,
-+					CPUFREQ_TRANSITION_NOTIFIER);
-+
-+	if (!ret)
-+		goto out;
-+
-+	dev_err(&pdev->dev, "failed to register cpufreq notifier: %d\n", ret);
-+
-+	cpufreq_unregister_driver(&ls1x_cpufreq_driver);
-+err_driver:
-+	clk_put(ls1x_cpufreq.osc_clk);
-+err_mux:
-+	clk_put(ls1x_cpufreq.clk);
-+out:
-+	return ret;
-+}
-+
-+static struct platform_driver ls1x_cpufreq_platdrv = {
-+	.driver = {
-+		.name	= "ls1x-cpufreq",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ls1x_cpufreq_probe,
-+	.remove		= ls1x_cpufreq_remove,
-+};
-+
-+module_platform_driver(ls1x_cpufreq_platdrv);
-+
-+MODULE_AUTHOR("Kelvin Cheung <keguang.zhang@gmail.com>");
-+MODULE_DESCRIPTION("Loongson 1 CPUFreq driver");
-+MODULE_LICENSE("GPL");
--- 
-1.9.1
-
+On Tue, Oct 7, 2014 at 5:09 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Hi Matt,
+>
+> On Mon, Sep 29, 2014 at 09:26:28PM -0700, Matt Ranostay wrote:
+>> +     priv->num_channels = cap->num_channels;
+>> +     priv->keycodes = devm_kcalloc(dev,
+>> +             priv->num_channels, sizeof(u32), GFP_KERNEL);
+>> +     if (!priv->keycodes)
+>> +             return -ENOMEM;
+>
+> Instead of allocating keymap separately can we do something like below?
+>
+> Thanks.
+>
+> --
+> Dmitry
+>
+>
+> Input: cap11xx - add support for various cap11xx devices
+>
+> From: Matt Ranostay <mranostay@gmail.com>
+>
+> Several other variants of the cap11xx device exists with a varying
+> number of capacitance detection channels. Add support for creating
+> the channels dynamically.
+>
+> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
+> Reviewed-by: Daniel Mack <daniel@zonque.org>
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  .../devicetree/bindings/input/cap11xx.txt          |    3 +
+>  drivers/input/keyboard/cap11xx.c                   |   62 +++++++++++++-------
+>  2 files changed, 42 insertions(+), 23 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/input/cap11xx.txt b/Documentation/devicetree/bindings/input/cap11xx.txt
+> index 738f5f3..8031aa5 100644
+> --- a/Documentation/devicetree/bindings/input/cap11xx.txt
+> +++ b/Documentation/devicetree/bindings/input/cap11xx.txt
+> @@ -7,9 +7,10 @@ Required properties:
+>
+>         compatible:             Must be on the following, depending on the model:
+>                                         "microchip,cap1106"
+> +                                       "microchip,cap1126"
+> +                                       "microchip,cap1188"
+>
+>         reg:                    The I2C slave address of the device.
+> -                               Only 0x28 is valid.
+>
+>         interrupts:             Property describing the interrupt line the
+>                                 device's ALERT#/CM_IRQ# pin is connected to.
+> diff --git a/drivers/input/keyboard/cap11xx.c b/drivers/input/keyboard/cap11xx.c
+> index 0da2e83..87fa209 100644
+> --- a/drivers/input/keyboard/cap11xx.c
+> +++ b/drivers/input/keyboard/cap11xx.c
+> @@ -1,7 +1,6 @@
+>  /*
+>   * Input driver for Microchip CAP11xx based capacitive touch sensors
+>   *
+> - *
+>   * (c) 2014 Daniel Mack <linux@zonque.org>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+> @@ -54,8 +53,6 @@
+>  #define CAP11XX_REG_MANUFACTURER_ID    0xfe
+>  #define CAP11XX_REG_REVISION           0xff
+>
+> -#define CAP11XX_NUM_CHN 6
+> -#define CAP11XX_PRODUCT_ID     0x55
+>  #define CAP11XX_MANUFACTURER_ID        0x5d
+>
+>  struct cap11xx_priv {
+> @@ -63,7 +60,24 @@ struct cap11xx_priv {
+>         struct input_dev *idev;
+>
+>         /* config */
+> -       unsigned short keycodes[CAP11XX_NUM_CHN];
+> +       u32 keycodes[];
+> +};
+> +
+> +struct cap11xx_hw_model {
+> +       uint8_t product_id;
+> +       unsigned int num_channels;
+> +};
+> +
+> +enum {
+> +       CAP1106,
+> +       CAP1126,
+> +       CAP1188,
+> +};
+> +
+> +static const struct cap11xx_hw_model cap11xx_devices[] = {
+> +       [CAP1106] = { .product_id = 0x55, .num_channels = 6 },
+> +       [CAP1126] = { .product_id = 0x53, .num_channels = 6 },
+> +       [CAP1188] = { .product_id = 0x50, .num_channels = 8 },
+>  };
+>
+>  static const struct reg_default cap11xx_reg_defaults[] = {
+> @@ -150,7 +164,7 @@ static irqreturn_t cap11xx_thread_func(int irq_num, void *data)
+>         if (ret < 0)
+>                 goto out;
+>
+> -       for (i = 0; i < CAP11XX_NUM_CHN; i++)
+> +       for (i = 0; i < priv->idev->keycodemax; i++)
+>                 input_report_key(priv->idev, priv->keycodes[i],
+>                                  status & (1 << i));
+>
+> @@ -187,11 +201,16 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>         struct device *dev = &i2c_client->dev;
+>         struct cap11xx_priv *priv;
+>         struct device_node *node;
+> +       const struct cap11xx_hw_model *cap = &cap11xx_devices[id->driver_data];
+>         int i, error, irq, gain = 0;
+>         unsigned int val, rev;
+> -       u32 gain32, keycodes[CAP11XX_NUM_CHN];
+> +       u32 gain32;
+> +
+> +       BUG_ON(!cap->num_channels);
+>
+> -       priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+> +       priv = devm_kzalloc(dev,
+> +                           sizeof(*priv) + cap->num_channels * sizeof(u32),
+> +                           GFP_KERNEL);
+>         if (!priv)
+>                 return -ENOMEM;
+>
+> @@ -203,9 +222,9 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>         if (error)
+>                 return error;
+>
+> -       if (val != CAP11XX_PRODUCT_ID) {
+> +       if (val != cap->product_id) {
+>                 dev_err(dev, "Product ID: Got 0x%02x, expected 0x%02x\n",
+> -                       val, CAP11XX_PRODUCT_ID);
+> +                       val, cap->product_id);
+>                 return -ENODEV;
+>         }
+>
+> @@ -225,8 +244,8 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>
+>         dev_info(dev, "CAP11XX detected, revision 0x%02x\n", rev);
+>         i2c_set_clientdata(i2c_client, priv);
+> -       node = dev->of_node;
+>
+> +       node = dev->of_node;
+>         if (!of_property_read_u32(node, "microchip,sensor-gain", &gain32)) {
+>                 if (is_power_of_2(gain32) && gain32 <= 8)
+>                         gain = ilog2(gain32);
+> @@ -234,17 +253,12 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>                         dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
+>         }
+>
+> -       BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
+> -
+>         /* Provide some useful defaults */
+> -       for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> -               keycodes[i] = KEY_A + i;
+> +       for (i = 0; i < cap->num_channels; i++)
+> +               priv->keycodes[i] = KEY_A + i;
+>
+>         of_property_read_u32_array(node, "linux,keycodes",
+> -                                  keycodes, ARRAY_SIZE(keycodes));
+> -
+> -       for (i = 0; i < ARRAY_SIZE(keycodes); i++)
+> -               priv->keycodes[i] = keycodes[i];
+> +               priv->keycodes, cap->num_channels);
+>
+>         error = regmap_update_bits(priv->regmap, CAP11XX_REG_MAIN_CONTROL,
+>                                    CAP11XX_REG_MAIN_CONTROL_GAIN_MASK,
+> @@ -268,17 +282,17 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>         if (of_property_read_bool(node, "autorepeat"))
+>                 __set_bit(EV_REP, priv->idev->evbit);
+>
+> -       for (i = 0; i < CAP11XX_NUM_CHN; i++)
+> +       for (i = 0; i < cap->num_channels; i++)
+>                 __set_bit(priv->keycodes[i], priv->idev->keybit);
+>
+>         __clear_bit(KEY_RESERVED, priv->idev->keybit);
+>
+>         priv->idev->keycode = priv->keycodes;
+>         priv->idev->keycodesize = sizeof(priv->keycodes[0]);
+> -       priv->idev->keycodemax = ARRAY_SIZE(priv->keycodes);
+> +       priv->idev->keycodemax = cap->num_channels;
+>
+>         priv->idev->id.vendor = CAP11XX_MANUFACTURER_ID;
+> -       priv->idev->id.product = CAP11XX_PRODUCT_ID;
+> +       priv->idev->id.product = cap->product_id;
+>         priv->idev->id.version = rev;
+>
+>         priv->idev->open = cap11xx_input_open;
+> @@ -312,12 +326,16 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
+>
+>  static const struct of_device_id cap11xx_dt_ids[] = {
+>         { .compatible = "microchip,cap1106", },
+> +       { .compatible = "microchip,cap1126", },
+> +       { .compatible = "microchip,cap1188", },
+>         {}
+>  };
+>  MODULE_DEVICE_TABLE(of, cap11xx_dt_ids);
+>
+>  static const struct i2c_device_id cap11xx_i2c_ids[] = {
+> -       { "cap1106", 0 },
+> +       { "cap1106", CAP1106 },
+> +       { "cap1126", CAP1126 },
+> +       { "cap1188", CAP1188 },
+>         {}
+>  };
+>  MODULE_DEVICE_TABLE(i2c, cap11xx_i2c_ids);
