@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847AbaJJJZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:25:25 -0400
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:40994 "EHLO
-	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752078AbaJJJZW (ORCPT
+	id S1754009AbaJJJ2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:28:55 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:54509 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944AbaJJJ2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:25:22 -0400
-X-ASG-Debug-ID: 1412933120-0759e7482841acf0002-xx1T2L
-X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
-X-Barracuda-AUTH-User: xsenscom
-X-Barracuda-Apparent-Source-IP: 87.249.116.215
-Date: Fri, 10 Oct 2014 11:25:19 +0200
-From: Frans Klaver <frans.klaver@xsens.com>
-To: Johan Hovold <johan@kernel.org>
-CC: <stable@vger.kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
- products
-Message-ID: <20141010092518.GD3588@ci00147.xsens-tech.local>
-X-ASG-Orig-Subj: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
- products
-References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
- <20141010090117.GA12494@localhost>
- <20141010091209.GC3588@ci00147.xsens-tech.local>
- <20141010092014.GC12494@localhost>
+	Fri, 10 Oct 2014 05:28:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20141010092014.GC12494@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [172.16.11.125]
-X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1412933120
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10404
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <1412108254-19234-1-git-send-email-marek@goldelico.com>
+References: <1412108254-19234-1-git-send-email-marek@goldelico.com>
+Date: Fri, 10 Oct 2014 11:28:51 +0200
+Message-ID: <CAAfyv36R-qpQPLHGGv8+QPtwyRWRJc4rPi9GcNwWpuCTGmWuWQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] input: tsc2007: Extend for pre-calibration, flipping
+ and rotation
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-input@vger.kernel.org, Marek Belisko <marek@goldelico.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 11:20:14AM +0200, Johan Hovold wrote:
-> On Fri, Oct 10, 2014 at 11:12:09AM +0200, Frans Klaver wrote:
-> > I'll move the new entries up. How about I throw in a separate patch that
-> > cleans up stuff around the PID definitions? There's some alignment off
-> > as well. That doesn't need to go into stable, I think.
-> 
-> As long as you keep the clean up minimal (e.g. the reorder the two
-> entries above and add a comment or new line, skip the alignment bit) it
-> can all go in one patch along with the new PIDs.
-> 
-> That way there'll be no conflicts when future PID-patches get backported
-> to stable.
+Ping. Any objections? Thanks
 
-Alright. Expect a new patch soonish.
+On Tue, Sep 30, 2014 at 10:17 PM, Marek Belisko <marek@goldelico.com> wrote:
+> Following series add support to tsc2007 touchscreen driver for pre-calibration,
+> flipping and rotation. Added bindings are documented and used in gta04 device tree.
+>
+> Marek Belisko (3):
+>   input: tsc2007: Add pre-calibration, flipping and rotation
+>   Documentation: dt: input: tsc2007: Document new parameters
+>   arm: dts: omap3-gta04: Extend touchscreen configs
+>
+>  .../bindings/input/touchscreen/tsc2007.txt         | 17 ++++-
+>  arch/arm/boot/dts/omap3-gta04.dtsi                 |  6 ++
+>  drivers/input/touchscreen/tsc2007.c                | 89 +++++++++++++++++++++-
+>  include/linux/i2c/tsc2007.h                        |  6 ++
+>  4 files changed, 111 insertions(+), 7 deletions(-)
+>
+> --
+> 1.9.3
+>
 
-Thanks,
-Frans
+BR,
+
+marek
+
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
