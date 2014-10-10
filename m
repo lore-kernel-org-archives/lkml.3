@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612AbaJJKYk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:24:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56093 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaJJKYf (ORCPT
+	id S1753533AbaJJKZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:25:43 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:34040 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751069AbaJJKZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:24:35 -0400
-Date: Fri, 10 Oct 2014 12:24:06 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Leonid Yegoshin <Leonid.Yegoshin@imgtec.com>, linux-mips@linux-mips.org,
-        Zubair.Kakakhel@imgtec.com, geert+renesas@glider.be,
-        david.daney@cavium.com, paul.gortmaker@windriver.com, davidlohr@hp.com,
-        macro@linux-mips.org, chenhc@lemote.com, richard@nod.at,
-        zajec5@gmail.com, keescook@chromium.org, alex@alex-smith.me.uk,
-        tglx@linutronix.de, blogic@openwrt.org, jchandra@broadcom.com,
-        paul.burton@imgtec.com, qais.yousef@imgtec.com,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        markos.chandras@imgtec.com, dengcheng.zhu@imgtec.com,
-        manuel.lauss@gmail.com, akpm@linux-foundation.org,
-        lars.persson@axis.com
-Subject: Re: [PATCH v2 2/3] MIPS: Setup an instruction emulation in VDSO
- protected page instead of user stack
-Message-ID: <20141010102406.GK10832@worktop.programming.kicks-ass.net>
-References: <20141009195030.31230.58695.stgit@linux-yegoshin>
- <20141009200017.31230.69698.stgit@linux-yegoshin>
- <20141009224304.GA4818@jhogan-linux.le.imgtec.org>
- <543715D7.1020505@imgtec.com>
- <20141009234044.GB4818@jhogan-linux.le.imgtec.org>
- <5437232F.60800@imgtec.com>
- <20141010100334.GD4818@jhogan-linux.le.imgtec.org>
+	Fri, 10 Oct 2014 06:25:37 -0400
+Message-ID: <5437B416.2080606@hurleysoftware.com>
+Date: Fri, 10 Oct 2014 06:25:26 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141010100334.GD4818@jhogan-linux.le.imgtec.org>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Jingchang Lu <jingchang.lu@freescale.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>, Joseph Lo <josephl@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] serial: of-serial: fix up PM ops on no_console_suspend
+References: <1412845852-26157-1-git-send-email-jingchang.lu@freescale.com> <543768F3.6090703@wwwdotorg.org> <01583b7f252b4f81a5655009f6f73aba@BL2PR03MB467.namprd03.prod.outlook.com>
+In-Reply-To: <01583b7f252b4f81a5655009f6f73aba@BL2PR03MB467.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 11:03:34AM +0100, James Hogan wrote:
-> Hi Leonid,
-> 
-> On Thu, Oct 09, 2014 at 05:07:11PM -0700, Leonid Yegoshin wrote:
-> > On 10/09/2014 04:40 PM, James Hogan wrote:
-> > > You could then avoid the whole stack and per-thread thing and just have
-> > > a maximum of one emuframe dedicated to each thread or allocated on
-> > > demand, and if there genuinely is a use case for nesting later on, worry
-> > > about it then.
-> > 
-> > As I understand, you propose to allocate some space in mmap.
-> 
-> No, sorry if I wasn't very clear. I just mean that you can get away with
-> a single kernel managed page per mm, with an emuframe allocated
-> per-thread which that thread always uses, since they never nest, which I
-> think simplifies the whole thing significantly.
-> 
-> The allocation could be smarter than that of course in case you have
-> thousands of threads and only a subset doing lots of FP branches, but a
-> single thread should never need more than one at a time since the new
-> signal behaviour effectively makes the delay slot emulation sort of
-> atomic from the point of view of usermode, and the kernel knows for sure
-> whether BD emulation is in progress from the PC.
-> 
-> (If there is some other way than signals that I haven't taken into
-> account that the emulation could be pre-empted then please let me know!)
+On 10/10/2014 02:16 AM, Jingchang Lu wrote:
+>> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+>> On 10/09/2014 02:10 AM, Jingchang Lu wrote:
+>>> Mandatorily disabling the uart clock will cause register access hung
+>>> on "no_console_suspend". This patch add condition check on it and only
+>>> disable the clock with console_suspend_enabled true.
+>>
+>> It would be useful if the email/patch subject line said "V2", and there
+>> was a changelog below.
+> This is not a v2, patch "serial: of-serial: add PM suspend/resume support
+> (commit 2dea53bf57783f243c892e99c10c6921e956aa7e)" has been merged into
+> linux-next tree, this is a fixup on that PM ops.
 
-Right, look at uprobes, it does exactly all this with a single page.
-Slot allocation will block waiting for a free slot when all are in use.
+Then please say so in the commit log. Something like,
 
-If you need to support nesting, you need to do greedy slot allocation,
-which is possible with limited nesting.
+Fix commit 2dea53bf57783f243c892e99c10c6921e956aa7e,
+"serial: of-serial: add PM suspend/resume support", which
+disables the uart clock on suspend, but also causes a hardware
+hang on register access if no_console_suspend command line option
+is used.
+
+Regards,
+Peter Hurley
+
