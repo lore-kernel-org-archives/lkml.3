@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709AbaJJI7Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:59:25 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:50737 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaJJI7E (ORCPT
+	id S1752225AbaJJJAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:00:35 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:57042 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaJJJAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:59:04 -0400
-Date: Fri, 10 Oct 2014 09:58:28 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: David Laight <David.Laight@ACULAB.COM>, Arnd Bergmann <arnd@arndb.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Karsten Keil <isdn@linux-pingi.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Subject: Re: [PATCH tty-next 14/22] tty: Remove
- tty_wait_until_sent_from_close()
-Message-ID: <20141010095828.1f0de28b@alan.etchedpixels.co.uk>
-In-Reply-To: <5434B5D3.4060308@hurleysoftware.com>
-References: <1402924639-5164-1-git-send-email-peter@hurleysoftware.com>
-	<1402924639-5164-15-git-send-email-peter@hurleysoftware.com>
-	<4575870.N9RCpZ4UMg@wuerfel>
-	<53A01F02.7000202@hurleysoftware.com>
-	<063D6719AE5E284EB5DD2968C1650D6D1725DAF6@AcuExch.aculab.com>
-	<5434B5D3.4060308@hurleysoftware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 10 Oct 2014 05:00:33 -0400
+Date: Fri, 10 Oct 2014 10:00:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 1/4] mfd: max77693: Remove unused define
+Message-ID: <20141010090027.GE26795@lee--X1>
+References: <1412929436-22001-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412929436-22001-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The point being that holding the tty lock across the _entire_ close
-> is equivalent to the current outcome, regardless of O_NONBLOCK.
+On Fri, 10 Oct 2014, Krzysztof Kozlowski wrote:
+
+> Remove old MAX77693_NUM_IRQ_MUIC_REGS define. Not used anywhere.
 > 
-> I'm reluctant to start returning EGAIN for non-blocking tty opens
-> because no tty driver does that now, and I don't think userspace will
-> deal well with new return codes from tty opens.
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  include/linux/mfd/max77693-private.h | 1 -
+>  1 file changed, 1 deletion(-)
 
-I do not know about the non blocking case mattering. The blocking open
-does need to wait, when I broke that case before I broke the console
-login drivers (mingetty).
+Applied for v3.19.
 
-Returning EAGAIN would also only work if poll/select did the right thing.
-Currently Linux can't support a System5 style ttymon process because of
-this limitation, which means, for example, that systemd can't implement a
-single thread to manage all console prompts/setup
+> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+> index 4f1a80b66ecf..3c51c4d01306 100644
+> --- a/include/linux/mfd/max77693-private.h
+> +++ b/include/linux/mfd/max77693-private.h
+> @@ -26,7 +26,6 @@
+>  
+>  #include <linux/i2c.h>
+>  
+> -#define MAX77693_NUM_IRQ_MUIC_REGS	3
+>  #define MAX77693_REG_INVALID		(0xff)
+>  
+>  /* Slave addr = 0xCC: PMIC, Charger, Flash LED */
 
-Alan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
