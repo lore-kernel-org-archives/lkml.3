@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaJJUHO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 16:07:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39948 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797AbaJJUHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 16:07:13 -0400
-Date: Fri, 10 Oct 2014 17:07:08 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Fu Wei <fu.wei@linaro.org>, Robert Richter <rric@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 1/1] rasd: Use perf_evlist__open() instead of open coded
-Message-ID: <20141010200708.GB18775@kernel.org>
-References: <CAFrcx1kufO2yj7--UiL841Yp5Es5=WqjL__Yzg=-+nPV5XoohA@mail.gmail.com>
- <20141006212606.GF14113@kernel.org>
- <CAFrcx1=swP-3E_pxWEcozFJhL+5YaUBPavQX=OfMtc8h4e=bDg@mail.gmail.com>
- <20141007133236.GG14113@kernel.org>
- <20141007140433.GG30146@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141007140433.GG30146@pd.tnic>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754892AbaJJUI1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 16:08:27 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:47953 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbaJJUI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 16:08:26 -0400
+From: Sumit Semwal <sumit.semwal@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-media@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linaro-kernel@lists.linaro.org,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Subject: [RFC 0/4] dma-buf Constraints-Enabled Allocation helpers
+Date: Sat, 11 Oct 2014 01:37:54 +0530
+Message-Id: <1412971678-4457-1-git-send-email-sumit.semwal@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Oct 07, 2014 at 04:04:33PM +0200, Borislav Petkov escreveu:
-> On Tue, Oct 07, 2014 at 10:32:36AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Hopefully we will completely remove the need to set up any thread or cpu
-> > map, as what you want is syswide tracing, right?
-> 
-> Yeah, I was questioning the need to open at least one thread even for
-> system-wide tracing.
+Hi,
 
-Ok, so what is now at my perf/hists branch at:
+Why:
+====
+ While sharing buffers using dma-buf, currently there's no mechanism to let
+devices share their memory access constraints with each other to allow for
+delayed allocation of backing storage.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git
+This RFC attempts to introduce the idea of memory constraints of a device,
+and how these constraints can be shared and used to help allocate buffers that
+can satisfy requirements of all devices attached to a particular dma-buf.
 
-should do the trick, the patch below makes rasd.c use it. I'll try
-building rasd.c with it and checking if it works.
+How:
+====
+ A constraints_mask is added to dma_parms of the device, and at the time of
+each device attachment to a dma-buf, the dma-buf uses this constraints_mask
+to calculate the access_mask for the dma-buf.
 
-Never having tried this, what are the requisites to test it? Some
-specific hardware and a kernel with the right tracepoint? I guess some
-recent 3.17-rc kernel is all that I need?
+Allocators can be defined for each of these constraints_masks, and then helper
+functions can be used to allocate the backing storage from the matching
+allocator satisfying the constraints of all devices interested.
 
-- Arnaldo
+A new miscdevice, /dev/cenalloc [1] is created, which acts as the dma-buf
+exporter to make this transparent to the devices.
 
----
+More details in the patch description of "cenalloc: Constraint-Enabled
+Allocation helpers for dma-buf".
 
-[PATCH] rasd: Use perf_evlist__open() instead of open coded equivalent
 
-Cc: Borislav Petkov <bp@suse.de>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- src/rasd.c | 23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
+At present, the constraint_mask is only a bitmask, but it should be possible to
+change it to a struct and adapt the constraint_mask calculation accordingly,
+based on discussion.
 
-diff --git a/src/rasd.c b/src/rasd.c
-index 06ccdcdd9d56..d3df9868388c 100644
---- a/src/rasd.c
-+++ b/src/rasd.c
-@@ -241,9 +241,6 @@ static void daemonize(void)
- 
- int main()
- {
--	struct perf_evsel *c;
--	struct thread_map *threads;
--	struct cpu_map *cpus;
- 	int i;
- 
- 	/* Run the process as a daemon */
-@@ -266,24 +263,10 @@ int main()
- 	if (read_config_file())
- 		err("error reading config file");
- 
--	/* Set cpu and threads maps */
--	threads = thread_map__new(-1, getpid(), UINT_MAX);
--	if (threads == NULL)
--		err("allocating threads_map\n");
--
--	cpus = cpu_map__new(NULL);
--	if (cpus == NULL)
--		err("allocating cpu_map\n");
--
--	perf_evlist__set_maps(evlist, cpus, threads);
--
- 	/* Open events */
--	evlist__for_each(evlist, c) {
--		/* On all online cpus by default, system wide tracing */
--		if (perf_evsel__open(c, evlist->cpus, NULL) < 0)
--			err("opening tracepoint, are you root?");
--	}
--	perf_evlist__set_id_pos(evlist);
-+	/* On all online cpus by default, system wide tracing */
-+	if (perf_evlist__open(evlist) < 0)
-+		err("opening tracepoint, are you root?");
- 
- 	/* mmap buffers */
- 	if (perf_evlist__mmap(evlist, 4 /* opts->mmap_pages */, false) < 0)
+
+Important requirement:
+======================
+ Of course, delayed allocation can only work if all participating devices 
+will wait for other devices to have 'attached' before mapping the buffer
+for the first time.
+
+As of now, users of dma-buf(drm prime, v4l2 etc) call the attach() and then
+map_attachment() almost immediately after it. This would need to be changed if
+they were to benefit from constraints.
+
+
+What 'cenalloc' is not:
+=======================
+- not 'general' allocator helpers - useful only for constraints-enabled
+  devices that share buffers with others using dma-buf.
+- not a replacement for existing allocation mechanisms inside various
+  subsystems; merely a possible alternative.
+- no page-migration - it would be very complementary to the delayed allocation
+   suggested here.
+
+TODOs: 
+======
+- demonstration test cases
+- vma helpers for allocators
+- more sample allocators
+- userspace ioctl (It should be a simple one, and we have one ready, but wanted
+   to agree on the kernel side of things first)
+
+
+May the brickbats begin, please! :)
+
+Best regards,
+~Sumit.
+
+[1]: 'C'onstraints 'EN'abled 'ALLOC'ation helpers = cenalloc: it might not be a
+very appealing name, so suggestions are very welcome!
+
+
+Benjamin Gaignard (1):
+  cenalloc: a sample allocator for contiguous page allocation
+
+Sumit Semwal (3):
+  dma-buf: Add constraints sharing information
+  cenalloc: Constraint-Enabled Allocation helpers for dma-buf
+  cenalloc: Build files for constraint-enabled allocation helpers
+
+ MAINTAINERS                               |   1 +
+ drivers/Kconfig                           |   2 +
+ drivers/Makefile                          |   1 +
+ drivers/cenalloc/Kconfig                  |   8 +
+ drivers/cenalloc/Makefile                 |   3 +
+ drivers/cenalloc/cenalloc.c               | 597 ++++++++++++++++++++++++++++++
+ drivers/cenalloc/cenalloc.h               |  99 +++++
+ drivers/cenalloc/cenalloc_priv.h          | 188 ++++++++++
+ drivers/cenalloc/cenalloc_system_contig.c | 225 +++++++++++
+ drivers/dma-buf/dma-buf.c                 |  50 ++-
+ include/linux/device.h                    |   7 +-
+ include/linux/dma-buf.h                   |  14 +
+ 12 files changed, 1189 insertions(+), 6 deletions(-)
+ create mode 100644 drivers/cenalloc/Kconfig
+ create mode 100644 drivers/cenalloc/Makefile
+ create mode 100644 drivers/cenalloc/cenalloc.c
+ create mode 100644 drivers/cenalloc/cenalloc.h
+ create mode 100644 drivers/cenalloc/cenalloc_priv.h
+ create mode 100644 drivers/cenalloc/cenalloc_system_contig.c
+
 -- 
-1.9.3
+1.9.1
 
