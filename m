@@ -1,168 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbaJJF6r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:58:47 -0400
-Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:46258 "EHLO
-	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751275AbaJJF6q (ORCPT
+	id S1751718AbaJJF7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:59:11 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57695 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaJJF7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:58:46 -0400
-X-Sender-Id: pramod.gurav@smartplayin.com
-From: Pramod Gurav <pramod.gurav@smartplayin.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
-Subject: [PATCH v3] thermal: ti-soc-thermal: Switch to using managed resources
-Date: Fri, 10 Oct 2014 11:32:12 +0530
-Message-Id: <1412920932-7419-1-git-send-email-pramod.gurav@smartplayin.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 10 Oct 2014 01:59:09 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9A5wlTF016815, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH v2] mfd: rtsx: fix PM suspend for 5227 & 5249
+Date: Fri, 10 Oct 2014 13:58:44 +0800
+Message-ID: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change switches to managed resource APIs to allocated resources
-such as irq, clock. Hence does away with release statements of the
-same resorces in error lables and remove function.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Cc: Eduardo Valentin <edubezval@gmail.com>
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
-Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Fix rts5227&5249 failed send buffer cmd after suspend,
+PM_CTRL3 should reset before send any buffer cmd after suspend.
+Otherwise, buffer cmd will failed, this will lead resume fail.
 
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 ---
-Changes since v2:
-- fix failure path of clk_get_rate by returning error.
-Change since v1:
-- Passing struct device to devm_clk_get was missing. Fix the same in v2.
+ drivers/mfd/Makefile         |  2 +-
+ drivers/mfd/rts5227.c        |  6 ++++++
+ drivers/mfd/rts5249.c        |  4 ++++
+ drivers/mfd/rtsx_gops.c      | 37 +++++++++++++++++++++++++++++++++++++
+ drivers/mfd/rtsx_pcr.h       |  3 +++
+ include/linux/mfd/rtsx_pci.h | 28 ++++++++++++++++++++++++++++
+ 6 files changed, 79 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mfd/rtsx_gops.c
 
- drivers/thermal/ti-soc-thermal/ti-bandgap.c |   58 ++++++++-------------------
- 1 file changed, 16 insertions(+), 42 deletions(-)
-
-diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-index 634b6ce..22ad68e 100644
---- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-@@ -1060,7 +1060,7 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
- 	int status;
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f001487..7f45c06 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -13,7 +13,7 @@ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+ obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+ obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
  
- 	/* Request for gpio_86 line */
--	status = gpio_request(gpio_nr, "tshut");
-+	status = devm_gpio_request(&pdev->dev, gpio_nr, "tshut");
- 	if (status < 0) {
- 		dev_err(bgp->dev, "Could not request for TSHUT GPIO:%i\n", 86);
- 		return status;
-@@ -1071,14 +1071,13 @@ static int ti_bandgap_tshut_init(struct ti_bandgap *bgp,
- 		return status;
- 	}
+-rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
++rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+ obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+ obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
  
--	status = request_irq(gpio_to_irq(gpio_nr), ti_bandgap_tshut_irq_handler,
--			     IRQF_TRIGGER_RISING, "tshut", NULL);
--	if (status) {
--		gpio_free(gpio_nr);
-+	status = devm_request_irq(&pdev->dev, gpio_to_irq(gpio_nr),
-+				  ti_bandgap_tshut_irq_handler,
-+				  IRQF_TRIGGER_RISING, "tshut", NULL);
-+	if (status)
- 		dev_err(bgp->dev, "request irq failed for TSHUT");
--	}
+diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+index 9c8eec8..3240740 100644
+--- a/drivers/mfd/rts5227.c
++++ b/drivers/mfd/rts5227.c
+@@ -130,6 +130,12 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
  
--	return 0;
-+	return status;
+ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+ {
++	int err;
++
++	err = rtsx_gops_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	/* Optimize RX sensitivity */
+ 	return rtsx_pci_write_phy_register(pcr, 0x00, 0xBA42);
+ }
+diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+index 573de7b..cf425cc 100644
+--- a/drivers/mfd/rts5249.c
++++ b/drivers/mfd/rts5249.c
+@@ -130,6 +130,10 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+ {
+ 	int err;
+ 
++	err = rtsx_gops_pm_reset(pcr);
++	if (err < 0)
++		return err;
++
+ 	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
+ 			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
+ 			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
+diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
+new file mode 100644
+index 0000000..b1a98c6
+--- /dev/null
++++ b/drivers/mfd/rtsx_gops.c
+@@ -0,0 +1,37 @@
++/* Driver for Realtek PCI-Express card reader
++ *
++ * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2, or (at your option) any
++ * later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, see <http://www.gnu.org/licenses/>.
++ *
++ * Author:
++ *   Micky Ching <micky_ching@realsil.com.cn>
++ */
++
++#include <linux/mfd/rtsx_pci.h>
++#include "rtsx_pcr.h"
++
++int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
++{
++	int err;
++
++	/* init aspm */
++	rtsx_pci_write_register(pcr, ASPM_FORCE_CTL, 0xFF, 0x00);
++	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, ~LCTLR_ASPM_CTL_MASK, 0x00);
++	if (err < 0)
++		return err;
++
++	/* reset PM_CTRL3 before send buffer cmd */
++	return rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
++}
+diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
+index 07e4c2e..fe2bbb6 100644
+--- a/drivers/mfd/rtsx_pcr.h
++++ b/drivers/mfd/rtsx_pcr.h
+@@ -72,4 +72,7 @@ do {									\
+ 	pcr->ms_pull_ctl_disable_tbl = __device##_ms_pull_ctl_disable_tbl; \
+ } while (0)
+ 
++/* generic operations */
++int rtsx_gops_pm_reset(struct rtsx_pcr *pcr);
++
+ #endif
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 74346d5..1604dda 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -707,6 +707,14 @@
+ #define PM_CTRL1			0xFF44
+ #define PM_CTRL2			0xFF45
+ #define PM_CTRL3			0xFF46
++#define   SDIO_SEND_PME_EN		0x80
++#define   FORCE_RC_MODE_ON		0x40
++#define   FORCE_RX50_LINK_ON		0x20
++#define   D3_DELINK_MODE_EN		0x10
++#define   USE_PESRTB_CTL_DELINK		0x08
++#define   DELAY_PIN_WAKE		0x04
++#define   RESET_PIN_WAKE		0x02
++#define   PM_WAKE_EN			0x01
+ #define PM_CTRL4			0xFF47
+ 
+ /* Memory mapping */
+@@ -752,6 +760,14 @@
+ #define PHY_DUM_REG			0x1F
+ 
+ #define LCTLR				0x80
++#define   LCTLR_EXT_SYNC		0x80
++#define   LCTLR_COMMON_CLOCK_CFG	0x40
++#define   LCTLR_RETRAIN_LINK		0x20
++#define   LCTLR_LINK_DISABLE		0x10
++#define   LCTLR_RCB			0x08
++#define   LCTLR_RESERVED		0x04
++#define   LCTLR_ASPM_CTL_MASK		0x03
++
+ #define PCR_SETTING_REG1		0x724
+ #define PCR_SETTING_REG2		0x814
+ #define PCR_SETTING_REG3		0x747
+@@ -967,4 +983,16 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+ 	return (u8 *)(pcr->host_cmds_ptr);
  }
  
- /**
-@@ -1104,16 +1103,14 @@ static int ti_bandgap_talert_init(struct ti_bandgap *bgp,
- 		dev_err(&pdev->dev, "get_irq failed\n");
- 		return bgp->irq;
- 	}
--	ret = request_threaded_irq(bgp->irq, NULL,
-+	ret = devm_request_threaded_irq(&pdev->dev, bgp->irq, NULL,
- 				   ti_bandgap_talert_irq_handler,
- 				   IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
- 				   "talert", bgp);
--	if (ret) {
-+	if (ret)
- 		dev_err(&pdev->dev, "Request threaded irq failed.\n");
--		return ret;
--	}
- 
--	return 0;
-+	return ret;
- }
- 
- static const struct of_device_id of_ti_bandgap_match[];
-@@ -1212,21 +1209,17 @@ int ti_bandgap_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	bgp->fclock = clk_get(NULL, bgp->conf->fclock_name);
--	ret = IS_ERR(bgp->fclock);
--	if (ret) {
-+	bgp->fclock = devm_clk_get(&pdev->dev, bgp->conf->fclock_name);
-+	if (IS_ERR(bgp->fclock)) {
- 		dev_err(&pdev->dev, "failed to request fclock reference\n");
--		ret = PTR_ERR(bgp->fclock);
--		goto free_irqs;
-+		return PTR_ERR(bgp->fclock);
- 	}
- 
--	bgp->div_clk = clk_get(NULL,  bgp->conf->div_ck_name);
--	ret = IS_ERR(bgp->div_clk);
--	if (ret) {
-+	bgp->div_clk = devm_clk_get(&pdev->dev, bgp->conf->div_ck_name);
-+	if (IS_ERR(bgp->div_clk)) {
- 		dev_err(&pdev->dev,
- 			"failed to request div_ts_ck clock ref\n");
--		ret = PTR_ERR(bgp->div_clk);
--		goto free_irqs;
-+		return PTR_ERR(bgp->div_clk);
- 	}
- 
- 	for (i = 0; i < bgp->conf->sensor_count; i++) {
-@@ -1249,9 +1242,8 @@ int ti_bandgap_probe(struct platform_device *pdev)
- 				  bgp->conf->sensors[0].ts_data->max_freq);
- 	if (clk_rate < bgp->conf->sensors[0].ts_data->min_freq ||
- 	    clk_rate <= 0) {
--		ret = -ENODEV;
- 		dev_err(&pdev->dev, "wrong clock rate (%d)\n", clk_rate);
--		goto put_clks;
-+		return -ENODEV;
- 	}
- 
- 	ret = clk_set_rate(bgp->div_clk, clk_rate);
-@@ -1357,14 +1349,6 @@ remove_sensors:
- disable_clk:
- 	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
- 		clk_disable_unprepare(bgp->fclock);
--put_clks:
--	clk_put(bgp->fclock);
--	clk_put(bgp->div_clk);
--free_irqs:
--	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
--		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
--		gpio_free(bgp->tshut_gpio);
--	}
- 
- 	return ret;
- }
-@@ -1388,16 +1372,6 @@ int ti_bandgap_remove(struct platform_device *pdev)
- 
- 	if (TI_BANDGAP_HAS(bgp, CLK_CTRL))
- 		clk_disable_unprepare(bgp->fclock);
--	clk_put(bgp->fclock);
--	clk_put(bgp->div_clk);
--
--	if (TI_BANDGAP_HAS(bgp, TALERT))
--		free_irq(bgp->irq, bgp);
--
--	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
--		free_irq(gpio_to_irq(bgp->tshut_gpio), NULL);
--		gpio_free(bgp->tshut_gpio);
--	}
- 
- 	return 0;
- }
++static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
++		u8 mask, u8 append)
++{
++	int err;
++	u8 val;
++
++	err = pci_read_config_byte(pcr->pci, addr, &val);
++	if (err < 0)
++		return err;
++	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
++}
++
+ #endif
 -- 
-1.7.9.5
+1.9.1
 
