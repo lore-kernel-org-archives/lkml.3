@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaJJU5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 16:57:06 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:51531 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaJJU5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 16:57:04 -0400
-Message-ID: <54384817.6060102@roeck-us.net>
-Date: Fri, 10 Oct 2014 13:56:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1754943AbaJJU7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 16:59:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44715 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751720AbaJJU7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 16:59:23 -0400
+Date: Fri, 10 Oct 2014 22:59:19 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: linux-input@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vojtech Pavlik <vojtech@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: i8042 - disable active multiplexing by default
+In-Reply-To: <20141010205131.GA3271@dtor-ws>
+Message-ID: <alpine.LNX.2.00.1410102252480.31343@pobox.suse.cz>
+References: <20141010205131.GA3271@dtor-ws>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Steven Honeyman <stevenhoneyman@gmail.com>
-Subject: Re: [PATCH] i8k: Add support for Dell Latitude E6440
-References: <1412932368-24082-1-git-send-email-pali.rohar@gmail.com>
-In-Reply-To: <1412932368-24082-1-git-send-email-pali.rohar@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.5438481E.0144,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: 
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2014 02:12 AM, Pali Rohár wrote:
-> Dell Latitude E6440 needs same settings as E6540.
->
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+On Fri, 10 Oct 2014, Dmitry Torokhov wrote:
 
-Acked-by: Guenter Roeck <linux@roeck-us.net>
+> Active multiplexing is a nice feature as it allows several pointing devices
+> (such as touchpad and external mouse) use their native protocols at the
+> same time. Unfortunately many manufacturers do not implement the feature
+> properly even though they advertise it. The problematic implementations are
+> never fixed, since Windows by default does not use this mode, and move from
+> one BIOS/model of laptop to another. When active multiplexing is broken
+> turning it on usually results in touchpad, keyboard, or both unresponsive.
+> 
+> With PS/2 usage on decline (most of PS/2 devices in use nowadays are
+> internal laptop touchpads), I expect number of users who have laptops with
+> working MUX implementation, docking stations with external PS/2 ports, and
+> who are still using external PS/2 mice, to be rather small. Let's flip the
+> default to be OFF and allow activating it through i8042.nomux=0 kernel
+> option.  We'll also keep DMI table where we can record known good models.
 
-> ---
->   drivers/char/i8k.c |    8 ++++++++
->   1 file changed, 8 insertions(+)
->
-> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> index 34174d0..471f985 100644
-> --- a/drivers/char/i8k.c
-> +++ b/drivers/char/i8k.c
-> @@ -711,6 +711,14 @@ static struct dmi_system_id i8k_dmi_table[] __initdata = {
->   		.driver_data = (void *)&i8k_config_data[DELL_LATITUDE_D520],
->   	},
->   	{
-> +		.ident = "Dell Latitude E6440",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6440"),
-> +		},
-> +		.driver_data = (void *)&i8k_config_data[DELL_LATITUDE_E6540],
-> +	},
-> +	{
->   		.ident = "Dell Latitude E6540",
->   		.matches = {
->   			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
->
+Being responsible for introducing a non-trivial portion of 
+i8042_dmi_nomux_table[] entries:
 
+	Acked-by: Jiri Kosina <jkosina@suse.cz>
+
+If nothing else, it'd make my life easier :)
+
+[ ... snip ... ]
+> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+> index f5a98af..9a97c2b 100644
+> --- a/drivers/input/serio/i8042.c
+> +++ b/drivers/input/serio/i8042.c
+> @@ -39,7 +39,7 @@ static bool i8042_noaux;
+>  module_param_named(noaux, i8042_noaux, bool, 0);
+>  MODULE_PARM_DESC(noaux, "Do not probe or use AUX (mouse) port.");
+>  
+> -static bool i8042_nomux;
+> +static bool i8042_nomux = true;
+
+Hmmm ... perhaps if we want to be really friendly, we should warn (and I 
+definitely don't mean WARN(), but rather pr_info() or something) if we 
+encounter that the cmdline contains 'i8042.nomux=1'.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
