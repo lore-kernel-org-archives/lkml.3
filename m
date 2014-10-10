@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaJJLwx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:52:53 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:45165 "EHLO SMTP.CITRIX.COM"
+	id S1752436AbaJJLxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:53:12 -0400
+Received: from mail4.gandi.net ([217.70.183.210]:55385 "EHLO mail4.gandi.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487AbaJJLwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:52:50 -0400
-X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
-   d="scan'208";a="180113941"
-Date: Fri, 10 Oct 2014 12:50:34 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <xen-devel@lists.xensource.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v4 0/7] introduce GNTTABOP_cache_flush
-Message-ID: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1751455AbaJJLxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:53:10 -0400
+X-Greylist: delayed 482 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Oct 2014 07:53:09 EDT
+Date: Fri, 10 Oct 2014 13:45:03 +0200
+From: William Dauchy <william@gandi.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: William Dauchy <william@gandi.net>, stable@vger.kernel.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 3.12 00/96] 3.12.30-stable review
+Message-ID: <20141010114503.GC1681@gandi.net>
+References: <cover.1412147522.git.jslaby@suse.cz>
+ <CAJ75kXb-mmrW9n51O19rM4xz1i_qTBjzAkOzfY5brWW4TEig1A@mail.gmail.com>
+ <20141010114047.GB32429@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/e2eDi0V/xtL+Mc8"
+Content-Disposition: inline
+In-Reply-To: <20141010114047.GB32429@kroah.com>
+Reply_to: William Dauchy <william@gandi.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this patch series introduces support for GNTTABOP_cache_flush to perform
-cache maintenance operation on foreign pages and reverts the current
-code based on XENFEAT_grant_map_identity.
 
-It also provides a very slow fallback by bouncing on the swiotlb buffer,
-in case the hypercall is not available.
+--/e2eDi0V/xtL+Mc8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Oct10 04:40, Greg Kroah-Hartman wrote:
+> The last 3.14.x release had a bunch of these patches already in them,
+> with more to come in future releases, so yes, 3.14.x is going to benefit
+> from it, and you didn't even notice :)
 
-Changes in v4:
-- remove outer_*_range call;
-- introduce is_dma_coherent;
-- use is_dma_coherent in arch/arm/xen/mm32.c;
-- merge xen/mm32.c into xen/mm.c;
-- xen/arm/arm64: introduce xen_arch_need_swiotlb;
-- avoid bouncing dma map operations that involve foreign grants and
-non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
+oh true; did not catch the last one.
 
-Changes in v3:
-- fix the cache maintenance op call to match what Linux does natively;
-- update the hypercall interface to match Xen.
+> But 3.10 will probably not, it's been just too long for that kernel
+> release, sorry, major mm changes like this isn't something I'm willing
+> to do at this point in time.
 
-Changes in v2:
-- remove the definition of XENFEAT_grant_map_identity;
-- update the hypercall interface to match Xen;
-- call the interface on a single page at a time.
+understood.
 
+Thanks for your quick answer,
+--=20
+William
 
-Stefano Stabellini (7):
-      xen/arm: remove handling of XENFEAT_grant_map_identity
-      xen/arm: remove outer_*_range call
-      [RFC] arm/arm64: introduce is_dma_coherent
-      xen/arm: use is_dma_coherent
-      xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-      xen/arm/arm64: introduce xen_arch_need_swiotlb
-      xen/arm: introduce GNTTABOP_cache_flush
+--/e2eDi0V/xtL+Mc8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
- arch/arm/include/asm/dma-mapping.h         |    6 +
- arch/arm/include/asm/xen/page.h            |    4 +
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/enlighten.c                   |    5 -
- arch/arm/xen/mm.c                          |  161 +++++++++++++++++++++-
- arch/arm/xen/mm32.c                        |  202 ----------------------------
- arch/arm64/include/asm/dma-mapping.h       |    5 +
- arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
- arch/x86/include/asm/xen/page.h            |    7 +
- drivers/xen/swiotlb-xen.c                  |    5 +-
- include/xen/interface/features.h           |    3 -
- include/xen/interface/grant_table.h        |   19 +++
- 12 files changed, 207 insertions(+), 256 deletions(-)
- delete mode 100644 arch/arm/xen/mm32.c
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iEYEARECAAYFAlQ3xr8ACgkQ1I6eqOUidQH61wCaA2R0wGXgO1AjBzVcUFspuSzs
+hfIAn0v1PzZb3xbkKOZtswEBVMo4tqjT
+=8QTT
+-----END PGP SIGNATURE-----
+
+--/e2eDi0V/xtL+Mc8--
