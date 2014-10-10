@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaJJMca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 08:32:30 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:36238 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752153AbaJJMcY (ORCPT
+	id S1754010AbaJJMdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 08:33:03 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:20588 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751884AbaJJMcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 08:32:24 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-6b-5437d1d5b6e0
+	Fri, 10 Oct 2014 08:32:22 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-54-5437d1d49a8b
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: Inki Dae <inki.dae@samsung.com>
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -18,54 +18,59 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org (open list),
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 4/4] drm/exynos: correct connector->dpms field before resuming
-Date: Fri, 10 Oct 2014 14:31:56 +0200
-Message-id: <1412944316-27737-5-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 3/4] drm/exynos: enable vblank after DPMS on
+Date: Fri, 10 Oct 2014 14:31:55 +0200
+Message-id: <1412944316-27737-4-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1412944316-27737-1-git-send-email-a.hajda@samsung.com>
 References: <1412944316-27737-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGJMWRmVeSWpSXmKPExsVy+t/xq7pXL5qHGPRe1rG4te4cq8WVr+/Z
-	LCbdn8Bi8eLeRRaLs01v2C0u75rDZjHj/D4mi7VH7rJbzJj8ks2B0+N+93Emj74tqxg9Pm+S
-	C2CO4rJJSc3JLEst0rdL4Mp4+GsyW8EJjorTK9cyNTAuYu9i5OSQEDCRaJ1zjA3CFpO4cG89
-	kM3FISSwlFGip/0EC4TTxySx5/4/RpAqNgFNib+bb4J1iAgoS6za184OUsQs8JFJ4srSN8wg
-	CWEBP4nlM6eDFbEIqEosm7qbCcTmFXCWmDZ1FdQ6OYmTxyazgticAi4Sv29dALI5gLY5Szy/
-	pDyBkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJCw+rKDcfExq0OMAhyMSjy8F2TM
-	Q4RYE8uKK3MPMUpwMCuJ8M7fCxTiTUmsrEotyo8vKs1JLT7EyMTBKdXAWJe/786xpMyraeei
-	+BbLfRFLf8ezwfSduOXPDWXu11wvCmh8WHRNMeWa7+vVYhWzYtJsHgl/XL/PVml/w/vm642+
-	ojue/pVbfPZN+6Eu56K3l6uuLusSdMoU/pfjsvrltzUz3a896lwRoTVPSmrSictV2+0Ou12q
-	uv3uf42vq/PMBYmXDCufmCixFGckGmoxFxUnAgBjp2CYCQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xq7pXLpqHGJx/wWtxa905VosrX9+z
+	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
+	F8AcxWWTkpqTWZZapG+XwJXR8qK6YD5nxbKGicwNjE/Zuxg5OSQETCQan01lgbDFJC7cW8/W
+	xcjFISSwlFHi68t+Jginj0li0dP1YB1sApoSfzffZAOxRQSUJVbta2cHKWIW+MgkcWXpG2aQ
+	hLCAjUTXnX9gNouAqsTqK81MIDavgLPE5mVzWCHWyUmcPDYZzOYUcJH4fesCkM0BtM1Z4vkl
+	5QmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihATV1x2MS49ZHWIU4GBU4uG9IGMe
+	IsSaWFZcmXuIUYKDWUmEd/5eoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGemkmzuhLvxoZTkdY
+	VrzyFV7I0nX9QMHuo+cr+J7k65ib5r+Z7h3Y9th78xzHmVKxXrbqAqLx+S9sVkQ+NcjMqFkr
+	Hfv1T/mr7pJHp7PT7d9mbtNcLagSJVD2ocTrlw2P8exLzfsNmENOJx3uYTaXmuzcKH7wsbTg
+	rCT3/8Zv6kuvB2q//6fEUpyRaKjFXFScCABe5H5OCAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During system suspend after connector switch off its dpms field
-is set to connector previous dpms state. To properly resume dpms field
-should be set to its actual state (off) before resuming to previous dpms state.
+Before DPMS off driver disables vblank.
+It should be balanced by vblank enable after DPMS on.
+The patch fixes issue with page_flip ioctl not being able
+to acquire vblank counter introduced by patch:
+drm: Always reject drm_vblank_get() after drm_vblank_off()
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_drv.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_crtc.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_drv.c b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-index ce6c14c..fe250e4 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_drv.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_drv.c
-@@ -194,8 +194,12 @@ static int exynos_drm_resume(struct drm_device *dev)
- 
- 	drm_modeset_lock_all(dev);
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
--		if (connector->funcs->dpms)
--			connector->funcs->dpms(connector, connector->dpms);
-+		if (connector->funcs->dpms) {
-+			int dpms = connector->dpms;
-+
-+			connector->dpms = DRM_MODE_DPMS_OFF;
-+			connector->funcs->dpms(connector, dpms);
-+		}
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+index 8e38e9f..45026e6 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
+@@ -71,13 +71,16 @@ static void exynos_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
+ 				!atomic_read(&exynos_crtc->pending_flip),
+ 				HZ/20))
+ 			atomic_set(&exynos_crtc->pending_flip, 0);
+-		drm_vblank_off(crtc->dev, exynos_crtc->pipe);
++		drm_crtc_vblank_off(crtc);
  	}
- 	drm_modeset_unlock_all(dev);
  
+ 	if (manager->ops->dpms)
+ 		manager->ops->dpms(manager, mode);
+ 
+ 	exynos_crtc->dpms = mode;
++
++	if (mode == DRM_MODE_DPMS_ON)
++		drm_crtc_vblank_on(crtc);
+ }
+ 
+ static void exynos_drm_crtc_prepare(struct drm_crtc *crtc)
 -- 
 1.9.1
 
