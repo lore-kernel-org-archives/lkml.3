@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176AbaJJI0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:26:00 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:62834 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774AbaJJIYI (ORCPT
+	id S1751962AbaJJIaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 04:30:19 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54001 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaJJIaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:24:08 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-09-543797a41a24
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/4] mfd: max77693: Remove unused define
-Date: Fri, 10 Oct 2014 10:23:53 +0200
-Message-id: <1412929436-22001-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t/xK7pLppuHGPw5KW+xccZ6VovrX56z
-	Wrx+YWhxtukNu8X9r0cZLS7vmsNmsfbIXXaL240r2CxOd7M6cHrcubaHzWPeyUCPvi2rGD0+
-	b5ILYInisklJzcksSy3St0vgyri/oZ+14BtLxdW+c+wNjDNYuhg5OSQETCQW7f/ACmGLSVy4
-	t56ti5GLQ0hgKaPEvPV72CGcPiaJM8+esYFUsQkYS2xevgSsSkRgN6PEt72LmEAcZoGjjBLT
-	e98ygVQJC1hIbDx6HsxmEVCV+DZzInMXIwcHr4C7xOztNRDr5CROHpvMOoGRewEjwypG0dTS
-	5ILipPRcI73ixNzi0rx0veT83E2MkGD5uoNx6TGrQ4wCHIxKPLwXZMxDhFgTy4orcw8xSnAw
-	K4nw6psChXhTEiurUovy44tKc1KLDzEycXBKNTC2NJy64XiV1XW93/nm7eH5N97531C+6iP0
-	sVrwG78832fXZUJK7HeeB1pHy4ZfWXdQ6/T6p4cWL39z8rpktCCf1+YWqTclm24JXq+aPNdD
-	YK2cwrJDfpfXV9YG3XJ7I2zHaL9n1o3lTlorM+6K682c4cOnaT8hkf+qSamXgnnniZi9CneS
-	WG2VWIozEg21mIuKEwEMacm+9AEAAA==
+	Fri, 10 Oct 2014 04:30:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, kernel-janitors@vger.kernel.org,
+        cocci@systeme.lip6.fr
+Subject: Re: [RFC] drop owner assignment from platform_drivers
+Date: Fri, 10 Oct 2014 10:30:08 +0200
+Message-ID: <2106140.DbuFLh1xav@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141010072439.GA1741@katana>
+References: <20141010072439.GA1741@katana>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y4kIVLXK9p5um1bOKfTdGsMkbn7oOYiwXc7KAItgbfB
+ 6CotV57dwV9j/D9H71F53eq3ibM1h0eB8aymAXR7xMQsRexUVU
+ UcMSjn3BjsrdpY7NQndtGekwm5DPI8paaLi7osJltVUMq4Qeka
+ +9mNrxACLgQt+0MWAZUyel1hmFTG7Z5ieQhWznG3IABkXoYFBu
+ 7LIlU4L5dlGPxmA8wJWQ+oxpS3LRBcj+DjZUwE99KOhm/ZN//u
+ nUSNgxRn0SvKKQhhzmkHPJe4x5U3yHTRPCPtxgXbr19Vs/xWXE
+ /E79TGGw42EtxpxS7kK4WMHBdqhvn6aF2DVhOgvMzp9U4niOae
+ laL8XGRAEkgyuohpEFmI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove old MAX77693_NUM_IRQ_MUIC_REGS define. Not used anywhere.
+On Friday 10 October 2014 09:24:39 Wolfram Sang wrote:
+> people found out that for platform_driver, we don't need to set the
+> .owner field because this is done by the platform driver core. So far,
+> so good. However, now I got patches removing the .owner field for this
+> single i2c driver or for that one. To prevent getting thousands of
+> patches fixing single drivers, I used coccinelle to remove all instances
+> from the kernel. The SmPL looks like this, it doesn't blindly remove all
+> THIS_MODULE, but checks if the platform_driver struct was really used by
+> a call actually setting the .owner field:
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- include/linux/mfd/max77693-private.h | 1 -
- 1 file changed, 1 deletion(-)
+Is the intention just to save a few lines in the kernel source, or are
+there any additional upsides to doing this?
 
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-index 4f1a80b66ecf..3c51c4d01306 100644
---- a/include/linux/mfd/max77693-private.h
-+++ b/include/linux/mfd/max77693-private.h
-@@ -26,7 +26,6 @@
- 
- #include <linux/i2c.h>
- 
--#define MAX77693_NUM_IRQ_MUIC_REGS	3
- #define MAX77693_REG_INVALID		(0xff)
- 
- /* Slave addr = 0xCC: PMIC, Charger, Flash LED */
--- 
-1.9.1
+While it looks like an obvious cleanup, it also seems to me that there
+is zero effect in terms of functionality, code size or enabling future
+changes.
 
+I'm all for adding your semantic patch to scripts/coccinelle so it gets
+picked up by anyone writing new drivers or doing code cleanup on their
+driver, but I'm unsure about the value of applying all your patches
+for the existing drivers.
+
+	Arnd
