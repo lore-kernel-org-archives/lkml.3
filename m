@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374AbaJJLmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:42:44 -0400
-Received: from plane.gmane.org ([80.91.229.3]:53107 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617AbaJJLmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:42:42 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: Re: [PATCH 3.12 00/96] 3.12.30-stable review
-Date: Fri, 10 Oct 2014 11:42:28 +0000 (UTC)
-Message-ID: <pan.2014.10.10.11.42.28@googlemail.com>
-References: <cover.1412147522.git.jslaby@suse.cz>
-	<CAJ75kXb-mmrW9n51O19rM4xz1i_qTBjzAkOzfY5brWW4TEig1A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: pd953ec9a.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: stable@vger.kernel.org
+	id S1752853AbaJJLm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:42:57 -0400
+Received: from 11.mo5.mail-out.ovh.net ([46.105.47.167]:38334 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751524AbaJJLmv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:42:51 -0400
+X-Greylist: delayed 4200 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Oct 2014 07:42:50 EDT
+From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+To: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
+	SoC...),
+        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Subject: [PATCH] ARM: dts: rockchip: enable DMA on SPI for rk3066 and rk3188
+Date: Fri, 10 Oct 2014 10:04:13 +0200
+Message-Id: <1412928253-5119-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Mailer: git-send-email 1.9.1
+X-Ovh-Tracer-Id: 10640880020907884769
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrkeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014 09:32:45 +0200, William Dauchy wrote:
+According to the RK3066 and RK3188 TRM, the two SPI controllers support DMA
+handshake interface. Add the DMA properties so they can be used when needed.
 
-> Hi stable release team,
-> 
-> On Wed, Oct 1, 2014 at 10:57 AM, Jiri Slaby <jslaby@suse.cz> wrote:
->> This one is special. First, it is rounded (30). Second, most of the
->> patches are performance improvements. They are coming from SUSE
->> Enterprise Linux and all are backed by proper testing and performance
->> measurements. All this patchset was prepared and sent by Mel Gorman
->> with a support of other patchers from SUSE. Thanks to all of them.
-> 
-> I'm just wondering if 3.10.x and 3.14.x are going to benefit from
-> these performance improvement patches as well.
+Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+---
+ arch/arm/boot/dts/rk3xxx.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-This set of patches was awesome but also pretty large and touched some
-nontrivial parts, so it's not just a simple matter of merging them
-wholesale.
-
-I merged a handful of these patches to my own private 3.14.x tree where
-they work wonderfully, and some have already appeared in the latest
-stable-3.14.21. Greg also said that he has more in the queue. :)
-
-The one I have so far punted on due to the filesystem dependencies is
-2457aec63745e235bcafb7ef312b182d8682f0fc aka: "mm: non-atomically mark
-page accessed during page cache allocation where possible" - that would
-be really nice to have.
-
--h
+diff --git a/arch/arm/boot/dts/rk3xxx.dtsi b/arch/arm/boot/dts/rk3xxx.dtsi
+index 499468d..9ba92de 100644
+--- a/arch/arm/boot/dts/rk3xxx.dtsi
++++ b/arch/arm/boot/dts/rk3xxx.dtsi
+@@ -367,6 +367,8 @@
+ 		reg = <0x20070000 0x1000>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		dmas = <&dmac2 10>, <&dmac2 11>;
++		dma-names = "tx", "rx";
+ 		status = "disabled";
+ 	};
+ 
+@@ -378,6 +380,8 @@
+ 		reg = <0x20074000 0x1000>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
++		dmas = <&dmac2 12>, <&dmac2 13>;
++		dma-names = "tx", "rx";
+ 		status = "disabled";
+ 	};
+ };
+-- 
+1.9.1
 
