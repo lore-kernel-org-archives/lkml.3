@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaJJFrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:47:52 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:46547 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905AbaJJFrt (ORCPT
+	id S1751395AbaJJFxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:53:44 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:58692 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168AbaJJFxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:47:49 -0400
-Message-ID: <543772F9.1010304@st.com>
-Date: Fri, 10 Oct 2014 07:47:37 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Vince Bridgers <vbridger@opensource.altera.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Cc: <vbridger@altera.com>
-Subject: Re: [PATCH net] stmmac: correct mc_filter local variable in set_filter
- and set_mac_addr call
-References: <1412867436-22153-1-git-send-email-vbridger@opensource.altera.com>
-In-Reply-To: <1412867436-22153-1-git-send-email-vbridger@opensource.altera.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.52.138.72]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-10_04:2014-10-10,2014-10-10,1970-01-01 signatures=0
+	Fri, 10 Oct 2014 01:53:40 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Anton Blanchard <anton@samba.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        linuxppc-dev@lists.ozlabs.org (open list:LINUX FOR POWERPC...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] powerpc: Wire up sys_bpf() syscall
+Date: Fri, 10 Oct 2014 01:53:45 -0400
+Message-Id: <1412920428-29263-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/9/2014 5:10 PM, Vince Bridgers wrote:
-> Testing revealed that the local variable mc_filter was dimensioned
-> incorrectly for all possible configurations and get_mac_addr should
-> have been set_mac_addr (a typo). Make sure mc_filter is dimensioned
-> to 8 32-bit unsigned longs - the largest size of the Synopsys
-> multicast filter register set.
->
-> Signed-off-by: Vince Bridgers <vbridger@opensource.altera.com>
+This patch wires up the new syscall sys_bpf() on powerpc.
 
-Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ arch/powerpc/include/asm/systbl.h      | 1 +
+ arch/powerpc/include/asm/unistd.h      | 2 +-
+ arch/powerpc/include/uapi/asm/unistd.h | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
 
-> ---
->   drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> index 5efe60e..0adcf73 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
-> @@ -134,7 +134,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
->   	void __iomem *ioaddr = (void __iomem *)dev->base_addr;
->   	unsigned int value = 0;
->   	unsigned int perfect_addr_number = hw->unicast_filter_entries;
-> -	u32 mc_filter[2];
-> +	u32 mc_filter[8];
->   	int mcbitslog2 = hw->mcast_bits_log2;
->
->   	pr_debug("%s: # mcasts %d, # unicast %d\n", __func__,
-> @@ -182,7 +182,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
->   		struct netdev_hw_addr *ha;
->
->   		netdev_for_each_uc_addr(ha, dev) {
-> -			stmmac_get_mac_addr(ioaddr, ha->addr,
-> +			stmmac_set_mac_addr(ioaddr, ha->addr,
->   					    GMAC_ADDR_HIGH(reg),
->   					    GMAC_ADDR_LOW(reg));
->   			reg++;
->
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index 7d8a600..ce9577d 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -365,3 +365,4 @@ SYSCALL_SPU(renameat2)
+ SYSCALL_SPU(seccomp)
+ SYSCALL_SPU(getrandom)
+ SYSCALL_SPU(memfd_create)
++SYSCALL_SPU(bpf)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 4e9af3f..e0da021 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -12,7 +12,7 @@
+ #include <uapi/asm/unistd.h>
+ 
+ 
+-#define __NR_syscalls		361
++#define __NR_syscalls		362
+ 
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
+diff --git a/arch/powerpc/include/uapi/asm/unistd.h b/arch/powerpc/include/uapi/asm/unistd.h
+index 0688fc0..f55351f 100644
+--- a/arch/powerpc/include/uapi/asm/unistd.h
++++ b/arch/powerpc/include/uapi/asm/unistd.h
+@@ -383,5 +383,6 @@
+ #define __NR_seccomp		358
+ #define __NR_getrandom		359
+ #define __NR_memfd_create	360
++#define __NR_bpf		361
+ 
+ #endif /* _UAPI_ASM_POWERPC_UNISTD_H_ */
+-- 
+2.1.0
 
