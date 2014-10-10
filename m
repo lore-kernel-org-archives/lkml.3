@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaJJTjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 15:39:43 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:60997 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbaJJTjm (ORCPT
+	id S1755233AbaJJTkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 15:40:21 -0400
+Received: from sidious.london.02.net ([82.132.130.152]:35686 "EHLO
+	mail.o2.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751703AbaJJTkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 15:39:42 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, kernel-janitors@vger.kernel.org,
-        cocci@systeme.lip6.fr
-Subject: Re: [RFC] drop owner assignment from platform_drivers
-Date: Fri, 10 Oct 2014 21:39:10 +0200
-Message-ID: <5588520.7NmcEzOB7Z@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141010181218.GB6075@katana>
-References: <20141010072439.GA1741@katana> <2106140.DbuFLh1xav@wuerfel> <20141010181218.GB6075@katana>
+	Fri, 10 Oct 2014 15:40:19 -0400
+Date: Fri, 10 Oct 2014 20:34:04 +0100
+From: Bernd Porr <mail@berndporr.me.uk>
+To: Ian Abbott <abbotti@mev.co.uk>,
+        Hartley Sweeten <HartleyS@visionengravers.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: [PATCH 2/3] staging: comedi: usbdux: updated contact details /
+ comments
+Message-ID: <20141010193404.GA29546@bp1-Dimension-9100>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:oLCcn55SD4TSSPUnF4E+N1PD64t8Yf++8AEd7BnNGZw
- qvz52iQlVyFB+H0cm+ZcLatrFvPYw+aXpkn2xRw+bLvhy7mxEU
- ja43SIYOHKPlffJKozIf7Z19JoexesKDQB2Sw8F/RPGlISU9qh
- KqqH6gJU39N6Cdn8xEcbw9Ub6aPp3wKkK7NZi+vIsc6x13L7SU
- ivz7VLF95ul4eXqugQEim05xEXBJ+u12Z6F42XJONmR+74yPYp
- jVhsSvC6bmFCDsaU787j5PdLXhsXcGinnKVhBCX/Mjbgvgk1k6
- Rjkx0lcltvvfLtl9mEpqsvvt4UDD2C81Q69GRmEI2iOMOXc88K
- IKw69y57jkc4k4VbvEBE=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 October 2014 20:12:21 Wolfram Sang wrote:
-> Hi Arnd,
-> 
-> thanks for taking a look!
-> 
-> On Fri, Oct 10, 2014 at 10:30:08AM +0200, Arnd Bergmann wrote:
-> > On Friday 10 October 2014 09:24:39 Wolfram Sang wrote:
-> > > people found out that for platform_driver, we don't need to set the
-> > > .owner field because this is done by the platform driver core. So far,
-> > > so good. However, now I got patches removing the .owner field for this
-> > > single i2c driver or for that one. To prevent getting thousands of
-> > > patches fixing single drivers, I used coccinelle to remove all instances
-> > > from the kernel. The SmPL looks like this, it doesn't blindly remove all
-> > > THIS_MODULE, but checks if the platform_driver struct was really used by
-> > > a call actually setting the .owner field:
-> > 
-> > Is the intention just to save a few lines in the kernel source, or are
-> > there any additional upsides to doing this?
-> 
-> As written above, I don't like getting patches removing this line for
-> single drivers. I already got two and I am expecting more. So I'd prefer
-> to do this on subsystem level. I will apply the I2C part, for sure.
+I've updated my contact details and removed obsolete comments. 
 
-Ah, right, that is certainly a good reason. Have you checked how many
-other patches like this got merged? If it's a common theme, then doing
-all at once sounds like a really good idea.
+Signed-off-by: Bernd Porr <mail@berndporr.me.uk>
+---
+ drivers/staging/comedi/drivers/usbdux.c | 59 ++++++++++++++++-----------------
+ 1 file changed, 28 insertions(+), 31 deletions(-)
 
-> > While it looks like an obvious cleanup, it also seems to me that there
-> > is zero effect in terms of functionality, code size or enabling future
-> > changes.
-> 
-> Well, the kernel image will compress better ;)
+diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
+index 053bc50..24fa9f66 100644
+--- a/drivers/staging/comedi/drivers/usbdux.c
++++ b/drivers/staging/comedi/drivers/usbdux.c
+@@ -1,37 +1,34 @@
+ /*
+-   comedi/drivers/usbdux.c
+-   Copyright (C) 2003-2007 Bernd Porr, Bernd.Porr@f2s.com
+-
+-   This program is free software; you can redistribute it and/or modify
+-   it under the terms of the GNU General Public License as published by
+-   the Free Software Foundation; either version 2 of the License, or
+-   (at your option) any later version.
+-
+-   This program is distributed in the hope that it will be useful,
+-   but WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-   GNU General Public License for more details.
++ * usbdux.c
++ * Copyright (C) 2003-2014 Bernd Porr, mail@berndporr.me.uk
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
+  */
++
+ /*
+-Driver: usbdux
+-Description: University of Stirling USB DAQ & INCITE Technology Limited
+-Devices: [ITL] USB-DUX (usbdux.o)
+-Author: Bernd Porr <BerndPorr@f2s.com>
+-Updated: 8 Dec 2008
+-Status: Stable
+-Configuration options:
+-  You have to upload firmware with the -i option. The
+-  firmware is usually installed under /usr/share/usb or
+-  /usr/local/share/usb or /lib/firmware.
+-
+-Connection scheme for the counter at the digital port:
+-  0=/CLK0, 1=UP/DOWN0, 2=RESET0, 4=/CLK1, 5=UP/DOWN1, 6=RESET1.
+-  The sampling rate of the counter is approximately 500Hz.
+-
+-Please note that under USB2.0 the length of the channel list determines
+-the max sampling rate. If you sample only one channel you get 8kHz
+-sampling rate. If you sample two channels you get 4kHz and so on.
+-*/
++ * Driver: usbdux
++ * Description: University of Stirling USB DAQ & INCITE Technology Limited
++ * Devices: (ITL) USB-DUX [usbdux]
++ * Author: Bernd Porr <mail@berndporr.me.uk>
++ * Updated: 10 Oct 2014
++ * Status: Stable
++ * Connection scheme for the counter at the digital port:
++ * 0=/CLK0, 1=UP/DOWN0, 2=RESET0, 4=/CLK1, 5=UP/DOWN1, 6=RESET1.
++ * The sampling rate of the counter is approximately 500Hz.
++ *
++ * Note that under USB2.0 the length of the channel list determines
++ * the max sampling rate. If you sample only one channel you get 8kHz
++ * sampling rate. If you sample two channels you get 4kHz and so on.
++ */
++
+ /*
+  * I must give credit here to Chris Baugher who
+  * wrote the driver for AT-MIO-16d. I used some parts of this
+-- 
+1.9.1
 
-Right, I hadn't thought of that.
-
-> And well, it is cleaner.
-> Why should we set up something if it gets overwritten anyhow?
-
-Of course we shouldn't. To take the analogy: just like it doesn't
-matter what the initial value of the .owner fields is after it gets
-overwritten by the probe call, the patch to remove the origonal
-initialization isn't very valuable after the code that has the
-useless initialization is already part of the kernel ;-)
-
-> > I'm all for adding your semantic patch to scripts/coccinelle so it gets
-> > picked up by anyone writing new drivers or doing code cleanup on their
-> > driver, but I'm unsure about the value of applying all your patches
-> > for the existing drivers.
-> 
-> I could try reducing the number of patches. Any other downsides?
-
-Just to be clear: I don't really see any downsides to your patches,
-the problem is that the upsides relatively small, so it's unclear if
-all maintainers are better off applying the patches or not even
-knowing about them.
-
-	Arnd
