@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592AbaJJMCJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 08:02:09 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:54032 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579AbaJJMCG (ORCPT
+	id S1751975AbaJJMHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 08:07:31 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50930 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751043AbaJJMH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 08:02:06 -0400
-Date: Fri, 10 Oct 2014 13:02:02 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 10/11] perf/x86/intel: Support task events with Intel CQM
-Message-ID: <20141010120202.GY14343@console-pimps.org>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-11-git-send-email-matt@console-pimps.org>
- <20141008110743.GF4750@worktop.programming.kicks-ass.net>
- <20141008121044.GS14343@console-pimps.org>
- <20141008144957.GK10832@worktop.programming.kicks-ass.net>
+	Fri, 10 Oct 2014 08:07:29 -0400
+Date: Fri, 10 Oct 2014 13:07:03 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
+Message-ID: <20141010120702.GI7755@arm.com>
+References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
+ <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141008144957.GK10832@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 08 Oct, at 04:49:57PM, Peter Zijlstra wrote:
+On Fri, Oct 10, 2014 at 12:51:44PM +0100, Stefano Stabellini wrote:
+> Introduce a function to check whether a device is dma coherent.
 > 
-> The thing is, with multiplexing you cannot fail at event creation time
-> anyhow. The only time where you can 'fail' is when programming the PMU,
-> when its full its full.
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: linux@arm.linux.org.uk
+> CC: catalin.marinas@arm.com
+> CC: will.deacon@arm.com
+> CC: linux-arm-kernel@lists.infradead.org
+> ---
+>  arch/arm/include/asm/dma-mapping.h   |    6 ++++++
+>  arch/arm64/include/asm/dma-mapping.h |    5 +++++
+>  2 files changed, 11 insertions(+)
 > 
-> Those that don't fit, get to wait their turn.
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index c45b61a..bededbb 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -126,6 +126,12 @@ static inline int set_arch_dma_coherent_ops(struct device *dev)
+>  	set_dma_ops(dev, &arm_coherent_dma_ops);
+>  	return 0;
+>  }
+> +
+> +static inline bool is_dma_coherent(struct device *dev)
+> +{
+> +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
+> +}
 
-For CQM it's not about "fitting" everything in the PMU but more about
-monitoring the same thing (task, cgroup) with different events, i.e. one
-thing with two RMIDs. We have the RMID recycling algorithm to make
-things fit, but that doesn't help us out here.
+Hmm, what about the IOMMU ops?
 
-An example scenario that isn't supported by this patch series is
-monitoring a cgroup while simultaneously monitoring a task that's part
-of that cgroup. Whichever event is created second will fail at event
-init time.
-
-And that seemed like a fair approach to me. But the more I think about
-it, the more I begin to agree that maybe we should allow users the
-flexibility to create conflicting events, particularly because there
-appears to be precedent in other parts of perf.
-
-Hmm... "rotation" is starting to become my least favourite word.
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+Will
