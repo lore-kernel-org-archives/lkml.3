@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbaJJJ2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:28:55 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:54509 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944AbaJJJ2w (ORCPT
+	id S1754095AbaJJJ3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:29:22 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:46745 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944AbaJJJ3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:28:52 -0400
+	Fri, 10 Oct 2014 05:29:20 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9A9T3TZ013803, This message is accepted by code: ctloc85258
+Message-ID: <5437A6E0.9020408@realsil.com.cn>
+Date: Fri, 10 Oct 2014 17:29:04 +0800
+From: Micky Ching <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <1412108254-19234-1-git-send-email-marek@goldelico.com>
-References: <1412108254-19234-1-git-send-email-marek@goldelico.com>
-Date: Fri, 10 Oct 2014 11:28:51 +0200
-Message-ID: <CAAfyv36R-qpQPLHGGv8+QPtwyRWRJc4rPi9GcNwWpuCTGmWuWQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] input: tsc2007: Extend for pre-calibration, flipping
- and rotation
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-input@vger.kernel.org, Marek Belisko <marek@goldelico.com>
-Content-Type: text/plain; charset=UTF-8
+To: Lee Jones <lee.jones@linaro.org>
+CC: <sameo@linux.intel.com>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH v2] mfd: rtsx: fix PM suspend for 5227 & 5249
+References: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn> <20141010092440.GF26795@lee--X1>
+In-Reply-To: <20141010092440.GF26795@lee--X1>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping. Any objections? Thanks
 
-On Tue, Sep 30, 2014 at 10:17 PM, Marek Belisko <marek@goldelico.com> wrote:
-> Following series add support to tsc2007 touchscreen driver for pre-calibration,
-> flipping and rotation. Added bindings are documented and used in gta04 device tree.
+On 10/10/2014 05:24 PM, Lee Jones wrote:
+> On Fri, 10 Oct 2014, micky_ching@realsil.com.cn wrote:
 >
-> Marek Belisko (3):
->   input: tsc2007: Add pre-calibration, flipping and rotation
->   Documentation: dt: input: tsc2007: Document new parameters
->   arm: dts: omap3-gta04: Extend touchscreen configs
+>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>
+>> Fix rts5227&5249 failed send buffer cmd after suspend,
+>> PM_CTRL3 should reset before send any buffer cmd after suspend.
+>> Otherwise, buffer cmd will failed, this will lead resume fail.
+>>
+>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>> ---
+>>   drivers/mfd/Makefile         |  2 +-
+>>   drivers/mfd/rts5227.c        |  6 ++++++
+>>   drivers/mfd/rts5249.c        |  4 ++++
+>>   drivers/mfd/rtsx_gops.c      | 37 +++++++++++++++++++++++++++++++++++++
+>>   drivers/mfd/rtsx_pcr.h       |  3 +++
+>>   include/linux/mfd/rtsx_pci.h | 28 ++++++++++++++++++++++++++++
+> These are Card Reader drivers right?
 >
->  .../bindings/input/touchscreen/tsc2007.txt         | 17 ++++-
->  arch/arm/boot/dts/omap3-gta04.dtsi                 |  6 ++
->  drivers/input/touchscreen/tsc2007.c                | 89 +++++++++++++++++++++-
->  include/linux/i2c/tsc2007.h                        |  6 ++
->  4 files changed, 111 insertions(+), 7 deletions(-)
->
-> --
-> 1.9.3
->
+> Do you know why these are in MFD?
+Hi Lee,
 
-BR,
+Our chips support SD/MMC card and MS card,
+SD/MMC card driver is put into mmc/ subsystem,
+MS card driver is put into memstick/ subsystem.
+We put the common functions into mfd/ subsystem.
 
-marek
+>
+>>   6 files changed, 79 insertions(+), 1 deletion(-)
+>>   create mode 100644 drivers/mfd/rtsx_gops.c
+>
 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Best Regards,
+micky.
+--------------------
+Realsil Microelectronics Inc. PCBU swlinux.
+Tel:86-512-6258-8966 Ext: 5806
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
