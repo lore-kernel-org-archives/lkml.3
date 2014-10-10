@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaJJOLN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 10:11:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63172 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754608AbaJJOKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 10:10:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,692,1406617200"; 
-   d="scan'208";a="603383854"
-Message-ID: <1412950247.7701.15.camel@linux.intel.com>
-Subject: Re: [PATCH 2/2 v3] SPI: spi-pxa2xx: SPI support for Intel Quark
- X1000
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Chen, Alvin" <alvin.chen@intel.com>
-Cc: "pure.logic@nexus-software.ie" <pure.logic@nexus-software.ie>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Date: Fri, 10 Oct 2014 17:10:47 +0300
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E998BCE@SHSMSX101.ccr.corp.intel.com>
-References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
-	 <1412783423-9408-3-git-send-email-alvin.chen@intel.com>
-	 <5436ECC6.9080704@nexus-software.ie>
-	 <4656BEB6164FC34F8171C6538F1A595B2E998BCE@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.6-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755086AbaJJOLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:11:42 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59794 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754018AbaJJOKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 10:10:00 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-49-5437e8b5983b
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: zohar@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, linux-security-module@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH v3 5/6] ima: require signature based appraisal
+Date: Fri, 10 Oct 2014 17:09:32 +0300
+Message-id: <4dd050e33e489d3b563075a9ea4e3d15675f6550.1412950047.git.d.kasatkin@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
+References: <cover.1412950047.git.d.kasatkin@samsung.com>
+In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
+References: <cover.1412950047.git.d.kasatkin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xy7pbX5iHGPQcMrKYs34Nm8Wtv3uZ
+	Lb4srbN4OWMeu8XlXXPYLD70PGKzOP/3OKvFpxWTmB04PHbOusvucWLGbxaPB4c2s3jsXvCZ
+	yaNvyypGj8+b5Dw2PXnLFMAexWWTkpqTWZZapG+XwJXRe+M6S8EkgYov398zNTBe4u1i5OSQ
+	EDCR2P3yFTuELSZx4d56ti5GLg4hgaWMEtuvvGGGcDqZJL482ARWxSagJ7Gh+Qc7SEJEYBGj
+	xONlF1lBEswC6RKfJvWCFQkL2El8PfOCEcRmEVCVOH7pBRuIzSsQJ/Gr/zYTxDo5iZPHJoP1
+	cgpYSXx79QssLiRgKfH9fQsLLvEJjPwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE
+	6dcdjEuPWR1iFOBgVOLhvSBjHiLEmlhWXJl7iFGCg1lJhPfbc6AQb0piZVVqUX58UWlOavEh
+	RiYOTqkGRtd5MvcvPOAz1DrCwnenvUh2qU731ZjHir6TvfwsHq48/cZdqsMge/GduD/Oi1Yl
+	T2kN91WfmH+7mv9qXa3bDdnHbqaLbuy8KrR9evhNtRCTgxPi1j8zYFssbmyf0p/A//9TB/vi
+	d7Jea29oLl/WtdzhiMP+nSu+6P08ufm21iTxuAnrvS7Mu6LEUpyRaKjFXFScCADaEe4TMAIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-10 at 00:46 +0000, Chen, Alvin wrote:
-> > Doesn't apply.
-> > 
-> > Applying: SPI: spi-pxa2xx: SPI support for Intel Quark X1000
-> > error: patch failed: drivers/spi/spi-pxa2xx-pci.c:19
-> > error: drivers/spi/spi-pxa2xx-pci.c: patch does not apply Patch failed at 0002 SPI:
-> > spi-pxa2xx: SPI support for Intel Quark X1000
-> > 
-> It is based on the slave-dma tree (git.infraded.org) for-linus branch, which will be reapplied on top of v3.19-rc1.
-> More information can be got from Andy.
+This patch provides kernel parameter CONFIG_IMA_APPRAISE_SIGNED_INIT
+to force IMA appraisal using signatures. This is useful, when EVM key
+is not initalized yet and we want securely initialize integrity or any
+other functionality.
 
-Actually if I understand correctly your series requires only one patch
-to be applied from topic/spi-pxa2xx branch by Chiau Ee, though you have
-to rearrange the code in the spi-pxa2xx-pci.c to not be closer to
-Braswell stuff.
+It forces embedded policy to require signature. Signed initialization
+script can initialize EVM key, update the IMA policy and change further
+requirement of everything to be signed.
 
-But again, it's only my guessing, you may try to rebase it on top of
-topic branch mentioned above.
+Changes in v2:
+* policy change of this patch separated from the key loading patch
 
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+---
+ security/integrity/ima/Kconfig      | 7 +++++++
+ security/integrity/ima/ima_policy.c | 5 +++++
+ 2 files changed, 12 insertions(+)
 
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index 44941c1..6a1971f 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -146,3 +146,10 @@ config IMA_X509_PATH
+ 	default "/etc/ima/x509_ima.der"
+ 	help
+ 	   This option defines IMA X509 certificate path.
++
++config IMA_APPRAISE_SIGNED_INIT
++	bool "Require signed user-space initialization"
++	depends on IMA_LOAD_X509
++	default n
++	help
++	   This option requires user-space init to be signed.
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index 0d14d25..222ff79 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -100,7 +100,12 @@ static struct ima_rule_entry default_appraise_rules[] = {
+ 	{.action = DONT_APPRAISE, .fsmagic = SECURITYFS_MAGIC, .flags = IMA_FSMAGIC},
+ 	{.action = DONT_APPRAISE, .fsmagic = SELINUX_MAGIC, .flags = IMA_FSMAGIC},
+ 	{.action = DONT_APPRAISE, .fsmagic = CGROUP_SUPER_MAGIC, .flags = IMA_FSMAGIC},
++#ifndef CONFIG_IMA_APPRAISE_SIGNED_INIT
+ 	{.action = APPRAISE, .fowner = GLOBAL_ROOT_UID, .flags = IMA_FOWNER},
++#else
++	/* force signature */
++	{.action = APPRAISE, .fowner = GLOBAL_ROOT_UID, .flags = IMA_FOWNER | IMA_DIGSIG_REQUIRED},
++#endif
+ };
+ 
+ static LIST_HEAD(ima_default_rules);
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.9.1
 
