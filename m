@@ -1,161 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaJJVyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 17:54:20 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:54416 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJJVyQ (ORCPT
+	id S1755118AbaJJVzj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 17:55:39 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36836 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292AbaJJVzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 17:54:16 -0400
+	Fri, 10 Oct 2014 17:55:38 -0400
+Message-ID: <543855D0.9030108@gmail.com>
+Date: Fri, 10 Oct 2014 14:55:28 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com>
-References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
-	<CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
-	<20140905141241.GC10455@mtj.dyndns.org>
-	<20140905164405.GA28964@core.coreip.homeip.net>
-	<20140905174925.GA12991@mtj.dyndns.org>
-	<CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
-	<20140905224047.GC15723@mtj.dyndns.org>
-	<CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
-	<20140909011059.GB11706@mtj.dyndns.org>
-	<1410241109.2028.22.camel@jarvis.lan>
-	<CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
-	<1410291346.13298.16.camel@jarvis.lan>
-	<CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com>
-	<CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
-	<CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com>
-	<CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
-	<CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com>
-	<CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com>
-	<CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com>
-Date: Fri, 10 Oct 2014 14:54:14 -0700
-Message-ID: <CAOMFOmVSwPAbPtNzPn93QGjbXh1B3QC7B2Ahd1Qxc=gWb6H7fQ@mail.gmail.com>
-Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if not OOM
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Tom Gundersen <teg@jklm.no>, Tejun Heo <tj@kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        hare <hare@suse.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Wu Zhangjin <falcon@meizu.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Benjamin Poirier <bpoirier@suse.de>,
-        Santosh Rastapur <santosh@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>,
-        Hariprasad S <hariprasad@chelsio.com>,
-        Pierre Fersing <pierre-fersing@pierref.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: linux-kernel@vger.kernel.org, thomas.petazzoni@free-electrons.com,
+        computersforpeace@gmail.com
+Subject: Re: [PATCH v3 0/2] bus: brcmstb_gisb: misc fixes
+References: <1411408966-15390-1-git-send-email-f.fainelli@gmail.com> <5438329D.1040600@gmail.com> <1956888.MIJ5XMTDdo@wuerfel>
+In-Reply-To: <1956888.MIJ5XMTDdo@wuerfel>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
-
-On Fri, Sep 12, 2014 at 1:09 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> On Thu, Sep 11, 2014 at 10:48 PM, Tom Gundersen <teg@jklm.no> wrote:
->> On Fri, Sep 12, 2014 at 12:26 AM, Luis R. Rodriguez
->> <mcgrof@do-not-panic.com> wrote:
->>> On Thu, Sep 11, 2014 at 2:43 PM, Tom Gundersen <teg@jklm.no> wrote:
->>>> How about simply introducing a new flag to finit_module() to indicate
->>>> that the caller does not care about asynchronicity. We could then pass
->>>> this from udev, but existing scripts calling modprobe/insmod will not
->>>> be affected.
+On 10/10/2014 02:10 PM, Arnd Bergmann wrote:
+> On Friday 10 October 2014 12:25:17 Florian Fainelli wrote:
+>>
+>> On 09/22/2014 11:02 AM, Florian Fainelli wrote:
+>>> Hi Arnd,
 >>>
->>> Do you mean that you *do want asynchronicity*?
+>>> This patch set contains two small fixes for the Broadcom GISB bus
+>>> arbiter code. First patch makes sure we do register a fault code for
+>>> ARM platforms, second patch is a fix when the code is used on a PM
+>>> capable system.
 >>
->> Precisely, udev would opt-in, but existing scripts etc would not.
->
-> Sure that's the other alternative that Tejun was mentioning.
->
->>>> But isn't finit_module() taking a long time a serious problem given
->>>> that it means no other module can be loaded in parallel?
->>>
->>> Indeed but having a desire to make the init() complete fast is
->>> different than the desire to have the combination of both init and
->>> probe fast synchronously.
->>
->> I guess no one is arguing that probe should somehow be required to be
->> fast, but rather:
->>
->>> If userspace wants init to be fast and let
->>> probe be async then userspace has no option but to deal with the fact
->>> that async probe will be async, and it should then use other methods
->>> to match any dependencies if its doing that itself.
->>
->> Correct. And this therefore likely needs to be opt-in behaviour per
->> finit_module() invocation to avoid breaking old assumptions.
->
-> Sure.
->
->>> For example
->>> networking should not kick off after a network driver is loaded but
->>> rather one the device creeps up on udev. We should be good with
->>> networking dealing with this correctly today but not sure about other
->>> subsystems. depmod should be able to load the required modules in
->>> order and if bus drivers work right then probe of the remnant devices
->>> should happen asynchronously. The one case I can think of that is a
->>> bit different is modules-load.d things but those *do not rely on the
->>> timeout*, but are loaded prior to a service requirement. Note though
->>> that if those modules had probe and they then run async'd then systemd
->>> service would probably need to consider that the requirements may not
->>> be there until later. If this is not carefully considered that could
->>> introduce regression to users of modules-load.d when async probe is
->>> fully deployed. The same applies to systemd making assumptions of kmod
->>> loading a module and a dependency being complete as probe would have
->>> run it before.
->>
->> Yeah, these all needs to be considered when deciding whether or not to
->> enable async in each specific case.
->
-> Yes and come to think of it I'd recommend opting out of async
-> functionality for modules-load.d given that it does *not* hooked with
-> the timeout and there is a good chances its users likely do want to
-> wait for probe to run at this point.
->
-> Given this I also am inclined now for the per module request to be
-> async or not (default) from userspace. The above would be a good
-> example starting use case.
->
->>> I believe one concern here lies in on whether or not userspace
->>> is properly equipped to deal with the requirements on module loading
->>> doing async probing and that possibly failing. Perhaps systemd might
->>> think all userspace is ready for that but are we sure that's the case?
->>
->> There almost certainly are custom things out there relying on the
->> synchronous behaviour, but if we make it opt-in we should not have a
->> problem.
+>> Once the merge window re-opens in about a week from now, how do you want
+>> me to submit those patches? Do you want them as part of a brcmstb pull
+>> request, or something else?
+> 
+> At least one of us is confused. The merge window is currently open,
+> and I have send all outstanding pull requests for 3.18. If you have
+> bug fixes that are required for 3.18, we should merge them now and
+> send them as soon as possible.
 
+I'm the one confusing the terms here, I meant to write: "when you start
+queuing patches again".
 
-We recently discussed this "timeout module loading" issue in Arch IRC
-and here are few more ideas:
+> 
+> If this is stuff that can wait for 3.19, please send a pull
+> request after the the end of the ELC/LPC conferences next week
+> so we can queue it up in next/fixes-non-critical.
 
-1) Why not to make the timeout configurable through config file? There
-is already udev.conf you can put config option there. Thus people with
-modprobe issues can easily "fix" the problem. And then decrease
-default timeout back to 30 seconds. I agree that long module loading
-(more than 30 secs) is abnormal and should be investigated by driver
-authors.
+That can wait for 3.19, thanks!
+--
+Florian
 
-2) Could you add 'echo w > /proc/sysrq-trigger' to udev code right
-before killing the "modprobe" thread? sysrq will print information
-about stuck threads (including modprobe itself) this will make
-debugging easier. e.g. dmesg here
-https://bugs.archlinux.org/task/40454 says nothing where the threads
-were stuck.
