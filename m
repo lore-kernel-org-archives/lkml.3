@@ -1,141 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaJJITh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:19:37 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:47704 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaJJITU (ORCPT
+	id S1751957AbaJJIWT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 04:22:19 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:35770 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324AbaJJIWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:19:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412889395-19350-1-git-send-email-fabf@skynet.be>
-References: <1412889395-19350-1-git-send-email-fabf@skynet.be>
-Date: Fri, 10 Oct 2014 12:19:18 +0400
-Message-ID: <CALFYKtABf_QuaqPrk5oJHRTfsXYMxX3nQP_kx9rauoYO0dTmdg@mail.gmail.com>
-Subject: Re: [PATCH 1/1 linux-next] ceph: fix bool assignments
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sage Weil <sage@inktank.com>,
-        Ceph Development <ceph-devel@vger.kernel.org>,
-        "Yan, Zheng" <zyan@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 10 Oct 2014 04:22:16 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-14-543797360000
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH fixes 1/2] mfd: max77693: Use proper regmap for handling MUIC
+ interrupts
+Date: Fri, 10 Oct 2014 10:22:01 +0200
+Message-id: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xa7pm081DDN7t47HYOGM9q8X1L89Z
+	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1ktFmx8xOjA5XHn2h42j3knAz36
+	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY9+6x+wFXzgr3jb/ZmxgXMDRxcjJISFgInF80zZW
+	CFtM4sK99WxdjFwcQgJLGSVWfVvABOH0MUlcnP2DGaSKTcBYYvPyJWBVIgK7GSW+7V0EVsUs
+	cJdRovnue8YuRg4OYYEoiWnfCkAaWARUJXY/W88EYvMKuEt8PLUXap2cxMljk1knMHIvYGRY
+	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESNl93MC49ZnWIUYCDUYmH94KMeYgQa2JZcWXu
+	IUYJDmYlEV59U6AQb0piZVVqUX58UWlOavEhRiYOTqkGRtO+H2kHnLlUNDSmcYlHCYXazJTu
+	vzKdU37/x8VsrRMb7S+sux/sFNG7IUHYl5/35c980y/9U3f2u9S+5Sv8/swwUf0/T4Plx3cl
+	RoJ++p4pStpJx/fvrfH4cO5vwwrr9FbutPsyLwulv6ceDheVbDr8yV1TsPmY/5boFZabLovn
+	2toaGFoosRRnJBpqMRcVJwIAKbxyNfkBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 1:16 AM, Fabian Frederick <fabf@skynet.be> wrote:
-> Fix some coccinelle warnings:
-> fs/ceph/caps.c:2400:6-10: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2401:6-15: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2402:6-17: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2403:6-22: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2404:6-22: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2405:6-19: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2440:4-20: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2469:3-16: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2490:2-18: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2519:3-7: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2549:3-12: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2575:2-6: WARNING: Assignment of bool to 0/1
-> fs/ceph/caps.c:2589:3-7: WARNING: Assignment of bool to 0/1
->
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/ceph/caps.c | 26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
->
-> diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
-> index 6d1cd45..7131327 100644
-> --- a/fs/ceph/caps.c
-> +++ b/fs/ceph/caps.c
-> @@ -2397,12 +2397,12 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->         u64 max_size = le64_to_cpu(grant->max_size);
->         struct timespec mtime, atime, ctime;
->         int check_caps = 0;
-> -       bool wake = 0;
-> -       bool writeback = 0;
-> -       bool queue_trunc = 0;
-> -       bool queue_invalidate = 0;
-> -       bool queue_revalidate = 0;
-> -       bool deleted_inode = 0;
-> +       bool wake = false;
-> +       bool writeback = false;
-> +       bool queue_trunc = false;
-> +       bool queue_invalidate = false;
-> +       bool queue_revalidate = false;
-> +       bool deleted_inode = false;
->
->         dout("handle_cap_grant inode %p cap %p mds%d seq %d %s\n",
->              inode, cap, mds, seq, ceph_cap_string(newcaps));
-> @@ -2437,7 +2437,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                         /* there were locked pages.. invalidate later
->                            in a separate thread. */
->                         if (ci->i_rdcache_revoking != ci->i_rdcache_gen) {
-> -                               queue_invalidate = 1;
-> +                               queue_invalidate = true;
->                                 ci->i_rdcache_revoking = ci->i_rdcache_gen;
->                         }
->                 }
-> @@ -2466,7 +2466,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                 set_nlink(inode, le32_to_cpu(grant->nlink));
->                 if (inode->i_nlink == 0 &&
->                     (newcaps & (CEPH_CAP_LINK_SHARED | CEPH_CAP_LINK_EXCL)))
-> -                       deleted_inode = 1;
-> +                       deleted_inode = true;
->         }
->
->         if ((issued & CEPH_CAP_XATTR_EXCL) == 0 && grant->xattr_len) {
-> @@ -2487,7 +2487,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->         /* Do we need to revalidate our fscache cookie. Don't bother on the
->          * first cache cap as we already validate at cookie creation time. */
->         if ((issued & CEPH_CAP_FILE_CACHE) && ci->i_rdcache_gen > 1)
-> -               queue_revalidate = 1;
-> +               queue_revalidate = true;
->
->         if (newcaps & CEPH_CAP_ANY_RD) {
->                 /* ctime/mtime/atime? */
-> @@ -2516,7 +2516,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                                 ci->i_wanted_max_size = 0;  /* reset */
->                                 ci->i_requested_max_size = 0;
->                         }
-> -                       wake = 1;
-> +                       wake = true;
->                 }
->         }
->
-> @@ -2546,7 +2546,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                      ceph_cap_string(newcaps),
->                      ceph_cap_string(revoking));
->                 if (revoking & used & CEPH_CAP_FILE_BUFFER)
-> -                       writeback = 1;  /* initiate writeback; will delay ack */
-> +                       writeback = true;  /* initiate writeback; will delay ack */
->                 else if (revoking == CEPH_CAP_FILE_CACHE &&
->                          (newcaps & CEPH_CAP_FILE_LAZYIO) == 0 &&
->                          queue_invalidate)
-> @@ -2572,7 +2572,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                 cap->implemented |= newcaps; /* add bits only, to
->                                               * avoid stepping on a
->                                               * pending revocation */
-> -               wake = 1;
-> +               wake = true;
->         }
->         BUG_ON(cap->issued & ~cap->implemented);
->
-> @@ -2586,7 +2586,7 @@ static void handle_cap_grant(struct ceph_mds_client *mdsc,
->                 kick_flushing_inode_caps(mdsc, session, inode);
->                 up_read(&mdsc->snap_rwsem);
->                 if (newcaps & ~issued)
-> -                       wake = 1;
-> +                       wake = true;
->         }
->
->         if (queue_trunc) {
+Interrupts coming from Maxim77693 MUIC block (MicroUSB Interface
+Controller) were not handled at all because wrong regmap was used for
+MUIC's regmap_irq_chip.
 
-(CC'ing Yan just in case)
+The MUIC component of Maxim 77693 uses different I2C address thus second
+regmap is created and used by max77693 extcon driver. The registers for
+MUIC interrupts are also in that block and should be handled by that
+second regmap.
 
-Applied.
+However the regmap irq chip for MUIC was configured with default regmap
+which could not read MUIC registers.
 
-Thanks,
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: <stable@vger.kernel.org>
+Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
+---
+ drivers/mfd/max77693.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-                Ilya
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 2277a11b6629..4b54da1ff7ab 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -243,7 +243,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		goto err_irq_charger;
+ 	}
+ 
+-	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
++	ret = regmap_add_irq_chip(max77693->regmap_muic, max77693->irq,
+ 				IRQF_ONESHOT | IRQF_SHARED |
+ 				IRQF_TRIGGER_FALLING, 0,
+ 				&max77693_muic_irq_chip,
+-- 
+1.9.1
+
