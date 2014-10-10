@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466AbaJJIWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:22:36 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:35770 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaJJIWS (ORCPT
+	id S1752614AbaJJIYY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 04:24:24 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:62834 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909AbaJJIYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:22:18 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-b2-5437973627ab
+	Fri, 10 Oct 2014 04:24:10 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-0f-543797a5c257
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -16,94 +16,94 @@ To: MyungJoo Ham <myungjoo.ham@samsung.com>,
 Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH fixes 2/2] extcon: max77693: Fix always masked MUIC interrupts
-Date: Fri, 10 Oct 2014 10:22:02 +0200
-Message-id: <1412929322-21908-2-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 3/4] extcon: max77693: Request only specific interrupts
+Date: Fri, 10 Oct 2014 10:23:55 +0200
+Message-id: <1412929436-22001-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
-References: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLJMWRmVeSWpSXmKPExsVy+t/xa7pm081DDObv0LXYOGM9q8X1L89Z
-	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1ktFmx8xOjA5XHn2h42j3knAz36
-	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY9u7/awFW4QrFvZXNzD+4+9i5OSQEDCR+Ll/FyOE
-	LSZx4d56ti5GLg4hgaWMEpO6z0A5fUwSF2f/YAapYhMwlti8fAlYQkRgN6PEt72LmEAcZoG7
-	jBLNd9+DzRIW8JPY/LmPtYuRg4NFQFXieo8MSJhXwF2i9eINdoh1chInj01mBbE5BTwk9i49
-	BWYLAdXcPXKPbQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIUH2ZQfj4mNWhxgF
-	OBiVeHgvyJiHCLEmlhVX5h5ilOBgVhLh1TcFCvGmJFZWpRblxxeV5qQWH2Jk4uCUamCMnxax
-	8teP0w/vmfaJm6ROzWTXypq7eGb55ZIfp1+KKn85VRwVVjPD3Fl31tR4//JtjQL35FN+yD/7
-	4Kv/jFvP4HKw+mftgqea014b/eq3rD/XZ3/kfI/p76ADV2U2yt3Z9tZe4NTdk3MOm57xP7dB
-	87bp9zeVfdmMy+L2bw+qb7+ja6xpVWKnxFKckWioxVxUnAgAHhpMmhACAAA=
+In-reply-to: <1412929436-22001-1-git-send-email-k.kozlowski@samsung.com>
+References: <1412929436-22001-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBJMWRmVeSWpSXmKPExsVy+t/xK7pLp5uHGFzrF7fYOGM9q8X1L89Z
+	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1kdOD3uXNvD5jHvZKBH35ZVjB6f
+	N8kFsERx2aSk5mSWpRbp2yVwZbR27mAs2CBW8ev/B+YGxgdCXYycHBICJhIrGq+xQdhiEhfu
+	rQeyuTiEBJYySsxb+ZUZJCEk0MckcbhJGcRmEzCW2Lx8CViRiMBuRolvexcxgTjMAkcZJab3
+	vmUCqRIWcJc4emwjexcjBweLgKrE/E+2IGFeoPC776eZILbJSZw8NpkVxOYU8JBoeb2LEWKZ
+	u8TLngWsExh5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICa2vOxiXHrM6xCjAwajE
+	w3tBxjxEiDWxrLgy9xCjBAezkgivvilQiDclsbIqtSg/vqg0J7X4ECMTB6dUA2PyyqLHU+Pu
+	3Gh29921PvTCpxDB+ScOLn1yf+3cI3vsk9+6pzOHLTUROvDhqHxdwu3usrNyjR4+a1YxFn5i
+	K6hcdnP33MkBlxbp5B8ozbj0NGj3RNv6tFSVqScrFbfN/Sa9x7P8sPSfFeaPu6W3tbVx3Lyk
+	cjzKIN6gVH7WyRSnGydEnzjElnMqsRRnJBpqMRcVJwIAoaw/9QsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All interrupts coming from MUIC were ignored because interrupt source
-register was masked.
+The driver was requesting all MUIC interrupts but then was masking most
+of them manually at end of probe (with default_init_data). Since
+default_init_data cannot be passed through DTS (no bindings for driver),
+this was a conflicting behavior. First get everything, then mask what we
+don't want.
 
-The Maxim 77693 has a "interrupt source" - a separate register and interrupts
-which give information about PMIC block triggering the individual
-interrupt (charger, topsys, MUIC, flash LED).
+This could change after adding DTS bindings for requesting specific
+MUIC interrupts. Until then driver should request only these MUIC
+interrupts which he is really interested in.
 
-By default bootloader could initialize this register to "mask all"
-value. In such case (observed on Trats2 board) MUIC interrupts won't be
-generated regardless of their mask status. Regmap irq chip was unmasking
-individual MUIC interrupts but the source was masked
-
-Before introducing regmap irq chip this interrupt source was unmasked,
-read and acked. Reading and acking is not necessary but unmasking is. Do
-it in extcon driver.
+The commit does not introduce any functional change when the driver is
+used with DTS (no platform data). However this changes the behavior with
+platform data supplied. In such case the driver will request only 3
+interrupts (ADC, ADC1K, ChgTyp). Platform data could still unmask other
+interrupts but they won't be handled by the driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: <stable@vger.kernel.org>
-Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
 ---
- drivers/extcon/extcon-max77693.c     | 16 ++++++++++++++++
- include/linux/mfd/max77693-private.h |  5 +++++
- 2 files changed, 21 insertions(+)
+ drivers/extcon/extcon-max77693.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
 
 diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 490e27475bac..d3adacf3187f 100644
+index d4b2dfab1888..68d6c7cccc4f 100644
 --- a/drivers/extcon/extcon-max77693.c
 +++ b/drivers/extcon/extcon-max77693.c
-@@ -1176,6 +1176,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 		}
- 	}
+@@ -44,19 +44,6 @@ static struct max77693_reg_data default_init_data[] = {
+ 		.addr = MAX77693_MUIC_REG_STATUS2,
+ 		.data = STATUS2_CHGDETRUN_MASK,
+ 	}, {
+-		/* INTMASK1 - Unmask [3]ADC1KM,[0]ADCM */
+-		.addr = MAX77693_MUIC_REG_INTMASK1,
+-		.data = INTMASK1_ADC1K_MASK
+-			| INTMASK1_ADC_MASK,
+-	}, {
+-		/* INTMASK2 - Unmask [0]ChgTypM */
+-		.addr = MAX77693_MUIC_REG_INTMASK2,
+-		.data = INTMASK2_CHGTYP_MASK,
+-	}, {
+-		/* INTMASK3 - Mask all of interrupts */
+-		.addr = MAX77693_MUIC_REG_INTMASK3,
+-		.data = 0x0,
+-	}, {
+ 		/* CDETCTRL2 */
+ 		.addr = MAX77693_MUIC_REG_CDETCTRL2,
+ 		.data = CDETCTRL2_VIDRMEN_MASK
+@@ -135,21 +122,8 @@ struct max77693_muic_irq {
  
-+	if (i) {
-+		/*
-+		 * i>0, at least one MUIC interrupt requested so need to unmask
-+		 * MUIC interrupt in INTSRC register. Without that MUIC
-+		 * interrupts will not be reported.
-+		 */
-+		ret = regmap_update_bits(max77693->regmap,
-+				MAX77693_PMIC_REG_INTSRC_MASK, SRC_IRQ_MUIC,
-+				~SRC_IRQ_MUIC);
-+		if (ret < 0) {
-+			dev_err(&pdev->dev, "Could not unmask MUIC interrupt in INTSRC: %d\n",
-+					ret);
-+			return ret;
-+		}
-+	}
-+
- 	/* Initialize extcon device */
- 	info->edev = devm_extcon_dev_allocate(&pdev->dev,
- 					      max77693_extcon_cable);
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-index e1b2b61285b9..4f1a80b66ecf 100644
---- a/include/linux/mfd/max77693-private.h
-+++ b/include/linux/mfd/max77693-private.h
-@@ -438,6 +438,11 @@ enum max77693_irq_source {
- 	MAX77693_IRQ_GROUP_NR,
+ static struct max77693_muic_irq muic_irqs[] = {
+ 	{ MAX77693_MUIC_IRQ_INT1_ADC,		"muic-ADC" },
+-	{ MAX77693_MUIC_IRQ_INT1_ADC_LOW,	"muic-ADCLOW" },
+-	{ MAX77693_MUIC_IRQ_INT1_ADC_ERR,	"muic-ADCError" },
+ 	{ MAX77693_MUIC_IRQ_INT1_ADC1K,		"muic-ADC1K" },
+ 	{ MAX77693_MUIC_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
+-	{ MAX77693_MUIC_IRQ_INT2_CHGDETREUN,	"muic-CHGDETREUN" },
+-	{ MAX77693_MUIC_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
+-	{ MAX77693_MUIC_IRQ_INT2_DXOVP,		"muic-DXOVP" },
+-	{ MAX77693_MUIC_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
+-	{ MAX77693_MUIC_IRQ_INT2_VIDRM,		"muic-VIDRM" },
+-	{ MAX77693_MUIC_IRQ_INT3_EOC,		"muic-EOC" },
+-	{ MAX77693_MUIC_IRQ_INT3_CGMBC,		"muic-CGMBC" },
+-	{ MAX77693_MUIC_IRQ_INT3_OVP,		"muic-OVP" },
+-	{ MAX77693_MUIC_IRQ_INT3_MBCCHG_ERR,	"muic-MBCCHG_ERR" },
+-	{ MAX77693_MUIC_IRQ_INT3_CHG_ENABLED,	"muic-CHG_ENABLED" },
+-	{ MAX77693_MUIC_IRQ_INT3_BAT_DET,	"muic-BAT_DET" },
  };
  
-+#define SRC_IRQ_CHARGER			BIT(0)
-+#define SRC_IRQ_TOP			BIT(1)
-+#define SRC_IRQ_FLASH			BIT(2)
-+#define SRC_IRQ_MUIC			BIT(3)
-+
- #define LED_IRQ_FLED2_OPEN		BIT(0)
- #define LED_IRQ_FLED2_SHORT		BIT(1)
- #define LED_IRQ_FLED1_OPEN		BIT(2)
+ /* Define supported accessory type */
 -- 
 1.9.1
 
