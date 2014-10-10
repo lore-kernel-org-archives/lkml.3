@@ -1,123 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaJJFpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:45:54 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:33685 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaJJFpv (ORCPT
+	id S1751416AbaJJFrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:47:52 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:46547 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905AbaJJFrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:45:51 -0400
-From: Vineeth Vijayan <vvijayan@mvista.com>
-To: benh@kernel.crashing.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: mpe@ellerman.id.au, Vineeth Vijayan <vvijayan@mvista.com>
-Subject: [PATCH] powerpc: Fix Text randomization
-Date: Fri, 10 Oct 2014 11:15:26 +0530
-Message-Id: <1412919926-13123-1-git-send-email-vvijayan@mvista.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 10 Oct 2014 01:47:49 -0400
+Message-ID: <543772F9.1010304@st.com>
+Date: Fri, 10 Oct 2014 07:47:37 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Vince Bridgers <vbridger@opensource.altera.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <vbridger@altera.com>
+Subject: Re: [PATCH net] stmmac: correct mc_filter local variable in set_filter
+ and set_mac_addr call
+References: <1412867436-22153-1-git-send-email-vbridger@opensource.altera.com>
+In-Reply-To: <1412867436-22153-1-git-send-email-vbridger@opensource.altera.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.138.72]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-10_04:2014-10-10,2014-10-10,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right now there is no way to disable TEXT randomization on a PPC32
-machine. text randomization happens even in the case of "echo 0 >
-/proc/sys/kernel/randomize_va_space"
+On 10/9/2014 5:10 PM, Vince Bridgers wrote:
+> Testing revealed that the local variable mc_filter was dimensioned
+> incorrectly for all possible configurations and get_mac_addr should
+> have been set_mac_addr (a typo). Make sure mc_filter is dimensioned
+> to 8 32-bit unsigned longs - the largest size of the Synopsys
+> multicast filter register set.
+>
+> Signed-off-by: Vince Bridgers <vbridger@opensource.altera.com>
 
-This happens due to the incorrect definition of ELF_ET_DYN_BASE at
-arch/powerpc/include/asm/elf.h
+Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
 
-Signed-off-by: Vineeth Vijayan <vvijayan@mvista.com>
----
-Test details:
-
-#include <stdio.h>
-
-int main(int argc,char *argv)
-{
-        printf("main = %p\n",main);
-        return 0;
-}
-
-Compile the same as position-independent executable
-
-Results without Patch:
-
-p5040ds:~# gcc test.c -o test -fPIE -pie
-p5040ds:~# echo 2 > /proc/sys/kernel/randomize_va_space 
-p5040ds:~# ./test 
-main = 0xb7e9681c
-p5040ds:~# ./test 
-main = 0xb7aba81c
-p5040ds:~# ./test 
-main = 0xb7fac81c
-p5040ds:~# ./test 
-main = 0xb7f4c81c
-p5040ds:~# echo 0 > /proc/sys/kernel/randomize_va_space                                                                                                                                              
-p5040ds:~# ./test 
-main = 0x2010281c
-p5040ds:~# ./test 
-main = 0x2018d81c
-p5040ds:~# ./test 
-main = 0x206a981c
-p5040ds:~# ./test 
-main = 0x2036681c
-
-
-Results with Patch:
-
-p5040ds:~# gcc test.c -o test -fPIE -pie
-p5040ds:~# 
-p5040ds:~# echo 2 > /proc/sys/kernel/randomize_va_space 
-p5040ds:~# 
-p5040ds:~# ./test 
-main = 0xb78a581c
-p5040ds:~# ./test 
-main = 0xb792c81c
-p5040ds:~# ./test 
-main = 0xb79de81c
-p5040ds:~# ./test 
-main = 0xb78ae81c
-p5040ds:~# echo 0 > /proc/sys/kernel/randomize_va_space                                                                                                                                              
-p5040ds:~# 
-p5040ds:~# ./test 
-main = 0x2000081c
-p5040ds:~# ./test 
-main = 0x2000081c
-p5040ds:~# ./test 
-main = 0x2000081c
-p5040ds:~# ./test 
-main = 0x2000081c
-
-
- arch/powerpc/Kconfig           |    1 +
- arch/powerpc/include/asm/elf.h |    2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 4bc7b62..f99ddae 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -88,6 +88,7 @@ config PPC
- 	select ARCH_MIGHT_HAVE_PC_PARPORT
- 	select ARCH_MIGHT_HAVE_PC_SERIO
- 	select BINFMT_ELF
-+	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	select OF
- 	select OF_EARLY_FLATTREE
- 	select OF_RESERVED_MEM
-diff --git a/arch/powerpc/include/asm/elf.h b/arch/powerpc/include/asm/elf.h
-index 888d8f3..162813b 100644
---- a/arch/powerpc/include/asm/elf.h
-+++ b/arch/powerpc/include/asm/elf.h
-@@ -29,7 +29,7 @@
-    that it will "exec", and that there is sufficient room for the brk.  */
- 
- extern unsigned long randomize_et_dyn(unsigned long base);
--#define ELF_ET_DYN_BASE		(randomize_et_dyn(0x20000000))
-+#define ELF_ET_DYN_BASE		(0x20000000)
- 
- #define ELF_CORE_EFLAGS (is_elf2_task() ? 2 : 0)
- 
--- 
-1.7.9.5
+> ---
+>   drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+> index 5efe60e..0adcf73 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
+> @@ -134,7 +134,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
+>   	void __iomem *ioaddr = (void __iomem *)dev->base_addr;
+>   	unsigned int value = 0;
+>   	unsigned int perfect_addr_number = hw->unicast_filter_entries;
+> -	u32 mc_filter[2];
+> +	u32 mc_filter[8];
+>   	int mcbitslog2 = hw->mcast_bits_log2;
+>
+>   	pr_debug("%s: # mcasts %d, # unicast %d\n", __func__,
+> @@ -182,7 +182,7 @@ static void dwmac1000_set_filter(struct mac_device_info *hw,
+>   		struct netdev_hw_addr *ha;
+>
+>   		netdev_for_each_uc_addr(ha, dev) {
+> -			stmmac_get_mac_addr(ioaddr, ha->addr,
+> +			stmmac_set_mac_addr(ioaddr, ha->addr,
+>   					    GMAC_ADDR_HIGH(reg),
+>   					    GMAC_ADDR_LOW(reg));
+>   			reg++;
+>
 
