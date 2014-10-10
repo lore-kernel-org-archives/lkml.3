@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaJJGt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 02:49:26 -0400
-Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:54336
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750982AbaJJGtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 02:49:21 -0400
-From: Zhao Qiang <B45475@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <B07421@freescale.com>
-CC: <R63061@freescale.com>, Zhao Qiang <B45475@freescale.com>
-Subject: [PATCH 2/3] qe: run qe_init and qe_ic_init
-Date: Fri, 10 Oct 2014 14:48:45 +0800
-Message-ID: <1412923725-9611-1-git-send-email-B45475@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(99396003)(85306004)(97736003)(85852003)(62966002)(48376002)(87936001)(88136002)(87286001)(89996001)(107046002)(95666004)(31966008)(81156004)(105606002)(229853001)(106466001)(104016003)(50226001)(4396001)(36756003)(80022003)(46102003)(68736004)(44976005)(69596002)(64706001)(104166001)(21056001)(19580405001)(77156001)(19580395003)(84676001)(47776003)(20776003)(6806004)(2201001)(92566001)(93916002)(92726001)(575784001)(50466002)(26826002)(102836001)(50986999)(120916001)(76482002)(2101003)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB340;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1751579AbaJJG7p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 02:59:45 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:62040 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbaJJG7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 02:59:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB340;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 03607C04F0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=qiang.zhao@freescale.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB339;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <2373913.b8GhYem2Rt@vostro.rjw.lan>
+References: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1960419.9oqpSxvdev@vostro.rjw.lan> <CAAObsKC0PcfBTJv8zZYUiys4NxvS=JMd3jjedUam5oZ4tNLwhA@mail.gmail.com>
+ <2373913.b8GhYem2Rt@vostro.rjw.lan>
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Date: Fri, 10 Oct 2014 08:59:22 +0200
+X-Google-Sender-Auth: jFX4afDrItp3PRCySpvivUlcIfU
+Message-ID: <CAAObsKBuDRQy7=zLkmRj9O+Ka0K_z-ejXCyzwttEXmQVkXn2hw@mail.gmail.com>
+Subject: Re: [REPOST PATCH v4 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?Q?Terje_Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mperttunen@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-qe and qe_ic need to be initialized before the
-qe app drivers, using subsys_initcall to run
-qe_init and qe_ic_init
+On 26 September 2014 01:51, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Wednesday, September 24, 2014 03:31:55 PM Tomeu Vizoso wrote:
+>> On 24 September 2014 15:32, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> > On Wednesday, September 24, 2014 10:42:13 AM Tomeu Vizoso wrote:
+>> >> On 14 September 2014 19:06, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+>> >> > On Friday, September 12, 2014 11:11:25 AM Tomeu Vizoso wrote:
+>> >> >> On 3 September 2014 17:49, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+>> >> >> > Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
+>> >> >> >
+>> >> >> > It can be used by memory controllers to calculate the optimum clock frequency
+>> >> >> > based on the bandwidth needs of the different memory clients.
+>> >> >> >
+>> >> >> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>> >> >> > Acked-by: Pavel Machek <pavel@ucw.cz>
+>> >> >>
+>> >> >> Hi Rafael,
+>> >> >>
+>> >> >> will you take this one for 3.18?
+>> >> >
+>> >> > Quite likely, but I'm traveling now, so I'll do that after I'm back home
+>> >> > in a few days.  I'll write to you if there are any problems.
+>> >>
+>> >> Don't want to be annoying, but thought I might ping you just in case
+>> >> this fell through the cracks.
+>> >
+>> > No, it didn't.
+>> >
+>> > I'm wondering about patch [2/2], though.  I'm assuming that you'll push you
+>> > later through the Tegra DRM driver, right?
+>>
+>> Yes, that was Stephen's suggestion:
+>>
+>> https://lkml.org/lkml/2014/8/25/439
+>
+> OK, patch [1/2] queued up for 3.18, thanks!
 
-Signed-off-by: Zhao Qiang <B45475@freescale.com>
----
- drivers/soc/qe/qe.c    | 15 +++++++++++++++
- drivers/soc/qe/qe_ic.c | 15 +++++++++++++++
- 2 files changed, 30 insertions(+)
+Hi Rafael,
 
-diff --git a/drivers/soc/qe/qe.c b/drivers/soc/qe/qe.c
-index 2aaa5b2..bfea0f8 100644
---- a/drivers/soc/qe/qe.c
-+++ b/drivers/soc/qe/qe.c
-@@ -683,6 +683,21 @@ unsigned int qe_get_num_of_snums(void)
- }
- EXPORT_SYMBOL(qe_get_num_of_snums);
- 
-+static int __init qe_init(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,qe");
-+	if (!np) {
-+		pr_err("%s: Could not find Quicc Engine node\n", __func__);
-+		return -ENODEV;
-+	}
-+	qe_reset();
-+	of_node_put(np);
-+	return 0;
-+}
-+subsys_initcall(qe_init);
-+
- #if defined(CONFIG_SUSPEND) && defined(CONFIG_PPC_85xx)
- static int qe_resume(struct platform_device *ofdev)
- {
-diff --git a/drivers/soc/qe/qe_ic.c b/drivers/soc/qe/qe_ic.c
-index cc1b8d5..11fe98c 100644
---- a/drivers/soc/qe/qe_ic.c
-+++ b/drivers/soc/qe/qe_ic.c
-@@ -34,6 +34,7 @@
- #include <linux/fsl/qe_ic.h>
- 
- #include "qe_ic.h"
-+#include "../../irqchip/irqchip.h"
- 
- static DEFINE_RAW_SPINLOCK(qe_ic_lock);
- 
-@@ -501,4 +502,18 @@ static int __init init_qe_ic_sysfs(void)
- 	return 0;
- }
- 
-+static int __init qeic_of_init(void)
-+{
-+	struct device_node *np;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,qe-ic");
-+	if (np) {
-+		qe_ic_init(np, 0, qe_ic_cascade_low_mpic,
-+			   qe_ic_cascade_high_mpic);
-+		of_node_put(np);
-+	}
-+	return 0;
-+}
-+subsys_initcall(qeic_of_init);
-+
- subsys_initcall(init_qe_ic_sysfs);
--- 
-2.1.0.27.g96db324
+I don't see this one in linux-next yet.
 
+Regards,
+
+Tomeu
