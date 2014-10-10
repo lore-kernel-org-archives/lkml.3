@@ -1,176 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaJJOPr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 10:15:47 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:57127 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaJJOPn (ORCPT
+	id S1754474AbaJJOTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:19:05 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:57003 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957AbaJJOTB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 10:15:43 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-8c-5437ea0d3908
-Message-id: <5437EA04.2020406@samsung.com>
-Date: Fri, 10 Oct 2014 17:15:32 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 0/4] ima: require signed user-space initialization
-References: <cover.1405428802.git.d.kasatkin@samsung.com>
- <20140715143315.eef78daf3eb41ef0d61f30d1@linux-foundation.org>
- <CACE9dm-FdxDb5ifFfOfQUbU=j7A81NBYWhHJu8LmyCMdD2==5g@mail.gmail.com>
- <1406142529.14764.63.camel@dhcp-9-2-203-236.watson.ibm.com>
- <CACE9dm_gvLJG05D+siBS-dV1CtQU2Pj6gQZv1Q7uN88YK5QO3A@mail.gmail.com>
-In-reply-to: <CACE9dm_gvLJG05D+siBS-dV1CtQU2Pj6gQZv1Q7uN88YK5QO3A@mail.gmail.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDLMWRmVeSWpSXmKPExsVy+t/xq7q8r8xDDLpOc1jMWb+GzeLL0jqL
-	lzPmsVtc3jWHzeJDzyM2i08rJjE7sHnsnHWX3ePEjN8sHg8ObWbx2L3gM5PH501yAaxRXDYp
-	qTmZZalF+nYJXBl/uqaxFDzVr7hz7g97A+M3tS5GTg4JAROJE5fPMULYYhIX7q1n62Lk4hAS
-	WMoo0XVkJhOE08gksWDhT6jMLEaJxYe2MoG08ApoSWzeeZgNxGYRUJV4sGwx2Cg2AT2JDc0/
-	2EFsUYEIiZN397BD1AtK/Jh8jwXEFhHQlVj1fBczyFBmkA3L/u4DGyos4Cmxdd4Ldohtx5gk
-	rm18BbSBg4NTIFhi/5NwEJNZQF1iypRckHJmAXmJzWveMoPYQkA3dK9dywbxjqLE6cnnmCcw
-	Cs9CsnoWQvcsJN0LGJlXMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTEyJcdjIuPWR1iFOBg
-	VOLhvSBjHiLEmlhWXJl7iFGCg1lJhPfbc6AQb0piZVVqUX58UWlOavEhRiYOTqkGxiW/Dxr9
-	5ayVEg6Rj9gvYrecZTLzo6ynOy0P9Wl7yPnwtAlsYttyL8r0OkO0K6N2SZSWatnRB2Enfe5u
-	VLGMztl9JHWG2515y+wMrk3ZMYOD+cd+t/knirUWPrJ2uVb5O4pzFXfPJItFGw4EFx5a/ul6
-	vOdkqZqJ/42yHiVycE/a+mTWBS31k0osxRmJhlrMRcWJANIMHoVvAgAA
+	Fri, 10 Oct 2014 10:19:01 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Weijie Yang <weijie.yang@samsung.com>, iamjoonsoo.kim@lge.com
+Cc: aneesh.kumar@linux.vnet.ibm.com, m.szyprowski@samsung.com,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm/cma: fix cma bitmap aligned mask computing
+In-Reply-To: <000301cfe430$504b0290$f0e107b0$%yang@samsung.com>
+Organization: http://mina86.com/
+References: <000301cfe430$504b0290$f0e107b0$%yang@samsung.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/24.4.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:141010:akpm@linux-foundation.org::tPEQvLO9gQuCfnUS:0000000000000000000000000000000000000S6p
+X-Hashcash: 1:20:141010:weijie.yang@samsung.com::axBHi7iFHfUjHtJ2:000000000000000000000000000000000000002Li/
+X-Hashcash: 1:20:141010:m.szyprowski@samsung.com::jviWRQdZDNBKkRtX:00000000000000000000000000000000000002+Ax
+X-Hashcash: 1:20:141010:aneesh.kumar@linux.vnet.ibm.com::MYca18VQCPqrKSWp:0000000000000000000000000000003sYw
+X-Hashcash: 1:20:141010:linux-kernel@vger.kernel.org::RERzZKTj+o4NSFQh:0000000000000000000000000000000003zno
+X-Hashcash: 1:20:141010:iamjoonsoo.kim@lge.com::EIXURTuN0ZPZpHNo:00000000000000000000000000000000000000052Dk
+X-Hashcash: 1:20:141010:linux-mm@kvack.org::x65LGXdP9XCA/SJO:00000000000000000000000000000000000000000006sWX
+Date: Fri, 10 Oct 2014 16:18:54 +0200
+Message-ID: <xa1tvbns2ek1.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+On Fri, Oct 10 2014, Weijie Yang wrote:
+> The current cma bitmap aligned mask compute way is incorrect, it could
+> cause an unexpected align when using cma_alloc() if wanted align order
+> is bigger than cma->order_per_bit.
+>
+> Take kvm for example (PAGE_SHIFT = 12), kvm_cma->order_per_bit is set to 6,
+> when kvm_alloc_rma() tries to alloc kvm_rma_pages, it will input 15 as
+> expected align value, after using current computing, however, we get 0 as
+> cma bitmap aligned mask other than 511.
+>
+> This patch fixes the cma bitmap aligned mask compute way.
+>
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 
-I have just posted updated patchset.
-Please check patch description where I discuss your questions and
-related changes.
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-Thanks,
-Dmitry
+Should that also get:
 
-On 30/07/14 00:37, Dmitry Kasatkin wrote:
-> On Wed, Jul 23, 2014 at 9:08 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->> On Wed, 2014-07-16 at 23:26 +0300, Dmitry Kasatkin wrote:
->>> Hello,
->>>
->>>
->>> On Wed, Jul 16, 2014 at 12:33 AM, Andrew Morton
->>> <akpm@linux-foundation.org> wrote:
->>>> On Tue, 15 Jul 2014 15:54:19 +0300 Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
->>>>
->>>>> Currently secure IMA/EVM initialization has to be done from the initramfs,
->>>>> embedded in the signed kernel image. Many systems do not want to use
->>>>> initramfs or usage of embedded initramfs makes it difficult to have
->>>>> multi-target kernels.
->>>>>
->>>>> This is a very simple patchset which makes it possible to perform secure
->>>>> initialization by requiring initial user-space to be signed.
->>>>>
->>>>> It does it by:
->>>>> - introducing IMA public keys loading hook
->>>>> - loading IMA trusted public key into .ima trusted keyring
->>>>> - making default IMA appraisal policy to require everything to be signed
->>>>>
->>>>> When builtin initramfs is not in use, keys cannot be read from initcalls,
->>>>> because root filesystem is not yet mounted. In order to read keys before
->>>>> executing init process, ima_prepare_keys() hook is introduced. Reading
->>>>> public keys from the kernel is justified because signature verification
->>>>> key is needed in order to verify anything else which is read from the
->>>>> file system. Public keys are X509 certificates and itself signed by the
->>>>> trusted key from the .system keyring. Kernel BIG KEYS support is an example
->>>>> of reading keys directly by the kernel.
->>>>>
->>>>> CONFIG_IMA_APPRAISE_SIGNED_INIT kernel option is provided to make the IMA
->>>>> default appraisal policy to required signature validation. Signed init
->>>>> process need to initialize EVM key and load appropriate IMA policy which
->>>>> would not require everything to be signed.
->>>>>
->>>>> Unless real '/sbin/init' is signed, a simple and practical way is to place
->>>>> all signed programs, libraries, scripts and configuration files under
->>>>> dedicated directory, for example '/ima', and run signed init process by
->>>>> providing a kernel command line parameter 'init=/ima/init'
->>>> The kernel may already have loaded kernel modules before it gets around
->>>> to mounting rootfs and running /sbin/init.  How does that fit into the
->>>> overall signing scheme?  And how did /sbin/modprobe get its signature
->>>> checked?
->>>>
->>>>
->>> If kernel embedded initramfs is in use then it is signed together with kernel,
->>> and this functionality is not needed and no need to enable it with
->>> kernel configuration.
->>>
->>> As it is IMA extensions and it is entirely based on IMA functionality
->>> it requires extended attribute support.
->>>
->>> If externally loaded initramfs is used, then that one uses cpio based
->>> archive that does not support extended attributes and thus external
->>> initramfs cannot be used for secure initialization.
->> Right, but GNU tar version 1.27.1 supports Posix.1 (ustar) format, which
->> has xattr support.  GNU CPIO supports the Posix.1 tar format.  The
->> question is whether CPIO supports the included xattrs.
->>
->>> This functionality is targeted to be used without initramfs on normal
->>> filesystems supporting xattrs. In such case, modprobe cannot be loaded before
->>> rootfs is mounted. Any filesystems and block device drivers obviously
->>> need to be embedded into the kernel. In the place where
->>> ima_prepare_keys() hooks is called, we have
->>>
->>>    ima_prepare_keys();
->>>    load_default_modules();
->>>
->>> So we load keys after mounting rootfs and before calling load_default_modules().
->>> So if anything useful kernel loads with load_default_modules, will be
->>> loaded after IMA key is available and thus modprobe will be verified.
->>>
->>>
->>>> The proposed interface and implementation look reasonable to me.
->>>> Opening and reading a file from the root fs is a bit unusual, but we
->>>> already do something similar with "/sbin/init" and the reasoning here
->>>> is similar.
->>>>
->>>> The only alternative I can immediately think of is to bundle the public
->>>> keys into a kernel module and load them into the kernel that way but
->>>>
->>>> - if/when we implement module signing, we have a chicken-and-egg problem
->>>>
->>>> - doing it via a kernel module seems a bit fake - a bit of trickery
->>>>   to reduce code duplication.  Better to do it explicitly.
->>>>
->>> This was the idea. Kernel has embedded certificate signing key on the
->>> .system keyring. Filesystem image/package can come with own signing key
->>> and that one is loaded and verified by existing KEY infrastructure.
->>> Entire signed init code can come as rpm or deb package with its own key.
->>> That is benefit of loading key.
->> Ok, this type of solution addresses the concerns of devices, but we also
->> need a viable solution for systems with an initramfs.
->>
->> Mimi
->>
-> Sorry for the late reply. I am on holidays at the moment.
+Cc: <stable@vger.kernel.org> # v3.17
+
+> ---
+>  mm/cma.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 >
-> Offered solution is simple one to work without initramfs.
+> diff --git a/mm/cma.c b/mm/cma.c
+> index c17751c..f6207ef 100644
+> --- a/mm/cma.c
+> +++ b/mm/cma.c
+> @@ -57,7 +57,10 @@ unsigned long cma_get_size(struct cma *cma)
+>  
+>  static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
+>  {
+> -	return (1UL << (align_order >> cma->order_per_bit)) - 1;
+> +	if (align_order <= cma->order_per_bit)
+> +		return 0;
+> +	else
+> +		return (1UL << (align_order - cma->order_per_bit)) - 1;
+>  }
+>  
+>  static unsigned long cma_bitmap_maxno(struct cma *cma)
+> -- 
+> 1.7.10.4
 >
-> When using initramfs, one approach is that it can be be embedded into
-> the kernel.
->
-> When initramfs is separate, offered solution would work as well, but
-> it would require initramfs container, which is 'cpio' would support
-> extended attributes. cpio does not support them. 'cpio' maintainer
-> Sergey Poznyakoff replied in my email to him that it would require
-> standardization work. He suggested that it is better to use 'tar'
-> archive which supports xattrs. Using tar for initramfs would require
-> initramfs tool changes across all distros and kernel. As I said above
-> offered solution would work as well for initramfs without any changes
-> if initramfs container would support xattrs... So further extensions
-> are not related to this patchset.
->
-> Thanks,
-> Dmitry
 >
 
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
