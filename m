@@ -1,195 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264AbaJJWi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 18:38:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50921 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJJWi2 (ORCPT
+	id S1755049AbaJJWpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 18:45:41 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:54341 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514AbaJJWpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 18:38:28 -0400
-Date: Fri, 10 Oct 2014 15:37:30 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mike Skoog <mskoog@endruntechnologies.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mkorreng <mkorreng@endruntechnologies.com>
-Subject: Re: Kernel Patch to add Endrun PCIe PTP card v1 (1/2)
-Message-ID: <20141010223730.GB1843@kroah.com>
-References: <54384D73.5020004@endruntechnologies.com>
+	Fri, 10 Oct 2014 18:45:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54384D73.5020004@endruntechnologies.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [84.208.172.182]
+In-Reply-To: <CAOMFOmVSwPAbPtNzPn93QGjbXh1B3QC7B2Ahd1Qxc=gWb6H7fQ@mail.gmail.com>
+References: <1409899047-13045-1-git-send-email-mcgrof@do-not-panic.com>
+ <CAB=NE6Wti1RpAFk5q_YeZn2F9Rd=wsiwhyPszu74nG9fXwH5vQ@mail.gmail.com>
+ <20140905141241.GC10455@mtj.dyndns.org> <20140905164405.GA28964@core.coreip.homeip.net>
+ <20140905174925.GA12991@mtj.dyndns.org> <CAB=NE6VPTV39pNujOgO422wbUvU44HZ7s=aaxPVraNECqA6e4Q@mail.gmail.com>
+ <20140905224047.GC15723@mtj.dyndns.org> <CAB=NE6Uz1VD5qpMFSBfQRV8ih9FQcCUhNtWMvD38t5hdDvix4Q@mail.gmail.com>
+ <20140909011059.GB11706@mtj.dyndns.org> <1410241109.2028.22.camel@jarvis.lan>
+ <CAB=NE6WGAMvffGDTkN5x5Cd+YOtD-Cmo3v7_8FmJ5cvCRbFEpw@mail.gmail.com>
+ <1410291346.13298.16.camel@jarvis.lan> <CAB=NE6U6v-GhAaZv3yXn9uVFvBvE4Uq8z7MQU8N+CyW19WpnNQ@mail.gmail.com>
+ <CAG-2HqUiUksdT4UyeDsdc1Q74=2BiX2TuzzGh_hoLiO5_DOvXQ@mail.gmail.com>
+ <CAB=NE6UprJH69hzc1mjqyq6PAn+7LZmX65Z8CDwUdJ73nDusHg@mail.gmail.com>
+ <CAG-2HqUzCvd55mq=M3=tXbHAjc2QnVuRtbFZMWTz9k_6BmmngQ@mail.gmail.com>
+ <CAB=NE6XmFaWMKuW3vJ7QMZ1BmmWrAPezTYYsqatX4mMNdMjpog@mail.gmail.com>
+ <CAG-2HqWYXo+uRtOk_XW-Bi5aXcTLphEMLCMy8a2THuEg9dHPzw@mail.gmail.com>
+ <CAB=NE6XS9pWmfO7xjTpLFG1OdOJ=UktbOK5pjJCK8hzfXagfXQ@mail.gmail.com> <CAOMFOmVSwPAbPtNzPn93QGjbXh1B3QC7B2Ahd1Qxc=gWb6H7fQ@mail.gmail.com>
+From: Tom Gundersen <teg@jklm.no>
+Date: Sat, 11 Oct 2014 00:45:17 +0200
+Message-ID: <CAG-2HqXdxHrx4OL4E0TnzA1Fb6zK6J+qowfD0RHCwviGUv-_ng@mail.gmail.com>
+Subject: Re: [systemd-devel] [RFC v2 3/6] kthread: warn on kill signal if not OOM
+To: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, Tejun Heo <tj@kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Takashi Iwai <tiwai@suse.de>, Kay Sievers <kay@vrfy.org>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        hare <hare@suse.com>,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Wu Zhangjin <falcon@meizu.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        "mpt-fusionlinux.pdl" <MPT-FusionLinux.pdl@avagotech.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Benjamin Poirier <bpoirier@suse.de>,
+        Santosh Rastapur <santosh@chelsio.com>,
+        Casey Leedom <leedom@chelsio.com>,
+        Hariprasad S <hariprasad@chelsio.com>,
+        Pierre Fersing <pierre-fersing@pierref.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        systemd Mailing List <systemd-devel@lists.freedesktop.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joseph Salisbury <joseph.salisbury@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 02:19:47PM -0700, Mike Skoog wrote:
-> =====================================================
-> Subject: [PATCHv1 1/2] 8250_pci: pci.ids: EndRun Technologies PTP PCIe
-> card recognition.
-> From: Michael Skoog, EndRun Technologies, Inc.
+On Fri, Oct 10, 2014 at 11:54 PM, Anatol Pomozov
+<anatol.pomozov@gmail.com> wrote:
+> 1) Why not to make the timeout configurable through config file? There
+> is already udev.conf you can put config option there. Thus people with
+> modprobe issues can easily "fix" the problem. And then decrease
+> default timeout back to 30 seconds. I agree that long module loading
+> (more than 30 secs) is abnormal and should be investigated by driver
+> authors.
 
-What is all of this here for?  I shouldn't have to hand-edit a changelog
-body in order to apply it, try using git send-email to send the patch
-out in an easier format.
+We can already configure this either on the udev or kernel
+commandline, is that not sufficient (I don't object to also adding it
+to the config file, just asking)?
 
-> 
-> Add recognition of EndRun Technologies PCIe PTP slave card
-> and setups two ttySx ports to communicate to the card for
-> retrieval of PTP based time and to communicate with the card's
-> Linux OS.
-> 
-> Signed-off-by: Michael Skoog <mskoog@endruntechnologies.com>
-> Signed-off-by: Mike Korreng <mkorreng@endruntechnologies.com>
-> 
-> ---
-> 
-> The kernel patch is currently against linux 3.17 kernel, for the x86
-> architecture.
-> 
-> The pci.ids patch is against the Slackware 13 distribution.
-> 
-> diffstat:
->  8250_pci.c |   66
-> +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 66 insertions(+)
+> 2) Could you add 'echo w > /proc/sysrq-trigger' to udev code right
+> before killing the "modprobe" thread? sysrq will print information
+> about stuck threads (including modprobe itself) this will make
+> debugging easier. e.g. dmesg here
+> https://bugs.archlinux.org/task/40454 says nothing where the threads
+> were stuck.
 
-Your patch is line-wrapped and can't be applied :(
+Are the current warnings (in udev git) sufficient (should tell you
+which module is taking long, but still won't tell you which kernel
+thread of course)?
 
+Cheers,
 
-
-> 
-> Please let me know any feedback you have on this patch or the approach used.
-> 
-> Thanks,
-> 
-> =====================
-> Michael Skoog
-> Software Engineer
-> EndRun Technologies
-> =====================
-> 
-> 
-> --------------------------------------------------------------------------------
-> diff -up linux-3.16.3/drivers/tty/serial/8250/8250_pci.c{.orig,} >
-> /tmp/8250_pci.c.patch
-
-Why do you have 2 diff lines here?  Did you hand-edit this?
-
-> 
-> --- linux-3.17/drivers/tty/serial/8250/8250_pci.c.orig	2014-10-09
-> 09:29:31.083013764 -0700
-> +++ linux-3.17/drivers/tty/serial/8250/8250_pci.c	2014-10-09
-> 13:20:34.817731134 -0700
-> @@ -1000,6 +1000,40 @@ static void pci_ite887x_exit(struct pci_
->  }
-> 
->  /*
-> + * EndRun Technologies.
-> + * Determine the number of ports available on the device.
-> + */
-> +#define PCI_VENDOR_ID_ENDRUN			0x7401
-> +#define PCI_DEVICE_ID_ENDRUN_1588	0xe100
-> +
-> +static int pci_endrun_init(struct pci_dev *dev)
-> +{
-> +	u8 __iomem *p;
-> +	unsigned long deviceID;
-> +	unsigned int  number_uarts = 0;
-> +
-> +	/* EndRun device is all 0xexxx */
-> +	if (dev->vendor == PCI_VENDOR_ID_ENDRUN &&
-> +		(dev->device & 0xf000) != 0xe000)
-> +		return 0;
-> +
-> +	p = pci_iomap(dev, 0, 5);
-> +	if (p == NULL)
-> +		return -ENOMEM;
-> +
-> +	deviceID = ioread32(p);
-> +	/* EndRun device */
-> +	if (deviceID == 0x07000200) {
-> +		number_uarts = ioread8(p + 4);
-> +		dev_dbg(&dev->dev,
-> +			"%d ports detected on EndRun PCI Express device\n",
-> +								number_uarts);
-> +	}
-> +	pci_iounmap(dev, p);
-> +	return number_uarts;
-> +}
-> +
-> +/*
->   * Oxford Semiconductor Inc.
->   * Check that device is part of the Tornado range of devices, then
-> determine
->   * the number of ports available on the device.
-> @@ -2303,6 +2337,17 @@ static struct pci_serial_quirk pci_seria
->  		.setup		= pci_netmos_9900_setup,
->  	},
->  	/*
-> +	 * EndRun Technologies
-> +	*/
-> +	{
-> +		.vendor		= PCI_VENDOR_ID_ENDRUN,
-> +		.device		= PCI_ANY_ID,
-> +		.subvendor	= PCI_ANY_ID,
-> +		.subdevice	= PCI_ANY_ID,
-> +		.init		= pci_endrun_init,
-> +		.setup		= pci_default_setup,
-> +	},
-> +	/*
->  	 * For Oxford Semiconductor Tornado based devices
->  	 */
->  	{
-> @@ -2711,6 +2756,7 @@ enum pci_board_num_t {
->  	pbn_panacom2,
->  	pbn_panacom4,
->  	pbn_plx_romulus,
-> +	pbn_endrun_2_4000000,
->  	pbn_oxsemi,
->  	pbn_oxsemi_1_4000000,
->  	pbn_oxsemi_2_4000000,
-> @@ -3255,6 +3301,20 @@ static struct pciserial_board pci_boards
->  	},
-> 
->  	/*
-> +	 * EndRun Technologies
-> +	* Uses the size of PCI Base region 0 to
-> +	* signal now many ports are available
-> +	* 2 port 952 Uart support
-> +	*/
-> +	[pbn_endrun_2_4000000] = {
-> +		.flags		= FL_BASE0,
-> +		.num_ports	= 2,
-> +		.base_baud	= 4000000,
-> +		.uart_offset	= 0x200,
-> +		.first_offset	= 0x1000,
-> +	},
-> +
-> +	/*
->  	 * This board uses the size of PCI Base region 0 to
->  	 * signal now many ports are available
->  	 */
-> @@ -4121,6 +4181,12 @@ static struct pci_device_id serial_pci_t
->  		0x10b5, 0x106a, 0, 0,
->  		pbn_plx_romulus },
->  	/*
-> +	* EndRun Technologies. PCI express device range.
-> +	*/
-> +	{	PCI_VENDOR_ID_ENDRUN, PCI_DEVICE_ID_ENDRUN_1588, /* EndRun PTP/1588
-> 2 Native UART */
-> +		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-> +		pbn_endrun_2_4000000 },
-> +	/*
->  	 * Quatech cards. These actually have configurable clocks but for
->  	 * now we just use the default.
->  	 *
-
-
-Other than the basic formatting issues mentioned, the patch looks fine,
-can you fix those up and resend it so that I can apply it?
-
-thanks,
-
-greg k-h
+Tom
