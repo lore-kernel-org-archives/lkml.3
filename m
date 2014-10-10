@@ -1,73 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788AbaJJHpL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 03:45:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49346 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaJJHpE (ORCPT
+	id S1751851AbaJJHrI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 03:47:08 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:50986 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaJJHrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 03:45:04 -0400
-Date: Fri, 10 Oct 2014 09:44:54 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
-Message-ID: <20141010074454.GO4992@pengutronix.de>
-References: <1412857956-6207-1-git-send-email-s.hauer@pengutronix.de>
- <5436BF5B.5060006@gmail.com>
+	Fri, 10 Oct 2014 03:47:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5436BF5B.5060006@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:41:16 up 30 days, 28 min, 86 users,  load average: 0.19, 0.29,
- 0.27
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20141009153025.GY10832@worktop.programming.kicks-ass.net>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-3-git-send-email-vincent.guittot@linaro.org>
+ <20141009112352.GO4750@worktop.programming.kicks-ass.net> <CAKfTPtABoQFQfufYK+hTd96ufQT83uypedzuZOeWjnUd51AbaQ@mail.gmail.com>
+ <20141009153025.GY10832@worktop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 10 Oct 2014 09:46:42 +0200
+Message-ID: <CAKfTPtD0se5uVJPcQE-Rh-O+GTLmjY1rHH1AcrCLSTbcXSbuqw@mail.gmail.com>
+Subject: Re: [PATCH v7 2/7] sched: move cfs task on a CPU with higher capacity
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 10:01:15AM -0700, Florian Fainelli wrote:
-> On 10/09/2014 05:32 AM, Sascha Hauer wrote:
-> >  static int ksz8021_config_init(struct phy_device *phydev)
-> >  {
-> > +	struct clk *clk;
-> >  	const u16 val = KSZPHY_OMSO_B_CAST_OFF | KSZPHY_OMSO_RMII_OVERRIDE;
-> >  	int rc;
-> >  
-> > +	clk = devm_clk_get(&phydev->dev, "rmii-ref");
-> > +	if (!IS_ERR(clk)) {
-> > +		unsigned long rate = clk_get_rate(clk);
-> > +
-> > +		if (rate > 24500000 && rate < 25500000)
-> > +			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
-> > +		else if (rate > 49500000 && rate < 50500000)
-> > +			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
-> > +	}
-> 
-> I suppose that you could move this to the PHY driver probe() callback,
-> and perform the rate checking from here, rejecting a clock whose rate is
-> out of the acceptable range, and return an error to prevent the PHY
-> driver registration? It is really up to you though.
+On 9 October 2014 17:30, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, Oct 09, 2014 at 04:59:36PM +0200, Vincent Guittot wrote:
+>> On 9 October 2014 13:23, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, Oct 07, 2014 at 02:13:32PM +0200, Vincent Guittot wrote:
+>> >> +++ b/kernel/sched/fair.c
+>> >> @@ -5896,6 +5896,18 @@ fix_small_capacity(struct sched_domain *sd, struct sched_group *group)
+>> >>  }
+>> >>
+>> >>  /*
+>> >> + * Check whether the capacity of the rq has been noticeably reduced by side
+>> >> + * activity. The imbalance_pct is used for the threshold.
+>> >> + * Return true is the capacity is reduced
+>> >> + */
+>> >> +static inline int
+>> >> +check_cpu_capacity(struct rq *rq, struct sched_domain *sd)
+>> >> +{
+>> >> +     return ((rq->cpu_capacity * sd->imbalance_pct) <
+>> >> +                             (rq->cpu_capacity_orig * 100));
+>> >> +}
+>> >> +
+>> >> +/*
+>> >>   * Group imbalance indicates (and tries to solve) the problem where balancing
+>> >>   * groups is inadequate due to tsk_cpus_allowed() constraints.
+>> >>   *
+>> >> @@ -6567,6 +6579,14 @@ static int need_active_balance(struct lb_env *env)
+>> >>                */
+>> >>               if ((sd->flags & SD_ASYM_PACKING) && env->src_cpu > env->dst_cpu)
+>> >>                       return 1;
+>> >> +
+>> >> +             /*
+>> >> +              * The src_cpu's capacity is reduced because of other
+>> >> +              * sched_class or IRQs, we trig an active balance to move the
+>> >> +              * task
+>> >> +              */
+>> >> +             if (check_cpu_capacity(env->src_rq, sd))
+>> >> +                     return 1;
+>> >>       }
+>> >
+>> > So does it make sense to first check if there's a better candidate at
+>> > all? By this time we've already iterated the current SD while trying
+>> > regular load balancing, so we could know this.
+>>
+>> i'm not sure to completely catch your point.
+>> Normally, f_b_g and f_b_q have already looked at the best candidate
+>> when we call need_active_balance. And src_cpu has been elected.
+>> Or i have missed your point ?
+>
+> Yep you did indeed miss my point.
+>
+> So I've always disliked this patch for its arbitrary nature, why
+> unconditionally try and active balance every time there is 'some' RT/IRQ
+> usage, it could be all CPUs are over that arbitrary threshold and we'll
+> end up active balancing for no point.
+>
+> So, since we've already iterated all CPUs in our domain back in
+> update_sd_lb_stats() we could have computed the CFS fraction:
+>
+>         1024 * capacity / capacity_orig
+>
+> for every cpu and collected the min/max of this. Then we can compute if
+> src is significantly (and there I suppose we can indeed use imb)
+> affected compared to others.
 
-Oh, it seems doing this in config_init is really wrong as it can be
-called multiple times, even as a response to the SIOCSMIIREG ioctl.
-We would request the clock each time then without ever releasing it.
-I'll send an updated version with clock handling in probe().
+ok, so we should put additional check in f_b_g to be sure that we will
+ jump to force_balance only if there will be a real gain by moving the
+task on the local group (from an available capacity for the task point
+of view)
+and probably in f_b_q too
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+>
