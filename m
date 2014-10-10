@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaJJMdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 08:33:03 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:20588 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaJJMcW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 08:32:22 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-54-5437d1d49a8b
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org (open list),
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...)
-Subject: [PATCH 3/4] drm/exynos: enable vblank after DPMS on
-Date: Fri, 10 Oct 2014 14:31:55 +0200
-Message-id: <1412944316-27737-4-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1412944316-27737-1-git-send-email-a.hajda@samsung.com>
-References: <1412944316-27737-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xq7pXLpqHGJx/wWtxa905VosrX9+z
-	WUy6P4HF4sW9iywWZ5vesFtc3jWHzWLG+X1MFmuP3GW3mDH5JZsDp8f97uNMHn1bVjF6fN4k
-	F8AcxWWTkpqTWZZapG+XwJXR8qK6YD5nxbKGicwNjE/Zuxg5OSQETCQan01lgbDFJC7cW8/W
-	xcjFISSwlFHi68t+Jginj0li0dP1YB1sApoSfzffZAOxRQSUJVbta2cHKWIW+MgkcWXpG2aQ
-	hLCAjUTXnX9gNouAqsTqK81MIDavgLPE5mVzWCHWyUmcPDYZzOYUcJH4fesCkM0BtM1Z4vkl
-	5QmMvAsYGVYxiqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihATV1x2MS49ZHWIU4GBU4uG9IGMe
-	IsSaWFZcmXuIUYKDWUmEd/5eoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGemkmzuhLvxoZTkdY
-	VrzyFV7I0nX9QMHuo+cr+J7k65ib5r+Z7h3Y9th78xzHmVKxXrbqAqLx+S9sVkQ+NcjMqFkr
-	Hfv1T/mr7pJHp7PT7d9mbtNcLagSJVD2ocTrlw2P8exLzfsNmENOJx3uYTaXmuzcKH7wsbTg
-	rCT3/8Zv6kuvB2q//6fEUpyRaKjFXFScCABe5H5OCAIAAA==
+	id S1754172AbaJJMdp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 08:33:45 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:46686 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751454AbaJJMdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 08:33:41 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: PERIER Romain <romain.perier@gmail.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, robh <robh@kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get "poweroff-source" property
+Date: Fri, 10 Oct 2014 14:33:23 +0200
+Message-ID: <2477657.j9qmEgD9t9@phil>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
+References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com> <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com> <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before DPMS off driver disables vblank.
-It should be balanced by vblank enable after DPMS on.
-The patch fixes issue with page_flip ioctl not being able
-to acquire vblank counter introduced by patch:
-drm: Always reject drm_vblank_get() after drm_vblank_off()
+Hi Grant,
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/gpu/drm/exynos/exynos_drm_crtc.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+Am Freitag, 10. Oktober 2014, 12:47:08 schrieb Grant Likely:
+> What I'm more concerned about is the semantics of the property. What
+> do the generic code paths gain by standardizing this property? Is it
+> expected that
+[seems to be missing some text in the original mail]
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-index 8e38e9f..45026e6 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-@@ -71,13 +71,16 @@ static void exynos_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
- 				!atomic_read(&exynos_crtc->pending_flip),
- 				HZ/20))
- 			atomic_set(&exynos_crtc->pending_flip, 0);
--		drm_vblank_off(crtc->dev, exynos_crtc->pipe);
-+		drm_crtc_vblank_off(crtc);
- 	}
- 
- 	if (manager->ops->dpms)
- 		manager->ops->dpms(manager, mode);
- 
- 	exynos_crtc->dpms = mode;
-+
-+	if (mode == DRM_MODE_DPMS_ON)
-+		drm_crtc_vblank_on(crtc);
- }
- 
- static void exynos_drm_crtc_prepare(struct drm_crtc *crtc)
--- 
-1.9.1
+We currently see an influx of system-power-controller variants. While in the 
+past it only was
+	ti,system-power-controller
 
+there is now already
+	maxim,system-power-controller
+	rockchip,system-power-controller
+
+Romain's work would introduce "active-semi,system-power-controller", I have a 
+"netronix,system-power-controller" sitting in some distant tree and there may 
+be more already waiting somewhere.
+
+So in the worst case I'd think you could expect such a property for every 
+pmic-vendor in vendor-prefixes.txt ... as it seems to be a quite common use-
+case these days to have the pmic handle system power on its own.
+
+
+Heiko
