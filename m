@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaJJF6O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:58:14 -0400
-Received: from smtp73.ord1c.emailsrvr.com ([108.166.43.73]:59526 "EHLO
-	smtp73.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751016AbaJJF6M (ORCPT
+	id S1751622AbaJJF6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:58:47 -0400
+Received: from smtp65.ord1c.emailsrvr.com ([108.166.43.65]:46258 "EHLO
+	smtp65.ord1c.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751275AbaJJF6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:58:12 -0400
+	Fri, 10 Oct 2014 01:58:46 -0400
 X-Sender-Id: pramod.gurav@smartplayin.com
 From: Pramod Gurav <pramod.gurav@smartplayin.com>
 To: linux-kernel@vger.kernel.org
 Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
         Eduardo Valentin <edubezval@gmail.com>,
         Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
-Subject: [PATCH] thermal: ti-soc-thermal: Switch to using managed resources
-Date: Fri, 10 Oct 2014 11:31:46 +0530
-Message-Id: <1412920906-7382-1-git-send-email-pramod.gurav@smartplayin.com>
+Subject: [PATCH v3] thermal: ti-soc-thermal: Switch to using managed resources
+Date: Fri, 10 Oct 2014 11:32:12 +0530
+Message-Id: <1412920932-7419-1-git-send-email-pramod.gurav@smartplayin.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
