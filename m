@@ -1,73 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229AbaJJAgW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 20:36:22 -0400
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:41356 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaJJAgU (ORCPT
+	id S1751238AbaJJAln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 20:41:43 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:33522 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922AbaJJAlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 20:36:20 -0400
+	Thu, 9 Oct 2014 20:41:42 -0400
+Message-ID: <54372B43.2010801@inktank.com>
+Date: Thu, 09 Oct 2014 17:41:39 -0700
+From: Dan Mick <dan.mick@inktank.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-In-Reply-To: <CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
-References: <1412618020-22278-1-git-send-email-sonnyrao@chromium.org>
-	<CAGOxZ53bviLbuA27=1QjNUgxA_WMMP-6siV=DajuN8iSqsasMg@mail.gmail.com>
-	<CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
-	<CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
-Date: Thu, 9 Oct 2014 17:36:19 -0700
-X-Google-Sender-Auth: BmHK2wJWTJpKdEwYVmlOqMzKNsM
-Message-ID: <CAD=FV=VQe-9c+QOYEmsuHwY+9qF1tkTgiakdSUWhUoWw6zuHSA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Reset DMA before enabling IDMAC
-From: Doug Anderson <dianders@chromium.org>
-To: Alim Akhtar <alim.akhtar@gmail.com>
-Cc: =?UTF-8?B?RWRkaWUgQ2FpKOiUoeaeqyk=?= <eddie.cai@rock-chips.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Addy Ke <addy.ke@rock-chips.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Fabian Frederick <fabf@skynet.be>, linux-kernel@vger.kernel.org
+CC: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
+Subject: Re: [PATCH 1/1 linux-next] ceph: fix bool assignments
+References: <1412889395-19350-1-git-send-email-fabf@skynet.be>
+In-Reply-To: <1412889395-19350-1-git-send-email-fabf@skynet.be>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alim,
 
-On Thu, Oct 9, 2014 at 3:19 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
-> Thats fine, I think every vendor (most of them) has a custom
-> implementation of dw_mmc, but they do have VERID register to check the
-> dw_mmc version.
-> The reason why I asked is, I have seen inconsistency in card
-> enumeration on few controller version, and this patch alone does not
-> help, and adding a call to dw_mci_idmac_reset() after DMA reset is
-> needed. And this is what is recommended in the synopsys's data book
-> also.
-> Do you see any issue/side effect after adding dw_mci_idmac_reset()?
 
-A quick test shows no problem with adding this to Sonny's patch:
+On 10/09/2014 02:16 PM, Fabian Frederick wrote:
+> Fix some coccinelle warnings:
+> fs/ceph/caps.c:2400:6-10: WARNING: Assignment of bool to 0/1
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 66dc8fe..588b5b8 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -481,6 +481,7 @@ static void dw_mci_idmac_start_dma(struct dw_mci
-*host, unsigned int sg_len)
 
-        /* Make sure to reset DMA in case we did PIO before this */
-        dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
-+       dw_mci_idmac_reset(host);
+> -	bool wake = 0;
+> +	bool wake = false;
 
-        /* Select IDMAC interface */
-        temp = mci_readl(host, CTRL);
+FWIW, that message is backwards: it should say "WARNING: Assignment of
+0/1 to bool" (I know, it's a coccinelle issue, but..)
 
-I'll start reboot tests now to see how it behaves...  I think Sonny is
-out of the office for a few days so we might need to wait for a spin,
-but I'll run with that change in the meantime and see how it behaves
-for me.
 
-Thanks!
-
--Doug
