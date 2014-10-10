@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645AbaJJJhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:37:35 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:57406 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaJJJhd (ORCPT
+	id S1753909AbaJJJiu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:38:50 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:35443 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJJJir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:37:33 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Fri, 10 Oct 2014 11:34:43 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: Johan Hovold <johan@kernel.org>, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb: serial: ftdi_sio: add Awinda Station and Dongle
- products
-Message-ID: <20141010093443.GD12494@localhost>
-References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
- <1412933547-10906-1-git-send-email-frans.klaver@xsens.com>
+	Fri, 10 Oct 2014 05:38:47 -0400
+Date: Fri, 10 Oct 2014 10:38:42 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Backlight for v3.18
+Message-ID: <20141010093841.GG26795@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1412933547-10906-1-git-send-email-frans.klaver@xsens.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 11:32:27AM +0200, Frans Klaver wrote:
-> Add new IDs for the Xsens Awinda Station and Awinda Dongle.
-> 
-> While at it, order the definitions by PID and add a logical separation
-> between devices using Xsens' VID and those using FTDI's VID.
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-> ---
->  drivers/usb/serial/ftdi_sio.c     | 2 ++
->  drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-> index dc72b92..e4eccb6 100644
-> --- a/drivers/usb/serial/ftdi_sio.c
-> +++ b/drivers/usb/serial/ftdi_sio.c
-> @@ -661,6 +661,8 @@ static const struct usb_device_id id_table_combined[] = {
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-> +	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
-> +	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
+Hi Linus,
 
-These are still not in alphabetical order. :)
+The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
 
->  	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
->  	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
->  	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
-> diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-> index 5937b2d..b68084c 100644
-> --- a/drivers/usb/serial/ftdi_sio_ids.h
-> +++ b/drivers/usb/serial/ftdi_sio_ids.h
-> @@ -143,8 +143,12 @@
->   * Xsens Technologies BV products (http://www.xsens.com).
->   */
->  #define XSENS_VID		0x2639
-> -#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-> +#define XSENS_AWINDA_STATION_PID 0x0101
-> +#define XSENS_AWINDA_DONGLE_PID 0x0102
->  #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
-> +#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-> +
-> +/* Xsens devices using FTDI VID */
->  #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
->  #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
->  #define XSENS_CONVERTER_2_PID	0xD38A
+  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
 
-Looks good otherwise.
+are available in the git repository at:
 
-Thanks,
-Johan
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/backlight.git tags/backlight-for-linus-3.18
+
+for you to fetch changes up to b6af73b42219aa6b253ef5c0020eff1019485ffc:
+
+  backlight: omap1: add blank line after declarations (2014-08-29 08:27:53 +0100)
+
+----------------------------------------------------------------
+Changes to existing drivers
+  - Checkpatch fixes
+  - Removal of unused code in generic_bl
+  - Removal of superfluous .owner attribute
+
+New drivers/supported devices
+  - None
+
+(Re-)moved drivers
+  - None
+
+----------------------------------------------------------------
+Fabio Estevam (1):
+      backlight: generic_bl: Remove unused function
+
+Jingoo Han (18):
+      backlight: adp5520: Add blank line after declarations
+      backlight: adp8860: Add blank line after declarations
+      backlight: adp8870: Add blank line after declarations
+      backlight: ams369fg06: Remove 'else' after a return
+      backlight: corgi_lcd: Add blank line after declarations
+      backlight: cr_bllcd: Add blank line after declarations
+      backlight: ili922x: Remove 'else' after a return
+      backlight: ld9040: Remove 'else' after a return
+      backlight: lm3639: Remove unnecessary return statements
+      backlight: lms501kf03: Remove 'else' after a return
+      backlight: lp855x: Add blank line after declarations
+      backlight: pcf50633: Add blank line after declarations
+      backlight: s6e63m0: Remove 'else' after a return
+      backlight: tdo24m: Add blank line after declarations
+      backlight: wm831x_bl: Add blank line after declarations
+      backlight: jornada720: Remove 'else' after a return
+      backlight: jornada720: Remove 'else' after a return
+      backlight: omap1: add blank line after declarations
+
+Peter Griffin (1):
+      backlight: Remove .owner field for drivers using module_platform_driver
+
+ drivers/video/backlight/88pm860x_bl.c        |  1 -
+ drivers/video/backlight/aat2870_bl.c         |  1 -
+ drivers/video/backlight/adp5520_bl.c         |  2 +-
+ drivers/video/backlight/adp8860_bl.c         |  3 +++
+ drivers/video/backlight/adp8870_bl.c         |  4 ++++
+ drivers/video/backlight/ams369fg06.c         |  6 +++---
+ drivers/video/backlight/as3711_bl.c          |  1 -
+ drivers/video/backlight/corgi_lcd.c          |  1 +
+ drivers/video/backlight/cr_bllcd.c           |  1 +
+ drivers/video/backlight/da903x_bl.c          |  1 -
+ drivers/video/backlight/da9052_bl.c          |  1 -
+ drivers/video/backlight/ep93xx_bl.c          |  1 -
+ drivers/video/backlight/generic_bl.c         | 18 ------------------
+ drivers/video/backlight/gpio_backlight.c     |  1 -
+ drivers/video/backlight/ili922x.c            | 11 ++++++-----
+ drivers/video/backlight/jornada720_bl.c      |  6 +++---
+ drivers/video/backlight/jornada720_lcd.c     |  6 +-----
+ drivers/video/backlight/ld9040.c             |  6 +++---
+ drivers/video/backlight/lm3533_bl.c          |  1 -
+ drivers/video/backlight/lm3639_bl.c          |  2 --
+ drivers/video/backlight/lms501kf03.c         | 12 ++++++------
+ drivers/video/backlight/lp855x_bl.c          |  2 ++
+ drivers/video/backlight/lp8788_bl.c          |  1 -
+ drivers/video/backlight/max8925_bl.c         |  1 -
+ drivers/video/backlight/omap1_bl.c           |  1 +
+ drivers/video/backlight/ot200_bl.c           |  1 -
+ drivers/video/backlight/pandora_bl.c         |  1 -
+ drivers/video/backlight/pcf50633-backlight.c |  1 +
+ drivers/video/backlight/platform_lcd.c       |  1 -
+ drivers/video/backlight/pwm_bl.c             |  1 -
+ drivers/video/backlight/s6e63m0.c            | 12 ++++++------
+ drivers/video/backlight/tdo24m.c             |  2 ++
+ drivers/video/backlight/tps65217_bl.c        |  1 -
+ drivers/video/backlight/wm831x_bl.c          |  2 +-
+ 34 files changed, 45 insertions(+), 68 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
