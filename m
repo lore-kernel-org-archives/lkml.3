@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390AbaJJGQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 02:16:29 -0400
-Received: from mail-bl2on0114.outbound.protection.outlook.com ([65.55.169.114]:1489
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750982AbaJJGQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 02:16:27 -0400
-X-Greylist: delayed 72345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Oct 2014 02:16:27 EDT
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>, Joseph Lo <josephl@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] serial: of-serial: fix up PM ops on no_console_suspend
-Thread-Topic: [PATCH] serial: of-serial: fix up PM ops on no_console_suspend
-Thread-Index: AQHP46dGRJKFTuLoMU2a/EicZwVioJwoyCKAgAAOnFA=
-Date: Fri, 10 Oct 2014 06:16:24 +0000
-Message-ID: <01583b7f252b4f81a5655009f6f73aba@BL2PR03MB467.namprd03.prod.outlook.com>
-References: <1412845852-26157-1-git-send-email-jingchang.lu@freescale.com>
- <543768F3.6090703@wwwdotorg.org>
-In-Reply-To: <543768F3.6090703@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [123.151.195.49]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB467;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-forefront-prvs: 03607C04F0
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(24454002)(51704005)(13464003)(199003)(479174003)(377454003)(76576001)(66066001)(120916001)(97736003)(76482002)(20776003)(2501002)(101416001)(31966008)(64706001)(19580395003)(19580405001)(99396003)(50986999)(85852003)(99286002)(95666004)(76176999)(54356999)(108616004)(92566001)(40100002)(122556002)(106116001)(86362001)(105586002)(2656002)(87936001)(85306004)(74316001)(4396001)(33646002)(80022003)(107046002)(46102003)(21056001)(106356001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB467;H:BL2PR03MB467.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751484AbaJJGRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 02:17:16 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:56890 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaJJGRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 02:17:13 -0400
+Date: Fri, 10 Oct 2014 11:47:02 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ALSA: au88x0: pr_* replaced with dev_*
+Message-ID: <20141010061702.GA4431@sudip-PC>
+References: <1412847397-4292-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <1412847397-4292-2-git-send-email-sudipm.mukherjee@gmail.com>
+ <s5hd2a1tlb2.wl-tiwai@suse.de>
+ <1412864283.3438.43.camel@joe-AO725>
 MIME-Version: 1.0
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB371;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412864283.3438.43.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9A6GdfP003930
 
->-----Original Message-----
->From: Stephen Warren [mailto:swarren@wwwdotorg.org]
->Sent: Friday, October 10, 2014 1:05 PM
->To: Lu Jingchang-B35083; gregkh@linuxfoundation.org
->Cc: arnd@arndb.de; Joseph Lo; linux-kernel@vger.kernel.org; linux-
->serial@vger.kernel.org; linux-arm-kernel@lists.infradead.org
->Subject: Re: [PATCH] serial: of-serial: fix up PM ops on
->no_console_suspend
->
->On 10/09/2014 02:10 AM, Jingchang Lu wrote:
->> Mandatorily disabling the uart clock will cause register access hung
->> on "no_console_suspend". This patch add condition check on it and only
->> disable the clock with console_suspend_enabled true.
->
->It would be useful if the email/patch subject line said "V2", and there
->was a changelog below.
-This is not a v2, patch "serial: of-serial: add PM suspend/resume support
-(commit 2dea53bf57783f243c892e99c10c6921e956aa7e)" has been merged into
-linux-next tree, this is a fixup on that PM ops.
-Thanks.
+On Thu, Oct 09, 2014 at 07:18:03AM -0700, Joe Perches wrote:
+> On Thu, 2014-10-09 at 15:38 +0200, Takashi Iwai wrote:
+> > At Thu,  9 Oct 2014 15:06:37 +0530,
+> > Sudip Mukherjee wrote:
+<snip>
+> > > diff --git a/sound/pci/au88x0/au88x0.c b/sound/pci/au88x0/au88x0.c
+> []
+> > > @@ -48,10 +48,10 @@ static void vortex_fix_latency(struct pci_dev *vortex)
+> > >  {
+> > >  	int rc;
+> > >  	if (!(rc = pci_write_config_byte(vortex, 0x40, 0xff))) {
+> > > -			pr_info( CARD_NAME
+> > > +			dev_info(&vortex->dev, CARD_NAME
+> > >  			       ": vortex latency is 0xff\n");
+> > 
+> > Omit the superfluous prefix when converting to dev_info() & co.
+> > Other than that, looks good to me.
+> 
+> Hi Sudip.
+> 
+> Probably all the uses of CARD_NAME and "vortex" singly and
+> in combination should be removed in all these conversions.
+> 
+Hi Takashi and Joe,
+I knew Takashi will ask to remove the CARD_NAME , so i have looked at the possibility while modifying the code.
+CARD_NAME will be "Aureal Advantage" or "Aureal Vortex" or "Aureal Vortex 2" based on which chip is defined.
+So I thought, if we remove the prefix then we will not get the exact card name. dev_* will print the device name as
+CARD_NAME_SHORT which will be au8810 or au8820 or au8830.
+so, now waiting for your suggestion ..
 
-Best Regards,
-Jingchang 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+thanks
+sudip
+
+
+
+> 
