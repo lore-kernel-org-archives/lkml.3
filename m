@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957AbaJJIWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:22:19 -0400
+	id S1752466AbaJJIWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 04:22:36 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:35770 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324AbaJJIWQ (ORCPT
+	with ESMTP id S1751389AbaJJIWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:22:16 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-14-543797360000
+	Fri, 10 Oct 2014 04:22:18 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-b2-5437973627ab
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -17,57 +17,93 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH fixes 1/2] mfd: max77693: Use proper regmap for handling MUIC
- interrupts
-Date: Fri, 10 Oct 2014 10:22:01 +0200
-Message-id: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH fixes 2/2] extcon: max77693: Fix always masked MUIC interrupts
+Date: Fri, 10 Oct 2014 10:22:02 +0200
+Message-id: <1412929322-21908-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xa7pm081DDN7t47HYOGM9q8X1L89Z
+In-reply-to: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
+References: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLJMWRmVeSWpSXmKPExsVy+t/xa7pm081DDObv0LXYOGM9q8X1L89Z
 	LV6/MLQ42/SG3eL+16OMFpd3zWGzWHvkLrvF7cYVbBanu1ktFmx8xOjA5XHn2h42j3knAz36
-	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY9+6x+wFXzgr3jb/ZmxgXMDRxcjJISFgInF80zZW
-	CFtM4sK99WxdjFwcQgJLGSVWfVvABOH0MUlcnP2DGaSKTcBYYvPyJWBVIgK7GSW+7V0EVsUs
-	cJdRovnue8YuRg4OYYEoiWnfCkAaWARUJXY/W88EYvMKuEt8PLUXap2cxMljk1knMHIvYGRY
-	xSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESNl93MC49ZnWIUYCDUYmH94KMeYgQa2JZcWXu
-	IUYJDmYlEV59U6AQb0piZVVqUX58UWlOavEhRiYOTqkGRtO+H2kHnLlUNDSmcYlHCYXazJTu
-	vzKdU37/x8VsrRMb7S+sux/sFNG7IUHYl5/35c980y/9U3f2u9S+5Sv8/swwUf0/T4Plx3cl
-	RoJ++p4pStpJx/fvrfH4cO5vwwrr9FbutPsyLwulv6ceDheVbDr8yV1TsPmY/5boFZabLovn
-	2toaGFoosRRnJBpqMRcVJwIAKbxyNfkBAAA=
+	tqxi9Pi8SS6AJYrLJiU1J7MstUjfLoErY9u7/awFW4QrFvZXNzD+4+9i5OSQEDCR+Ll/FyOE
+	LSZx4d56ti5GLg4hgaWMEpO6z0A5fUwSF2f/YAapYhMwlti8fAlYQkRgN6PEt72LmEAcZoG7
+	jBLNd9+DzRIW8JPY/LmPtYuRg4NFQFXieo8MSJhXwF2i9eINdoh1chInj01mBbE5BTwk9i49
+	BWYLAdXcPXKPbQIj7wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIUH2ZQfj4mNWhxgF
+	OBiVeHgvyJiHCLEmlhVX5h5ilOBgVhLh1TcFCvGmJFZWpRblxxeV5qQWH2Jk4uCUamCMnxax
+	8teP0w/vmfaJm6ROzWTXypq7eGb55ZIfp1+KKn85VRwVVjPD3Fl31tR4//JtjQL35FN+yD/7
+	4Kv/jFvP4HKw+mftgqea014b/eq3rD/XZ3/kfI/p76ADV2U2yt3Z9tZe4NTdk3MOm57xP7dB
+	87bp9zeVfdmMy+L2bw+qb7+ja6xpVWKnxFKckWioxVxUnAgAHhpMmhACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interrupts coming from Maxim77693 MUIC block (MicroUSB Interface
-Controller) were not handled at all because wrong regmap was used for
-MUIC's regmap_irq_chip.
+All interrupts coming from MUIC were ignored because interrupt source
+register was masked.
 
-The MUIC component of Maxim 77693 uses different I2C address thus second
-regmap is created and used by max77693 extcon driver. The registers for
-MUIC interrupts are also in that block and should be handled by that
-second regmap.
+The Maxim 77693 has a "interrupt source" - a separate register and interrupts
+which give information about PMIC block triggering the individual
+interrupt (charger, topsys, MUIC, flash LED).
 
-However the regmap irq chip for MUIC was configured with default regmap
-which could not read MUIC registers.
+By default bootloader could initialize this register to "mask all"
+value. In such case (observed on Trats2 board) MUIC interrupts won't be
+generated regardless of their mask status. Regmap irq chip was unmasking
+individual MUIC interrupts but the source was masked
+
+Before introducing regmap irq chip this interrupt source was unmasked,
+read and acked. Reading and acking is not necessary but unmasking is. Do
+it in extcon driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: <stable@vger.kernel.org>
 Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
 ---
- drivers/mfd/max77693.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/extcon/extcon-max77693.c     | 16 ++++++++++++++++
+ include/linux/mfd/max77693-private.h |  5 +++++
+ 2 files changed, 21 insertions(+)
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 2277a11b6629..4b54da1ff7ab 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -243,7 +243,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 		goto err_irq_charger;
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 490e27475bac..d3adacf3187f 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1176,6 +1176,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
+ 		}
  	}
  
--	ret = regmap_add_irq_chip(max77693->regmap, max77693->irq,
-+	ret = regmap_add_irq_chip(max77693->regmap_muic, max77693->irq,
- 				IRQF_ONESHOT | IRQF_SHARED |
- 				IRQF_TRIGGER_FALLING, 0,
- 				&max77693_muic_irq_chip,
++	if (i) {
++		/*
++		 * i>0, at least one MUIC interrupt requested so need to unmask
++		 * MUIC interrupt in INTSRC register. Without that MUIC
++		 * interrupts will not be reported.
++		 */
++		ret = regmap_update_bits(max77693->regmap,
++				MAX77693_PMIC_REG_INTSRC_MASK, SRC_IRQ_MUIC,
++				~SRC_IRQ_MUIC);
++		if (ret < 0) {
++			dev_err(&pdev->dev, "Could not unmask MUIC interrupt in INTSRC: %d\n",
++					ret);
++			return ret;
++		}
++	}
++
+ 	/* Initialize extcon device */
+ 	info->edev = devm_extcon_dev_allocate(&pdev->dev,
+ 					      max77693_extcon_cable);
+diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+index e1b2b61285b9..4f1a80b66ecf 100644
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -438,6 +438,11 @@ enum max77693_irq_source {
+ 	MAX77693_IRQ_GROUP_NR,
+ };
+ 
++#define SRC_IRQ_CHARGER			BIT(0)
++#define SRC_IRQ_TOP			BIT(1)
++#define SRC_IRQ_FLASH			BIT(2)
++#define SRC_IRQ_MUIC			BIT(3)
++
+ #define LED_IRQ_FLED2_OPEN		BIT(0)
+ #define LED_IRQ_FLED2_SHORT		BIT(1)
+ #define LED_IRQ_FLED1_OPEN		BIT(2)
 -- 
 1.9.1
 
