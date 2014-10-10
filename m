@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbaJJJYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:24:50 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:54978 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaJJJYq (ORCPT
+	id S1753847AbaJJJZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:25:25 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:40994 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaJJJZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:24:46 -0400
-Date: Fri, 10 Oct 2014 10:24:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2] mfd: rtsx: fix PM suspend for 5227 & 5249
-Message-ID: <20141010092440.GF26795@lee--X1>
-References: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn>
+	Fri, 10 Oct 2014 05:25:22 -0400
+X-ASG-Debug-ID: 1412933120-0759e7482841acf0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Fri, 10 Oct 2014 11:25:19 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: <stable@vger.kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
+ products
+Message-ID: <20141010092518.GD3588@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
+ products
+References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
+ <20141010090117.GA12494@localhost>
+ <20141010091209.GC3588@ci00147.xsens-tech.local>
+ <20141010092014.GC12494@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141010092014.GC12494@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1412933120
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10404
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014, micky_ching@realsil.com.cn wrote:
-
-> From: Micky Ching <micky_ching@realsil.com.cn>
+On Fri, Oct 10, 2014 at 11:20:14AM +0200, Johan Hovold wrote:
+> On Fri, Oct 10, 2014 at 11:12:09AM +0200, Frans Klaver wrote:
+> > I'll move the new entries up. How about I throw in a separate patch that
+> > cleans up stuff around the PID definitions? There's some alignment off
+> > as well. That doesn't need to go into stable, I think.
 > 
-> Fix rts5227&5249 failed send buffer cmd after suspend,
-> PM_CTRL3 should reset before send any buffer cmd after suspend.
-> Otherwise, buffer cmd will failed, this will lead resume fail.
+> As long as you keep the clean up minimal (e.g. the reorder the two
+> entries above and add a comment or new line, skip the alignment bit) it
+> can all go in one patch along with the new PIDs.
 > 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/Makefile         |  2 +-
->  drivers/mfd/rts5227.c        |  6 ++++++
->  drivers/mfd/rts5249.c        |  4 ++++
->  drivers/mfd/rtsx_gops.c      | 37 +++++++++++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.h       |  3 +++
->  include/linux/mfd/rtsx_pci.h | 28 ++++++++++++++++++++++++++++
+> That way there'll be no conflicts when future PID-patches get backported
+> to stable.
 
-These are Card Reader drivers right?
+Alright. Expect a new patch soonish.
 
-Do you know why these are in MFD?
-
->  6 files changed, 79 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/mfd/rtsx_gops.c
-
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks,
+Frans
