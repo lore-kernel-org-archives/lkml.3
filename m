@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaJJOKz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 10:10:55 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:26329 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601AbaJJOKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 10:10:02 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-46-5437e8b41725
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v3 4/6] integrity: provide hook to load keys when rootfs is
- ready
-Date: Fri, 10 Oct 2014 17:09:31 +0300
-Message-id: <d9c99743a6010aebdea29a9966030e56b84b7418.1412950047.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
-References: <cover.1412950047.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
-References: <cover.1412950047.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7pbXpiHGCzdbmUxZ/0aNotbf/cy
-	W3xZWmfxcsY8dovLu+awWXzoecRmcf7vcVaLTysmMTtweOycdZfd48SM3yweDw5tZvHYveAz
-	k0ffllWMHp83yXlsevKWKYA9issmJTUnsyy1SN8ugSujf0kHc8F04YpJU+eyNjBe4+9i5OSQ
-	EDCRONf3jg3CFpO4cG89kM3FISSwlFHi1fc1YAkhgU4mibktBSA2m4CexIbmH+wgRSICixgl
-	Hi+7yAqSYBZIl/g0qZcdxBYWCJZ42reBGcRmEVCVeHdmJdAgDg5egTiJV3MyIJbJSZw8Nhms
-	lVPASuLbq19MELssJb6/b2HBJT6BkX8BI8MqRtHU0uSC4qT0XCO94sTc4tK8dL3k/NxNjJAA
-	/bqDcekxq0OMAhyMSjy8F2TMQ4RYE8uKK3MPMUpwMCuJ8H57DhTiTUmsrEotyo8vKs1JLT7E
-	yMTBKdXAGKVlvjNpQltD4tGf7R0Jjy5sPiERaNmkVLHj3ORjJVdacr0al6hv2bRkxSqt148m
-	ndrj6852M/2m+gr1c30xov+bNolZVmz2SUoRrHu0ZNal8JL1GrO5n5w3b/BVfvr+L6td9oZr
-	yjJWqhP9fvRmKV8qTE+fv/Ru4uJPL8N8f6gY1Vlc59rAr8RSnJFoqMVcVJwIAI+MBbUuAgAA
+	id S1755018AbaJJOLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:11:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63172 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608AbaJJOKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 10:10:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,692,1406617200"; 
+   d="scan'208";a="603383854"
+Message-ID: <1412950247.7701.15.camel@linux.intel.com>
+Subject: Re: [PATCH 2/2 v3] SPI: spi-pxa2xx: SPI support for Intel Quark
+ X1000
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Chen, Alvin" <alvin.chen@intel.com>
+Cc: "pure.logic@nexus-software.ie" <pure.logic@nexus-software.ie>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
+        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Date: Fri, 10 Oct 2014 17:10:47 +0300
+In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E998BCE@SHSMSX101.ccr.corp.intel.com>
+References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com>
+	 <1412783423-9408-3-git-send-email-alvin.chen@intel.com>
+	 <5436ECC6.9080704@nexus-software.ie>
+	 <4656BEB6164FC34F8171C6538F1A595B2E998BCE@SHSMSX101.ccr.corp.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Keys can only be loaded when rootfs is mounted. Initcalls
-are not suitable for that. Provide a special hook.
+On Fri, 2014-10-10 at 00:46 +0000, Chen, Alvin wrote:
+> > Doesn't apply.
+> > 
+> > Applying: SPI: spi-pxa2xx: SPI support for Intel Quark X1000
+> > error: patch failed: drivers/spi/spi-pxa2xx-pci.c:19
+> > error: drivers/spi/spi-pxa2xx-pci.c: patch does not apply Patch failed at 0002 SPI:
+> > spi-pxa2xx: SPI support for Intel Quark X1000
+> > 
+> It is based on the slave-dma tree (git.infraded.org) for-linus branch, which will be reapplied on top of v3.19-rc1.
+> More information can be got from Andy.
 
-Changes in v2:
-* Hook renamed as 'integrity_load_keys()' to handle both IMA and EVM
-  keys by integrity subsystem.
-* Hook patch moved after defining loading functions
+Actually if I understand correctly your series requires only one patch
+to be applied from topic/spi-pxa2xx branch by Chiau Ee, though you have
+to rearrange the code in the spi-pxa2xx-pci.c to not be closer to
+Braswell stuff.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- include/linux/integrity.h |  6 ++++++
- init/main.c               |  6 +++++-
- security/integrity/iint.c | 11 +++++++++++
- 3 files changed, 22 insertions(+), 1 deletion(-)
+But again, it's only my guessing, you may try to rebase it on top of
+topic branch mentioned above.
 
-diff --git a/include/linux/integrity.h b/include/linux/integrity.h
-index 83222ce..c2d6082 100644
---- a/include/linux/integrity.h
-+++ b/include/linux/integrity.h
-@@ -24,6 +24,7 @@ enum integrity_status {
- #ifdef CONFIG_INTEGRITY
- extern struct integrity_iint_cache *integrity_inode_get(struct inode *inode);
- extern void integrity_inode_free(struct inode *inode);
-+extern void __init integrity_load_keys(void);
- 
- #else
- static inline struct integrity_iint_cache *
-@@ -36,5 +37,10 @@ static inline void integrity_inode_free(struct inode *inode)
- {
- 	return;
- }
-+
-+static inline void integrity_load_keys(void)
-+{
-+}
- #endif /* CONFIG_INTEGRITY */
-+
- #endif /* _LINUX_INTEGRITY_H */
-diff --git a/init/main.c b/init/main.c
-index e8ae1fe..2c1928d 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -78,6 +78,7 @@
- #include <linux/context_tracking.h>
- #include <linux/random.h>
- #include <linux/list.h>
-+#include <linux/integrity.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -1026,8 +1027,11 @@ static noinline void __init kernel_init_freeable(void)
- 	 * Ok, we have completed the initial bootup, and
- 	 * we're essentially up and running. Get rid of the
- 	 * initmem segments and start the user-mode stuff..
-+	 *
-+	 * rootfs is available now, try loading the public keys
-+	 * and default modules
- 	 */
- 
--	/* rootfs is available now, try loading default modules */
-+	integrity_load_keys();
- 	load_default_modules();
- }
-diff --git a/security/integrity/iint.c b/security/integrity/iint.c
-index 0a76686..a1f5cd1 100644
---- a/security/integrity/iint.c
-+++ b/security/integrity/iint.c
-@@ -245,3 +245,14 @@ out:
- 	fput(file);
- 	return rc;
- }
-+
-+/*
-+ * integrity_load_keys - load integrity keys hook
-+ *
-+ * Hooks is called from init/main.c:kernel_init_freeable()
-+ * when rootfs is ready
-+ */
-+void __init integrity_load_keys(void)
-+{
-+	ima_load_x509();
-+}
+
 -- 
-1.9.1
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
