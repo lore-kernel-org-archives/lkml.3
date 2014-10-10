@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaJJAZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 20:25:18 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64721 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaJJAZP convert rfc822-to-8bit (ORCPT
+	id S1751229AbaJJAgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 9 Oct 2014 20:36:22 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:41356 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032AbaJJAgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 20:25:15 -0400
+	Thu, 9 Oct 2014 20:36:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141009172120.GB2410@roeck-us.net>
-References: <1412872877-1771-1-git-send-email-linux@roeck-us.net>
- <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com>
- <5436C2B4.6030801@broadcom.com> <20141009172120.GB2410@roeck-us.net>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Fri, 10 Oct 2014 11:24:53 +1100
-Message-ID: <CAGRGNgWWSX8rYatphNAmx+j3wZ7RAXgucUzi_7M6-3NeUjQDEg@mail.gmail.com>
-Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
-To: Guenter Roeck <linux@roeck-us.net>,
-        sparclinux <sparclinux@vger.kernel.org>
-Cc: Arend van Spriel <arend@broadcom.com>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
+References: <1412618020-22278-1-git-send-email-sonnyrao@chromium.org>
+	<CAGOxZ53bviLbuA27=1QjNUgxA_WMMP-6siV=DajuN8iSqsasMg@mail.gmail.com>
+	<CAO3aYcqi0g=eJta33s5oM-tAAmAhe86VvHd43p5RJ7qMPZzfrg@mail.gmail.com>
+	<CAGOxZ520EXdS9FoCVW7GPvheNSZu=xqc2makJY5D0c3zjVBkDw@mail.gmail.com>
+Date: Thu, 9 Oct 2014 17:36:19 -0700
+X-Google-Sender-Auth: BmHK2wJWTJpKdEwYVmlOqMzKNsM
+Message-ID: <CAD=FV=VQe-9c+QOYEmsuHwY+9qF1tkTgiakdSUWhUoWw6zuHSA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Reset DMA before enabling IDMAC
+From: Doug Anderson <dianders@chromium.org>
+To: Alim Akhtar <alim.akhtar@gmail.com>
+Cc: =?UTF-8?B?RWRkaWUgQ2FpKOiUoeaeqyk=?= <eddie.cai@rock-chips.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Addy Ke <addy.ke@rock-chips.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Alim,
 
-On Fri, Oct 10, 2014 at 4:21 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Thu, Oct 09, 2014 at 07:15:32PM +0200, Arend van Spriel wrote:
->> On 10/09/14 18:54, Rafał Miłecki wrote:
->> >On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net>  wrote:
->> >>Commit 2101e533f41a ("bcma: register bcma as device tree driver")
->> >>introduces a hard dependency on OF_ADDRESS into the bcma driver.
->> >>OF_ADDRESS is specifically disabled for the sparc architecture.
->> >>This results in the following error when building sparc64:allmodconfig.
->>
->> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF
->> and !CONFIG_OF_ADDRESS? Does that makes sense?
->>
->
-> You tell me. From drivers/of/Kconfig:
->
-> config OF_ADDRESS
->         def_bool y
->         depends on !SPARC
->         select OF_ADDRESS_PCI if PCI
->
-> Presumably there is a reason to disable OF_ADDRESS for sparc.
+On Thu, Oct 9, 2014 at 3:19 PM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> Thats fine, I think every vendor (most of them) has a custom
+> implementation of dw_mmc, but they do have VERID register to check the
+> dw_mmc version.
+> The reason why I asked is, I have seen inconsistency in card
+> enumeration on few controller version, and this patch alone does not
+> help, and adding a call to dw_mci_idmac_reset() after DMA reset is
+> needed. And this is what is recommended in the synopsys's data book
+> also.
+> Do you see any issue/side effect after adding dw_mci_idmac_reset()?
 
-Why not ask the sparclinux list? (CC'd)
+A quick test shows no problem with adding this to Sonny's patch:
 
-Thanks,
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 66dc8fe..588b5b8 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -481,6 +481,7 @@ static void dw_mci_idmac_start_dma(struct dw_mci
+*host, unsigned int sg_len)
 
--- 
-Julian Calaby
+        /* Make sure to reset DMA in case we did PIO before this */
+        dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
++       dw_mci_idmac_reset(host);
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
+        /* Select IDMAC interface */
+        temp = mci_readl(host, CTRL);
+
+I'll start reboot tests now to see how it behaves...  I think Sonny is
+out of the office for a few days so we might need to wait for a spin,
+but I'll run with that change in the meantime and see how it behaves
+for me.
+
+Thanks!
+
+-Doug
