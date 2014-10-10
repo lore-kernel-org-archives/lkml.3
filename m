@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaJJG7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 02:59:45 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:62040 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaJJG7n (ORCPT
+	id S1751636AbaJJHBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 03:01:49 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:46364 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaJJHBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 02:59:43 -0400
+	Fri, 10 Oct 2014 03:01:47 -0400
+Date: Fri, 10 Oct 2014 09:01:42 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: [PATCH 1/2] ARM: tegra: venice2: add GK20A GPU DT node
+Message-ID: <20141010070140.GA29675@ulmo.nvidia.com>
+References: <1412835112-7209-1-git-send-email-acourbot@nvidia.com>
+ <54376A45.6070707@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <2373913.b8GhYem2Rt@vostro.rjw.lan>
-References: <1409759373-22696-1-git-send-email-tomeu.vizoso@collabora.com>
- <1960419.9oqpSxvdev@vostro.rjw.lan> <CAAObsKC0PcfBTJv8zZYUiys4NxvS=JMd3jjedUam5oZ4tNLwhA@mail.gmail.com>
- <2373913.b8GhYem2Rt@vostro.rjw.lan>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Fri, 10 Oct 2014 08:59:22 +0200
-X-Google-Sender-Auth: jFX4afDrItp3PRCySpvivUlcIfU
-Message-ID: <CAAObsKBuDRQy7=zLkmRj9O+Ka0K_z-ejXCyzwttEXmQVkXn2hw@mail.gmail.com>
-Subject: Re: [REPOST PATCH v4 1/2] PM / QoS: Add PM_QOS_MEMORY_BANDWIDTH class
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?Q?Terje_Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        linux-pm@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <54376A45.6070707@wwwdotorg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 September 2014 01:51, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Wednesday, September 24, 2014 03:31:55 PM Tomeu Vizoso wrote:
->> On 24 September 2014 15:32, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > On Wednesday, September 24, 2014 10:42:13 AM Tomeu Vizoso wrote:
->> >> On 14 September 2014 19:06, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> >> > On Friday, September 12, 2014 11:11:25 AM Tomeu Vizoso wrote:
->> >> >> On 3 September 2014 17:49, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
->> >> >> > Also adds a class type PM_QOS_SUM that aggregates the values by summing them.
->> >> >> >
->> >> >> > It can be used by memory controllers to calculate the optimum clock frequency
->> >> >> > based on the bandwidth needs of the different memory clients.
->> >> >> >
->> >> >> > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->> >> >> > Acked-by: Pavel Machek <pavel@ucw.cz>
->> >> >>
->> >> >> Hi Rafael,
->> >> >>
->> >> >> will you take this one for 3.18?
->> >> >
->> >> > Quite likely, but I'm traveling now, so I'll do that after I'm back home
->> >> > in a few days.  I'll write to you if there are any problems.
->> >>
->> >> Don't want to be annoying, but thought I might ping you just in case
->> >> this fell through the cracks.
->> >
->> > No, it didn't.
->> >
->> > I'm wondering about patch [2/2], though.  I'm assuming that you'll push you
->> > later through the Tegra DRM driver, right?
->>
->> Yes, that was Stephen's suggestion:
->>
->> https://lkml.org/lkml/2014/8/25/439
->
-> OK, patch [1/2] queued up for 3.18, thanks!
 
-Hi Rafael,
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't see this one in linux-next yet.
+On Thu, Oct 09, 2014 at 10:10:29PM -0700, Stephen Warren wrote:
+> On 10/08/2014 11:11 PM, Alexandre Courbot wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> >=20
+> > Add the device-tree node for the GK20A GPU and leave it disabled by
+> > default. It is the responsability of the bootloader to enable it if the
+> > VPR registers have been programmed such as the GPU can operate.
+>=20
+> > diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts=
+/tegra124-venice2.dts
+>=20
+> > +	gpu@0,57000000 {
+> > +		status =3D "disabled";
+>=20
+> status=3D"disabled" usually goes into tegra124.dtsi. A board would only
+> override status to "okay" if necessary, and include any board specific
+> properties ...
 
-Regards,
+True. I guess this is somewhat redundant here since the .dtsi file
+already sets it to "disabled". Given how it is rather unusual for a
+board's DTS file to not enable a node I think there would be some
+advantage in keeping this explicitly to avoid confusion. Alternatively
+perhaps a comment in the DTS file about why this isn't enabled by
+default would be a good replacement.
 
-Tomeu
+Thierry
+
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUN4RUAAoJEN0jrNd/PrOhZsgP/iE/Xqhzo+/I6KaRGGltk0st
+5qPWxNB6iSAaQUxxbbgCv37US8OY0aG2tpBXWwJZtpL24ST40ljPZ0m3Sa5UEUAq
+D0OQzJ144RzT9pW5weMfds7qd6afuBWrWnmZsvs85fpL5UXKfcsCSa+CfnZoWfxu
+PsyXZEGCeuxvd6Nv/QPfbzkler0Mmv3dVFNPYno/QPtMxDH4ztYJEieMiW6Q1u5z
+aTEEY4HOOYazTrRcE8+FGCwYWWgc2fRBET3oLTfL5SiPYR2JjFBvYC1ZE+QTjMXz
+r28vujlnvki5ht1viiI4gk3G5favAcJ6CvIKC0p7ponUadcDaF3yR5zuxNejndhw
+lfkvjl+8Aey4B1oYw+7+cLgwcK6kDdqQFJf1TAe7HxJywjqKSAJ5i51zn/6b7Z0m
+p2NMUli6aYzkMmz5dRmqzso5tWiyWNIcAcrIapjYwQg52Ii6kkrDfBEpi7aDt9kP
+I01w+gNDZAXTh7R67XOdWgRJqBQ4WQGN/5xZ3jxoQ1r+trjP0b/Lxp78xQrOJgQ7
+Oy/SOvFUAzxOTtSuOnzgJuKxWD67ciX3BMCUIZ+LWsq+Qyb9GgJicShfYGscSnEA
+2XTK6rMbhmdFnfo7ZNQXHomrzlFnqxLwGSZH6gRksJREotl9M4Be5gYVv7p0BGnz
+YgYIJwIB9jXsQNYePYBz
+=210x
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
