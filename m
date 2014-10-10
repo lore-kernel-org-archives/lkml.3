@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaJJJTK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:19:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38141 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804AbaJJJTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:19:07 -0400
-Date: Fri, 10 Oct 2014 17:19:04 +0800
-From: Dave Young <dyoung@redhat.com>
-To: pablo@netfilter.org
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nf_reject_ipv4: module license 'unspecified' taints kernel
-Message-ID: <20141010091904.GD1981@darkstar.nay.redhat.com>
+	id S1753329AbaJJJVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:21:05 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55936 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804AbaJJJVC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 05:21:02 -0400
+Date: Fri, 10 Oct 2014 11:20:52 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org
+Subject: Re: [BUG] mm, thp: khugepaged can't allocate on requested node when
+ confined to a cpuset
+Message-ID: <20141010092052.GU4750@worktop.programming.kicks-ass.net>
+References: <20141008191050.GK3778@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141008191050.GK3778@sgi.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Oct 08, 2014 at 02:10:50PM -0500, Alex Thorlton wrote:
 
-With today's linus tree, I got below kmsg:
-[   23.545204] nf_reject_ipv4: module license 'unspecified' taints kernel.
-[   23.551886] Disabling lock debugging due to kernel taint
-[   23.557302] nf_reject_ipv4: Unknown symbol lock_is_held (err 0)
-[   23.563256] nf_reject_ipv4: Unknown symbol rcu_read_lock_bh_held (err 0)
-[   23.569992] nf_reject_ipv4: Unknown symbol ip_local_out_sk (err 0)
-[   23.576206] nf_reject_ipv4: Unknown symbol debug_lockdep_rcu_enabled (err 0)
-[   23.583290] nf_reject_ipv4: Unknown symbol rcu_is_watching (err 0)
-[   23.589523] nf_reject_ipv4: Unknown symbol rcu_lock_map (err
+> Is this particular bug a known issue?
 
-It could be caused by below commit:
+Its not unexpected for me.
 
-commit c8d7b98bec43faaa6583c3135030be5eb4693acb
-Author: Pablo Neira Ayuso <pablo@netfilter.org>
-Date:   Fri Sep 26 14:35:15 2014 +0200
+> I've been trying to come up with
+> a simple way to fix the bug, but it's a bit difficult since we no longer
+> have a way to trace back to the task_struct that we're collapsing for
+> once we've reached get_page_from_freelist.  I'm wondering if we might
+> want to make the cpuset check higher up in the call-chain and then pass
+> that nodemask down instead of sending a NULL nodemask, as we end up
+> doing in many (most?) situations.  I can think of several problems with
+> that approach as well, but it's all I've come up with so far.
+> 
+> The obvious workaround is to not isolate khugepaged to a cpuset, but
+> since we're allowed to do so, I think the thread should probably behave
+> appropriately when pinned to a cpuset.
+> 
+> Any input on this issue is greatly appreciated.  Thanks, guys!
 
-    netfilter: move nf_send_resetX() code to nf_reject_ipvX modules
-    
-    Move nf_send_reset() and nf_send_reset6() to nf_reject_ipv4 and
-    nf_reject_ipv6 respectively. This code is shared by x_tables and
-    nf_tables.
-    
-    Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+So for the numa thing we do everything from the affected tasks context.
+There was a lot of arguments early on that that could never really work,
+but here we are.
 
-I believe there's similar issue for ipv6 reject part though I have disabled ipv6
-in my .config.
-
-Let me know if you need any furthur information.
-
-Thanks
-Dave
+Should we convert khugepaged to the same? Drive the whole thing from
+task_work? That would make this issue naturally go away.
