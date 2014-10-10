@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaJJHzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 03:55:08 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:53283 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446AbaJJHzG (ORCPT
+	id S1752228AbaJJHz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 03:55:28 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:14445 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751446AbaJJHzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 03:55:06 -0400
-Date: Fri, 10 Oct 2014 08:55:02 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 3/3] scsi: Use try_rc16 and try_vpd_pages quirks on Hyper-V
- virtual disks
-Message-ID: <20141010075502.GD32028@sucs.org>
-References: <20141010074901.GA32028@sucs.org>
+	Fri, 10 Oct 2014 03:55:25 -0400
+X-IronPort-AV: E=Sophos;i="5.04,690,1406584800"; 
+   d="scan'208";a="100378760"
+Date: Fri, 10 Oct 2014 09:55:16 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Fabian Frederick <fabf@skynet.be>
+cc: linux-kernel@vger.kernel.org, Dan Mick <dan.mick@inktank.com>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>, Michal Marek <mmarek@suse.cz>,
+        cocci@systeme.lip6.fr
+Subject: Re: [PATCH 1/1 linux-next] scripts/coccinelle/misc/boolinit.cocci:
+ fix assignment warnings
+In-Reply-To: <1412925511-3556-1-git-send-email-fabf@skynet.be>
+Message-ID: <alpine.DEB.2.10.1410100954590.2402@hadrien>
+References: <1412925511-3556-1-git-send-email-fabf@skynet.be>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141010074901.GA32028@sucs.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Microsoft Hyper-V virtual disks currently only claim SPC-2 compliance causing
-feature tests not to be run (even though those features are correctly announced
-elsewhere). Make Hyper-V virtual disks quirk past READ CAPACITY(16) and VPD
-page guards so appropriate tests are performed.
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-This only impacts Hyper-V's VHD/VHDX virtual disks and not passthrough devices.
+Thanks!
 
-Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
----
- drivers/scsi/scsi_devinfo.c | 1 +
- 1 file changed, 1 insertion(+)
+On Fri, 10 Oct 2014, Fabian Frederick wrote:
 
-diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
-index 49014a1..3eadcb1 100644
---- a/drivers/scsi/scsi_devinfo.c
-+++ b/drivers/scsi/scsi_devinfo.c
-@@ -210,6 +210,7 @@ static struct {
- 	{"Medion", "Flash XL  MMC/SD", "2.6D", BLIST_FORCELUN},
- 	{"MegaRAID", "LD", NULL, BLIST_FORCELUN},
- 	{"MICROP", "4110", NULL, BLIST_NOTQ},
-+	{"Msft", "Virtual Disk", "1.0", BLIST_TRY_VPD_PAGES | BLIST_TRY_RC16},
- 	{"MYLEX", "DACARMRB", "*", BLIST_REPORTLUN2},
- 	{"nCipher", "Fastness Crypto", NULL, BLIST_FORCELUN},
- 	{"NAKAMICH", "MJ-4.8S", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
--- 
-1.9.3
-
+> Replace "Assignment of bool to 0/1" by "Assignment of 0/1 to bool"
+>
+> Suggested-by: Dan Mick <dan.mick@inktank.com>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  scripts/coccinelle/misc/boolinit.cocci | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/scripts/coccinelle/misc/boolinit.cocci b/scripts/coccinelle/misc/boolinit.cocci
+> index b9abed4..63c4562 100644
+> --- a/scripts/coccinelle/misc/boolinit.cocci
+> +++ b/scripts/coccinelle/misc/boolinit.cocci
+> @@ -145,13 +145,13 @@ cocci.print_main("WARNING: Comparison of bool to 0/1",p)
+>  p1 << r3.p1;
+>  @@
+>
+> -cocci.print_main("WARNING: Assignment of bool to 0/1",p1)
+> +cocci.print_main("WARNING: Assignment of 0/1 to bool",p1)
+>
+>  @script:python depends on org@
+>  p2 << r3.p2;
+>  @@
+>
+> -cocci.print_main("ERROR: Assignment of bool to non-0/1 constant",p2)
+> +cocci.print_main("ERROR: Assignment of non-0/1 constant to bool",p2)
+>
+>  @script:python depends on report@
+>  p << r1.p;
+> @@ -169,10 +169,10 @@ coccilib.report.print_report(p[0],"WARNING: Comparison of bool to 0/1")
+>  p1 << r3.p1;
+>  @@
+>
+> -coccilib.report.print_report(p1[0],"WARNING: Assignment of bool to 0/1")
+> +coccilib.report.print_report(p1[0],"WARNING: Assignment of 0/1 to bool")
+>
+>  @script:python depends on report@
+>  p2 << r3.p2;
+>  @@
+>
+> -coccilib.report.print_report(p2[0],"ERROR: Assignment of bool to non-0/1 constant")
+> +coccilib.report.print_report(p2[0],"ERROR: Assignment of non-0/1 constant to bool")
+> --
+> 1.9.3
+>
+>
