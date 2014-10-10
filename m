@@ -1,192 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194AbaJJLy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:54:27 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:65433 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752963AbaJJLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:54:14 -0400
-X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
-   d="scan'208";a="180114187"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 1/7] xen/arm: remove handling of XENFEAT_grant_map_identity
-Date: Fri, 10 Oct 2014 12:51:42 +0100
-Message-ID: <1412941908-5850-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
+	id S1754286AbaJJLys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:54:48 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44297 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaJJLym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:54:42 -0400
+Date: Fri, 10 Oct 2014 12:53:59 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: PERIER Romain <romain.perier@gmail.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, robh <robh@kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Message-ID: <20141010115359.GE18557@sirena.org.uk>
+References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com>
+ <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com>
+ <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y1L3PTX8QE8cb2T+"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get
+ "poweroff-source" property
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The feature has been removed from Xen. Also Linux cannot use it on ARM32
-without CONFIG_ARM_LPAE.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+--Y1L3PTX8QE8cb2T+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
----
-Changes in v2:
+On Fri, Oct 10, 2014 at 12:47:08PM +0100, Grant Likely wrote:
 
-- remove the definition of XENFEAT_grant_map_identity.
----
- arch/arm/xen/enlighten.c         |    5 ---
- arch/arm/xen/mm32.c              |   85 +-------------------------------------
- include/xen/interface/features.h |    3 --
- 3 files changed, 1 insertion(+), 92 deletions(-)
+> This is an extremely simple wrapper. It may be best to simply make it
+> a static inline. It is also generic enough that I don't have a problem
+> with it living in include/linux/of.h; but of_regulator.h would be fine
+> too.
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 0e15f01..c7ca936 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -261,11 +261,6 @@ static int __init xen_guest_init(void)
- 
- 	xen_setup_features();
- 
--	if (!xen_feature(XENFEAT_grant_map_identity)) {
--		pr_warn("Please upgrade your Xen.\n"
--				"If your platform has any non-coherent DMA devices, they won't work properly.\n");
--	}
--
- 	if (xen_feature(XENFEAT_dom0))
- 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
- 	else
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-index 3b99860..a5a93fc 100644
---- a/arch/arm/xen/mm32.c
-+++ b/arch/arm/xen/mm32.c
-@@ -5,70 +5,6 @@
- 
- #include <xen/features.h>
- 
--static DEFINE_PER_CPU(unsigned long, xen_mm32_scratch_virt);
--static DEFINE_PER_CPU(pte_t *, xen_mm32_scratch_ptep);
--
--static int alloc_xen_mm32_scratch_page(int cpu)
--{
--	struct page *page;
--	unsigned long virt;
--	pmd_t *pmdp;
--	pte_t *ptep;
--
--	if (per_cpu(xen_mm32_scratch_ptep, cpu) != NULL)
--		return 0;
--
--	page = alloc_page(GFP_KERNEL);
--	if (page == NULL) {
--		pr_warn("Failed to allocate xen_mm32_scratch_page for cpu %d\n", cpu);
--		return -ENOMEM;
--	}
--
--	virt = (unsigned long)__va(page_to_phys(page));
--	pmdp = pmd_offset(pud_offset(pgd_offset_k(virt), virt), virt);
--	ptep = pte_offset_kernel(pmdp, virt);
--
--	per_cpu(xen_mm32_scratch_virt, cpu) = virt;
--	per_cpu(xen_mm32_scratch_ptep, cpu) = ptep;
--
--	return 0;
--}
--
--static int xen_mm32_cpu_notify(struct notifier_block *self,
--				    unsigned long action, void *hcpu)
--{
--	int cpu = (long)hcpu;
--	switch (action) {
--	case CPU_UP_PREPARE:
--		if (alloc_xen_mm32_scratch_page(cpu))
--			return NOTIFY_BAD;
--		break;
--	default:
--		break;
--	}
--	return NOTIFY_OK;
--}
--
--static struct notifier_block xen_mm32_cpu_notifier = {
--	.notifier_call	= xen_mm32_cpu_notify,
--};
--
--static void* xen_mm32_remap_page(dma_addr_t handle)
--{
--	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
--	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
--
--	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
--	local_flush_tlb_kernel_page(virt);
--
--	return (void*)virt;
--}
--
--static void xen_mm32_unmap(void *vaddr)
--{
--	put_cpu_var(xen_mm32_scratch_virt);
--}
--
- 
- /* functions called by SWIOTLB */
- 
-@@ -88,13 +24,7 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	
- 		if (!pfn_valid(pfn))
- 		{
--			/* Cannot map the page, we don't know its physical address.
--			 * Return and hope for the best */
--			if (!xen_feature(XENFEAT_grant_map_identity))
--				return;
--			vaddr = xen_mm32_remap_page(handle) + offset;
--			op(vaddr, len, dir);
--			xen_mm32_unmap(vaddr - offset);
-+			/* TODO: cache flush */
- 		} else {
- 			struct page *page = pfn_to_page(pfn);
- 
-@@ -181,22 +111,9 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
- 
- int __init xen_mm32_init(void)
- {
--	int cpu;
--
- 	if (!xen_initial_domain())
- 		return 0;
- 
--	register_cpu_notifier(&xen_mm32_cpu_notifier);
--	get_online_cpus();
--	for_each_online_cpu(cpu) {
--		if (alloc_xen_mm32_scratch_page(cpu)) {
--			put_online_cpus();
--			unregister_cpu_notifier(&xen_mm32_cpu_notifier);
--			return -ENOMEM;
--		}
--	}
--	put_online_cpus();
--
- 	return 0;
- }
- arch_initcall(xen_mm32_init);
-diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-index 14334d0..131a6cc 100644
---- a/include/xen/interface/features.h
-+++ b/include/xen/interface/features.h
-@@ -53,9 +53,6 @@
- /* operation as Dom0 is supported */
- #define XENFEAT_dom0                      11
- 
--/* Xen also maps grant references at pfn = mfn */
--#define XENFEAT_grant_map_identity        12
--
- #define XENFEAT_NR_SUBMAPS 1
- 
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
--- 
-1.7.10.4
+I think of.h might be a better idea - it's not something that needs to
+be regulator specific, system power controllers could provide the same
+functionality but may not offer any regulator control to Linux.
 
+--Y1L3PTX8QE8cb2T+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUN8jWAAoJECTWi3JdVIfQL84H/1LIL/5/DYEQwAMprFKH8pLv
+BfFv863V5x1QtGRxC+OiDANdj61PBIrAB78PswZ5tPpX13mca3WbEqqOFSnIGdeA
+AbtMTWiznlEdQoO04vwm7lbGkAH3M7KKjq9EMIDsGnQJ4Qi+JyxTNKuwbPRIFL6e
+CiRnwPuz180PeBsUWw2b4oqcK8CPk/Bq4txHz/9Q7C59IBdzd9q62oFtLf5l6C9Y
+lqspLR7EiZOzXx3DkJ6+Jphq7SN84MZwFYoyI9WvP1MxpSzp1XLrNOXnBeyHDoSl
+7bCr0uVL8YtxUdGAKFAdWZ/IqVh9zAvct5YTw6MKNhYumkHuTrfYWRzU8p7s+zA=
+=Illa
+-----END PGP SIGNATURE-----
+
+--Y1L3PTX8QE8cb2T+--
