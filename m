@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755086AbaJJOLm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 10:11:42 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59794 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018AbaJJOKA (ORCPT
+	id S1755233AbaJJOMB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:12:01 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:26329 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077AbaJJOJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 10:10:00 -0400
-X-AuditID: cbfec7f5-b7f776d000003e54-49-5437e8b5983b
+	Fri, 10 Oct 2014 10:09:59 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-3f-5437e8b2ebde
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, viro@zeniv.linux.org.uk,
         akpm@linux-foundation.org, linux-security-module@vger.kernel.org,
         linux-ima-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, dmitry.kasatkin@gmail.com,
         Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v3 5/6] ima: require signature based appraisal
-Date: Fri, 10 Oct 2014 17:09:32 +0300
-Message-id: <4dd050e33e489d3b563075a9ea4e3d15675f6550.1412950047.git.d.kasatkin@samsung.com>
+Subject: [PATCH v3 2/6] integrity: provide x509 certificate loading from the
+ kernel
+Date: Fri, 10 Oct 2014 17:09:29 +0300
+Message-id: <18b795d742e81d3b820584e22803c907dac301e1.1412950047.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
 References: <cover.1412950047.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1412950047.git.d.kasatkin@samsung.com>
 References: <cover.1412950047.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xy7pbX5iHGPQcMrKYs34Nm8Wtv3uZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xy7qbX5iHGPzpZLSYs34Nm8Wtv3uZ
 	Lb4srbN4OWMeu8XlXXPYLD70PGKzOP/3OKvFpxWTmB04PHbOusvucWLGbxaPB4c2s3jsXvCZ
-	yaNvyypGj8+b5Dw2PXnLFMAexWWTkpqTWZZapG+XwJXRe+M6S8EkgYov398zNTBe4u1i5OSQ
-	EDCR2P3yFTuELSZx4d56ti5GLg4hgaWMEtuvvGGGcDqZJL482ARWxSagJ7Gh+Qc7SEJEYBGj
-	xONlF1lBEswC6RKfJvWCFQkL2El8PfOCEcRmEVCVOH7pBRuIzSsQJ/Gr/zYTxDo5iZPHJoP1
-	cgpYSXx79QssLiRgKfH9fQsLLvEJjPwLGBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoQE
-	6dcdjEuPWR1iFOBgVOLhvSBjHiLEmlhWXJl7iFGCg1lJhPfbc6AQb0piZVVqUX58UWlOavEh
-	RiYOTqkGRtd5MvcvPOAz1DrCwnenvUh2qU731ZjHir6TvfwsHq48/cZdqsMge/GduD/Oi1Yl
-	T2kN91WfmH+7mv9qXa3bDdnHbqaLbuy8KrR9evhNtRCTgxPi1j8zYFssbmyf0p/A//9TB/vi
-	d7Jea29oLl/WtdzhiMP+nSu+6P08ufm21iTxuAnrvS7Mu6LEUpyRaKjFXFScCADaEe4TMAIA	AA==
+	yaNvyypGj8+b5Dw2PXnLFMAexWWTkpqTWZZapG+XwJXx4NtXpoKZwhXX1sxlaWDcx9/FyMkh
+	IWAi8WH3JmYIW0ziwr31bF2MXBxCAksZJaadOgrldDJJtE1sYQepYhPQk9jQ/IMdJCEisIhR
+	4vGyi6wgCWaBdIlPk3rBioQFQiX6uy6wgNgsAqoSr+/MBavhFYiTOH30KxvEOjmJk8cmg8U5
+	Bawkvr36xQRiCwlYSnx/38KCS3wCI/8CRoZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCFB
+	+nUH49JjVocYBTgYlXh4L8iYhwixJpYVV+YeYpTgYFYS4f32HCjEm5JYWZValB9fVJqTWnyI
+	kYmDU6qB8S7Dz+UTvLUNvHq37BJKc5rxo8/8xJ3jEQG1v0LiD3wpcLv79tPPC5tvdE5/J2DB
+	d0wl7OnGvJ3P1KKenSw4GcJwXKJKY99s24tKmjzWcUFVoukGj6Pj1b69ObD/pPVWhge+9mfD
+	WlSulfT1FNw+K1YncjaebZ58hLVR2RHumJtcL+ZfWMpZpcRSnJFoqMVcVJwIABy7UrUwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides kernel parameter CONFIG_IMA_APPRAISE_SIGNED_INIT
-to force IMA appraisal using signatures. This is useful, when EVM key
-is not initalized yet and we want securely initialize integrity or any
-other functionality.
-
-It forces embedded policy to require signature. Signed initialization
-script can initialize EVM key, update the IMA policy and change further
-requirement of everything to be signed.
+Provide function to load x509 certificates from the kernel into the
+integrity kernel keyrings.
 
 Changes in v2:
-* policy change of this patch separated from the key loading patch
+* configuration option removed
+* function declared as '__init'
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/Kconfig      | 7 +++++++
- security/integrity/ima/ima_policy.c | 5 +++++
- 2 files changed, 12 insertions(+)
+ security/integrity/digsig.c    | 37 ++++++++++++++++++++++++++++++++++++-
+ security/integrity/integrity.h |  2 ++
+ 2 files changed, 38 insertions(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 44941c1..6a1971f 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -146,3 +146,10 @@ config IMA_X509_PATH
- 	default "/etc/ima/x509_ima.der"
- 	help
- 	   This option defines IMA X509 certificate path.
-+
-+config IMA_APPRAISE_SIGNED_INIT
-+	bool "Require signed user-space initialization"
-+	depends on IMA_LOAD_X509
-+	default n
-+	help
-+	   This option requires user-space init to be signed.
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index 0d14d25..222ff79 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -100,7 +100,12 @@ static struct ima_rule_entry default_appraise_rules[] = {
- 	{.action = DONT_APPRAISE, .fsmagic = SECURITYFS_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = SELINUX_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = CGROUP_SUPER_MAGIC, .flags = IMA_FSMAGIC},
-+#ifndef CONFIG_IMA_APPRAISE_SIGNED_INIT
- 	{.action = APPRAISE, .fowner = GLOBAL_ROOT_UID, .flags = IMA_FOWNER},
-+#else
-+	/* force signature */
-+	{.action = APPRAISE, .fowner = GLOBAL_ROOT_UID, .flags = IMA_FOWNER | IMA_DIGSIG_REQUIRED},
-+#endif
- };
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index 4f643d1..fa383fd 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -14,7 +14,7 @@
  
- static LIST_HEAD(ima_default_rules);
+ #include <linux/err.h>
+ #include <linux/sched.h>
+-#include <linux/rbtree.h>
++#include <linux/slab.h>
+ #include <linux/cred.h>
+ #include <linux/key-type.h>
+ #include <linux/digsig.h>
+@@ -84,3 +84,38 @@ int __init integrity_init_keyring(const unsigned int id)
+ 	}
+ 	return err;
+ }
++
++int __init integrity_load_x509(const unsigned int id, char *path)
++{
++	key_ref_t key;
++	char *data;
++	int rc;
++
++	if (!keyring[id])
++		return -EINVAL;
++
++	rc = integrity_read_file(path, &data);
++	if (rc < 0)
++		return rc;
++
++	key = key_create_or_update(make_key_ref(keyring[id], 1),
++				   "asymmetric",
++				   NULL,
++				   data,
++				   rc,
++				   ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				   KEY_USR_VIEW | KEY_USR_READ),
++				   KEY_ALLOC_NOT_IN_QUOTA |
++				   KEY_ALLOC_TRUSTED);
++	if (IS_ERR(key)) {
++		rc = PTR_ERR(key);
++		pr_err("Problem loading X.509 certificate (%d): %s\n",
++		       rc, path);
++	} else {
++		pr_notice("Loaded X.509 cert '%s': %s\n",
++			  key_ref_to_ptr(key)->description, path);
++		key_ref_put(key);
++	}
++	kfree(data);
++	return 0;
++}
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 20d2204..1057abb 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -134,6 +134,7 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 			    const char *digest, int digestlen);
+ 
+ int __init integrity_init_keyring(const unsigned int id);
++int __init integrity_load_x509(const unsigned int id, char *path);
+ #else
+ 
+ static inline int integrity_digsig_verify(const unsigned int id,
+@@ -147,6 +148,7 @@ static inline int integrity_init_keyring(const unsigned int id)
+ {
+ 	return 0;
+ }
++
+ #endif /* CONFIG_INTEGRITY_SIGNATURE */
+ 
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
 -- 
 1.9.1
 
