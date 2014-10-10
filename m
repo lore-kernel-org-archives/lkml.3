@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbaJJQZp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 12:25:45 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60063 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751652AbaJJQZn (ORCPT
+	id S1754095AbaJJQ0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 12:26:46 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:44303 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751622AbaJJQ0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 12:25:43 -0400
-Date: Fri, 10 Oct 2014 17:25:31 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        josh@joshtriplett.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RCU bug with v3.17-rc3 ?
-Message-ID: <20141010162531.GL12379@n2100.arm.linux.org.uk>
-References: <20140905213216.GD5001@linux.vnet.ibm.com> <20141008171322.GH22688@saruman> <20141008175707.GI22688@saruman> <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141010135743.GB31348@saruman>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 10 Oct 2014 12:26:43 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
+        Peter Hurley <peter@hurleysoftware.com>, Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] arm: Blacklist gcc 4.8.[012] and 4.9.0 with CONFIG_FRAME_POINTER
+Date: Fri, 10 Oct 2014 12:26:14 -0400
+Message-Id: <1412958374-16090-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.1.1
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 08:57:43AM -0500, Felipe Balbi wrote:
-> On Thu, Oct 09, 2014 at 04:07:15PM -0500, Felipe Balbi wrote:
-> > Hi,
-> > 
-> > On Thu, Oct 09, 2014 at 03:46:37PM -0500, Felipe Balbi wrote:
-> > > On Thu, Oct 09, 2014 at 10:41:01PM +0200, Rabin Vincent wrote:
-> > > > On Thu, Oct 09, 2014 at 11:26:56AM -0500, Felipe Balbi wrote:
-> > > > > alright, it's pretty deterministic however. Always on the same test, no
-> > > > > matter which USB controller, no matter if backing store is RAM or MMC.
-> > > > > 
-> > > > > Those two undefined instructions on the disassembly caught my attention,
-> > > > > perhaps I'm facing a GCC bug ?
-> > > > 
-> > > > The undefined instructions are just ARM's BUG() implementation.
-> > > > 
-> > > > But did you see the question I asked you yesterday in your other thread?
-> > > > http://www.spinics.net/lists/arm-kernel/msg368634.html
-> > > 
-> > > hmm, completely missed that, sorry. I'm using 4.8.2, will try something
-> > > else.
-> > 
-> > seems to be working fine now, thanks. I'll leave test running overnight
-> > just in case.
-> 
-> yup, ran over night without any problems.
+gcc versions 4.8.[012] and 4.9.0 generates code that prematurely
+adjusts the stack pointer such that still-to-be-referenced locals
+are below the stack pointer, which allows them to be overwritten
+by interrupts.
 
-Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
-it seems that this has been known about for some time.)
+On 10/09/2014 04:41 PM, Rabin Vincent wrote:
+>   4.8.1 and 4.8.2 are known to miscompile the ARM kernel and these
+>   find_get_entry() crashes with 0xffffffff involved smell a lot like the
+>   earlier reports from kernels build with those compilers:
+>
+>   https://lkml.org/lkml/2014/6/25/456
+>   https://lkml.org/lkml/2014/6/30/375
+>   https://lkml.org/lkml/2014/6/30/660
+>   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
+>   https://lkml.org/lkml/2014/5/9/330
+>
+> Also, I didn't see any public email making a definitive link between GCC
+> PR 58854 that Nathan pointed out in https://lkml.org/lkml/2014/6/30/660
+> and the earlier find_get_entry() crashes, but I just built GCC 4.8.1 and
+> an ARM kernel with that, and the GCC bug is clearly seen in
+> radix_tree_lookup_slot() which returns the pointer which
+> find_get_entry() is dereferencing:
+>
+>   <radix_tree_lookup_slot>:
+>    e1a0c00d  mov     ip, sp
+>    e92dd800  push    {fp, ip, lr, pc}
+>    e24cb004  sub     fp, ip, #4
+>    e24dd008  sub     sp, sp, #8
+>    e3a02000  mov     r2, #0
+>    e24b3010  sub     r3, fp, #16
+>    ebffffc5  bl      c0176ab8 <__radix_tree_lookup>
+>    e24bd00c  sub     sp, fp, #12		<--- sp moved up
+>    e3500000  cmp     r0, #0
+>    151b0010  ldrne   r0, [fp, #-16]		<--- load from under sp
+>    e89da800  ldm     sp, {fp, sp, pc}
+>
 
-We can blacklist these GCC versions quite easily.  We already have GCC
-3.3 blacklisted, and it's trivial to add others.  I would want to include
-some proper details about the bug, just like the other existing entries
-we already have in asm-offsets.c, where we name the functions that the
-compiler is known to break where appropriate.
+See gcc PR 58854, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
 
-However, I'm rather annoyed that there are people here who have known
-for some time that GCC 4.8.1 and GCC 4.8.2 _can_ lead to filesystem
-corruption, and have sat on their backsides doing nothing about getting
-it blacklisted for something like a year.
+Reported-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Felipe Balbi <balbi@ti.com>
+Cc: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ include/linux/compiler-gcc4.h | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-When people talk about the ARM community being dysfunctional... well,
-this kind of irresponsible behaviour just gives them more fodder to
-throw at us.
-
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 2507fd2..4069fb2 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -86,3 +86,17 @@
+ #define __HAVE_BUILTIN_BSWAP16__
+ #endif
+ #endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
++
++/*
++ * For ARCH=arm, gcc versions 4.8.[012] and 4.9.0 generate code that closes
++ * the stack frame prematurely which allows still-in-use locals to be
++ * overwritten by interrupts
++ *
++ * see PR 58854, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58854
++ */
++#ifdef __KERNEL__
++# if ((GCC_VERSION >= 40800 && GCC_VERSION <= 40802) || GCC_VERSION == 40900) \
++	&& defined(__arm__) && defined(CONFIG_FRAME_POINTER)
++#  error Your version of gcc miscompiles stack frames
++# endif
++#endif
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.1
+
