@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaJJNJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 09:09:36 -0400
-Received: from max.feld.cvut.cz ([147.32.192.36]:39828 "EHLO max.feld.cvut.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871AbaJJNJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 09:09:33 -0400
-From: Michal Sojka <sojkam1@fel.cvut.cz>
-To: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>
-Subject: [PATCH] Update help of CONFIG_MTD_OF_PARTS
-Date: Fri, 10 Oct 2014 15:06:17 +0200
-Message-Id: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
-X-Mailer: git-send-email 2.1.1
+	id S1754095AbaJJNJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 09:09:53 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:42894 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961AbaJJNJv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 09:09:51 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Paul Zimmerman <paulz@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: dwc2: gadget: sparse warning of context imbalance
+Date: Fri, 10 Oct 2014 18:39:39 +0530
+Message-Id: <1412946579-6805-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The help text of CONFIG_MTD_OF_PARTS refers to additional documentation
-in booting-without-of.txt but this documentation was moved to another
-file in commit efcc2da3fd148c9acb7d7cf1d9800e0649f950fc (Stefan Roese:
-Factor MTD physmap bindings out of booting-without-of). This updates the
-help text to point to the right place.
+sparse was giving the following warning:
+	warning: context imbalance in 's3c_hsotg_ep_enable' 
+	- different lock contexts for basic block
 
-Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+we were returning ENOMEM while still holding the spinlock.
+The sparse warning was fixed by releasing the spinlock before return.
+
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
 ---
- drivers/mtd/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/dwc2/gadget.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
-index 94b8210..fa8371a 100644
---- a/drivers/mtd/Kconfig
-+++ b/drivers/mtd/Kconfig
-@@ -133,7 +133,7 @@ config MTD_OF_PARTS
- 	help
- 	  This provides a partition parsing function which derives
- 	  the partition map from the children of the flash node,
--	  as described in Documentation/devicetree/booting-without-of.txt.
-+	  as described in Documentation/devicetree/bindings/mtd/mtd-physmap.txt.
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 7b5856f..046e90d 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
+ 			hs_ep->fifo_size = val;
+ 			break;
+ 		}
+-		if (i == 8)
++		if (i == 8) {
++			spin_unlock_irqrestore(&hsotg->lock, flags);
+ 			return -ENOMEM;
++		}
+ 	}
  
- config MTD_AR7_PARTS
- 	tristate "TI AR7 partitioning support"
+ 	/* for non control endpoints, set PID to D0 */
 -- 
-2.1.1
+1.8.1.2
 
