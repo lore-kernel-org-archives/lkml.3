@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaJJROn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 13:14:43 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:34448 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456AbaJJROl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 13:14:41 -0400
+	id S1754515AbaJJRPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 13:15:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751957AbaJJRPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 13:15:47 -0400
+From: =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH v2 1/2] KVM: x86: add apic_timer_expired()
+Date: Fri, 10 Oct 2014 19:15:08 +0200
+Message-Id: <1412961309-16485-2-git-send-email-rkrcmar@redhat.com>
+In-Reply-To: <1412961309-16485-1-git-send-email-rkrcmar@redhat.com>
+References: <1412961309-16485-1-git-send-email-rkrcmar@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1409672443-4289-4-git-send-email-gdjakov@mm-sol.com>
-References: <1409672443-4289-1-git-send-email-gdjakov@mm-sol.com>
-	<1409672443-4289-4-git-send-email-gdjakov@mm-sol.com>
-Date: Fri, 10 Oct 2014 10:14:34 -0700
-Message-ID: <CAJAp7OhV82HyDQSRW4F2z6UD6WZzuopBoUZMeT2pYBdGq-Dqcg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] ARM: dts: qcom: Add SDHC nodes for APQ8084 platform
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Georgi Djakov <gdjakov@mm-sol.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Russell King <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 2, 2014 at 8:40 AM, Georgi Djakov <gdjakov@mm-sol.com> wrote:
-> Enable support for the two SD host controllers on the APQ8084 platform
-> by adding the required nodes to the DT files.
-> On the IFC6540 board, the first controller is connected to the onboard
-> eMMC and the second is connected to a micro-SD card slot.
->
-> Signed-off-by: Georgi Djakov <gdjakov@mm-sol.com>
+Make the code reusable.
 
-Hi Georgi,
+If the timer was already pending, we shouldn't be waiting in a queue,
+so wake_up can be skipped, simplifying the path.
 
-This looks sane, but...
+There is no 'reinject' case => the comment is removed.
+Current race behaves correctly.
 
-> ---
->  arch/arm/boot/dts/qcom-apq8084-ifc6540.dts |   11 +++++++++++
->  arch/arm/boot/dts/qcom-apq8084.dtsi        |   23 +++++++++++++++++++++++
->  2 files changed, 34 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts b/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
-> index e41cb8a..c9ff108 100644
-> --- a/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
-> +++ b/arch/arm/boot/dts/qcom-apq8084-ifc6540.dts
-[..]
-> +               sdhci@f98a4900 {
-> +                       cd-gpios = <&tlmm 122 GPIO_ACTIVE_LOW>;
-> +                       bus-width = <4>;
+Signed-off-by: Radim Krčmář <rkrcmar@redhat.com>
+---
+ Not sure about the FIXME, and it might motivate someone to redo the
+ implicit checking as well :)
 
-...why do you add this node and leave it disabled in the dts?
+ arch/x86/kvm/lapic.c | 37 +++++++++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
 
-> +               };
->         };
->  };
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index b8345dd..a3cf68b 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1034,6 +1034,26 @@ static void update_divide_count(struct kvm_lapic *apic)
+ 				   apic->divide_count);
+ }
+ 
++static void apic_timer_expired(struct kvm_lapic *apic)
++{
++	struct kvm_vcpu *vcpu = apic->vcpu;
++	wait_queue_head_t *q = &vcpu->wq;
++
++	/*
++	 * Note: KVM_REQ_PENDING_TIMER is implicitly checked in
++	 * vcpu_enter_guest.
++	 */
++	if (atomic_read(&apic->lapic_timer.pending))
++		return;
++
++	atomic_inc(&apic->lapic_timer.pending);
++	/* FIXME: this code should not know anything about vcpus */
++	kvm_make_request(KVM_REQ_PENDING_TIMER, vcpu);
++
++	if (waitqueue_active(q))
++		wake_up_interruptible(q);
++}
++
+ static void start_apic_timer(struct kvm_lapic *apic)
+ {
+ 	ktime_t now;
+@@ -1538,23 +1558,8 @@ static enum hrtimer_restart apic_timer_fn(struct hrtimer *data)
+ {
+ 	struct kvm_timer *ktimer = container_of(data, struct kvm_timer, timer);
+ 	struct kvm_lapic *apic = container_of(ktimer, struct kvm_lapic, lapic_timer);
+-	struct kvm_vcpu *vcpu = apic->vcpu;
+-	wait_queue_head_t *q = &vcpu->wq;
+ 
+-	/*
+-	 * There is a race window between reading and incrementing, but we do
+-	 * not care about potentially losing timer events in the !reinject
+-	 * case anyway. Note: KVM_REQ_PENDING_TIMER is implicitly checked
+-	 * in vcpu_enter_guest.
+-	 */
+-	if (!atomic_read(&ktimer->pending)) {
+-		atomic_inc(&ktimer->pending);
+-		/* FIXME: this code should not know anything about vcpus */
+-		kvm_make_request(KVM_REQ_PENDING_TIMER, vcpu);
+-	}
+-
+-	if (waitqueue_active(q))
+-		wake_up_interruptible(q);
++	apic_timer_expired(apic);
+ 
+ 	if (lapic_is_periodic(apic)) {
+ 		hrtimer_add_expires_ns(&ktimer->timer, ktimer->period);
+-- 
+2.1.0
 
-Regards,
-Bjorn
