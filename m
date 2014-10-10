@@ -1,138 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948AbaJJSbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 14:31:41 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:61200 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767AbaJJSbi (ORCPT
+	id S1754948AbaJJSdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 14:33:36 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:49987 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaJJSdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 14:31:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Date: Fri, 10 Oct 2014 20:31:26 +0200
-Message-ID: <3880727.lDR3zpUDhm@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141010135804.GA26646@e102568-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com> <1831157.eN0OxS7i7m@wuerfel> <20141010135804.GA26646@e102568-lin.cambridge.arm.com>
+	Fri, 10 Oct 2014 14:33:35 -0400
+Message-ID: <5438267B.3080901@ozlabs.ru>
+Date: Fri, 10 Oct 2014 20:33:31 +0200
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:gOfanepeGw8XZk5/LS3WUnQsHJImPc619Djn7iT8sAI
- 23RhOV83F9IS82rO2HkZzys2gcTY35GB7Vcm9LrU3iIP4CFZ4Z
- YqIVP9xA1NoVI/wnYb3Klf/ogDOhdQxv/m5fOeTFEOk/GBSCfG
- yp47u4KKM421/aJKaCBVloUihVJuQGxRVvNgjm5PC1vlLbDB50
- /05tVPm0cmZ8kYXoMRL4Vhhh39Wf9Sm3Eb61QxTPAfa56VdKni
- czCfy0wsitQtaf4sMsB4Cl5chHpgbXqRZc/3UefXtYE64i3EEF
- eE4qkmDo3/Qu1RMkgSfwWVEd4aOApME2/UH2O/GGrY8/2EiSlK
- NyTPhEyPaVFN/VBQyefc=
-X-UI-Out-Filterresults: notjunk:1;
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2 13/13] vfio: powerpc/spapr: Enable Dynamic DMA windows
+References: <1411441262-11025-1-git-send-email-aik@ozlabs.ru>	 <1411441262-11025-14-git-send-email-aik@ozlabs.ru> <1411509370.24563.35.camel@ul30vt.home>
+In-Reply-To: <1411509370.24563.35.camel@ul30vt.home>
+Content-Type: text/plain; charset=koi8-r
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 October 2014 14:58:04 Lorenzo Pieralisi wrote:
-> On Thu, Oct 09, 2014 at 11:51:43AM +0100, Arnd Bergmann wrote:
+On 09/23/2014 11:56 PM, Alex Williamson wrote:
+> On Tue, 2014-09-23 at 13:01 +1000, Alexey Kardashevskiy wrote:
+>> This defines and implements VFIO IOMMU API which lets the userspace
+>> create and remove DMA windows.
+>>
+>> This updates VFIO_IOMMU_SPAPR_TCE_GET_INFO to return the number of
+>> available windows and page mask.
+>>
+>> This adds VFIO_IOMMU_SPAPR_TCE_CREATE and VFIO_IOMMU_SPAPR_TCE_REMOVE
+>> to allow the user space to create and remove window(s).
+>>
+>> The VFIO IOMMU driver does basic sanity checks and calls corresponding
+>> SPAPR TCE functions. At the moment only IODA2 (POWER8 PCI host bridge)
+>> implements them.
+>>
+>> This advertises VFIO_IOMMU_SPAPR_TCE_FLAG_DDW capability via
+>> VFIO_IOMMU_SPAPR_TCE_GET_INFO.
+>>
+>> This calls platform DDW reset() callback when IOMMU is being disabled
+>> to reset the DMA configuration to its original state.
+>>
+>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+>> ---
+>>  drivers/vfio/vfio_iommu_spapr_tce.c | 135 ++++++++++++++++++++++++++++++++++--
+>>  include/uapi/linux/vfio.h           |  25 ++++++-
+>>  2 files changed, 153 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+>> index 0dccbc4..b518891 100644
+>> --- a/drivers/vfio/vfio_iommu_spapr_tce.c
+>> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+>> @@ -190,18 +190,25 @@ static void tce_iommu_disable(struct tce_container *container)
+>>  
+>>  	container->enabled = false;
+>>  
+>> -	if (!container->grp || !current->mm)
+>> +	if (!container->grp)
+>>  		return;
+>>  
+>>  	data = iommu_group_get_iommudata(container->grp);
+>>  	if (!data || !data->iommu_owner || !data->ops->get_table)
+>>  		return;
+>>  
+>> -	tbl = data->ops->get_table(data, 0);
+>> -	if (!tbl)
+>> -		return;
+>> +	if (current->mm) {
+>> +		tbl = data->ops->get_table(data, 0);
+>> +		if (tbl)
+>> +			decrement_locked_vm(tbl);
+>>  
+>> -	decrement_locked_vm(tbl);
+>> +		tbl = data->ops->get_table(data, 1);
+>> +		if (tbl)
+>> +			decrement_locked_vm(tbl);
+>> +	}
+>> +
+>> +	if (data->ops->reset)
+>> +		data->ops->reset(data);
+>>  }
+>>  
+>>  static void *tce_iommu_open(unsigned long arg)
+>> @@ -243,7 +250,7 @@ static long tce_iommu_ioctl(void *iommu_data,
+>>  				 unsigned int cmd, unsigned long arg)
+>>  {
+>>  	struct tce_container *container = iommu_data;
+>> -	unsigned long minsz;
+>> +	unsigned long minsz, ddwsz;
+>>  	long ret;
+>>  
+>>  	switch (cmd) {
+>> @@ -288,6 +295,28 @@ static long tce_iommu_ioctl(void *iommu_data,
+>>  		info.dma32_window_size = tbl->it_size << tbl->it_page_shift;
+>>  		info.flags = 0;
+>>  
+>> +		ddwsz = offsetofend(struct vfio_iommu_spapr_tce_info,
+>> +				page_size_mask);
+>> +
+>> +		if (info.argsz == ddwsz) {
 > 
-> > > Last changes where introduced by commit 8c05cd08a, whose commit log adds
-> > > to my confusion:
-> > > 
-> > > "[...] I think what we want here is for pci_start to be 0 when mmap_api ==
-> > > PCI_MMAP_PROCFS.[...]"
-> > > 
-> > > But that's not what the code does.
-> > 
-> > My best guess is that this is a typo and that Darrick meant PCI_MMAP_SYSFS
-> > in the changelog, which is the same thing that the code does. It's also
-> > the sensible thing to do.
-> > 
-> > This probably means that the procfs interface is now also broken on
-> > sparc.
-> > 
-> > > I will try to grab an integrator board to give it a go.
-> > 
-> > Ok, good idea.
+>> =
 > 
-> Grabbed, tested it, my theory was correct, I can't map PCI resources
-> to userspace. Actually, if I pass resource offset as a fixed-up address, mmap
-> succeeds through proc, but it does not mmap the resource, it maps
-> the resource + mem_offset that happens to be RAM :D for the PCI slot I am
-> using.
+>> +			if (data->ops->query && data->ops->create &&
+>> +					data->ops->remove) {
+>> +				info.flags |= VFIO_IOMMU_SPAPR_TCE_FLAG_DDW;
 > 
-> I am testing on an oldish (3.16) kernel since I am having trouble with
-> mainline PCI and my network adapter on integrator, but I do not see why this
-> is a problem, this bug has been there forever.
-
-I would guess that almost the only users of the sysfs and procfs
-interfaces are Xorg drivers, you certainly don't need it to get
-a network adapter working.
-
-> By removing mem_offset from pci_mmap_page_range() everything works fine,
-> both proc and sys mappings are ok.
-
-Ok, thanks for confirming!
-
-> > However, given what you found, the procfs interface being broken since
-> > 2010 on both architectures (arm32 and sparc) that try to honor the offset,
-> > we should probably go back to your previous suggestion of removing
-> > the offset handling, which would make it possible to use the procfs
-> > interface and the sysfs interface on all architectures.
-> > 
-> > Would you be able to prepare a patch that does this and circulate that
-> > with the sparc, powerpc and microblaze maintainers as well as Darrick
-> > and Martin who were involved with the pci_mmap_fits change?
+> I think you want to set this flag regardless of whether the user has
+> provided space for it.  A valid use model is to call with the minimum
+> size and look at the flags to determine if it needs to be called again
+> with a larger size.
 > 
-> Yes, but let's step back a second. I think that the proc interface
-> should expect an offset as passed to the user in /proc/bus/pci/devices,
-> and there the resource is exposed through pci_resource_to_user().
+>> +
+>> +				ret = data->ops->query(data,
+>> +						&info.current_windows,
+>> +						&info.windows_available,
+>> +						&info.page_size_mask);
+>> +				if (ret)
+>> +					return ret;
+>> +			} else {
+>> +				info.current_windows = 0;
+>> +				info.windows_available = 0;
+>> +				info.page_size_mask = 0;
+>> +			}
+>> +			minsz = ddwsz;
 > 
-> Hence, the pci_mmap_fits() should check the offset against the
-> resource filtered through pci_resource_to_user(), job done, patch
-> is trivial, and does what pci_resource_to_user() was meant for IMHO.
-
-My point was that there is no reason why sparc and powerpc should
-do this differently. At the moment they do and sparc is broken
-as you proved. We can either fix sparc to restore the old behavior
-by adding pci_resource_to_user to pci_mmap_fits, or by making it
-do what powerpc does, essentially removing the memory space handling
-from pci_resource_to_user.
-
-Whatever we do for sparc is probably what we need to do on ARM as well,
-except that ARM has been broken for a longer time than sparc.
-
-> Then we have to decide what to do with arm32 code:
+> It's not really any longer the min size, is it?
 > 
-> 1) we remove mem_offset from pci_mmap_page_range() (and rely on default
->    pci_resource_to_user())
+>> +		}
+>> +
+>>  		if (copy_to_user((void __user *)arg, &info, minsz))
+>>  			return -EFAULT;
+>>  
+>> @@ -412,12 +441,106 @@ static long tce_iommu_ioctl(void *iommu_data,
+>>  		tce_iommu_disable(container);
+>>  		mutex_unlock(&container->lock);
+>>  		return 0;
+>> +
+>>  	case VFIO_EEH_PE_OP:
+>>  		if (!container->grp)
+>>  			return -ENODEV;
+>>  
+>>  		return vfio_spapr_iommu_eeh_ioctl(container->grp,
+>>  						  cmd, arg);
+>> +
+>> +	case VFIO_IOMMU_SPAPR_TCE_CREATE: {
+>> +		struct vfio_iommu_spapr_tce_create create;
+>> +		struct spapr_tce_iommu_group *data;
+>> +		struct iommu_table *tbl;
+>> +
+>> +		if (WARN_ON(!container->grp))
 > 
-> or
+> redux previous comment on this warning
 > 
-> 2) we provide pci_resource_to_user() for arm32 which does the CPU->bus
->    conversion for us (and leave mem_offset as-is in pci_mmap_range())
+>> +			return -ENXIO;
+>> +
+>> +		data = iommu_group_get_iommudata(container->grp);
+>> +
+>> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_create,
+>> +				start_addr);
+>> +
+>> +		if (copy_from_user(&create, (void __user *)arg, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		if (create.argsz < minsz)
+>> +			return -EINVAL;
+>> +
+>> +		if (create.flags)
+>> +			return -EINVAL;
+>> +
+>> +		if (!data->ops->create || !data->iommu_owner)
+>> +			return -ENOSYS;
+>> +
+>> +		BUG_ON(!data || !data->ops || !data->ops->remove);
+> 
+> Little late for this test since we'll oops on the previous test.  Why is
+> this a BUG_ON?  A user could exploit this on a system with only a
+> partial set of callbacks.
+> 
+>> +
+>> +		ret = data->ops->create(data, create.page_shift,
+>> +				create.window_shift, &tbl);
+>> +		if (ret)
+>> +			return ret;
+>> +
+>> +		ret = try_increment_locked_vm(tbl);
+>> +		if (ret) {
+>> +			data->ops->remove(data, tbl);
+>> +			return ret;
+>> +		}
+>> +
+>> +		create.start_addr = tbl->it_offset << tbl->it_page_shift;
+>> +
+>> +		if (copy_to_user((void __user *)arg, &create, minsz)) {
+>> +			data->ops->remove(data, tbl);
+>> +			decrement_locked_vm(tbl);
+>> +			return -EFAULT;
+>> +		}
+>> +		mutex_lock(&container->lock);
+>> +		++container->windows_num;
+>> +		mutex_unlock(&container->lock);
+>> +
+>> +		return ret;
+>> +	}
+>> +	case VFIO_IOMMU_SPAPR_TCE_REMOVE: {
+>> +		struct vfio_iommu_spapr_tce_remove remove;
+>> +		struct spapr_tce_iommu_group *data;
+>> +		struct iommu_table *tbl;
+>> +
+>> +		if (WARN_ON(!container->grp))
+>> +			return -ENXIO;
+>> +
+>> +		data = iommu_group_get_iommudata(container->grp);
+>> +
+>> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_remove,
+>> +				start_addr);
+>> +
+>> +		if (copy_from_user(&remove, (void __user *)arg, minsz))
+>> +			return -EFAULT;
+>> +
+>> +		if (remove.argsz < minsz)
+>> +			return -EINVAL;
+>> +
+>> +		if (remove.flags)
+>> +			return -EINVAL;
+>> +
+>> +		if (!data->ops->remove || !data->iommu_owner)
+> 
+> On this one we don't both to get data/data->ops.  Is there also an
+> exploit where the user can call these CREATE/REMOVE interfaces even
+> though INFO doesn't expose them if only a partial set of callbacks are
+> present?
 
-I'd vote for 1) to get it in line with the only working architectures
-that currently use a nonzero offset, but Russell needs to have the final
-word on this, and I still think we have to involve the sparc and powerpc
-maintainers as well, hoping to find a common solution for everybody.
+		if (!data || !data->ops || !data->ops->remove || !data->iommu_owner)
 
-Making a user space interface behave differently based on the CPU
-architecture is a bad idea.
+should do it, right?
+And I am not going to add create() without remove(), may be it is worth
+adding a compile time check for that.
 
-	Arnd
+
+> 
+>> +			return -ENOSYS;
+>> +
+>> +		tbl = spapr_tce_find_table(container, data, remove.start_addr);
+> 
+> What happens if this returns the 0 index rather than the expected 1
+> index table?  Why doesn't this call ops->find_table()?
+
+Why ops->find_table()? They are different (->find_table() searches for the
+window by number, spapr_tce_find_table() searches by address), I do not
+understand this comment.
+
+And removing window#0 is supported.
+
+
+> 
+>> +		if (!tbl)
+>> +			return -EINVAL;
+>> +
+>> +		ret = data->ops->remove(data, tbl);
+>> +		if (ret)
+>> +			return ret;
+>> +
+>> +		decrement_locked_vm(tbl);
+>> +
+>> +		mutex_lock(&container->lock);
+>> +		--container->windows_num;
+>> +		mutex_unlock(&container->lock);
+>> +
+>> +		return 0;
+>> +	}
+>>  	}
+>>  
+>>  	return -ENOTTY;
+>> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+>> index 6612974..e71a6ef 100644
+>> --- a/include/uapi/linux/vfio.h
+>> +++ b/include/uapi/linux/vfio.h
+>> @@ -451,9 +451,13 @@ struct vfio_iommu_type1_dma_unmap {
+>>   */
+>>  struct vfio_iommu_spapr_tce_info {
+>>  	__u32 argsz;
+>> -	__u32 flags;			/* reserved for future use */
+>> +	__u32 flags;
+>> +#define VFIO_IOMMU_SPAPR_TCE_FLAG_DDW	1 /* Support dynamic windows */
+>>  	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
+>>  	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
+>> +	__u32 current_windows;
+>> +	__u32 windows_available;
+>> +	__u32 page_size_mask;
+>>  };
+>>  
+>>  #define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
+>> @@ -489,6 +493,25 @@ struct vfio_eeh_pe_op {
+>>  
+>>  #define VFIO_EEH_PE_OP			_IO(VFIO_TYPE, VFIO_BASE + 21)
+>>  
+>> +struct vfio_iommu_spapr_tce_create {
+>> +	__u32 argsz;
+>> +	__u32 flags;
+>> +	/* in */
+>> +	__u32 page_shift;
+>> +	__u32 window_shift;
+>> +	/* out */
+>> +	__u64 start_addr;
+>> +};
+>> +#define VFIO_IOMMU_SPAPR_TCE_CREATE	_IO(VFIO_TYPE, VFIO_BASE + 18)
+>> +
+>> +struct vfio_iommu_spapr_tce_remove {
+>> +	__u32 argsz;
+>> +	__u32 flags;
+>> +	/* in */
+>> +	__u64 start_addr;
+>> +};
+>> +#define VFIO_IOMMU_SPAPR_TCE_REMOVE	_IO(VFIO_TYPE, VFIO_BASE + 19)
+>> +
+> 
+> Zero comments, no good.
+
+Right. I'll fix it. Thanks for the review.
+
+
+> 
+>>  /* ***************************************************************** */
+>>  
+>>  #endif /* _UAPIVFIO_H */
+> 
+> 
+> 
+
+
+-- 
+Alexey
