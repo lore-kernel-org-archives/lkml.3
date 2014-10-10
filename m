@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaJJNOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 09:14:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52077 "EHLO
+	id S1753675AbaJJNS2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 09:18:28 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:52150 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751043AbaJJNO2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751684AbaJJNSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 09:14:28 -0400
-Date: Fri, 10 Oct 2014 14:14:17 +0100
+	Fri, 10 Oct 2014 09:18:25 -0400
+Date: Fri, 10 Oct 2014 14:17:59 +0100
 From: Mark Rutland <mark.rutland@arm.com>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Rhyland Klein <rklein@nvidia.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Thierry Reding <treding@nvidia.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] of: Add Tegra124 EMC bindings
-Message-ID: <20141010131417.GA6004@leverpostej>
-References: <1412945262-6068-1-git-send-email-tomeu.vizoso@collabora.com>
- <1412945262-6068-5-git-send-email-tomeu.vizoso@collabora.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Mark Brown <broonie@kernel.org>, Doug Anderson <dianders@chromium.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/5] regulator: of: Add regulator-initial-mode parse
+ support
+Message-ID: <20141010131759.GB6004@leverpostej>
+References: <1412775847-15213-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1412775847-15213-2-git-send-email-javier.martinez@collabora.co.uk>
+ <20141008142511.GA4609@sirena.org.uk>
+ <54354C7D.7090104@collabora.co.uk>
+ <20141008151220.GE4609@sirena.org.uk>
+ <54356666.4090003@collabora.co.uk>
+ <20141009102717.GG3869@leverpostej>
+ <5436A793.6090204@collabora.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412945262-6068-5-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <5436A793.6090204@collabora.co.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 01:46:55PM +0100, Tomeu Vizoso wrote:
-> From: Mikko Perttunen <mperttunen@nvidia.com>
+On Thu, Oct 09, 2014 at 04:19:47PM +0100, Javier Martinez Canillas wrote:
+> Hello Mark,
 > 
-> Add binding documentation for the nvidia,tegra124-emc device tree node.
+> On 10/09/2014 12:27 PM, Mark Rutland wrote:
+> >> 
+> >> Well, is not fairly obvious to me. One can also say the opposite, why the
+> >> kernel is documenting a DT binding that is not (currently) implemented?
+> > 
+> > Checkpatch will complain regarding undocumented bindings, so from a
+> > pragmatic point of view the binding must come first.
+> >
+> > Personally, when I read a patch series I do an initial pass in-order,
+> > and having the binding first makes things clearer. I might have some
+> > questions regarding the binding that the driver answers later, and it makes it
+> > easier to spot undocumented properties or conventions used by the
+> > driver. Doing so the other way around usually leaves me with more
+> > questions at the end.
+> >
 > 
-> Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> ---
->  .../bindings/memory-controllers/tegra-emc.txt      | 41 ++++++++++++++++++++++
->  1 file changed, 41 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
-> new file mode 100644
-> index 0000000..6282c6b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
-> @@ -0,0 +1,41 @@
-> +Tegra124 SoC EMC controller
-> +
-> +Required properties :
-> +- compatible : "nvidia,tegra124-emc".
-> +- reg : Should contain 1 entry:
-> +  - EMC register set
-> +
-> +The node should contain a "timings@i" subnode for each supported RAM type
-> +  (see field RAM_CODE in register PMC_STRAPPING_OPT_A)
-> +Required properties for "timings@i" nodes :
-> +- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
-> +  is used for.
-> +
-> +Each "timings@i" node should contain "timing@j" subnodes. One "timing@j"
-> +  node should exist for each supported EMC clock rate.
+> Thanks a lot for the explanation, it certainly makes sense then to have
+> the DT binding before. I'll propose a patch to add that information to
+> Documentation/devicetree/bindings/submitting-patches.txt so people
+> (like me) who didn't find it obvious can know what the convention is.
 
-What do the i and j correspond to?
+That sounds like a good idea; yes please.
 
-> +Required properties for "timing@j" nodes :
-> +- clock-frequency : Should contain the memory clock rate.
-> +- nvidia,parent-clock-frequency : Should contain the rate of the EMC
-> +  clock's parent clock.
-
-Why are both of these properties necessary?
-
-What is the relationship between the two?
-
-> +- clocks : Must contain an entry for each entry in clock-names.
-> +  See ../clocks/clock-bindings.txt for details.
-> +- clock-names : Must include the following entries:
-> +  - emc-parent : EMC's parent clock.
-
-Surely the clocks are a property of the EMC, and not the individual
-timings?
-
-> +- The following properties contain EMC timing characterization values:
-> +  - nvidia,emc-zcal-cnt-long
-> +  - nvidia,emc-auto-cal-interval
-> +  - nvidia,emc-ctt-term-ctrl
-> +  - nvidia,emc-cfg
-> +  - nvidia,emc-cfg-2
-> +  - nvidia,emc-sel-dpd-ctrl
-> +  - nvidia,emc-cfg-dig-dll
-> +  - nvidia,emc-bgbias-ctl0
-> +  - nvidia,emc-auto-cal-config
-> +  - nvidia,emc-auto-cal-config2
-> +  - nvidia,emc-auto-cal-config3
-> +  - nvidia,emc-mode-reset
-> +  - nvidia,emc-mode-1
-> +  - nvidia,emc-mode-2
-> +  - nvidia,emc-mode-4
-> +- nvidia,emc-configuration : EMC timing characterization data written to
-> +                             EMC registers.
-
-I have no idea what any of these are. Perhaps these make sense, but I
-cannot tell.
-
+Thanks,
 Mark.
