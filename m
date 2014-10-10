@@ -1,74 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbaJJKye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:54:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45772 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468AbaJJKyb (ORCPT
+	id S1752801AbaJJK4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:56:10 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:61598 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaJJK4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:54:31 -0400
-Date: Fri, 10 Oct 2014 12:54:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 10/11] perf/x86/intel: Support task events with Intel CQM
-Message-ID: <20141010105425.GA3000@worktop.programming.kicks-ass.net>
-References: <1411567455-31264-1-git-send-email-matt@console-pimps.org>
- <1411567455-31264-11-git-send-email-matt@console-pimps.org>
- <20141008110743.GF4750@worktop.programming.kicks-ass.net>
+	Fri, 10 Oct 2014 06:56:06 -0400
+Date: Fri, 10 Oct 2014 11:56:00 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH fixes v2] mfd: max77693: Fix always masked MUIC interrupts
+Message-ID: <20141010105600.GL26795@lee--X1>
+References: <1412938115-11606-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141008110743.GF4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1412938115-11606-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 01:07:43PM +0200, Peter Zijlstra wrote:
-> On Wed, Sep 24, 2014 at 03:04:14PM +0100, Matt Fleming wrote:
-> > From: Matt Fleming <matt.fleming@intel.com>
-> > 
-> > Add support for task events as well as system-wide events. This change
-> > has a big impact on the way that we gather LLC occupancy values in
-> > intel_cqm_event_read().
-> > 
-> > Currently, for system-wide (per-cpu) events we defer processing to
-> > userspace which knows how to discard all but one cpu result per package.
-> > 
-> > Things aren't so simple for task events because we need to do the value
-> > aggregation ourselves. To do this, we defer updating the LLC occupancy
-> > value in event->count from intel_cqm_event_read() and do an SMP
-> > cross-call to read values for all packages in intel_cqm_event_count().
-> > We need to ensure that we only do this for one task event per cache
-> > group, otherwise we'll report duplicate values.
-> > 
-> > If we're a system-wide event we want to fallback to the default
-> > perf_event_count() implementation. Refactor this into a common function
-> > so that we don't duplicate the code.
-> 
-> So it looks like these events will be classified as regular HW events,
-> this means they'll be mixed with the other HW events, and we'll stop
-> scheduling the moment either one returns a fail.
-> 
-> There are two alternatives;
->  1) create an extra task context to keep them in
->  2) pretend to be a software event and do the scheduling yourself
-> 
-> I think my initial proposal was 2, can you clarify why you've changed
-> that? Lemme go read the next patch though, maybe that'll clarify things
-> further.
+On Fri, 10 Oct 2014, Krzysztof Kozlowski wrote:
 
-As you rightly pointed out on IRC, the following (as found in patch 8):
+> All interrupts coming from MUIC were ignored because interrupt source
+> register was masked.
+> 
+> The Maxim 77693 has a "interrupt source" - a separate register and interrupts
+> which give information about PMIC block triggering the individual
+> interrupt (charger, topsys, MUIC, flash LED).
+> 
+> By default bootloader could initialize this register to "mask all"
+> value. In such case (observed on Trats2 board) MUIC interrupts won't be
+> generated regardless of their mask status. Regmap irq chip was unmasking
+> individual MUIC interrupts but the source was masked
+> 
+> Before introducing regmap irq chip this interrupt source was unmasked,
+> read and acked. Reading and acking is not necessary but unmasking is.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: <stable@vger.kernel.org>
+> Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
 
-+static struct pmu intel_cqm_pmu = {
-+       .attr_groups    = intel_cqm_attr_groups,
-+       .task_ctx_nr    = perf_sw_context,
+Applied to -fixes until someone complains.
 
-Does indeed make it a software event, so then need to do all the
-scheduling outselves.
+> ---
+> 
+> Changes since v1:
+> 1. Do the unmasking in main MFD driver. Additionally unmask all
+>    interrupts, not only MUIC. Suggested by Chanwoo Choi.
+> ---
+>  drivers/mfd/max77693.c               | 12 ++++++++++++
+>  include/linux/mfd/max77693-private.h |  7 +++++++
+>  2 files changed, 19 insertions(+)
+> 
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index 4b54da1ff7ab..4e4e6a1a6301 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -253,6 +253,17 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  		goto err_irq_muic;
+>  	}
+>  
+> +	/* Unmask interrupts from all blocks in interrupt source register */
+> +	ret = regmap_update_bits(max77693->regmap,
+> +				MAX77693_PMIC_REG_INTSRC_MASK,
+> +				SRC_IRQ_ALL, ~SRC_IRQ_ALL);
+> +	if (ret < 0) {
+> +		dev_err(max77693->dev,
+> +			"Could not unmask interrupts in INTSRC: %d\n",
+> +			ret);
+> +		goto err_intsrc;
+> +	}
+> +
+>  	pm_runtime_set_active(max77693->dev);
+>  
+>  	ret = mfd_add_devices(max77693->dev, -1, max77693_devs,
+> @@ -264,6 +275,7 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+>  
+>  err_mfd:
+>  	mfd_remove_devices(max77693->dev);
+> +err_intsrc:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_muic);
+>  err_irq_muic:
+>  	regmap_del_irq_chip(max77693->irq, max77693->irq_data_charger);
+> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+> index e1b2b61285b9..15fed5365a20 100644
+> --- a/include/linux/mfd/max77693-private.h
+> +++ b/include/linux/mfd/max77693-private.h
+> @@ -438,6 +438,13 @@ enum max77693_irq_source {
+>  	MAX77693_IRQ_GROUP_NR,
+>  };
+>  
+> +#define SRC_IRQ_CHARGER			BIT(0)
+> +#define SRC_IRQ_TOP			BIT(1)
+> +#define SRC_IRQ_FLASH			BIT(2)
+> +#define SRC_IRQ_MUIC			BIT(3)
+> +#define SRC_IRQ_ALL			(SRC_IRQ_CHARGER | SRC_IRQ_TOP \
+> +						| SRC_IRQ_FLASH | SRC_IRQ_MUIC)
+> +
+>  #define LED_IRQ_FLED2_OPEN		BIT(0)
+>  #define LED_IRQ_FLED2_SHORT		BIT(1)
+>  #define LED_IRQ_FLED1_OPEN		BIT(2)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
