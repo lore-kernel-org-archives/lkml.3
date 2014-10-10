@@ -1,143 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaJJHsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 03:48:23 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:42570 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaJJHsR (ORCPT
+	id S1751930AbaJJHtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 03:49:10 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:59178 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaJJHtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 03:48:17 -0400
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH v2] net/phy: micrel: Add clock support for KSZ8021/KSZ8031
-Date: Fri, 10 Oct 2014 09:48:05 +0200
-Message-Id: <1412927285-6809-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 2.1.1
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 10 Oct 2014 03:49:08 -0400
+Date: Fri, 10 Oct 2014 08:49:01 +0100
+From: Sitsofe Wheeler <sitsofe@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
+        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Subject: [PATCH 0/3] scsi: Add Hyper-V logical block provisioning quirks
+Message-ID: <20141010074901.GA32028@sucs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The KSZ8021 and KSZ8031 support RMII reference input clocks of 25MHz
-and 50MHz. Both PHYs differ in the default frequency they expect
-after reset. If this differs from the actual input clock, then
-register 0x1f bit 7 must be changed.
+Microsoft Hyper-V virtual disks currently only claim SPC-2 compliance
+even though they implement post SPC-2 features (such as thin
+provisioning) which means the Linux kernel does not go on to test for
+those features even though they are advertised.
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
+A previous patch attempted to add a quirk to workaround this but the
+quirk was only enabled after the features had been scanned for, wouldn't
+work for "small" disks and would quirk on  all Hyper-V SCSI devices
+(e.g. passthrough disks).
 
-Changes since v1:
+The new patches partially revert the previous effort, add the quirk in a
+more traditional manner to only Hyper-V virtual disks and work on small
+virtual disks.
 
-- Move clock handling to the probe callback
-- Bail out with an error for invalid clock rates
+Sitsofe Wheeler (3):
+  Revert "Drivers: add blist flags"
+  scsi: add try_rc16 blacklist flag
+  scsi: Use try_rc16 and try_vpd_pages quirks on Hyper-V virtual disks
 
- Documentation/devicetree/bindings/net/micrel.txt |  6 +++++
- drivers/net/phy/micrel.c                         | 31 ++++++++++++++++++++++--
- include/linux/micrel_phy.h                       |  1 +
- 3 files changed, 36 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_devinfo.c |  1 +
+ drivers/scsi/scsi_scan.c    |  3 +++
+ drivers/scsi/sd.c           |  3 +++
+ drivers/scsi/storvsc_drv.c  | 10 ----------
+ include/scsi/scsi_device.h  |  1 +
+ include/scsi/scsi_devinfo.h |  1 +
+ 6 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/micrel.txt b/Documentation/devicetree/bindings/net/micrel.txt
-index 98a3e61..e1d99b9 100644
---- a/Documentation/devicetree/bindings/net/micrel.txt
-+++ b/Documentation/devicetree/bindings/net/micrel.txt
-@@ -16,3 +16,9 @@ Optional properties:
- 	      KSZ8051: register 0x1f, bits 5..4
- 
-               See the respective PHY datasheet for the mode values.
-+
-+ - clocks, clock-names: contains clocks according to the common clock bindings.
-+
-+              supported clocks:
-+	      - KSZ8021, KSZ8031: "rmii-ref": The RMII refence input clock. Used
-+		to determine the XI input clock.
-diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-index 011dbda..492435f 100644
---- a/drivers/net/phy/micrel.c
-+++ b/drivers/net/phy/micrel.c
-@@ -26,6 +26,7 @@
- #include <linux/phy.h>
- #include <linux/micrel_phy.h>
- #include <linux/of.h>
-+#include <linux/clk.h>
- 
- /* Operation Mode Strap Override */
- #define MII_KSZPHY_OMSO				0x16
-@@ -72,9 +73,12 @@ static int ksz_config_flags(struct phy_device *phydev)
- {
- 	int regval;
- 
--	if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK) {
-+	if (phydev->dev_flags & (MICREL_PHY_50MHZ_CLK | MICREL_PHY_25MHZ_CLK)) {
- 		regval = phy_read(phydev, MII_KSZPHY_CTRL);
--		regval |= KSZ8051_RMII_50MHZ_CLK;
-+		if (phydev->dev_flags & MICREL_PHY_50MHZ_CLK)
-+			regval |= KSZ8051_RMII_50MHZ_CLK;
-+		else
-+			regval &= ~KSZ8051_RMII_50MHZ_CLK;
- 		return phy_write(phydev, MII_KSZPHY_CTRL, regval);
- 	}
- 	return 0;
-@@ -440,6 +444,27 @@ ksz9021_wr_mmd_phyreg(struct phy_device *phydev, int ptrad, int devnum,
- {
- }
- 
-+static int ksz8021_probe(struct phy_device *phydev)
-+{
-+	struct clk *clk;
-+
-+	clk = devm_clk_get(&phydev->dev, "rmii-ref");
-+	if (!IS_ERR(clk)) {
-+		unsigned long rate = clk_get_rate(clk);
-+
-+		if (rate > 24500000 && rate < 25500000) {
-+			phydev->dev_flags |= MICREL_PHY_25MHZ_CLK;
-+		} else if (rate > 49500000 && rate < 50500000) {
-+			phydev->dev_flags |= MICREL_PHY_50MHZ_CLK;
-+		} else {
-+			dev_err(&phydev->dev, "Clock rate out of range: %ld\n", rate);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static struct phy_driver ksphy_driver[] = {
- {
- 	.phy_id		= PHY_ID_KS8737,
-@@ -462,6 +487,7 @@ static struct phy_driver ksphy_driver[] = {
- 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
- 			   SUPPORTED_Asym_Pause),
- 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-+	.probe		= ksz8021_probe,
- 	.config_init	= ksz8021_config_init,
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
-@@ -477,6 +503,7 @@ static struct phy_driver ksphy_driver[] = {
- 	.features	= (PHY_BASIC_FEATURES | SUPPORTED_Pause |
- 			   SUPPORTED_Asym_Pause),
- 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-+	.probe		= ksz8021_probe,
- 	.config_init	= ksz8021_config_init,
- 	.config_aneg	= genphy_config_aneg,
- 	.read_status	= genphy_read_status,
-diff --git a/include/linux/micrel_phy.h b/include/linux/micrel_phy.h
-index 2e5b194..53d33de 100644
---- a/include/linux/micrel_phy.h
-+++ b/include/linux/micrel_phy.h
-@@ -37,6 +37,7 @@
- 
- /* struct phy_device dev_flags definitions */
- #define MICREL_PHY_50MHZ_CLK	0x00000001
-+#define MICREL_PHY_25MHZ_CLK	0x00000002
- 
- #define MICREL_KSZ9021_EXTREG_CTRL	0xB
- #define MICREL_KSZ9021_EXTREG_DATA_WRITE	0xC
 -- 
-2.1.1
+1.9.3
 
