@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaJJXZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 19:25:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54726 "EHLO mga02.intel.com"
+	id S1755034AbaJJXZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 19:25:26 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14043 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752120AbaJJXZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 19:25:31 -0400
+	id S1751797AbaJJXZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 19:25:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,695,1406617200"; 
-   d="scan'208";a="587028031"
+   d="scan'208";a="612737918"
 From: Andi Kleen <andi@firstfloor.org>
 To: peterz@infradead.org
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 2/4] x86: Move copy_from_user_nmi() inline
-Date: Fri, 10 Oct 2014 16:25:15 -0700
-Message-Id: <1412983517-12419-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 1/4] Move pagefault_enable/disable to own include file
+Date: Fri, 10 Oct 2014 16:25:14 -0700
+Message-Id: <1412983517-12419-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1412983517-12419-1-git-send-email-andi@firstfloor.org>
 References: <1412983517-12419-1-git-send-email-andi@firstfloor.org>
@@ -25,120 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Move copy_from_user_nmi() inline. This allows the compiler to directly
-do the __builtin_constant_p() optimizations in __copy_from_user_nocheck.
+Move pagefault_enable/disable from linux/uaccess.h to
+an own include file. This avoids an include loop
+with asm/uaccess.h needing these inlines in its own
+inlines.
 
-This then allows to optimize an 8 byte (32bit) or 16byte copy (64bit)
-into two direct __get_user() instead of using the generic copy function.
-
-This covers the 8/16 byte copies dump_stack uses when called from
-the performance critical perf nmi pmi handler.
-
-First this is much faster by itself (single memory access vs complicated
-function). But it also is a lot faster for any page fault, which are
-common in backtracing. Currently copy_from_user() does every page
-fault twice, to generate an exact unread-bytes count. This adds a lot
-of overhead. The inline __get_user code can do this without significant
-overhead, it bails out on the first fault.
-
-copy_from_user_nmi() is only placed from a few places, so there
-isn't any significant code size increase from inlining this.
+linux/uaccess.h still includes the header so there
+is no change for any existing users.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/include/asm/uaccess.h | 29 +++++++++++++++++++++++++++--
- arch/x86/lib/usercopy.c        | 36 ------------------------------------
- 2 files changed, 27 insertions(+), 38 deletions(-)
- delete mode 100644 arch/x86/lib/usercopy.c
+ arch/x86/include/asm/uaccess.h |  1 +
+ include/linux/pagefault.h      | 39 +++++++++++++++++++++++++++++++++++++++
+ include/linux/uaccess.h        | 34 +---------------------------------
+ 3 files changed, 41 insertions(+), 33 deletions(-)
+ create mode 100644 include/linux/pagefault.h
 
 diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-index e50a84f..30c391c 100644
+index 0d592e0..e50a84f 100644
 --- a/arch/x86/include/asm/uaccess.h
 +++ b/arch/x86/include/asm/uaccess.h
-@@ -523,8 +523,6 @@ struct __large_struct { unsigned long buf[100]; };
- #define put_user_ex(x, ptr)						\
- 	__put_user_size_ex((__typeof__(*(ptr)))(x), (ptr), sizeof(*(ptr)))
- 
--extern unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
- extern __must_check long
- strncpy_from_user(char *dst, const char __user *src, long count);
- 
-@@ -741,5 +739,32 @@ copy_to_user(void __user *to, const void *from, unsigned long n)
- #undef __copy_from_user_overflow
- #undef __copy_to_user_overflow
- 
+@@ -7,6 +7,7 @@
+ #include <linux/compiler.h>
+ #include <linux/thread_info.h>
+ #include <linux/string.h>
++#include <linux/pagefault.h>
+ #include <asm/asm.h>
+ #include <asm/page.h>
+ #include <asm/smap.h>
+diff --git a/include/linux/pagefault.h b/include/linux/pagefault.h
+new file mode 100644
+index 0000000..f9520bd
+--- /dev/null
++++ b/include/linux/pagefault.h
+@@ -0,0 +1,39 @@
++#ifndef _LINUX_PAGEFAULT_H
++#define _LINUX_PAGEFAULT_H 1
++
++#include <linux/preempt.h>
++
 +/*
-+ * We rely on the nested NMI work to allow atomic faults from the NMI path; the
-+ * nested NMI paths are careful to preserve CR2.
++ * These routines enable/disable the pagefault handler in that
++ * it will not take any locks and go straight to the fixup table.
 + *
-+ * Inline this function so that the caller gets the __builtin_constant_p
-+ * optimizations in __copy_from_user_nocheck
++ * They have great resemblance to the preempt_disable/enable calls
++ * and in fact they are identical; this is because currently there is
++ * no other way to make the pagefault handlers do this. So we do
++ * disable preemption but we don't necessarily care about that.
 + */
-+static __must_check __always_inline unsigned long
-+copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++static inline void pagefault_disable(void)
 +{
-+	unsigned long ret;
-+
-+	if (__range_not_ok(from, n, user_addr_max()))
-+		return 0;
-+
++	preempt_count_inc();
 +	/*
-+	 * Even though this function is typically called from NMI/IRQ context
-+	 * disable pagefaults so that its behaviour is consistent even when
-+	 * called form other contexts.
++	 * make sure to have issued the store before a pagefault
++	 * can hit.
 +	 */
-+	pagefault_disable();
-+	ret = __copy_from_user_inatomic(to, from, n);
-+	pagefault_enable();
-+
-+	return ret;
++	barrier();
 +}
 +
- #endif /* _ASM_X86_UACCESS_H */
++static inline void pagefault_enable(void)
++{
++#ifndef CONFIG_PREEMPT
++	/*
++	 * make sure to issue those last loads/stores before enabling
++	 * the pagefault handler again.
++	 */
++	barrier();
++	preempt_count_dec();
++#else
++	preempt_enable();
++#endif
++}
++
++#endif
+diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
+index ecd3319..9a5e894 100644
+--- a/include/linux/uaccess.h
++++ b/include/linux/uaccess.h
+@@ -2,41 +2,9 @@
+ #define __LINUX_UACCESS_H__
  
-diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-deleted file mode 100644
-index ddf9ecb..0000000
---- a/arch/x86/lib/usercopy.c
-+++ /dev/null
-@@ -1,36 +0,0 @@
+ #include <linux/preempt.h>
++#include <linux/pagefault.h>
+ #include <asm/uaccess.h>
+ 
 -/*
-- * User address space access functions.
+- * These routines enable/disable the pagefault handler in that
+- * it will not take any locks and go straight to the fixup table.
 - *
-- *  For licencing details see kernel-base/COPYING
+- * They have great resemblance to the preempt_disable/enable calls
+- * and in fact they are identical; this is because currently there is
+- * no other way to make the pagefault handlers do this. So we do
+- * disable preemption but we don't necessarily care about that.
 - */
--
--#include <linux/highmem.h>
--#include <linux/module.h>
--
--#include <asm/word-at-a-time.h>
--#include <linux/sched.h>
--
--/*
-- * We rely on the nested NMI work to allow atomic faults from the NMI path; the
-- * nested NMI paths are careful to preserve CR2.
-- */
--unsigned long
--copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
+-static inline void pagefault_disable(void)
 -{
--	unsigned long ret;
--
--	if (__range_not_ok(from, n, TASK_SIZE))
--		return 0;
--
+-	preempt_count_inc();
 -	/*
--	 * Even though this function is typically called from NMI/IRQ context
--	 * disable pagefaults so that its behaviour is consistent even when
--	 * called form other contexts.
+-	 * make sure to have issued the store before a pagefault
+-	 * can hit.
 -	 */
--	pagefault_disable();
--	ret = __copy_from_user_inatomic(to, from, n);
--	pagefault_enable();
--
--	return ret;
+-	barrier();
 -}
--EXPORT_SYMBOL_GPL(copy_from_user_nmi);
+-
+-static inline void pagefault_enable(void)
+-{
+-#ifndef CONFIG_PREEMPT
+-	/*
+-	 * make sure to issue those last loads/stores before enabling
+-	 * the pagefault handler again.
+-	 */
+-	barrier();
+-	preempt_count_dec();
+-#else
+-	preempt_enable();
+-#endif
+-}
+-
+ #ifndef ARCH_HAS_NOCACHE_UACCESS
+ 
+ static inline unsigned long __copy_from_user_inatomic_nocache(void *to,
 -- 
 1.9.3
 
