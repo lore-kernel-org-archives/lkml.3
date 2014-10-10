@@ -1,142 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbaJJGBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 02:01:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44993 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121AbaJJGA5 (ORCPT
+	id S1751501AbaJJGDw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 02:03:52 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:64664 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaJJGDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 02:00:57 -0400
-Date: Fri, 10 Oct 2014 08:00:43 +0200
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2 2/4] regulator: Set ena_gpio_initialized in regulator
- drivers
-Message-ID: <20141010060043.GA26053@pengutronix.de>
-References: <1412776028-15655-1-git-send-email-mpa@pengutronix.de>
- <1412776028-15655-3-git-send-email-mpa@pengutronix.de>
- <1412780013.31093.7.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
-Content-Disposition: inline
-In-Reply-To: <1412780013.31093.7.camel@AMDC1943>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:55:41 up 28 days, 23:43, 91 users,  load average: 0.01, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 10 Oct 2014 02:03:49 -0400
+Message-ID: <1412921020.3631.7.camel@debian>
+Subject: [PATCH] x86, MCE: support memory error recovery for both UCNA and
+ Deferred error in machine_check_poll
+From: Chen Yucong <slaoub@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Fri, 10 Oct 2014 14:03:40 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Chen Yucong <slaoub@gmail.com>
 
---NzB8fVQJ5HfG6fxh
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+dram_ce_error() stems from Boris's patch set. Thanks!
+Link: http://lkml.org/lkml/2014/7/1/545
 
-On Wed, Oct 08, 2014 at 04:53:33PM +0200, Krzysztof Kozlowski wrote:
-> On =C5=9Bro, 2014-10-08 at 15:47 +0200, Markus Pargmann wrote:
-> > This patch sets ena_gpio_initialized for all drivers which set a
-> > ena_gpio from parsed DT properties. Drivers using pdata may get zero
-> > initialized pdata and therefore copy a 0 into the regulator_config
-> > ena_gpio field.
-> >=20
-> > Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
->=20
-> (... rewind to s2m/s5m... I think Mark asked for splitting this per
-> driver)
+Uncorrected no action required (UCNA) - is a UCR error that is not
+signaled via a machine check exception and, instead, is reported to
+system software as a corrected machine check error. UCNA errors indicate
+that some data in the system is corrupted, but the data has not been
+consumed and the processor state is valid and you may continue execution
+on this processor. UCNA errors require no action from system software
+to continue execution. Note that UCNA errors are supported by the
+processor only when IA32_MCG_CAP[24] (MCG_SER_P) is set.
+                                           -- Intel SDM Volume 3B
 
-Then I misunderstood Mark, I thought he just meant the fixups at the end
-of the last series.
+Deferred errors are errors that cannot be corrected by hardware, but
+do not cause an immediate interruption in program flow, loss of data
+integrity, or corruption of processor state. These errors indicate
+that data has been corrupted but not consumed. Hardware writes information
+to the status and address registers in the corresponding bank that
+identifies the source of the error if deferred errors are enabled for
+logging. Deferred errors are not reported via machine check exceptions;
+they can be seen by polling the MCi_STATUS registers.
+                                            -- ADM64 APM Volume 2
 
->=20
-> > diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-> > index adab82d5279f..49b9e1ddc87e 100644
-> > --- a/drivers/regulator/s2mps11.c
-> > +++ b/drivers/regulator/s2mps11.c
-> > @@ -897,6 +897,7 @@ common_reg:
-> >  			config.of_node =3D rdata[i].of_node;
-> >  		}
-> >  		config.ena_gpio =3D s2mps11->ext_control_gpio[i];
-> > +		config.ena_gpio_initialized =3D true;
-> > =20
-> >  		regulator =3D devm_regulator_register(&pdev->dev,
-> >  						&regulators[i], &config);
->=20
-> Looks good.
->=20
-> > diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-> > index 0ab5cbeeb797..7f176cdb7e37 100644
-> > --- a/drivers/regulator/s5m8767.c
-> > +++ b/drivers/regulator/s5m8767.c
-> > @@ -466,6 +466,7 @@ static void s5m8767_regulator_config_ext_control(st=
-ruct s5m8767_info *s5m8767,
-> >  	}
-> > =20
-> >  	config->ena_gpio =3D rdata->ext_control_gpio;
-> > +	config->ena_gpio_initialized =3D true;
-> >  	config->ena_gpio_flags =3D GPIOF_OUT_INIT_HIGH;
-> >  }
->=20
-> It will work fine but a little messy. The 'config' is re-used in loop
-> for next regulators, so:
-> 1. regulator X with GPIO=3D-ENODEV, ena_gpio_initialized=3Dfalse
-> 2. regulator X+1 with real GPIO, ena_gpio_initialized=3Dtrue
-> 3. regulator X+2 with GPIO=3D-ENODEV, ena_gpio_initialized=3Dtrue
->=20
->=20
-> Instead do this in probe around line 950:
->  config.ena_gpio =3D -EINVAL;
->  config.ena_gpio_flags =3D 0;
-> +config->ena_gpio_initialized =3D true;
->  if (gpio_is_valid(pdata->regulators[i].ext_control_gpio))
->  	s5m8767_regulator_config_ext_control(s5m8767,
->  			&pdata->regulators[i], &config);
+Above two items, both UCNA and Deferred errors belong to detected
+errors, but they can't be corrected by hardware, and this is very
+similar to Software Recoverable Action Optional (SRAO) errors.
+Therefore, we can take some actions that have been used for handling
+SRAO errors to handle UCNA and Deferred errors.
 
-I will fix that.
+Signed-off-by: Chen Yucong <slaoub@gmail.com>
+---
+ arch/x86/include/asm/mce.h       |    4 ++++
+ arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+)
 
-Thanks,
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index 958b90f..c9ac7df4 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -34,6 +34,10 @@
+ #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
+ #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
+ 
++/* AMD-specific bits */
++#define MCI_STATUS_DEFERRED     (1ULL<<44)  /* declare an uncorrected error */
++#define MCI_STATUS_POISON       (1ULL<<43)  /* access poisonous data */
++
+ /*
+  * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
+  * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 61a9668ce..4030c77 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -575,6 +575,35 @@ static void mce_read_aux(struct mce *m, int i)
+ 	}
+ }
+ 
++static bool dram_ce_error(struct mce *m)
++{
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	if (c->x86_vendor == X86_VENDOR_AMD) {
++		/* ErrCodeExt[20:16] */
++		u8 xec = (m->status >> 16) & 0x1f;
++
++		if (m->status & MCI_STATUS_DEFERRED)
++			return (xec == 0x0 || xec == 0x8);
++	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
++		/*
++		 * SDM Volume 3B - 15.9.2 Compound Error Codes (Table 15-9)
++		 *
++		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
++		 * indicating a memory error. But we can't just blindly check
++		 * bit 7 because if bit 8 is set, then this is a cache error,
++		 * and if bit 11 is set, then it is a bus/ interconnect error
++		 * - and either way bit 7 just gives more detail on what
++		 * cache/bus/interconnect error happened. Note that we can
++		 * ignore bit 12, as it's the "filter" bit.
++		 */
++		if ((m->mcgcap & MCG_SER_P) && (m->status & MCI_STATUS_UC))
++			return (m->status & 0xef80) == BIT(7);
++	}
++
++	return false;
++}
++
+ DEFINE_PER_CPU(unsigned, mce_poll_count);
+ 
+ /*
+@@ -630,6 +659,16 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
++
++		/*
++		 * In the cases where we don't have a valid address after all,
++		 * do not add it into the ring buffer.
++		 */
++		if (dram_ce_error(&m) && (m.status & MCI_STATUS_ADDRV)) {
++			mce_ring_add(m.addr >> PAGE_SHIFT);
++			mce_schedule_work();
++		}
++
+ 		/*
+ 		 * Don't get the IP here because it's unlikely to
+ 		 * have anything to do with the actual error location.
+-- 
+1.7.10.4
 
-Markus
 
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
 
---NzB8fVQJ5HfG6fxh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUN3YLAAoJEEpcgKtcEGQQRvUP/j6YUqw9RH4dCc/Y88YLvo9C
-2hPuQ/qKMSj33VCOEnkWMpnqXZvRcHKGrnOO0XEbiTk2f04EzHaf7wZbyIja1bCK
-wYY05TNZBp2YsmpLDXeg57uJ5eGNyEkKhFTYitPNFHH1ELf6rRxgspBtkL3lAOBX
-z8bp4n2vNLzYIn1GN5G2gqT8Et5HTE8uItFu2c1Epr8+ZJLLO5EzOmsvCjS4Yyda
-K+DPz4iIJ5asQ35TLFyJF/CX0CBzzMD4fC4t7HUc6CXwR8OIJOPhNdpw4Q5jsJpO
-KXyQ0HAW9dzPtAOofbUeLDsDGs8zAUJGyIKTlFl/b3BCkamBbs9LrN9FlICRqCDh
-e4whUQHt12FdYUYSsVLsRlQgklb6J/s4XkfrJBLY2l98M8RafX6IZQgx6LibDUWS
-+Hf19TD8jR90NUh1QcpZCqcKwt5sr/r04ikmviqLP0N5Dq9HJSCEH7bErCSzL9v2
-gl4XJbOVA0xU7m1Up1Gg5bZJf0otPZogdDlZmiQiG0Sji3rJLy2vHQVR0cWcjqom
-ANn9txF8Zs0K0F2PuFv0Nsop6+1XLSQrq3ioFHaKuMVbfLJ83xg+Kkc92axIOHrP
-Ov45rXJIkchfVXGNLwYW4xJvprVPz3hAsxbsmQQSmRNu1EJrQbexC3eSZI9OaU6X
-8JcEiW1bguX588R953U3
-=pBCZ
------END PGP SIGNATURE-----
-
---NzB8fVQJ5HfG6fxh--
