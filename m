@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaJJMdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 08:33:45 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:46686 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454AbaJJMdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 08:33:41 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: PERIER Romain <romain.perier@gmail.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, robh <robh@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get "poweroff-source" property
-Date: Fri, 10 Oct 2014 14:33:23 +0200
-Message-ID: <2477657.j9qmEgD9t9@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
-References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com> <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com> <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1752225AbaJJMkF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 08:40:05 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:21026 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaJJMj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 08:39:59 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f5-b7f776d000003e54-55-5437d39d02c4
+Content-transfer-encoding: 8BIT
+Message-id: <5437D39A.60603@samsung.com>
+Date: Fri, 10 Oct 2014 14:39:54 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+To: Inki Dae <inki.dae@samsung.com>, Joonyoung Shim <jy0922.shim@samsung.com>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        dri-devel@lists.freedesktop.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drm/exynos: fix vblank handling during dpms off
+References: <542B9A0E.7020206@samsung.com>
+ <1412151287-12845-1-git-send-email-a.hajda@samsung.com>
+ <542D13CC.5000304@samsung.com> <542D2E7C.1020904@samsung.com>
+In-reply-to: <542D2E7C.1020904@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/xy7pzL5uHGMxolrXoPXeSyeLK1/ds
+	FpPuT2CxeHHvIotF74KrbBZnm96wW1zeNYfNYsb5fUwWMya/ZHPg9Nj+7QGrx/3u40wefVtW
+	MXp83iQXwBLFZZOSmpNZllqkb5fAlTHz2y7mglb+ir89v1gbGGfydDFyckgImEj8uNXFAmGL
+	SVy4t56ti5GLQ0hgKaPEi9cbwBK8AoISPybfA7I5OJgF5CWOXMqGMNUlpkzJhSj/xCjx6Od0
+	qHINiRMv5jGD2CwCqhIH1nwCi7MJaEr83XyTDcQWFYiQOHl3DzuILSLgKzFzzWImkEHMAk1M
+	ElefPQBrFhZwkbg64TMTxIYljBI7Nq5nBUlwCmhLnDvyin0Co8AsJPfNQrhvFsJ9CxiZVzGK
+	ppYmFxQnpeca6RUn5haX5qXrJefnbmKEBPvXHYxLj1kdYhTgYFTi4b0gYx4ixJpYVlyZe4hR
+	goNZSYR3/l6gEG9KYmVValF+fFFpTmrxIUYmDk6pBkYuQUlx7qn8SR0rOT+LHRGewirV+9DF
+	IankUN2eAJZshpVJbJdTDAojDlVe7gh+0KY+LXCPK+fKM0aZ7PntsWLieVf4t6u8ym8tkW71
+	m3yl55DnzCkBx2s3fNVkV2K3OPpHKUjAr/Qen8qqk48uW/a3bLPaL/mXmeG2iZv65lP7J4qv
+	uci1RYmlOCPRUIu5qDgRAIf4OvlUAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On 10/02/2014 12:52 PM, Inki Dae wrote:
+> On 2014년 10월 02일 17:58, Joonyoung Shim wrote:
+>> Hi Andrzej,
+>>
+>> On 10/01/2014 05:14 PM, Andrzej Hajda wrote:
+>>> The patch disables vblanks during dpms off only if pagefilp has
+>>> not been finished. It also replaces drm_vblank_off with drm_crtc_vblank_put.
+>>> It fixes issue with page_flip ioctl not being able to acquire vblank counter.
+>> This problem isn't related with pageflip, it just causes from
+>> 7ffd7a68511c710b84db3548a1997fd2625f580a commit (drm: Always reject
+>> drm_vblank_get() after drm_vblank_off()).
+>>
+>> We need to use drm_vblank_on() as a counterpart to drm_vblank_off()
+>> after the commit .
+>>
+>> How about below patch?
+> Thanks you Joonyoung and Andrzej,
+>
+> drm_vblank_on/off() are legacy api so it would be better to use
+> drm_vblank_crtc_on/off functions instead.
+>
+> And drm_vblank_crtc_off() makes sure that the latest vblank frame count
+> is stored and restored by drm_vblank_crtc_on() again. So my opinion is,
+>
+> static void exynos_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
+> {
+> 	[snip]
+>
+> 	if (mode > DRM_MODE_DPMS_ON) {
+> 		/* wait for the completion of page flip. */
+> 		if (!wait_event_timeout(exynos_crtc->pending_flip_queue,
+> 				!atomic_read(&exynos_crtc->pending_flip),
+> 				HZ/20))
+> 			atomic_set(&exynos_crtc->pending_flip, 0);
+> 		drm_crtc_vblank_off(crtc);		//<- store the latest vblank frame count.
+> 	} else {
+> 		drm_crtc_vblank_on(crtc);		//<- restore the vblank frame count.
+> 	}
+>
+> 	[snip]
+> }
+>
+>
+> Tested and worked well with above patch. How about it?
+>
+>
 
-Am Freitag, 10. Oktober 2014, 12:47:08 schrieb Grant Likely:
-> What I'm more concerned about is the semantics of the property. What
-> do the generic code paths gain by standardizing this property? Is it
-> expected that
-[seems to be missing some text in the original mail]
+drm_crtc_vblank_on should be called after dpms on, otherwise it can fail enabling vblank. I have provided
+full explanation in my other email [1].
+You can modify your patch or just use the one provided in [1].
 
-We currently see an influx of system-power-controller variants. While in the 
-past it only was
-	ti,system-power-controller
+[1]: http://permalink.gmane.org/gmane.comp.video.dri.devel/116152
 
-there is now already
-	maxim,system-power-controller
-	rockchip,system-power-controller
+Regards
+Andrzej
 
-Romain's work would introduce "active-semi,system-power-controller", I have a 
-"netronix,system-power-controller" sitting in some distant tree and there may 
-be more already waiting somewhere.
-
-So in the worst case I'd think you could expect such a property for every 
-pmic-vendor in vendor-prefixes.txt ... as it seems to be a quite common use-
-case these days to have the pmic handle system power on its own.
-
-
-Heiko
