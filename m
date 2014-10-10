@@ -1,119 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbaJJLre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:47:34 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:52620 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575AbaJJLr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:47:29 -0400
+	id S1751909AbaJJLwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:52:53 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:45165 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487AbaJJLwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:52:50 -0400
+X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
+   d="scan'208";a="180113941"
+Date: Fri, 10 Oct 2014 12:50:34 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <xen-devel@lists.xensource.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH v4 0/7] introduce GNTTABOP_cache_flush
+Message-ID: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com>
-References: <1412711104-15902-1-git-send-email-romain.perier@gmail.com> <CABgxDoL2cztT6Y0oodtk4Q4jaDc1Rtx_RokxC+f0XykSojrdyg@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Fri, 10 Oct 2014 12:47:08 +0100
-X-Google-Sender-Auth: P-V_8qOrmZdjjP94O8h7NGI4M0M
-Message-ID: <CACxGe6vmBSgGpJgJ51Ki5KbQO65GDw3kSGSxnswYMfE8OGj9gw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 1/4] regulator: Add helper function to get
- "poweroff-source" property
-To: PERIER Romain <romain.perier@gmail.com>
-Cc: devicetree <devicetree@vger.kernel.org>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, robh <robh@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 8:43 PM, PERIER Romain <romain.perier@gmail.com> wrote:
-> This is not the final location, I have no idea exactly where I might
-> put this helper function. This is why I ask you your opinion (and
-> also, this is why that's a proposal)
->
-> 2014-10-07 21:45 GMT+02:00 Romain Perier <romain.perier@gmail.com>:
->> Several drivers create their own devicetree property when they register
->> poweroff capabilities. This is for example the case for mfd, regulator
->> or power drivers which define "vendor,system-power-controller" property.
->> This patch adds support for a standard property "poweroff-source"
->> which marks the device as able to shutdown the system.
->>
->> Signed-off-by: Romain Perier <romain.perier@gmail.com>
->> ---
->>  drivers/regulator/of_regulator.c       | 12 ++++++++++++
->>  include/linux/regulator/of_regulator.h |  6 ++++++
->>  2 files changed, 18 insertions(+)
->>
->> diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
->> index 7a51814..8b898e6 100644
->> --- a/drivers/regulator/of_regulator.c
->> +++ b/drivers/regulator/of_regulator.c
->> @@ -240,3 +240,15 @@ struct regulator_init_data *regulator_of_get_init_data(struct device *dev,
->>
->>         return init_data;
->>  }
->> +
->> +/**
->> + * is_system_poweroff_source - Tells if poweroff-source is found for device_node
->> + * @np: Pointer to the given device_node
->> + *
->> + * return true if present false otherwise
->> + */
->> +bool is_system_poweroff_source(const struct device_node *np)
->> +{
->> +       return of_property_read_bool(np, "poweroff-source");
->> +}
->> +EXPORT_SYMBOL_GPL(is_system_poweroff_source);
+Hi all,
+this patch series introduces support for GNTTABOP_cache_flush to perform
+cache maintenance operation on foreign pages and reverts the current
+code based on XENFEAT_grant_map_identity.
 
-Hi Romain,
-
-This is an extremely simple wrapper. It may be best to simply make it
-a static inline. It is also generic enough that I don't have a problem
-with it living in include/linux/of.h; but of_regulator.h would be fine
-too.
-
-Since this is a device tree specific function (it doesn't work with
-ACPI or platform_data), you should prefix the function name with of_
-
-g.
+It also provides a very slow fallback by bouncing on the swiotlb buffer,
+in case the hypercall is not available.
 
 
-What I'm more concerned about is the semantics of the property. What
-do the generic code paths gain by standardizing this property? Is it
-expected that
->> diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
->> index f921796..9d8fbb2 100644
->> --- a/include/linux/regulator/of_regulator.h
->> +++ b/include/linux/regulator/of_regulator.h
->> @@ -20,6 +20,7 @@ extern struct regulator_init_data
->>  extern int of_regulator_match(struct device *dev, struct device_node *node,
->>                               struct of_regulator_match *matches,
->>                               unsigned int num_matches);
->> +extern bool is_system_poweroff_source(const struct device_node *np);
->>  #else
->>  static inline struct regulator_init_data
->>         *of_get_regulator_init_data(struct device *dev,
->> @@ -35,6 +36,11 @@ static inline int of_regulator_match(struct device *dev,
->>  {
->>         return 0;
->>  }
->> +
->> +static inline bool is_system_poweroff_source(const struct device_node *np)
->> +{
->> +       return false;
->> +}
->>  #endif /* CONFIG_OF */
->>
->>  #endif /* __LINUX_OF_REG_H */
->> --
->> 1.9.1
->>
+Changes in v4:
+- remove outer_*_range call;
+- introduce is_dma_coherent;
+- use is_dma_coherent in arch/arm/xen/mm32.c;
+- merge xen/mm32.c into xen/mm.c;
+- xen/arm/arm64: introduce xen_arch_need_swiotlb;
+- avoid bouncing dma map operations that involve foreign grants and
+non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
+
+Changes in v3:
+- fix the cache maintenance op call to match what Linux does natively;
+- update the hypercall interface to match Xen.
+
+Changes in v2:
+- remove the definition of XENFEAT_grant_map_identity;
+- update the hypercall interface to match Xen;
+- call the interface on a single page at a time.
+
+
+Stefano Stabellini (7):
+      xen/arm: remove handling of XENFEAT_grant_map_identity
+      xen/arm: remove outer_*_range call
+      [RFC] arm/arm64: introduce is_dma_coherent
+      xen/arm: use is_dma_coherent
+      xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+      xen/arm/arm64: introduce xen_arch_need_swiotlb
+      xen/arm: introduce GNTTABOP_cache_flush
+
+ arch/arm/include/asm/dma-mapping.h         |    6 +
+ arch/arm/include/asm/xen/page.h            |    4 +
+ arch/arm/xen/Makefile                      |    2 +-
+ arch/arm/xen/enlighten.c                   |    5 -
+ arch/arm/xen/mm.c                          |  161 +++++++++++++++++++++-
+ arch/arm/xen/mm32.c                        |  202 ----------------------------
+ arch/arm64/include/asm/dma-mapping.h       |    5 +
+ arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
+ arch/x86/include/asm/xen/page.h            |    7 +
+ drivers/xen/swiotlb-xen.c                  |    5 +-
+ include/xen/interface/features.h           |    3 -
+ include/xen/interface/grant_table.h        |   19 +++
+ 12 files changed, 207 insertions(+), 256 deletions(-)
+ delete mode 100644 arch/arm/xen/mm32.c
