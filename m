@@ -1,86 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363AbaJJUJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 16:09:56 -0400
-Received: from mx.aristanetworks.com ([162.210.130.12]:33151 "EHLO
-	prod-mx.aristanetworks.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755318AbaJJUJy (ORCPT
+	id S1751806AbaJJUZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 16:25:07 -0400
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:64082 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaJJUZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 16:09:54 -0400
-Date: Fri, 10 Oct 2014 13:09:53 -0700
-To: peter@hurleysoftware.com, linux-kernel@vger.kernel.org, jslaby@suse.cz,
-        gregkh@linuxfoundation.org, linux-serial@vger.kernel.org
-Subject: [PATCH 1/1] tty: Fix pty master poll() after slave closes v2
-Cc: fruggeri@arista.com
-User-Agent: Heirloom mailx 12.5 7/5/10
+	Fri, 10 Oct 2014 16:25:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20141010200953.4C0BC48235B@fruggeri-Arora18.sjc.aristanetworks.com>
-From: fruggeri@aristanetworks.com (Francesco Ruggeri)
+Date: Fri, 10 Oct 2014 23:25:04 +0300
+Message-ID: <CAHno66wDqzNiF1b1ajWWGKTs0kVKH=a6re-WyTnNQRkVySwGzg@mail.gmail.com>
+Subject: Re: PROBLEM: ThinkPad Edge: psmouse.c: TouchPad at
+ isa0060/serio4/input0 lost sync at byte 1
+From: Artem Pylypchuk <articicejuice@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f95499c3030f ("n_tty: Don't wait for buffer work in read() loop")
-introduces a race window where a pty master can be signalled that the pty
-slave was closed before all the data that the slave wrote is delivered.
-Commit f8747d4a466a ("tty: Fix pty master read() after slave closes") fixed the
-problem in case of n_tty_read, but the problem still exists for n_tty_poll.
-This can be seen by running 'for ((i=0; i<100;i++));do ./test.py ;done'
-where test.py is:
+Hi!
 
-import os, select, pty
+Are you using tleds utility by any chance?
+Or any utility that frequently switches keyboard indicators.
 
-(pid, pty_fd) = pty.fork()
+I've just discovered that running tleds (for Scroll Lock as eth0
+indicator) can cause such problems, on an old MSI MS-171A. It causes
+such messages:
 
-if pid == 0:
-   os.write(1, 'This string should be received by parent')
-else:
-   poller = select.epoll()
-   poller.register( pty_fd, select.EPOLLIN )
-   ready = poller.poll( 1 * 1000 )
-   for fd, events in ready:
-      if not events & select.EPOLLIN:
-         print 'missed POLLIN event'
-      else:
-         print os.read(fd, 100)
-   poller.close()
+psmouse serio4: Touchpad at isa0060/serio4/input0 lost sync at byte 4
 
-The string from the slave is missed several times.
-This patch takes the same approach as the fix for read and special cases
-this condition for poll.
-Tested on 3.16.
+ and can sometimes block the keyboard and mouse forever (so you have
+to use external USB ones to save your data and reboot).
 
-Signed-off-by: Francesco Ruggeri <fruggeri@arista.com>
----
- drivers/tty/n_tty.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Anyway, this could also be a hardware problem with the internal serial bus.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f44f1ba..cf16aeb 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -2413,12 +2413,17 @@ static unsigned int n_tty_poll(struct tty_struct *tty, struct file *file,
- 
- 	poll_wait(file, &tty->read_wait, wait);
- 	poll_wait(file, &tty->write_wait, wait);
-+	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
-+		mask |= POLLHUP;
- 	if (input_available_p(tty, 1))
- 		mask |= POLLIN | POLLRDNORM;
-+	else if (mask & POLLHUP) {
-+		tty_flush_to_ldisc(tty);
-+		if (input_available_p(tty, 1))
-+			mask |= POLLIN | POLLRDNORM;
-+	}
- 	if (tty->packet && tty->link->ctrl_status)
- 		mask |= POLLPRI | POLLIN | POLLRDNORM;
--	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
--		mask |= POLLHUP;
- 	if (tty_hung_up_p(file))
- 		mask |= POLLHUP;
- 	if (!(mask & (POLLHUP | POLLIN | POLLRDNORM))) {
--- 
-1.8.1.4
-
+Cheers.
