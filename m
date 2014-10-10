@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbaJJVZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 17:25:12 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:64038 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670AbaJJVZK convert rfc822-to-8bit (ORCPT
+	id S1755308AbaJJV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 17:26:25 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:58937 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795AbaJJV0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 17:25:10 -0400
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 10 Oct 2014 22:24:49 +0100
-X-Google-Sender-Auth: DKa3bO36Uq7O-GR2H4_TODb3f0s
-Message-ID: <CACxGe6sqRfWG4xAAxNuaONJrcy_VXYDxAqAdBa+oA4BVVkx32g@mail.gmail.com>
-Subject: [GIT PULL] Devicetree changes for v3.18
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 10 Oct 2014 17:26:23 -0400
+From: Kever Yang <kever.yang@rock-chips.com>
+To: heiko@sntech.de
+Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
+        cf@rock-chips.com, xjq@rock-chips.com, hj@rock-chips.com,
+        huangtao@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/6] add basic rk3288 smp support
+Date: Fri, 10 Oct 2014 14:26:04 -0700
+Message-Id: <1412976370-14468-1-git-send-email-kever.yang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+rk3288 is qual-core CPU Soc, we enable the smp in this patch.
 
-Here are the device tree changes I have queued up for v3.18. Pretty
-small set this time. Please pull.
+In version 3 we use regmap and pmu syscon for cpu power on/off.
+This should be work after Pankaj Dubey's patch applied:
+(https://lkml.org/lkml/2014/9/30/156)
 
-g.
+Changes in v3:
+- add pmu regmap patches in version 3
+- use one ops and secondary_starup for all rockchip SOCs
+- pick back the power domain operation for cpu hotplug
+- add compitable name "rockchip,rk3288-pmu-sram" for pmu-intmem
 
-The following changes since commit fe82dcec644244676d55a1384c958d5f67979adb:
+Changes in v2:
+- use rk3288_boot_secondary instead ofsmp_boot_secondary
+- discards the power domain operation
+- handle the per cpu starup when actived by 'sev'
+- adjust the alignment
 
-  Linux 3.17-rc7 (2014-09-28 14:29:07 -0700)
+Kever Yang (6):
+  ARM: rockchip: convert to regmap and use pmu syscon if available
+  ARM: dts: rockchip: use the same pmu node name as before
+  ARM: rockchip: add option to access the pmu via a phandle in
+    smp_operations
+  ARM: dts: rockchip: add pmu references to cpus nodes
+  ARM: rockchip: add basic smp support for rk3288
+  ARM: dts: rockchip: add intmem node for rk3288 smp support
 
-are available in the git repository at:
+ arch/arm/boot/dts/rk3288.dtsi    |  21 ++++-
+ arch/arm/mach-rockchip/headsmp.S |   5 +-
+ arch/arm/mach-rockchip/platsmp.c | 188 +++++++++++++++++++++++++++++----------
+ 3 files changed, 167 insertions(+), 47 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/glikely/linux
-tags/devicetree-for-linus
+-- 
+1.9.1
 
-for you to fetch changes up to 2118f4b8dfc666c3e4a9e262beca79636a0852fe:
-
-  of/selftest: Move hash table off stack to fix large frame size
-(2014-10-07 11:30:31 +0100)
-
-----------------------------------------------------------------
-Devicetree changes for v3.18
-
-This branch contains bug fixes and new features for the devicetree code.
-Most of the changes are either new testcases for the selftest code or
-documentation changes. The most notable change is the addition of a
-phandle resolver for use when grafting in a second device tree blob into
-the core tree. The resolver isn't currently used by anything other than
-the selftest module, but it will be used to support device tree
-overlays; probably in the v3.19 timeframe.
-
-Also note that I've moved my normal tree from git.secretlab.ca to
-git.kernel.org.
-
-----------------------------------------------------------------
-Gaurav Minocha (1):
-      To remove non-ascii characters in of_selftest.txt
-
-Geert Uytterhoeven (1):
-      of: Add vendor prefix for Sitronix
-
-Grant Likely (7):
-      of: Fix NULL dereference in selftest removal code
-      of/selftest: Test structure of device tree
-      of: Don't try to search when phandle == 0
-      of/selftest: Add a test for duplicate phandles
-      of/selftest: Use the resolver to fixup phandles
-      Merge branch 'for-next' of git://git.kernel.org/.../robh/linux
-into devicetree/next
-      of/selftest: Move hash table off stack to fix large frame size
-
-Pantelis Antoniou (1):
-      of: Introduce Device Tree resolve support.
-
-Peter Chen (1):
-      of: add vendor prefix for Chipidea
-
-Santosh Shilimkar (1):
-      dt/documentation: add specification of dma bus information
-
-Thierry Reding (1):
-      of: Add vendor prefix for Innolux Corporation
-
-Tim Harvey (1):
-      devicetree: bindings: Document Gateworks vendor prefix
-
-Uwe Kleine-König (1):
-      of: Add vendor prefix for Energy Micro
-
- .../devicetree/bindings/vendor-prefixes.txt        |   5 +
- Documentation/devicetree/booting-without-of.txt    |  53 ++++
- .../devicetree/dynamic-resolution-notes.txt        |  25 ++
- Documentation/devicetree/of_selftest.txt           |  30 +-
- drivers/of/Kconfig                                 |   4 +
- drivers/of/Makefile                                |   1 +
- drivers/of/base.c                                  |   3 +
- drivers/of/resolver.c                              | 336 +++++++++++++++++++++
- drivers/of/selftest.c                              | 120 +++++++-
- drivers/of/testcase-data/testcases.dts             |  35 +++
- include/linux/of.h                                 |   3 +
- 11 files changed, 591 insertions(+), 24 deletions(-)
- create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
- create mode 100644 drivers/of/resolver.c
