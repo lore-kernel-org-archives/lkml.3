@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548AbaJJJvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:51:32 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:52093 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaJJJv3 convert rfc822-to-8bit (ORCPT
+	id S1751787AbaJJJwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:52:17 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:46800 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587AbaJJJwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:51:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Scott Branden <sbranden@broadcom.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
+	Fri, 10 Oct 2014 05:52:15 -0400
+X-ASG-Debug-ID: 1412934733-0759e74828422c20002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>, <stable@vger.kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
-        Ray Jui <rjui@broadcom.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Jonathan Richardson <jonathar@broadcom.com>
-Subject: Re: [PATCH V4 1/7] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Fri, 10 Oct 2014 11:50:24 +0200
-Message-ID: <6682352.2KHnNYBAnS@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1412894671-5921-2-git-send-email-sbranden@broadcom.com>
-References: <1412894671-5921-2-git-send-email-sbranden@broadcom.com>
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Date: Fri, 10 Oct 2014 11:52:08 +0200
+X-ASG-Orig-Subj: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Message-ID: <1412934728-23475-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
+References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V02:K0:NClxdAJO63HZzbEMDT97Wp57AT3KYcbRmDZsLDj9hB+
- zfVbVnMIfv1ESiUbbprCngSJ6+bVcRYPQvsNLGOjkH4wA0BF4M
- K5DozeAW7uK2qvoviH4WHEXha83IIRU76YjYeUbWxgSXkAoNiJ
- ZRaoa6KVMUh+bBRGZdNomx7HHENS2D8FgMQ1zHCqOxV6wXgnUv
- 9GkOZqrRDnjK4sSiqtpibG1InsBPJ4i0eGWiopXjB4/yjvaU7r
- tqdq2cnVqBDTY3auAcDDvGwyD82/BiDMDyv+0RBdwSbR7roART
- utmMuoIdQAIhJQRQyXiZSEQePrP5JJ/CrPqI0bVMFX7qIWRXJg
- 5xSSltFSQLt7A3fNX+NU=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1412934733
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10405
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 09 October 2014 15:44:25 Scott Branden wrote:
-> From: Jonathan Richardson <jonathar@broadcom.com>
-> 
-> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
-> Move ARCH_BCM_5301x under the ARCH_BCM_IPROC architecture.
-> 
-> Reviewed-by: Ray Jui <rjui@broadcom.com>
-> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
-> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-No signoff from the Author?
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
 
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index b11ad54..85363de 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -1051,7 +1051,7 @@ config DEBUG_UART_PL01X
->  
->  # Compatibility options for 8250
->  config DEBUG_UART_8250
-> -	def_bool ARCH_DOVE || ARCH_EBSA110 || \
-> +	def_bool ARCH_BCM_IPROC || ARCH_DOVE || ARCH_EBSA110 || \
->  		(FOOTBRIDGE && !DEBUG_DC21285_PORT) || \
->  		ARCH_GEMINI || ARCH_IOP13XX || ARCH_IOP32X || \
->  		ARCH_IOP33X || ARCH_IXP4XX || \
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+Third time's a charm.
 
-As I mentioned before, this is the wrong option. Please use
-DEBUG_LL_UART_8250 like all the modern platforms do.
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-> index fc93800..b2b6752 100644
-> --- a/arch/arm/mach-bcm/Kconfig
-> +++ b/arch/arm/mach-bcm/Kconfig
-> @@ -5,6 +5,53 @@ menuconfig ARCH_BCM
->  
->  if ARCH_BCM
->  
-> +menu "iProc SoC based Machine types"
-> +	config ARCH_BCM_IPROC
-> +		bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
-> +		depends on ARCH_BCM_CYGNUS || ARCH_BCM_5301X
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index dc72b92..1f73ca3 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -661,6 +661,8 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 5937b2d..b68084c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
+-- 
+2.1.0
 
-Please make this a silent option by dropping the text after 'bool',
-and the 'depends on' line.
-
-> +		select ARM_GIC
-> +		select CACHE_L2X0
-> +		select HAVE_ARM_SCU if SMP
-> +		select HAVE_ARM_TWD if SMP
-> +		select ARM_GLOBAL_TIMER
-> +
-> +		select CLKSRC_MMIO
-> +		select ARCH_REQUIRE_GPIOLIB
-> +		select ARM_AMBA
-> +		select PINCTRL
-
-> +
-> +static const char const *bcm_cygnus_dt_compat[] = {
-> +	"brcm,cygnus",
-> +	NULL,
-> +};
-> +
-> +DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-> +	.l2c_aux_val	= 0,
-> +	.l2c_aux_mask	= ~0,
-> +	.dt_compat = bcm_cygnus_dt_compat,
-> +MACHINE_END
-> 
-
-This looks good now.
-
-	Arnd
