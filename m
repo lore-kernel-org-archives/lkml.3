@@ -1,53 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001AbaJJTm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 15:42:28 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:57961 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaJJTm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 15:42:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cocci@systeme.lip6.fr
-Subject: Re: [RFC] drop owner assignment from platform_drivers
-Date: Fri, 10 Oct 2014 21:42:21 +0200
-Message-ID: <2769473.KEN6DZKnT7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141010182604.GC6075@katana>
-References: <20141010072439.GA1741@katana> <20141010083627.GL5182@n2100.arm.linux.org.uk> <20141010182604.GC6075@katana>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:pu5tzLrr4qYg6fmRxJIo9ukHzmW7+oMbBS63dkdp4iv
- EKKAF6ooGe6qgjfP8iWgNwu2+lvUhEpgMOMsDDhLzmuSbaKwcd
- ZwdD/tlLdzrbqK3LOlKMiGdLclzMV9wpZwtWpMtCnMtICXL7RA
- YZjdSB4khBrgsHMJx5v3/dPHBhnfMN3s9gDp9SZYyGjQByrvxr
- NyYYR1sXSe5+eAVwEpfyPFekROz05JBAZDJ8h1LSiP3cTB08lM
- i3oizJUPmCTCo4AIJJYc5O2sfm15xs0KXnb+1LawSCQoNsAN8r
- RGoGALKsNiqy68pyQkYrw4+nscRoqVZVDitcrb/g7RmUoEzPMC
- q27iJmqJmR5V76PjE5mM=
-X-UI-Out-Filterresults: notjunk:1;
+	id S1754941AbaJJToW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 15:44:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14613 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929AbaJJToV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 15:44:21 -0400
+Message-ID: <1412970260.15099.8.camel@redhat.com>
+Subject: Re: [PATCH 5/7] audit: remove redundant watch refcount
+From: Eric Paris <eparis@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org, sgrubb@redhat.com,
+        aviro@redhat.com, pmoore@redhat.com
+Date: Fri, 10 Oct 2014 15:44:20 -0400
+In-Reply-To: <ab6cab591e00ed03bbde0467c42ca59879baaca7.1412285491.git.rgb@redhat.com>
+References: <cover.1412285491.git.rgb@redhat.com>
+	 <ab6cab591e00ed03bbde0467c42ca59879baaca7.1412285491.git.rgb@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 October 2014 20:26:05 Wolfram Sang wrote:
+Having a hard time convincing myself of the next 2...  Doesn't mean
+they're wrong or bad, but my brain isn't seeing it today...
+
+On Thu, 2014-10-02 at 22:05 -0400, Richard Guy Briggs wrote:
+> Remove extra layer of audit_{get,put}_watch() calls.
 > 
-> You got me wondering, though, that it could not be correct to call
-> platform_driver_register() from the platform core instead of module
-> init. I will check tomorrow. Still, this would be a bug independent of
-> my series. Although I'd need to respin it if platform_driver_probe()
-> needed a fix.
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  kernel/audit_watch.c |    5 +----
+>  kernel/auditfilter.c |    7 -------
+>  2 files changed, 1 insertions(+), 11 deletions(-)
+> 
+> diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
+> index f209448..c707afb 100644
+> --- a/kernel/audit_watch.c
+> +++ b/kernel/audit_watch.c
+> @@ -203,7 +203,6 @@ int audit_to_watch(struct audit_krule *krule, char *path, int len, u32 op)
+>  	if (IS_ERR(watch))
+>  		return PTR_ERR(watch);
+>  
+> -	audit_get_watch(watch);
+>  	krule->watch = watch;
+>  
+>  	return 0;
+> @@ -306,7 +305,6 @@ static void audit_update_watch(struct audit_parent *parent,
+>  				 * new watch.
+>  				 */
+>  				audit_put_watch(nentry->rule.watch);
+> -				audit_get_watch(nwatch);
+>  				nentry->rule.watch = nwatch;
+>  				list_add(&nentry->rule.rlist, &nwatch->rules);
+>  				list_add_rcu(&nentry->list, &audit_inode_hash[h]);
+> @@ -392,8 +390,7 @@ static void audit_add_to_parent(struct audit_krule *krule,
+>  
+>  		watch_found = 1;
+>  
+> -		/* put krule's and initial refs to temporary watch */
+> -		audit_put_watch(watch);
+> +		/* put krule's ref to temporary watch */
+>  		audit_put_watch(watch);
+>  
+>  		audit_get_watch(w);
+> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> index facd704..5675916 100644
+> --- a/kernel/auditfilter.c
+> +++ b/kernel/auditfilter.c
+> @@ -563,8 +563,6 @@ exit_nofree:
+>  	return entry;
+>  
+>  exit_free:
+> -	if (entry->rule.watch)
+> -		audit_put_watch(entry->rule.watch); /* matches initial get */
+>  	if (entry->rule.tree)
+>  		audit_put_tree(entry->rule.tree); /* that's the temporary one */
+>  	audit_free_rule(entry);
+> @@ -942,8 +940,6 @@ static inline int audit_add_rule(struct audit_entry *entry)
+>   	return 0;
+>  
+>  error:
+> -	if (watch)
+> -		audit_put_watch(watch); /* tmp watch, matches initial get */
+>  	return err;
+>  }
+>  
+> @@ -951,7 +947,6 @@ error:
+>  static inline int audit_del_rule(struct audit_entry *entry)
+>  {
+>  	struct audit_entry  *e;
+> -	struct audit_watch *watch = entry->rule.watch;
+>  	struct audit_tree *tree = entry->rule.tree;
+>  	struct list_head *list;
+>  	int ret = 0;
+> @@ -992,8 +987,6 @@ static inline int audit_del_rule(struct audit_entry *entry)
+>  	mutex_unlock(&audit_filter_mutex);
+>  
+>  out:
+> -	if (watch)
+> -		audit_put_watch(watch); /* match initial get */
+>  	if (tree)
+>  		audit_put_tree(tree);	/* that's the temporary one */
+>  
 
-Right, this seems to be a preexisting bug. platform_create_bundle 
-and platform_driver_probe will both overwrite the .owner field with
-NULL since they live in builtin code. They need to be replaced with
-__platform_driver_probe and __platform_driver_register that both
-take an extra owner argument passed down from the caller in the driver
-module.
 
-	Arnd
