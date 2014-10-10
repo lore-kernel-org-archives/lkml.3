@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812AbaJJKVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:21:16 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:37945 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484AbaJJKVK (ORCPT
+	id S1753329AbaJJKVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:21:01 -0400
+Received: from regular1.263xmail.com ([211.150.99.140]:39833 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069AbaJJKU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:21:10 -0400
-Date: Fri, 10 Oct 2014 11:21:04 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH v2] mfd: rtsx: fix PM suspend for 5227 & 5249
-Message-ID: <20141010102104.GK26795@lee--X1>
-References: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412920724-27945-1-git-send-email-micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 10 Oct 2014 06:20:28 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <f81173307457169766cf6d72f543426e>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v8 2/5] dt-bindings: document Rockchip thermal
+Date: Fri, 10 Oct 2014 18:19:38 +0800
+Message-Id: <1412936381-22718-3-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1412936381-22718-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1412936381-22718-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014, micky_ching@realsil.com.cn wrote:
+This add the necessary binding documentation for the thermal
+found on Rockchip SoCs
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Fix rts5227&5249 failed send buffer cmd after suspend,
-> PM_CTRL3 should reset before send any buffer cmd after suspend.
-> Otherwise, buffer cmd will failed, this will lead resume fail.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/Makefile         |  2 +-
->  drivers/mfd/rts5227.c        |  6 ++++++
->  drivers/mfd/rts5249.c        |  4 ++++
->  drivers/mfd/rtsx_gops.c      | 37 +++++++++++++++++++++++++++++++++++++
->  drivers/mfd/rtsx_pcr.h       |  3 +++
->  include/linux/mfd/rtsx_pci.h | 28 ++++++++++++++++++++++++++++
->  6 files changed, 79 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/mfd/rtsx_gops.c
+Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+---
+ .../bindings/thermal/rockchip-thermal.txt          | 45 ++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
 
-[...]
-
-> +static inline int rtsx_pci_update_cfg_byte(struct rtsx_pcr *pcr, int addr,
-> +		u8 mask, u8 append)
-> +{
-> +	int err;
-> +	u8 val;
-> +
-> +	err = pci_read_config_byte(pcr->pci, addr, &val);
-> +	if (err < 0)
-> +		return err;
-> +	return pci_write_config_byte(pcr->pci, addr, (val & mask) | append);
-> +}
-> +
-
-Why is this in here?  Why not put it in the generic ops file?
-
+diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+new file mode 100644
+index 0000000..d5ff410
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+@@ -0,0 +1,45 @@
++* Temperature Sensor ADC (TSADC) on rockchip SoCs
++
++Required properties:
++- compatible: "rockchip,rk3288-tsadc"
++- reg: physical base address of the controller and length of memory mapped
++       region.
++- interrupts: The interrupt number to the cpu. The interrupt specifier format
++	      depends on the interrupt controller.
++- clocks: Must contain an entry for each entry in clock-names.
++- clock-names: Shall be "tsadc" for the converter-clock, and "apb_pclk" for
++	       the peripheral clock.
++- #thermal-sensor-cells: Should be 1. See ./thermal.txt for a description.
++
++Exiample:
++tsadc: tsadc@ff280000 {
++	compatible = "rockchip,rk3288-tsadc";
++	reg = <0xff280000 0x100>;
++	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
++	clock-names = "tsadc", "apb_pclk";
++};
++
++Example: referring to thermal sensors:
++thermal-zones {
++       cpu_thermal: cpu_thermal {
++	        polling-delay-passive = <500>; /* milliseconds */
++	        polling-delay = <1000>; /* milliseconds */
++
++			        /* sensor	ID */
++	        thermal-sensors = <&tsadc	1>;
++
++	        trips {
++		        cpu_alert0: cpu_alert {
++			        temperature = <80000>; /* millicelsius */
++			        hysteresis = <2000>; /* millicelsius */
++			        type = "passive";
++		        };
++		        cpu_crit: cpu_crit {
++			        temperature = <125000>; /* millicelsius */
++			        hysteresis = <2000>; /* millicelsius */
++			    type = "critical";
++		        };
++	        };
++       };
++};
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
+
