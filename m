@@ -1,126 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751350AbaJJFP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:15:59 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:12338 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaJJFPy (ORCPT
+	id S1751400AbaJJFRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:17:17 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:12222 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaJJFRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:15:54 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 09 Oct 2014 22:15:39 -0700
-From: Vidya Sagar <vidyas@nvidia.com>
-To: <thierry.reding@gmail.com>, <bhelgaas@google.com>, <swarren@wwwdotorg.org>
-CC: <kthota@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Vidya Sagar <vidyas@nvidia.com>
-Subject: [PATCH v2] PCI: tegra: Enable root port specific features
-Date: Fri, 10 Oct 2014 10:45:35 +0530
-Message-ID: <1412918135-11686-1-git-send-email-vidyas@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 10 Oct 2014 01:17:13 -0400
+X-AuditID: cbfec7f4-b7f156d0000063c7-c8-54376bd61b82
+Message-id: <54376BD5.3000002@samsung.com>
+Date: Fri, 10 Oct 2014 07:17:09 +0200
+From: Robert Baldyga <r.baldyga@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mina86@mina86.com, andrzej.p@samsung.com,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH] usb: gadget: f_fs: remove redundant ffs_data_get()
+References: <1412840476-2767-1-git-send-email-r.baldyga@samsung.com>
+ <20141009142117.GB16002@saruman>
+In-reply-to: <20141009142117.GB16002@saruman>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xa7rXss1DDO6c1bCY9bKdxeLg/XqL
+	5sXr2Swu75rDZrFoWSuzxdojd9ktFhxvYXVg99g/dw27x7o/r5g8+rasYvQ4fmM7k8fnTXIB
+	rFFcNimpOZllqUX6dglcGVuOPGAumMtR8e1YP3MD4yO2LkZODgkBE4m7U1+wQthiEhfurQeK
+	c3EICSxllPi8bTU7hPORUeLnnhvsIFW8AloSE+d3MoPYLAKqEkf2rwaz2QR0JLZ8n8AIYosK
+	REicvLsHql5Q4sfkeywgtoiAgMT6F5fAhjILzGeU6Or6CtYgLOAu8fL1ATBbSCBdounSF7Ch
+	nAK6Els/7gZq4ABq0JO4f1ELJMwsIC+xec1b5gmMArOQrJiFUDULSdUCRuZVjKKppckFxUnp
+	uYZ6xYm5xaV56XrJ+bmbGCEh/mUH4+JjVocYBTgYlXh4L8iYhwixJpYVV+YeYpTgYFYS4dU3
+	BQrxpiRWVqUW5ccXleakFh9iZOLglGpgZG12jW4Sk/l3NF75gbv7NXNH3xQ2HxG152te5Aje
+	tzV1fT9139Hoa6c//Hl0OpJb4YaDo/3vsoM+U3S9t/NVB/8W1Diq8mKXrWjTjgk5pd42Oh9n
+	Vl+O51ec/jHVNT5Va+/p05t01bb/On1L0sjaq2eqRdZcX7e5c/5va99jvSS/m1EqZLugEktx
+	RqKhFnNRcSIA2kgfbE8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enables root port to advertise its ASPM-L1 capability
-resulting in possible link entry to L1 when an ASPM-L1 capable
-device is connected
-Enables per-controller & per-TMS clock clamping by default
-Enabling above features result in more power saving
+On 10/09/2014 04:21 PM, Felipe Balbi wrote:
+> On Thu, Oct 09, 2014 at 09:41:16AM +0200, Robert Baldyga wrote:
+>> During FunctionFS bind, ffs_data_get() function was called twice
+>> (in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
+>> ffs_data_put() was called once (in functionfs_unbind() function).
+>> In result refcount never reached value 0, and ffs memory resources has
+>> been never released.
+>>
+>> Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
+>> and not neccessary, we remove it to have equal number of gets ans puts,
+>> and free allocated memory after refcount reach 0.
+>>
+>> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+> 
+> Which commit is this fixing ? does it deserve a stable backport ? How
+> far back ?
+> 
 
-It also avoids PM message truncation by waiting for DLLP to finish
-before entering into L1 or L2
+The problem starts with commit 5920cda627688c3229fd63157ff031f3f174175e
+[usb: gadget: FunctionFS: convert to new function interface with
+backward compatibility].
 
-Signed-off-by: Vidya Sagar <vidyas@nvidia.com>
----
-v2:
- Removed rp_read() & rp_write() as they seem to be redundant
- Moved port disable code under error condition i.e. it the link
-  is down, corresponding port will be disabled
+This bug causes memory leak so I think it should be in stable too.
 
- drivers/pci/host/pci-tegra.c | 50 +++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 45 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 3d43874..7f32b07 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -237,6 +237,18 @@
- 		(0xf  << PADS_REFCLK_CFG_DRVI_SHIFT)     \
- 	)
- 
-+#define NV_PCIE2_RP_VEND_XP1			0x00000F04
-+#define NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT	(1 << 21)
-+
-+#define NV_PCIE2_RP_VEND_XP_BIST		0x00000F4C
-+#define PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE	(1 << 28)
-+
-+#define NV_PCIE2_RP_PRIV_MISC			0x00000FE0
-+#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD	(0xF << 16)
-+#define PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE	(1 << 23)
-+#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD	(0xF << 24)
-+#define PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE		(1 << 31)
-+
- struct tegra_msi {
- 	struct msi_chip chip;
- 	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
-@@ -1859,6 +1871,32 @@ retry:
- 	return false;
- }
- 
-+/* Enable various features of root port */
-+static void tegra_pcie_enable_rp_features(struct tegra_pcie_port *port)
-+{
-+	unsigned int data;
-+
-+	/* Power mangagement settings */
-+	/* Enable clock clamping by default */
-+	data = readl(port->base + NV_PCIE2_RP_PRIV_MISC);
-+	data |= PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_THRESHOLD |
-+		PCIE2_RP_PRIV_MISC_CTLR_CLK_CLAMP_ENABLE |
-+		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_THRESHOLD |
-+		PCIE2_RP_PRIV_MISC_TMS_CLK_CLAMP_ENABLE;
-+	writel(data, port->base + NV_PCIE2_RP_PRIV_MISC);
-+
-+	/* Enable rootport to advertise its ASPM - L1 capability */
-+	data = readl(port->base + NV_PCIE2_RP_VEND_XP1);
-+	data |= NV_PCIE2_RP_VEND_XP_LINK_PVT_CTL_L1_ASPM_SUPPORT;
-+	writel(data, port->base + NV_PCIE2_RP_VEND_XP1);
-+
-+	/* LTSSM : wait for DLLP to finish before entering L1 or L2/L3 */
-+	/* to avoid truncating PM messages resulting in receiver errors */
-+	data = readl(port->base + NV_PCIE2_RP_VEND_XP_BIST);
-+	data |= PCIE2_RP_VEND_XP_BIST_GOTO_L1_L2_AFTER_DLLP_DONE;
-+	writel(data, port->base + NV_PCIE2_RP_VEND_XP_BIST);
-+}
-+
- static int tegra_pcie_enable(struct tegra_pcie *pcie)
- {
- 	struct tegra_pcie_port *port, *tmp;
-@@ -1870,13 +1908,15 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
- 
- 		tegra_pcie_port_enable(port);
- 
--		if (tegra_pcie_port_check_link(port))
-+		if (!tegra_pcie_port_check_link(port)) {
-+			dev_info(pcie->dev, "link %u down, ignoring\n",
-+				port->index);
-+			tegra_pcie_port_disable(port);
-+			tegra_pcie_port_free(port);
- 			continue;
-+		}
- 
--		dev_info(pcie->dev, "link %u down, ignoring\n", port->index);
--
--		tegra_pcie_port_disable(port);
--		tegra_pcie_port_free(port);
-+		tegra_pcie_enable_rp_features(port);
- 	}
- 
- 	memset(&hw, 0, sizeof(hw));
--- 
-1.8.1.5
-
+Thanks,
+Robert Baldyga
