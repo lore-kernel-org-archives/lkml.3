@@ -1,122 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751395AbaJJJtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:49:00 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:61057 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaJJJs5 (ORCPT
+	id S1751548AbaJJJvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:51:32 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:52093 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaJJJv3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:48:57 -0400
-Date: Fri, 10 Oct 2014 10:48:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH fixes 2/2] extcon: max77693: Fix always masked MUIC
- interrupts
-Message-ID: <20141010094851.GJ26795@lee--X1>
-References: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
- <1412929322-21908-2-git-send-email-k.kozlowski@samsung.com>
- <20141010085854.GC26795@lee--X1>
- <1412931716.22108.0.camel@AMDC1943>
+	Fri, 10 Oct 2014 05:51:29 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Jonathan Richardson <jonathar@broadcom.com>
+Subject: Re: [PATCH V4 1/7] ARM: cygnus: Initial support for Broadcom Cygnus SoC
+Date: Fri, 10 Oct 2014 11:50:24 +0200
+Message-ID: <6682352.2KHnNYBAnS@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1412894671-5921-2-git-send-email-sbranden@broadcom.com>
+References: <1412894671-5921-2-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1412931716.22108.0.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V02:K0:NClxdAJO63HZzbEMDT97Wp57AT3KYcbRmDZsLDj9hB+
+ zfVbVnMIfv1ESiUbbprCngSJ6+bVcRYPQvsNLGOjkH4wA0BF4M
+ K5DozeAW7uK2qvoviH4WHEXha83IIRU76YjYeUbWxgSXkAoNiJ
+ ZRaoa6KVMUh+bBRGZdNomx7HHENS2D8FgMQ1zHCqOxV6wXgnUv
+ 9GkOZqrRDnjK4sSiqtpibG1InsBPJ4i0eGWiopXjB4/yjvaU7r
+ tqdq2cnVqBDTY3auAcDDvGwyD82/BiDMDyv+0RBdwSbR7roART
+ utmMuoIdQAIhJQRQyXiZSEQePrP5JJ/CrPqI0bVMFX7qIWRXJg
+ 5xSSltFSQLt7A3fNX+NU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014, Krzysztof Kozlowski wrote:
-
-> On pią, 2014-10-10 at 09:58 +0100, Lee Jones wrote:
-> > On Fri, 10 Oct 2014, Krzysztof Kozlowski wrote:
-> > 
-> > > All interrupts coming from MUIC were ignored because interrupt source
-> > > register was masked.
-> > > 
-> > > The Maxim 77693 has a "interrupt source" - a separate register and interrupts
-> > > which give information about PMIC block triggering the individual
-> > > interrupt (charger, topsys, MUIC, flash LED).
-> > > 
-> > > By default bootloader could initialize this register to "mask all"
-> > > value. In such case (observed on Trats2 board) MUIC interrupts won't be
-> > > generated regardless of their mask status. Regmap irq chip was unmasking
-> > > individual MUIC interrupts but the source was masked
-> > > 
-> > > Before introducing regmap irq chip this interrupt source was unmasked,
-> > > read and acked. Reading and acking is not necessary but unmasking is. Do
-> > > it in extcon driver.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > Cc: <stable@vger.kernel.org>
-> > > Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
-> > > ---
-> > >  drivers/extcon/extcon-max77693.c     | 16 ++++++++++++++++
-> > >  include/linux/mfd/max77693-private.h |  5 +++++
-> > >  2 files changed, 21 insertions(+)
-> > 
-> > Did you run this through checkpatch?
+On Thursday 09 October 2014 15:44:25 Scott Branden wrote:
+> From: Jonathan Richardson <jonathar@broadcom.com>
 > 
-> Yes, no complains.
+> Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+> Move ARCH_BCM_5301x under the ARCH_BCM_IPROC architecture.
+> 
+> Reviewed-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Desmond Liu <desmondl@broadcom.com>
+> Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
+> Tested-by: Jonathan Richardson <jonathar@broadcom.com>
+> Signed-off-by: Scott Branden <sbranden@broadcom.com>
 
-Run it again!  One of those lines is clearly over 80 chars.
+No signoff from the Author?
 
-> > > diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-> > > index 490e27475bac..d3adacf3187f 100644
-> > > --- a/drivers/extcon/extcon-max77693.c
-> > > +++ b/drivers/extcon/extcon-max77693.c
-> > > @@ -1176,6 +1176,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
-> > >  		}
-> > >  	}
-> > >  
-> > > +	if (i) {
-> > > +		/*
-> > > +		 * i>0, at least one MUIC interrupt requested so need to unmask
-> > > +		 * MUIC interrupt in INTSRC register. Without that MUIC
-> > > +		 * interrupts will not be reported.
-> > > +		 */
-> > > +		ret = regmap_update_bits(max77693->regmap,
-> > > +				MAX77693_PMIC_REG_INTSRC_MASK, SRC_IRQ_MUIC,
-> > > +				~SRC_IRQ_MUIC);
-> > > +		if (ret < 0) {
-> > > +			dev_err(&pdev->dev, "Could not unmask MUIC interrupt in INTSRC: %d\n",
-> > > +					ret);
-> > > +			return ret;
-> > > +		}
-> > > +	}
-> > > +
-> > >  	/* Initialize extcon device */
-> > >  	info->edev = devm_extcon_dev_allocate(&pdev->dev,
-> > >  					      max77693_extcon_cable);
-> > > diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-> > > index e1b2b61285b9..4f1a80b66ecf 100644
-> > > --- a/include/linux/mfd/max77693-private.h
-> > > +++ b/include/linux/mfd/max77693-private.h
-> > > @@ -438,6 +438,11 @@ enum max77693_irq_source {
-> > >  	MAX77693_IRQ_GROUP_NR,
-> > >  };
-> > >  
-> > > +#define SRC_IRQ_CHARGER			BIT(0)
-> > > +#define SRC_IRQ_TOP			BIT(1)
-> > > +#define SRC_IRQ_FLASH			BIT(2)
-> > > +#define SRC_IRQ_MUIC			BIT(3)
-> > > +
-> > >  #define LED_IRQ_FLED2_OPEN		BIT(0)
-> > >  #define LED_IRQ_FLED2_SHORT		BIT(1)
-> > >  #define LED_IRQ_FLED1_OPEN		BIT(2)
-> > 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index b11ad54..85363de 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -1051,7 +1051,7 @@ config DEBUG_UART_PL01X
+>  
+>  # Compatibility options for 8250
+>  config DEBUG_UART_8250
+> -	def_bool ARCH_DOVE || ARCH_EBSA110 || \
+> +	def_bool ARCH_BCM_IPROC || ARCH_DOVE || ARCH_EBSA110 || \
+>  		(FOOTBRIDGE && !DEBUG_DC21285_PORT) || \
+>  		ARCH_GEMINI || ARCH_IOP13XX || ARCH_IOP32X || \
+>  		ARCH_IOP33X || ARCH_IXP4XX || \
+
+As I mentioned before, this is the wrong option. Please use
+DEBUG_LL_UART_8250 like all the modern platforms do.
+
+> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+> index fc93800..b2b6752 100644
+> --- a/arch/arm/mach-bcm/Kconfig
+> +++ b/arch/arm/mach-bcm/Kconfig
+> @@ -5,6 +5,53 @@ menuconfig ARCH_BCM
+>  
+>  if ARCH_BCM
+>  
+> +menu "iProc SoC based Machine types"
+> +	config ARCH_BCM_IPROC
+> +		bool "Broadcom ARMv7 iProc boards" if ARCH_MULTI_V7
+> +		depends on ARCH_BCM_CYGNUS || ARCH_BCM_5301X
+
+Please make this a silent option by dropping the text after 'bool',
+and the 'depends on' line.
+
+> +		select ARM_GIC
+> +		select CACHE_L2X0
+> +		select HAVE_ARM_SCU if SMP
+> +		select HAVE_ARM_TWD if SMP
+> +		select ARM_GLOBAL_TIMER
+> +
+> +		select CLKSRC_MMIO
+> +		select ARCH_REQUIRE_GPIOLIB
+> +		select ARM_AMBA
+> +		select PINCTRL
+
+> +
+> +static const char const *bcm_cygnus_dt_compat[] = {
+> +	"brcm,cygnus",
+> +	NULL,
+> +};
+> +
+> +DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
+> +	.l2c_aux_val	= 0,
+> +	.l2c_aux_mask	= ~0,
+> +	.dt_compat = bcm_cygnus_dt_compat,
+> +MACHINE_END
 > 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This looks good now.
+
+	Arnd
