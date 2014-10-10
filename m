@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaJJFRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 01:17:17 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:12222 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750758AbaJJFRN (ORCPT
+	id S1751455AbaJJFTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 01:19:01 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:41799 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaJJFS7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 01:17:13 -0400
-X-AuditID: cbfec7f4-b7f156d0000063c7-c8-54376bd61b82
-Message-id: <54376BD5.3000002@samsung.com>
-Date: Fri, 10 Oct 2014 07:17:09 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mina86@mina86.com, andrzej.p@samsung.com,
-        m.szyprowski@samsung.com
-Subject: Re: [PATCH] usb: gadget: f_fs: remove redundant ffs_data_get()
-References: <1412840476-2767-1-git-send-email-r.baldyga@samsung.com>
- <20141009142117.GB16002@saruman>
-In-reply-to: <20141009142117.GB16002@saruman>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xa7rXss1DDO6c1bCY9bKdxeLg/XqL
-	5sXr2Swu75rDZrFoWSuzxdojd9ktFhxvYXVg99g/dw27x7o/r5g8+rasYvQ4fmM7k8fnTXIB
-	rFFcNimpOZllqUX6dglcGVuOPGAumMtR8e1YP3MD4yO2LkZODgkBE4m7U1+wQthiEhfurQeK
-	c3EICSxllPi8bTU7hPORUeLnnhvsIFW8AloSE+d3MoPYLAKqEkf2rwaz2QR0JLZ8n8AIYosK
-	REicvLsHql5Q4sfkeywgtoiAgMT6F5fAhjILzGeU6Or6CtYgLOAu8fL1ATBbSCBdounSF7Ch
-	nAK6Els/7gZq4ABq0JO4f1ELJMwsIC+xec1b5gmMArOQrJiFUDULSdUCRuZVjKKppckFxUnp
-	uYZ6xYm5xaV56XrJ+bmbGCEh/mUH4+JjVocYBTgYlXh4L8iYhwixJpYVV+YeYpTgYFYS4dU3
-	BQrxpiRWVqUW5ccXleakFh9iZOLglGpgZG12jW4Sk/l3NF75gbv7NXNH3xQ2HxG152te5Aje
-	tzV1fT9139Hoa6c//Hl0OpJb4YaDo/3vsoM+U3S9t/NVB/8W1Diq8mKXrWjTjgk5pd42Oh9n
-	Vl+O51ec/jHVNT5Va+/p05t01bb/On1L0sjaq2eqRdZcX7e5c/5va99jvSS/m1EqZLugEktx
-	RqKhFnNRcSIA2kgfbE8CAAA=
+	Fri, 10 Oct 2014 01:18:59 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Matthew Vick <matthew.vick@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Linux NICS <linux.nics@intel.com>,
+        e1000-devel@lists.sourceforge.net (open list:INTEL ETHERNET DR...),
+        netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2] networking: fm10k: Fix build failure
+Date: Fri, 10 Oct 2014 01:19:06 -0400
+Message-Id: <1412918346-24763-1-git-send-email-bobby.prani@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/2014 04:21 PM, Felipe Balbi wrote:
-> On Thu, Oct 09, 2014 at 09:41:16AM +0200, Robert Baldyga wrote:
->> During FunctionFS bind, ffs_data_get() function was called twice
->> (in functionfs_bind() and in ffs_do_functionfs_bind()), while on unbind
->> ffs_data_put() was called once (in functionfs_unbind() function).
->> In result refcount never reached value 0, and ffs memory resources has
->> been never released.
->>
->> Since ffs_data_get() call in ffs_do_functionfs_bind() is redundant
->> and not neccessary, we remove it to have equal number of gets ans puts,
->> and free allocated memory after refcount reach 0.
->>
->> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> 
-> Which commit is this fixing ? does it deserve a stable backport ? How
-> far back ?
-> 
+The latest linus git tip (3.18-rc1) fails with the following build failure. Fix
+this by making PTP support explicit for fm10k driver.
 
-The problem starts with commit 5920cda627688c3229fd63157ff031f3f174175e
-[usb: gadget: FunctionFS: convert to new function interface with
-backward compatibility].
+rivers/built-in.o: In function `fm10k_ptp_register':
+(.text+0x12e760): undefined reference to `ptp_clock_registER'
+drivers/built-in.o: In function `fm10k_ptp_unregister':
+(.text+0x12e7dc): undefined reference to `ptp_clock_unregister'
+Makefile:930: recipe for target 'vmlinux' failed
 
-This bug causes memory leak so I think it should be in stable too.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ drivers/net/ethernet/intel/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks,
-Robert Baldyga
+diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
+index 6a6d5ee..6919adb 100644
+--- a/drivers/net/ethernet/intel/Kconfig
++++ b/drivers/net/ethernet/intel/Kconfig
+@@ -304,6 +304,7 @@ config FM10K
+ 	tristate "Intel(R) FM10000 Ethernet Switch Host Interface Support"
+ 	default n
+ 	depends on PCI_MSI
++	select PTP_1588_CLOCK
+ 	---help---
+ 	  This driver supports Intel(R) FM10000 Ethernet Switch Host
+ 	  Interface.  For more information on how to identify your adapter,
+-- 
+1.9.1
+
