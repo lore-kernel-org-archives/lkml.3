@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484AbaJJV12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 17:27:28 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:42447 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318AbaJJV00 (ORCPT
+	id S1755526AbaJJV1n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 17:27:43 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:49207 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368AbaJJV0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 17:26:26 -0400
+	Fri, 10 Oct 2014 17:26:24 -0400
 From: Kever Yang <kever.yang@rock-chips.com>
 To: heiko@sntech.de
 Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
@@ -15,9 +15,9 @@ Cc: dianders@chromium.org, sonnyrao@chromium.org, addy.ke@rock-chips.com,
         Kever Yang <kever.yang@rock-chips.com>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 3/6] ARM: rockchip: add option to access the pmu via a phandle in smp_operations
-Date: Fri, 10 Oct 2014 14:26:07 -0700
-Message-Id: <1412976370-14468-4-git-send-email-kever.yang@rock-chips.com>
+Subject: [PATCH v3 1/6] ARM: rockchip: convert to regmap and use pmu syscon if available
+Date: Fri, 10 Oct 2014 14:26:05 -0700
+Message-Id: <1412976370-14468-2-git-send-email-kever.yang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1412976370-14468-1-git-send-email-kever.yang@rock-chips.com>
 References: <1412976370-14468-1-git-send-email-kever.yang@rock-chips.com>
@@ -25,47 +25,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes it possible to define a rockchip,pmu phandle in the cpus node directly
-referencing the pmu syscon instead of searching for specific compatible.
+The pmu register space is - like the GRF - shared by quite some peripherals.
+On the rk3188 and rk3288 even parts of the pinctrl are living there.
+Therefore we normally shouldn't map it a second time when the syscon
+does this already.
 
-The old way of finding the pmu stays of course available.
+Therefore convert the cpu power-domain handling to access the pmu via a
+regmap and at first try to get it via the syscon interface.
+Getting this syscon will only fail if the pmu node does not have the
+"syscon" compatible and thus does not get shared with other drivers.
+
+In this case we map it like before and create the necessary regmap on
+top of it.
 
 Signed-off-by: Heiko Stuebner <heiko@sntech.de>
 Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
 ---
 
 Changes in v3:
-- add this patch
+- add this patch in version 3
 
 Changes in v2: None
 
- arch/arm/mach-rockchip/platsmp.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/arm/mach-rockchip/platsmp.c | 104 +++++++++++++++++++++++++++++----------
+ 1 file changed, 78 insertions(+), 26 deletions(-)
 
 diff --git a/arch/arm/mach-rockchip/platsmp.c b/arch/arm/mach-rockchip/platsmp.c
-index 4c36fbf..57b53b3 100644
+index 189684f..4c36fbf 100644
 --- a/arch/arm/mach-rockchip/platsmp.c
 +++ b/arch/arm/mach-rockchip/platsmp.c
-@@ -155,6 +155,19 @@ static int __init rockchip_smp_prepare_pmu(void)
- 	struct device_node *node;
- 	void __iomem *pmu_base;
+@@ -19,6 +19,8 @@
+ #include <linux/io.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/regmap.h>
++#include <linux/mfd/syscon.h>
  
-+	/*
-+	 * This function is only called via smp_ops->smp_prepare_cpu().
-+	 * That only happens if a "/cpus" device tree node exists
-+	 * and has an "enable-method" property that selects the SMP
-+	 * operations defined herein.
-+	 */
-+	node = of_find_node_by_path("/cpus");
+ #include <asm/cacheflush.h>
+ #include <asm/cp15.h>
+@@ -37,23 +39,42 @@ static int ncores;
+ 
+ #define PMU_PWRDN_SCU		4
+ 
+-static void __iomem *pmu_base_addr;
++static struct regmap *pmu;
+ 
+-static inline bool pmu_power_domain_is_on(int pd)
++static int pmu_power_domain_is_on(int pd)
+ {
+-	return !(readl_relaxed(pmu_base_addr + PMU_PWRDN_ST) & BIT(pd));
++	u32 val;
++	int ret;
 +
-+	pmu = syscon_regmap_lookup_by_phandle(node, "rockchip,pmu");
-+	of_node_put(node);
++	ret = regmap_read(pmu, PMU_PWRDN_ST, &val);
++	if (ret < 0)
++		return ret;
++
++	return !(val & BIT(pd));
+ }
+ 
+-static void pmu_set_power_domain(int pd, bool on)
++static int pmu_set_power_domain(int pd, bool on)
+ {
+-	u32 val = readl_relaxed(pmu_base_addr + PMU_PWRDN_CON);
+-	if (on)
+-		val &= ~BIT(pd);
+-	else
+-		val |=  BIT(pd);
+-	writel(val, pmu_base_addr + PMU_PWRDN_CON);
+-
+-	while (pmu_power_domain_is_on(pd) != on) { }
++	u32 val = (on) ? 0 : BIT(pd);
++	int ret;
++
++	ret = regmap_update_bits(pmu, PMU_PWRDN_CON, BIT(pd), val);
++	if (ret < 0) {
++		pr_err("%s: could not update power domain\n", __func__);
++		return ret;
++	}
++
++	ret = -1;
++	while (ret != on) {
++		ret = pmu_power_domain_is_on(pd);
++		if (ret < 0) {
++			pr_err("%s: could not read power domain state\n",
++				 __func__);
++			return ret;
++		}
++	}
++
++	return 0;
+ }
+ 
+ /*
+@@ -63,7 +84,7 @@ static void pmu_set_power_domain(int pd, bool on)
+ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+ 					     struct task_struct *idle)
+ {
+-	if (!sram_base_addr || !pmu_base_addr) {
++	if (!sram_base_addr || !pmu) {
+ 		pr_err("%s: sram or pmu missing for cpu boot\n", __func__);
+ 		return -ENXIO;
+ 	}
+@@ -75,9 +96,7 @@ static int __cpuinit rockchip_boot_secondary(unsigned int cpu,
+ 	}
+ 
+ 	/* start the core */
+-	pmu_set_power_domain(0 + cpu, true);
+-
+-	return 0;
++	return pmu_set_power_domain(0 + cpu, true);
+ }
+ 
+ /**
+@@ -125,6 +144,48 @@ static int __init rockchip_smp_prepare_sram(struct device_node *node)
+ 	return 0;
+ }
+ 
++static struct regmap_config rockchip_pmu_regmap_config = {
++	.reg_bits = 32,
++	.val_bits = 32,
++	.reg_stride = 4,
++};
++
++static int __init rockchip_smp_prepare_pmu(void)
++{
++	struct device_node *node;
++	void __iomem *pmu_base;
++
++	pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
 +	if (!IS_ERR(pmu))
 +		return 0;
 +
- 	pmu = syscon_regmap_lookup_by_compatible("rockchip,rk3066-pmu");
- 	if (!IS_ERR(pmu))
- 		return 0;
++	/* fallback, create our own regmap for the pmu area */
++	pmu = NULL;
++	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
++	if (!node) {
++		pr_err("%s: could not find pmu dt node\n", __func__);
++		return -ENODEV;
++	}
++
++	pmu_base = of_iomap(node, 0);
++	if (!pmu_base) {
++		pr_err("%s: could not map pmu registers\n", __func__);
++		return -ENOMEM;
++	}
++
++	pmu = regmap_init_mmio(NULL, pmu_base, &rockchip_pmu_regmap_config);
++	if (IS_ERR(pmu)) {
++		int ret = PTR_ERR(pmu);
++
++		iounmap(pmu_base);
++		pmu = NULL;
++		pr_err("%s: regmap init failed\n", __func__);
++		return ret;
++	}
++
++	return 0;
++}
++
+ static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	struct device_node *node;
+@@ -151,17 +212,8 @@ static void __init rockchip_smp_prepare_cpus(unsigned int max_cpus)
+ 	if (rockchip_smp_prepare_sram(node))
+ 		return;
+ 
+-	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3066-pmu");
+-	if (!node) {
+-		pr_err("%s: could not find pmu dt node\n", __func__);
++	if (rockchip_smp_prepare_pmu())
+ 		return;
+-	}
+-
+-	pmu_base_addr = of_iomap(node, 0);
+-	if (!pmu_base_addr) {
+-		pr_err("%s: could not map pmu registers\n", __func__);
+-		return;
+-	}
+ 
+ 	/* enable the SCU power domain */
+ 	pmu_set_power_domain(PMU_PWRDN_SCU, true);
 -- 
 1.9.1
 
