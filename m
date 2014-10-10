@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaJJIOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 04:14:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56899 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaJJIOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 04:14:18 -0400
-Date: Fri, 10 Oct 2014 10:14:13 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: [GIT PULL] UDF and quota changes for 3.18-rc1
-Message-ID: <20141010081413.GC3076@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751995AbaJJIOf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 04:14:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38978 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaJJIOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 04:14:31 -0400
+Message-ID: <1412928866.3491.1.camel@pengutronix.de>
+Subject: Re: [PATCHv2] reset: add reset_control_status helper function
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: dinguyen@opensource.altera.com
+Cc: dinh.linux@gmail.com, atull@opensource.altera.com,
+        linux-kernel@vger.kernel.org
+Date: Fri, 10 Oct 2014 10:14:26 +0200
+In-Reply-To: <1412887494-16442-1-git-send-email-dinguyen@opensource.altera.com>
+References: <1412887494-16442-1-git-send-email-dinguyen@opensource.altera.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+Hi Dinh,
 
-  could you please pull from
+you forgot one s/^+unsigned int/+int/ below.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
+Am Donnerstag, den 09.10.2014, 15:44 -0500 schrieb dinguyen@opensource.altera.com:
+[...]
+> @@ -126,6 +126,19 @@ int reset_control_deassert(struct reset_control *rstc)
+>  EXPORT_SYMBOL_GPL(reset_control_deassert);
+>  
+>  /**
+> + * reset_control_status - returns a status of a reset bit
+> + * @rstc: reset controller
 
-to get a few UDF fixes and also a few patches which are preparing
-filesystems for support of project quotas in VFS.
++ *
++ * Returns a negative errno if not supported, a positive value if the reset
++ * line is asserted, or zero if the reset line is not asserted.
 
-Top of the tree is 6174c2eb8ece. The full shortlog is:
+Maybe add something like this?
 
-Fabian Frederick (1):
-      udf: remove redundant sys_tz declaration
+[...]
+> diff --git a/include/linux/reset-controller.h b/include/linux/reset-controller.h
+> index 41a4695..ce6b962 100644
+> --- a/include/linux/reset-controller.h
+> +++ b/include/linux/reset-controller.h
+> @@ -12,11 +12,13 @@ struct reset_controller_dev;
+>   *         things to reset the device
+>   * @assert: manually assert the reset line, if supported
+>   * @deassert: manually deassert the reset line, if supported
+> + * @status: return the status of the reset line, if supported
+>   */
+>  struct reset_control_ops {
+>  	int (*reset)(struct reset_controller_dev *rcdev, unsigned long id);
+>  	int (*assert)(struct reset_controller_dev *rcdev, unsigned long id);
+>  	int (*deassert)(struct reset_controller_dev *rcdev, unsigned long id);
+> +	int (*status)(struct reset_controller_dev *rcdev, unsigned long id);
+>  };
+>  
+>  struct module;
+> diff --git a/include/linux/reset.h b/include/linux/reset.h
+> index 349f150..f7c76f2 100644
+> --- a/include/linux/reset.h
+> +++ b/include/linux/reset.h
+> @@ -10,6 +10,7 @@ struct reset_control;
+>  int reset_control_reset(struct reset_control *rstc);
+>  int reset_control_assert(struct reset_control *rstc);
+>  int reset_control_deassert(struct reset_control *rstc);
+> +unsigned int reset_control_status(struct reset_control *rstc);
 
-Jan Kara (6):
-      udf: Fix race between write(2) and close(2)
-      ext3: Don't use MAXQUOTAS value
-      reiserfs: Don't use MAXQUOTAS value
-      ocfs2: Don't use MAXQUOTAS value
-      ocfs2: Back out change to use OCFS2_MAXQUOTAS in ocfs2_setattr()
-      udf: Fix loading of special inodes
+int
+ 
+>  struct reset_control *reset_control_get(struct device *dev, const char *id);
+>  void reset_control_put(struct reset_control *rstc);
+[...]
 
-The diffstat is
+regards
+Philipp
 
- fs/ext3/ext3.h          | 12 +++++++-----
- fs/ext3/super.c         | 14 +++++++-------
- fs/ocfs2/file.c         |  2 +-
- fs/ocfs2/quota.h        |  5 ++++-
- fs/ocfs2/quota_global.c |  4 ++--
- fs/ocfs2/quota_local.c  | 33 +++++++++++++++++----------------
- fs/ocfs2/super.c        | 30 +++++++++++++++++-------------
- fs/reiserfs/reiserfs.h  |  5 ++++-
- fs/reiserfs/super.c     | 16 ++++++++--------
- fs/udf/file.c           |  9 ++++++++-
- fs/udf/inode.c          | 14 +++++++++-----
- fs/udf/super.c          | 10 +++++-----
- fs/udf/udfdecl.h        | 13 ++++++++++++-
- fs/udf/udftime.c        |  2 --
- 14 files changed, 101 insertions(+), 68 deletions(-)
-
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
