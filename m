@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaJJRRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 13:17:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22974 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751264AbaJJRRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 13:17:51 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: David Jeffery <djeffery@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Return short read or 0 at end of a raw device, not EIO
-References: <20140929142110.GA12562@fury.redhat.com>
-	<20140929190509.GA2767@infradead.org> <5429D84B.7080902@redhat.com>
-	<20140930152840.GA9666@infradead.org> <542ADC33.2040804@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 10 Oct 2014 13:17:28 -0400
-In-Reply-To: <542ADC33.2040804@redhat.com> (David Jeffery's message of "Tue,
-	30 Sep 2014 12:37:07 -0400")
-Message-ID: <x49fvevkfo7.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753229AbaJJR0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 13:26:31 -0400
+Received: from g2t1383g.austin.hp.com ([15.217.136.92]:18329 "EHLO
+	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaJJR03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 13:26:29 -0400
+From: Jerry Hoemann <jerry.hoemann@hp.com>
+To: akpm@linux-foundation.org, jeffrey.t.kirsher@intel.com,
+        kenhelias@firemail.de
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, tmak@hp.com,
+        Jerry Hoemann <jerry.hoemann@hp.com>
+Subject: [PATCH 0/1] fsnotify: next_i is freed during
+Date: Fri, 10 Oct 2014 11:26:13 -0600
+Message-Id: <1412961974-21917-1-git-send-email-jerry.hoemann@hp.com>
+X-Mailer: git-send-email 1.7.11.3
+In-Reply-To: <234>
+References: <234>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Jeffery <djeffery@redhat.com> writes:
+Resending to CC linux-fsdevel@vger.kernel.org.....
 
-> On 09/30/2014 11:28 AM, Christoph Hellwig wrote:
->> On Mon, Sep 29, 2014 at 06:08:11PM -0400, David Jeffery wrote:
->>> On 09/29/2014 03:05 PM, Christoph Hellwig wrote:
->>>> Seems like this should be changed in the generic code, or is there some
->>>> reason why it would return EIO only for devices, but not for regular
->>>> files in this case?
->>>>
->>>
->>> Regular files shouldn't be returning EIO and don't in my tests. The file
->>> systems manage direct I/O EOF handling in their own block or direct_IO
->>> callbacks.  Block devices do not and instead do the size checks up
->>> front.  Raw devices were bypassing the block device check, so only the
->>> raw driver should be having this issue.
->> 
->> So I guess the problem is commit
->> 
->> "blkdev_aio_read(): switch to generic_file_read_iter(), get rid of iov_shorten()"
->> 
->> which removes the iov_shorten call in blkdev_aio_read?  This should be
->> mentioned in the changelog.
->> 
->> But maybe we should instead make block devices behave more similar to
->> regular files in this respect?
->
-> The issue's origin should be with bbec0270bdd8 "blkdev_max_block: make
-> private to fs/buffer.c".  This change intentionally removed the size
-> checks from blkdev_get_block() to avoid issues with the size variables
-> changing underneath the calls.  Commit 684c9aaebbb0 is the initial
-> commit to add the size checks with blkdev_aio_read() since
-> blkdev_get_block() no longer checks size.  As the raw driver was also
-> dependent on the size checks in blkdev_get_block(), it was broken by
-> bbec0270bdd8 but not fixed at all by 684c9aaebbb0.
->
->> 
->> Also did you make sure to add your regression test somewhere, e.g. ltp?
->> 
->
-> No I have not.  I'll see about an ltp test.
 
-Christoph, do you have any issues with the patch as it stands?  Whose
-tree do you think this should go through?  akpm's?
+During file system stress testing on 3.10 and 3.12 based kernels,
+the umount command occasionally hung in fsnotify_unmount_inodes
+in the section of code:
 
-Cheers,
-Jeff
+                spin_lock(&inode->i_lock);
+                if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+                        spin_unlock(&inode->i_lock);
+                        continue;
+                }
+
+As this section of code holds the global inode_sb_list_lock, eventually
+the system hangs trying to acquire the lock.
+
+Multiple crash dumps showed:
+
+The inode->i_state == 0x60 and i_count == 0 and i_sb_list would point
+back at itself.  As this is not the value of list upon entry to the
+function, the kernel never exits the loop.
+
+To help narrow down problem, the call to list_del_init in inode_sb_list_del
+was changed to list_del.  This poisons the pointers in the i_sb_list
+and causes a kernel to panic if it transverse a freed inode.
+
+Subsequent stress testing paniced in fsnotify_unmount_inodes at the bottom
+of the list_for_each_entry_safe loop showing next_i had become free.
+
+We believe the root cause of the problem is that next_i is being freed during
+the window of time that the list_for_each_entry_safe loop temporarily releases
+inode_sb_list_lock to call fsnotify and fsnotify_inode_delete.
+
+The code in fsnotify_unmount_inodes attempts to prevent the freeing
+of inode and next_i by calling __iget.  However, the code doesn't
+do the __iget call on next_i
+	if i_count == 0 or
+	if i_state & (I_FREEING | I_WILL_FREE)
+
+
+The patch addresses this issue by advancing next_i in the above two
+cases until we either find a next_i which we can __iget or we reach
+the end of the list.  This makes the handling of next_i more closely
+match the handling of the variable "inode."
+
+The time to reproduce the hang is highly variable (from hours to days.)
+We ran the stress test on a 3.10 kernel with the proposed patch for a
+week without failure.
+
+Jerry Hoemann (1):
+  fsnotify: next_i is freed during fsnotify_unmount_inodes.
+
+ fs/notify/inode_mark.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+-- 
+1.7.11.3
+
