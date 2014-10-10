@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752228AbaJJK1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:27:11 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:43307 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080AbaJJK1I (ORCPT
+	id S1752538AbaJJKcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:32:14 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:56681 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaJJKcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:27:08 -0400
-Message-ID: <5437B462.4050102@gmail.com>
-Date: Fri, 10 Oct 2014 18:26:42 +0800
-From: Wanpeng Li <kernellwp@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 10 Oct 2014 06:32:13 -0400
+X-ASG-Debug-ID: 1412937131-0759e748284316e0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Fri, 10 Oct 2014 12:32:09 +0200
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: <stable@vger.kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
+ products
+Message-ID: <20141010103209.GG3588@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
+ products
+References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
+ <1412934728-23475-1-git-send-email-frans.klaver@xsens.com>
+ <20141010095400.GE12494@localhost>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
-        Kirill V Tkhai <tkhai@yandex.ru>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/deadline: do not try to push tasks if pinned task
- switches to dl
-References: <1412908997-15396-1-git-send-email-wanpeng.li@linux.intel.com> <20141010101016.GJ10832@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141010101016.GJ10832@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20141010095400.GE12494@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1412937131
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10406
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 10, 2014 at 11:54:00AM +0200, Johan Hovold wrote:
+> On Fri, Oct 10, 2014 at 11:52:08AM +0200, Frans Klaver wrote:
+> > Add new IDs for the Xsens Awinda Station and Awinda Dongle.
+> > 
+> > While at it, order the definitions by PID and add a logical separation
+> > between devices using Xsens' VID and those using FTDI's VID.
+> > 
+> > Cc: <stable@vger.kernel.org>
+> > Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+> > ---
+> > Third time's a charm.
+> 
+> Thanks for your persistence. :)
 
-于 10/10/14, 6:10 PM, Peter Zijlstra 写道:
-> On Fri, Oct 10, 2014 at 10:43:17AM +0800, Wanpeng Li wrote:
->> As Kirill mentioned(https://lkml.org/lkml/2013/1/29/118):
->> | If rq has already had 2 or more pushable tasks and we try to add a
->> | pinned task then call of push_rt_task will just waste a time.
->>
->> Just switched pinned task is not able to be pushed. If the rq had had
->> several dl tasks before they have already been considered as candidates
->> to be pushed (or pulled). This patch does the same behavior as rt class
->> which introduced by commit 104479 (sched/rt: Do not try to push tasks
->> if pinned task switches to RT).
-> Checkpatch rightly complains:
->
-> ERROR: Please use 12 or more chars for the git commit ID like: 'commit 10447917551e ("sched/rt: Do not try to push tasks if pinned task switches to RT")'
-> #12:
-> which introduced by commit 104479 (sched/rt: Do not try to push tasks
+No problem. I plan on persisting for a couple of more decades.
 
-I also got this warning before send out the patch, however, I check 6 
-chars is enough for this commit. Anyway, I will send a newer version later.
-
-Regards,
-Wanpeng Li
-
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+Thanks,
+Frans
