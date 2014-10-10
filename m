@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaJJHvR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 03:51:17 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:50851 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaJJHvN (ORCPT
+	id S1752022AbaJJHvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 03:51:44 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57070 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaJJHvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 03:51:13 -0400
-Date: Fri, 10 Oct 2014 08:51:10 +0100
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, Christoph Hellwig <hch@lst.de>,
-        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>
-Subject: [PATCH 1/3] Revert "Drivers: add blist flags"
-Message-ID: <20141010075110.GB32028@sucs.org>
-References: <20141010074901.GA32028@sucs.org>
+	Fri, 10 Oct 2014 03:51:40 -0400
+Date: Fri, 10 Oct 2014 09:51:28 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+Cc: chris@printf.net, ulf.hansson@linaro.org, shc_work@mail.ru,
+        peter.griffin@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, agust@denx.de, gsi@denx.de,
+        sbabic@denx.de
+Subject: Re: [PATCH v2 2/2] mmc: mxcmmc: fix the default value for available
+ voltages into mxcmci_probe
+Message-ID: <20141010075128.GP4992@pengutronix.de>
+References: <1412778273-13464-1-git-send-email-matteo.facchinetti@sirius-es.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141010074901.GA32028@sucs.org>
+In-Reply-To: <1412778273-13464-1-git-send-email-matteo.facchinetti@sirius-es.it>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:50:45 up 30 days, 38 min, 86 users,  load average: 0.08, 0.11,
+ 0.19
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit f3cfabce7a2e92564d380de3aad4b43901fb7ae6 (Drivers:
-add blist flags) as it does not enable thin provisioning for my Hyper-V 2012 R2
-virtual disks.
+On Wed, Oct 08, 2014 at 04:24:33PM +0200, Matteo Facchinetti wrote:
+> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+> 
+> If available voltages are not given, mmc_regulator_get_supply() function
+> returns 0 and mxcmmc driver doesn't set a value for ocr_avail mask.
+> 
+> In accordance with the comment in platform_data/mmc-mxcmmc.h,
+> fix it, assuming MMC_VDD_32_33 | MMC_VDD_33_34 as default value.
+> 
+> Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
 
-Signed-off-by: Sitsofe Wheeler <sitsofe@yahoo.com>
----
- drivers/scsi/storvsc_drv.c | 10 ----------
- 1 file changed, 10 deletions(-)
+Looks okay now.
 
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index 733e5f7..2cc094e 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -327,8 +327,6 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-  */
- static int storvsc_timeout = 180;
- 
--static int msft_blist_flags = BLIST_TRY_VPD_PAGES;
--
- #define STORVSC_MAX_IO_REQUESTS				200
- 
- static void storvsc_on_channel_callback(void *context);
-@@ -1439,14 +1437,6 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 
- 	sdevice->no_write_same = 1;
- 
--	/*
--	 * Add blist flags to permit the reading of the VPD pages even when
--	 * the target may claim SPC-2 compliance. MSFT targets currently
--	 * claim SPC-2 compliance while they implement post SPC-2 features.
--	 * With this patch we can correctly handle WRITE_SAME_16 issues.
--	 */
--	sdevice->sdev_bflags |= msft_blist_flags;
--
- 	return 0;
- }
- 
+Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
+> ---
+> v2:
+> * Add test to check if mmc->ocr_avail is setted by mmc_regulator_get_supply().
+>   This will prevent that it be overwritten unconditionally.
+> ---
+>  drivers/mmc/host/mxcmmc.c | 12 +++++++-----
+>  1 file changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+> index 536a898..5316d9b 100644
+> --- a/drivers/mmc/host/mxcmmc.c
+> +++ b/drivers/mmc/host/mxcmmc.c
+> @@ -1077,12 +1077,14 @@ static int mxcmci_probe(struct platform_device *pdev)
+>  		dat3_card_detect = true;
+>  
+>  	ret = mmc_regulator_get_supply(mmc);
+> -	if (ret) {
+> -		if (pdata && ret != -EPROBE_DEFER)
+> -			mmc->ocr_avail = pdata->ocr_avail ? :
+> -				MMC_VDD_32_33 | MMC_VDD_33_34;
+> +	if (ret == -EPROBE_DEFER)
+> +		goto out_free;
+> +
+> +	if (!mmc->ocr_avail) {
+> +		if (pdata && pdata->ocr_avail)
+> +			mmc->ocr_avail = pdata->ocr_avail;
+>  		else
+> -			goto out_free;
+> +			mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+>  	}
+>  
+>  	if (dat3_card_detect)
+> -- 
+> 1.8.3.2
+> 
+> 
+
 -- 
-1.9.3
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
