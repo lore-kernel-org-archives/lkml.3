@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaJJJah (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 05:30:37 -0400
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:47761 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137AbaJJJae (ORCPT
+	id S1754112AbaJJJck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 05:32:40 -0400
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:42537 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018AbaJJJci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 05:30:34 -0400
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="48120885"
-Message-ID: <5437A737.2030509@broadcom.com>
-Date: Fri, 10 Oct 2014 11:30:31 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Fri, 10 Oct 2014 05:32:38 -0400
+X-ASG-Debug-ID: 1412933556-0759e7482841cfb0002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Frans Klaver <frans.klaver@xsens.com>, <stable@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Date: Fri, 10 Oct 2014 11:32:27 +0200
+X-ASG-Orig-Subj: [PATCH v2] usb: serial: ftdi_sio: add Awinda Station and Dongle products
+Message-ID: <1412933547-10906-1-git-send-email-frans.klaver@xsens.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
+References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
 MIME-Version: 1.0
-To: Hauke Mehrtens <hauke@hauke-m.de>
-CC: Guenter Roeck <linux@roeck-us.net>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
-References: <1412872877-1771-1-git-send-email-linux@roeck-us.net> <CACna6rzOeGcKrrftLx_3uWe_bAXQaQMmWb3wWHP0CjtdO8D0eg@mail.gmail.com> <5436C2B4.6030801@broadcom.com> <5436C367.5080908@broadcom.com> <20141009172924.GD2410@roeck-us.net> <5436D3CF.2030506@hauke-m.de> <20141009192520.GA6552@roeck-us.net> <54370298.2040502@hauke-m.de>
-In-Reply-To: <54370298.2040502@hauke-m.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [172.16.11.125]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1412933556
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://filter1.ibarracuda.nl:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10404
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09/14 23:48, Hauke Mehrtens wrote:
-> On 10/09/2014 09:25 PM, Guenter Roeck wrote:
->> On Thu, Oct 09, 2014 at 08:28:31PM +0200, Hauke Mehrtens wrote:
->>> On 10/09/2014 07:29 PM, Guenter Roeck wrote:
->>>> On Thu, Oct 09, 2014 at 07:18:31PM +0200, Arend van Spriel wrote:
->>>>> On 10/09/14 19:15, Arend van Spriel wrote:
->>>>>> On 10/09/14 18:54, Rafał Miłecki wrote:
->>>>>>> On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net>  wrote:
->>>>>>>> Commit 2101e533f41a ("bcma: register bcma as device tree driver")
->>>>>>>> introduces a hard dependency on OF_ADDRESS into the bcma driver.
->>>>>>>> OF_ADDRESS is specifically disabled for the sparc architecture.
->>>>>>>> This results in the following error when building sparc64:allmodconfig.
->>>>>>
->>>>>> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF and
->>>>>> !CONFIG_OF_ADDRESS? Does that makes sense?
->>>>>
->>>>> Is CONFIG_OF is used on sparc to access OpenBoot information?
->>>>>
->>>> I have no idea. All I know is that the driver doesn't build anymore with OF
->>>> enabled and OF_ADDRESS disabled.
->>>
->>> Device tree support in bcma is only needed on some SoC, when this is
->>> used on a PCIe card it is not needed.
->>>
->>> I would just deactivate the parts that are using device tree in bcma
->>> when it is not available. I will send a patch after having something to eat.
->>>
->> Devicetree dependency is already covered with #ifdef CONFIG_OF. Problem is
->> that it really needs #ifdef CONFIG_OF_ADDRESS. Though even that might be
->> better than my patch, since it would at least build the driver on sparc
->> as it used to do.
->>
->>> Is there a better method which is compatible with SPARC than using
->>> of_translate_address() to get the reg address and also take the ranges
->>> attribute of the bus into account?
->>>
->> No idea, sorry. Can you by any chance use pcie device information
->> instead of depending on devicetree data ?
->
-> Device tree is not used for PCIe devices in bcma. We only use it when
-> bcma is used for the system bus on some Broadcom SoCs, currently there
-> is no plan to use device tree for PCIe devices in bcma. I think bcma is
-> only used on wifi cards connected via PCIe on Sparc systems.
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-When we mainlined I verified the brcmsmac was working on a sparc system. 
-However, at that time we were not using BCMA. I do not recall whether or 
-not we tested on sparc with BCMA support. I might give it a spin again.
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
 
-Regards,
-Arend
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+---
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index dc72b92..e4eccb6 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -661,6 +661,8 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 5937b2d..b68084c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
+-- 
+2.1.0
+
