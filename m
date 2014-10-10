@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850AbaJJLfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:35:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60622 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaJJLfl (ORCPT
+	id S1752018AbaJJLfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:35:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:56311 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347AbaJJLfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Oct 2014 07:35:41 -0400
-X-AuditID: cbfee68f-f791c6d000004834-d5-5437c48a9523
+X-AuditID: cbfee690-f79ab6d0000046f7-d4-5437c48ab322
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: broonie@kernel.org
 Cc: lgirdwood@gmail.com, grant.likely@linaro.org, robh+dt@kernel.org,
         kyungmin.park@samsung.com, javier@dowhile0.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv5 1/3] regulator: of: Add support for parsing regulator_state
- for suspend state
-Date: Fri, 10 Oct 2014 20:35:33 +0900
-Message-id: <1412940935-14721-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv5 0/3] regulator: of: Add support for parsing regulator suspend
+ state
+Date: Fri, 10 Oct 2014 20:35:32 +0900
+Message-id: <1412940935-14721-1-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-In-reply-to: <1412940935-14721-1-git-send-email-cw00.choi@samsung.com>
-References: <1412940935-14721-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkWLfriHmIQddTQ4upD5+wWVz/8pzV
-	Yv6Rc6wWB/7sYLS49nsGm8XZpjfsFt+udDBZXN41h82ide8RdgdOj7+zW5k9ds66y+6xaVUn
-	m8eda3vYPPq2rGL0+LxJLoAtissmJTUnsyy1SN8ugSuj7WYrc8EGoYoLJ/vZGxgX8XcxcnJI
-	CJhIrFj/gAnCFpO4cG89WxcjF4eQwFJGiR3vVzDDFJ361csOkVjEKPHm7RSoqiYmiafv+sHa
-	2QS0JPa/uMEGYosAjbo9p5MZpIhZ4AajxIHty1hAEsICiRI/TvSB2SwCqhKPVkLYvAKuEi9/
-	72CBWCcn8WHPI3YQm1PATWLO1AZGEFsIqGbpx2MsIEMlBNaxS6w9uRxqkIDEt8mHgGwOoISs
-	xKYDUGdLShxccYNlAqPwAkaGVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiBkXD637P+HYx3
-	D1gfYhTgYFTi4dWQNw8RYk0sK67MPcRoCrRhIrOUaHI+MN7ySuINjc2MLExNTI2NzC3NlMR5
-	F0r9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAOM/s343gR/6zLr+Sfc/R7KU8yasvlOEa
-	7xQT/5qLrvcmvE18Nv2g3t1v+j3F5m805oolytoWe0QyX15csfvOK3e9nXVep6Kfq9e+SpRZ
-	9edZ19nNt4red9xZoTqtxVhyauX1DovblYeYvuxdu7x5Q4952rtQhR+c8+IVgvx4OhJsG1dZ
-	dbwzVGIpzkg01GIuKk4EADwxksB/AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd2uI+YhBhsXaFpMffiEzeL6l+es
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsWyRsSkQLfriHmIwbX54hZTHz5hs7j+5Tmr
+	xfwj51gtDvzZwWhx7fcMNouzTW/YLb5d6WCyuLxrDptF694j7A6cHn9ntzJ77Jx1l91j06pO
+	No871/awefRtWcXo8XmTXABbFJdNSmpOZllqkb5dAlfG/v7F7AWHhCvePOxkamD8xd/FyMkh
+	IWAiseHgWWYIW0ziwr31bF2MXBxCAksZJXaf2sXSxcgBVnRiIhdEfBGjRM+iN1BFTUwSj37u
+	A+tmE9CS2P/iBhuILQI06facTmaQImaBG4wSB7YvA5skLBAusfuwOkgNi4CqxKa521lBbF4B
+	V4m9O4+yQ1whJ/FhzyN2kF4JgensErdmd7NBNAhIfJt8COoiWYlNB6CulpQ4uOIGywRGwQWM
+	DKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxAoP69L9nE3Yw3jtgfYhRgINRiYf3gox5iBBr
+	YllxZe4hRlOgDROZpUST84Gxk1cSb2hsZmRhamJqbGRuaaYkzvta6mewkEB6YklqdmpqQWpR
+	fFFpTmrxIUYmDk6pBsZozrcqWxKn1tz9+lZm0dv9tetytp5T3MF3/7jR0kVVNiwKU1n4/oQH
+	LQ6PeDdj7p1lvyac5D9yMcnoadfL7WkFf9gtdoTeXOT9/+dPpYDFv1k2T727RK8prth2k3Bu
+	8aMUFU8XXeHEDQweF31k9qozSKtI/9mVpVQrmeUZd19RbLum+Ir2hwpKLMUZiYZazEXFiQCa
+	yn1lZQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDIsWRmVeSWpSXmKPExsVy+t9jAd2uI+YhBue/8llMffiEzeL6l+es
 	FvOPnGO1OPBnB6PFtd8z2CzONr1ht/h2pYPJ4vKuOWwWrXuPsDtwevyd3crssXPWXXaPTas6
 	2TzuXNvD5tG3ZRWjx+dNcgFsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZK
 	CnmJuam2Si4+AbpumTlAZykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsY
-	M9putjIXbBCquHCyn72BcRF/FyMnh4SAicSpX73sELaYxIV769m6GLk4hAQWMUq8eTsFymli
-	knj6rp8JpIpNQEti/4sbbCC2CFDH7TmdzCBFzAI3GCUObF/GApIQFkiU+HGiD8xmEVCVeLQS
-	wuYVcJV4+XsHC8Q6OYkPex6BreYUcJOYM7WBEcQWAqpZ+vEYywRG3gWMDKsYRVMLkguKk9Jz
-	DfWKE3OLS/PS9ZLzczcxguPsmdQOxpUNFocYBTgYlXh4L8iYhwixJpYVV+YeYpTgYFYS4Z2/
-	FyjEm5JYWZValB9fVJqTWnyI0RToqonMUqLJ+cAUkFcSb2hsYmZkaWRuaGFkbK4kznug1TpQ
-	SCA9sSQ1OzW1ILUIpo+Jg1OqgdHk1jzRbFGNVz0zri1YVpR9qcXgnAP3eUm133GPrlSfXZRd
-	EbZ736oe2/vs79Z62RyQWcdlolhf/YWn7lL18mflV8y2uSnnFSxQ2BAVo/x+K7P1bInl+s0t
-	C9dpvbN79Zfnx5SaBxsOPMwIPiXr/O8G4+INpYvfnV4kYztV+Krwa9kt3ELvvmkpsRRnJBpq
-	MRcVJwIAYv8jQ8kCAAA=
+	M/b3L2YvOCRc8eZhJ1MD4y/+LkYODgkBE4kTE7m6GDmBTDGJC/fWs3UxcnEICSxilOhZ9AbK
+	aWKSePRzHzNIFZuAlsT+FzfYQGwRoI7bczqZQYqYBW4wShzYvowFZKqwQLjE7sPqIDUsAqoS
+	m+ZuZwWxeQVcJfbuPMoOsU1O4sOeR+wTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/d
+	xAiOmWfSOxhXNVgcYhTgYFTi4b0gYx4ixJpYVlyZe4hRgoNZSYR3/l6gEG9KYmVValF+fFFp
+	TmrxIUZToO0TmaVEk/OB8ZxXEm9obGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1tSC1CKaP
+	iYNTqoGx+EzJlh0vZXYLneyV+2+YOF9e9538Ca5LO///qO6s0Q/Oe+obcjSsb1ewS7HJP+nZ
+	nybOc8l+GiwaIWfR1iPLIbTxyaykvGkr882Zek/ke04JXXdkUQN37X4z86SZUtu2lsj3Oy+c
+	eGvvllLLBVM50y1+XF/lkvZa6vWq5b48sxZJXWz9E+CvxFKckWioxVxUnAgASYIIpa8CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,80 +50,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulation_constraints structure includes specific field to support
-suspend state for global PMIC SUSPEND/HIBERNATE mode. This patch add support
-for parsing regulator_state for suspend state.
+The regulators would set different state/mode according to the kind of suspend
+state. So regulation_constraints structure has already regulator suspend state filed.
+This patch parse regulator suspend state from devicetree file.
 
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/regulator/of_regulator.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+I tested this patch on Rinato board (Samsung Gear 2) included S2MPS14 PMIC.
+- The power-consumption in suspend state is 0.6mA after applied this patchset.
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 7a51814..b375ffe 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -19,12 +19,19 @@
- 
- #include "internal.h"
- 
-+const char *const regulator_states[PM_SUSPEND_MAX + 1] = {
-+	[PM_SUSPEND_MEM]	= "regulator-state-mem",
-+	[PM_SUSPEND_MAX]	= "regulator-state-disk",
-+};
-+
- static void of_get_regulation_constraints(struct device_node *np,
- 					struct regulator_init_data **init_data)
- {
- 	const __be32 *min_uV, *max_uV;
- 	struct regulation_constraints *constraints = &(*init_data)->constraints;
--	int ret;
-+	struct regulator_state *suspend_state;
-+	struct device_node *suspend_np;
-+	int ret, i;
- 	u32 pval;
- 
- 	constraints->name = of_get_property(np, "regulator-name", NULL);
-@@ -73,6 +80,36 @@ static void of_get_regulation_constraints(struct device_node *np,
- 	ret = of_property_read_u32(np, "regulator-enable-ramp-delay", &pval);
- 	if (!ret)
- 		constraints->enable_time = pval;
-+
-+	for (i = 0; i < ARRAY_SIZE(regulator_states); i++) {
-+		switch (i) {
-+		case PM_SUSPEND_MEM:
-+			suspend_state = &constraints->state_mem;
-+			break;
-+		case PM_SUSPEND_MAX:
-+			suspend_state = &constraints->state_disk;
-+			break;
-+		case PM_SUSPEND_ON:
-+		case PM_SUSPEND_FREEZE:
-+		case PM_SUSPEND_STANDBY:
-+		default:
-+			continue;
-+		};
-+
-+		suspend_np = of_get_child_by_name(np, regulator_states[i]);
-+		if (!suspend_np || !suspend_state)
-+			continue;
-+
-+		if (of_property_read_bool(suspend_np,
-+					"regulator-on-in-suspend"))
-+			suspend_state->enabled = true;
-+		else if (of_property_read_bool(suspend_np,
-+					"regulator-off-in-suspend"))
-+			suspend_state->disabled = true;
-+
-+		suspend_state = NULL;
-+		suspend_np = NULL;
-+	}
- }
- 
- /**
+For example:
+	ldoX_reg: LDOx {
+		regulator-name = "VAP_XXX_1.2V";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-always-on;
+
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
+	};
+
+Changes from v4:
+- Rebase this patchset on for-next branch of regulator.git
+- Remove 'regulator-volt' property
+- Remove 'regulator-initial-state' property
+- Add example patch[1, patch3] based on Rinato board[2] included S2MPS14 PMIC.
+  S2MPS14 PMIC patch[3] has already implemented '.set_suspend_disable()' func
+  to change the regulator state to reduce power-consumption in suspend-state.
+  [1] ARM: dts: Add sleep mode of regulator for exynos3250-rinato board
+  [2] http://www.spinics.net/lists/linux-samsung-soc/msg37636.html
+      - [PATCHv2 0/2] ARM: dts: Add new board dts file for Exynos3250-based Rinato board
+      - This patchset is not yet merged.
+  [3] regulator: s2mps11: Add set_suspend_disable for S2MPS14
+      (commid id: 05be09bb5ec8d12051515087a1983745dc93d906)
+
+Changes from v3:
+- Don't support 'regulator-state-standby' mode
+- Remove 'regulator-mode' property
+
+Changes from v2:
+- Fix over 80 lines by using checkpatch script
+- Rebase this patchset on latest for-next branch of regulator.git
+
+Changes from v1:
+- Check whether regulator-initial-state and regulator-mode is correct or not
+- Add more detailed description about regulator-initial-state, regulator-mode
+  and regulator-state-[standby/mem/disk] for devicetree bindings
+- Modify example of regulator suspend state in bindings documentation
+
+Chanwoo Choi (3):
+  regulator: of: Add support for parsing regulator_state for suspend state
+  dt-bindings: regulator: Add regulator suspend state for PM state
+  ARM: dts: Add sleep mode of regulator for exynos3250-rinato board
+
+ .../devicetree/bindings/regulator/regulator.txt    |  13 +++
+ arch/arm/boot/dts/exynos3250-rinato.dts            | 108 +++++++++++++++++++++
+ drivers/regulator/of_regulator.c                   |  39 +++++++-
+ 3 files changed, 159 insertions(+), 1 deletion(-)
+
 -- 
 1.8.0
 
