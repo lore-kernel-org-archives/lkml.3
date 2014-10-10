@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244AbaJJNGc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 09:06:32 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:33121 "EHLO SMTP.CITRIX.COM"
+	id S1753812AbaJJNJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 09:09:36 -0400
+Received: from max.feld.cvut.cz ([147.32.192.36]:39828 "EHLO max.feld.cvut.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbaJJNG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 09:06:29 -0400
-X-IronPort-AV: E=Sophos;i="5.04,692,1406592000"; 
-   d="scan'208";a="180136789"
-Date: Fri, 10 Oct 2014 14:04:10 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
-In-Reply-To: <20141010120702.GI7755@arm.com>
-Message-ID: <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com> <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	id S1751871AbaJJNJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 09:09:33 -0400
+From: Michal Sojka <sojkam1@fel.cvut.cz>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Michal Sojka <sojkam1@fel.cvut.cz>
+Subject: [PATCH] Update help of CONFIG_MTD_OF_PARTS
+Date: Fri, 10 Oct 2014 15:06:17 +0200
+Message-Id: <1412946377-18933-1-git-send-email-sojkam1@fel.cvut.cz>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 10 Oct 2014, Will Deacon wrote:
-> On Fri, Oct 10, 2014 at 12:51:44PM +0100, Stefano Stabellini wrote:
-> > Introduce a function to check whether a device is dma coherent.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > CC: linux@arm.linux.org.uk
-> > CC: catalin.marinas@arm.com
-> > CC: will.deacon@arm.com
-> > CC: linux-arm-kernel@lists.infradead.org
-> > ---
-> >  arch/arm/include/asm/dma-mapping.h   |    6 ++++++
-> >  arch/arm64/include/asm/dma-mapping.h |    5 +++++
-> >  2 files changed, 11 insertions(+)
-> > 
-> > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> > index c45b61a..bededbb 100644
-> > --- a/arch/arm/include/asm/dma-mapping.h
-> > +++ b/arch/arm/include/asm/dma-mapping.h
-> > @@ -126,6 +126,12 @@ static inline int set_arch_dma_coherent_ops(struct device *dev)
-> >  	set_dma_ops(dev, &arm_coherent_dma_ops);
-> >  	return 0;
-> >  }
-> > +
-> > +static inline bool is_dma_coherent(struct device *dev)
-> > +{
-> > +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
-> > +}
-> 
-> Hmm, what about the IOMMU ops?
+The help text of CONFIG_MTD_OF_PARTS refers to additional documentation
+in booting-without-of.txt but this documentation was moved to another
+file in commit efcc2da3fd148c9acb7d7cf1d9800e0649f950fc (Stefan Roese:
+Factor MTD physmap bindings out of booting-without-of). This updates the
+help text to point to the right place.
 
-Maybe I should check __generic_dma_ops(dev) != &arm_dma_ops?
-Do you have any better suggestions?
+Signed-off-by: Michal Sojka <sojkam1@fel.cvut.cz>
+---
+ drivers/mtd/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/Kconfig b/drivers/mtd/Kconfig
+index 94b8210..fa8371a 100644
+--- a/drivers/mtd/Kconfig
++++ b/drivers/mtd/Kconfig
+@@ -133,7 +133,7 @@ config MTD_OF_PARTS
+ 	help
+ 	  This provides a partition parsing function which derives
+ 	  the partition map from the children of the flash node,
+-	  as described in Documentation/devicetree/booting-without-of.txt.
++	  as described in Documentation/devicetree/bindings/mtd/mtd-physmap.txt.
+ 
+ config MTD_AR7_PARTS
+ 	tristate "TI AR7 partitioning support"
+-- 
+2.1.1
+
