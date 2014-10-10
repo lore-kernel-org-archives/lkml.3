@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaJJMxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 08:53:31 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:63437 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384AbaJJMvM (ORCPT
+	id S1752699AbaJJNBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 09:01:49 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:59067 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751621AbaJJNBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 08:51:12 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Rhyland Klein <rklein@nvidia.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
-        Thierry Reding <treding@nvidia.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/10] of: Add Tegra124 EMC bindings
-Date: Fri, 10 Oct 2014 14:46:55 +0200
-Message-Id: <1412945262-6068-5-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1412945262-6068-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1412945262-6068-1-git-send-email-tomeu.vizoso@collabora.com>
+	Fri, 10 Oct 2014 09:01:47 -0400
+Message-ID: <1412946102.2037.13.camel@x220>
+Subject: Re: [PATCH v2 2/2] kconfig: trivial - adjust comments
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Martin Walch <walch.martin@web.de>
+Cc: yann.morin.1998@free.fr, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 10 Oct 2014 15:01:42 +0200
+In-Reply-To: <1411405999-20212-3-git-send-email-walch.martin@web.de>
+References: <3491939.FtiyjGE4Of@tacticalops>
+	 <1411405999-20212-1-git-send-email-walch.martin@web.de>
+	 <1411405999-20212-3-git-send-email-walch.martin@web.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Oct 2014 13:01:42.0608 (UTC) FILETIME=[56924500:01CFE48A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikko Perttunen <mperttunen@nvidia.com>
+Hi Martin,
 
-Add binding documentation for the nvidia,tegra124-emc device tree node.
+I haven't yet dared to review 1/2, which is the interesting change. So I
+cheated and skipped to 2/2.
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- .../bindings/memory-controllers/tegra-emc.txt      | 41 ++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
+On Mon, 2014-09-22 at 19:13 +0200, Martin Walch wrote:
+> Replace any C99 comments with traditional ones (/*...*/).
 
-diff --git a/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
-new file mode 100644
-index 0000000..6282c6b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/memory-controllers/tegra-emc.txt
-@@ -0,0 +1,41 @@
-+Tegra124 SoC EMC controller
-+
-+Required properties :
-+- compatible : "nvidia,tegra124-emc".
-+- reg : Should contain 1 entry:
-+  - EMC register set
-+
-+The node should contain a "timings@i" subnode for each supported RAM type
-+  (see field RAM_CODE in register PMC_STRAPPING_OPT_A)
-+Required properties for "timings@i" nodes :
-+- nvidia,ram-code : Should contain the value of RAM_CODE this timing set
-+  is used for.
-+
-+Each "timings@i" node should contain "timing@j" subnodes. One "timing@j"
-+  node should exist for each supported EMC clock rate.
-+Required properties for "timing@j" nodes :
-+- clock-frequency : Should contain the memory clock rate.
-+- nvidia,parent-clock-frequency : Should contain the rate of the EMC
-+  clock's parent clock.
-+- clocks : Must contain an entry for each entry in clock-names.
-+  See ../clocks/clock-bindings.txt for details.
-+- clock-names : Must include the following entries:
-+  - emc-parent : EMC's parent clock.
-+- The following properties contain EMC timing characterization values:
-+  - nvidia,emc-zcal-cnt-long
-+  - nvidia,emc-auto-cal-interval
-+  - nvidia,emc-ctt-term-ctrl
-+  - nvidia,emc-cfg
-+  - nvidia,emc-cfg-2
-+  - nvidia,emc-sel-dpd-ctrl
-+  - nvidia,emc-cfg-dig-dll
-+  - nvidia,emc-bgbias-ctl0
-+  - nvidia,emc-auto-cal-config
-+  - nvidia,emc-auto-cal-config2
-+  - nvidia,emc-auto-cal-config3
-+  - nvidia,emc-mode-reset
-+  - nvidia,emc-mode-1
-+  - nvidia,emc-mode-2
-+  - nvidia,emc-mode-4
-+- nvidia,emc-configuration : EMC timing characterization data written to
-+                             EMC registers.
--- 
-1.9.3
+Perhaps you could split those changes off in a separate, trivial patch.
+
+> Also fix the contents of two comments:
+> 
+> 1) the second occurrence of
+> (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
+> is probably copy & paste from above, missing the adjustment corresponding
+> to the code.
+> It should probably read
+> (a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c'
+> 
+> 2) that one is similar:
+> (a!='m') && (a!='n') -> (a='m')
+> it should be
+> (a!='m') && (a!='n') -> (a='y')
+
+And perhaps even send these two changes as two separate patches. Not
+sure, as I don't review much, but it should make it easier to review.
+
+> Signed-off-by: Martin Walch <walch.martin@web.de>
+> ---
+>  scripts/kconfig/expr.c | 38 +++++++++++++++++++-------------------
+>  1 file changed, 19 insertions(+), 19 deletions(-)
+> 
+> diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
+> index 4aa171b..c840e52 100644
+> --- a/scripts/kconfig/expr.c
+> +++ b/scripts/kconfig/expr.c
+> [...] 
+>  	if (sym1->type == S_TRISTATE) {
+>  		if (e1->type == E_EQUAL && e2->type == E_UNEQUAL) {
+> -			// (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
+> +			/* (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b' */
+
+Could you make this match the code? Ie,
+                         /* (a='b') && (a!='c') -> 'b'!='c' ? a='b' : 'n' */
+
+if I'm reading the code right.
+
+>  			sym2 = e1->right.sym;
+>  			if ((e2->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+>  				return sym2 != e2->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
+>  							     : expr_alloc_symbol(&symbol_no);
+>  		}
+>  		if (e1->type == E_UNEQUAL && e2->type == E_EQUAL) {
+> -			// (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
+> +			/* (a!='b') && (a='c') -> 'b'='c' ? 'n' : a='c' */
+
+Likewise:
+                         /* (a!='b') && (a='c') -> 'b'!='c' ? a='c' : 'n' */
+
+>  			sym2 = e2->right.sym;
+>  			if ((e1->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+>  				return sym2 != e1->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
+
+(You could also make the code match the comments. But that would make
+the patch less trivial.)
+
+
+Paul Bolle
 
