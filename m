@@ -1,239 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297AbaJJDyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 9 Oct 2014 23:54:12 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:57837 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168AbaJJDyJ (ORCPT
+	id S1751128AbaJJEcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 00:32:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45517 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaJJEcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 9 Oct 2014 23:54:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141008000956.GN16469@dtor-ws>
-References: <1412051189-22643-1-git-send-email-mranostay@gmail.com>
-	<1412051189-22643-3-git-send-email-mranostay@gmail.com>
-	<20141008000956.GN16469@dtor-ws>
-Date: Thu, 9 Oct 2014 20:54:07 -0700
-Message-ID: <CAKzfze9XhuwL0W0vcYjqP1Dqm5yib7xd=UOvvW2_iE1BJzH4CQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/3] cap11xx: Add support for various cap11xx devices
-From: Matt Ranostay <mranostay@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Daniel Mack <zonque@gmail.com>,
-        linux-input@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 10 Oct 2014 00:32:43 -0400
+Date: Fri, 10 Oct 2014 00:32:38 -0400 (EDT)
+Message-Id: <20141010.003238.851779524160284732.davem@davemloft.net>
+To: julian.calaby@gmail.com
+Cc: linux@roeck-us.net, sparclinux@vger.kernel.org, arend@broadcom.com,
+        zajec5@gmail.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hauke@hauke-m.de, arnd@arndb.de
+Subject: Re: [PATCH] bcma: Add dependency on OF_ADDRESS
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAGRGNgWWSX8rYatphNAmx+j3wZ7RAXgucUzi_7M6-3NeUjQDEg@mail.gmail.com>
+References: <5436C2B4.6030801@broadcom.com>
+	<20141009172120.GB2410@roeck-us.net>
+	<CAGRGNgWWSX8rYatphNAmx+j3wZ7RAXgucUzi_7M6-3NeUjQDEg@mail.gmail.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 09 Oct 2014 21:32:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh good catch! Will resubmitted with v5.
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Fri, 10 Oct 2014 11:24:53 +1100
 
-On Tue, Oct 7, 2014 at 5:09 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Matt,
->
-> On Mon, Sep 29, 2014 at 09:26:28PM -0700, Matt Ranostay wrote:
->> +     priv->num_channels = cap->num_channels;
->> +     priv->keycodes = devm_kcalloc(dev,
->> +             priv->num_channels, sizeof(u32), GFP_KERNEL);
->> +     if (!priv->keycodes)
->> +             return -ENOMEM;
->
-> Instead of allocating keymap separately can we do something like below?
->
-> Thanks.
->
-> --
-> Dmitry
->
->
-> Input: cap11xx - add support for various cap11xx devices
->
-> From: Matt Ranostay <mranostay@gmail.com>
->
-> Several other variants of the cap11xx device exists with a varying
-> number of capacitance detection channels. Add support for creating
-> the channels dynamically.
->
-> Signed-off-by: Matt Ranostay <mranostay@gmail.com>
-> Reviewed-by: Daniel Mack <daniel@zonque.org>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  .../devicetree/bindings/input/cap11xx.txt          |    3 +
->  drivers/input/keyboard/cap11xx.c                   |   62 +++++++++++++-------
->  2 files changed, 42 insertions(+), 23 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/input/cap11xx.txt b/Documentation/devicetree/bindings/input/cap11xx.txt
-> index 738f5f3..8031aa5 100644
-> --- a/Documentation/devicetree/bindings/input/cap11xx.txt
-> +++ b/Documentation/devicetree/bindings/input/cap11xx.txt
-> @@ -7,9 +7,10 @@ Required properties:
->
->         compatible:             Must be on the following, depending on the model:
->                                         "microchip,cap1106"
-> +                                       "microchip,cap1126"
-> +                                       "microchip,cap1188"
->
->         reg:                    The I2C slave address of the device.
-> -                               Only 0x28 is valid.
->
->         interrupts:             Property describing the interrupt line the
->                                 device's ALERT#/CM_IRQ# pin is connected to.
-> diff --git a/drivers/input/keyboard/cap11xx.c b/drivers/input/keyboard/cap11xx.c
-> index 0da2e83..87fa209 100644
-> --- a/drivers/input/keyboard/cap11xx.c
-> +++ b/drivers/input/keyboard/cap11xx.c
-> @@ -1,7 +1,6 @@
->  /*
->   * Input driver for Microchip CAP11xx based capacitive touch sensors
->   *
-> - *
->   * (c) 2014 Daniel Mack <linux@zonque.org>
->   *
->   * This program is free software; you can redistribute it and/or modify
-> @@ -54,8 +53,6 @@
->  #define CAP11XX_REG_MANUFACTURER_ID    0xfe
->  #define CAP11XX_REG_REVISION           0xff
->
-> -#define CAP11XX_NUM_CHN 6
-> -#define CAP11XX_PRODUCT_ID     0x55
->  #define CAP11XX_MANUFACTURER_ID        0x5d
->
->  struct cap11xx_priv {
-> @@ -63,7 +60,24 @@ struct cap11xx_priv {
->         struct input_dev *idev;
->
->         /* config */
-> -       unsigned short keycodes[CAP11XX_NUM_CHN];
-> +       u32 keycodes[];
-> +};
-> +
-> +struct cap11xx_hw_model {
-> +       uint8_t product_id;
-> +       unsigned int num_channels;
-> +};
-> +
-> +enum {
-> +       CAP1106,
-> +       CAP1126,
-> +       CAP1188,
-> +};
-> +
-> +static const struct cap11xx_hw_model cap11xx_devices[] = {
-> +       [CAP1106] = { .product_id = 0x55, .num_channels = 6 },
-> +       [CAP1126] = { .product_id = 0x53, .num_channels = 6 },
-> +       [CAP1188] = { .product_id = 0x50, .num_channels = 8 },
->  };
->
->  static const struct reg_default cap11xx_reg_defaults[] = {
-> @@ -150,7 +164,7 @@ static irqreturn_t cap11xx_thread_func(int irq_num, void *data)
->         if (ret < 0)
->                 goto out;
->
-> -       for (i = 0; i < CAP11XX_NUM_CHN; i++)
-> +       for (i = 0; i < priv->idev->keycodemax; i++)
->                 input_report_key(priv->idev, priv->keycodes[i],
->                                  status & (1 << i));
->
-> @@ -187,11 +201,16 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->         struct device *dev = &i2c_client->dev;
->         struct cap11xx_priv *priv;
->         struct device_node *node;
-> +       const struct cap11xx_hw_model *cap = &cap11xx_devices[id->driver_data];
->         int i, error, irq, gain = 0;
->         unsigned int val, rev;
-> -       u32 gain32, keycodes[CAP11XX_NUM_CHN];
-> +       u32 gain32;
-> +
-> +       BUG_ON(!cap->num_channels);
->
-> -       priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-> +       priv = devm_kzalloc(dev,
-> +                           sizeof(*priv) + cap->num_channels * sizeof(u32),
-> +                           GFP_KERNEL);
->         if (!priv)
->                 return -ENOMEM;
->
-> @@ -203,9 +222,9 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->         if (error)
->                 return error;
->
-> -       if (val != CAP11XX_PRODUCT_ID) {
-> +       if (val != cap->product_id) {
->                 dev_err(dev, "Product ID: Got 0x%02x, expected 0x%02x\n",
-> -                       val, CAP11XX_PRODUCT_ID);
-> +                       val, cap->product_id);
->                 return -ENODEV;
->         }
->
-> @@ -225,8 +244,8 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->
->         dev_info(dev, "CAP11XX detected, revision 0x%02x\n", rev);
->         i2c_set_clientdata(i2c_client, priv);
-> -       node = dev->of_node;
->
-> +       node = dev->of_node;
->         if (!of_property_read_u32(node, "microchip,sensor-gain", &gain32)) {
->                 if (is_power_of_2(gain32) && gain32 <= 8)
->                         gain = ilog2(gain32);
-> @@ -234,17 +253,12 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->                         dev_err(dev, "Invalid sensor-gain value %d\n", gain32);
->         }
->
-> -       BUILD_BUG_ON(ARRAY_SIZE(keycodes) != ARRAY_SIZE(priv->keycodes));
-> -
->         /* Provide some useful defaults */
-> -       for (i = 0; i < ARRAY_SIZE(keycodes); i++)
-> -               keycodes[i] = KEY_A + i;
-> +       for (i = 0; i < cap->num_channels; i++)
-> +               priv->keycodes[i] = KEY_A + i;
->
->         of_property_read_u32_array(node, "linux,keycodes",
-> -                                  keycodes, ARRAY_SIZE(keycodes));
-> -
-> -       for (i = 0; i < ARRAY_SIZE(keycodes); i++)
-> -               priv->keycodes[i] = keycodes[i];
-> +               priv->keycodes, cap->num_channels);
->
->         error = regmap_update_bits(priv->regmap, CAP11XX_REG_MAIN_CONTROL,
->                                    CAP11XX_REG_MAIN_CONTROL_GAIN_MASK,
-> @@ -268,17 +282,17 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->         if (of_property_read_bool(node, "autorepeat"))
->                 __set_bit(EV_REP, priv->idev->evbit);
->
-> -       for (i = 0; i < CAP11XX_NUM_CHN; i++)
-> +       for (i = 0; i < cap->num_channels; i++)
->                 __set_bit(priv->keycodes[i], priv->idev->keybit);
->
->         __clear_bit(KEY_RESERVED, priv->idev->keybit);
->
->         priv->idev->keycode = priv->keycodes;
->         priv->idev->keycodesize = sizeof(priv->keycodes[0]);
-> -       priv->idev->keycodemax = ARRAY_SIZE(priv->keycodes);
-> +       priv->idev->keycodemax = cap->num_channels;
->
->         priv->idev->id.vendor = CAP11XX_MANUFACTURER_ID;
-> -       priv->idev->id.product = CAP11XX_PRODUCT_ID;
-> +       priv->idev->id.product = cap->product_id;
->         priv->idev->id.version = rev;
->
->         priv->idev->open = cap11xx_input_open;
-> @@ -312,12 +326,16 @@ static int cap11xx_i2c_probe(struct i2c_client *i2c_client,
->
->  static const struct of_device_id cap11xx_dt_ids[] = {
->         { .compatible = "microchip,cap1106", },
-> +       { .compatible = "microchip,cap1126", },
-> +       { .compatible = "microchip,cap1188", },
->         {}
->  };
->  MODULE_DEVICE_TABLE(of, cap11xx_dt_ids);
->
->  static const struct i2c_device_id cap11xx_i2c_ids[] = {
-> -       { "cap1106", 0 },
-> +       { "cap1106", CAP1106 },
-> +       { "cap1126", CAP1126 },
-> +       { "cap1188", CAP1188 },
->         {}
->  };
->  MODULE_DEVICE_TABLE(i2c, cap11xx_i2c_ids);
+> Hi,
+> 
+> On Fri, Oct 10, 2014 at 4:21 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> On Thu, Oct 09, 2014 at 07:15:32PM +0200, Arend van Spriel wrote:
+>>> On 10/09/14 18:54, Rafa©© Mi©©ecki wrote:
+>>> >On 9 October 2014 18:41, Guenter Roeck<linux@roeck-us.net>  wrote:
+>>> >>Commit 2101e533f41a ("bcma: register bcma as device tree driver")
+>>> >>introduces a hard dependency on OF_ADDRESS into the bcma driver.
+>>> >>OF_ADDRESS is specifically disabled for the sparc architecture.
+>>> >>This results in the following error when building sparc64:allmodconfig.
+>>>
+>>> Does this mean on sparc (using allmodconfig) you will get CONFIG_OF
+>>> and !CONFIG_OF_ADDRESS? Does that makes sense?
+>>>
+>>
+>> You tell me. From drivers/of/Kconfig:
+>>
+>> config OF_ADDRESS
+>>         def_bool y
+>>         depends on !SPARC
+>>         select OF_ADDRESS_PCI if PCI
+>>
+>> Presumably there is a reason to disable OF_ADDRESS for sparc.
+> 
+> Why not ask the sparclinux list? (CC'd)
+
+On sparc, at boot time we precompute all of the addresses provided in
+the OF device tree.
+
+So we need none of this OF_ADDRESS infrastructure.
+
+Frankly, I've always believed that this is how address computation
+should be done on OF platforms, and it simplifies drivers massively.
+You really only need to implement 2 or 3 bus translators to make it
+work.  Others have disagreed with me.
