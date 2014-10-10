@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062AbaJJLyZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:54:25 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:22994 "EHLO SMTP.CITRIX.COM"
+	id S1754194AbaJJLy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:54:27 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:65433 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752607AbaJJLyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:54:16 -0400
+	id S1752963AbaJJLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:54:14 -0400
 X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
-   d="scan'208";a="180114192"
+   d="scan'208";a="180114187"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
@@ -15,9 +15,9 @@ CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
         <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 7/7] xen/arm: introduce GNTTABOP_cache_flush
-Date: Fri, 10 Oct 2014 12:51:48 +0100
-Message-ID: <1412941908-5850-7-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 1/7] xen/arm: remove handling of XENFEAT_grant_map_identity
+Date: Fri, 10 Oct 2014 12:51:42 +0100
+Message-ID: <1412941908-5850-1-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
@@ -28,154 +28,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce support for new hypercall GNTTABOP_cache_flush.
-Use it to perform cache flashing on pages used for dma when necessary.
-
-If GNTTABOP_cache_flush is supported by the hypervisor, we don't need to
-bounce dma map operations that involve foreign grants and non-coherent
-devices.
+The feature has been removed from Xen. Also Linux cannot use it on ARM32
+without CONFIG_ARM_LPAE.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 
 ---
-
-Changes in v4:
-- add comment;
-- avoid bouncing dma map operations that involve foreign grants and
-non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
-
-Changes in v3:
-- fix the cache maintenance op call to match what Linux does natively;
-- update the hypercall interface to match Xen.
-
 Changes in v2:
-- update the hypercall interface to match Xen;
-- call the interface on a single page at a time.
----
- arch/arm/xen/mm.c                   |   41 ++++++++++++++++++++++++++++++-----
- include/xen/interface/grant_table.h |   19 ++++++++++++++++
- 2 files changed, 54 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index 0c2a75a..21db123 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -11,6 +11,7 @@
- #include <linux/swiotlb.h>
+- remove the definition of XENFEAT_grant_map_identity.
+---
+ arch/arm/xen/enlighten.c         |    5 ---
+ arch/arm/xen/mm32.c              |   85 +-------------------------------------
+ include/xen/interface/features.h |    3 --
+ 3 files changed, 1 insertion(+), 92 deletions(-)
+
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index 0e15f01..c7ca936 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -261,11 +261,6 @@ static int __init xen_guest_init(void)
  
- #include <xen/xen.h>
-+#include <xen/interface/grant_table.h>
- #include <xen/interface/memory.h>
- #include <xen/swiotlb-xen.h>
+ 	xen_setup_features();
  
-@@ -44,6 +45,8 @@ static inline void *kmap_high_get(struct page *page)
- static inline void kunmap_high(struct page *page) {}
- #endif
+-	if (!xen_feature(XENFEAT_grant_map_identity)) {
+-		pr_warn("Please upgrade your Xen.\n"
+-				"If your platform has any non-coherent DMA devices, they won't work properly.\n");
+-	}
+-
+ 	if (xen_feature(XENFEAT_dom0))
+ 		xen_start_info->flags |= SIF_INITDOMAIN|SIF_PRIVILEGED;
+ 	else
+diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
+index 3b99860..a5a93fc 100644
+--- a/arch/arm/xen/mm32.c
++++ b/arch/arm/xen/mm32.c
+@@ -5,70 +5,6 @@
  
-+static bool hypercall_flush = false;
-+
+ #include <xen/features.h>
+ 
+-static DEFINE_PER_CPU(unsigned long, xen_mm32_scratch_virt);
+-static DEFINE_PER_CPU(pte_t *, xen_mm32_scratch_ptep);
+-
+-static int alloc_xen_mm32_scratch_page(int cpu)
+-{
+-	struct page *page;
+-	unsigned long virt;
+-	pmd_t *pmdp;
+-	pte_t *ptep;
+-
+-	if (per_cpu(xen_mm32_scratch_ptep, cpu) != NULL)
+-		return 0;
+-
+-	page = alloc_page(GFP_KERNEL);
+-	if (page == NULL) {
+-		pr_warn("Failed to allocate xen_mm32_scratch_page for cpu %d\n", cpu);
+-		return -ENOMEM;
+-	}
+-
+-	virt = (unsigned long)__va(page_to_phys(page));
+-	pmdp = pmd_offset(pud_offset(pgd_offset_k(virt), virt), virt);
+-	ptep = pte_offset_kernel(pmdp, virt);
+-
+-	per_cpu(xen_mm32_scratch_virt, cpu) = virt;
+-	per_cpu(xen_mm32_scratch_ptep, cpu) = ptep;
+-
+-	return 0;
+-}
+-
+-static int xen_mm32_cpu_notify(struct notifier_block *self,
+-				    unsigned long action, void *hcpu)
+-{
+-	int cpu = (long)hcpu;
+-	switch (action) {
+-	case CPU_UP_PREPARE:
+-		if (alloc_xen_mm32_scratch_page(cpu))
+-			return NOTIFY_BAD;
+-		break;
+-	default:
+-		break;
+-	}
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block xen_mm32_cpu_notifier = {
+-	.notifier_call	= xen_mm32_cpu_notify,
+-};
+-
+-static void* xen_mm32_remap_page(dma_addr_t handle)
+-{
+-	unsigned long virt = get_cpu_var(xen_mm32_scratch_virt);
+-	pte_t *ptep = __get_cpu_var(xen_mm32_scratch_ptep);
+-
+-	*ptep = pfn_pte(handle >> PAGE_SHIFT, PAGE_KERNEL);
+-	local_flush_tlb_kernel_page(virt);
+-
+-	return (void*)virt;
+-}
+-
+-static void xen_mm32_unmap(void *vaddr)
+-{
+-	put_cpu_var(xen_mm32_scratch_virt);
+-}
+-
  
  /* functions called by SWIOTLB */
  
-@@ -60,17 +63,35 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	do {
- 		size_t len = left;
- 		void *vaddr;
-+
-+		/* buffers in highmem or foreign pages cannot cross page
-+		 * boundaries */
-+		if (len + offset > PAGE_SIZE)
-+			len = PAGE_SIZE - offset;
+@@ -88,13 +24,7 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
  	
  		if (!pfn_valid(pfn))
  		{
--			/* TODO: cache flush */
-+			struct gnttab_cache_flush cflush;
-+
-+			cflush.op = 0;
-+			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
-+			cflush.offset = offset;
-+			cflush.length = len;
-+
-+			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
-+				cflush.op = GNTTAB_CACHE_INVAL;
-+			if (op == dmac_map_area) {
-+				if (dir == DMA_FROM_DEVICE)
-+					cflush.op = GNTTAB_CACHE_INVAL;
-+				else
-+					cflush.op = GNTTAB_CACHE_CLEAN;
-+			}
-+			if (cflush.op)
-+				HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1);
+-			/* Cannot map the page, we don't know its physical address.
+-			 * Return and hope for the best */
+-			if (!xen_feature(XENFEAT_grant_map_identity))
+-				return;
+-			vaddr = xen_mm32_remap_page(handle) + offset;
+-			op(vaddr, len, dir);
+-			xen_mm32_unmap(vaddr - offset);
++			/* TODO: cache flush */
  		} else {
  			struct page *page = pfn_to_page(pfn);
  
- 			if (PageHighMem(page)) {
--				if (len + offset > PAGE_SIZE)
--					len = PAGE_SIZE - offset;
+@@ -181,22 +111,9 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
+ 
+ int __init xen_mm32_init(void)
+ {
+-	int cpu;
 -
- 				if (cache_is_vipt_nonaliasing()) {
- 					vaddr = kmap_atomic(page);
- 					op(vaddr + offset, len, dir);
-@@ -143,7 +164,7 @@ bool xen_arch_need_swiotlb(struct device *dev,
- 						   unsigned long pfn,
- 						   unsigned long mfn)
- {
--	return ((pfn != mfn) && !is_dma_coherent(dev));
-+	return (!hypercall_flush && (pfn != mfn) && !is_dma_coherent(dev));
- }
- 
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-@@ -186,10 +207,18 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 
- int __init xen_mm_init(void)
- {
-+	struct gnttab_cache_flush cflush;
  	if (!xen_initial_domain())
  		return 0;
- 	xen_swiotlb_init(1, false);
- 	xen_dma_ops = &xen_swiotlb_dma_ops;
-+
-+	cflush.op = 0;
-+	cflush.a.dev_bus_addr = 0;
-+	cflush.offset = 0;
-+	cflush.length = 0;
-+	if (HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1) != -ENOSYS)
-+		hypercall_flush = true;
+ 
+-	register_cpu_notifier(&xen_mm32_cpu_notifier);
+-	get_online_cpus();
+-	for_each_online_cpu(cpu) {
+-		if (alloc_xen_mm32_scratch_page(cpu)) {
+-			put_online_cpus();
+-			unregister_cpu_notifier(&xen_mm32_cpu_notifier);
+-			return -ENOMEM;
+-		}
+-	}
+-	put_online_cpus();
+-
  	return 0;
  }
--arch_initcall(xen_mm_init);
-+arch_initcall(xen_mm_init)
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index e40fae9..bcce564 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -479,6 +479,25 @@ struct gnttab_get_version {
- DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
+ arch_initcall(xen_mm32_init);
+diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
+index 14334d0..131a6cc 100644
+--- a/include/xen/interface/features.h
++++ b/include/xen/interface/features.h
+@@ -53,9 +53,6 @@
+ /* operation as Dom0 is supported */
+ #define XENFEAT_dom0                      11
  
- /*
-+ * Issue one or more cache maintenance operations on a portion of a
-+ * page granted to the calling domain by a foreign domain.
-+ */
-+#define GNTTABOP_cache_flush          12
-+struct gnttab_cache_flush {
-+    union {
-+        uint64_t dev_bus_addr;
-+        grant_ref_t ref;
-+    } a;
-+    uint16_t offset;   /* offset from start of grant */
-+    uint16_t length;   /* size within the grant */
-+#define GNTTAB_CACHE_CLEAN          (1<<0)
-+#define GNTTAB_CACHE_INVAL          (1<<1)
-+#define GNTTAB_CACHE_SOURCE_GREF    (1<<31)
-+    uint32_t op;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
-+
-+/*
-  * Bitfield values for update_pin_status.flags.
-  */
-  /* Map the grant entry for access by I/O devices. */
+-/* Xen also maps grant references at pfn = mfn */
+-#define XENFEAT_grant_map_identity        12
+-
+ #define XENFEAT_NR_SUBMAPS 1
+ 
+ #endif /* __XEN_PUBLIC_FEATURES_H__ */
 -- 
 1.7.10.4
 
