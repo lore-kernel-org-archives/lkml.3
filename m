@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaJJOfp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 10:35:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63081 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950AbaJJOfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 10:35:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,692,1406617200"; 
-   d="scan'208";a="586743167"
-Message-ID: <5437EEA3.50705@intel.com>
-Date: Fri, 10 Oct 2014 07:35:15 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754777AbaJJOic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 10:38:32 -0400
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:48004 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754051AbaJJOi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 10:38:28 -0400
 MIME-Version: 1.0
-To: Fengwei Yin <yfw.kernel@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        fengguang.wu@intel.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: [PATCH] smaps should deal with huge zero page exactly same as
- normal zero page
-References: <CADUXgx7QTWBMxesxgCet5rjpGu-V-xK_-5f2rX9R+v-ggi902A@mail.gmail.com> <5436B98E.1070407@intel.com> <20141010132027.GB25038@gmail.com>
-In-Reply-To: <20141010132027.GB25038@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141009151211.GV10832@worktop.programming.kicks-ass.net>
+References: <1412684017-16595-1-git-send-email-vincent.guittot@linaro.org>
+ <1412684017-16595-6-git-send-email-vincent.guittot@linaro.org>
+ <20141009113614.GP4750@worktop.programming.kicks-ass.net> <CAKfTPtDtfhQDWNjU5i-YpX4-Ak3nT3uaOCvhqgNP-u=-La7_gw@mail.gmail.com>
+ <20141009151211.GV10832@worktop.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 10 Oct 2014 16:38:06 +0200
+Message-ID: <CAKfTPtBVbs=sniL4UJ-Ax4zpVwf1ut8RVpYTVRnmYN4VOhhzvw@mail.gmail.com>
+Subject: Re: [PATCH v7 5/7] sched: get CPU's usage statistic
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Rik van Riel <riel@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2014 06:21 AM, Fengwei Yin wrote:
-> @@ -787,6 +788,9 @@ check_pfn:
->  		return NULL;
->  	}
->  
-> +	if (is_huge_zero_pfn(pfn))
-> +		return NULL;
-> +
+On 9 October 2014 17:12, Peter Zijlstra <peterz@infradead.org> wrote:
 
-That looks a lot better.  One thing, why not put the is_huge_zero_pfn()
-check next to the is_zero_pfn() check?
+>> >> +static int get_cpu_usage(int cpu)
+>> >> +{
+>> >> +     unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
+>> >> +     unsigned long capacity = capacity_orig_of(cpu);
+>> >> +
+>> >> +     if (usage >= SCHED_LOAD_SCALE)
+>> >> +             return capacity + 1;
+>> >
+>> > Like Morten I'm confused by that +1 thing.
+>>
+>> ok. the goal was to point out the erroneous case where usage is out of
+>> the range but if it generates confusion, it can remove it
+>
+> Well, the fact that you clip makes that point, returning a value outside
+> of the specified range doesn't.
+
+i meant removing the +1
