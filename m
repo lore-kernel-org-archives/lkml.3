@@ -1,358 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937AbaJJLyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 07:54:22 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:39753 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753244AbaJJLyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 07:54:15 -0400
-X-IronPort-AV: E=Sophos;i="5.04,691,1406592000"; 
-   d="scan'208";a="180114191"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 5/7] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-Date: Fri, 10 Oct 2014 12:51:46 +0100
-Message-ID: <1412941908-5850-5-git-send-email-stefano.stabellini@eu.citrix.com>
+	id S1754467AbaJJLzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 07:55:06 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:33993 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374AbaJJLzB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 07:55:01 -0400
+X-AuditID: cbfec7f5-b7f776d000003e54-bb-5437c91326e2
+From: Karol Wrona <k.wrona@samsung.com>
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <k.wrona@samsung.com>
+Subject: [PATCH v2 0/1] misc: st32boot: Add stm32 upgrade protocol handling
+Date: Fri, 10 Oct 2014 13:54:42 +0200
+Message-id: <1412942083-28231-1-git-send-email-k.wrona@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBJMWRmVeSWpSXmKPExsVy+t/xy7rCJ81DDL4sY7b4O+kYu8XGGetZ
+	LR40rWKyOLVsP5PF2aY37Bbzjrxjsbi8aw6bA7vH71+TGD02repk8+jbsorR4/MmuQCWKC6b
+	lNSczLLUIn27BK6MJ9PbGAtm8VZ8nvWXtYFxM1cXIyeHhICJxOzGI8wQtpjEhXvr2boYuTiE
+	BJYySlw40soM4fQxSSw+dYYJpIpNQF2iecdisISIQCOjxM3F/WwgCWaBDkaJRe1gY4UFvCW6
+	5k4EG8sioCrx8sJ91i5GDg5eAWeJnuf5IKaEgILEnEk2Exi5FzAyrGIUTS1NLihOSs810itO
+	zC0uzUvXS87P3cQICY2vOxiXHrM6xCjAwajEw3tBxjxEiDWxrLgy9xCjBAezkgjv/L1AId6U
+	xMqq1KL8+KLSnNTiQ4xMHJxSDYxL96bem3c+6HXKfyHvCW8t/0Qu2pGjUODGckj8+IR05aNr
+	gsR1Wk4yu5QuTRBvPnq+/bit95Kpnpmyv6dN0J2uEbmbn72t31w/ZFuLzpwZBVPnvWvc5bTY
+	r6lSiNtE/Lkzv8GNE4Z+3ge/rfKZnMp4Pvhl3BHGIzs3TzunW6crNrnDPVhlUqYSS3FGoqEW
+	c1FxIgDLC+ZR6wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge xen/mm32.c into xen/mm.c.
-As a consequence the code gets compiled on arm64 too: introduce a few
-compat functions to actually be able to compile it.
+Hello,
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/mm.c                          |  123 ++++++++++++++++++++++++++++
- arch/arm/xen/mm32.c                        |  110 -------------------------
- arch/arm64/include/asm/xen/page-coherent.h |   44 +---------
- 4 files changed, 125 insertions(+), 154 deletions(-)
- delete mode 100644 arch/arm/xen/mm32.c
+This patch is needed by the sensorhub driver which uses STM32F4xx and Jonathan
+suggested to factor out these sources (mentioned in: 
+[RFC/PATCH 2/6] misc: sensorhub: Add sensorhub).
 
-diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-index 1f85bfe..1296952 100644
---- a/arch/arm/xen/Makefile
-+++ b/arch/arm/xen/Makefile
-@@ -1 +1 @@
--obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o mm32.o
-+obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b0e77de..9d460e0 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -1,5 +1,8 @@
-+#include <linux/cpu.h>
-+#include <linux/dma-mapping.h>
- #include <linux/bootmem.h>
- #include <linux/gfp.h>
-+#include <linux/highmem.h>
- #include <linux/export.h>
- #include <linux/slab.h>
- #include <linux/types.h>
-@@ -16,6 +19,126 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
- 
-+
-+#ifdef CONFIG_ARM64
-+static inline void dmac_map_area(const void *start, size_t size, int dir)
-+{
-+	return __dma_map_area(start, size, dir);
-+}
-+
-+static inline void dmac_unmap_area(const void *start, size_t size, int dir)
-+{
-+	return __dma_unmap_area(start, size, dir);
-+}
-+
-+static inline bool cache_is_vipt_nonaliasing(void)
-+{
-+	return true;
-+}
-+
-+static inline void *kmap_high_get(struct page *page)
-+{
-+	return NULL;
-+}
-+
-+static inline void kunmap_high(struct page *page) {}
-+#endif
-+
-+
-+/* functions called by SWIOTLB */
-+
-+static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
-+	size_t size, enum dma_data_direction dir,
-+	void (*op)(const void *, size_t, int))
-+{
-+	unsigned long pfn;
-+	size_t left = size;
-+
-+	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
-+	offset %= PAGE_SIZE;
-+
-+	do {
-+		size_t len = left;
-+		void *vaddr;
-+	
-+		if (!pfn_valid(pfn))
-+		{
-+			/* TODO: cache flush */
-+		} else {
-+			struct page *page = pfn_to_page(pfn);
-+
-+			if (PageHighMem(page)) {
-+				if (len + offset > PAGE_SIZE)
-+					len = PAGE_SIZE - offset;
-+
-+				if (cache_is_vipt_nonaliasing()) {
-+					vaddr = kmap_atomic(page);
-+					op(vaddr + offset, len, dir);
-+					kunmap_atomic(vaddr);
-+				} else {
-+					vaddr = kmap_high_get(page);
-+					if (vaddr) {
-+						op(vaddr + offset, len, dir);
-+						kunmap_high(page);
-+					}
-+				}
-+			} else {
-+				vaddr = page_address(page) + offset;
-+				op(vaddr, len, dir);
-+			}
-+		}
-+
-+		offset = 0;
-+		pfn++;
-+		left -= len;
-+	} while (left);
-+}
-+
-+static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir)
-+{
-+	/* Cannot use __dma_page_dev_to_cpu because we don't have a
-+	 * struct page for handle */
-+
-+	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
-+}
-+
-+static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir)
-+{
-+
-+	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
-+}
-+
-+void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir,
-+		struct dma_attrs *attrs)
-+
-+{
-+	if (is_dma_coherent(hwdev))
-+		return;
-+	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
-+		return;
-+
-+	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
-+}
-+
-+void xen_dma_sync_single_for_cpu(struct device *hwdev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	if (is_dma_coherent(hwdev))
-+		return;
-+	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
-+}
-+
-+void xen_dma_sync_single_for_device(struct device *hwdev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	if (is_dma_coherent(hwdev))
-+		return;
-+	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-+}
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-deleted file mode 100644
-index c7fa673..0000000
---- a/arch/arm/xen/mm32.c
-+++ /dev/null
-@@ -1,110 +0,0 @@
--#include <linux/cpu.h>
--#include <linux/dma-mapping.h>
--#include <linux/gfp.h>
--#include <linux/highmem.h>
--
--#include <xen/features.h>
--
--
--/* functions called by SWIOTLB */
--
--static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
--	size_t size, enum dma_data_direction dir,
--	void (*op)(const void *, size_t, int))
--{
--	unsigned long pfn;
--	size_t left = size;
--
--	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
--	offset %= PAGE_SIZE;
--
--	do {
--		size_t len = left;
--		void *vaddr;
--	
--		if (!pfn_valid(pfn))
--		{
--			/* TODO: cache flush */
--		} else {
--			struct page *page = pfn_to_page(pfn);
--
--			if (PageHighMem(page)) {
--				if (len + offset > PAGE_SIZE)
--					len = PAGE_SIZE - offset;
--
--				if (cache_is_vipt_nonaliasing()) {
--					vaddr = kmap_atomic(page);
--					op(vaddr + offset, len, dir);
--					kunmap_atomic(vaddr);
--				} else {
--					vaddr = kmap_high_get(page);
--					if (vaddr) {
--						op(vaddr + offset, len, dir);
--						kunmap_high(page);
--					}
--				}
--			} else {
--				vaddr = page_address(page) + offset;
--				op(vaddr, len, dir);
--			}
--		}
--
--		offset = 0;
--		pfn++;
--		left -= len;
--	} while (left);
--}
--
--static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir)
--{
--	/* Cannot use __dma_page_dev_to_cpu because we don't have a
--	 * struct page for handle */
--
--	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
--}
--
--static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir)
--{
--
--	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
--}
--
--void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir,
--		struct dma_attrs *attrs)
--
--{
--	if (is_dma_coherent(hwdev))
--		return;
--	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
--		return;
--
--	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
--}
--
--void xen_dma_sync_single_for_cpu(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--	if (is_dma_coherent(hwdev))
--		return;
--	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
--}
--
--void xen_dma_sync_single_for_device(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--	if (is_dma_coherent(hwdev))
--		return;
--	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
--}
--
--int __init xen_mm32_init(void)
--{
--	if (!xen_initial_domain())
--		return 0;
--
--	return 0;
--}
--arch_initcall(xen_mm32_init);
-diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-index dde3fc9..2052102 100644
---- a/arch/arm64/include/asm/xen/page-coherent.h
-+++ b/arch/arm64/include/asm/xen/page-coherent.h
-@@ -1,43 +1 @@
--#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
--#define _ASM_ARM64_XEN_PAGE_COHERENT_H
--
--#include <asm/page.h>
--#include <linux/dma-attrs.h>
--#include <linux/dma-mapping.h>
--
--static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
--		dma_addr_t *dma_handle, gfp_t flags,
--		struct dma_attrs *attrs)
--{
--	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
--}
--
--static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
--		void *cpu_addr, dma_addr_t dma_handle,
--		struct dma_attrs *attrs)
--{
--	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
--}
--
--static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
--	     unsigned long offset, size_t size, enum dma_data_direction dir,
--	     struct dma_attrs *attrs)
--{
--}
--
--static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir,
--		struct dma_attrs *attrs)
--{
--}
--
--static inline void xen_dma_sync_single_for_cpu(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--}
--
--static inline void xen_dma_sync_single_for_device(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--}
--#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
-+#include <../../arm/include/asm/xen/page-coherent.h>
+I feel a bit ashamed because I know a bit STM32F4 controllers but I did not
+realize that it is generic ST protocol. It helped us a lot because this 
+code really needed some refactoring.
+
+So this patch contains SPI protocol used in the STM32 bootloader and is based
+on AN4286. Generally it can be used to implement handling of other interfaces
+like UART or I2C because the flow is quite similar and maybe adding proper
+hw access callbacks will do all work.
+
+It supports:
+  - get info frame
+  - get version
+  - firmware write (write, read, write address, erase)
+
+>From v1: some typos fixes
+
+
+Karol
+
+Karol Wrona (1):
+  misc: st32boot: Add stm32 upgrade protocol handling
+
+ drivers/misc/Kconfig                |    1 +
+ drivers/misc/Makefile               |    1 +
+ drivers/misc/stm32boot/Kconfig      |    6 +
+ drivers/misc/stm32boot/Makefile     |    3 +
+ drivers/misc/stm32boot/stm32_core.c |  412 +++++++++++++++++++++++++++++++++++
+ drivers/misc/stm32boot/stm32_core.h |   81 +++++++
+ drivers/misc/stm32boot/stm32_spi.c  |  108 +++++++++
+ include/linux/stm32fwu.h            |   47 ++++
+ 8 files changed, 659 insertions(+)
+ create mode 100644 drivers/misc/stm32boot/Kconfig
+ create mode 100644 drivers/misc/stm32boot/Makefile
+ create mode 100644 drivers/misc/stm32boot/stm32_core.c
+ create mode 100644 drivers/misc/stm32boot/stm32_core.h
+ create mode 100644 drivers/misc/stm32boot/stm32_spi.c
+ create mode 100644 include/linux/stm32fwu.h
+
 -- 
-1.7.10.4
+1.7.9.5
 
