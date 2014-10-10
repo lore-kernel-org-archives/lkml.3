@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005AbaJJTiq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 15:38:46 -0400
-Received: from jabba.london.02.net ([82.132.130.169]:49851 "EHLO mail.o2.co.uk"
+	id S1754897AbaJJTip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 15:38:45 -0400
+Received: from jabba.london.02.net ([82.132.130.169]:49845 "EHLO mail.o2.co.uk"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754503AbaJJTin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751866AbaJJTin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 10 Oct 2014 15:38:43 -0400
-Date: Fri, 10 Oct 2014 20:32:42 +0100
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Fri, 10 Oct 2014 15:38:42 EDT
+Date: Fri, 10 Oct 2014 20:35:11 +0100
 From: Bernd Porr <mail@berndporr.me.uk>
 To: Ian Abbott <abbotti@mev.co.uk>,
         Hartley Sweeten <HartleyS@visionengravers.com>,
@@ -15,9 +16,8 @@ To: Ian Abbott <abbotti@mev.co.uk>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: [PATCH 1/3] staging: comedi: usbduxsigma: updated contact details
- and status
-Message-ID: <20141010193241.GA29530@bp1-Dimension-9100>
+Subject: [PATCH 3/3] staging: comedi: usbduxfast: updated address details
+Message-ID: <20141010193511.GA29558@bp1-Dimension-9100>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,39 +26,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've updated my contact details of the driver. I've also tested it
-thoroughly and it works perfectly. I've changed the status to stable. 
+Updated the range of years, e-mail and added driver desription as
+usually done in comedi. 
 
 Signed-off-by: Bernd Porr <mail@berndporr.me.uk>
 ---
- drivers/staging/comedi/drivers/usbduxsigma.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/drivers/usbduxfast.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/drivers/usbduxsigma.c b/drivers/staging/comedi/drivers/usbduxsigma.c
-index 94a09c1..309878e 100644
---- a/drivers/staging/comedi/drivers/usbduxsigma.c
-+++ b/drivers/staging/comedi/drivers/usbduxsigma.c
-@@ -1,6 +1,6 @@
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index f85818d..4f57321 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -1,5 +1,5 @@
  /*
-  * usbduxsigma.c
-- * Copyright (C) 2011 Bernd Porr, Bernd.Porr@f2s.com
-+ * Copyright (C) 2011-2014 Bernd Porr, mail@berndporr.me.uk
+- *  Copyright (C) 2004 Bernd Porr, Bernd.Porr@f2s.com
++ *  Copyright (C) 2004-2014 Bernd Porr, mail@berndporr.me.uk
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
-@@ -17,9 +17,9 @@
-  * Driver: usbduxsigma
-  * Description: University of Stirling USB DAQ & INCITE Technology Limited
-  * Devices: (ITL) USB-DUX [usbduxsigma]
-- * Author: Bernd Porr <BerndPorr@f2s.com>
-- * Updated: 8 Nov 2011
-- * Status: testing
-+ * Author: Bernd Porr <mail@berndporr.me.uk>
-+ * Updated: 10 Oct 2014
-+ * Status: stable
+@@ -12,6 +12,15 @@
+  * GNU General Public License for more details.
   */
  
++/*                                                                             
++ * Driver: usbduxfast
++ * Description: University of Stirling USB DAQ & INCITE Technology Limited     
++ * Devices: (ITL) USB-DUX [usbduxfast]                                        
++ * Author: Bernd Porr <mail@berndporr.me.uk>
++ * Updated: 10 Oct 2014                                   
++ * Status: stable                                                         
++ */
++
  /*
+  * I must give credit here to Chris Baugher who
+  * wrote the driver for AT-MIO-16d. I used some parts of this
 -- 
 1.9.1
 
