@@ -1,125 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675AbaJJKK6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 06:10:58 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:42947 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaJJKKz (ORCPT
+	id S1751617AbaJJKUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 06:20:31 -0400
+Received: from regular1.263xmail.com ([211.150.99.138]:37563 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaJJKU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 06:10:55 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f156d0000063c7-49-5437b0ac318e
-Content-transfer-encoding: 8BIT
-Message-id: <1412935850.4143.4.camel@AMDC1943>
-Subject: Re: [PATCH fixes 2/2] extcon: max77693: Fix always masked MUIC
- interrupts
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        stable@vger.kernel.org
-Date: Fri, 10 Oct 2014 12:10:50 +0200
-In-reply-to: <5437AF78.3060602@samsung.com>
-References: <1412929322-21908-1-git-send-email-k.kozlowski@samsung.com>
- <1412929322-21908-2-git-send-email-k.kozlowski@samsung.com>
- <54379CB6.1040405@samsung.com> <1412931783.22108.2.camel@AMDC1943>
- <5437AF78.3060602@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t/xK7prNpiHGNz4ZGCxccZ6VovrX56z
-	WpxtesNucf/rUUaLy7vmsFmsPXKX3eJ24wo2i9PdrBYLNj5idOD0uHNtD5vHvJOBHn1bVjF6
-	fN4kF8ASxWWTkpqTWZZapG+XwJUxacV/9oJGqYovi84wNjD+Fuli5OSQEDCReHqxmQXCFpO4
-	cG89WxcjF4eQwFJGid+LLjOCJHgFBCV+TL4HVMTBwSwgL3HkUjZImFlAXWLSvEXMEPWfGSXa
-	7u5hhajXk9g19wnYUGGBEIm7b36CzWETMJbYvHwJG4gtIqAhMfPvFUaQZmaB/UwSh09vAEuw
-	CKhKXP24gw1kGaeAtsTWX2IQC14zSvS1/mAFiUsIKEs09rtNYBSYheS8WQjnzUJy3gJG5lWM
-	oqmlyQXFSem5hnrFibnFpXnpesn5uZsYIYH+ZQfj4mNWhxgFOBiVeHgvyJiHCLEmlhVX5h5i
-	lOBgVhLh7Z4DFOJNSaysSi3Kjy8qzUktPsTIxMEp1cCo0qPvvtZ/98zN4qfOz3TcwXo0K104
-	5q/scQNZEa+Vj39674huKnTW1H5fZ37jqtKGIrEehQW7P2u8n5wlLXY9Nsme/fUj/h/Wz6uv
-	ZIcFbxXoCWxkWa7vnu+3M/KMjPgCxepAz6shayW0pRUtRAosbxyY5LJ1UnEVf3nkWcflu5Z3
-	X381i0eJpTgj0VCLuag4EQCde60EUgIAAA==
+	Fri, 10 Oct 2014 06:20:26 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <ef7d0806bcae9637da1cba4cdc465dfe>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v8 0/5] Rockchip soc thermal driver
+Date: Fri, 10 Oct 2014 18:19:36 +0800
+Message-Id: <1412936381-22718-1-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2014-10-10 at 19:05 +0900, Chanwoo Choi wrote:
-> On 10/10/2014 06:03 PM, Krzysztof Kozlowski wrote:
-> > On pią, 2014-10-10 at 17:45 +0900, Chanwoo Choi wrote:
-> >> On 10/10/2014 05:22 PM, Krzysztof Kozlowski wrote:
-> >>> All interrupts coming from MUIC were ignored because interrupt source
-> >>> register was masked.
-> >>>
-> >>> The Maxim 77693 has a "interrupt source" - a separate register and interrupts
-> >>> which give information about PMIC block triggering the individual
-> >>> interrupt (charger, topsys, MUIC, flash LED).
-> >>>
-> >>> By default bootloader could initialize this register to "mask all"
-> >>> value. In such case (observed on Trats2 board) MUIC interrupts won't be
-> >>> generated regardless of their mask status. Regmap irq chip was unmasking
-> >>> individual MUIC interrupts but the source was masked
-> >>>
-> >>> Before introducing regmap irq chip this interrupt source was unmasked,
-> >>> read and acked. Reading and acking is not necessary but unmasking is. Do
-> >>> it in extcon driver.
-> >>>
-> >>> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> >>> Cc: <stable@vger.kernel.org>
-> >>> Fixes: 342d669c1ee4 ("mfd: max77693: Handle IRQs using regmap")
-> >>> ---
-> >>>  drivers/extcon/extcon-max77693.c     | 16 ++++++++++++++++
-> >>>  include/linux/mfd/max77693-private.h |  5 +++++
-> >>>  2 files changed, 21 insertions(+)
-> >>>
-> >>> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-> >>> index 490e27475bac..d3adacf3187f 100644
-> >>> --- a/drivers/extcon/extcon-max77693.c
-> >>> +++ b/drivers/extcon/extcon-max77693.c
-> >>> @@ -1176,6 +1176,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
-> >>>  		}
-> >>>  	}
-> >>>  
-> >>> +	if (i) {
-> >>> +		/*
-> >>> +		 * i>0, at least one MUIC interrupt requested so need to unmask
-> >>> +		 * MUIC interrupt in INTSRC register. Without that MUIC
-> >>> +		 * interrupts will not be reported.
-> >>> +		 */
-> >>> +		ret = regmap_update_bits(max77693->regmap,
-> >>> +				MAX77693_PMIC_REG_INTSRC_MASK, SRC_IRQ_MUIC,
-> >>> +				~SRC_IRQ_MUIC);
-> >>> +		if (ret < 0) {
-> >>> +			dev_err(&pdev->dev, "Could not unmask MUIC interrupt in INTSRC: %d\n",
-> >>> +					ret);
-> >>> +			return ret;
-> >>> +		}
-> >>> +	}
-> >>> +
-> >>
-> >> No,
-> >> The extcon-max77693 driver cannot enable IRQ_CHARGER/TOP/FLASH
-> >> because MAX77693_PMIC_REG_INTSRC_MASK register is common register of MAX77693.
-> >>
-> >> The IRQ_CHARGER/TOP/FLASH of MAX77693_PMIC_REG_INTSRC_MASK register should be enabled
-> >> in drivers/mfd/max77693.c.
-> > 
-> > The code above unmasks only SRC_IRQ_MUIC. Other bits are not touched.
-> > Why do you think that other IRQs will be enabled?
-> 
-> I think that MAX77693_PMIC_REG_INTSRC_MASK common register better to be controlled
-> in drivers/mfd/max77693.c. I prefer that MAX77693 extcon driver would read/write only MUIC registers.
-> 
-> Also, MAX77693 extcon driver have to be always unmasked.
-> If IRQ_MUIC is masked, MAX77693 extcon driver could not detect any external cables.
-> 
-> For example,
-> The max77836 enable MUIC_IRQ by un-masking MUIC_IRQ.
-> You can check it on drivers/mfd/max14577.c (line 251~258)
+This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
+I believe the driver can be used on the rk3288-evb board.
 
-Sure, I get it. I'll do it the same as in max14577 driver.
+Add this driver, The system can reset the entire chip when
+the thermal temperture over 120C, In case of rising over 125C
+when tha hardware shorting,The sodftware will shutdown via "critical".
 
-Thanks for feedback!
-Krzysztof
+Changes in v8:
+	* address comments from Dmitry Torokhov and Doug Anderson.
+	- add three Teperture Sensors.
+        - support CRU and GPIO reset chip.
+	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
+	- alarm-temp via set_trips() callback
+	- remove "reset-gpios"
+
+Changes in v7:
+        - fix get data->clk=0 when in probe() function.
+	- fix some style code.
+	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+
+Changes in v6:
+        * address comments from Tomeu Vizoso.
+        - use thermal's generic framework.
+
+Changes in v5:
+        * address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
+        - with BIT() macro
+        - manage clocks in suspend/resume.
+	- license is fixed as GPLv2.
+	- #include "thermal_core.h"->#include <linux/thermal.h>
+	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
+	- The method of binding and unbinding be fixed.
+	- The pin-name tsadc->otp_out
+
+Changes in v4:
+        * address comments from Jonathan Cameron,huangtao and zhaoyifeng:
+        - this series thermal driver still be put in driver/thermal/
+        - modify the thermal driver description.
+
+Changes in v3:(add dts configure)
+        * address comments from Dmitry Torokhov and Arnd Bergmann:
+        - fix clock-names in rockchip-thermal.txt
+        - remove rockchip_thermal_control() in rockchip_set_mode()
+        - fix some code style.
+        - add dts configure.
+
+Changes in v2:
+        * address comments from Heiko Stubner:
+        - fix dt-bindings in rockchip-thermal.txt
+        - remove Author mark
+        - rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
+        - fix a identation
+        - remove clk_set_rate(),it's no necessary.
+        - fix the SIMPLE_DEV_PM_OPS() function  style.
+
+Caesar Wang (5):
+  thermal: rockchip: add driver for thermal
+  dt-bindings: document Rockchip thermal
+  ARM: dts: add RK3288 Thermal data
+  ARM: dts: add main Thermal info to rk3288
+  ARM: dts: enable Thermal on rk3288-evb board
+
+ .../bindings/thermal/rockchip-thermal.txt          |  45 ++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
+ arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
+ arch/arm/boot/dts/rk3288.dtsi                      |  23 +
+ drivers/thermal/Kconfig                            |   9 +
+ drivers/thermal/Makefile                           |   1 +
+ drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
+ 7 files changed, 769 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
+ create mode 100644 drivers/thermal/rockchip_thermal.c
+
+-- 
+1.9.1
+
 
