@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaJKXmR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 19:42:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:32283 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaJKXmQ (ORCPT
+	id S1752349AbaJKXqi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 19:46:38 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34222 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaJKXqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 19:42:16 -0400
-Message-ID: <5439C035.8020208@oracle.com>
-Date: Sat, 11 Oct 2014 19:41:41 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sat, 11 Oct 2014 19:46:37 -0400
+Date: Sun, 12 Oct 2014 00:46:35 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: fs/namei.c: Misuse of sequence counts?
+Message-ID: <20141011234635.GL7996@ZenIV.linux.org.uk>
+References: <20141011225808.GA20777@zzz>
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@suug.ch>
-CC: paulmck@linux.vnet.ibm.com, "David S. Miller" <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rhashtable: hang while running tests on boot
-References: <5437E1B3.6020409@oracle.com> <20141010142247.GU4880@linux.vnet.ibm.com> <5437ED21.2040500@oracle.com> <20141011155032.GZ4880@linux.vnet.ibm.com> <5439564E.8080105@oracle.com> <20141011222615.GB14186@casper.infradead.org>
-In-Reply-To: <20141011222615.GB14186@casper.infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141011225808.GA20777@zzz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2014 06:26 PM, Thomas Graf wrote:
-> On 10/11/14 at 12:09pm, Sasha Levin wrote:
->> On 10/11/2014 11:50 AM, Paul E. McKenney wrote:
->>>>>>> I am guessing that this happens only when running the resizable hashtable
->>>>>>> tests -- if that guess is incorrect, please let me know.
->>>>>
->>>>> I've seen it a few times only with rhashtable related traces, if that ever
->>>>> changes I'll update - but for now I think it's safe to assume it's rhashtable
->>>>> specific.
->>> Ah, so this is intermittent.  Joy.
->>
->> Yup, I'm seeing it in about 10% of boot attempts.
-> 
-> Have you ever seen any traces outside of the test_rht code?  I'm
-> trying to figure out whether it's a bug in the test code or in the
-> hash table itself.
+On Sat, Oct 11, 2014 at 05:58:08PM -0500, Eric Biggers wrote:
 
-There are odd RCU lockups (one of which is pasted earlier in this thread),
-but there's nothing pointing to rht code there, and I'm not seeing any other
-rht related issues.
+> In follow_dotdot_rcu(), said commit moved loads of the inode to just before
+> read_seqcount_begin(), in several instances.  I don't think this is correct,
+> because (as I understand it) read_seqcount_begin() is opening a seq-read
+> critical section on the new dentry.  So the inode load should come *after* it,
+> as in the original, to ensure the inode pointer is correctly matched with the
+> sequence count.
 
+Nope.  What we do is
+	* pick parent inode and seqcount (in whatever order)
+	* THEN check that child is still unchanged.
+The second part guarantees that parent dentry had been the parent of
+child all along, since the moment we'd first fetched _child's_ seqcount.
+And since a pinned positive dentry can't have its ->d_inode changed,
+we know that the value of parent's inode we'd fetched remained valid
+at least until we'd checked the child's seqcount and found it unchanged.
+Which means that we had it valid at some point after we'd fetched parent's
+seqcount.
 
-Thanks,
-Sasha
-
+The crucial part is that dentry cannot change its ->d_inode for as long as
+there are references to it.
