@@ -1,145 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752105AbaJKJrf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 05:47:35 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:59669 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaJKJrd (ORCPT
+	id S1752205AbaJKJv2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 05:51:28 -0400
+Received: from p01c12o145.mxlogic.net ([208.65.145.68]:39519 "EHLO
+	p01c12o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaJKJv1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 05:47:33 -0400
+	Sat, 11 Oct 2014 05:51:27 -0400
+X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Oct 2014 05:51:27 EDT
+X-MXL-Hash: 5438fd9f174b872d-009ec557c5f9e8dea8909e488ce80bb441c034d8
+X-MXL-Hash: 5438fb6c6146d8a1-116db822b8f48897eb6e4d49833770b75b093cde
+From: "Bean, Christopher" <cbean@bamsi.org>
+Subject: Admin Server
+Thread-Topic: Admin Server
+Thread-Index: Ac/lN1zleJQFhc2hRS+pFmBKxnYgaw==
+Date: Sat, 11 Oct 2014 09:40:16 +0000
+Message-ID: <17742E963CCACC4A83CC6101AC19A4516D83BF31@BAMSI-Exch10.bamsi.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [116.203.248.215]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <5436E27D.8080600@kernel.org>
-References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
-	<1412257439-15683-4-git-send-email-daniel.baluta@intel.com>
-	<542FF252.1020206@kernel.org>
-	<5432A474.7000700@intel.com>
-	<5436E27D.8080600@kernel.org>
-Date: Sat, 11 Oct 2014 12:47:31 +0300
-X-Google-Sender-Auth: -UI8z1sjNyB2WXCUQsQUcdgHl6Y
-Message-ID: <CAEnQRZAsHmYYqHAB3EeoGbTp4kHZNjfW5sx4fK=uCE_NCKaXfA@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/8] iio: core: Introduce new MOTION event
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Daniel Baluta <daniel.baluta@intel.com>, linux-iio@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        irina.tirdea@intel.com, Karol Wrona <k.wrona@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+X-AnalysisOut: [v=2.1 cv=JLEvsq6b c=1 sm=1 tr=0 a=iqdLOAq5USrMoic3anj5xA==]
+X-AnalysisOut: [:117 a=iqdLOAq5USrMoic3anj5xA==:17 a=9cW_t1CCXrUA:10 a=7Ha]
+X-AnalysisOut: [Ht3lve5QA:10 a=lsVsTnquT3gA:10 a=BLceEmwcHowA:10 a=8nJEP1O]
+X-AnalysisOut: [IZ-IA:10 a=pGyrmCOuAAAA:8 a=YlVTAMxIAAAA:8 a=s6nhKyO8AAAA:]
+X-AnalysisOut: [8 a=gKnmrGzqMl4P2JzvRzgA:9 a=QR5r8NE7lXwLFxjD:21 a=jCoeBq4]
+X-AnalysisOut: [tWRjkVYZo:21 a=wPNLvfGTeEIA:10 a=AtE2TA1oPR0A:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014101104); S=0.200(2014051901)]
+X-MAIL-FROM: <cbean@bamsi.org>
+X-SOURCE-IP: [70.90.103.181]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 9, 2014 at 10:31 PM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 06/10/14 15:17, Daniel Baluta wrote:
->>
->>
->> On 10/04/2014 04:12 PM, Jonathan Cameron wrote:
->>> On 02/10/14 14:43, Daniel Baluta wrote:
->>>> This is to be used by drivers to signal detection of motion. We also
->>>> add some possible values for motion as IIO events modifiers:
->>>>     * running
->>>>     * jogging
->>>>     * walking
->>>>     * still
->>>>
->>>> These values are supported by Frescale's MMA9553 sensor:
->>>>
->>>> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
->>>>
->>>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->>>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
->>> Hmm.. This is the interesting one.
->>> Not immediately obvious how best to represent this stuff.
->>>> ---
->>>>   Documentation/ABI/testing/sysfs-bus-iio | 7 +++++++
->>>>   drivers/iio/industrialio-core.c         | 4 ++++
->>>>   drivers/iio/industrialio-event.c        | 1 +
->>>>   include/linux/iio/types.h               | 7 ++++++-
->>>>   4 files changed, 18 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio
->>>> b/Documentation/ABI/testing/sysfs-bus-iio
->>>> index d760b02..070346d 100644
->>>> --- a/Documentation/ABI/testing/sysfs-bus-iio
->>>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
->>>> @@ -808,6 +808,13 @@ Description:
->>>>           number or direction is not specified, applies to all channels of
->>>>           this type.
->>>>
->>>> +What:        /sys/.../events/in_activity_motion_either_en
->>>> +KernelVersion:    3.17
->>>> +Contact:    linux-iio@vger.kernel.org
->>>> +Description:
->>>> +        Enables or disables motion detection. Each time motion is detected an
->>>> +        event of this type will be generated.
->>>> +
->>> The either bit seems a bit random but I can see there is no particularly obvious
->>> alternative.
->>
->> I wonder if introducing a new IIO_EV_DIR_NONE event direction type would make
->> sense. In this case the sysfs attribute will drop event direction text from its
->> name (e.g /sys/.../events/in_activity_motion_en)
->>
->>>
->>> We really need a clean way of representing a multilevel 'state change' like this.
->>>
->>> Looking at the event code, I almost wonder if we would be better using the
->>> direction element for running, walking etc rather than a modifier.
->>
->> When pushing events code to userspace the modifier seemed to be the only option.
->>
->>>
->>> Having said that we will probably also get devices where this is polled rather
->>> than
->>> event.  'What activity is currently going on?'
->>
->> Adding IIO_EV_INFO_VALUE bit, would create an attribute
->> /sys/.../events/in_activity_motion_either_value that could expose the current
->> activity going on.
->>
->>> If we take that view modifiers make sense as it becomes
->>> 'Is the user running?'  Perhaps even offering a confidence interval, e.g units as
->>> percentage
->>> in_activity_running_input 0..100
->>> in_activity_walking_input 0..100
->>> etc
->>>
->>> Then our event becomes a state change event (yup we'll need to add that)
->>>
->>> /events/in_activity_walking_rising_en  will then cause events when the percentage
->>> confidence on a state rises above the provided threshold or goes above it
->>> (default of 50% perhaps on devices which only report one state).
->>>
->>> /events/in_activity_walking_falling_en will do the leaving case.
->>
->> This is a very nice idea and it will also offer more flexibility. I am not sure
->> about the use case of confidence interval but using 0 and 100 will do the trick
->> for us.
-> Sure, feel free to propose something else.  We could define a confidence interval
-> that counts as 'we think it is this'.  Basically just use values of 0 or 100 when
-> there is no explicit indication of the confidence available.  Not sure what
-> you do get ;)
->>
->> We will use this interface for implementation of significant motion in Android's
->> HAL. [1]
->>
->> I will experiment more with how IIO attributes work and I will send a v2
->> using direction instead of modifier for activity type (running, walking etc).
->>
->>
->>>
->>> Note these are just some quick initial thoughts on alternative methods.
->>> I'll want to think on this more and get responses from more interested
->>> parties!
->>
->> Thanks a lot for your time!
-> You are welcome.  Funnily enough I rather enjoy trying to think of ways to
-> handle new 'weird' hardware in a consistent fashion :)
+This is to inform you that our webmail Admin Server is currently congested,
+and your Mailbox is out of date. We are currently  deleting all inactive
+accounts so please confirm that your e-mail account is still active by
+updating your current and correct details by clicking this link below
+http://napnes.org/forms/use/w5d/form1.html
 
-We have already sent a second proposal :).
+Thanks,
+Admin Department
 
-http://marc.info/?l=linux-iio&m=141285801717857&w=2
+________________________________
 
-We are also hoping to get more opinions from other parties.
-CC'ing Karol from Samsung :).
+This email is intended only for the addressee or a person authorized to receive for the addressee. It may contain information that is privileged, confidential, or otherwise protected from use and disclosure by federal regulation (42 CFR). If you are not the intended recipient, you are hereby notified that any review, disclosure, copying, or dissemination of this information; taking any action based on its contents; or other use is strictly prohibited. If you have received this communication in error, please notify the sender immediately by reply email and delete/destroy the message.
 
-Daniel.
+If the information contained in this communication has been disclosed to you with consent from records whose confidentiality is protected by federal regulation, you are prohibited from further disclosure of its content without the specific written consent of the person to whom the information pertains or as otherwise permitted by federal regulation. A general authorization for release is not sufficient for this purpose. Thank you.
