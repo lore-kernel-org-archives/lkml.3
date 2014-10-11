@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbaJKWZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 18:25:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54229 "EHLO
+	id S1752421AbaJKW0R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 18:26:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54236 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752154AbaJKWZS (ORCPT
+	with ESMTP id S1752343AbaJKW0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 18:25:18 -0400
-Date: Sat, 11 Oct 2014 23:25:14 +0100
+	Sat, 11 Oct 2014 18:26:16 -0400
+Date: Sat, 11 Oct 2014 23:26:15 +0100
 From: Thomas Graf <tgraf@suug.ch>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
-Subject: Re: [bisected] e341694e3eb5 netlink_lookup() rcu conversion causes
- latencies
-Message-ID: <20141011222514.GA14186@casper.infradead.org>
-References: <20141011083627.GB5074@osiris>
- <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: paulmck@linux.vnet.ibm.com, "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rhashtable: hang while running tests on boot
+Message-ID: <20141011222615.GB14186@casper.infradead.org>
+References: <5437E1B3.6020409@oracle.com>
+ <20141010142247.GU4880@linux.vnet.ibm.com>
+ <5437ED21.2040500@oracle.com>
+ <20141011155032.GZ4880@linux.vnet.ibm.com>
+ <5439564E.8080105@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <5439564E.8080105@oracle.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -31,38 +30,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 at 12:32pm, Eric Dumazet wrote:
-> On Sat, 2014-10-11 at 10:36 +0200, Heiko Carstens wrote:
-> > Hi all,
-> > 
-> > it just came to my attention that commit e341694e3eb5
-> > "netlink: Convert netlink_lookup() to use RCU protected hash table"
-> > causes network latencies for me on s390.
-> > 
-> > The testcase is quite simple and 100% reproducible on s390:
-> > 
-> > Simply login via ssh to a remote system which has the above mentioned
-> > patch applied. Any action like pressing return now has significant
-> > latencies. Or in other words, working via such a connection becomes
-> > a pain ;)
-> > 
-> > I haven't debugged it, however I assume the problem is that a) the
-> > commit introduces a synchronize_net() call und b) s390 kernels
-> > usually get compiled with CONFIG_HZ_100 while most other architectures
-> > use CONFIG_HZ_1000.
-> > If I change the kernel config to CONFIG_HZ_1000 the problem goes away,
-> > however I don't consider this a fix...
-> > 
-> > Another reason why this hasn't been observed on x86 may or may not be
-> > that we haven't implemented CONFIG_HAVE_CONTEXT_TRACKING on s390 (yet).
-> > But that's just guessing...
+On 10/11/14 at 12:09pm, Sasha Levin wrote:
+> On 10/11/2014 11:50 AM, Paul E. McKenney wrote:
+> >>> > > I am guessing that this happens only when running the resizable hashtable
+> >>> > > tests -- if that guess is incorrect, please let me know.
+> >> > 
+> >> > I've seen it a few times only with rhashtable related traces, if that ever
+> >> > changes I'll update - but for now I think it's safe to assume it's rhashtable
+> >> > specific.
+> > Ah, so this is intermittent.  Joy.
 > 
-> CC Paul and Sasha
+> Yup, I'm seeing it in about 10% of boot attempts.
 
-I think the issue here is obvious and a fix is on the way to move
-the insertion and removal to a worker to no longer require the
-synchronize_rcu().
-
-What bothers me is that the synchronize_rcu() should only occur
-on expand/shrink and not for every table update. The default table
-size is 64.
+Have you ever seen any traces outside of the test_rht code?  I'm
+trying to figure out whether it's a bug in the test code or in the
+hash table itself.
