@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaJKXed (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 19:34:33 -0400
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:56605 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751624AbaJKXec convert rfc822-to-8bit (ORCPT
+	id S1752288AbaJKXmR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 19:42:17 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32283 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaJKXmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 19:34:32 -0400
-X-Greylist: delayed 8400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Oct 2014 19:34:31 EDT
+	Sat, 11 Oct 2014 19:42:16 -0400
+Message-ID: <5439C035.8020208@oracle.com>
+Date: Sat, 11 Oct 2014 19:41:41 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <20141011201523.GA29341@kroah.com>
-References: <1413054822-7894-1-git-send-email-filipe@codinghighway.com>
-	<20141011201523.GA29341@kroah.com>
-Date: Sat, 11 Oct 2014 22:06:48 +0100
-Message-ID: <CAECfEV8QWn9-JeSHcKpn7Hkaea0xzDxkGSzcLyrXa4vqdNnGcA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] drivers/staging: Fixed sparse error "directive in
- argument list"
-From: =?UTF-8?Q?Filipe_Gon=C3=A7alves?= <filipe@codinghighway.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        devel <devel@driverdev.osuosl.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Ovh-Tracer-Id: 11234510746146540312
-X-Ovh-Remote: 209.85.213.174 (mail-ig0-f174.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrleduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejgedrleduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Thomas Graf <tgraf@suug.ch>
+CC: paulmck@linux.vnet.ibm.com, "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rhashtable: hang while running tests on boot
+References: <5437E1B3.6020409@oracle.com> <20141010142247.GU4880@linux.vnet.ibm.com> <5437ED21.2040500@oracle.com> <20141011155032.GZ4880@linux.vnet.ibm.com> <5439564E.8080105@oracle.com> <20141011222615.GB14186@casper.infradead.org>
+In-Reply-To: <20141011222615.GB14186@casper.infradead.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ah .. right! I didn't know what OBD_OCD_VERSION() was. Now I see it's
-a way to test kernel version. I am going to submit a new patch
-shortly.
+On 10/11/2014 06:26 PM, Thomas Graf wrote:
+> On 10/11/14 at 12:09pm, Sasha Levin wrote:
+>> On 10/11/2014 11:50 AM, Paul E. McKenney wrote:
+>>>>>>> I am guessing that this happens only when running the resizable hashtable
+>>>>>>> tests -- if that guess is incorrect, please let me know.
+>>>>>
+>>>>> I've seen it a few times only with rhashtable related traces, if that ever
+>>>>> changes I'll update - but for now I think it's safe to assume it's rhashtable
+>>>>> specific.
+>>> Ah, so this is intermittent.  Joy.
+>>
+>> Yup, I'm seeing it in about 10% of boot attempts.
+> 
+> Have you ever seen any traces outside of the test_rht code?  I'm
+> trying to figure out whether it's a bug in the test code or in the
+> hash table itself.
+
+There are odd RCU lockups (one of which is pasted earlier in this thread),
+but there's nothing pointing to rht code there, and I'm not seeing any other
+rht related issues.
+
 
 Thanks,
-Filipe
+Sasha
 
-On Sat, Oct 11, 2014 at 9:15 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->
-> On Sat, Oct 11, 2014 at 08:13:42PM +0100, Filipe Gonçalves wrote:
->> This patch fixes a sparse warning on layout.c (ptlrpc) that was caused by having preprocessor directives in the arguments to a macro.
->>
->> Signed-off-by: Filipe Gonçalves <filipe@codinghighway.com>
->> ---
->>  drivers/staging/lustre/lustre/ptlrpc/layout.c | 7 +++++--
->>  1 file changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
->> index 5b83371..211df78 100644
->> --- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
->> +++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
->> @@ -978,10 +978,11 @@ struct req_msg_field RMF_CONN =
->>  EXPORT_SYMBOL(RMF_CONN);
->>
->>  struct req_msg_field RMF_CONNECT_DATA =
->> +#if LUSTRE_VERSION_CODE > OBD_OCD_VERSION(2, 7, 50, 0)
->>       DEFINE_MSGF("cdata",
->>                   RMF_F_NO_SIZE_CHECK /* we allow extra space for interop */,
->> -#if LUSTRE_VERSION_CODE > OBD_OCD_VERSION(2, 7, 50, 0)
->>                   sizeof(struct obd_connect_data),
->> +                 lustre_swab_connect, NULL);
->
-> Ick ick ick.
->
-> Yeah, sparse might complain about this, but how about just properly
-> deleting the #ifdef entirely, and not perpetuate it even more?
->
-> It shouldn't be needed anymore now that the code is in the kernel tree.
->
-> greg k-h
