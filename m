@@ -1,47 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453AbaJKOVu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 10:21:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56321 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268AbaJKOVt (ORCPT
+	id S1752486AbaJKOsX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 10:48:23 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:41088 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418AbaJKOsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 10:21:49 -0400
-Date: Sat, 11 Oct 2014 07:20:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Philip Munksgaard <pmunksgaard@gmail.com>
-Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: serial: Fix indentation style issue
-Message-ID: <20141011142049.GA11456@kroah.com>
-References: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413035383-3981-1-git-send-email-pmunksgaard@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 11 Oct 2014 10:48:21 -0400
+Message-ID: <1413038899.9362.43.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH net-next RFC 3/3] virtio-net: conditionally enable tx
+ interrupt
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Sat, 11 Oct 2014 07:48:19 -0700
+In-Reply-To: <1413011806-3813-4-git-send-email-jasowang@redhat.com>
+References: <1413011806-3813-1-git-send-email-jasowang@redhat.com>
+	 <1413011806-3813-4-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 03:49:43PM +0200, Philip Munksgaard wrote:
-> Fix a style issue
+On Sat, 2014-10-11 at 15:16 +0800, Jason Wang wrote:
+> We free transmitted packets in ndo_start_xmit() in the past to get better
+> performance in the past. One side effect is that skb_orphan() needs to be
+> called in ndo_start_xmit() which makes sk_wmem_alloc not accurate in
+> fact. For TCP protocol, this means several optimization could not work well
+> such as TCP small queue and auto corking. This can lead extra low
+> throughput of small packets stream.
 > 
-> Signed-off-by: Philip Munksgaard <pmunksgaard@gmail.com>
+> Thanks to the urgent descriptor support. This patch tries to solve this
+> issue by enable the tx interrupt selectively for stream packets. This means
+> we don't need to orphan TCP stream packets in ndo_start_xmit() but enable
+> tx interrupt for those packets. After we get tx interrupt, a tx napi was
+> scheduled to free those packets.
+> 
+> With this method, sk_wmem_alloc of TCP socket were more accurate than in
+> the past which let TCP can batch more through TSQ and auto corking.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 > ---
->  drivers/usb/serial/option.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  drivers/net/virtio_net.c | 164 ++++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 128 insertions(+), 36 deletions(-)
 > 
-> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> index d1a3f60..d88998d 100644
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-> @@ -1616,7 +1616,7 @@ static const struct usb_device_id option_ids[] = {
->  	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
->  	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
->    	  .driver_info = (kernel_ulong_t)&four_g_w14_blacklist
-> -  	},
-> +	},
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index 5810841..b450fc4 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -72,6 +72,8 @@ struct send_queue {
+>  
+>  	/* Name of the send queue: output.$index */
+>  	char name[40];
+> +
+> +	struct napi_struct napi;
+>  };
+>  
+>  /* Internal representation of a receive virtqueue */
+> @@ -217,15 +219,40 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
+>  	return p;
+>  }
+>  
+> +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
+> +{
+> +	struct sk_buff *skb;
+> +	unsigned int len;
+> +	struct virtnet_info *vi = sq->vq->vdev->priv;
+> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+> +	int sent = 0;
+> +
+> +	while (sent < budget &&
+> +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
+> +		pr_debug("Sent skb %p\n", skb);
+> +
+> +		u64_stats_update_begin(&stats->tx_syncp);
+> +		stats->tx_bytes += skb->len;
+> +		stats->tx_packets++;
+> +		u64_stats_update_end(&stats->tx_syncp);
+> +
+> +		dev_kfree_skb_any(skb);
+> +		sent++;
+> +	}
+> +
 
-Why not fix the same 'space' issue on the line before this at the same
-time?
+You could accumulate skb->len in a totlen var, and perform a single
+
+	u64_stats_update_begin(&stats->tx_syncp);
+	stats->tx_bytes += totlen;
+	stats->tx_packets += sent;
+	u64_stats_update_end(&stats->tx_syncp);
+
+after the loop.
+
+
+> +	return sent;
+> +}
+> +
+
+...
+
+> +
+> +static bool virtnet_skb_needs_intr(struct sk_buff *skb)
+> +{
+> +	union {
+> +		unsigned char *network;
+> +		struct iphdr *ipv4;
+> +		struct ipv6hdr *ipv6;
+> +	} hdr;
+> +	struct tcphdr *th = tcp_hdr(skb);
+> +	u16 payload_len;
+> +
+> +	hdr.network = skb_network_header(skb);
+> +
+> +	/* Only IPv4/IPv6 with TCP is supported */
+
+	Oh well, yet another packet flow dissector :)
+
+	If most packets were caught by your implementation, you could use it
+for fast patj and fallback to skb_flow_dissect() for encapsulated
+traffic.
+
+	struct flow_keys keys;   
+
+	if (!skb_flow_dissect(skb, &keys)) 
+		return false;
+
+	if (keys.ip_proto != IPPROTO_TCP)
+		return false;
+
+	then check __skb_get_poff() how to get th, and check if there is some
+payload...
+
+
+> +	if ((skb->protocol == htons(ETH_P_IP)) &&
+> +	    hdr.ipv4->protocol == IPPROTO_TCP) {
+> +		payload_len = ntohs(hdr.ipv4->tot_len) - hdr.ipv4->ihl * 4 -
+> +			      th->doff * 4;
+> +	} else if ((skb->protocol == htons(ETH_P_IPV6) ||
+> +		   hdr.ipv6->nexthdr == IPPROTO_TCP)) {
+> +		payload_len = ntohs(hdr.ipv6->payload_len) - th->doff * 4;
+> +	} else {
+> +		return false;
+> +	}
+> +
+> +	/* We don't want to dealy packet with PUSH bit and pure ACK packet */
+> +	if (!th->psh && payload_len)
+> +		return true;
+> +
+> +	return false;
+>  }
+
+
+
 
