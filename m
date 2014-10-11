@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaJKMis (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 08:38:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaJKMir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 08:38:47 -0400
-Date: Sat, 11 Oct 2014 20:38:05 +0800
-From: Baoquan He <bhe@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141011123805.GC11560@dhcp-16-116.nay.redhat.com>
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
- <542B1EC1.8090502@zytor.com>
- <20141001135237.GA13689@redhat.com>
- <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
+	id S1752319AbaJKMmI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 08:42:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47419 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162AbaJKMmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 08:42:06 -0400
+Message-ID: <54392576.30707@oracle.com>
+Date: Sat, 11 Oct 2014 08:41:26 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <543907B5.7060001@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: paulmck@linux.vnet.ibm.com
+CC: "David S. Miller" <davem@davemloft.net>, tgraf@suug.ch,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rhashtable: hang while running tests on boot
+References: <5437E1B3.6020409@oracle.com> <20141010142247.GU4880@linux.vnet.ibm.com>
+In-Reply-To: <20141010142247.GU4880@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 at 03:34am, H. Peter Anvin wrote:
-> On 10/10/2014 08:14 PM, Baoquan He wrote:
-> >On 10/08/14 at 03:27pm, Vivek Goyal wrote:
-> >>On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
-> >
-> >>>Sorry... this makes no sense.
-> >>>
-> >>>For x86-64, there is no direct connection between the physical and
-> >>>virtual address spaces that the kernel runs in...
-> >>
-> >>I am sorry I did not understand this one. I thought that initial
-> >>relocatable kernel implementaion did not have any direct connection
-> >>between virtual and physical address. One could load kernel anywhere
-> >>and kernel virtual address will not change and we will just adjust
-> >>page tables to map virtual address to right physical address.
-> >>
-> >>Now handle_relocation() stuff seems to introduce a close coupling
-> >>between physical and virtual address. So if kernel shifts by 16MB
-> >>in physical address space, then it will shift by equal amount
-> >>in virtual address space. So there seems to be a direct connection
-> >>between virtual and physical address space in this case.
-> >
-> >Yeah, it's exactly as Vivek said.
-> >
-> >Before kaslr was introduced, x86_64 kernel can be put anywhere, and
-> >always _text is 0xffffffff81000000. Meanwhile phys_base contains the
-> >offset between the compiled addr (namely 0x1000000) and kernel loaded
-> >addr. After kaslr implementation was added, as long as kernel loaded
-> >addr is different 0x1000000, it will call handle_relocations(). The
-> >offset now is added onto each symbols including _text and phys_base
-> >becomes 0.
-> >
-> >It's clearly showing that by checking /proc/kallsyms and value of
-> >phys_base.
-> >
-> 
-> This really shouldn't have happened this way on x86-64.  It has to
-> happen this way on i386, but I worry that this may be a serious
-> misdesign in kaslr on x86-64.  I'm also wondering if there is any
-> other fallout of this?
+On 10/10/2014 10:22 AM, Paul E. McKenney wrote:
+> I am guessing that this happens only when running the resizable hashtable
+> tests -- if that guess is incorrect, please let me know.
 
-Yes, this shouldn't happen this way on x86_64. With this patch, those
-are fixed as expected. If kernel location is not chosen randomly, we
-should not do the relocations handling. If and only if kaslr is enabled
-and it relocated the kernel randomly as expected, we do the relocations
-handling.
+Paul, I'm not sure if it's related or not - but I'm also seeing quite a few
+unexplainable (read: which I can't explain) RCU stalls:
 
-I think this patch really makes sense and it's simple and won't impact
-i386 and other implementations.
+[ 2121.852211] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[ 2121.852233]  0: (244 ticks this GP) idle=1f7/140000000000002/0 softirq=18045/18045 last_accelerate: 7794/c7aa, nonlazy_posted: 576737, ..
+[ 2121.852260]  (detected by 7, t=20502 jiffies, g=16439, c=16438, q=63119)
+[ 2121.852265] Task dump for CPU 0:
+[ 2121.852294] ksoftirqd/0     R  running task    13504     3      2 0x10080008
+[ 2121.852307]  ffff880068203d88 ffffffff8efe9a34 ffff880068203d48 0000000000000000
+[ 2121.852317]  ffff8800681c3000 ffff880068200010 ffff880068200000 000001bae312d5a9
+[ 2121.852327]  ffff880064a5b000 ffff880064a5b000 ffff880068203d78 0000000000000000
+[ 2121.852330] Call Trace:
+[ 2121.852354]  [<ffffffff8efe9a34>] ? __schedule+0x614/0xdd0
+[ 2121.852364]  [<ffffffff8efea230>] schedule+0x40/0xb0
+[ 2121.852378]  [<ffffffff8a1fe4a8>] smpboot_thread_fn+0x1b8/0x420
+[ 2121.852389]  [<ffffffff8a1c7a90>] ? tasklet_init+0x70/0x70
+[ 2121.852399]  [<ffffffff8a1fe2f0>] ? SyS_setgroups+0x1e0/0x1e0
+[ 2121.852410]  [<ffffffff8a1f7aa4>] kthread+0x144/0x170
+[ 2121.852420]  [<ffffffff8efec2cf>] ? wait_for_completion+0x10f/0x160
+[ 2121.852431]  [<ffffffff8a1f7960>] ? flush_kthread_work+0x1d0/0x1d0
+[ 2121.852440]  [<ffffffff8eff4a3c>] ret_from_fork+0x7c/0xb0
+[ 2121.852450]  [<ffffffff8a1f7960>] ? flush_kthread_work+0x1d0/0x1d0
 
-Thanks
-Baoquan
 
+Thanks,
+Sasha
