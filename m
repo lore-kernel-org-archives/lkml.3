@@ -1,222 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbaJKGb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 02:31:29 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:57957 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270AbaJKGb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 02:31:28 -0400
-From: Anh Le <anhlq2110@gmail.com>
-To: oleg.drokin@intel.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: lustre: llite: fix some sparse warnings about userspace pointer
-Date: Sat, 11 Oct 2014 13:31:17 +0700
-Message-Id: <1413009077-10158-1-git-send-email-anhlq2110@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751983AbaJKHRC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 03:17:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171AbaJKHRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 03:17:00 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: linux-api@vger.kernel.org, kvm@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next RFC 0/3] virtio-net: Conditionally enable tx interrupt
+Date: Sat, 11 Oct 2014 15:16:43 +0800
+Message-Id: <1413011806-3813-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add __user macro to the function declarations that accept userspace pointers as
-arguments.
+Hello all:
 
-Signed-off-by: Anh Le <anhlq2110@gmail.com>
----
- .../staging/lustre/lustre/include/lprocfs_status.h |  6 +--
- drivers/staging/lustre/lustre/llite/lproc_llite.c  | 48 +++++++++++-----------
- .../lustre/lustre/obdclass/lprocfs_status.c        |  4 +-
- 3 files changed, 29 insertions(+), 29 deletions(-)
+We free old transmitted packets in ndo_start_xmit() currently, so any
+packet must be orphaned also there. This was used to reduce the overhead of
+tx interrupt to achieve better performance. But this may not work for some
+protocols such as TCP stream. TCP depends on the value of sk_wmem_alloc to
+implement various optimization for small packets stream such as TCP small
+queue and auto corking. But orphaning packets early in ndo_start_xmit()
+disable such things more or less since sk_wmem_alloc was not accurate. This
+lead extra low throughput for TCP stream of small writes.
 
-diff --git a/drivers/staging/lustre/lustre/include/lprocfs_status.h b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-index ccb6cd4..42fdb64 100644
---- a/drivers/staging/lustre/lustre/include/lprocfs_status.h
-+++ b/drivers/staging/lustre/lustre/include/lprocfs_status.h
-@@ -374,8 +374,8 @@ static inline void s2dhms(struct dhms *ts, time_t secs)
- #define JOBSTATS_PROCNAME_UID		"procname_uid"
- #define JOBSTATS_NODELOCAL		"nodelocal"
- 
--extern int lprocfs_write_frac_helper(const char *buffer, unsigned long count,
--				     int *val, int mult);
-+extern int lprocfs_write_frac_helper(const char __user *buffer,
-+		unsigned long count, int *val, int mult);
- extern int lprocfs_read_frac_helper(char *buffer, unsigned long count,
- 				    long val, int mult);
- #if defined (CONFIG_PROC_FS)
-@@ -647,7 +647,7 @@ extern int lprocfs_rd_kbytesavail(struct seq_file *m, void *data);
- extern int lprocfs_rd_filestotal(struct seq_file *m, void *data);
- extern int lprocfs_rd_filesfree(struct seq_file *m, void *data);
- 
--extern int lprocfs_write_helper(const char *buffer, unsigned long count,
-+extern int lprocfs_write_helper(const char __user *buffer, unsigned long count,
- 				int *val);
- extern int lprocfs_seq_read_frac_helper(struct seq_file *m, long val, int mult);
- extern int lprocfs_write_u64_helper(const char *buffer, unsigned long count,
-diff --git a/drivers/staging/lustre/lustre/llite/lproc_llite.c b/drivers/staging/lustre/lustre/llite/lproc_llite.c
-index 3b3df9f..2a97df1 100644
---- a/drivers/staging/lustre/lustre/llite/lproc_llite.c
-+++ b/drivers/staging/lustre/lustre/llite/lproc_llite.c
-@@ -227,8 +227,8 @@ static int ll_max_readahead_mb_seq_show(struct seq_file *m, void *v)
- 	return lprocfs_seq_read_frac_helper(m, pages_number, mult);
- }
- 
--static ssize_t ll_max_readahead_mb_seq_write(struct file *file, const char *buffer,
--					 size_t count, loff_t *off)
-+static ssize_t ll_max_readahead_mb_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -269,7 +269,7 @@ static int ll_max_readahead_per_file_mb_seq_show(struct seq_file *m, void *v)
- }
- 
- static ssize_t ll_max_readahead_per_file_mb_seq_write(struct file *file,
--						  const char *buffer,
-+						  const char __user *buffer,
- 						  size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
-@@ -313,7 +313,7 @@ static int ll_max_read_ahead_whole_mb_seq_show(struct seq_file *m, void *unused)
- }
- 
- static ssize_t ll_max_read_ahead_whole_mb_seq_write(struct file *file,
--						const char *buffer,
-+						const char __user *buffer,
- 						size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
-@@ -469,8 +469,8 @@ static int ll_checksum_seq_show(struct seq_file *m, void *v)
- 	return seq_printf(m, "%u\n", (sbi->ll_flags & LL_SBI_CHECKSUM) ? 1 : 0);
- }
- 
--static ssize_t ll_checksum_seq_write(struct file *file, const char *buffer,
--				 size_t count, loff_t *off)
-+static ssize_t ll_checksum_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -504,8 +504,8 @@ static int ll_max_rw_chunk_seq_show(struct seq_file *m, void *v)
- 	return seq_printf(m, "%lu\n", ll_s2sbi(sb)->ll_max_rw_chunk);
- }
- 
--static ssize_t ll_max_rw_chunk_seq_write(struct file *file, const char *buffer,
--				     size_t count, loff_t *off)
-+static ssize_t ll_max_rw_chunk_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	int rc, val;
-@@ -533,8 +533,8 @@ static int ll_rd_track_id(struct seq_file *m, enum stats_track_type type)
- 	}
- }
- 
--static int ll_wr_track_id(const char *buffer, unsigned long count, void *data,
--			  enum stats_track_type type)
-+static int ll_wr_track_id(const char __user *buffer, unsigned long count,
-+		 void *data, enum stats_track_type type)
- {
- 	struct super_block *sb = data;
- 	int rc, pid;
-@@ -556,8 +556,8 @@ static int ll_track_pid_seq_show(struct seq_file *m, void *v)
- 	return ll_rd_track_id(m, STATS_TRACK_PID);
- }
- 
--static ssize_t ll_track_pid_seq_write(struct file *file, const char *buffer,
--				  size_t count, loff_t *off)
-+static ssize_t ll_track_pid_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct seq_file *seq = file->private_data;
- 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_PID);
-@@ -569,8 +569,8 @@ static int ll_track_ppid_seq_show(struct seq_file *m, void *v)
- 	return ll_rd_track_id(m, STATS_TRACK_PPID);
- }
- 
--static ssize_t ll_track_ppid_seq_write(struct file *file, const char *buffer,
--				   size_t count, loff_t *off)
-+static ssize_t ll_track_ppid_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct seq_file *seq = file->private_data;
- 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_PPID);
-@@ -582,8 +582,8 @@ static int ll_track_gid_seq_show(struct seq_file *m, void *v)
- 	return ll_rd_track_id(m, STATS_TRACK_GID);
- }
- 
--static ssize_t ll_track_gid_seq_write(struct file *file, const char *buffer,
--				  size_t count, loff_t *off)
-+static ssize_t ll_track_gid_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct seq_file *seq = file->private_data;
- 	return ll_wr_track_id(buffer, count, seq->private, STATS_TRACK_GID);
-@@ -598,8 +598,8 @@ static int ll_statahead_max_seq_show(struct seq_file *m, void *v)
- 	return seq_printf(m, "%u\n", sbi->ll_sa_max);
- }
- 
--static ssize_t ll_statahead_max_seq_write(struct file *file, const char *buffer,
--				      size_t count, loff_t *off)
-+static ssize_t ll_statahead_max_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -628,8 +628,8 @@ static int ll_statahead_agl_seq_show(struct seq_file *m, void *v)
- 			sbi->ll_flags & LL_SBI_AGL_ENABLED ? 1 : 0);
- }
- 
--static ssize_t ll_statahead_agl_seq_write(struct file *file, const char *buffer,
--				      size_t count, loff_t *off)
-+static ssize_t ll_statahead_agl_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -672,8 +672,8 @@ static int ll_lazystatfs_seq_show(struct seq_file *m, void *v)
- 			(sbi->ll_flags & LL_SBI_LAZYSTATFS) ? 1 : 0);
- }
- 
--static ssize_t ll_lazystatfs_seq_write(struct file *file, const char *buffer,
--				   size_t count, loff_t *off)
-+static ssize_t ll_lazystatfs_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct super_block *sb = ((struct seq_file *)file->private_data)->private;
- 	struct ll_sb_info *sbi = ll_s2sbi(sb);
-@@ -787,8 +787,8 @@ static int ll_xattr_cache_seq_show(struct seq_file *m, void *v)
- 	return rc;
- }
- 
--static ssize_t ll_xattr_cache_seq_write(struct file *file, const char *buffer,
--					size_t count, loff_t *off)
-+static ssize_t ll_xattr_cache_seq_write(struct file *file,
-+		 const char __user *buffer, size_t count, loff_t *off)
- {
- 	struct seq_file *seq = file->private_data;
- 	struct super_block *sb = seq->private;
-diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index 61e04af..686bc18 100644
---- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -177,7 +177,7 @@ int lprocfs_read_frac_helper(char *buffer, unsigned long count, long val,
- }
- EXPORT_SYMBOL(lprocfs_read_frac_helper);
- 
--int lprocfs_write_frac_helper(const char *buffer, unsigned long count,
-+int lprocfs_write_frac_helper(const char __user *buffer, unsigned long count,
- 			      int *val, int mult)
- {
- 	char kernbuf[20], *end, *pbuf;
-@@ -1819,7 +1819,7 @@ __s64 lprocfs_read_helper(struct lprocfs_counter *lc,
- }
- EXPORT_SYMBOL(lprocfs_read_helper);
- 
--int lprocfs_write_helper(const char *buffer, unsigned long count,
-+int lprocfs_write_helper(const char __user *buffer, unsigned long count,
- 			 int *val)
- {
- 	return lprocfs_write_frac_helper(buffer, count, val, 1);
+This series tries to solve this issue by enable tx interrupts for all TCP
+packets other than the ones with push bit or pure ACK. This is done through
+the support of urgent descriptor which can force an interrupt for a
+specified packet. If tx interrupt was enabled for a packet, there's no need
+to orphan it in ndo_start_xmit(), we can free it tx napi which is scheduled
+by tx interrupt. Then sk_wmem_alloc was more accurate than before and TCP
+can batch more for small write. More larger skb was produced by TCP in this
+case to improve both throughput and cpu utilization.
+
+Test shows great improvements on small write tcp streams. For most of the
+other cases, the throughput and cpu utilization are the same in the
+past. Only few cases, more cpu utilization was noticed which needs more
+investigation.
+
+Review and comments are welcomed.
+
+Thanks
+
+Test result:
+
+- Two Intel Corporation Xeon 5600s (8 cores) with back to back connected
+  82599ES:
+- netperf test between guest and remote host
+- 1 queue 2 vcpus with zercopy enabled vhost_net
+- both host and guest are net-next.git with the patches.
+- Value with '[]' means obvious difference (the significance is greater
+  than 95%).
+- he significance of the differences between the two averages is calculated
+  using unpaired T-test that takes into account the SD of the averages.
+
+Guest RX
+size/sessions/throughput-+%/cpu-+%/per cpu throughput -+%/
+64/1/+3.7872%/+3.2307%/+0.5390%/
+64/2/-0.2325%/+2.9552%/-3.0962%/
+64/4/[-2.0296%]/+2.2955%/[-4.2280%]/
+64/8/+0.0944%/[+2.2654%]/-2.4662%/
+256/1/+1.1947%/-2.5462%/+3.8386%/
+256/2/-1.6477%/+3.4421%/-4.9301%/
+256/4/[-5.9526%]/[+6.8861%]/[-11.9951%]/
+256/8/-3.6470%/-1.5887%/-2.0916%/
+1024/1/-4.2225%/-1.3238%/-2.9376%/
+1024/2/+0.3568%/+1.8439%/-1.4601%/
+1024/4/-0.7065%/-0.0099%/-2.3483%/
+1024/8/-1.8620%/-2.4774%/+0.6310%/
+4096/1/+0.0115%/-0.3693%/+0.3823%/
+4096/2/-0.0209%/+0.8730%/-0.8862%/
+4096/4/+0.0729%/-7.0303%/+7.6403%/
+4096/8/-2.3720%/+0.0507%/-2.4214%/
+16384/1/+0.0222%/-1.8672%/+1.9254%/
+16384/2/+0.0986%/+3.2968%/-3.0961%/
+16384/4/-1.2059%/+7.4291%/-8.0379%/
+16384/8/-1.4893%/+0.3403%/-1.8234%/
+65535/1/-0.0445%/-1.4060%/+1.3808%/
+65535/2/-0.0311%/+0.9610%/-0.9827%/
+65535/4/-0.7015%/+0.3660%/-1.0637%/
+65535/8/-3.1585%/+11.1302%/[-12.8576%]/
+
+Guest TX
+size/sessions/throughput-+%/cpu-+%/per cpu throughput -+%/
+64/1/[+75.2622%]/[-14.3928%]/[+104.7283%]/
+64/2/[+68.9596%]/[-12.6655%]/[+93.4625%]/
+64/4/[+68.0126%]/[-12.7982%]/[+92.6710%]/
+64/8/[+67.9870%]/[-12.6297%]/[+92.2703%]/
+256/1/[+160.4177%]/[-26.9643%]/[+256.5624%]/
+256/2/[+48.4357%]/[-24.3380%]/[+96.1825%]/
+256/4/[+48.3663%]/[-24.1127%]/[+95.5087%]/
+256/8/[+47.9722%]/[-24.2516%]/[+95.3469%]/
+1024/1/[+54.4474%]/[-52.9223%]/[+228.0694%]/
+1024/2/+0.0742%/[-12.7444%]/[+14.6908%]/
+1024/4/[+0.5524%]/-0.0327%/+0.5853%/
+1024/8/[-1.2783%]/[+6.2902%]/[-7.1206%]/
+4096/1/+0.0778%/-13.1121%/+15.1804%/
+4096/2/+0.0189%/[-11.3176%]/[+12.7832%]/
+4096/4/+0.0218%/-1.0389%/+1.0718%/
+4096/8/-1.3774%/[+12.7396%]/[-12.5218%]/
+16384/1/+0.0136%/-2.5043%/+2.5826%/
+16384/2/+0.0509%/[-15.3846%]/[+18.2420%]/
+16384/4/-0.0163%/[-4.8808%]/[+5.1141%]/
+16384/8/[-1.7249%]/[+13.9174%]/[-13.7313%]/
+65535/1/+0.0686%/-5.4942%/+5.8862%/
+65535/2/+0.0043%/[-7.5816%]/[+8.2082%]/
+65535/4/+0.0080%/[-7.2993%]/[+7.8827%]/
+65535/8/[-1.3669%]/[+16.6536%]/[-15.4479%]/
+
+Guest TCP_RR
+size/sessions/throughput-+%/cpu-+%/per cpu throughput -+%/
+256/1/-0.2914%/+12.6457%/-11.4848%/
+256/25/-0.5968%/-5.0531%/+4.6935%/
+256/50/+0.0262%/+0.2079%/-0.1813%/
+4096/1/+2.6965%/[+16.1248%]/[-11.5636%]/
+4096/25/-0.5002%/+0.5449%/-1.0395%/
+4096/50/[-2.0987%]/-0.0330%/[-2.0664%]/
+
+Tests on mlx4 was ongoing, will post the result in next week.
+
+Jason Wang (3):
+  virtio: support for urgent descriptors
+  vhost: support urgent descriptors
+  virtio-net: conditionally enable tx interrupt
+
+ drivers/net/virtio_net.c         | 164 ++++++++++++++++++++++++++++++---------
+ drivers/vhost/net.c              |  43 +++++++---
+ drivers/vhost/scsi.c             |  23 ++++--
+ drivers/vhost/test.c             |   5 +-
+ drivers/vhost/vhost.c            |  44 +++++++----
+ drivers/vhost/vhost.h            |  19 +++--
+ drivers/virtio/virtio_ring.c     |  75 +++++++++++++++++-
+ include/linux/virtio.h           |  14 ++++
+ include/uapi/linux/virtio_ring.h |   5 +-
+ 9 files changed, 308 insertions(+), 84 deletions(-)
+
 -- 
-1.9.1
+1.8.3.1
 
