@@ -1,159 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251AbaJKQJu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:09:50 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:43476 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaJKQJt (ORCPT
+	id S1751700AbaJKQKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:10:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43591 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaJKQKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:09:49 -0400
-X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
-   d="scan'208";a="47984797"
-Message-ID: <5439564B.8040905@broadcom.com>
-Date: Sat, 11 Oct 2014 18:09:47 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Sat, 11 Oct 2014 12:10:22 -0400
+Message-ID: <5439564E.8080105@oracle.com>
+Date: Sat, 11 Oct 2014 12:09:50 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: Arend van Spriel <arend@broadcom.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] debugfs: add helper function to create device related
- seq_file
-References: <1413043315-22332-1-git-send-email-arend@broadcom.com>
-In-Reply-To: <1413043315-22332-1-git-send-email-arend@broadcom.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: paulmck@linux.vnet.ibm.com
+CC: "David S. Miller" <davem@davemloft.net>, tgraf@suug.ch,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: rhashtable: hang while running tests on boot
+References: <5437E1B3.6020409@oracle.com> <20141010142247.GU4880@linux.vnet.ibm.com> <5437ED21.2040500@oracle.com> <20141011155032.GZ4880@linux.vnet.ibm.com>
+In-Reply-To: <20141011155032.GZ4880@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 18:01, Arend van Spriel wrote:
-> This patch adds a helper function that simplifies adding a
-> sequence file for device drivers. The calling device driver
-> needs to provide a read function and a device pointer. The
-> field struct seq_file::private will reference the device
-> pointer upon call to the read function so the driver can
-> obtain his data from it and do its seq_printf() calls.
+On 10/11/2014 11:50 AM, Paul E. McKenney wrote:
+>>> > > I am guessing that this happens only when running the resizable hashtable
+>>> > > tests -- if that guess is incorrect, please let me know.
+>> > 
+>> > I've seen it a few times only with rhashtable related traces, if that ever
+>> > changes I'll update - but for now I think it's safe to assume it's rhashtable
+>> > specific.
+> Ah, so this is intermittent.  Joy.
 
-Maybe should have made this RFC first. Anyways, it is intended for 3.19, 
-although I don't mind if it would end up in 3.18 :-p
+Yup, I'm seeing it in about 10% of boot attempts.
 
-Regards,
-Arend
 
-> Signed-off-by: Arend van Spriel<arend@broadcom.com>
-> ---
->   fs/debugfs/file.c       | 54 +++++++++++++++++++++++++++++++++++++++++++++++++
->   include/linux/debugfs.h | 16 ++++++++++++++-
->   2 files changed, 69 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index 76c08c2..088b3fc 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -22,6 +22,7 @@
->   #include<linux/io.h>
->   #include<linux/slab.h>
->   #include<linux/atomic.h>
-> +#include<linux/device.h>
->
->   static ssize_t default_read_file(struct file *file, char __user *buf,
->   				 size_t count, loff_t *ppos)
-> @@ -761,3 +762,56 @@ struct dentry *debugfs_create_regset32(const char *name, umode_t mode,
->   EXPORT_SYMBOL_GPL(debugfs_create_regset32);
->
->   #endif /* CONFIG_HAS_IOMEM */
-> +
-> +struct debugfs_devm_entry {
-> +	int (*read)(struct seq_file *seq, void *data);
-> +	struct device *dev;
-> +};
-> +
-> +static int debugfs_devm_entry_open(struct inode *inode, struct file *f)
-> +{
-> +	struct debugfs_devm_entry *entry = inode->i_private;
-> +
-> +	return single_open(f, entry->read, entry->dev);
-> +}
-> +
-> +static const struct file_operations debugfs_devm_entry_ops = {
-> +	.owner = THIS_MODULE,
-> +	.open = debugfs_devm_entry_open,
-> +	.release = single_release,
-> +	.read = seq_read,
-> +	.llseek = seq_lseek
-> +};
-> +
-> +/**
-> + * debugfs_create_devm_seqfile - create a debugfs file that is bound to device.
-> + *
-> + * @dev: device related to this debugfs file.
-> + * @name: name of the debugfs file.
-> + * @parent: a pointer to the parent dentry for this file.  This should be a
-> + *	directory dentry if set.  If this parameter is %NULL, then the
-> + *	file will be created in the root of the debugfs filesystem.
-> + * @read_fn: function pointer called to print the seq_file content.
-> + */
-> +struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char *name,
-> +					   struct dentry *parent,
-> +					   int (*read_fn)(struct seq_file *s,
-> +					   	   	  void *data))
-> +{
-> +	struct debugfs_devm_entry *entry;
-> +
-> +	if (IS_ERR(parent))
-> +		return ERR_PTR(-ENOENT);
-> +
-> +	entry = devm_kzalloc(dev, sizeof(*entry), GFP_KERNEL);
-> +	if (!entry)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	entry->read = read_fn;
-> +	entry->dev = dev;
-> +
-> +	return debugfs_create_file(name, S_IRUGO, parent, entry,
-> +				&debugfs_devm_entry_ops);
-> +}
-> +EXPORT_SYMBOL_GPL(debugfs_create_devm_seqfile);
-> +
-> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-> index 4d0b4d1..f8c0db4 100644
-> --- a/include/linux/debugfs.h
-> +++ b/include/linux/debugfs.h
-> @@ -99,13 +99,18 @@ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
->   					struct dentry *parent,
->   					u32 *array, u32 elements);
->
-> +struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char *name,
-> +					   struct dentry *parent,
-> +					   int (*read_fn)(struct seq_file *s,
-> +					   	   	  void *data));
-> +
->   bool debugfs_initialized(void);
->
->   #else
->
->   #include<linux/err.h>
->
-> -/*
-> +/*
->    * We do not return NULL from these functions if CONFIG_DEBUG_FS is not enabled
->    * so users have a chance to detect if there was a real error or not.  We don't
->    * want to duplicate the design decision mistakes of procfs and devfs again.
-> @@ -251,6 +256,15 @@ static inline struct dentry *debugfs_create_u32_array(const char *name, umode_t
->   	return ERR_PTR(-ENODEV);
->   }
->
-> +static inline struct dentry *debugfs_create_devm_seqfile(struct device *dev,
-> +							 const char *name,
-> +							 struct dentry *parent,
-> +					   int (*read_fn)(struct seq_file *s,
-> +					   	   	  void *data))
-> +{
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
->   #endif
->
->   #endif
-
+Thanks,
+Sasha
