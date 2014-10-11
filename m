@@ -1,65 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562AbaJKTNz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 15:13:55 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:39837 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaJKTNy (ORCPT
+	id S1752439AbaJKT1t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 15:27:49 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:36055 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075AbaJKT1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 15:13:54 -0400
-From: =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Filipe=20Gon=C3=A7alves?= <filipe@codinghighway.com>
-Subject: [PATCH 1/1] drivers/staging: Fixed sparse error "directive in argument list"
-Date: Sat, 11 Oct 2014 20:13:42 +0100
-Message-Id: <1413054822-7894-1-git-send-email-filipe@codinghighway.com>
-X-Mailer: git-send-email 1.9.1
+	Sat, 11 Oct 2014 15:27:47 -0400
+Message-ID: <543984A8.8050701@mentor.com>
+Date: Sat, 11 Oct 2014 14:27:36 -0500
+From: Nathan Lynch <Nathan_Lynch@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Rik van Riel <riel@redhat.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, <josh@joshtriplett.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: RCU bug with v3.17-rc3 ?
+References: <20140905213216.GD5001@linux.vnet.ibm.com> <20141008171322.GH22688@saruman> <20141008175707.GI22688@saruman> <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com>
+In-Reply-To: <54388B81.5020306@mentor.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a sparse warning on layout.c (ptlrpc) that was caused by having preprocessor directives in the arguments to a macro.
+On 10/10/2014 08:44 PM, Nathan Lynch wrote:
+> On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
+>>
+>> Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
+>> it seems that this has been known about for some time.)
+> 
+> Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
+> are affected, as well as 4.9.0.
 
-Signed-off-by: Filipe Gonçalves <filipe@codinghighway.com>
----
- drivers/staging/lustre/lustre/ptlrpc/layout.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/layout.c b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-index 5b83371..211df78 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/layout.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/layout.c
-@@ -978,10 +978,11 @@ struct req_msg_field RMF_CONN =
- EXPORT_SYMBOL(RMF_CONN);
- 
- struct req_msg_field RMF_CONNECT_DATA =
-+#if LUSTRE_VERSION_CODE > OBD_OCD_VERSION(2, 7, 50, 0)
- 	DEFINE_MSGF("cdata",
- 		    RMF_F_NO_SIZE_CHECK /* we allow extra space for interop */,
--#if LUSTRE_VERSION_CODE > OBD_OCD_VERSION(2, 7, 50, 0)
- 		    sizeof(struct obd_connect_data),
-+		    lustre_swab_connect, NULL);
- #else
- /* For interoperability with 1.8 and 2.0 clients/servers.
-  * The RPC verification code allows larger RPC buffers, but not
-@@ -990,9 +991,11 @@ struct req_msg_field RMF_CONNECT_DATA =
-  * size is at least as large as obd_connect_data_v1.  That is not
-  * not in itself harmful, since the chance of just corrupting this
-  * field is low.  See JIRA LU-16 for details. */
-+	DEFINE_MSGF("cdata",
-+		    RMF_F_NO_SIZE_CHECK /* we allow extra space for interop */,
- 		    sizeof(struct obd_connect_data_v1),
--#endif
- 		    lustre_swab_connect, NULL);
-+#endif
- EXPORT_SYMBOL(RMF_CONNECT_DATA);
- 
- struct req_msg_field RMF_DLM_REQ =
--- 
-1.9.1
+Correction -- 4.9.0 has this fixed, even though the GCC PR shows it as a
+"known to fail" version.
 
