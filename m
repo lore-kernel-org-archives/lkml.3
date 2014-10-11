@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627AbaJKQPP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:15:15 -0400
-Received: from mga01.intel.com ([192.55.52.88]:2815 "EHLO mga01.intel.com"
+	id S1752519AbaJKQUw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:20:52 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29315 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751927AbaJKQPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:15:10 -0400
+	id S1751132AbaJKQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:20:50 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="398750256"
+X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
+   d="scan'208";a="603887813"
 From: Vinod Koul <vinod.koul@intel.com>
 To: dmaengine@vger.kernel.org
-Cc: Vinod Koul <vinod.koul@intel.com>, Mark Brown <broonie@linaro.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Dan Williams <dan.j.williams@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] net: ks8842: use dmaengine_terminate_all() API
-Date: Sat, 11 Oct 2014 21:10:34 +0530
-Message-Id: <1413042040-28222-6-git-send-email-vinod.koul@intel.com>
+Cc: Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 0/6] dmaengine: remove FSLDMA_EXTERNAL_START
+Date: Sat, 11 Oct 2014 21:16:42 +0530
+Message-Id: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
-References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The drivers should use dmaengine_terminate_all() API instead of
-accessing the device_control which will be deprecated soon
+FSLDMA_EXTERNAL_START is one of the custom methods in device_control. Since
+we are planning to deprecate device_control, we should move this to an API.
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- drivers/net/ethernet/micrel/ks8842.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+This serries adds the fsl_dma_external_start() API for users and also
+converts the users.
 
-diff --git a/drivers/net/ethernet/micrel/ks8842.c b/drivers/net/ethernet/micrel/ks8842.c
-index 822616e..0c33b92 100644
---- a/drivers/net/ethernet/micrel/ks8842.c
-+++ b/drivers/net/ethernet/micrel/ks8842.c
-@@ -875,13 +875,11 @@ static void ks8842_stop_dma(struct ks8842_adapter *adapter)
- 
- 	tx_ctl->adesc = NULL;
- 	if (tx_ctl->chan)
--		tx_ctl->chan->device->device_control(tx_ctl->chan,
--			DMA_TERMINATE_ALL, 0);
-+		dmaengine_terminate_all(tx_ctl->chan);
- 
- 	rx_ctl->adesc = NULL;
- 	if (rx_ctl->chan)
--		rx_ctl->chan->device->device_control(rx_ctl->chan,
--			DMA_TERMINATE_ALL, 0);
-+		dmaengine_terminate_all(rx_ctl->chan);
- 
- 	if (sg_dma_address(&rx_ctl->sg))
- 		dma_unmap_single(adapter->dev, sg_dma_address(&rx_ctl->sg),
--- 
-1.7.0.4
+I would like this to be merged thru dmanegine tree due to new dependency.
+
+Vinod Koul (6):
+  dmaengine: add dmaengine_prep_dma_sg() helper
+  dmaengine: freescale: add and export fsl_dma_external_start()
+  carma-fpga: use dmaengine_xxx() API
+  carma-fpga: move to fsl_dma_external_start()
+  dmaengine: freescale: remove FSLDMA_EXTERNAL_START control method
+  dmaengine: remove FSLDMA_EXTERNAL_START
+
+ drivers/dma/fsldma.c                    |   25 +++++++++++++++----------
+ drivers/misc/carma/carma-fpga-program.c |   12 ++++++------
+ include/linux/dmaengine.h               |   13 ++++++++++---
+ include/linux/fsldma.h                  |   13 +++++++++++++
+ 4 files changed, 44 insertions(+), 19 deletions(-)
+ create mode 100644 include/linux/fsldma.h
 
