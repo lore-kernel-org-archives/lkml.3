@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439AbaJKT1t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 15:27:49 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:36055 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075AbaJKT1r (ORCPT
+	id S1752636AbaJKTcs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 15:32:48 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:56117 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaJKTcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 15:27:47 -0400
-Message-ID: <543984A8.8050701@mentor.com>
-Date: Sat, 11 Oct 2014 14:27:36 -0500
-From: Nathan Lynch <Nathan_Lynch@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Rik van Riel <riel@redhat.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, <josh@joshtriplett.org>,
-        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RCU bug with v3.17-rc3 ?
-References: <20140905213216.GD5001@linux.vnet.ibm.com> <20141008171322.GH22688@saruman> <20141008175707.GI22688@saruman> <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com>
-In-Reply-To: <54388B81.5020306@mentor.com>
-Content-Type: text/plain; charset="windows-1252"
+	Sat, 11 Oct 2014 15:32:47 -0400
+Message-ID: <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [bisected] e341694e3eb5 netlink_lookup() rcu conversion causes
+ latencies
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com
+Cc: Thomas Graf <tgraf@suug.ch>, Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
+Date: Sat, 11 Oct 2014 12:32:44 -0700
+In-Reply-To: <20141011083627.GB5074@osiris>
+References: <20141011083627.GB5074@osiris>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2014 08:44 PM, Nathan Lynch wrote:
-> On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
->>
->> Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
->> it seems that this has been known about for some time.)
+On Sat, 2014-10-11 at 10:36 +0200, Heiko Carstens wrote:
+> Hi all,
 > 
-> Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
-> are affected, as well as 4.9.0.
+> it just came to my attention that commit e341694e3eb5
+> "netlink: Convert netlink_lookup() to use RCU protected hash table"
+> causes network latencies for me on s390.
+> 
+> The testcase is quite simple and 100% reproducible on s390:
+> 
+> Simply login via ssh to a remote system which has the above mentioned
+> patch applied. Any action like pressing return now has significant
+> latencies. Or in other words, working via such a connection becomes
+> a pain ;)
+> 
+> I haven't debugged it, however I assume the problem is that a) the
+> commit introduces a synchronize_net() call und b) s390 kernels
+> usually get compiled with CONFIG_HZ_100 while most other architectures
+> use CONFIG_HZ_1000.
+> If I change the kernel config to CONFIG_HZ_1000 the problem goes away,
+> however I don't consider this a fix...
+> 
+> Another reason why this hasn't been observed on x86 may or may not be
+> that we haven't implemented CONFIG_HAVE_CONTEXT_TRACKING on s390 (yet).
+> But that's just guessing...
 
-Correction -- 4.9.0 has this fixed, even though the GCC PR shows it as a
-"known to fail" version.
+CC Paul and Sasha
+
 
