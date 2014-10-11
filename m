@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaJKQUv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:20:51 -0400
+	id S1752803AbaJKQW0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:22:26 -0400
 Received: from mga11.intel.com ([192.55.52.93]:29315 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009AbaJKQUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:20:50 -0400
+	id S1751009AbaJKQUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:20:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
-   d="scan'208";a="603887820"
+   d="scan'208";a="603887835"
 From: Vinod Koul <vinod.koul@intel.com>
 To: dmaengine@vger.kernel.org
 Cc: Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
         linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 1/6] dmaengine: add dmaengine_prep_dma_sg() helper
-Date: Sat, 11 Oct 2014 21:16:43 +0530
-Message-Id: <1413042408-28491-2-git-send-email-vinod.koul@intel.com>
+Subject: [PATCH 2/6] dmaengine: freescale: add and export fsl_dma_external_start()
+Date: Sat, 11 Oct 2014 21:16:44 +0530
+Message-Id: <1413042408-28491-3-git-send-email-vinod.koul@intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
 References: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
@@ -24,34 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This was only prep API which didnt have an helper
+The freescale driver uses custom device control FSLDMA_EXTERNAL_START to
+put the controller in external start mode.
+Since we are planning to deprecate the device control, move this to exported
+API. Subsequent patches will remove the FSLDMA_EXTERNAL_START
 
 Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 ---
- include/linux/dmaengine.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ drivers/dma/fsldma.c   |   16 +++++++++++++++-
+ include/linux/fsldma.h |   13 +++++++++++++
+ 2 files changed, 28 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/fsldma.h
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 3d291f5..ce8a08e 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -757,6 +757,16 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
- 	return chan->device->device_prep_interleaved_dma(chan, xt, flags);
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index d5d6885..0cded86 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -36,7 +36,7 @@
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+-
++#include <linux/fsldma.h>
+ #include "dmaengine.h"
+ #include "fsldma.h"
+ 
+@@ -367,6 +367,20 @@ static void fsl_chan_toggle_ext_start(struct fsldma_chan *chan, int enable)
+ 		chan->feature &= ~FSL_DMA_CHAN_START_EXT;
  }
  
-+static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_sg(
-+		struct dma_chan *chan,
-+		struct scatterlist *dst_sg, unsigned int dst_nents,
-+		struct scatterlist *src_sg, unsigned int src_nents,
-+		unsigned long flags)
++int fsl_dma_external_start(struct dma_chan *dchan, int enable)
 +{
-+	return chan->device->device_prep_dma_sg(chan, dst_sg, dst_nents,
-+			src_sg, src_nents, flags);
-+}
++	struct fsldma_chan *chan;
 +
- static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_caps *caps)
++	if (!dchan)
++		return -EINVAL;
++
++	chan = to_fsl_chan(dchan);
++
++	fsl_chan_toggle_ext_start(chan, enable);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(fsl_dma_external_start);
++
+ static void append_ld_queue(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
  {
- 	if (!chan || !caps)
+ 	struct fsl_desc_sw *tail = to_fsl_desc(chan->ld_pending.prev);
+diff --git a/include/linux/fsldma.h b/include/linux/fsldma.h
+new file mode 100644
+index 0000000..b213c02
+--- /dev/null
++++ b/include/linux/fsldma.h
+@@ -0,0 +1,13 @@
++/*
++ * This is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef FSL_DMA_H
++#define FSL_DMA_H
++/* fsl dma API for enxternal start */
++int fsl_dma_external_start(struct dma_chan *dchan, int enable);
++
++#endif
 -- 
 1.7.0.4
 
