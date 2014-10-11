@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbaJKQVN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:21:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29315 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752710AbaJKQVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:21:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
-   d="scan'208";a="603887878"
-From: Vinod Koul <vinod.koul@intel.com>
-To: dmaengine@vger.kernel.org
-Cc: Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 6/6] dmaengine: remove FSLDMA_EXTERNAL_START
-Date: Sat, 11 Oct 2014 21:16:48 +0530
-Message-Id: <1413042408-28491-7-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
-References: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
+	id S1752765AbaJKQVe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:21:34 -0400
+Received: from smtp-out-029.synserver.de ([212.40.185.29]:1034 "EHLO
+	smtp-out-029.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbaJKQVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:21:33 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 27692
+Message-ID: <5439591B.4020701@metafoo.de>
+Date: Sat, 11 Oct 2014 18:21:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: dmaengine@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] ASoC: txx9: use dmaengine_terminate_all() API
+References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com> <1413042040-28222-11-git-send-email-vinod.koul@intel.com>
+In-Reply-To: <1413042040-28222-11-git-send-email-vinod.koul@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-as users have been converted, so no need of this custom method
+On 10/11/2014 05:40 PM, Vinod Koul wrote:
+> The drivers should use dmaengine_terminate_all() API instead of
+> accessing the device_control which will be deprecated soon
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- include/linux/dmaengine.h |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+I already send a similar patch a while ago. It is on it's way into 3.18.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index ce8a08e..3254a03 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -199,15 +199,12 @@ enum dma_ctrl_flags {
-  * configuration data in statically from the platform). An additional
-  * argument of struct dma_slave_config must be passed in with this
-  * command.
-- * @FSLDMA_EXTERNAL_START: this command will put the Freescale DMA controller
-- * into external start mode.
-  */
- enum dma_ctrl_cmd {
- 	DMA_TERMINATE_ALL,
- 	DMA_PAUSE,
- 	DMA_RESUME,
- 	DMA_SLAVE_CONFIG,
--	FSLDMA_EXTERNAL_START,
- };
- 
- /**
--- 
-1.7.0.4
-
+>
+> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
