@@ -1,95 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaJKSzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 14:55:18 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:56475 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701AbaJKSzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 14:55:10 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jianqun <jay.xu@rock-chips.com>
-Cc: mturquette@linaro.org, dianders@chromium.org, kever.yang@rock-chips.com,
-        dbasehore@chromium.org, mark.yao@rock-chips.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        huangtao@rock-chips.com, cf@rock-chips.com
-Subject: Re: [PATCH] clk: rockchip: rk3288: i2s_frac adds flag to set parent's rate
-Date: Sat, 11 Oct 2014 20:54:56 +0200
-Message-ID: <1489993.9j1G9iMIhJ@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
-References: <1412046724-28069-1-git-send-email-jay.xu@rock-chips.com>
+	id S1752543AbaJKTGA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 15:06:00 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:49156 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaJKTF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 15:05:59 -0400
+From: Nix <nix@esperi.org.uk>
+To: Oliver Neukum <oliver@neukum.org>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Martin <pm@debian.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
+References: <878um4tg09.fsf@spindle.srvr.nix>
+	<1409569752.24385.12.camel@linux-fkkt.site>
+	<874mwnosz1.fsf@spindle.srvr.nix>
+Emacs: is that a Lisp interpreter in your editor, or are you just happy to see me?
+Date: Sat, 11 Oct 2014 20:05:46 +0100
+In-Reply-To: <874mwnosz1.fsf@spindle.srvr.nix> (nix@esperi.org.uk's message of
+	"Fri, 05 Sep 2014 00:40:02 +0100")
+Message-ID: <871tqe2zqt.fsf_-_@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=5 Fuz1=5 Fuz2=5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jianqun,
+[Cc:ed someone who knows the people behind the Entropy Key: they're not
+ being manufactured at the moment, but he might want to know anyway]
 
-Am Dienstag, 30. September 2014, 11:12:04 schrieb Jianqun:
-> The relation of i2s nodes as follows:
->           i2s_src               0           0            594000000  0
->              i2s_frac           0           0            11289600   0
->                 i2s_pre         0           0            11289600   0
->                    sclk_i2s0    0           0            11289600   0
->                    i2s0_clkout  0           0            11289600   0
->                       hclk_i2s0 1           1            99000000   0
-> 
-> sclk_i2s0 is the master clock, when to set rate of sclk_i2s0, should
-> allow to set its parent's rate, by add flag CLK_SET_RATE_PARENT for
-> "i2s_frac", "i2s_pre", "i2s0_clkout" and "sclk_i2s0".
-> 
-> Tested on rk3288 board using max98090, with command "aplay <music.wav>"
-> 
-> Change-Id: I12faad082566532b65a7de8c0a6845e1c17870e6
+On 5 Sep 2014, nix@esperi.org.uk stated:
 
-Please no "Change-Id"s in upstream patches.
+> On 1 Sep 2014, Oliver Neukum stated:
+>
+>>> I'll do a bisection of the cdc-acm changes since 3.15 tomorrow night and
+>>> see if I can find the commit at fault.
+>>
+>> Thank you for the report. Please let me know the results of your
+>> bisection.
+>
+> Bisection underway (fifth attempt -- I *may* have characterized it well
+> enough after a few hours of thrashing at it to bisect accurately this
+> time).
+[...]
+> More generally, the problem may be at *shutdown* -- something goes wrong
+> during link suspension or something, such that the link never comes up
+> again until physically reconnected. So a straight bisect is misleading
+> -- the error may have been in the *last* kernel tested -- and even then,
+> some kernels (e.g. the 3.15.0 merge base) appear capable of making it
+> work fine. But even this is not consistent: sometimes a kernel that
+> works fine if you repeatedly reboot it (such as 3.15) malfunctions when
+> you reboot into 3.16 -- but sometimes a newly plugged USB key on a 3.16
+> kernel malfunctions upon reboot, even if you reboot into a working
+> kernel such as 3.15 (and it then proceeds to work indefinitely if you
+> unplug and replug it and stick with 3.15.x, but upon rebooting into
+> 3.16.x it goes wrong again).
 
+*Finally* bisected, not helped by the fact that I sometimes needed up to
+five reboots (!) to see a failure. The guilty commit is this one:
 
-> Signed-off-by: Jianqun <jay.xu@rock-chips.com>
-> ---
->  drivers/clk/rockchip/clk-rk3288.c | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/clk/rockchip/clk-rk3288.c
-> b/drivers/clk/rockchip/clk-rk3288.c index c770de0..baf19b4 100644
-> --- a/drivers/clk/rockchip/clk-rk3288.c
-> +++ b/drivers/clk/rockchip/clk-rk3288.c
-> @@ -301,15 +301,15 @@ static struct rockchip_clk_branch
-> rk3288_clk_branches[] __initdata = { COMPOSITE(0, "i2s_src",
-> mux_pll_src_cpll_gpll_p, 0,
->  			RK3288_CLKSEL_CON(4), 15, 1, MFLAGS, 0, 7, DFLAGS,
->  			RK3288_CLKGATE_CON(4), 1, GFLAGS),
-> -	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", 0,
-> +	COMPOSITE_FRAC(0, "i2s_frac", "i2s_src", CLK_SET_RATE_PARENT,
->  			RK3288_CLKSEL_CON(8), 0,
->  			RK3288_CLKGATE_CON(4), 2, GFLAGS),
-> -	MUX(0, "i2s_pre", mux_i2s_pre_p, 0,
-> +	MUX(0, "i2s_pre", mux_i2s_pre_p, CLK_SET_RATE_PARENT,
->  			RK3288_CLKSEL_CON(4), 8, 2, MFLAGS),
-> -	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, 0,
-> +	COMPOSITE_NODIV(0, "i2s0_clkout", mux_i2s_clkout_p, CLK_SET_RATE_PARENT,
+commit 0943d8ead30e9474034cc5e92225ab0fd29fd0d4
+Author: Johan Hovold <jhovold@gmail.com>
+Date:   Mon May 26 19:23:51 2014 +0200
 
-are you sure it is correct that i2s0_clkout should also be able to set the 
-core i2s clock?
+    USB: cdc-acm: use tty-port dtr_rts
 
-I.e. as it is now, the i2s controller could set one frequency through 
-sclk_i2s0 and whatever uses i2s0_clkout would be able to set it to something 
-completely different, which may call for trouble.
+    Add dtr_rts tty-port operation which implements proper DTR/RTS handling
+    (e.g. only lower DTR/RTS during shutdown if HUPCL is set).
 
-So in my mind, it might be better to limit i2s0_clkout to select between its 
-two parent without being able influence the core i2s clock?
+    Note that modem-control locking still needs to be added throughout the
+    driver.
 
+    Signed-off-by: Johan Hovold <jhovold@gmail.com>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Heiko
+To re-describe this failure for the people who weren't in the thread: in
+3.16.x I often see this output when asking the ekey daemon for the state
+of my Simtec Entropy Key (a cdc-acm-based random number generator) after
+rebooting my ohci-based Soekris net5501:
 
+fold:~# ekeydctl stats 1
+BytesRead=0
+BytesWritten=0
+ConnectionNonces=0
+ConnectionPackets=0
+ConnectionRekeys=0
+ConnectionResets=0
+ConnectionTime=65
+EntropyRate=0
+FipsFrameRate=0
+FrameByteLast=0
+FramesOk=0
+FramingErrors=0
+KeyDbsdShannonPerByteL=0
+KeyDbsdShannonPerByteR=0
+KeyEnglishBadness=No failure
+KeyRawBadness=0
+KeyRawShannonPerByteL=0
+KeyRawShannonPerByteR=0
+KeyRawShannonPerByteX=0
+KeyShortBadness=efm_ok
+KeyTemperatureC=-273.15
+KeyTemperatureF=-459.67
+KeyTemperatureK=0
+KeyVoltage=0
+PacketErrors=0
+PacketOK=0
+ReadRate=0
+TotalEntropy=0
+WriteRate=0
 
->  			RK3288_CLKSEL_CON(4), 12, 1, MFLAGS,
->  			RK3288_CLKGATE_CON(4), 0, GFLAGS),
-> -	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", 0,
-> +	GATE(SCLK_I2S0, "sclk_i2s0", "i2s_pre", CLK_SET_RATE_PARENT,
->  			RK3288_CLKGATE_CON(4), 3, GFLAGS),
-> 
->  	MUX(0, "spdif_src", mux_pll_src_cpll_gpll_p, 0,
+This device streams data continuously at at rate of several KiB/s, so
+normally we would never expect to see a report of zero bytes read or
+written if the key were functional (nor, indeed, a key temperature of
+absolute zero!). This failure never occurred in 3.15.x nor any earlier
+kernel. (Note: the 'no failure' message above is sent *from the key* to
+indicate that the random numbers can be trusted: it is a bit unfortunate
+that the code for 'No failure' is 0, which is also the default value
+before anything is received from the key. In this case, we're just
+seeing the daemon's initialization-time default. As BytesRead indicates,
+the key is not talking to us.)
 
+The symptoms are such that it is the kernel you reboot *from* that
+causes the failure, not the one you reboot into: once the key fails it
+never recovers without physical removal and reinsertion (or, one
+presumes, a poweroff of the whole machine, but I haven't tried that)
+
+This is not a consistent failure: sometimes it can take up to four
+reboots for the key to fail. As a result, the bisection took forever (I
+had to wait until I had a spare weekend day to devote to it). Despite
+the errative nature, I'm fairly confident this commit is at fault: with
+it reverted, I have restarted a couple of dozen times without failure
+symptoms.
+
+(I speculate that the device's firmware may be terminally confused by
+having something try to hang it up, since it's not a modem nor anything
+like one, as the boot messages correctly proclaim. The firmware isn't
+open, so I can't check.)
