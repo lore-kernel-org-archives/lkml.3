@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaJKIgf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 04:36:35 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:45155 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040AbaJKIgc (ORCPT
+	id S1752003AbaJKIwT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 04:52:19 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:8750 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaJKIwR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 04:36:32 -0400
-Date: Sat, 11 Oct 2014 10:36:27 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Thomas Graf <tgraf@suug.ch>, Nikolay Aleksandrov <nikolay@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ursula Braun <braunu@de.ibm.com>
-Subject: [bisected] e341694e3eb5 netlink_lookup() rcu conversion causes
- latencies
-Message-ID: <20141011083627.GB5074@osiris>
+	Sat, 11 Oct 2014 04:52:17 -0400
+Message-ID: <5438EFAF.4020303@huawei.com>
+Date: Sat, 11 Oct 2014 16:51:59 +0800
+From: Hu Keping <hukeping@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14101108-0017-0000-0000-00000168AA3F
+To: <arnd@arndb.de>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <sdu.liu@huawei.com>,
+        <wangnan0@huawei.com>, <peifeiyue@huawei.com>
+Subject: Memory trample when using /dev/mem
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.89.121]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi there,
 
-it just came to my attention that commit e341694e3eb5
-"netlink: Convert netlink_lookup() to use RCU protected hash table"
-causes network latencies for me on s390.
+Recently, I run a little testcase about using mmap to check
+some physical address.What I found was that the different task can
+read and write the same physical address at the same time.
 
-The testcase is quite simple and 100% reproducible on s390:
+For example,
+I make proc1 to access 0x20000000, read and write "512" to
+that address every 2 seconds. Meanwhile,I make proc2 to access
+0x200000000, read and write "1024" to that address every 1 seconds.
+The output is a mess, though it needs not be worry on this case,
+but what about the proc1 and proc2 are both driver, and they mmap to the
+same physical address?
 
-Simply login via ssh to a remote system which has the above mentioned
-patch applied. Any action like pressing return now has significant
-latencies. Or in other words, working via such a connection becomes
-a pain ;)
+As there are many drivers using /dev/mem and we can not
+make sure that the different task will not trample on
+each others memory.Shall we add some printk to help locating the problem
+when error happened?
 
-I haven't debugged it, however I assume the problem is that a) the
-commit introduces a synchronize_net() call und b) s390 kernels
-usually get compiled with CONFIG_HZ_100 while most other architectures
-use CONFIG_HZ_1000.
-If I change the kernel config to CONFIG_HZ_1000 the problem goes away,
-however I don't consider this a fix...
 
-Another reason why this hasn't been observed on x86 may or may not be
-that we haven't implemented CONFIG_HAVE_CONTEXT_TRACKING on s390 (yet).
-But that's just guessing...
+Thanks,
+Hu Keping
 
