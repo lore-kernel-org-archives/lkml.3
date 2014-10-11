@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705AbaJKDPg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 23:15:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739AbaJKDPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 23:15:34 -0400
-Date: Sat, 11 Oct 2014 11:14:52 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        keescook@chromium.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
- <542B1EC1.8090502@zytor.com>
- <20141001135237.GA13689@redhat.com>
- <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
+	id S1751861AbaJKDQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 23:16:53 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:56306 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaJKDQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 23:16:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141008192728.GA26517@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1412997161.9362.34.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1412995493-16100-1-git-send-email-ast@plumgrid.com>
+	<1412997161.9362.34.camel@edumazet-glaptop2.roam.corp.google.com>
+Date: Fri, 10 Oct 2014 20:16:50 -0700
+Message-ID: <CAMEtUuxsMsd75XXgeF5EyJHK8qm6FWWbaQTp0V7K6uvu8SKWuA@mail.gmail.com>
+Subject: Re: [PATCH net] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/14 at 03:27pm, Vivek Goyal wrote:
-> On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
- 
-> > Sorry... this makes no sense.
-> > 
-> > For x86-64, there is no direct connection between the physical and
-> > virtual address spaces that the kernel runs in...
-> 
-> I am sorry I did not understand this one. I thought that initial
-> relocatable kernel implementaion did not have any direct connection
-> between virtual and physical address. One could load kernel anywhere
-> and kernel virtual address will not change and we will just adjust
-> page tables to map virtual address to right physical address.
-> 
-> Now handle_relocation() stuff seems to introduce a close coupling
-> between physical and virtual address. So if kernel shifts by 16MB
-> in physical address space, then it will shift by equal amount
-> in virtual address space. So there seems to be a direct connection
-> between virtual and physical address space in this case.
+On Fri, Oct 10, 2014 at 8:12 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Fri, 2014-10-10 at 19:44 -0700, Alexei Starovoitov wrote:
+>
+>> 2.
+>> while staring at the code realized that 64-byte buffer may not be enough
+>> when 1st insn is large, so increase it to 128 to avoid buffer overflow
+>> (theoretical maximum size of prologue+div is 109) and add runtime check.
+>>
+>
+>
+>> diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+>> index d56cd1f..8266896 100644
+>> --- a/arch/x86/net/bpf_jit_comp.c
+>> +++ b/arch/x86/net/bpf_jit_comp.c
+>> @@ -187,7 +187,8 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+>>  {
+>>       struct bpf_insn *insn = bpf_prog->insnsi;
+>>       int insn_cnt = bpf_prog->len;
+>> -     u8 temp[64];
+>> +     bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
+>> +     u8 temp[128];
+>
+> Hmmm. I would use some guard like :
+>
+> #define BPF_MAX_INSN_SIZE 128
+> #define BPF_INSN_SAFETY   64
+>
+>         u8 temp[MAX_INSN_SIZE + BPF_INSN_SAFETY];
+>
+>
+>> +             if (ilen >= sizeof(temp)) {
+>
+>         if (ilen > BPF_MAX_INSN_SIZE) {
+> ...
+>
+>> +                     pr_err("bpf_jit_compile fatal insn size error\n");
+>> +                     return -EFAULT;
+>> +             }
+>> +
+>
+> Otherwise, we might have corrupted stack and panic anyway.
 
-Yeah, it's exactly as Vivek said.
-
-Before kaslr was introduced, x86_64 kernel can be put anywhere, and
-always _text is 0xffffffff81000000. Meanwhile phys_base contains the
-offset between the compiled addr (namely 0x1000000) and kernel loaded
-addr. After kaslr implementation was added, as long as kernel loaded
-addr is different 0x1000000, it will call handle_relocations(). The
-offset now is added onto each symbols including _text and phys_base
-becomes 0.
-
-It's clearly showing that by checking /proc/kallsyms and value of
-phys_base.
-
-
-Thanks
-Baoquan
+well, it only reduces the chances of stack corruption.. but yeah,
+let's reduce them. will respin.
