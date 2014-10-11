@@ -1,90 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaJKMpR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 08:45:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564AbaJKMpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 08:45:14 -0400
-Date: Sat, 11 Oct 2014 20:44:37 +0800
-From: Baoquan He <bhe@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
-        kexec@lists.infradead.org, whissi@whissi.de,
-        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141011124437.GA9847@dhcp-16-116.nay.redhat.com>
-References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
- <542B1EC1.8090502@zytor.com>
- <20141001135237.GA13689@redhat.com>
- <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
- <20141011123805.GC11560@dhcp-16-116.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141011123805.GC11560@dhcp-16-116.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752292AbaJKMv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 08:51:26 -0400
+Received: from wp038.webpack.hosteurope.de ([80.237.132.45]:45796 "EHLO
+	wp038.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752070AbaJKMvZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 08:51:25 -0400
+X-Greylist: delayed 788 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Oct 2014 08:51:25 EDT
+From: Henning Schild <henning@hennsch.de>
+To: linux-kernel@vger.kernel.org
+Cc: Henning Schild <henning@hennsch.de>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+Subject: [PATCH] drm/radeon: remove code that can never get executed
+Date: Sat, 11 Oct 2014 14:51:15 +0200
+Message-Id: <1413031875-28053-1-git-send-email-henning@hennsch.de>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1413031067-26961-1-git-send-email-henning@hennsch.de>
+References: <1413031067-26961-1-git-send-email-henning@hennsch.de>
+X-bounce-key: webpack.hosteurope.de;henning@hennsch.de;1413031885;38d7e403;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/14 at 08:38pm, Baoquan He wrote:
-> On 10/11/14 at 03:34am, H. Peter Anvin wrote:
-> > On 10/10/2014 08:14 PM, Baoquan He wrote:
-> > >On 10/08/14 at 03:27pm, Vivek Goyal wrote:
-> > >>On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
-> > >
-> > >>>Sorry... this makes no sense.
-> > >>>
-> > >>>For x86-64, there is no direct connection between the physical and
-> > >>>virtual address spaces that the kernel runs in...
-> > >>
-> > >>I am sorry I did not understand this one. I thought that initial
-> > >>relocatable kernel implementaion did not have any direct connection
-> > >>between virtual and physical address. One could load kernel anywhere
-> > >>and kernel virtual address will not change and we will just adjust
-> > >>page tables to map virtual address to right physical address.
-> > >>
-> > >>Now handle_relocation() stuff seems to introduce a close coupling
-> > >>between physical and virtual address. So if kernel shifts by 16MB
-> > >>in physical address space, then it will shift by equal amount
-> > >>in virtual address space. So there seems to be a direct connection
-> > >>between virtual and physical address space in this case.
-> > >
-> > >Yeah, it's exactly as Vivek said.
-> > >
-> > >Before kaslr was introduced, x86_64 kernel can be put anywhere, and
-> > >always _text is 0xffffffff81000000. Meanwhile phys_base contains the
-> > >offset between the compiled addr (namely 0x1000000) and kernel loaded
-> > >addr. After kaslr implementation was added, as long as kernel loaded
-> > >addr is different 0x1000000, it will call handle_relocations(). The
-> > >offset now is added onto each symbols including _text and phys_base
-> > >becomes 0.
-> > >
-> > >It's clearly showing that by checking /proc/kallsyms and value of
-> > >phys_base.
-> > >
-> > 
-> > This really shouldn't have happened this way on x86-64.  It has to
-> > happen this way on i386, but I worry that this may be a serious
-> > misdesign in kaslr on x86-64.  I'm also wondering if there is any
-> > other fallout of this?
+Removing a code-path that can never be executed ... and its copies. If
+drm_edid_to_speaker_allocation returns 0 the callers return. There is no
+need to check that condition again.
 
-Btw, except of this bug, I didn't find other risk of kaslr currently.
-The code flow is straightforward and clear.
+Signed-off-by: Henning Schild <henning@hennsch.de>
+---
+ drivers/gpu/drm/radeon/dce3_1_afmt.c    | 5 +----
+ drivers/gpu/drm/radeon/dce6_afmt.c      | 5 +----
+ drivers/gpu/drm/radeon/evergreen_hdmi.c | 5 +----
+ 3 files changed, 3 insertions(+), 12 deletions(-)
 
-> 
-> Yes, this shouldn't happen this way on x86_64. With this patch, those
-> are fixed as expected. If kernel location is not chosen randomly, we
-> should not do the relocations handling. If and only if kaslr is enabled
-> and it relocated the kernel randomly as expected, we do the relocations
-> handling.
-> 
-> I think this patch really makes sense and it's simple and won't impact
-> i386 and other implementations.
-> 
+diff --git a/drivers/gpu/drm/radeon/dce3_1_afmt.c b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+index cb76074..6d31ed8 100644
+--- a/drivers/gpu/drm/radeon/dce3_1_afmt.c
++++ b/drivers/gpu/drm/radeon/dce3_1_afmt.c
+@@ -58,10 +58,7 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+ 	/* set HDMI mode */
+ 	tmp |= HDMI_CONNECTION;
+-	if (sad_count)
+-		tmp |= SPEAKER_ALLOCATION(sadb[0]);
+-	else
+-		tmp |= SPEAKER_ALLOCATION(5); /* stereo */
++	tmp |= SPEAKER_ALLOCATION(sadb[0]);
+ 	WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
+ 
+ 	kfree(sadb);
+diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
+index ab29f95..e6b2750 100644
+--- a/drivers/gpu/drm/radeon/dce6_afmt.c
++++ b/drivers/gpu/drm/radeon/dce6_afmt.c
+@@ -186,10 +186,7 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+ 	/* set HDMI mode */
+ 	tmp |= HDMI_CONNECTION;
+-	if (sad_count)
+-		tmp |= SPEAKER_ALLOCATION(sadb[0]);
+-	else
+-		tmp |= SPEAKER_ALLOCATION(5); /* stereo */
++	tmp |= SPEAKER_ALLOCATION(sadb[0]);
+ 	WREG32_ENDPOINT(offset, AZ_F0_CODEC_PIN_CONTROL_CHANNEL_SPEAKER, tmp);
+ 
+ 	kfree(sadb);
+diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+index 278c7a1..11a6b65 100644
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -128,10 +128,7 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	tmp &= ~(DP_CONNECTION | SPEAKER_ALLOCATION_MASK);
+ 	/* set HDMI mode */
+ 	tmp |= HDMI_CONNECTION;
+-	if (sad_count)
+-		tmp |= SPEAKER_ALLOCATION(sadb[0]);
+-	else
+-		tmp |= SPEAKER_ALLOCATION(5); /* stereo */
++	tmp |= SPEAKER_ALLOCATION(sadb[0]);
+ 	WREG32(AZ_F0_CODEC_PIN0_CONTROL_CHANNEL_SPEAKER, tmp);
+ 
+ 	kfree(sadb);
+-- 
+2.0.4
+
