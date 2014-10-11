@@ -1,66 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaJKCk6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 22:40:58 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:46462 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750727AbaJKCk4 (ORCPT
+	id S1751564AbaJKCpG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 22:45:06 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:64450 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaJKCpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 22:40:56 -0400
-Message-ID: <543898AB.7060304@hurleysoftware.com>
-Date: Fri, 10 Oct 2014 22:40:43 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Nathan Lynch <Nathan_Lynch@mentor.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Felipe Balbi <balbi@ti.com>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        josh@joshtriplett.org, Rabin Vincent <rabin@rab.in>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: RCU bug with v3.17-rc3 ?
-References: <20140905213216.GD5001@linux.vnet.ibm.com> <20141008171322.GH22688@saruman> <20141008175707.GI22688@saruman> <20141008212938.GP22688@saruman> <20141009160138.GA2396@cmpxchg.org> <20141009162656.GE16002@saruman> <20141009204101.GA25955@debian> <20141009204637.GE25729@saruman> <20141009210715.GH25729@saruman> <20141010135743.GB31348@saruman> <20141010162531.GL12379@n2100.arm.linux.org.uk> <54388B81.5020306@mentor.com>
-In-Reply-To: <54388B81.5020306@mentor.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Fri, 10 Oct 2014 22:45:03 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net] x86: bpf_jit: fix two bugs in eBPF JIT compiler
+Date: Fri, 10 Oct 2014 19:44:53 -0700
+Message-Id: <1412995493-16100-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/10/2014 09:44 PM, Nathan Lynch wrote:
-> On 10/10/2014 11:25 AM, Russell King - ARM Linux wrote:
->>
->> Right, so GCC 4.8.{1,2} are totally unsuitable for kernel building (and
->> it seems that this has been known about for some time.)
-> 
-> Looking at http://gcc.gnu.org/PR58854 it seems that all 4.8.x for x < 3
-> are affected, as well as 4.9.0.
-> 
->> We can blacklist these GCC versions quite easily.  We already have GCC
->> 3.3 blacklisted, and it's trivial to add others.  I would want to include
->> some proper details about the bug, just like the other existing entries
->> we already have in asm-offsets.c, where we name the functions that the
->> compiler is known to break where appropriate.
-> 
-> Before blacklisting anything, it's worth considering that simple version
-> checks would break existing pre-4.8.3 compilers that have been patched
-> for PR58854.  It looks like Yocto and Buildroot issued releases with
-> patched 4.8.2 compilers well before the (fixed) 4.8.3 release.  I think
-> the most we can reasonably do without breaking some correctly-behaving
-> toolchains is to emit a warning.
+1.
+JIT compiler using multi-pass approach to converge to final image size,
+since x86 instructions are variable length. It starts with large
+gaps between instructions (so some jumps may use imm32 instead of imm8)
+and iterates until total program size is the same as in previous pass.
+This algorithm works only if program size is strictly decreasing.
+Programs that use LD_ABS insn need additional code in prologue, but it
+was not emitted during 1st pass, so there was a chance that 2nd pass would
+adjust imm32->imm8 jump offsets to the same number of bytes as increase in
+prologue, which may cause algorithm to erroneously decide that size converged.
+Fix it by always emitting largest prologue in the first pass which
+is detected by oldproglen==0 check.
+Also change error check condition 'proglen != oldproglen' to fail gracefully.
 
-Providing a manual switch to override blacklisting is way more sane
-than a build warning that no one's looking at.
+2.
+while staring at the code realized that 64-byte buffer may not be enough
+when 1st insn is large, so increase it to 128 to avoid buffer overflow
+(theoretical maximum size of prologue+div is 109) and add runtime check.
+
+Fixes: 622582786c9e ("net: filter: x86: internal BPF JIT")
+Reported-by: Darrick J. Wong <darrick.wong@oracle.com>
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
+note in classic BPF programs 1st insn is always short move, but native eBPF
+programs may trigger buffer overflow. I couldn't force the crash with overflow,
+since there are no further calls while this part of stack is used.
+Both are ugly bugs regardless.
+When net-next opens I will add narrowed down testcase from 'nmap' to testsuite.
+
+ arch/x86/net/bpf_jit_comp.c |   21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/net/bpf_jit_comp.c b/arch/x86/net/bpf_jit_comp.c
+index d56cd1f..8266896 100644
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -187,7 +187,8 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+ {
+ 	struct bpf_insn *insn = bpf_prog->insnsi;
+ 	int insn_cnt = bpf_prog->len;
+-	u8 temp[64];
++	bool seen_ld_abs = ctx->seen_ld_abs | (oldproglen == 0);
++	u8 temp[128];
+ 	int i;
+ 	int proglen = 0;
+ 	u8 *prog = temp;
+@@ -225,7 +226,7 @@ static int do_jit(struct bpf_prog *bpf_prog, int *addrs, u8 *image,
+ 	EMIT2(0x31, 0xc0); /* xor eax, eax */
+ 	EMIT3(0x4D, 0x31, 0xED); /* xor r13, r13 */
+ 
+-	if (ctx->seen_ld_abs) {
++	if (seen_ld_abs) {
+ 		/* r9d : skb->len - skb->data_len (headlen)
+ 		 * r10 : skb->data
+ 		 */
+@@ -685,7 +686,7 @@ xadd:			if (is_imm8(insn->off))
+ 		case BPF_JMP | BPF_CALL:
+ 			func = (u8 *) __bpf_call_base + imm32;
+ 			jmp_offset = func - (image + addrs[i]);
+-			if (ctx->seen_ld_abs) {
++			if (seen_ld_abs) {
+ 				EMIT2(0x41, 0x52); /* push %r10 */
+ 				EMIT2(0x41, 0x51); /* push %r9 */
+ 				/* need to adjust jmp offset, since
+@@ -699,7 +700,7 @@ xadd:			if (is_imm8(insn->off))
+ 				return -EINVAL;
+ 			}
+ 			EMIT1_off32(0xE8, jmp_offset);
+-			if (ctx->seen_ld_abs) {
++			if (seen_ld_abs) {
+ 				EMIT2(0x41, 0x59); /* pop %r9 */
+ 				EMIT2(0x41, 0x5A); /* pop %r10 */
+ 			}
+@@ -804,7 +805,8 @@ emit_jmp:
+ 			goto common_load;
+ 		case BPF_LD | BPF_ABS | BPF_W:
+ 			func = CHOOSE_LOAD_FUNC(imm32, sk_load_word);
+-common_load:		ctx->seen_ld_abs = true;
++common_load:
++			ctx->seen_ld_abs = seen_ld_abs = true;
+ 			jmp_offset = func - (image + addrs[i]);
+ 			if (!func || !is_simm32(jmp_offset)) {
+ 				pr_err("unsupported bpf func %d addr %p image %p\n",
+@@ -878,6 +880,11 @@ common_load:		ctx->seen_ld_abs = true;
+ 		}
+ 
+ 		ilen = prog - temp;
++		if (ilen >= sizeof(temp)) {
++			pr_err("bpf_jit_compile fatal insn size error\n");
++			return -EFAULT;
++		}
++
+ 		if (image) {
+ 			if (unlikely(proglen + ilen > oldproglen)) {
+ 				pr_err("bpf_jit_compile fatal error\n");
+@@ -934,9 +941,11 @@ void bpf_int_jit_compile(struct bpf_prog *prog)
+ 			goto out;
+ 		}
+ 		if (image) {
+-			if (proglen != oldproglen)
++			if (proglen != oldproglen) {
+ 				pr_err("bpf_jit: proglen=%d != oldproglen=%d\n",
+ 				       proglen, oldproglen);
++				goto out;
++			}
+ 			break;
+ 		}
+ 		if (proglen == oldproglen) {
+-- 
+1.7.9.5
 
