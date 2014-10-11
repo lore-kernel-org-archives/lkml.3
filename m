@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaJKFPf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 01:15:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40855 "EHLO mga02.intel.com"
+	id S1751896AbaJKFQb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 01:16:31 -0400
+Received: from mga03.intel.com ([134.134.136.65]:47899 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750825AbaJKFPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 01:15:34 -0400
+	id S1750795AbaJKFQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 01:16:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,696,1406617200"; 
-   d="scan'208";a="587125580"
-Date: Sat, 11 Oct 2014 13:15:30 +0800
+   d="scan'208";a="587125899"
+Date: Sat, 11 Oct 2014 13:16:27 +0800
 From: Fengguang Wu <fengguang.wu@intel.com>
-To: Yuyang Du <yuyang.du@intel.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: [sched] BUG: unable to handle kernel NULL pointer dereference at
- 0000000000000040
-Message-ID: <20141011051530.GA21803@wfg-t540p.sh.intel.com>
+Subject: [x86, PCI, ACPI] WARNING: CPU: 0 PID: 3 at kernel/rcu/tree.c:2360
+ rcu_process_callbacks+0x43f/0x531()
+Message-ID: <20141011051627.GB21803@wfg-t540p.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,69 +24,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yuyang,
+Hi Jiang,
 
-FYI, we noticed the below changes on commit
+FYI, we noticed the below changes on
 
-445d95d7c384741d133251a9adac935866591c92 ("sched: Remove update_rq_runnable_avg")
-
-+------------------------------------------+------------+------------+
-|                                          | 80213c03c4 | 445d95d7c3 |
-+------------------------------------------+------------+------------+
-| boot_successes                           | 7          | 10         |
-| boot_failures                            | 0          | 5          |
-| BUG:unable_to_handle_kernel              | 0          | 5          |
-| Oops                                     | 0          | 5          |
-| RIP:print_cfs_group_stats                | 0          | 5          |
-| Kernel_panic-not_syncing:Fatal_exception | 0          | 5          |
-| backtrace:vfs_read                       | 0          | 5          |
-| backtrace:SyS_read                       | 0          | 5          |
-+------------------------------------------+------------+------------+
+https://github.com/jiangliu/linux.git ioapic/hotplug_v6
+commit e96f3bd3186db57bbde9f4e5c57d8328f7f0ec79 ("x86, PCI, ACPI: Kill private function resource_to_addr() in arch/x86/pci/acpi.c")
 
 
-repeat count: 267
-2014-10-10 18:20:23 ./case-anon-wx-rand-mt
-2014-10-10 18:20:23 ./usemem --runtime 300 -t 4 --prealloc --random 514360832
-[   67.303839] BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
-[   67.304014] IP: [<ffffffff810b1d52>] print_cfs_rq+0x4a3/0xa96
-[   67.304014] PGD 7cd1f067 PUD 7ccbe067 PMD 0 
-[   67.315030] Oops: 0000 [#1] SMP 
-[   67.315030] Modules linked in: snd_pcsp
-[   67.315030] CPU: 3 PID: 4013 Comm: sched_debug Not tainted 3.17.0-g4bb7030 #2846
-[   67.315030] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[   67.315030] task: ffff88007c6ecb00 ti: ffff88007ccac000 task.ti: ffff88007ccac000
-[   67.315030] RIP: 0010:[<ffffffff810b1d52>]  [<ffffffff810b1d52>] print_cfs_rq+0x4a3/0xa96
-[   67.315030] RSP: 0018:ffff88007ccafd60  EFLAGS: 00010086
-[   67.315030] RAX: ffff88011a814000 RBX: ffff88007c47afe8 RCX: 0000000000000513
-[   67.315030] RDX: ffff88007ccafd00 RSI: 0000000000000000 RDI: 0000000000001000
-[   67.315030] RBP: ffff88007ccafda8 R08: 0000000000000000 R09: 0000000000000001
-[   67.315030] R10: ffff88007ccafcc8 R11: 0000000000000000 R12: 0000000000000000
-[   67.315030] R13: 0000000000000000 R14: 0000000000000000 R15: ffffffffffffffff
-[   67.315030] FS:  00007f6216ddd700(0000) GS:ffff88011b400000(0000) knlGS:0000000000000000
-[   67.315030] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   67.315030] CR2: 0000000000000040 CR3: 000000007c6ce000 CR4: 00000000000006e0
-[   67.315030] Stack:
-[   67.315030]  0000002b20db6a16 0000000000000086 0000000000000000 0000000000000000
-[   67.315030]  ffff88011afd47b8 0000000000000000 ffff88007c47afe8 00000000001d4700
-[   67.315030]  0000000000000000 ffff88007ccafde8 ffffffff810aac54 ffff88011afd4870
-[   67.315030] Call Trace:
-[   67.315030]  [<ffffffff810aac54>] print_cfs_stats+0x99/0xe0
-[   67.315030]  [<ffffffff810b14b5>] print_cpu+0x57d/0x955
-[   67.315030]  [<ffffffff811685b7>] ? might_fault+0x59/0xb4
-[   67.315030]  [<ffffffff810b18a4>] sched_debug_show+0x17/0x22
-[   67.315030]  [<ffffffff811b66f8>] seq_read+0x16a/0x33e
-[   67.315030]  [<ffffffff811cc9f2>] ? fsnotify+0x267/0x28c
-[   67.315030]  [<ffffffff811e58f0>] proc_reg_read+0x48/0x67
-[   67.315030]  [<ffffffff811e58a8>] ? proc_reg_write+0x67/0x67
-[   67.315030]  [<ffffffff81197b2d>] vfs_read+0xa6/0x144
-[   67.315030]  [<ffffffff811985c5>] SyS_read+0x51/0x92
-[   67.315030]  [<ffffffff81b4c729>] system_call_fastpath+0x16/0x1b
-[   67.315030] Code: f0 00 00 00 31 c0 e8 d6 85 a8 00 49 8b 84 24 c8 00 00 00 48 85 db 48 8b 75 c8 48 8b 80 d8 00 00 00 4c 8b 24 f0 0f 84 17 03 00 00 <4d> 8b 6c 24 40 4c 89 ef e8 9b eb ff ff 4c 89 ef 48 89 45 d0 e8 
-[   67.315030] RIP  [<ffffffff810b1d52>] print_cfs_rq+0x4a3/0xa96
-[   67.315030]  RSP <ffff88007ccafd60>
-[   67.315030] CR2: 0000000000000040
-[   67.315030] ---[ end trace c7479625085660d8 ]---
-[   67.315030] Kernel panic - not syncing: Fatal exception
++------------------------------------------------------+------------+------------+
+|                                                      | 452b6361c4 | e96f3bd318 |
++------------------------------------------------------+------------+------------+
+| boot_successes                                       | 20         | 13         |
+| boot_failures                                        | 0          | 6          |
+| WARNING:at_kernel/rcu/tree.c:rcu_process_callbacks() | 0          | 6          |
+| backtrace:smpboot_thread_fn                          | 0          | 4          |
+| page_allocation_failure:order:,mode                  | 0          | 1          |
+| backtrace:cpu_startup_entry                          | 0          | 1          |
+| backtrace:vmalloc                                    | 0          | 1          |
+| backtrace:SyS_init_module                            | 0          | 1          |
+| backtrace:acpi_bus_scan                              | 0          | 1          |
+| backtrace:acpi_scan_init                             | 0          | 1          |
+| backtrace:acpi_init                                  | 0          | 1          |
+| backtrace:kernel_init_freeable                       | 0          | 1          |
++------------------------------------------------------+------------+------------+
+
+
+[    1.323479] PCI: CLS 0 bytes, default 64
+[    1.325701] Trying to unpack rootfs image as initramfs...
+[    1.852166] ------------[ cut here ]------------
+[    1.853652] WARNING: CPU: 0 PID: 3 at kernel/rcu/tree.c:2360 rcu_process_callbacks+0x43f/0x531()
+[    1.856015] Modules linked in:
+[    1.856015] CPU: 0 PID: 3 Comm: ksoftirqd/0 Not tainted 3.17.0-rc6-00063-g1e527ce #1
+[    1.856015] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[    1.856015]  0000000000000000 ffff8800136efd58 ffffffff819d5e8b 0000000000000000
+[    1.856015]  ffff8800136efd90 ffffffff810e7670 ffffffff8112f441 ffffffff82057400
+[    1.856015]  0000000000000004 0000000000000000 0000000000000246 ffff8800136efda0
+[    1.856015] Call Trace:
+[    1.856015]  [<ffffffff819d5e8b>] dump_stack+0x4d/0x66
+[    1.856015]  [<ffffffff810e7670>] warn_slowpath_common+0x7f/0x98
+[    1.856015]  [<ffffffff8112f441>] ? rcu_process_callbacks+0x43f/0x531
+[    1.856015]  [<ffffffff810e773c>] warn_slowpath_null+0x1a/0x1c
+[    1.856015]  [<ffffffff8112f441>] rcu_process_callbacks+0x43f/0x531
+[    1.856015]  [<ffffffff810eac98>] __do_softirq+0x131/0x2e4
+[    1.856015]  [<ffffffff810eae74>] run_ksoftirqd+0x29/0x65
+[    1.856015]  [<ffffffff81102c0a>] smpboot_thread_fn+0x194/0x1b2
+[    1.856015]  [<ffffffff81102a76>] ? SyS_setgroups+0x106/0x106
+[    1.856015]  [<ffffffff810ffd7b>] kthread+0xe4/0xec
+[    1.856015]  [<ffffffff810ffc97>] ? kthread_create_on_node+0x18c/0x18c
+[    1.856015]  [<ffffffff819dd27c>] ret_from_fork+0x7c/0xb0
+[    1.856015]  [<ffffffff810ffc97>] ? kthread_create_on_node+0x18c/0x18c
+[    1.856015] ---[ end trace c038ce2226e5515b ]---
+[    2.010076] Freeing initrd memory: 4692K (ffff880013b5b000 - ffff880013ff0000)
+
 
 
 Thanks,
