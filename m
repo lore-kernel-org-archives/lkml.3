@@ -1,161 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaJKOsX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 10:48:23 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:41088 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbaJKOsV (ORCPT
+	id S1752519AbaJKOty (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 10:49:54 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49956 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268AbaJKOtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 10:48:21 -0400
-Message-ID: <1413038899.9362.43.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH net-next RFC 3/3] virtio-net: conditionally enable tx
- interrupt
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Sat, 11 Oct 2014 07:48:19 -0700
-In-Reply-To: <1413011806-3813-4-git-send-email-jasowang@redhat.com>
-References: <1413011806-3813-1-git-send-email-jasowang@redhat.com>
-	 <1413011806-3813-4-git-send-email-jasowang@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Oct 2014 10:49:53 -0400
+Message-ID: <5439438A.9090407@roeck-us.net>
+Date: Sat, 11 Oct 2014 07:49:46 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm64: Fix compile error seen in non-SMP builds
+References: <1412990134-31186-1-git-send-email-linux@roeck-us.net> <20141011131618.GA4043@lerouge>
+In-Reply-To: <20141011131618.GA4043@lerouge>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54394390.0058,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-11 at 15:16 +0800, Jason Wang wrote:
-> We free transmitted packets in ndo_start_xmit() in the past to get better
-> performance in the past. One side effect is that skb_orphan() needs to be
-> called in ndo_start_xmit() which makes sk_wmem_alloc not accurate in
-> fact. For TCP protocol, this means several optimization could not work well
-> such as TCP small queue and auto corking. This can lead extra low
-> throughput of small packets stream.
-> 
-> Thanks to the urgent descriptor support. This patch tries to solve this
-> issue by enable the tx interrupt selectively for stream packets. This means
-> we don't need to orphan TCP stream packets in ndo_start_xmit() but enable
-> tx interrupt for those packets. After we get tx interrupt, a tx napi was
-> scheduled to free those packets.
-> 
-> With this method, sk_wmem_alloc of TCP socket were more accurate than in
-> the past which let TCP can batch more through TSQ and auto corking.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/net/virtio_net.c | 164 ++++++++++++++++++++++++++++++++++++-----------
->  1 file changed, 128 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 5810841..b450fc4 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -72,6 +72,8 @@ struct send_queue {
->  
->  	/* Name of the send queue: output.$index */
->  	char name[40];
-> +
-> +	struct napi_struct napi;
->  };
->  
->  /* Internal representation of a receive virtqueue */
-> @@ -217,15 +219,40 @@ static struct page *get_a_page(struct receive_queue *rq, gfp_t gfp_mask)
->  	return p;
->  }
->  
-> +static int free_old_xmit_skbs(struct send_queue *sq, int budget)
-> +{
-> +	struct sk_buff *skb;
-> +	unsigned int len;
-> +	struct virtnet_info *vi = sq->vq->vdev->priv;
-> +	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
-> +	int sent = 0;
-> +
-> +	while (sent < budget &&
-> +	       (skb = virtqueue_get_buf(sq->vq, &len)) != NULL) {
-> +		pr_debug("Sent skb %p\n", skb);
-> +
-> +		u64_stats_update_begin(&stats->tx_syncp);
-> +		stats->tx_bytes += skb->len;
-> +		stats->tx_packets++;
-> +		u64_stats_update_end(&stats->tx_syncp);
-> +
-> +		dev_kfree_skb_any(skb);
-> +		sent++;
-> +	}
-> +
+On 10/11/2014 06:16 AM, Frederic Weisbecker wrote:
+> On Fri, Oct 10, 2014 at 06:15:34PM -0700, Guenter Roeck wrote:
+>> Fix:
+>>
+>> In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+>>          from include/linux/irq_work.h:46,
+>>          from include/linux/perf_event.h:49,
+>>          from include/linux/ftrace_event.h:9,
+>>          from include/trace/syscall.h:6,
+>>          from include/linux/syscalls.h:81,
+>>          from init/main.c:18:
+>> ./arch/arm64/include/asm/smp.h:24:3:
+>> 	error: #error "<asm/smp.h> included in non-SMP build"
+>>   # error "<asm/smp.h> included in non-SMP build"
+>>     ^
+>> ./arch/arm64/include/asm/smp.h:27:0: warning: "raw_smp_processor_id" redefined
+>>   #define raw_smp_processor_id() (current_thread_info()->cpu)
+>>   ^
+>>
+>> and:
+>>
+>> In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+>>          from include/linux/irq_work.h:46,
+>>          from kernel/irq_work.c:11:
+>> ./arch/arm64/include/asm/smp_plat.h:56:30:
+>>          error: ‘NR_CPUS’ undeclared here (not in a function)
+>>          extern u64 __cpu_logical_map[NR_CPUS];
+>>
+>> by providing a helper function in smp_plat.h, similar to the arm implementation,
+>> and by removing NR_CPUS from smp_plat.h.
+>>
+>> Fixes: 3631073659d0 ("arm64: Tell irq work about self IPI support")
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>
+> That looks good to me.
+>
+> Note, ARM64 is one of the archs I couldn't test due to the lack of a
+> nolibc cross compiler in https://www.kernel.org/pub/tools/crosstool/
+>
+No worries. Even if you had, you might not have caught the non-SMP case.
+I only recently added a non-SMP build myself.
 
-You could accumulate skb->len in a totlen var, and perform a single
+Is the toolchain issue out of principle (not wanting to use a cross
+compiler that includes glibc) or because you did not find a cross
+compiler ? Linaro provides toolchains for aarch64, though they are
+only 32 bit. I built one myself using buildroot (select binutils 2.24
+and gcc 4.9.1).
 
-	u64_stats_update_begin(&stats->tx_syncp);
-	stats->tx_bytes += totlen;
-	stats->tx_packets += sent;
-	u64_stats_update_end(&stats->tx_syncp);
+In general I have been quite successful using buildroot to create
+toolchains, including ones for oddball architectures like score
+(after patching buildroot to support it, of course).
 
-after the loop.
-
-
-> +	return sent;
-> +}
-> +
-
-...
-
-> +
-> +static bool virtnet_skb_needs_intr(struct sk_buff *skb)
-> +{
-> +	union {
-> +		unsigned char *network;
-> +		struct iphdr *ipv4;
-> +		struct ipv6hdr *ipv6;
-> +	} hdr;
-> +	struct tcphdr *th = tcp_hdr(skb);
-> +	u16 payload_len;
-> +
-> +	hdr.network = skb_network_header(skb);
-> +
-> +	/* Only IPv4/IPv6 with TCP is supported */
-
-	Oh well, yet another packet flow dissector :)
-
-	If most packets were caught by your implementation, you could use it
-for fast patj and fallback to skb_flow_dissect() for encapsulated
-traffic.
-
-	struct flow_keys keys;   
-
-	if (!skb_flow_dissect(skb, &keys)) 
-		return false;
-
-	if (keys.ip_proto != IPPROTO_TCP)
-		return false;
-
-	then check __skb_get_poff() how to get th, and check if there is some
-payload...
-
-
-> +	if ((skb->protocol == htons(ETH_P_IP)) &&
-> +	    hdr.ipv4->protocol == IPPROTO_TCP) {
-> +		payload_len = ntohs(hdr.ipv4->tot_len) - hdr.ipv4->ihl * 4 -
-> +			      th->doff * 4;
-> +	} else if ((skb->protocol == htons(ETH_P_IPV6) ||
-> +		   hdr.ipv6->nexthdr == IPPROTO_TCP)) {
-> +		payload_len = ntohs(hdr.ipv6->payload_len) - th->doff * 4;
-> +	} else {
-> +		return false;
-> +	}
-> +
-> +	/* We don't want to dealy packet with PUSH bit and pure ACK packet */
-> +	if (!th->psh && payload_len)
-> +		return true;
-> +
-> +	return false;
->  }
-
-
-
+Guenter
 
