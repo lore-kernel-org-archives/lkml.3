@@ -1,84 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbaJKL0q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 07:26:46 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:47579 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaJKL0p (ORCPT
+	id S1752238AbaJKLeD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 07:34:03 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42957 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983AbaJKLeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 07:26:45 -0400
+	Sat, 11 Oct 2014 07:34:00 -0400
+Date: Sat, 11 Oct 2014 17:03:49 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Joe Perches <joe@perches.com>, h@sudip-PC
+Cc: Raymond Yau <superquad.vortex2@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v2 2/2] ALSA: au88x0: pr_* replaced with
+ dev_*
+Message-ID: <20141011113349.GA9962@sudip-PC>
+References: <1412930199-24797-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <1412930199-24797-2-git-send-email-sudipm.mukherjee@gmail.com>
+ <CAN8ccibSw_85wdnxbNSKfjXQ-7Lg3C6_5fhKQJJi5xMi8pMabA@mail.gmail.com>
+ <20141011090903.GC8231@sudip-PC>
+ <1413024491.16385.10.camel@joe-AO725>
 MIME-Version: 1.0
-Date: Sat, 11 Oct 2014 11:26:43 +0000
-Message-ID: <CAEJHKkXKwGRO9AguQnTYbLgLXrSDDjXkO1-azjRF5FxdmjdE2A@mail.gmail.com>
-Subject: cx88xx trouble with card
-From: basteon <basteon@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413024491.16385.10.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello.
+On Sat, Oct 11, 2014 at 03:48:11AM -0700, Joe Perches wrote:
+> On Sat, 2014-10-11 at 14:39 +0530, Sudip Mukherjee wrote:
+> > On Sat, Oct 11, 2014 at 03:20:56PM +0800, Raymond Yau wrote:
+> > > >
+<snip>
+> > > > ---
+> > > >
+> > > 
+> > > >  static int vortex_core_init(vortex_t *vortex)
+> > > >  {
+> > > >
+> > > > -       pr_info( "Vortex: init.... ");
+> > > > +       dev_info(vortex->card->dev, "init.... ");
+> > > 
+> > > Is it possible to add linefeed  since "done/n" won't appear in the same
+> > > line with init nor shutdown?
+> > > 
+> > should we add linefeed ?
+> > as of now it will print init.... then it will print done as the init is complete.
+> > so dmesg will show us:
+> > 
+> > init....done.
+> > 
+> > same for shutdown.
+> > but if we give linefeed , then it will become : 
+> > 
+> > init....
+> > done.
+> > 
+> > the meaning will be lost. and many user might just wonder what is done ? 
+> []
+> > > > @@ -2738,7 +2744,7 @@ static int vortex_core_init(vortex_t *vortex)
+> > > >  static int vortex_core_shutdown(vortex_t * vortex)
+> > > >  {
+> > > >
+> > > > -       pr_info( "Vortex: shutdown...");
+> > > > +       dev_info(vortex->card->dev, "shutdown...");
+> > > >  #ifndef CHIP_AU8820
+> > > >         vortex_eq_free(vortex);
+> > > >         vortex_Vort3D_disable(vortex);
+> > > > @@ -2760,7 +2766,7 @@ static int vortex_core_shutdown(vortex_t * vortex)
+> > > >         msleep(5);
+> > > >         hwwrite(vortex->mmio, VORTEX_IRQ_SOURCE, 0xffff);
+> > > >
+> > > > -       pr_info( "done.\n");
+> > > > +       dev_info(vortex->card->dev, "done.\n");
+> > > >         return 0;
+> > > >  }
+> 
+> It's actually on 2 lines before your patch.
+> 
+> 	pr_info("a");
+> 	pr_info("b\n");
+> 
+> already emits 2 separate lines.
+> 
+> 	pr_info("a");
+> 	pr_cont("b\n");
+> 
+> emits a single line "ab"
+> (unless some other thread emits something in-between)
+> 
+> pr_cont or a bare printk can be used after a dev_info
+> without a newline to avoid unwanted newlines.
 
-I have pixelview B1000 card and this card won't work with modules
-cx8800, cx88xx.
+i think i was not thinking while writing the previous mail.
+pr_info("a");
+pr_info("b\n");
+should print as "ab" , considering no other threads prints in between.
+but after converting it to dev_info it will become :
+"dev: adev: b".
+and for our "init.... done" , it will become 
+"au88x0: init.... au88x0: done."  ( i have ommited the driver name)
 
-May be I'm use wrong modules or cardid prefix:
-1554:4952, board: PixelView [card=3...
+can't we do some thing like :
+dev_info(vortex->card->dev, "init.... started\n");
+dev_info(vortex->card->dev, "init....done\n");
+then even if some other thread prints , then we will not loose the reference.
 
-# /usr/bin/tvtime-scanner
-Reading configuration from /etc/tvtime/tvtime.xml
-Scanning using TV standard NTSC.
-Scanning from  44.00 MHz to 958.00 MHz.
-MHz:  - No signal
-
-===============================
-01:06.0 Multimedia video controller: Conexant Systems, Inc.
-CX23880/1/2/3 PCI Video and Audio Decoder (rev 05)
-        Subsystem: PROLINK Microsystems Corp Device 4952
-        Flags: bus master, medium devsel, latency 32, IRQ 10
-        Memory at fd000000 (32-bit, non-prefetchable) [size=16M]
-        Capabilities: [44] Vital Product Data
-        Capabilities: [4c] Power Management version 2
-        Kernel modules: cx8800
-
-01:06.1 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
-PCI Video and Audio Decoder [Audio Port] (rev 05)
-        Subsystem: PROLINK Microsystems Corp Device 4952
-        Flags: bus master, medium devsel, latency 32, IRQ 10
-        Memory at fc000000 (32-bit, non-prefetchable) [size=16M]
-        Capabilities: [4c] Power Management version 2
-        Kernel modules: cx88-alsa
-
-01:06.2 Multimedia controller: Conexant Systems, Inc. CX23880/1/2/3
-PCI Video and Audio Decoder [MPEG Port] (rev 05)
-        Subsystem: PROLINK Microsystems Corp Device 4952
-        Flags: bus master, medium devsel, latency 32, IRQ 10
-        Memory at fb000000 (32-bit, non-prefetchable) [size=16M]
-        Capabilities: [4c] Power Management version 2
-        Kernel modules: cx8802
-
-===============================
-[18334.495349] Linux video capture interface: v2.00
-[18334.603004] IR NEC protocol handler initialized
-[18334.614074] cx88/2: cx2388x MPEG-TS Driver Manager version 0.0.8 loaded
-[18334.618258] cx88[0]: subsystem: 1554:4952, board: PixelView
-[card=3,autodetected], frontend(s): 0
-[18334.618263] cx88[0]: TV tuner type 5, Radio tuner type -1
-[18334.628915] IR RC5(x) protocol handler initialized
-[18334.660809] IR RC6 protocol handler initialized
-[18334.687047] IR JVC protocol handler initialized
-[18334.714899] IR Sony protocol handler initialized
-[18334.754031] lirc_dev: IR Remote Control driver registered, major 252
-[18334.764669] IR LIRC bridge handler initialized
-[18334.850358] cx88[0]/2: cx2388x 8802 Driver Manager
-[18343.108212] cx88/0: cx2388x v4l2 driver version 0.0.8 loaded
-[18343.108317] cx8800 0000:01:06.0: PCI INT A -> GSI 20 (level, low) -> IRQ 20
-[18343.112467] cx88[0]: subsystem: 1554:4952, board: PixelView
-[card=3,autodetected], frontend(s): 0
-[18343.112473] cx88[0]: TV tuner type 5, Radio tuner type -1
-[18343.312410] cx88[0]/0: found at 0000:01:06.0, rev: 5, irq: 20,
-latency: 32, mmio: 0xfd000000
-[18343.316831] cx88[0]/0: registered device video0 [v4l2]
-[18343.326623] cx88[0]/0: registered device vbi0
-[18343.333136] cx88[0]/0: registered device radio0
+thanks
+sudip
