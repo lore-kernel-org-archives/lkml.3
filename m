@@ -1,66 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaJKJlL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 05:41:11 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:48774 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaJKJlI (ORCPT
+	id S1752105AbaJKJrf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 05:47:35 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:59669 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628AbaJKJrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 05:41:08 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Sat, 11 Oct 2014 11:38:19 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Colin Foe-Parker <colin.foeparker@logicpd.com>, nsekhar@ti.com,
-        t-kristo@ti.com, j-keerthy@ti.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] rtc: omap: fixes and power-off feature
-Message-ID: <20141011093819.GA18988@localhost>
-References: <1412881594-25678-1-git-send-email-johan@kernel.org>
- <20141010175409.GL31348@saruman>
+	Sat, 11 Oct 2014 05:47:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141010175409.GL31348@saruman>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <5436E27D.8080600@kernel.org>
+References: <1412257439-15683-1-git-send-email-daniel.baluta@intel.com>
+	<1412257439-15683-4-git-send-email-daniel.baluta@intel.com>
+	<542FF252.1020206@kernel.org>
+	<5432A474.7000700@intel.com>
+	<5436E27D.8080600@kernel.org>
+Date: Sat, 11 Oct 2014 12:47:31 +0300
+X-Google-Sender-Auth: -UI8z1sjNyB2WXCUQsQUcdgHl6Y
+Message-ID: <CAEnQRZAsHmYYqHAB3EeoGbTp4kHZNjfW5sx4fK=uCE_NCKaXfA@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/8] iio: core: Introduce new MOTION event
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Daniel Baluta <daniel.baluta@intel.com>, linux-iio@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        irina.tirdea@intel.com, Karol Wrona <k.wrona@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 12:54:22PM -0500, Felipe Balbi wrote:
-> HI,
-> 
-> On Thu, Oct 09, 2014 at 09:06:22PM +0200, Johan Hovold wrote:
-> > This series fixes a few issues with the omap rtc-driver, cleans up a bit
-> > and finally adds support for the PMIC control feature found in some
-> > revisions of this RTC IP block.
-> > 
-> > Ultimately, this allows for powering off the Beaglebone and waking it up
-> > again on RTC alarms.
-> > 
-> > I noticed yesterday that Lokesh Vutla recently posted some patches to
-> > add regulator support to this driver. [1] While that series has some
-> > issues that needs to be addressed, I still think it could be a good idea
-> > to rebase my pmic_power_en patch on top of it as it adds some long
-> > overdue device abstraction. That would be needed anyway in order to
-> > support the new power-off infrastructure that's in the pipe in a clean
-> > way. [2]
-> 
-> is this power-off feature "RTC-only mode" ?
+On Thu, Oct 9, 2014 at 10:31 PM, Jonathan Cameron <jic23@kernel.org> wrote:
+> On 06/10/14 15:17, Daniel Baluta wrote:
+>>
+>>
+>> On 10/04/2014 04:12 PM, Jonathan Cameron wrote:
+>>> On 02/10/14 14:43, Daniel Baluta wrote:
+>>>> This is to be used by drivers to signal detection of motion. We also
+>>>> add some possible values for motion as IIO events modifiers:
+>>>>     * running
+>>>>     * jogging
+>>>>     * walking
+>>>>     * still
+>>>>
+>>>> These values are supported by Frescale's MMA9553 sensor:
+>>>>
+>>>> http://freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+>>>>
+>>>> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+>>>> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+>>> Hmm.. This is the interesting one.
+>>> Not immediately obvious how best to represent this stuff.
+>>>> ---
+>>>>   Documentation/ABI/testing/sysfs-bus-iio | 7 +++++++
+>>>>   drivers/iio/industrialio-core.c         | 4 ++++
+>>>>   drivers/iio/industrialio-event.c        | 1 +
+>>>>   include/linux/iio/types.h               | 7 ++++++-
+>>>>   4 files changed, 18 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/Documentation/ABI/testing/sysfs-bus-iio
+>>>> b/Documentation/ABI/testing/sysfs-bus-iio
+>>>> index d760b02..070346d 100644
+>>>> --- a/Documentation/ABI/testing/sysfs-bus-iio
+>>>> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+>>>> @@ -808,6 +808,13 @@ Description:
+>>>>           number or direction is not specified, applies to all channels of
+>>>>           this type.
+>>>>
+>>>> +What:        /sys/.../events/in_activity_motion_either_en
+>>>> +KernelVersion:    3.17
+>>>> +Contact:    linux-iio@vger.kernel.org
+>>>> +Description:
+>>>> +        Enables or disables motion detection. Each time motion is detected an
+>>>> +        event of this type will be generated.
+>>>> +
+>>> The either bit seems a bit random but I can see there is no particularly obvious
+>>> alternative.
+>>
+>> I wonder if introducing a new IIO_EV_DIR_NONE event direction type would make
+>> sense. In this case the sysfs attribute will drop event direction text from its
+>> name (e.g /sys/.../events/in_activity_motion_en)
+>>
+>>>
+>>> We really need a clean way of representing a multilevel 'state change' like this.
+>>>
+>>> Looking at the event code, I almost wonder if we would be better using the
+>>> direction element for running, walking etc rather than a modifier.
+>>
+>> When pushing events code to userspace the modifier seemed to be the only option.
+>>
+>>>
+>>> Having said that we will probably also get devices where this is polled rather
+>>> than
+>>> event.  'What activity is currently going on?'
+>>
+>> Adding IIO_EV_INFO_VALUE bit, would create an attribute
+>> /sys/.../events/in_activity_motion_either_value that could expose the current
+>> activity going on.
+>>
+>>> If we take that view modifiers make sense as it becomes
+>>> 'Is the user running?'  Perhaps even offering a confidence interval, e.g units as
+>>> percentage
+>>> in_activity_running_input 0..100
+>>> in_activity_walking_input 0..100
+>>> etc
+>>>
+>>> Then our event becomes a state change event (yup we'll need to add that)
+>>>
+>>> /events/in_activity_walking_rising_en  will then cause events when the percentage
+>>> confidence on a state rises above the provided threshold or goes above it
+>>> (default of 50% perhaps on devices which only report one state).
+>>>
+>>> /events/in_activity_walking_falling_en will do the leaving case.
+>>
+>> This is a very nice idea and it will also offer more flexibility. I am not sure
+>> about the use case of confidence interval but using 0 and 100 will do the trick
+>> for us.
+> Sure, feel free to propose something else.  We could define a confidence interval
+> that counts as 'we think it is this'.  Basically just use values of 0 or 100 when
+> there is no explicit indication of the confidence available.  Not sure what
+> you do get ;)
+>>
+>> We will use this interface for implementation of significant motion in Android's
+>> HAL. [1]
+>>
+>> I will experiment more with how IIO attributes work and I will send a v2
+>> using direction instead of modifier for activity type (running, walking etc).
+>>
+>>
+>>>
+>>> Note these are just some quick initial thoughts on alternative methods.
+>>> I'll want to think on this more and get responses from more interested
+>>> parties!
+>>
+>> Thanks a lot for your time!
+> You are welcome.  Funnily enough I rather enjoy trying to think of ways to
+> handle new 'weird' hardware in a consistent fashion :)
 
-Yes, I believe so, at least as long as RTC power is maintained. The
-pmic_power_en pin can otherwise still be used to power off. 
+We have already sent a second proposal :).
 
-On the BeagleBone the PMIC can be configured to enter OFF or SLEEP mode
-on power off, where the latter (and default) mode keeps the RTC power
-supply enabled.
+http://marc.info/?l=linux-iio&m=141285801717857&w=2
 
-Thanks for the fast review, Felipe.
+We are also hoping to get more opinions from other parties.
+CC'ing Karol from Samsung :).
 
-Johan
+Daniel.
