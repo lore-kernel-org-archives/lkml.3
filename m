@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700AbaJKQKZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:10:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43591 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbaJKQKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:10:22 -0400
-Message-ID: <5439564E.8080105@oracle.com>
-Date: Sat, 11 Oct 2014 12:09:50 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: "David S. Miller" <davem@davemloft.net>, tgraf@suug.ch,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: rhashtable: hang while running tests on boot
-References: <5437E1B3.6020409@oracle.com> <20141010142247.GU4880@linux.vnet.ibm.com> <5437ED21.2040500@oracle.com> <20141011155032.GZ4880@linux.vnet.ibm.com>
-In-Reply-To: <20141011155032.GZ4880@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1751963AbaJKQOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:14:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8978 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaJKQOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:14:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
+   d="scan'208";a="603886461"
+From: Vinod Koul <vinod.koul@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Viresh Kumar <viresh.linux@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Felipe Balbi <balbi@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Jingoo Han <jg1.han@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Denis Carikli <denis@eukrea.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mtd@lists.infradead.org,
+        netdev@vger.kernel.org, linux-spi@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, alsa-devel@alsa-project.org
+Subject: [PATCH 00/12] dmaengine: remove users of device_control
+Date: Sat, 11 Oct 2014 21:09:33 +0530
+Message-Id: <1413041973-28146-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2014 11:50 AM, Paul E. McKenney wrote:
->>> > > I am guessing that this happens only when running the resizable hashtable
->>> > > tests -- if that guess is incorrect, please let me know.
->> > 
->> > I've seen it a few times only with rhashtable related traces, if that ever
->> > changes I'll update - but for now I think it's safe to assume it's rhashtable
->> > specific.
-> Ah, so this is intermittent.  Joy.
+The recent discussion [1] on the API have resulted in moving away from
+device_control ioctl method to proper channel APIs.
+There are still few users on the device_control which should use the wrappers
+existing rather than access device_control.
+This will aid us in deprecating and removing device_control, possibly after
+the merge window.
 
-Yup, I'm seeing it in about 10% of boot attempts.
+These can be merged thru respective subsystem tree or dmaengine tree. Either
+way please just let me know.
 
+Feng's kbuild has tested these as well [2]
 
-Thanks,
-Sasha
+[1]: http://www.spinics.net/lists/dmaengine/msg02212.html
+[2]: http://git.infradead.org/users/vkoul/slave-dma.git/shortlog/refs/heads/topic/dma_control_cleanup
+
+Vinod Koul (12):
+  pata_arasan_cf: use dmaengine_terminate_all() API
+  dmaengine: coh901318: use dmaengine_terminate_all() API
+  [media] V4L2: mx3_camer: use dmaengine_pause() API
+  mtd: fsmc_nand: use dmaengine_terminate_all() API
+  mtd: sh_flctl: use dmaengine_terminate_all() API
+  net: ks8842: use dmaengine_terminate_all() API
+  spi/atmel: use dmaengine_terminate_all() API
+  spi/spi-dw-mid.c: use dmaengine_slave_config() API
+  serial: sh-sci: use dmaengine_terminate_all() API
+  usb: musb: ux500_dma: use dmaengine_xxx() APIs
+  ASoC: txx9: use dmaengine_terminate_all() API
+  video: mx3fb: use dmaengine_terminate_all() API
+
+ drivers/ata/pata_arasan_cf.c                   |    5 ++---
+ drivers/dma/coh901318.c                        |    2 +-
+ drivers/media/platform/soc_camera/mx3_camera.c |    6 ++----
+ drivers/mtd/nand/fsmc_nand.c                   |    2 +-
+ drivers/mtd/nand/sh_flctl.c                    |    2 +-
+ drivers/net/ethernet/micrel/ks8842.c           |    6 ++----
+ drivers/spi/spi-atmel.c                        |    6 ++----
+ drivers/spi/spi-dw-mid.c                       |    6 ++----
+ drivers/tty/serial/sh-sci.c                    |    2 +-
+ drivers/usb/musb/ux500_dma.c                   |    7 ++-----
+ drivers/video/fbdev/mx3fb.c                    |    3 +--
+ sound/soc/txx9/txx9aclc.c                      |    7 +++----
+ 12 files changed, 20 insertions(+), 34 deletions(-)
+
