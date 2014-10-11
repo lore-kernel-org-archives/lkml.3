@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaJKSf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 14:35:27 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:42345 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaJKSfZ (ORCPT
+	id S1752854AbaJKSfp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 14:35:45 -0400
+Received: from smtprelay0204.hostedemail.com ([216.40.44.204]:54388 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751895AbaJKSfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 14:35:25 -0400
-Date: Sat, 11 Oct 2014 20:35:25 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: Inki Dae <inki.dae@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 3/4] drm/exynos: enable vblank after DPMS on
-Message-ID: <20141011183525.GF26941@phenom.ffwll.local>
-Mail-Followup-To: Andrzej Hajda <a.hajda@samsung.com>,
-	Inki Dae <inki.dae@samsung.com>,
-	"moderated list:ARM/S5P EXYNOS AR..." <linux-samsung-soc@vger.kernel.org>,
-	Seung-Woo Kim <sw0312.kim@samsung.com>,
-	open list <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org,
-	Kyungmin Park <kyungmin.park@samsung.com>,
-	Marek Szyprowski <m.szyprowski@samsung.com>
-References: <1412944316-27737-1-git-send-email-a.hajda@samsung.com>
- <1412944316-27737-4-git-send-email-a.hajda@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412944316-27737-4-git-send-email-a.hajda@samsung.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 11 Oct 2014 14:35:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3867:3871:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12517:12519:12740:13069:13161:13229:13311:13357:13972:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bells49_4ef0d95d81b09
+X-Filterd-Recvd-Size: 1578
+Message-ID: <1413052541.22149.10.camel@joe-AO725>
+Subject: Re: [PATCH] char: misc: use pr_err instead of printk
+From: Joe Perches <joe@perches.com>
+To: Rahul Bedarkar <rahulbedarkar89@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 11 Oct 2014 11:35:41 -0700
+In-Reply-To: <1413052311-2646-1-git-send-email-rahulbedarkar89@gmail.com>
+References: <1413052311-2646-1-git-send-email-rahulbedarkar89@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 02:31:55PM +0200, Andrzej Hajda wrote:
-> Before DPMS off driver disables vblank.
-> It should be balanced by vblank enable after DPMS on.
-> The patch fixes issue with page_flip ioctl not being able
-> to acquire vblank counter introduced by patch:
-> drm: Always reject drm_vblank_get() after drm_vblank_off()
-> 
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-
-Yeah, you should always call vblank_on again when you (re)enable a crtc,
-whether this is through a set_config call or through dpms. This is
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-Sorry that we didn't catch the impact of this additional check on existing
-drivers, I've thought I've reviewed them and checked that they all call
-vblank_on. But I didn't take into account that the codepaths might differ
-for dpms and set_config paths. Otoh most drivers really should implement
-one in terms of the other.
-
-Cheers, Daniel
-
-> ---
->  drivers/gpu/drm/exynos/exynos_drm_crtc.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/drm/exynos/exynos_drm_crtc.c b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-> index 8e38e9f..45026e6 100644
-> --- a/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-> +++ b/drivers/gpu/drm/exynos/exynos_drm_crtc.c
-> @@ -71,13 +71,16 @@ static void exynos_drm_crtc_dpms(struct drm_crtc *crtc, int mode)
->  				!atomic_read(&exynos_crtc->pending_flip),
->  				HZ/20))
->  			atomic_set(&exynos_crtc->pending_flip, 0);
-> -		drm_vblank_off(crtc->dev, exynos_crtc->pipe);
-> +		drm_crtc_vblank_off(crtc);
->  	}
+On Sun, 2014-10-12 at 00:01 +0530, Rahul Bedarkar wrote:
+[]
+> diff --git a/drivers/char/misc.c b/drivers/char/misc.c
+[]
+> @@ -280,12 +280,12 @@ static int __init misc_init(void)
 >  
->  	if (manager->ops->dpms)
->  		manager->ops->dpms(manager, mode);
+>  	err = -EIO;
+>  	if (register_chrdev(MISC_MAJOR,"misc",&misc_fops))
+> -		goto fail_printk;
+> +		goto fail_pr_err;
+>  	misc_class->devnode = misc_devnode;
+>  	return 0;
 >  
->  	exynos_crtc->dpms = mode;
-> +
-> +	if (mode == DRM_MODE_DPMS_ON)
-> +		drm_crtc_vblank_on(crtc);
->  }
->  
->  static void exynos_drm_crtc_prepare(struct drm_crtc *crtc)
-> -- 
-> 1.9.1
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> -fail_printk:
+> -	printk("unable to get major %d for misc devices\n", MISC_MAJOR);
+> +fail_pr_err:
+> +	pr_err("unable to get major %d for misc devices\n", MISC_MAJOR);
+>  	class_destroy(misc_class);
+>  fail_remove:
+>  	remove_proc_entry("misc", NULL);
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+The printk is not relevant.
+Maybe the label should be "fail_destroy:"
+
