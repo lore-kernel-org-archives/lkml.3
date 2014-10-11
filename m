@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325AbaJKK63 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 06:58:29 -0400
-Received: from mail-bl2on0105.outbound.protection.outlook.com ([65.55.169.105]:20715
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752137AbaJKK6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 06:58:03 -0400
-From: Yuan Yao <yao.yuan@freescale.com>
-To: <wsa@the-dreams.de>, <marex@denx.de>
-CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
-        <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-i2c@vger.kernel.org>
-Subject: [PATCH v9 2/3] Documentation:add DMA support for freescale i2c driver
-Date: Sat, 11 Oct 2014 18:57:11 +0800
-Message-ID: <1413025032-14958-3-git-send-email-yao.yuan@freescale.com>
-X-Mailer: git-send-email 2.1.0.27.g96db324
-In-Reply-To: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
-References: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(104016003)(107046002)(95666004)(26826002)(21056001)(105606002)(4396001)(104166001)(50226001)(229853001)(33646002)(76176999)(50986999)(97736003)(93916002)(86362001)(92566001)(106466001)(81156004)(92726001)(31966008)(88136002)(36756003)(84676001)(77156001)(64706001)(20776003)(46102003)(85306004)(47776003)(80022003)(48376002)(99396003)(102836001)(62966002)(50466002)(69596002)(68736004)(87936001)(87286001)(120916001)(89996001)(85852003)(76482002)(19580405001)(44976005)(6806004)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB376;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1752437AbaJKLBM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 07:01:12 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:46000 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaJKLBL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 07:01:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB376;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0361212EA8
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=yao.yuan@freescale.com; 
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20141010094046.GH26795@lee--X1>
+References: <20141010094046.GH26795@lee--X1>
+Date: Sat, 11 Oct 2014 07:01:09 -0400
+X-Google-Sender-Auth: pgudXfrghg3p4BoA6UJtC_khwgY
+Message-ID: <CA+55aFyH-E4BTk0EVLnyVDqxtTNxAMM8fnzeo5=sfFaEp8RYhw@mail.gmail.com>
+Subject: Re: [GIT PULL] MFD for v3.18
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add i2c dts node properties for eDMA support, them depend on the eDMA driver.
+On Fri, Oct 10, 2014 at 5:40 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>  The following changes since commit 52addcf9d6669fa439387610bc65c92fa0980cef:
+>
+>   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-for-linus-3.18
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
----
- Documentation/devicetree/bindings/i2c/i2c-imx.txt | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+This causes Kconfig problems for me when doing "make allmodconfig":
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-imx.txt b/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-index 4a8513e..52d37fd 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-imx.txt
-@@ -11,6 +11,8 @@ Required properties:
- Optional properties:
- - clock-frequency : Constains desired I2C/HS-I2C bus clock frequency in Hz.
-   The absence of the propoerty indicates the default frequency 100 kHz.
-+- dmas: A list of two dma specifiers, one for each entry in dma-names.
-+- dma-names: should contain "tx" and "rx".
- 
- Examples:
- 
-@@ -26,3 +28,12 @@ i2c@70038000 { /* HS-I2C on i.MX51 */
- 	interrupts = <64>;
- 	clock-frequency = <400000>;
- };
-+
-+i2c0: i2c@40066000 { /* i2c0 on vf610 */
-+	compatible = "fsl,vf610-i2c";
-+	reg = <0x40066000 0x1000>;
-+	interrupts =<0 71 0x04>;
-+	dmas = <&edma0 0 50>,
-+		<&edma0 0 51>;
-+	dma-names = "rx","tx";
-+};
--- 
-1.8.4
+  fs/sysfs/Kconfig:1: symbol SYSFS is selected by CHARGER_MAX14577
+  drivers/power/Kconfig:327: symbol CHARGER_MAX14577 depends on POWER_SUPPLY
+  drivers/power/Kconfig:1: symbol POWER_SUPPLY is selected by HID_SONY
+  drivers/hid/Kconfig:649: symbol HID_SONY depends on NEW_LEDS
+  drivers/leds/Kconfig:8: symbol NEW_LEDS is selected by SENSORS_APPLESMC
+  drivers/hwmon/Kconfig:299: symbol SENSORS_APPLESMC depends on HWMON
+  drivers/hwmon/Kconfig:5: symbol HWMON is selected by EEEPC_LAPTOP
+  drivers/platform/x86/Kconfig:496: symbol EEEPC_LAPTOP depends on HOTPLUG_PCI
+  drivers/pci/hotplug/Kconfig:5: symbol HOTPLUG_PCI depends on SYSFS
 
+and the reason seems to be your changes to drivers/power/Kconfig for
+the CHARGER_MAX14577 symbol.
+
+So I pulled and then unpulled.  I realize you're not the only guilty
+party in this chain, but your pull is the final drop, so.. I would
+suggest making that MAX14577 charger interface _depend_ on SYSFS, not
+try to select it.
+
+                     Linus
