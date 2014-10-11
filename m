@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaJKWZO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 18:25:14 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:49314 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaJKWZM (ORCPT
+	id S1752275AbaJKWZX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 18:25:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54229 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154AbaJKWZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 18:25:12 -0400
-From: Nix <nix@esperi.org.uk>
-To: Paul Martin <pm@debian.org>
-Cc: Oliver Neukum <oliver@neukum.org>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <878um4tg09.fsf@spindle.srvr.nix>
-	<1409569752.24385.12.camel@linux-fkkt.site>
-	<874mwnosz1.fsf@spindle.srvr.nix> <871tqe2zqt.fsf_-_@spindle.srvr.nix>
-	<20141011195108.GA8275@thinkpad.nowster.org.uk>
-Emacs: a Lisp interpreter masquerading as ... a Lisp interpreter!
-Date: Sat, 11 Oct 2014 23:24:59 +0100
-In-Reply-To: <20141011195108.GA8275@thinkpad.nowster.org.uk> (Paul Martin's
-	message of "Sat, 11 Oct 2014 20:51:08 +0100")
-Message-ID: <87y4smz1l0.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
+	Sat, 11 Oct 2014 18:25:18 -0400
+Date: Sat, 11 Oct 2014 23:25:14 +0100
+From: Thomas Graf <tgraf@suug.ch>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>, paulmck@linux.vnet.ibm.com,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ursula Braun <braunu@de.ibm.com>
+Subject: Re: [bisected] e341694e3eb5 netlink_lookup() rcu conversion causes
+ latencies
+Message-ID: <20141011222514.GA14186@casper.infradead.org>
+References: <20141011083627.GB5074@osiris>
+ <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=5 Fuz1=5 Fuz2=5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413055964.9362.50.camel@edumazet-glaptop2.roam.corp.google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 Oct 2014, Paul Martin spake thusly:
+On 10/11/14 at 12:32pm, Eric Dumazet wrote:
+> On Sat, 2014-10-11 at 10:36 +0200, Heiko Carstens wrote:
+> > Hi all,
+> > 
+> > it just came to my attention that commit e341694e3eb5
+> > "netlink: Convert netlink_lookup() to use RCU protected hash table"
+> > causes network latencies for me on s390.
+> > 
+> > The testcase is quite simple and 100% reproducible on s390:
+> > 
+> > Simply login via ssh to a remote system which has the above mentioned
+> > patch applied. Any action like pressing return now has significant
+> > latencies. Or in other words, working via such a connection becomes
+> > a pain ;)
+> > 
+> > I haven't debugged it, however I assume the problem is that a) the
+> > commit introduces a synchronize_net() call und b) s390 kernels
+> > usually get compiled with CONFIG_HZ_100 while most other architectures
+> > use CONFIG_HZ_1000.
+> > If I change the kernel config to CONFIG_HZ_1000 the problem goes away,
+> > however I don't consider this a fix...
+> > 
+> > Another reason why this hasn't been observed on x86 may or may not be
+> > that we haven't implemented CONFIG_HAVE_CONTEXT_TRACKING on s390 (yet).
+> > But that's just guessing...
+> 
+> CC Paul and Sasha
 
-> Having been privy to the firmware of the eKey, it is very simplisting,
-> with no implementation whatsoever of any flow control.
+I think the issue here is obvious and a fix is on the way to move
+the insertion and removal to a worker to no longer require the
+synchronize_rcu().
 
-That's what I thought. (Why would something that just provides data at a
-constant rate way below that of even the slowest USB bus *need* flow
-control?)
-
-One presumes therefore that the kernel suddenly trying to do flow
-control on shutdown would fubar the firmware's internal state, leading
-to the symptoms I see.
-
-So, the question becomes, is there a way to spot this general 'no flow
-control on this device' thing from the kernel side, or do we need a
-blacklist? Or, perhaps, if this is commonplace for cdc-acm devices, a
-whitelist? I can't imagine it's *that* commonplace or someone would have
-spotted this already in the months and months it took me to do the
-bisection.
-
-Maybe all non-modem cdc-acm devices should eschew flow control, or
-something? (This is a genuine guess and is almost certainly wrong.)
-
--- 
-NULL && (void)
+What bothers me is that the synchronize_rcu() should only occur
+on expand/shrink and not for every table update. The default table
+size is 64.
