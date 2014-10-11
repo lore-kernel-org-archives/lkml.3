@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaJKLNI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 07:13:08 -0400
-Received: from mail-by2on0114.outbound.protection.outlook.com ([207.46.100.114]:1099
+	id S1752370AbaJKLNs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 07:13:48 -0400
+Received: from mail-by2on0141.outbound.protection.outlook.com ([207.46.100.141]:17505
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751750AbaJKLNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 07:13:06 -0400
+	id S1752116AbaJKLNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 07:13:45 -0400
 From: Yuan Yao <yao.yuan@freescale.com>
 To: <wsa@the-dreams.de>, <marex@denx.de>
 CC: <LW@KARO-electronics.de>, <mark.rutland@arm.com>,
         <fugang.duan@freescale.com>, <shawn.guo@linaro.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-i2c@vger.kernel.org>
-Subject: [PATCH v9 3/3] i2c: imx: add DMA support for freescale i2c driver
-Date: Sat, 11 Oct 2014 18:57:12 +0800
-Message-ID: <1413025032-14958-4-git-send-email-yao.yuan@freescale.com>
+Subject: [PATCH v9 0/3] i2c: imx: add DMA support for freescale i2c driver 
+Date: Sat, 11 Oct 2014 18:57:09 +0800
+Message-ID: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
 X-Mailer: git-send-email 2.1.0.27.g96db324
-In-Reply-To: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
-References: <1413025032-14958-1-git-send-email-yao.yuan@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(120916001)(95666004)(81156004)(31966008)(21056001)(99396003)(104016003)(88136002)(26826002)(77156001)(102836001)(107046002)(20776003)(47776003)(85852003)(229853001)(64706001)(92566001)(92726001)(85306004)(93916002)(106466001)(105606002)(50466002)(86362001)(80022003)(48376002)(76482002)(36756003)(46102003)(44976005)(6806004)(87286001)(19580405001)(19580395003)(104166001)(97736003)(89996001)(50226001)(62966002)(4396001)(76176999)(33646002)(50986999)(87936001)(68736004)(84676001)(69596002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB373;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(120916001)(95666004)(81156004)(31966008)(21056001)(99396003)(104016003)(88136002)(26826002)(77156001)(102836001)(107046002)(20776003)(47776003)(85852003)(229853001)(64706001)(92566001)(92726001)(85306004)(93916002)(106466001)(105606002)(50466002)(86362001)(80022003)(76482002)(575784001)(36756003)(46102003)(44976005)(6806004)(87286001)(19580405001)(19580395003)(104166001)(97736003)(89996001)(50226001)(62966002)(23676002)(4396001)(33646002)(50986999)(87936001)(68736004)(84676001)(69596002)(19627235001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB373;H:az84smr01.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
 X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB373;
 X-Exchange-Antispam-Report-Test: UriScan:;
@@ -34,459 +33,391 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add dma support for i2c. This function depend on DMA driver.
-You can turn on it by write both the dmas and dma-name properties in dts node.
-DMA is optional, even DMA request unsuccessfully, i2c can also work well.
 
-Signed-off-by: Yuan Yao <yao.yuan@freescale.com>
----
- drivers/i2c/busses/i2c-imx.c | 327 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 325 insertions(+), 2 deletions(-)
+Changed in v9: 
+- seperate a patch for sort include headers alphabetically 
+- some minor fixes for coding style. 
 
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index 2452b57..e58c771 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -38,7 +38,11 @@
- *******************************************************************************/
- 
- #include <linux/clk.h>
-+#include <linux/completion.h>
- #include <linux/delay.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/dmaengine.h>
-+#include <linux/dmapool.h>
- #include <linux/err.h>
- #include <linux/errno.h>
- #include <linux/i2c.h>
-@@ -49,6 +53,7 @@
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/of_dma.h>
- #include <linux/platform_data/i2c-imx.h>
- #include <linux/platform_device.h>
- #include <linux/sched.h>
-@@ -63,6 +68,13 @@
- /* Default value */
- #define IMX_I2C_BIT_RATE	100000	/* 100kHz */
- 
-+/*
-+ * Enable DMA if transfer byte size is bigger than this threshold.
-+ * As the hardware request, it must bigger than 4 bytes.
-+ */
-+#define IMX_I2C_DMA_THRESHOLD	16
-+#define IMX_I2C_DMA_TIMEOUT	1000
-+
- /* IMX I2C registers:
-  * the I2C register offset is different between SoCs,
-  * to provid support for all these chips, split the
-@@ -88,6 +100,7 @@
- #define I2SR_IBB	0x20
- #define I2SR_IAAS	0x40
- #define I2SR_ICF	0x80
-+#define I2CR_DMAEN	0x02
- #define I2CR_RSTA	0x04
- #define I2CR_TXAK	0x08
- #define I2CR_MTX	0x10
-@@ -174,6 +187,17 @@ struct imx_i2c_hwdata {
- 	unsigned		i2cr_ien_opcode;
- };
- 
-+struct imx_i2c_dma {
-+	struct dma_chan		*chan_tx;
-+	struct dma_chan		*chan_rx;
-+	struct dma_chan		*chan_using;
-+	struct completion	cmd_complete;
-+	dma_addr_t		dma_buf;
-+	unsigned int		dma_len;
-+	unsigned int		dma_transfer_dir;
-+	unsigned int		dma_data_dir;
-+};
-+
- struct imx_i2c_struct {
- 	struct i2c_adapter	adapter;
- 	struct clk		*clk;
-@@ -186,6 +210,8 @@ struct imx_i2c_struct {
- 	unsigned int		cur_clk;
- 	unsigned int		bitrate;
- 	const struct imx_i2c_hwdata	*hwdata;
-+
-+	struct imx_i2c_dma	*dma;
- };
- 
- static const struct imx_i2c_hwdata imx1_i2c_hwdata  = {
-@@ -256,6 +282,132 @@ static inline unsigned char imx_i2c_read_reg(struct imx_i2c_struct *i2c_imx,
- 	return readb(i2c_imx->base + (reg << i2c_imx->hwdata->regshift));
- }
- 
-+/* Functions for DMA support */
-+static int i2c_imx_dma_request(struct imx_i2c_struct *i2c_imx,
-+						dma_addr_t phy_addr)
-+{
-+	struct imx_i2c_dma *dma;
-+	struct dma_slave_config dma_sconfig;
-+	struct device *dev = &i2c_imx->adapter.dev;
-+	int ret;
-+
-+	dma = devm_kzalloc(dev, sizeof(*dma), GFP_KERNEL);
-+	if (!dma)
-+		return -ENOMEM;
-+
-+	dma->chan_tx = dma_request_slave_channel(dev, "tx");
-+	if (!dma->chan_tx) {
-+		dev_dbg(dev, "can't request DMA tx channel\n");
-+		ret = -ENODEV;
-+		goto fail_al;
-+	}
-+
-+	dma_sconfig.dst_addr = phy_addr +
-+				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
-+	dma_sconfig.dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-+	dma_sconfig.dst_maxburst = 1;
-+	dma_sconfig.direction = DMA_MEM_TO_DEV;
-+	ret = dmaengine_slave_config(dma->chan_tx, &dma_sconfig);
-+	if (ret < 0) {
-+		dev_dbg(dev, "can't configure tx channel\n");
-+		goto fail_tx;
-+	}
-+
-+	dma->chan_rx = dma_request_slave_channel(dev, "rx");
-+	if (!dma->chan_rx) {
-+		dev_dbg(dev, "can't request DMA rx channel\n");
-+		ret = -ENODEV;
-+		goto fail_tx;
-+	}
-+
-+	dma_sconfig.src_addr = phy_addr +
-+				(IMX_I2C_I2DR << i2c_imx->hwdata->regshift);
-+	dma_sconfig.src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
-+	dma_sconfig.src_maxburst = 1;
-+	dma_sconfig.direction = DMA_DEV_TO_MEM;
-+	ret = dmaengine_slave_config(dma->chan_rx, &dma_sconfig);
-+	if (ret < 0) {
-+		dev_dbg(dev, "can't configure rx channel\n");
-+		goto fail_rx;
-+	}
-+
-+	i2c_imx->dma = dma;
-+	init_completion(&dma->cmd_complete);
-+	dev_info(dev, "using %s (tx) and %s (rx) for DMA transfers\n",
-+		dma_chan_name(dma->chan_tx), dma_chan_name(dma->chan_rx));
-+
-+	return 0;
-+
-+fail_rx:
-+	dma_release_channel(dma->chan_rx);
-+fail_tx:
-+	dma_release_channel(dma->chan_tx);
-+fail_al:
-+	devm_kfree(dev, dma);
-+	dev_info(dev, "can't use DMA\n");
-+
-+	return ret;
-+}
-+
-+static void i2c_imx_dma_callback(void *arg)
-+{
-+	struct imx_i2c_struct *i2c_imx = (struct imx_i2c_struct *)arg;
-+	struct imx_i2c_dma *dma = i2c_imx->dma;
-+
-+	dma_unmap_single(dma->chan_using->device->dev, dma->dma_buf,
-+			dma->dma_len, dma->dma_data_dir);
-+	complete(&dma->cmd_complete);
-+}
-+
-+static int i2c_imx_dma_xfer(struct imx_i2c_struct *i2c_imx,
-+					struct i2c_msg *msgs)
-+{
-+	struct imx_i2c_dma *dma = i2c_imx->dma;
-+	struct dma_async_tx_descriptor *txdesc;
-+	struct device *dev = &i2c_imx->adapter.dev;
-+	struct device *chan_dev = dma->chan_using->device->dev;
-+
-+	dma->dma_buf = dma_map_single(chan_dev, msgs->buf,
-+					dma->dma_len, dma->dma_data_dir);
-+	if (dma_mapping_error(chan_dev, dma->dma_buf)) {
-+		dev_err(dev, "DMA mapping failed\n");
-+		return -EINVAL;
-+	}
-+
-+	txdesc = dmaengine_prep_slave_single(dma->chan_using, dma->dma_buf,
-+					dma->dma_len, dma->dma_transfer_dir,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
-+	if (!txdesc) {
-+		dev_err(dev, "Not able to get desc for DMA xfer\n");
-+		dma_unmap_single(chan_dev, dma->dma_buf,
-+					dma->dma_len, dma->dma_data_dir);
-+		return -EINVAL;
-+	}
-+
-+	txdesc->callback = i2c_imx_dma_callback;
-+	txdesc->callback_param = i2c_imx;
-+	dmaengine_submit(txdesc);
-+	dma_async_issue_pending(dma->chan_using);
-+
-+	return 0;
-+}
-+
-+static void i2c_imx_dma_free(struct imx_i2c_struct *i2c_imx)
-+{
-+	struct imx_i2c_dma *dma = i2c_imx->dma;
-+
-+	dma->dma_buf = 0;
-+	dma->dma_len = 0;
-+
-+	dma_release_channel(dma->chan_tx);
-+	dma->chan_tx = NULL;
-+
-+	dma_release_channel(dma->chan_rx);
-+	dma->chan_rx = NULL;
-+
-+	dma->chan_using = NULL;
-+}
-+
- /** Functions for IMX I2C adapter driver ***************************************
- *******************************************************************************/
- 
-@@ -387,6 +539,7 @@ static int i2c_imx_start(struct imx_i2c_struct *i2c_imx)
- 	i2c_imx->stopped = 0;
- 
- 	temp |= I2CR_IIEN | I2CR_MTX | I2CR_TXAK;
-+	temp &= ~I2CR_DMAEN;
- 	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
- 	return result;
- }
-@@ -400,6 +553,8 @@ static void i2c_imx_stop(struct imx_i2c_struct *i2c_imx)
- 		dev_dbg(&i2c_imx->adapter.dev, "<%s>\n", __func__);
- 		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
- 		temp &= ~(I2CR_MSTA | I2CR_MTX);
-+		if (i2c_imx->dma)
-+			temp &= ~I2CR_DMAEN;
- 		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
- 	}
- 	if (is_imx1_i2c(i2c_imx)) {
-@@ -440,6 +595,159 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
- 	return IRQ_NONE;
- }
- 
-+static int i2c_imx_dma_write(struct imx_i2c_struct *i2c_imx,
-+					struct i2c_msg *msgs)
-+{
-+	int result;
-+	unsigned int temp = 0;
-+	unsigned long orig_jiffies = jiffies;
-+	struct imx_i2c_dma *dma = i2c_imx->dma;
-+	struct device *dev = &i2c_imx->adapter.dev;
-+
-+	dma->chan_using = dma->chan_tx;
-+	dma->dma_transfer_dir = DMA_MEM_TO_DEV;
-+	dma->dma_data_dir = DMA_TO_DEVICE;
-+	dma->dma_len = msgs->len - 1;
-+	result = i2c_imx_dma_xfer(i2c_imx, msgs);
-+	if (result)
-+		return result;
-+
-+	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+	temp |= I2CR_DMAEN;
-+	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+
-+	/*
-+	 * Write slave address.
-+	 * The first byte must be transmitted by the CPU.
-+	 */
-+	imx_i2c_write_reg(msgs->addr << 1, i2c_imx, IMX_I2C_I2DR);
-+	reinit_completion(&i2c_imx->dma->cmd_complete);
-+	result = wait_for_completion_interruptible_timeout(
-+				&i2c_imx->dma->cmd_complete,
-+				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-+	if (result <= 0) {
-+		dmaengine_terminate_all(dma->chan_using);
-+		return result ?: -ETIMEDOUT;
-+	}
-+
-+	/* Waiting for transfer complete. */
-+	while (1) {
-+		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
-+		if (temp & I2SR_ICF)
-+			break;
-+		if (time_after(jiffies, orig_jiffies +
-+				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
-+			dev_dbg(dev, "<%s> Timeout\n", __func__);
-+			return -ETIMEDOUT;
-+		}
-+		schedule();
-+	}
-+
-+	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+	temp &= ~I2CR_DMAEN;
-+	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+
-+	/* The last data byte must be transferred by the CPU. */
-+	imx_i2c_write_reg(msgs->buf[msgs->len-1],
-+				i2c_imx, IMX_I2C_I2DR);
-+	result = i2c_imx_trx_complete(i2c_imx);
-+	if (result)
-+		return result;
-+
-+	result = i2c_imx_acked(i2c_imx);
-+	if (result)
-+		return result;
-+
-+	return 0;
-+}
-+
-+static int i2c_imx_dma_read(struct imx_i2c_struct *i2c_imx,
-+			struct i2c_msg *msgs, bool is_lastmsg)
-+{
-+	int result;
-+	unsigned int temp;
-+	unsigned long orig_jiffies;
-+	struct imx_i2c_dma *dma = i2c_imx->dma;
-+	struct device *dev = &i2c_imx->adapter.dev;
-+
-+	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+	temp |= I2CR_DMAEN;
-+	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+
-+	dma->chan_using = dma->chan_rx;
-+	dma->dma_transfer_dir = DMA_DEV_TO_MEM;
-+	dma->dma_data_dir = DMA_FROM_DEVICE;
-+	/* The last two data bytes must be transferred by the CPU. */
-+	dma->dma_len = msgs->len - 2;
-+	result = i2c_imx_dma_xfer(i2c_imx, msgs);
-+	if (result)
-+		return result;
-+
-+	reinit_completion(&i2c_imx->dma->cmd_complete);
-+	result = wait_for_completion_interruptible_timeout(
-+				&i2c_imx->dma->cmd_complete,
-+				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT));
-+	if (result <= 0) {
-+		dmaengine_terminate_all(dma->chan_using);
-+		return result ?: -ETIMEDOUT;
-+	}
-+
-+	/* waiting for transfer complete. */
-+	while (1) {
-+		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2SR);
-+		if (temp & I2SR_ICF)
-+			break;
-+		if (time_after(jiffies, orig_jiffies +
-+				msecs_to_jiffies(IMX_I2C_DMA_TIMEOUT))) {
-+			dev_dbg(dev, "<%s> Timeout\n", __func__);
-+			return -ETIMEDOUT;
-+		}
-+		schedule();
-+	}
-+
-+	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+	temp &= ~I2CR_DMAEN;
-+	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+
-+	/* read n-1 byte data */
-+	temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+	temp |= I2CR_TXAK;
-+	imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+
-+	msgs->buf[msgs->len-2] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-+	/* read n byte data */
-+	result = i2c_imx_trx_complete(i2c_imx);
-+	if (result)
-+		return result;
-+
-+	if (is_lastmsg) {
-+		/*
-+		 * It must generate STOP before read I2DR to prevent
-+		 * controller from generating another clock cycle
-+		 */
-+		dev_dbg(dev, "<%s> clear MSTA\n", __func__);
-+		temp = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2CR);
-+		temp &= ~(I2CR_MSTA | I2CR_MTX);
-+		imx_i2c_write_reg(temp, i2c_imx, IMX_I2C_I2CR);
-+		i2c_imx_bus_busy(i2c_imx, 0);
-+		i2c_imx->stopped = 1;
-+	} else {
-+		/*
-+		 * For i2c master receiver repeat restart operation like:
-+		 * read -> repeat MSTA -> read/write
-+		 * The controller must set MTX before read the last byte in
-+		 * the first read operation, otherwise the first read cost
-+		 * one extra clock cycle.
-+		 */
-+		temp = readb(i2c_imx->base + IMX_I2C_I2CR);
-+		temp |= I2CR_MTX;
-+		writeb(temp, i2c_imx->base + IMX_I2C_I2CR);
-+	}
-+	msgs->buf[msgs->len-1] = imx_i2c_read_reg(i2c_imx, IMX_I2C_I2DR);
-+
-+	return 0;
-+}
-+
- static int i2c_imx_write(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs)
- {
- 	int i, result;
-@@ -509,6 +817,9 @@ static int i2c_imx_read(struct imx_i2c_struct *i2c_imx, struct i2c_msg *msgs, bo
- 
- 	dev_dbg(&i2c_imx->adapter.dev, "<%s> read data\n", __func__);
- 
-+	if (i2c_imx->dma && msgs->len >= IMX_I2C_DMA_THRESHOLD && !block_data)
-+		return i2c_imx_dma_read(i2c_imx, msgs, is_lastmsg);
-+
- 	/* read data */
- 	for (i = 0; i < msgs->len; i++) {
- 		u8 len = 0;
-@@ -623,8 +934,12 @@ static int i2c_imx_xfer(struct i2c_adapter *adapter,
- #endif
- 		if (msgs[i].flags & I2C_M_RD)
- 			result = i2c_imx_read(i2c_imx, &msgs[i], is_lastmsg);
--		else
--			result = i2c_imx_write(i2c_imx, &msgs[i]);
-+		else {
-+			if (i2c_imx->dma && msgs[i].len >= IMX_I2C_DMA_THRESHOLD)
-+				result = i2c_imx_dma_write(i2c_imx, &msgs[i]);
-+			else
-+				result = i2c_imx_write(i2c_imx, &msgs[i]);
-+		}
- 		if (result)
- 			goto fail0;
- 	}
-@@ -659,6 +974,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
- 	struct imxi2c_platform_data *pdata = dev_get_platdata(&pdev->dev);
- 	void __iomem *base;
- 	int irq, ret;
-+	dma_addr_t phy_addr;
- 
- 	dev_dbg(&pdev->dev, "<%s>\n", __func__);
- 
-@@ -673,6 +989,7 @@ static int i2c_imx_probe(struct platform_device *pdev)
- 	if (IS_ERR(base))
- 		return PTR_ERR(base);
- 
-+	phy_addr = (dma_addr_t)res->start;
- 	i2c_imx = devm_kzalloc(&pdev->dev, sizeof(struct imx_i2c_struct),
- 				GFP_KERNEL);
- 	if (!i2c_imx)
-@@ -748,6 +1065,9 @@ static int i2c_imx_probe(struct platform_device *pdev)
- 		i2c_imx->adapter.name);
- 	dev_info(&i2c_imx->adapter.dev, "IMX I2C adapter registered\n");
- 
-+	/* Init DMA config if support*/
-+	i2c_imx_dma_request(i2c_imx, phy_addr);
-+
- 	return 0;   /* Return OK */
- 
- clk_disable:
-@@ -763,6 +1083,9 @@ static int i2c_imx_remove(struct platform_device *pdev)
- 	dev_dbg(&i2c_imx->adapter.dev, "adapter removed\n");
- 	i2c_del_adapter(&i2c_imx->adapter);
- 
-+	if (i2c_imx->dma)
-+		i2c_imx_dma_free(i2c_imx);
-+
- 	/* setup chip registers to defaults */
- 	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IADR);
- 	imx_i2c_write_reg(0, i2c_imx, IMX_I2C_IFDR);
--- 
-2.1.0.27.g96db324
+Changed in v8: 
+- some minor fixes for coding style. 
+- unsetting I2CR_DMAEN immediatelly when DMA failed. 
 
+Changed in v7: 
+- when waiting for transfer complete use schedule() instead of udelay(). 
+
+Changed in v6: 
+- changed the inappropriate print message. 
+- rebase to the latest code. 
+
+Changed in v5: 
+- add "*chan_dev = dma->chan_using->device->dev" for code cleanup. 
+- add the test logs. 
+
+Changed in v4: 
+- cancelled "i2c_imx->use_dma". 
+- changed "Dma" to "DMA". 
+- add Timeout handling for Transfer complete. 
+
+Changed in v3: 
+- fix a bug when request the dma faild. 
+- some minor fixes for coding style. 
+- other minor fixes. 
+
+Changed in v2: 
+- remove has_dma_support property 
+- unify i2c_imx_dma_rx and i2c_imx_dma_tx 
+- unify i2c_imx_dma_read and i2c_imx_pio_read 
+- unify i2c_imx_dma_write and i2c_imx_pio_write 
+
+Added in v1: 
+- Enable dma if it's support dma and transfer size bigger than the threshold. 
+- Add device tree bindings for i2c eDMA support. 
+- Add eDMA support for i2c driver. 
+
+
+The test log for i2c DMA support: 
+
+Starting kernel ... 
+
+Booting Linux on physical CPU 0xf00 
+Linux version 3.12.0+ (yuany@titan) (gcc version 4.8.3 20131202 (prerelease) (crosstool-NG linaro-1.13.1-4.8-2013.12 - Linaro GCC 2013.11) ) #34 SMP Sat Oct 11 17:15:15 CST 2014 
+CPU: ARMv7 Processor [410fc075] revision 5 (ARMv7), cr=30c73c7d 
+CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache 
+Machine: Freescale Layerscape LS1021A, model: LS1021A TWR Board 
+Memory policy: ECC disabled, Data cache writealloc 
+PERCPU: Embedded 7 pages/cpu @80e7a000 s7680 r8192 d12800 u32768 
+Built 1 zonelists in Zone order, mobility grouping on. Total pages: 260096 
+Kernel command line: root=/dev/ram rw console=ttyS0,115200 
+PID hash table entries: 4096 (order: 2, 16384 bytes) 
+Dentry cache hash table entries: 131072 (order: 7, 524288 bytes) 
+Inode-cache hash table entries: 65536 (order: 6, 262144 bytes) 
+Memory: 1014152K/1048576K available (4495K kernel code, 249K rwdata, 1352K rodata, 207K init, 224K bss, 34424K reserved, 0K highmem) 
+Virtual kernel memory layout: 
+vector : 0xffff0000 - 0xffff1000 ( 4 kB) 
+fixmap : 0xfff00000 - 0xfffe0000 ( 896 kB) 
+vmalloc : 0xc0800000 - 0xff000000 (1000 MB) 
+lowmem : 0x80000000 - 0xc0000000 (1024 MB) 
+pkmap : 0x7fe00000 - 0x80000000 ( 2 MB) 
+modules : 0x7f000000 - 0x7fe00000 ( 14 MB) 
+.text : 0x80008000 - 0x805bdf74 (5848 kB) 
+.init : 0x805be000 - 0x805f1e00 ( 208 kB) 
+.data : 0x805f2000 - 0x80630518 ( 250 kB) 
+.bss : 0x80630520 - 0x80668628 ( 225 kB) 
+SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1 
+Hierarchical RCU implementation. 
+RCU restricting CPUs from NR_CPUS=4 to nr_cpu_ids=2. 
+NR_IRQS:16 nr_irqs:16 16 
+Architected cp15 timer(s) running at 12.50MHz (phys). 
+Switching to timer-based delay loop 
+sched_clock: ARM arch timer >56 bits at 12500kHz, resolution 80ns 
+sched_clock: 32 bits at 100 Hz, resolution 10000000ns, wraps every 4294967286ms 
+Console: colour dummy device 80x30 
+Calibrating delay loop (skipped), value calculated using timer frequency.. 25.00 BogoMIPS (lpj=125000) 
+pid_max: default: 32768 minimum: 301 
+Mount-cache hash table entries: 512 
+CPU: Testing write buffer coherency: ok 
+CPU0: update cpu_power 1024 
+CPU0: thread -1, cpu 0, socket 15, mpidr 80000f00 
+Setting up static identity map for 0x80469420 - 0x80469454 
+CPU1: Booted secondary processor 
+CPU1: update cpu_power 1024 
+CPU1: thread -1, cpu 1, socket 15, mpidr 80000f01 
+Brought up 2 CPUs 
+SMP: Total of 2 processors activated. 
+CPU: All CPU(s) started in HYP mode. 
+CPU: Virtualization extensions available. 
+devtmpfs: initialized 
+VFP support v0.3: implementor 41 architecture 2 part 30 variant 7 rev 5 
+NET: Registered protocol family 16 
+DMA: preallocated 256 KiB pool for atomic coherent allocations 
+cpuidle: using governor ladder 
+cpuidle: using governor menu 
+irq: no irq domain found for /soc/uqe@2400000/qeic@80 ! 
+irq: no irq domain found for /soc/uqe@2400000/qeic@80 ! 
+bio: create slab <bio-0> at 0 
+layerscape-pcie 3400000.pcie: PCI host bridge to bus 0000:00 
+pci_bus 0000:00: root bus resource [bus 00-ff] 
+pci_bus 0000:00: root bus resource [io 0x4010000000-0x401000ffff] 
+pci_bus 0000:00: root bus resource [mem 0x4100000000-0x41ffffffff] (bus address [0x00000000-0xffffffff]) 
+PCI: bus0: Fast back to back transfers disabled 
+PCI: bus1: Fast back to back transfers enabled 
+pci 0000:00:00.0: BAR 0: assigned [mem 0x4100000000-0x4100ffffff 64bit] 
+pci 0000:00:00.0: BAR 6: assigned [mem 0x4101000000-0x4101ffffff pref] 
+pci 0000:00:00.0: PCI bridge to [bus 01] 
+pci 0000:00:00.0: PCI bridge to [bus 01] 
+layerscape-pcie 3500000.pcie: PCI host bridge to bus 0001:00 
+pci_bus 0001:00: root bus resource [bus 00-ff] 
+pci_bus 0001:00: root bus resource [io 0x4810000000-0x481000ffff] (bus address [0x480fff0000-0x480fffffff]) 
+pci_bus 0001:00: root bus resource [mem 0x4900000000-0x49ffffffff] (bus address [0x00000000-0xffffffff]) 
+PCI: bus0: Fast back to back transfers disabled 
+PCI: bus1: Fast back to back transfers enabled 
+pci 0001:00:00.0: BAR 0: assigned [mem 0x4900000000-0x4900ffffff 64bit] 
+pci 0001:00:00.0: BAR 6: assigned [mem 0x4901000000-0x4901ffffff pref] 
+pci 0001:00:00.0: PCI bridge to [bus 01] 
+pci 0000:00:00.0: PCI bridge to [bus 01] 
+pci 0001:00:00.0: PCI bridge to [bus 01] 
+vgaarb: loaded 
+SCSI subsystem initialized 
+usbcore: registered new interface driver usbfs 
+usbcore: registered new interface driver hub 
+usbcore: registered new device driver usb 
+i2c i2c-0: IMX I2C adapter registered 
+of_dma_request_slave_channel: dma-names property of node '/soc/i2c@2180000' missing or empty 
+i2c i2c-0: can't use DMA 
+i2c i2c-1: IMX I2C adapter registered 
+i2c i2c-1: using dma0chan16 (tx) and dma0chan17 (rx) for DMA transfers 
+i2c i2c-2: IMX I2C adapter registered 
+of_dma_request_slave_channel: dma-names property of node '/soc/i2c@21a0000' missing or empty 
+i2c i2c-2: can't use DMA 
+pps_core: LinuxPPS API ver. 1 registered 
+pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it> 
+PTP clock support registered 
+fsl-ifc 1530000.ifc: Freescale Integrated Flash Controller 
+Switched to clocksource arch_sys_counter 
+NET: Registered protocol family 2 
+TCP established hash table entries: 8192 (order: 4, 65536 bytes) 
+TCP bind hash table entries: 8192 (order: 5, 163840 bytes) 
+TCP: Hash tables configured (established 8192 bind 8192) 
+TCP: reno registered 
+UDP hash table entries: 512 (order: 2, 24576 bytes) 
+UDP-Lite hash table entries: 512 (order: 2, 24576 bytes) 
+NET: Registered protocol family 1 
+RPC: Registered named UNIX socket transport module. 
+RPC: Registered udp transport module. 
+RPC: Registered tcp transport module. 
+RPC: Registered tcp NFSv4.1 backchannel transport module. 
+Trying to unpack rootfs image as initramfs... 
+rootfs image is not initramfs (no cpio magic); looks like an initrd 
+Freeing initrd memory: 18704K (bdce9000 - bef2d000) 
+NFS: Registering the id_resolver key type 
+Key type id_resolver registered 
+Key type id_legacy registered 
+jffs2: version 2.2. (NAND) © 2001-2006 Red Hat, Inc. 
+msgmni has been set to 2017 
+io scheduler noop registered 
+io scheduler deadline registered 
+io scheduler cfq registered (default) 
+sii902x: probe of 1-0039 failed with error -1 
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled 
+21c0500.serial: ttyS0 at MMIO 0x21c0500 (irq = 118, base_baud = 9375000) is a Freescale 16550 FIFO64 
+console [ttyS0] enabled 
+21c0600.serial: ttyS1 at MMIO 0x21c0600 (irq = 118, base_baud = 9375000) is a Freescale 16550 FIFO64 
+of_serial 2402000.ucc: clk or clock-frequency not defined 
+of_serial: probe of 2402000.ucc failed with error -2 
+of_serial 2402200.ucc: clk or clock-frequency not defined 
+of_serial: probe of 2402200.ucc failed with error -2 
+serial: Freescale lpuart driver 
+2950000.serial: ttyLP0 at MMIO 0x2950000 (irq = 112, base_baud = 6250000) is a FSL_LPUART 
+brd: module loaded 
+loop: module loaded 
+60000000.nor: Found 1 x16 devices at 0x0 in 16-bit bank. Manufacturer ID 0x000089 Chip ID 0x00227e 
+Amd/Fujitsu Extended Query Table at 0x0040 
+Amd/Fujitsu Extended Query version 1.3. 
+number of CFI chips: 1 
+4 ofpart partitions found on MTD device 60000000.nor 
+Creating 4 MTD partitions on "60000000.nor": 
+0x000000000000-0x000000020000 : "NOR RCW Image" 
+0x000000020000-0x000000120000 : "NOR DTB Image" 
+0x000000120000-0x000000920000 : "NOR Linux Kernel Image" 
+0x000000920000-0x000003b20000 : "NOR Ramdisk Root File System" 
+6Freescale DSPI master initialized 
+CAN device driver interface 
+flexcan 2a70000.can: device registered (reg_base=c081a000, irq=158) 
+flexcan 2a80000.can: device registered (reg_base=c081c000, irq=159) 
+libphy: Freescale PowerQUICC MII Bus: probed 
+fsl-gianfar ethernet.4: enabled errata workarounds, flags: 0x4 
+fsl-gianfar ethernet.4 eth0: mac: 00:04:9f:03:45:e8 
+fsl-gianfar ethernet.4 eth0: Running with NAPI enabled 
+fsl-gianfar ethernet.4 eth0: RX BD ring size for Q[0]: 256 
+fsl-gianfar ethernet.4 eth0: TX BD ring size for Q[0]: 256 
+fsl-gianfar ethernet.5: enabled errata workarounds, flags: 0x4 
+fsl-gianfar ethernet.5 eth1: mac: 00:04:9f:03:45:e9 
+fsl-gianfar ethernet.5 eth1: Running with NAPI enabled 
+fsl-gianfar ethernet.5 eth1: RX BD ring size for Q[0]: 256 
+fsl-gianfar ethernet.5 eth1: TX BD ring size for Q[0]: 256 
+fsl-gianfar ethernet.6: enabled errata workarounds, flags: 0x4 
+fsl-gianfar ethernet.6 eth2: mac: 00:04:9f:03:45:ea 
+fsl-gianfar ethernet.6 eth2: Running with NAPI enabled 
+fsl-gianfar ethernet.6 eth2: RX BD ring size for Q[0]: 256 
+fsl-gianfar ethernet.6 eth2: TX BD ring size for Q[0]: 256 
+pps pps0: new PPS source ptp0 
+e1000: Intel(R) PRO/1000 Network Driver - version 7.3.21-k8-NAPI 
+e1000: Copyright (c) 1999-2006 Intel Corporation. 
+e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k 
+e1000e: Copyright(c) 1999 - 2013 Intel Corporation. 
+xhci-hcd xhci-hcd.0.auto: xHCI Host Controller 
+xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 1 
+xhci-hcd xhci-hcd.0.auto: irq 125, io mem 0x03100000 
+hub 1-0:1.0: USB hub found 
+hub 1-0:1.0: 1 port detected 
+xhci-hcd xhci-hcd.0.auto: xHCI Host Controller 
+xhci-hcd xhci-hcd.0.auto: new USB bus registered, assigned bus number 2 
+hub 2-0:1.0: USB hub found 
+hub 2-0:1.0: 1 port detected 
+usbcore: registered new interface driver usb-storage 
+mousedev: PS/2 mouse device common for all mice 
+i2c /dev entries driver 
+sdhci: Secure Digital Host Controller Interface driver 
+sdhci: Copyright(c) Pierre Ossman 
+sdhci-pltfm: SDHCI platform and OF driver helper 
+mmc0: SDHCI controller on 1560000.esdhc [1560000.esdhc] using ADMA 
+Value in jrstart addr c0e0005c, value prev 0 new f 
+caam 1700000.crypto: Instantiated RNG4 SH0 
+mmc0: new SDHC card at address 8415 
+caam 1700000.crypto: Instantiated RNG4 SH1 
+caam 1700000.crypto: device ID = 0x0a140300 (Era 67108864) 
+caam 1700000.crypto: job rings = 4, qi = 0 
+mmcblk0: mmc0:8415 SD04G 3.69 GiB 
+caam algorithms registered in /proc/crypto 
+mmcblk0: 
+caam_jr 1710000.jr: registering rng-caam 
+usbcore: registered new interface driver usbhid 
+usbhid: USB HID core driver 
+TCP: cubic registered 
+Initializing XFRM netlink socket 
+NET: Registered protocol family 10 
+sit: IPv6 over IPv4 tunneling driver 
+NET: Registered protocol family 17 
+NET: Registered protocol family 15 
+can: controller area network core (rev 20120528 abi 9) 
+NET: Registered protocol family 29 
+can: raw protocol (rev 20120528) 
+Key type dns_resolver registered 
+drivers/rtc/hctosys.c: unable to open rtc device (rtc0) 
+RAMDISK: gzip image found at block 0 
+usb 1-1: new high-speed USB device number 2 using xhci-hcd 
+hub 1-1:1.0: USB hub found 
+hub 1-1:1.0: 4 ports detected 
+usb 2-1: new SuperSpeed USB device number 2 using xhci-hcd 
+usb 2-1: Parent hub missing LPM exit latency info. Power management will be impacted. 
+hub 2-1:1.0: USB hub found 
+hub 2-1:1.0: 4 ports detected 
+VFS: Mounted root (ext2 filesystem) on device 1:0. 
+devtmpfs: mounted 
+Freeing unused kernel memory: 204K (805be000 - 805f1000) 
+INIT: version 2.88 booting 
+Starting udev 
+udevd[114]: starting version 182 
+FAT-fs (mmcblk0): Volume was not properly unmounted. Some data may be corrupt. Please run fsck. 
+Starting Bootlog daemon: bootlogd. 
+Populating dev cache 
+Configuring network interfaces... IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready 
+udhcpc (v1.21.1) started 
+Sending discover... 
+libphy: mdio@2d24000:02 - Link is Down 
+Sending discover... 
+libphy: mdio@2d24000:02 - Link is Up - 1000/Full 
+IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready 
+Sending discover... 
+Sending select for 10.193.20.87... 
+Lease of 10.193.20.87 obtained, lease time 14400 
+/etc/udhcpc.d/50default: Adding DNS 10.192.130.201 
+/etc/udhcpc.d/50default: Adding DNS 10.211.0.3 
+/etc/udhcpc.d/50default: Adding DNS 10.196.51.200 
+done. 
+net.ipv4.conf.default.rp_filter = 1 
+net.ipv4.conf.all.rp_filter = 1 
+hwclock: can't open '/dev/misc/rtc': No such file or directory 
+Wed Jun 25 11:59:00 UTC 2014 
+hwclock: can't open '/dev/misc/rtc': No such file or directory 
+Running postinst /etc/rpm-postinsts/100-sysvinit-inittab... 
+Running postinst /etc/rpm-postinsts/101-debianutils... 
+update-rc.d: /etc/init.d/run-postinsts exists during rc.d purge (continuing) 
+Removing any system startup links for run-postinsts ... 
+/etc/rcS.d/S99run-postinsts 
+INIT: Entering runlevel: 5 
+Starting OpenBSD Secure Shell server: sshd 
+generating ssh RSA key... 
+generating ssh ECDSA key... 
+generating ssh DSA key... 
+done. 
+hwclock: can't open '/dev/misc/rtc': No such file or directory 
+Starting network benchmark server: netserver. 
+Starting system log daemon...0 
+Starting kernel log daemon...0 
+Starting internet superserver: xinetd. 
+Stopping Bootlog daemon: bootlogd. 
+
+Poky (Yocto Project Reference Distro) 1.5 ls1021atwr /dev/ttyS0 
+
+ls1021atwr login: root 
+root@ls1021atwr:~# i2cdump -y 1 0x52 i 
+0 1 2 3 4 5 6 7 8 9 a b c d e f 0123456789abcdef 
+00: 55 55 55 55 aa aa aa aa ff ff ff ff ff ff ff ff UUUU????........ 
+10: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+20: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+30: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+40: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+50: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+60: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+70: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+90: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+a0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+b0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+c0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+d0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+e0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+f0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+root@ls1021atwr:~# i2cdump -y 1 0x52 
+No size specified (using byte-data access) 
+0 1 2 3 4 5 6 7 8 9 a b c d e f 0123456789abcdef 
+00: 55 55 55 55 aa aa aa aa ff ff ff ff ff ff ff ff UUUU????........ 
+10: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+20: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+30: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+40: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+50: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+60: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+70: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+90: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+a0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+b0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+c0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+d0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+e0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+f0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+root@ls1021atwr:~# i2cset -f -y 1 0x52 0x00 0xa0 0xa1 0xa2 0xa3 0xa4 0xa5 0xa6 0xa7 0xa8 0xa9 0xaa 0xab 0xac 0xad 0xae 0xaf i 
+root@ls1021atwr:~# i2cset -f -y 1 0x52 0x10 0xb0 0xb1 0xb2 0xb3 0xb4 0xb5 0xb6 0xb7 0xb8 0xb9 0xba 0xbb 0xbc 0xbd 0xbe 0xbf i 
+root@ls1021atwr:~# i2cset -f -y 1 0x52 0x20 0xc0 0xc1 0xc2 0xc3 0xc4 0xc5 0xc6 0xc7 0xc8 0xc9 0xca 0xcb 0xcc 0xcd 0xce 0xcf i 
+root@ls1021atwr:~# i2cset -f -y 1 0x52 0x30 0xd0 0xd1 0xd2 0xd3 0xd4 0xd5 0xd6 0xd7 0xd8 0xd9 0xda 0xdb 0xdc 0xdd 0xde 0xdf i 
+root@ls1021atwr:~# i2cset -f -y 1 0x52 0x40 0xe0 0xe1 0xe2 0xe3 0xe4 0xe5 0xe6 0xe7 0xe8 0xe9 0xea 0xeb 0xec 0xed 0xee 0xef i 
+root@ls1021atwr:~# i2cdump -y 1 0x52 i 
+0 1 2 3 4 5 6 7 8 9 a b c d e f 0123456789abcdef 
+00: a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af ???????????????? 
+10: b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf ???????????????? 
+20: c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf ???????????????? 
+30: d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df ???????????????? 
+40: e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef ???????????????? 
+50: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+60: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+70: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+90: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+a0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+b0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+c0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+d0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+e0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+f0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+root@ls1021atwr:~# i2cdump -y 1 0x52 
+No size specified (using byte-data access) 
+0 1 2 3 4 5 6 7 8 9 a b c d e f 0123456789abcdef 
+00: a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af ???????????????? 
+10: b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf ???????????????? 
+20: c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf ???????????????? 
+30: d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df ???????????????? 
+40: e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef ???????????????? 
+50: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+60: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+70: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+80: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+90: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+a0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+b0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+c0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+d0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+e0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+f0: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ................ 
+root@ls1021atwr:~# 
