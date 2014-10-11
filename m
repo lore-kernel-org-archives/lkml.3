@@ -1,316 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278AbaJKQDJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:03:09 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:43713 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002AbaJKQDH (ORCPT
+	id S1751251AbaJKQJu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:09:50 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:43476 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaJKQJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:03:07 -0400
-From: Jonas Brunsgaard <jonas.brunsgaard@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonas Brunsgaard <jonas.brunsgaard@gmail.com>
-Subject: [PATCH] usb: atm: fix codestyle issues in
-Date: Sat, 11 Oct 2014 18:02:48 +0200
-Message-Id: <1413043368-24548-1-git-send-email-jonas.brunsgaard@gmail.com>
-X-Mailer: git-send-email 1.9.3 (Apple Git-50)
+	Sat, 11 Oct 2014 12:09:49 -0400
+X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
+   d="scan'208";a="47984797"
+Message-ID: <5439564B.8040905@broadcom.com>
+Date: Sat, 11 Oct 2014 18:09:47 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] debugfs: add helper function to create device related
+ seq_file
+References: <1413043315-22332-1-git-send-email-arend@broadcom.com>
+In-Reply-To: <1413043315-22332-1-git-send-email-arend@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jonas Brunsgaard <jonas.brunsgaard@gmail.com>
----
- drivers/usb/atm/ueagle-atm.c | 95 ++++++++++++++++++++------------------------
- 1 file changed, 42 insertions(+), 53 deletions(-)
+On 10/11/14 18:01, Arend van Spriel wrote:
+> This patch adds a helper function that simplifies adding a
+> sequence file for device drivers. The calling device driver
+> needs to provide a read function and a device pointer. The
+> field struct seq_file::private will reference the device
+> pointer upon call to the read function so the driver can
+> obtain his data from it and do its seq_printf() calls.
 
-diff --git a/drivers/usb/atm/ueagle-atm.c b/drivers/usb/atm/ueagle-atm.c
-index 5a45937..eedb217 100644
---- a/drivers/usb/atm/ueagle-atm.c
-+++ b/drivers/usb/atm/ueagle-atm.c
-@@ -173,10 +173,10 @@ struct uea_softc {
- 	const struct firmware *dsp_firm;
- 	struct urb *urb_int;
- 
--	void (*dispatch_cmv) (struct uea_softc *, struct intr_pkt *);
--	void (*schedule_load_page) (struct uea_softc *, struct intr_pkt *);
--	int (*stat) (struct uea_softc *);
--	int (*send_cmvs) (struct uea_softc *);
-+	void (*dispatch_cmv)(struct uea_softc *, struct intr_pkt *);
-+	void (*schedule_load_page)(struct uea_softc *, struct intr_pkt *);
-+	int (*stat)(struct uea_softc *);
-+	int (*send_cmvs)(struct uea_softc *);
- 
- 	/* keep in sync with eaglectl */
- 	struct uea_stats {
-@@ -576,8 +576,7 @@ static int annex[NB_MODEM];
- module_param(debug, uint, 0644);
- MODULE_PARM_DESC(debug, "module debug level (0=off,1=on,2=verbose)");
- module_param_array(altsetting, uint, NULL, 0644);
--MODULE_PARM_DESC(altsetting, "alternate setting for incoming traffic: 0=bulk, "
--			     "1=isoc slowest, ... , 8=isoc fastest (default)");
-+MODULE_PARM_DESC(altsetting, "alternate setting for incoming traffic: 0=bulk, 1=isoc slowest, ... , 8=isoc fastest (default)");
- module_param_array(sync_wait, bool, NULL, 0644);
- MODULE_PARM_DESC(sync_wait, "wait the synchronisation before starting ATM");
- module_param_array(cmv_file, charp, NULL, 0644);
-@@ -686,8 +685,7 @@ static void uea_upload_pre_firmware(const struct firmware *fw_entry,
- 
- 		ret = uea_send_modem_cmd(usb, add, len, pfw + 3);
- 		if (ret < 0) {
--			uea_err(usb, "uploading firmware data failed "
--					"with error %d\n", ret);
-+			uea_err(usb, "uploading firmware data failed with error %d\n", ret);
- 			goto err;
- 		}
- 		pfw += len + 3;
-@@ -829,6 +827,7 @@ static int check_dsp_e4(const u8 *dsp, int len)
- 	for (i = 0; i < E4_MAX_PAGE_NUMBER; i++) {
- 		struct block_index *blockidx;
- 		u8 blockno = p->page_number_to_block_index[i];
-+
- 		if (blockno >= E4_NO_SWAPPAGE_HEADERS)
- 			continue;
- 
-@@ -1040,10 +1039,9 @@ static void __uea_load_page_e4(struct uea_softc *sc, u8 pageno, int boot)
- 		bi.dwAddress = cpu_to_be32(le32_to_cpu(blockidx->PageAddress));
- 
- 		uea_dbg(INS_TO_USBDEV(sc),
--			"sending block %u for DSP page "
--			"%u size %u address %x\n",
--			blockno, pageno, blocksize,
--			le32_to_cpu(blockidx->PageAddress));
-+				"sending block %u for DSP page %u size %u address %x\n",
-+				blockno, pageno, blocksize,
-+				le32_to_cpu(blockidx->PageAddress));
- 
- 		/* send block info through the IDMA pipe */
- 		if (uea_idma_write(sc, &bi, E4_BLOCK_INFO_SIZE))
-@@ -1060,7 +1058,6 @@ static void __uea_load_page_e4(struct uea_softc *sc, u8 pageno, int boot)
- 
- bad:
- 	uea_err(INS_TO_USBDEV(sc), "sending DSP block %u failed\n", blockno);
--	return;
- }
- 
- static void uea_load_page_e4(struct work_struct *work)
-@@ -1084,8 +1081,7 @@ static void uea_load_page_e4(struct work_struct *work)
- 
- 	p = (struct l1_code *) sc->dsp_firm->data;
- 	if (pageno >= le16_to_cpu(p->page_header[0].PageNumber)) {
--		uea_err(INS_TO_USBDEV(sc), "invalid DSP "
--						"page %u requested\n", pageno);
-+		uea_err(INS_TO_USBDEV(sc), "invalid DSP page %u requested\n", pageno);
- 		return;
- 	}
- 
-@@ -1180,8 +1176,8 @@ static int uea_cmv_e1(struct uea_softc *sc,
- 	int ret;
- 
- 	uea_enters(INS_TO_USBDEV(sc));
--	uea_vdbg(INS_TO_USBDEV(sc), "Function : %d-%d, Address : %c%c%c%c, "
--			"offset : 0x%04x, data : 0x%08x\n",
-+	uea_vdbg(INS_TO_USBDEV(sc),
-+			"Function : %d-%d, Address : %c%c%c%c, offset : 0x%04x, data : 0x%08x\n",
- 			E1_FUNCTION_TYPE(function),
- 			E1_FUNCTION_SUBTYPE(function),
- 			E1_GETSA1(address), E1_GETSA2(address),
-@@ -1220,10 +1216,10 @@ static int uea_cmv_e4(struct uea_softc *sc,
- 	uea_enters(INS_TO_USBDEV(sc));
- 	memset(&cmv, 0, sizeof(cmv));
- 
--	uea_vdbg(INS_TO_USBDEV(sc), "Function : %d-%d, Group : 0x%04x, "
--		 "Address : 0x%04x, offset : 0x%04x, data : 0x%08x\n",
--		 E4_FUNCTION_TYPE(function), E4_FUNCTION_SUBTYPE(function),
--		 group, address, offset, data);
-+	uea_vdbg(INS_TO_USBDEV(sc),
-+			"Function : %d-%d, Group : 0x%04x, Address : 0x%04x, offset : 0x%04x, data : 0x%08x\n",
-+			E4_FUNCTION_TYPE(function), E4_FUNCTION_SUBTYPE(function),
-+			group, address, offset, data);
- 
- 	/* we send a request, but we expect a reply */
- 	sc->cmv_dsc.e4.function = function | (0x1 << 4);
-@@ -1359,8 +1355,7 @@ static int uea_stat_e1(struct uea_softc *sc)
- 		break;
- 
- 	case 3:		/* fail ... */
--		uea_info(INS_TO_USBDEV(sc), "modem synchronization failed"
--					" (may be try other cmv/dsp)\n");
-+		uea_info(INS_TO_USBDEV(sc), "modem synchronization failed (may be try other cmv/dsp)\n");
- 		return -EAGAIN;
- 
- 	case 4 ... 6:	/* test state */
-@@ -1493,8 +1488,7 @@ static int uea_stat_e4(struct uea_softc *sc)
- 	case 0x1:
- 	case 0x3:
- 	case 0x4:
--		uea_dbg(INS_TO_USBDEV(sc), "modem not yet "
--						"synchronized\n");
-+		uea_dbg(INS_TO_USBDEV(sc), "modem not yet synchronized\n");
- 		return 0;
- 	case 0x5:	/* initialization */
- 	case 0x6:
-@@ -1503,8 +1497,7 @@ static int uea_stat_e4(struct uea_softc *sc)
- 		uea_dbg(INS_TO_USBDEV(sc), "modem initializing\n");
- 		return 0;
- 	case 0x2:	/* fail ... */
--		uea_info(INS_TO_USBDEV(sc), "modem synchronization "
--				"failed (may be try other cmv/dsp)\n");
-+		uea_info(INS_TO_USBDEV(sc), "modem synchronization failed (may be try other cmv/dsp)\n");
- 		return -EAGAIN;
- 	case 0x7:	/* operational */
- 		break;
-@@ -1667,9 +1660,9 @@ static int request_cmvs(struct uea_softc *sc,
- 	if (ret < 0) {
- 		/* if caller can handle old version, try to provide it */
- 		if (*ver == 1) {
--			uea_warn(INS_TO_USBDEV(sc), "requesting "
--							"firmware %s failed, "
--				"try to get older cmvs\n", cmv_name);
-+			uea_warn(INS_TO_USBDEV(sc),
-+					"requesting firmware %s failed, try to get older cmvs\n",
-+					cmv_name);
- 			return request_cmvs_old(sc, cmvs, fw);
- 		}
- 		uea_err(INS_TO_USBDEV(sc),
-@@ -1682,8 +1675,7 @@ static int request_cmvs(struct uea_softc *sc,
- 	data = (u8 *) (*fw)->data;
- 	if (size < 4 || strncmp(data, "cmv2", 4) != 0) {
- 		if (*ver == 1) {
--			uea_warn(INS_TO_USBDEV(sc), "firmware %s is corrupted,"
--				" try to get older cmvs\n", cmv_name);
-+			uea_warn(INS_TO_USBDEV(sc), "firmware %s is corrupted, try to get older cmvs\n", cmv_name);
- 			release_firmware(*fw);
- 			return request_cmvs_old(sc, cmvs, fw);
- 		}
-@@ -1743,8 +1735,7 @@ static int uea_send_cmvs_e1(struct uea_softc *sc)
- 	if (ver == 1) {
- 		struct uea_cmvs_v1 *cmvs_v1 = cmvs_ptr;
- 
--		uea_warn(INS_TO_USBDEV(sc), "use deprecated cmvs version, "
--			"please update your firmware\n");
-+		uea_warn(INS_TO_USBDEV(sc), "use deprecated cmvs version, please update your firmware\n");
- 
- 		for (i = 0; i < len; i++) {
- 			ret = uea_write_cmv_e1(sc,
-@@ -1774,8 +1765,7 @@ static int uea_send_cmvs_e1(struct uea_softc *sc)
- 	/* Enter in R-ACT-REQ */
- 	ret = uea_write_cmv_e1(sc, E1_SA_CNTL, 0, 2);
- 	uea_vdbg(INS_TO_USBDEV(sc), "Entering in R-ACT-REQ state\n");
--	uea_info(INS_TO_USBDEV(sc), "modem started, waiting "
--						"synchronization...\n");
-+	uea_info(INS_TO_USBDEV(sc), "modem started, waiting synchronization...\n");
- out:
- 	release_firmware(cmvs_fw);
- 	return ret;
-@@ -1829,8 +1819,8 @@ static int uea_send_cmvs_e4(struct uea_softc *sc)
- 	/* Enter in R-ACT-REQ */
- 	ret = uea_write_cmv_e4(sc, 1, E4_SA_CNTL, 0, 0, 2);
- 	uea_vdbg(INS_TO_USBDEV(sc), "Entering in R-ACT-REQ state\n");
--	uea_info(INS_TO_USBDEV(sc), "modem started, waiting "
--						"synchronization...\n");
-+	uea_info(INS_TO_USBDEV(sc),
-+			"modem started, waiting synchronization...\n");
- out:
- 	release_firmware(cmvs_fw);
- 	return ret;
-@@ -1993,8 +1983,7 @@ static int load_XILINX_firmware(struct uea_softc *sc)
- 	value = 0;
- 	ret = uea_send_modem_cmd(sc->usb_dev, 0xe, 1, &value);
- 	if (ret < 0)
--		uea_err(sc->usb_dev, "elsa de-assert failed with error"
--								" %d\n", ret);
-+		uea_err(sc->usb_dev, "elsa de-assert failed with error %d\n", ret);
- 
- err1:
- 	release_firmware(fw_entry);
-@@ -2051,16 +2040,16 @@ static void uea_dispatch_cmv_e1(struct uea_softc *sc, struct intr_pkt *intr)
- 	return;
- 
- bad2:
--	uea_err(INS_TO_USBDEV(sc), "unexpected cmv received, "
--			"Function : %d, Subfunction : %d\n",
-+	uea_err(INS_TO_USBDEV(sc),
-+			"unexpected cmv received Function : %d, Subfunction : %d\n",
- 			E1_FUNCTION_TYPE(cmv->bFunction),
- 			E1_FUNCTION_SUBTYPE(cmv->bFunction));
- 	uea_leaves(INS_TO_USBDEV(sc));
- 	return;
- 
- bad1:
--	uea_err(INS_TO_USBDEV(sc), "invalid cmv received, "
--			"wPreamble %d, bDirection %d\n",
-+	uea_err(INS_TO_USBDEV(sc),
-+			"invalid cmv received, wPreamble %d, bDirection %d\n",
- 			le16_to_cpu(cmv->wPreamble), cmv->bDirection);
- 	uea_leaves(INS_TO_USBDEV(sc));
- }
-@@ -2100,12 +2089,11 @@ static void uea_dispatch_cmv_e4(struct uea_softc *sc, struct intr_pkt *intr)
- 	return;
- 
- bad2:
--	uea_err(INS_TO_USBDEV(sc), "unexpected cmv received, "
--			"Function : %d, Subfunction : %d\n",
-+	uea_err(INS_TO_USBDEV(sc),
-+			"unexpected cmv received, Function : %d, Subfunction : %d\n",
- 			E4_FUNCTION_TYPE(cmv->wFunction),
- 			E4_FUNCTION_SUBTYPE(cmv->wFunction));
- 	uea_leaves(INS_TO_USBDEV(sc));
--	return;
- }
- 
- static void uea_schedule_load_page_e1(struct uea_softc *sc,
-@@ -2250,6 +2238,7 @@ err0:
- static void uea_stop(struct uea_softc *sc)
- {
- 	int ret;
-+
- 	uea_enters(INS_TO_USBDEV(sc));
- 	ret = kthread_stop(sc->kthread);
- 	uea_dbg(INS_TO_USBDEV(sc), "kthread finish with status %d\n", ret);
-@@ -2454,10 +2443,11 @@ UEA_ATTR(firmid, 0);
- 
- /* Retrieve the device End System Identifier (MAC) */
- 
--static int uea_getesi(struct uea_softc *sc, u_char * esi)
-+static int uea_getesi(struct uea_softc *sc, u_char *esi)
- {
- 	unsigned char mac_str[2 * ETH_ALEN + 1];
- 	int i;
-+
- 	if (usb_string
- 	    (sc->usb_dev, sc->usb_dev->descriptor.iSerialNumber, mac_str,
- 	     sizeof(mac_str)) != 2 * ETH_ALEN)
-@@ -2561,10 +2551,9 @@ static int uea_bind(struct usbatm_data *usbatm, struct usb_interface *intf,
- 	}
- 
- 	sc = kzalloc(sizeof(struct uea_softc), GFP_KERNEL);
--	if (!sc) {
--		uea_err(usb, "uea_init: not enough memory !\n");
-+	if (!sc)
- 		return -ENOMEM;
--	}
-+
- 
- 	sc->usb_dev = usb;
- 	usbatm->driver_data = sc;
-@@ -2595,8 +2584,7 @@ static int uea_bind(struct usbatm_data *usbatm, struct usb_interface *intf,
- 			uea_info(usb, "using iso mode\n");
- 			usbatm->flags |= UDSL_USE_ISOC | UDSL_IGNORE_EILSEQ;
- 		} else {
--			uea_err(usb, "setting alternate %u failed for "
--					"2 interface, using bulk mode\n", alt);
-+			uea_err(usb, "setting alternate %u failed for 2 interface, using bulk mode\n", alt);
- 		}
- 	}
- 
-@@ -2673,6 +2661,7 @@ static void uea_disconnect(struct usb_interface *intf)
- {
- 	struct usb_device *usb = interface_to_usbdev(intf);
- 	int ifnum = intf->altsetting->desc.bInterfaceNumber;
-+
- 	uea_enters(usb);
- 
- 	/* ADI930 has 2 interfaces and eagle 3 interfaces.
--- 
-1.9.3 (Apple Git-50)
+Maybe should have made this RFC first. Anyways, it is intended for 3.19, 
+although I don't mind if it would end up in 3.18 :-p
+
+Regards,
+Arend
+
+> Signed-off-by: Arend van Spriel<arend@broadcom.com>
+> ---
+>   fs/debugfs/file.c       | 54 +++++++++++++++++++++++++++++++++++++++++++++++++
+>   include/linux/debugfs.h | 16 ++++++++++++++-
+>   2 files changed, 69 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+> index 76c08c2..088b3fc 100644
+> --- a/fs/debugfs/file.c
+> +++ b/fs/debugfs/file.c
+> @@ -22,6 +22,7 @@
+>   #include<linux/io.h>
+>   #include<linux/slab.h>
+>   #include<linux/atomic.h>
+> +#include<linux/device.h>
+>
+>   static ssize_t default_read_file(struct file *file, char __user *buf,
+>   				 size_t count, loff_t *ppos)
+> @@ -761,3 +762,56 @@ struct dentry *debugfs_create_regset32(const char *name, umode_t mode,
+>   EXPORT_SYMBOL_GPL(debugfs_create_regset32);
+>
+>   #endif /* CONFIG_HAS_IOMEM */
+> +
+> +struct debugfs_devm_entry {
+> +	int (*read)(struct seq_file *seq, void *data);
+> +	struct device *dev;
+> +};
+> +
+> +static int debugfs_devm_entry_open(struct inode *inode, struct file *f)
+> +{
+> +	struct debugfs_devm_entry *entry = inode->i_private;
+> +
+> +	return single_open(f, entry->read, entry->dev);
+> +}
+> +
+> +static const struct file_operations debugfs_devm_entry_ops = {
+> +	.owner = THIS_MODULE,
+> +	.open = debugfs_devm_entry_open,
+> +	.release = single_release,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek
+> +};
+> +
+> +/**
+> + * debugfs_create_devm_seqfile - create a debugfs file that is bound to device.
+> + *
+> + * @dev: device related to this debugfs file.
+> + * @name: name of the debugfs file.
+> + * @parent: a pointer to the parent dentry for this file.  This should be a
+> + *	directory dentry if set.  If this parameter is %NULL, then the
+> + *	file will be created in the root of the debugfs filesystem.
+> + * @read_fn: function pointer called to print the seq_file content.
+> + */
+> +struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char *name,
+> +					   struct dentry *parent,
+> +					   int (*read_fn)(struct seq_file *s,
+> +					   	   	  void *data))
+> +{
+> +	struct debugfs_devm_entry *entry;
+> +
+> +	if (IS_ERR(parent))
+> +		return ERR_PTR(-ENOENT);
+> +
+> +	entry = devm_kzalloc(dev, sizeof(*entry), GFP_KERNEL);
+> +	if (!entry)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	entry->read = read_fn;
+> +	entry->dev = dev;
+> +
+> +	return debugfs_create_file(name, S_IRUGO, parent, entry,
+> +				&debugfs_devm_entry_ops);
+> +}
+> +EXPORT_SYMBOL_GPL(debugfs_create_devm_seqfile);
+> +
+> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+> index 4d0b4d1..f8c0db4 100644
+> --- a/include/linux/debugfs.h
+> +++ b/include/linux/debugfs.h
+> @@ -99,13 +99,18 @@ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+>   					struct dentry *parent,
+>   					u32 *array, u32 elements);
+>
+> +struct dentry *debugfs_create_devm_seqfile(struct device *dev, const char *name,
+> +					   struct dentry *parent,
+> +					   int (*read_fn)(struct seq_file *s,
+> +					   	   	  void *data));
+> +
+>   bool debugfs_initialized(void);
+>
+>   #else
+>
+>   #include<linux/err.h>
+>
+> -/*
+> +/*
+>    * We do not return NULL from these functions if CONFIG_DEBUG_FS is not enabled
+>    * so users have a chance to detect if there was a real error or not.  We don't
+>    * want to duplicate the design decision mistakes of procfs and devfs again.
+> @@ -251,6 +256,15 @@ static inline struct dentry *debugfs_create_u32_array(const char *name, umode_t
+>   	return ERR_PTR(-ENODEV);
+>   }
+>
+> +static inline struct dentry *debugfs_create_devm_seqfile(struct device *dev,
+> +							 const char *name,
+> +							 struct dentry *parent,
+> +					   int (*read_fn)(struct seq_file *s,
+> +					   	   	  void *data))
+> +{
+> +	return ERR_PTR(-ENODEV);
+> +}
+> +
+>   #endif
+>
+>   #endif
 
