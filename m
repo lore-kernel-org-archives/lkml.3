@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaJKPlr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 11:41:47 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55118 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaJKPlW (ORCPT
+	id S1752547AbaJKPln (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 11:41:43 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:35777 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302AbaJKPlW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 11 Oct 2014 11:41:22 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -14,9 +14,9 @@ Cc: Kishon Vijay Abraham I <kishon@ti.com>,
 	<antoine.tenart@free-electrons.com>,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] phy: berlin-sata: Add support for BG2 SATA PHY
-Date: Sat, 11 Oct 2014 17:41:10 +0200
-Message-Id: <1413042073-14253-3-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 3/5] phy: berlin-sata: Document BG2 compatible
+Date: Sat, 11 Oct 2014 17:41:11 +0200
+Message-Id: <1413042073-14253-4-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1413042073-14253-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Content-Type: text/plain; charset=UTF-8
@@ -25,9 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Berlin BG2 also has a SATA PHY compatible with the current driver
-except different PHY_BASE. Add a new compatible to the driver
-reflecting the different PHY_BASE.
+Berlin BG2 SATA PHY is slightly different from currently supported
+BG2Q SATA PHY. Document the new compatible for BG2's PHY.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -37,37 +36,24 @@ Cc: devicetree@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org 
 ---
- drivers/phy/phy-berlin-sata.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ Documentation/devicetree/bindings/phy/berlin-sata-phy.txt | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/phy/phy-berlin-sata.c b/drivers/phy/phy-berlin-sata.c
-index 9682b0f66177..71568f5444ac 100644
---- a/drivers/phy/phy-berlin-sata.c
-+++ b/drivers/phy/phy-berlin-sata.c
-@@ -30,6 +30,7 @@
- #define MBUS_WRITE_REQUEST_SIZE_128	(BIT(2) << 16)
- #define MBUS_READ_REQUEST_SIZE_128	(BIT(2) << 19)
+diff --git a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+index 88f8c23384c0..c0155f842f62 100644
+--- a/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
++++ b/Documentation/devicetree/bindings/phy/berlin-sata-phy.txt
+@@ -2,7 +2,9 @@ Berlin SATA PHY
+ ---------------
  
-+#define BG2_PHY_BASE		0x080
- #define BG2Q_PHY_BASE		0x200
- 
- /* register 0x01 */
-@@ -186,10 +187,15 @@ static u32 phy_berlin_power_down_bits[] = {
- 	POWER_DOWN_PHY1,
- };
- 
-+static u32 bg2_sata_phy_base = BG2_PHY_BASE;
- static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
- 
- static const struct of_device_id phy_berlin_sata_of_match[] = {
- 	{
-+		.compatible = "marvell,berlin2-sata-phy",
-+		.data = &bg2_sata_phy_base,
-+	},
-+	{
- 		.compatible = "marvell,berlin2q-sata-phy",
- 		.data = &bg2q_sata_phy_base,
- 	},
+ Required properties:
+-- compatible: should be "marvell,berlin2q-sata-phy"
++- compatible: should be one of
++    "marvell,berlin2-sata-phy"
++    "marvell,berlin2q-sata-phy"
+ - address-cells: should be 1
+ - size-cells: should be 0
+ - phy-cells: from the generic PHY bindings, must be 1
 -- 
 2.1.1
 
