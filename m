@@ -1,113 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaJKQ35 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:29:57 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:45604 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaJKQ34 (ORCPT
+	id S1752213AbaJKQbd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:31:33 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:60543 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaJKQbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:29:56 -0400
-Message-ID: <54395B00.4070208@martingkelly.com>
-Date: Sat, 11 Oct 2014 09:29:52 -0700
-From: Martin Kelly <martin@martingkelly.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
-MIME-Version: 1.0
-To: x86@kernel.org
-CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, Martin Kelly <martkell@amazon.com>
-Subject: Re: [PATCH] context_tracking: Fix checkpatch warnings
-References: <1410841232-24591-1-git-send-email-martin@martingkelly.com> <CAN8CM3zXEL8UFRcJqVN9rq-AY1Mk1_xL0eNdRHZEYRgL8ouh9Q@mail.gmail.com>
-In-Reply-To: <CAN8CM3zXEL8UFRcJqVN9rq-AY1Mk1_xL0eNdRHZEYRgL8ouh9Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Sat, 11 Oct 2014 12:31:32 -0400
+From: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+To: pdeschrijver@nvidia.com
+Cc: rmk+kernel@arm.linux.org.uk, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org,
+        Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+Subject: [PATCH] init: calibrate: fix style issues
+Date: Sat, 11 Oct 2014 18:31:15 +0200
+Message-Id: <1413045075-10416-1-git-send-email-rasmuswriedtlarsen@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/25/2014 09:25 AM, Martin Kelly wrote:
-> On Mon, Sep 15, 2014 at 9:20 PM, Martin Kelly <martin@martingkelly.com> wrote:
->> checkpatch emits several warnings for context_tracking.c, which are
->> fixed in this patch:
->>
->> - No space after "("
->> - Lines longer than 80 characters
->>
->> Signed-off-by: Martin Kelly <martkell@amazon.com>
->> ---
->>  kernel/context_tracking.c | 40 +++++++++++++++++++++-------------------
->>  1 file changed, 21 insertions(+), 19 deletions(-)
->>
->> diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
->> index 5664985..bf29065 100644
->> --- a/kernel/context_tracking.c
->> +++ b/kernel/context_tracking.c
->> @@ -54,8 +54,8 @@ void context_tracking_user_enter(void)
->>         /*
->>          * Repeat the user_enter() check here because some archs may be calling
->>          * this from asm and if no CPU needs context tracking, they shouldn't
->> -        * go further. Repeat the check here until they support the inline static
->> -        * key check.
->> +        * go further. Repeat the check here until they support the inline
->> +        * static key check.
->>          */
->>         if (!context_tracking_is_enabled())
->>                 return;
->> @@ -75,31 +75,33 @@ void context_tracking_user_enter(void)
->>         WARN_ON_ONCE(!current->mm);
->>
->>         local_irq_save(flags);
->> -       if ( __this_cpu_read(context_tracking.state) != IN_USER) {
->> +       if (__this_cpu_read(context_tracking.state) != IN_USER) {
->>                 if (__this_cpu_read(context_tracking.active)) {
->>                         trace_user_enter(0);
->>                         /*
->> -                        * At this stage, only low level arch entry code remains and
->> -                        * then we'll run in userspace. We can assume there won't be
->> -                        * any RCU read-side critical section until the next call to
->> -                        * user_exit() or rcu_irq_enter(). Let's remove RCU's dependency
->> -                        * on the tick.
->> +                        * At this stage, only low level arch entry code
->> +                        * remains and then we'll run in userspace. We can
->> +                        * assume there won't be any RCU read-side critical
->> +                        * section until the next call to user_exit() or
->> +                        * rcu_irq_enter(). Let's remove RCU's dependency on
->> +                        * the tick.
->>                          */
->>                         vtime_user_enter(current);
->>                         rcu_user_enter();
->>                 }
->>                 /*
->> -                * Even if context tracking is disabled on this CPU, because it's outside
->> -                * the full dynticks mask for example, we still have to keep track of the
->> -                * context transitions and states to prevent inconsistency on those of
->> -                * other CPUs.
->> -                * If a task triggers an exception in userspace, sleep on the exception
->> -                * handler and then migrate to another CPU, that new CPU must know where
->> -                * the exception returns by the time we call exception_exit().
->> -                * This information can only be provided by the previous CPU when it called
->> -                * exception_enter().
->> -                * OTOH we can spare the calls to vtime and RCU when context_tracking.active
->> -                * is false because we know that CPU is not tickless.
->> +                * Even if context tracking is disabled on this CPU, because
->> +                * it's outside the full dynticks mask for example, we still
->> +                * have to keep track of the context transitions and states to
->> +                * prevent inconsistency on those of other CPUs.  If a task
->> +                * triggers an exception in userspace, sleep on the exception
->> +                * handler and then migrate to another CPU, that new CPU must
->> +                * know where the exception returns by the time we call
->> +                * exception_exit().  This information can only be provided by
->> +                * the previous CPU when it called exception_enter().  OTOH we
->> +                * can spare the calls to vtime and RCU when
->> +                * context_tracking.active is false because we know that CPU is
->> +                * not tickless.
->>                  */
->>                 __this_cpu_write(context_tracking.state, IN_USER);
->>         }
->> --
->> 2.1.0
->>
-> 
-> (ping)
-> 
+* fix multiple quoted string split across lines style issues
+* change printk(KERN_NOTICE to pr_notice
+* insert spaces after , in function call
 
-(re-ping)
+Signed-off-by: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
+---
+ init/calibrate.c | 34 +++++++++++++---------------------
+ 1 file changed, 13 insertions(+), 21 deletions(-)
+
+diff --git a/init/calibrate.c b/init/calibrate.c
+index ce635dc..3cfd911 100644
+--- a/init/calibrate.c
++++ b/init/calibrate.c
+@@ -15,7 +15,7 @@ unsigned long lpj_fine;
+ unsigned long preset_lpj;
+ static int __init lpj_setup(char *str)
+ {
+-	preset_lpj = simple_strtoul(str,NULL,0);
++	preset_lpj = simple_strtoul(str, NULL, 0);
+ 	return 1;
+ }
+ 
+@@ -40,11 +40,13 @@ static unsigned long calibrate_delay_direct(void)
+ 	unsigned long good_timer_sum = 0;
+ 	unsigned long good_timer_count = 0;
+ 	unsigned long measured_times[MAX_DIRECT_CALIBRATION_RETRIES];
+-	int max = -1; /* index of measured_times with max/min values or not set */
++
++	/* index of measured_times with max/min values or not set */
++	int max = -1;
+ 	int min = -1;
+ 	int i;
+ 
+-	if (read_current_timer(&pre_start) < 0 )
++	if (read_current_timer(&pre_start) < 0)
+ 		return 0;
+ 
+ 	/*
+@@ -95,9 +97,7 @@ static unsigned long calibrate_delay_direct(void)
+ 		 * >= 12.5% apart, redo calibration.
+ 		 */
+ 		if (start >= post_end)
+-			printk(KERN_NOTICE "calibrate_delay_direct() ignoring "
+-					"timer_rate as we had a TSC wrap around"
+-					" start=%lu >=post_end=%lu\n",
++			pr_notice("calibrate_delay_direct() ignoring timer_rate as we had a TSC wrap around start=%lu >=post_end=%lu\n",
+ 				start, post_end);
+ 		if (start < post_end && pre_start != 0 && pre_end != 0 &&
+ 		    (timer_rate_max - timer_rate_min) < (timer_rate_max >> 3)) {
+@@ -134,14 +134,12 @@ static unsigned long calibrate_delay_direct(void)
+ 		good_timer_count = 0;
+ 		if ((measured_times[max] - estimate) <
+ 				(estimate - measured_times[min])) {
+-			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+-					"min bogoMips estimate %d = %lu\n",
++			pr_notice("calibrate_delay_direct() dropping min bogoMips estimate %d = %lu\n",
+ 				min, measured_times[min]);
+ 			measured_times[min] = 0;
+ 			min = max;
+ 		} else {
+-			printk(KERN_NOTICE "calibrate_delay_direct() dropping "
+-					"max bogoMips estimate %d = %lu\n",
++			pr_notice("calibrate_delay_direct() dropping max bogoMips estimate %d = %lu\n",
+ 				max, measured_times[max]);
+ 			measured_times[max] = 0;
+ 			max = min;
+@@ -160,9 +158,7 @@ static unsigned long calibrate_delay_direct(void)
+ 
+ 	}
+ 
+-	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
+-	       "estimate for loops_per_jiffy.\nProbably due to long platform "
+-		"interrupts. Consider using \"lpj=\" boot option.\n");
++	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
+ 	return 0;
+ }
+ #else
+@@ -280,23 +276,19 @@ void calibrate_delay(void)
+ 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
+ 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"already calibrated this CPU");
++			pr_info("Calibrating delay loop (skipped) already calibrated this CPU");
+ 	} else if (preset_lpj) {
+ 		lpj = preset_lpj;
+ 		if (!printed)
+-			pr_info("Calibrating delay loop (skipped) "
+-				"preset value.. ");
++			pr_info("Calibrating delay loop (skipped) preset value.. ");
+ 	} else if ((!printed) && lpj_fine) {
+ 		lpj = lpj_fine;
+-		pr_info("Calibrating delay loop (skipped), "
+-			"value calculated using timer frequency.. ");
++		pr_info("Calibrating delay loop (skipped), value calculated using timer frequency.. ");
+ 	} else if ((lpj = calibrate_delay_is_known())) {
+ 		;
+ 	} else if ((lpj = calibrate_delay_direct()) != 0) {
+ 		if (!printed)
+-			pr_info("Calibrating delay using timer "
+-				"specific routine.. ");
++			pr_info("Calibrating delay using timer specific routine.. ");
+ 	} else {
+ 		if (!printed)
+ 			pr_info("Calibrating delay loop... ");
+-- 
+1.9.1
+
