@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaJKUh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 16:37:57 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:65327 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaJKUh4 (ORCPT
+	id S1751785AbaJKU4d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 16:56:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58008 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaJKU4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 16:37:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Murali Karicheri <m-karicheri2@ti.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: keystone: add bus notifier to set dma_pfn_offset for pci devices
-Date: Sat, 11 Oct 2014 22:37:04 +0200
-Message-ID: <7696162.dApA5zbMp7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54387429.2030605@ti.com>
-References: <1412954137-4567-1-git-send-email-m-karicheri2@ti.com> <54385187.6030002@ti.com> <54387429.2030605@ti.com>
+	Sat, 11 Oct 2014 16:56:32 -0400
+Date: Sat, 11 Oct 2014 13:55:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cocci@systeme.lip6.fr
+Subject: Re: [RFC] drop owner assignment from platform_drivers
+Message-ID: <20141011205527.GA30877@kroah.com>
+References: <20141010072439.GA1741@katana>
+ <20141010083627.GL5182@n2100.arm.linux.org.uk>
+ <20141010182604.GC6075@katana>
+ <2769473.KEN6DZKnT7@wuerfel>
+ <20141011165650.GA1263@katana>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:JTsTW/IatLiQu/ToxTFW06vvuPaUMg+pEZON4+hNMCP
- 6eG2czg0fDnESf3l0pdKtO7eAFvb0eiHvPl0Ef8TOjmKarzVzw
- jh4CuQFg7X7vzD5Wz1yqwTbOBEw6cdRz27t6qJCC4r7fu+YCv7
- SCSzx3RZTjC6MMfoNNVXjbQdBmbTk07HJStIDz3iisxwQhxKse
- SuLBj18bxVrbl0iwgD6MkBrRyJDj3/sHMA4mcHvwqcNP+EKTdR
- mESV8CygDrzIzJ/OJzwsdFeBnK3Rq9mP/hrwlcoAZ80Iq1G07y
- 38vvVtnhJWgsJRE9RztJgL8lzoxb/zx3hZ+moaFLnoL3AjI3dZ
- PMw5veKEweBgoZA7hfag=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141011165650.GA1263@katana>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 10 October 2014 20:04:57 Santosh Shilimkar wrote:
-> On 10/10/14 5:37 PM, Murali Karicheri wrote:
-> > Based on this, dma configuration parameters get set for the device which
-> > is probed through DT.
-> >
-> > As PCI devices are attached to the PCI bus during scan, and we don't
-> > have DT nodes, we could use similar mechanism to pass the dma-range info
-> > from parent host platform device to the PCI devices by adding an
-> > of_pci_dma_configure() API and hook it to the PCI probe path some where?
-> > Please comment on this so that I can work on the right solution to
-> > address this issue for Keystone.
-> >
-> Adding the DT node parsing code in PCI bus probe path is the right way
-> to go about it. You could re-use some of the helpers from dma parsing
-> code.
+On Sat, Oct 11, 2014 at 06:56:51PM +0200, Wolfram Sang wrote:
 > 
-> I let Arnd comment if he disagrees, otherwise I suggest to create an
-> RFC patch and post it on the list. We can take it from there.
+> > > You got me wondering, though, that it could not be correct to call
+> > > platform_driver_register() from the platform core instead of module
+> > > init. I will check tomorrow. Still, this would be a bug independent of
+> > > my series. Although I'd need to respin it if platform_driver_probe()
+> > > needed a fix.
+> > 
+> > Right, this seems to be a preexisting bug. platform_create_bundle 
+> > and platform_driver_probe will both overwrite the .owner field with
+> > NULL since they live in builtin code. They need to be replaced with
+> > __platform_driver_probe and __platform_driver_register that both
+> > take an extra owner argument passed down from the caller in the driver
+> > module.
+> 
+> Yeah, that would be one solution. However, my personal favourite would
+> meanwhile be to revert the commit that Russell mentioned. I think it is
+> cleaner to have the owner explicitly set in the module rather than
+> hidden away by a function call. However, grepping through include/linux,
+> there are a few subsystems hiding it this way. So, it is a pattern
+> somewhow. Oh well...
 
-Yes, I think that is the correct way forward, we need this anyway to
-handle IOMMUs correctly, following the patches that Will Deacon did
-for platform device IOMMU configuration.
- 
-> That also reminded me xhci host code issue with dma-ranges since the
-> devices are manually created there. I will review that thread as
-> well after this merge window.
+The pattern is to not have to manually set MODULE_OWNER, and have the
+pre-processor do it for you, otherwise you will forget or get it wrong.
 
-Right, manually created devices are always problematic, you should
-try to avoid those.
+That is why I accepted this patch to the platform driver interface, as
+it is in line with many other bus driver apis (pci, usb, etc.).
 
-	Arnd
+I missed the one code path you pointed out, and that should be fixed,
+but that doesn't mean that the original patch should be reverted, as it
+is the way we want things to be, let's just fix up the bug and move on.
+
+And again, may I just say how much I hate the platform driver code, one
+of these days I'm going to lock myself in a room for a week and figure
+out a way to just delete that stuff...
+
+greg k-h
