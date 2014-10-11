@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357AbaJKMY4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 08:24:56 -0400
-Received: from mx1.polytechnique.org ([129.104.30.34]:36987 "EHLO
-	mx1.polytechnique.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993AbaJKMYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 08:24:55 -0400
-X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Oct 2014 08:24:55 EDT
-Message-ID: <54391F7C.1050001@m4x.org>
-Date: Sat, 11 Oct 2014 14:15:56 +0200
-From: Nicolas Iooss <nicolas.iooss_linux@m4x.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1752176AbaJKMis (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 08:38:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaJKMir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 08:38:47 -0400
+Date: Sat, 11 Oct 2014 20:38:05 +0800
+From: Baoquan He <bhe@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Kees Cook <keescook@chromium.org>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, ak@linux.intel.com, ebiederm@xmission.com,
+        kexec@lists.infradead.org, whissi@whissi.de,
+        kumagai-atsushi@mxc.nes.nec.co.jp, stable@vger.kernel.org
+Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
+Message-ID: <20141011123805.GC11560@dhcp-16-116.nay.redhat.com>
+References: <1412060896-1902-1-git-send-email-bhe@redhat.com>
+ <542B1EC1.8090502@zytor.com>
+ <20141001135237.GA13689@redhat.com>
+ <543553C7.9010906@zytor.com>
+ <20141008192728.GA26517@redhat.com>
+ <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
+ <543907B5.7060001@zytor.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        user-mode-linux-user@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] um: always use the same type for __syscall_stub_start
-References: <1413026981-9667-1-git-send-email-nicolas.iooss_linux@m4x.org> <54391792.40508@nod.at>
-In-Reply-To: <54391792.40508@nod.at>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
-X-AV-Checked: ClamAV using ClamSMTP at svoboda.polytechnique.org (Sat Oct 11 14:15:47 2014 +0200 (CEST))
-X-Spam-Flag: No, tests=bogofilter, spamicity=0.050827, queueID=2DFA41408EEFF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <543907B5.7060001@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-11 13:42 GMT+02:00 Richard Weinberger:
-> Am 11.10.2014 um 13:29 schrieb Nicolas Iooss:
->> syscall_stub_start is declared with different types in C files:
->>
->>   arch/um/kernel/physmem.c: extern int __syscall_stub_start;
->>   arch/um/kernel/skas/mmu.c: extern int __syscall_stub_start;
->>   arch/um/os-Linux/skas/mem.c: extern unsigned long __syscall_stub_start;
->>   arch/um/os-Linux/skas/process.c: extern int __syscall_stub_start;
->>
->> Fix this inconsistency by always using unsigned long.  This does not
->> change anything in the compiled code because only the address of
->> __syscall_stub_start is used, but it makes the static checker I use
->> stop complaining about incompatible declarations.
->
-> While we're here, can you put these declarations into a single header
-file?
+On 10/11/14 at 03:34am, H. Peter Anvin wrote:
+> On 10/10/2014 08:14 PM, Baoquan He wrote:
+> >On 10/08/14 at 03:27pm, Vivek Goyal wrote:
+> >>On Wed, Oct 08, 2014 at 08:09:59AM -0700, H. Peter Anvin wrote:
+> >
+> >>>Sorry... this makes no sense.
+> >>>
+> >>>For x86-64, there is no direct connection between the physical and
+> >>>virtual address spaces that the kernel runs in...
+> >>
+> >>I am sorry I did not understand this one. I thought that initial
+> >>relocatable kernel implementaion did not have any direct connection
+> >>between virtual and physical address. One could load kernel anywhere
+> >>and kernel virtual address will not change and we will just adjust
+> >>page tables to map virtual address to right physical address.
+> >>
+> >>Now handle_relocation() stuff seems to introduce a close coupling
+> >>between physical and virtual address. So if kernel shifts by 16MB
+> >>in physical address space, then it will shift by equal amount
+> >>in virtual address space. So there seems to be a direct connection
+> >>between virtual and physical address space in this case.
+> >
+> >Yeah, it's exactly as Vivek said.
+> >
+> >Before kaslr was introduced, x86_64 kernel can be put anywhere, and
+> >always _text is 0xffffffff81000000. Meanwhile phys_base contains the
+> >offset between the compiled addr (namely 0x1000000) and kernel loaded
+> >addr. After kaslr implementation was added, as long as kernel loaded
+> >addr is different 0x1000000, it will call handle_relocations(). The
+> >offset now is added onto each symbols including _text and phys_base
+> >becomes 0.
+> >
+> >It's clearly showing that by checking /proc/kallsyms and value of
+> >phys_base.
+> >
+> 
+> This really shouldn't have happened this way on x86-64.  It has to
+> happen this way on i386, but I worry that this may be a serious
+> misdesign in kaslr on x86-64.  I'm also wondering if there is any
+> other fallout of this?
 
-Sure.  Do you have a specific header file in mind or shall I create
-arch/um/include/asm/sections.h with declarations for
-__syscall_stub_start, __syscall_stub_end and __binary_start (used in
-arch/um/kernel/um_arch.c)?
+Yes, this shouldn't happen this way on x86_64. With this patch, those
+are fixed as expected. If kernel location is not chosen randomly, we
+should not do the relocations handling. If and only if kaslr is enabled
+and it relocated the kernel randomly as expected, we do the relocations
+handling.
 
-Thanks for your quick reply,
+I think this patch really makes sense and it's simple and won't impact
+i386 and other implementations.
 
-Nicolas
-
+Thanks
+Baoquan
 
