@@ -1,54 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaJKJv2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 05:51:28 -0400
-Received: from p01c12o145.mxlogic.net ([208.65.145.68]:39519 "EHLO
-	p01c12o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaJKJv1 convert rfc822-to-8bit (ORCPT
+	id S1752184AbaJKKCh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 06:02:37 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:42622 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976AbaJKKCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 05:51:27 -0400
-X-Greylist: delayed 541 seconds by postgrey-1.27 at vger.kernel.org; Sat, 11 Oct 2014 05:51:27 EDT
-X-MXL-Hash: 5438fd9f174b872d-009ec557c5f9e8dea8909e488ce80bb441c034d8
-X-MXL-Hash: 5438fb6c6146d8a1-116db822b8f48897eb6e4d49833770b75b093cde
-From: "Bean, Christopher" <cbean@bamsi.org>
-Subject: Admin Server
-Thread-Topic: Admin Server
-Thread-Index: Ac/lN1zleJQFhc2hRS+pFmBKxnYgaw==
-Date: Sat, 11 Oct 2014 09:40:16 +0000
-Message-ID: <17742E963CCACC4A83CC6101AC19A4516D83BF31@BAMSI-Exch10.bamsi.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [116.203.248.215]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Sat, 11 Oct 2014 06:02:34 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Sat, 11 Oct 2014 11:59:47 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Colin Foe-Parker <colin.foeparker@logicpd.com>, nsekhar@ti.com,
+        t-kristo@ti.com, j-keerthy@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/12] rtc: omap: fix class-device registration
+Message-ID: <20141011095947.GB18988@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1412881594-25678-4-git-send-email-johan@kernel.org>
+ <20141010175919.GO31348@saruman>
 MIME-Version: 1.0
-X-AnalysisOut: [v=2.1 cv=JLEvsq6b c=1 sm=1 tr=0 a=iqdLOAq5USrMoic3anj5xA==]
-X-AnalysisOut: [:117 a=iqdLOAq5USrMoic3anj5xA==:17 a=9cW_t1CCXrUA:10 a=7Ha]
-X-AnalysisOut: [Ht3lve5QA:10 a=lsVsTnquT3gA:10 a=BLceEmwcHowA:10 a=8nJEP1O]
-X-AnalysisOut: [IZ-IA:10 a=pGyrmCOuAAAA:8 a=YlVTAMxIAAAA:8 a=s6nhKyO8AAAA:]
-X-AnalysisOut: [8 a=gKnmrGzqMl4P2JzvRzgA:9 a=QR5r8NE7lXwLFxjD:21 a=jCoeBq4]
-X-AnalysisOut: [tWRjkVYZo:21 a=wPNLvfGTeEIA:10 a=AtE2TA1oPR0A:10]
-X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014101104); S=0.200(2014051901)]
-X-MAIL-FROM: <cbean@bamsi.org>
-X-SOURCE-IP: [70.90.103.181]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141010175919.GO31348@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that our webmail Admin Server is currently congested,
-and your Mailbox is out of date. We are currently  deleting all inactive
-accounts so please confirm that your e-mail account is still active by
-updating your current and correct details by clicking this link below
-http://napnes.org/forms/use/w5d/form1.html
+On Fri, Oct 10, 2014 at 12:59:30PM -0500, Felipe Balbi wrote:
+> On Thu, Oct 09, 2014 at 09:06:25PM +0200, Johan Hovold wrote:
+> > Make sure not to register the class device until after it has been
+> > configured and interrupt handlers registered at probe.
+> > 
+> > Currently, the device is not fully configured (e.g. 24-hour mode) when
+> > the class device is registered, something which involves driver
+> > callbacks for example to read the current time.
+> > 
+> > This reordering also prevents user space from enabling an alarm before
+> > an interrupt handler has been registered.
+> > 
+> > Note that the interrupts are now registered using the platform-device
+> > rather than class-device name.
+> > 
+> > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > ---
+> >  drivers/rtc/rtc-omap.c | 32 +++++++++++++++++---------------
+> >  1 file changed, 17 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> > index 828cb9983cc2..2eca141e784e 100644
+> > --- a/drivers/rtc/rtc-omap.c
+> > +++ b/drivers/rtc/rtc-omap.c
+> > @@ -147,8 +147,9 @@ static void rtc_wait_not_busy(void)
+> >  	/* now we have ~15 usec to read/write various registers */
+> >  }
+> >  
+> > -static irqreturn_t rtc_irq(int irq, void *rtc)
+> > +static irqreturn_t rtc_irq(int irq, void *dev_id)
+> >  {
+> > +	struct rtc_device	*rtc = platform_get_drvdata(dev_id);
+> >  	unsigned long		events = 0;
+> >  	u8			irq_data;
+> >  
+> > @@ -164,7 +165,8 @@ static irqreturn_t rtc_irq(int irq, void *rtc)
+> >  	if (irq_data & OMAP_RTC_STATUS_1S_EVENT)
+> >  		events |= RTC_IRQF | RTC_UF;
+> >  
+> > -	rtc_update_irq(rtc, 1, events);
+> > +	if (rtc)
+> > +		rtc_update_irq(rtc, 1, events);
+> >  
+> >  	return IRQ_HANDLED;
+> >  }
+> > @@ -416,17 +418,6 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+> >  		rtc_writel(KICK1_VALUE, OMAP_RTC_KICK1_REG);
+> >  	}
+> >  
+> > -	device_init_wakeup(&pdev->dev, true);
+> > -
+> > -	rtc = devm_rtc_device_register(&pdev->dev, pdev->name,
+> > -			&omap_rtc_ops, THIS_MODULE);
+> > -	if (IS_ERR(rtc)) {
+> > -		pr_debug("%s: can't register RTC device, err %ld\n",
+> > -			pdev->name, PTR_ERR(rtc));
+> > -		goto fail0;
+> > -	}
+> > -	platform_set_drvdata(pdev, rtc);
+> > -
+> >  	/* clear pending irqs, and set 1/second periodic,
+> >  	 * which we'll use instead of update irqs
+> >  	 */
+> > @@ -450,14 +441,14 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+> >  
+> >  	/* handle periodic and alarm irqs */
+> >  	if (devm_request_irq(&pdev->dev, omap_rtc_timer, rtc_irq, 0,
+> > -			dev_name(&rtc->dev), rtc)) {
+> > +			dev_name(&pdev->dev), pdev)) {
+> >  		pr_debug("%s: RTC timer interrupt IRQ%d already claimed\n",
+> >  			pdev->name, omap_rtc_timer);
+> >  		goto fail0;
+> >  	}
+> >  	if ((omap_rtc_timer != omap_rtc_alarm) &&
+> >  		(devm_request_irq(&pdev->dev, omap_rtc_alarm, rtc_irq, 0,
+> > -			dev_name(&rtc->dev), rtc))) {
+> > +			dev_name(&pdev->dev), pdev))) {
+> 
+> i don't get it. Why pass pdev as cookie when all you need is rtc ?
+> Doesn't sound very good to me. Also, IRQ handler *must* be registered
+> only after RTC is registered. That's because if you request an IRQ here,
+> you could already have a pending interrupt and since you won't have a
+> valid rtc pointer you won't be able to clear the interrupt line.
 
-Thanks,
-Admin Department
+We don't need the class device (rtc pointer) to clear the interrupt
+line. The iomem base is enough, and that is static until Lokesh adds the
+struct omap_rtc_dev abstraction. Then we pass that as the cookie.
 
-________________________________
+And all RTC interrupts have been disabled, and pending interrupts
+cleared before registering the handlers so that should not be a problem.
 
-This email is intended only for the addressee or a person authorized to receive for the addressee. It may contain information that is privileged, confidential, or otherwise protected from use and disclosure by federal regulation (42 CFR). If you are not the intended recipient, you are hereby notified that any review, disclosure, copying, or dissemination of this information; taking any action based on its contents; or other use is strictly prohibited. If you have received this communication in error, please notify the sender immediately by reply email and delete/destroy the message.
+To the contrary, once the class device has been registered user-space
+could enable interrupts at any time and that is why everything should
+have been set up before.
 
-If the information contained in this communication has been disclosed to you with consent from records whose confidentiality is protected by federal regulation, you are prohibited from further disclosure of its content without the specific written consent of the person to whom the information pertains or as otherwise permitted by federal regulation. A general authorization for release is not sufficient for this purpose. Thank you.
+Johan
