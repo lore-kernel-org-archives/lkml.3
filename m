@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaJKQkL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:40:11 -0400
-Received: from smtprelay0057.hostedemail.com ([216.40.44.57]:49914 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750834AbaJKQkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:40:09 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2690:2828:3138:3139:3140:3141:3142:3350:3622:3865:3867:3868:3870:3871:4321:4605:5007:7652:8660:10004:10400:10848:11026:11658:11914:12043:12296:12438:12517:12519:12740:13069:13148:13161:13229:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: shoe27_585ba5e961737
-X-Filterd-Recvd-Size: 1913
-Message-ID: <1413045605.16385.25.camel@joe-AO725>
-Subject: Re: [PATCH] init: calibrate: fix style issues
-From: Joe Perches <joe@perches.com>
-To: Rasmus Wriedt Larsen <rasmuswriedtlarsen@gmail.com>
-Cc: pdeschrijver@nvidia.com, rmk+kernel@arm.linux.org.uk, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org
-Date: Sat, 11 Oct 2014 09:40:05 -0700
-In-Reply-To: <1413045075-10416-1-git-send-email-rasmuswriedtlarsen@gmail.com>
-References: <1413045075-10416-1-git-send-email-rasmuswriedtlarsen@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752141AbaJKQoM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:44:12 -0400
+Received: from mail.kernel.org ([198.145.19.201]:37073 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009AbaJKQoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:44:11 -0400
+Date: Sat, 11 Oct 2014 18:44:04 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] MFD for v3.18
+Message-ID: <20141011164403.GA19541@earth.universe>
+References: <20141010094046.GH26795@lee--X1>
+ <CA+55aFyH-E4BTk0EVLnyVDqxtTNxAMM8fnzeo5=sfFaEp8RYhw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyH-E4BTk0EVLnyVDqxtTNxAMM8fnzeo5=sfFaEp8RYhw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-11 at 18:31 +0200, Rasmus Wriedt Larsen wrote:
-> * fix multiple quoted string split across lines style issues
-> * change printk(KERN_NOTICE to pr_notice
-> * insert spaces after , in function call
-[]
-> diff --git a/init/calibrate.c b/init/calibrate.c
-[]
-> @@ -160,9 +158,7 @@ static unsigned long calibrate_delay_direct(void)
->  
->  	}
->  
-> -	printk(KERN_NOTICE "calibrate_delay_direct() failed to get a good "
-> -	       "estimate for loops_per_jiffy.\nProbably due to long platform "
-> -		"interrupts. Consider using \"lpj=\" boot option.\n");
-> +	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\nProbably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
 
-This would be better on 2 lines:
-	pr_notice("calibrate_delay_direct() failed to get a good estimate for loops_per_jiffy.\n"
-		  "Probably due to long platform interrupts. Consider using \"lpj=\" boot option.\n");
+--HcAYCG3uE/tztfnV
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The grammar is poor though and this
-could be better phrased.
+Hi,
 
+On Sat, Oct 11, 2014 at 07:01:09AM -0400, Linus Torvalds wrote:
+> On Fri, Oct 10, 2014 at 5:40 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >  The following changes since commit 52addcf9d6669fa439387610bc65c92fa09=
+80cef:
+> >
+> >   Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
+> >
+> > are available in the git repository at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/mfd-fo=
+r-linus-3.18
+>=20
+> This causes Kconfig problems for me when doing "make allmodconfig":
+>=20
+>   fs/sysfs/Kconfig:1: symbol SYSFS is selected by CHARGER_MAX14577
+>   drivers/power/Kconfig:327: symbol CHARGER_MAX14577 depends on POWER_SUP=
+PLY
+>   drivers/power/Kconfig:1: symbol POWER_SUPPLY is selected by HID_SONY
+>   drivers/hid/Kconfig:649: symbol HID_SONY depends on NEW_LEDS
+>   drivers/leds/Kconfig:8: symbol NEW_LEDS is selected by SENSORS_APPLESMC
+>   drivers/hwmon/Kconfig:299: symbol SENSORS_APPLESMC depends on HWMON
+>   drivers/hwmon/Kconfig:5: symbol HWMON is selected by EEEPC_LAPTOP
+>   drivers/platform/x86/Kconfig:496: symbol EEEPC_LAPTOP depends on HOTPLU=
+G_PCI
+>   drivers/pci/hotplug/Kconfig:5: symbol HOTPLUG_PCI depends on SYSFS
+>=20
+> and the reason seems to be your changes to drivers/power/Kconfig for
+> the CHARGER_MAX14577 symbol.
+>=20
+> So I pulled and then unpulled.  I realize you're not the only guilty
+> party in this chain, but your pull is the final drop, so.. I would
+> suggest making that MAX14577 charger interface _depend_ on SYSFS, not
+> try to select it.
+
+This is fixed in battery-2.6.git. I will send a pull request in a
+couple of minutes.
+
+-- Sebastian
+
+--HcAYCG3uE/tztfnV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUOV5TAAoJENju1/PIO/qaoz0QAJJxN4fc/H7ZP4uUwG1W8ryY
+XJlP8YWy026waJGiA4Nh3G9l+5tqIZ3gUThtYFsHKi7bbyFeg+LCvUY4IVu+6TVl
+PstZJfrMSHW6QsxW0I8qB338XNGCTo6fKVzv8kDsWGHjGbCJSxcGwqZeBf5VnM+y
+3jU7JlzuK5BSkIiEYpP4PHIY49SJ/oegITlL61vOyfU5eqRGvQYCBq/W+2hMeDuy
+EawYP8wdJ5xk8JL+NNcKS8NrHjpn/7U1KyKT86l0AY2tUYWLRCrGqu04azUH8XN1
+cBG54INg3H7urb6P7dZfW0YKRBXhfdahU/mNptNb8AWJI4UrzL+O12WX7QsUGiGr
+k8b8ggl199v7oGSXYlUOyZ3E+XgdLJUzAfJt+VzpX+ZgD6QqJctFo0CiBy4vHXXN
+aS61W6mC7LC6RD48db3XPyMs2m1MHRt94dSwupXJDiBeRErlVC2HsHiPpPyHvcfK
+JbTmSX1l/aufejhNiJWzFASaHinFb42WIXGx2vBOQJZdDB/RRSz76d6PQvLNzAJ2
+nVcX/M1G7r0uzNqDZAoROKHy7vdKNOWgXtguK0qW5fMmhgtPYNBdq1t2GxRaatoJ
+F4cZI4yj4PEkSsx52E1+CjG80nRiIjsb5O/DqVe1csPB3oMdYmoAfFLzDD9CaShJ
+oha8DAGMZdM2CDs3CJD/
+=0ckc
+-----END PGP SIGNATURE-----
+
+--HcAYCG3uE/tztfnV--
