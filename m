@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaJKJJM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 05:09:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:52641 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628AbaJKJJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 05:09:10 -0400
-Date: Sat, 11 Oct 2014 14:39:03 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Raymond Yau <superquad.vortex2@gmail.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v2 2/2] ALSA: au88x0: pr_* replaced with
- dev_*
-Message-ID: <20141011090903.GC8231@sudip-PC>
-References: <1412930199-24797-1-git-send-email-sudipm.mukherjee@gmail.com>
- <1412930199-24797-2-git-send-email-sudipm.mukherjee@gmail.com>
- <CAN8ccibSw_85wdnxbNSKfjXQ-7Lg3C6_5fhKQJJi5xMi8pMabA@mail.gmail.com>
+	id S1752181AbaJKJMQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 05:12:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731AbaJKJMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 05:12:14 -0400
+Message-ID: <5438F463.50003@redhat.com>
+Date: Sat, 11 Oct 2014 11:12:03 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN8ccibSw_85wdnxbNSKfjXQ-7Lg3C6_5fhKQJJi5xMi8pMabA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Dave Jones <davej@redhat.com>,
+        linux-input@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: i8042 - disable active multiplexing by default
+References: <20141010205131.GA3271@dtor-ws> <20141010211827.GA26222@redhat.com> <20141010212245.GB38320@dtor-ws>
+In-Reply-To: <20141010212245.GB38320@dtor-ws>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 11, 2014 at 03:20:56PM +0800, Raymond Yau wrote:
-> >
-> > pr_* macros replaced with dev_* as they are more preffered over pr_*.
-> > each file which had pr_* was reviewed manually and replaced with dev_*.
-> > here we have actually used the reference of the vortex which was added
-> > to some functions in the previous patch of this series.
-> >
-> > The prefix of the CARD_NAME and prefix of "vortex:" was also
-> > removed as the dev_* will print the device name.
-> >
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> >
+Hi,
+
+On 10/10/2014 11:22 PM, Dmitry Torokhov wrote:
+> On Fri, Oct 10, 2014 at 05:18:27PM -0400, Dave Jones wrote:
+>> On Fri, Oct 10, 2014 at 01:51:31PM -0700, Dmitry Torokhov wrote:
+>>
+>>  >  /*
+>>  > - * Some Fujitsu notebooks are having trouble with touchpads if
+>>  > - * active multiplexing mode is activated. Luckily they don't have
+>>  > - * external PS/2 ports so we can safely disable it.
+>>  > - * ... apparently some Toshibas don't like MUX mode either and
+>>  > - * die horrible death on reboot.
+>>  > + * Some laptops do increment active multiplexing mode correctly;
+>>  > + * unfortunately they are in minority.
+>>  >   */
+>>
+>> s/increment/implement/ ?
 > 
-> >  static int vortex_core_init(vortex_t *vortex)
-> >  {
-> >
-> > -       pr_info( "Vortex: init.... ");
-> > +       dev_info(vortex->card->dev, "init.... ");
-> 
-> Is it possible to add linefeed  since "done/n" won't appear in the same
-> line with init nor shutdown?
-> 
-should we add linefeed ?
-as of now it will print init.... then it will print done as the init is complete.
-so dmesg will show us:
+> Thanks Dave, I'll fix it up.
 
-init....done.
+The patch looks good to me, and with the above fixup is:
 
-same for shutdown.
-but if we give linefeed , then it will become : 
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-init....
-done.
+Regards,
 
-the meaning will be lost. and many user might just wonder what is done ? 
-
-thanks
-sudip
-
-> >         /* Hardware Init. */
-> >         hwwrite(vortex->mmio, VORTEX_CTRL, 0xffffffff);
-> >         msleep(5);
-> > @@ -2729,7 +2735,7 @@ static int vortex_core_init(vortex_t *vortex)
-> >         //vortex_enable_timer_int(vortex);
-> >         //vortex_disable_timer_int(vortex);
-> >
-> > -       pr_info( "done.\n");
-> > +       dev_info(vortex->card->dev, "done.\n");
-> >         spin_lock_init(&vortex->lock);
-> >
-> >         return 0;
-> > @@ -2738,7 +2744,7 @@ static int vortex_core_init(vortex_t *vortex)
-> >  static int vortex_core_shutdown(vortex_t * vortex)
-> >  {
-> >
-> > -       pr_info( "Vortex: shutdown...");
-> > +       dev_info(vortex->card->dev, "shutdown...");
-> >  #ifndef CHIP_AU8820
-> >         vortex_eq_free(vortex);
-> >         vortex_Vort3D_disable(vortex);
-> > @@ -2760,7 +2766,7 @@ static int vortex_core_shutdown(vortex_t * vortex)
-> >         msleep(5);
-> >         hwwrite(vortex->mmio, VORTEX_IRQ_SOURCE, 0xffff);
-> >
-> > -       pr_info( "done.\n");
-> > +       dev_info(vortex->card->dev, "done.\n");
-> >         return 0;
-> >  }
-> >
+Hans
