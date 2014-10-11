@@ -1,226 +1,704 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbaJKGUW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 02:20:22 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:49913 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaJKGUU (ORCPT
+	id S1752062AbaJKGVV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 02:21:21 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63287 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaJKGVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 02:20:20 -0400
-Date: Fri, 10 Oct 2014 23:20:15 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com, arnd@arndb.de,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v8 1/5] thermal: rockchip: add driver for thermal
-Message-ID: <20141011062015.GA19734@dtor-ws>
-References: <1412936381-22718-1-git-send-email-caesar.wang@rock-chips.com>
- <1412936381-22718-2-git-send-email-caesar.wang@rock-chips.com>
- <20141010174636.GB32974@dtor-ws>
- <5438C7BD.4010308@rock-chips.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5438C7BD.4010308@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 11 Oct 2014 02:21:19 -0400
+Message-ID: <1413008458.5939.4.camel@localhost.localdomain>
+Subject: [ANNOUNCE] BLD-3.17 release.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: linux-kernel@vger.kernel.org
+Date: Sat, 11 Oct 2014 12:20:58 +0600
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 (3.10.2-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Caesar,
+BLD (The Barbershop Load Distribution Algorithm) patch for Linux 3.17
+, this version contains a build fix when CONFIG_BLD=n. I have recently
+done some netperf benchmark (actually I did prevously too but never
+publish) below shows the stat of default netperf run on localhost
+system (client/server) running on local system (core i3, 2g mem,
+higher is better).
 
-On Sat, Oct 11, 2014 at 02:01:33PM +0800, Caesar Wang wrote:
-> Dear Dmitry,
-> 
-> 在 2014年10月11日 01:46, Dmitry Torokhov 写道:
-> >Hi Caesar,
-> >
-> >On Fri, Oct 10, 2014 at 06:19:37PM +0800, Caesar Wang wrote:
-> >>Thermal is TS-ADC Controller module supports
-> >>user-defined mode and automatic mode.
-> >>
-> >>User-defined mode refers,TSADC all the control signals entirely by
-> >>software writing to register for direct control.
-> >>
-> >>Automaic mode refers to the module automatically poll TSADC output,
-> >>and the results were checked.If you find that the temperature High
-> >>in a period of time,an interrupt is generated to the processor
-> >>down-measures taken;If the temperature over a period of time High,
-> >>the resulting TSHUT gave CRU module,let it reset the entire chip,
-> >>or via GPIO give PMIC.
-> >>
-> >>Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-> >>Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> >>---
-> >>  drivers/thermal/Kconfig            |   9 +
-> >>  drivers/thermal/Makefile           |   1 +
-> >>  drivers/thermal/rockchip_thermal.c | 628 +++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 638 insertions(+)
-> >>  create mode 100644 drivers/thermal/rockchip_thermal.c
-> >>
-> >>diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> >>index f9a1386..24845ae 100644
-> >>--- a/drivers/thermal/Kconfig
-> >>+++ b/drivers/thermal/Kconfig
-> >>@@ -133,6 +133,15 @@ config SPEAR_THERMAL
-> >>  	  Enable this to plug the SPEAr thermal sensor driver into the Linux
-> >>  	  thermal framework.
-> >>+config ROCKCHIP_THERMAL
-> >>+	tristate "Rockchip thermal driver"
-> >>+	depends on ARCH_ROCKCHIP
-> >>+	help
-> >>+	  Rockchip thermal driver provides support for Temperature sensor
-> >>+	  ADC (TS-ADC) found on Rockchip SoCs. It supports one critical
-> >>+	  trip point. Cpufreq is used as the cooling device and will throttle
-> >>+	  CPUs when the Temperature crosses the passive trip point.
-> >>+
-> >>  config RCAR_THERMAL
-> >>  	tristate "Renesas R-Car thermal driver"
-> >>  	depends on ARCH_SHMOBILE || COMPILE_TEST
-> >>diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-> >>index de0636a..930554f 100644
-> >>--- a/drivers/thermal/Makefile
-> >>+++ b/drivers/thermal/Makefile
-> >>@@ -19,6 +19,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
-> >>  # platform thermal drivers
-> >>  obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
-> >>+obj-$(CONFIG_ROCKCHIP_THERMAL)	+= rockchip_thermal.o
-> >>  obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
-> >>  obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
-> >>  obj-y				+= samsung/
-> >>diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-> >>new file mode 100644
-> >>index 0000000..ceee2c1
-> >>--- /dev/null
-> >>+++ b/drivers/thermal/rockchip_thermal.c
-> >>@@ -0,0 +1,628 @@
-> >>+/*
-> >>+ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
-> >>+ *
-> >>+ * This program is free software; you can redistribute it and/or modify it
-> >>+ * under the terms and conditions of the GNU General Public License,
-> >>+ * version 2, as published by the Free Software Foundation.
-> >>+ *
-> >>+ * This program is distributed in the hope it will be useful, but WITHOUT
-> >>+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> >>+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> >>+ * more details.
-> >>+ */
-> >>+
-> >>+#include <linux/clk.h>
-> >>+#include <linux/cpu_cooling.h>
-> >>+#include <linux/interrupt.h>
-> >>+#include <linux/io.h>
-> >>+#include <linux/module.h>
-> >>+#include <linux/of.h>
-> >>+#include <linux/of_address.h>
-> >>+#include <linux/of_irq.h>
-> >>+#include <linux/platform_device.h>
-> >>+#include <linux/thermal.h>
-> >>+
-> >>+/**
-> >>+* If the temperature over a period of time High,
-> >>+* the resulting TSHUT gave CRU module,let it reset the entire chip,
-> >>+* or via GPIO give PMIC.
-> >>+*/
-> >>+enum reset_mde {
-> >Can we spare one more letter? ;)
-> >
-> 
-> OK, maybe fix it as the follows:
-> 
-> enum reset_mde {
->     TSADC_HT_RESET_CRU = 0,
->     TSADC_HT_PULL_GPIO,
-> };
+	    tcp_stream	tcp_rr    udp_stream     udp_rr
 
-I meant to spell "mode" out, like this:
+mainline    9343.54    20812.03	   18231.74	24396.074
+				   18210.71
 
-enum reset_mode {
-	...
-};
+bld	   14738.35    29224.54    26475.75	34910.08
+				   26462.53
 
-> >>+	CRU = 0,
-> >>+	GPIO,
-> >>+};
-> >>+
-> >>+/**
-> >>+* The system has three Teperture Sensors.
-> >>+* channel0 is reserve,channel1 is for CPU,and
-> >>+* channel channel 2 is for GPU.
-> >>+*/
-> >>+enum sensor_id {
-> >>+	RESERVE = 0,
-> >>+	CPU,
-> >>+	GPU,
-> >>+	SENSOR_ID_END,
-> >>+};
-> >>+
-> >>+struct rockchip_thermal_data {
-> >>+	const struct rockchip_tsadc_platform_data *pdata;
-> >>+	struct thermal_zone_device *tz[SENSOR_ID_END];
-> >>+	struct thermal_cooling_device *cdev;
-> >>+	void __iomem *regs;
-> >>+
-> >>+	unsigned long temp_passive;
-> >>+	unsigned long hw_shut_temp;
-> >>+	unsigned long alarm_temp;
-> >>+	bool irq_enabled;
-> >>+	int irq;
-> >>+	int reset_mode;
-> >>+	int chn;
-> >>+
-> >>+	struct clk *clk;
-> >>+	struct clk *pclk;
-> >>+};
-> >>+
-> >>+struct rockchip_tsadc_platform_data {
-> >>+	unsigned long temp_passive;
-> >>+	unsigned long hw_shut_temp;
-> >>+	int reset_mode;
-> >>+
-> >>+	int (*irq_handle)(void __iomem *reg);
-> >Why does it return int and not void? What is the return value of this?
-> 
-> Fixed. instead of using void.
-> >>+	int (*initialize)(int reset_mode, int chn, void __iomem *reg,
-> >Why does it return int and not void? What is the return value of this?> +			  unsigned long hw_shut_temp);
-> 
-> Ditto.
-> 
-> >>+	int (*control)(void __iomem *reg, bool on);
-> >>+	int (*code_to_temp)(u32 code);
-> >>+	u32 (*temp_to_code)(int temp);
-> >>+	void (*set_alarm_temp)(int chn, void __iomem *reg,
-> >>+			       unsigned long alarm_temp);
-> >>+};
-> >>+
-> >>+/* TSADC V2 Sensor info define: */
-> >>+#define TSADCV2_AUTO_CON			0x04
-> >>+#define TSADCV2_INT_EN				0x08
-> >>+#define TSADCV2_INT_PD				0x0c
-> >>+#define TSADCV2_DATA(chn)			(0x20+chn*0x04)
-> >Unsafe macros. You want to enclose argument in parenthesis.
-> 
-> Yeah.
-> Hmmm, there is no thought of a good way to deal with it at the moment.
-> 
-> Maybe do that as the follows,but should be a better way to deal.
+These are average of 5 runs of each tests. BLD performs better
+and shows ~(35-40)% improvement. Config used for this benchmark
+could be found at the following link:
 
-No, I meant
+https://raw.githubusercontent.com/rmullick/bld-patches/master/config.benchmark-3.17
 
-#define TSADCV2_DATA(chn)	(0x20 + (chn) * 0x04)
+And, recently Luis Cruz backports BLD's previous release BLD-3.16
+for Android and experimentally ran it on his galaxy SIII, these
+could be found at following link:
 
-This way one can safely pass expressions as argument, like
-TSADCV2_DATA(i + 1) will evaluate properly.
+https://github.com/SyNtheticNightmar3/bld-patches
 
-Thanks.
+If you are interested in running it on Android, take a look at the
+above link.
 
--- 
-Dmitry
+Thanks,
+Rakib
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+---
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 80a6907..65319c6 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -36,6 +36,15 @@ config BROKEN_ON_SMP
+ 	depends on BROKEN || !SMP
+ 	default y
+ 
++config BLD
++	bool "An alternate CPU load distribution technique for task scheduler"
++	depends on SMP
++	default y
++	help
++	  This is an alternate CPU load distribution technique based for task
++	  scheduler based on The Barbershop Load Distribution algorithm. Not
++	  suitable for NUMA, should work well on SMP.
++
+ config INIT_ENV_ARG_LIMIT
+ 	int
+ 	default 32 if !UML
+diff --git a/kernel/sched/bld.h b/kernel/sched/bld.h
+new file mode 100644
+index 0000000..097dd23
+--- /dev/null
++++ b/kernel/sched/bld.h
+@@ -0,0 +1,207 @@
++#ifdef CONFIG_BLD
++
++static DEFINE_RWLOCK(rt_list_lock);
++static LIST_HEAD(rt_rq_head);
++static LIST_HEAD(cfs_rq_head);
++static DEFINE_RWLOCK(cfs_list_lock);
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++static inline struct rq *rq_of_cfs(struct cfs_rq *cfs_rq)
++{
++	return cfs_rq->rq;
++}
++#else
++static inline struct rq *rq_of_cfs(struct cfs_rq *cfs_rq)
++{
++	return container_of(cfs_rq, struct rq, cfs);
++}
++#endif
++
++#ifdef CONFIG_RT_GROUP_SCHED
++static inline struct rq *rq_of_rt(struct rt_rq *rt_rq)
++{
++	return rt_rq->rq;
++}
++#else
++static inline struct rq *rq_of_rt(struct rt_rq *rt_rq)
++{
++	return container_of(rt_rq, struct rq, rt);
++}
++#endif
++
++static int select_cpu_for_wakeup(int task_type, struct cpumask *mask)
++{
++	int cpu = smp_processor_id(), i;
++	unsigned long load, min_load = ULONG_MAX;
++	struct rq *rq;
++
++	if (task_type) {
++		for_each_cpu(i, mask) {
++			rq = cpu_rq(i);
++			load = rq->cfs.load.weight;
++			if (load < min_load) {
++				min_load = load;
++				cpu = i;
++			}
++		}
++	} else {
++		min_load = -1;
++
++		for_each_cpu(i, mask) {
++			rq = cpu_rq(i);
++			load = rq->rt.lowbit;
++			if (load > min_load) {
++				min_load = load;
++				cpu = i;
++			}
++		}
++	}
++
++	return cpu;
++}
++
++static int bld_pick_cpu_cfs(struct task_struct *p, int sd_flags, int wake_flags)
++{
++	struct cfs_rq *cfs;
++	unsigned long flags;
++	unsigned int cpu = smp_processor_id();
++
++	read_lock_irqsave(&cfs_list_lock, flags);
++	list_for_each_entry(cfs, &cfs_rq_head, bld_cfs_list) {
++		cpu = cpu_of(rq_of_cfs(cfs));
++		if (cpu_online(cpu))
++			break;
++	}
++	read_unlock_irqrestore(&cfs_list_lock, flags);
++	return cpu;
++}
++
++static int bld_pick_cpu_rt(struct task_struct *p, int sd_flags, int wake_flags)
++{
++	struct rt_rq *rt;
++	unsigned long flags;
++	unsigned int cpu = smp_processor_id();
++
++	read_lock_irqsave(&rt_list_lock, flags);
++	list_for_each_entry(rt, &rt_rq_head, bld_rt_list) {
++		cpu = cpu_of(rq_of_rt(rt));
++		if (cpu_online(cpu))
++			break;
++	}
++	read_unlock_irqrestore(&rt_list_lock, flags);
++	return cpu;
++}
++
++static int bld_pick_cpu_domain(struct task_struct *p, int sd_flags, int wake_flags)
++{
++	unsigned int cpu = smp_processor_id(), want_affine = 0;
++	struct cpumask *tmpmask;
++
++	if (p->nr_cpus_allowed == 1)
++		return task_cpu(p);
++
++	if (sd_flags & SD_BALANCE_WAKE) {
++		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
++			want_affine = 1;
++		}
++	}
++
++	if (want_affine)
++		tmpmask = tsk_cpus_allowed(p);
++	else
++		tmpmask = sched_domain_span(cpu_rq(task_cpu(p))->sd);
++
++	if (rt_task(p))
++		cpu = select_cpu_for_wakeup(0, tmpmask);
++	else
++		cpu = select_cpu_for_wakeup(1, tmpmask);
++
++	return cpu;
++}
++
++static void track_load_rt(struct rq *rq, struct task_struct *p)
++{
++	unsigned long flag;
++	int firstbit;
++	struct rt_rq *first;
++	struct rt_prio_array *array = &rq->rt.active;
++
++	first = list_entry(rt_rq_head.next, struct rt_rq, bld_rt_list);
++	firstbit = sched_find_first_bit(array->bitmap);
++
++	/* Maintaining rt.lowbit */
++	if (firstbit <= rq->rt.lowbit)
++		rq->rt.lowbit = p->prio;
++
++	if (rq->rt.lowbit < first->lowbit) {
++		write_lock_irqsave(&rt_list_lock, flag);
++		list_del(&rq->rt.bld_rt_list);
++		list_add_tail(&rq->rt.bld_rt_list, &rt_rq_head);
++		write_unlock_irqrestore(&rt_list_lock, flag);
++	}
++}
++
++static int bld_get_cpu(struct task_struct *p, int sd_flags, int wake_flags)
++{
++	unsigned int cpu;
++
++	if (sd_flags == SD_BALANCE_WAKE || (sd_flags == SD_BALANCE_EXEC && (get_nr_threads(p) > 1)))
++		cpu = bld_pick_cpu_domain(p, sd_flags, wake_flags);
++	else {
++		if (rt_task(p))
++			cpu = bld_pick_cpu_rt(p, sd_flags, wake_flags);
++		else
++			cpu = bld_pick_cpu_cfs(p, sd_flags, wake_flags);
++	}
++
++	return cpu;
++}
++
++static void bld_track_load_activate(struct rq *rq, struct task_struct *p)
++{
++	unsigned long flag;
++	if (rt_task(p)) {
++		track_load_rt(rq, p);
++	} else {
++		if (rq->cfs.pos != 2) {
++			struct cfs_rq *last;
++			last = list_entry(cfs_rq_head.prev, struct cfs_rq, bld_cfs_list);
++			if (rq->cfs.load.weight >= last->load.weight) {
++				write_lock_irqsave(&cfs_list_lock, flag);
++				list_del(&rq->cfs.bld_cfs_list);
++				list_add_tail(&rq->cfs.bld_cfs_list, &cfs_rq_head);
++				rq->cfs.pos = 2; last->pos = 1;
++				write_unlock_irqrestore(&cfs_list_lock, flag);
++			}
++		}
++	}
++}
++
++static void bld_track_load_deactivate(struct rq *rq, struct task_struct *p)
++{
++	unsigned long flag;
++	if (rt_task(p)) {
++		track_load_rt(rq, p);
++	} else {
++		if (rq->cfs.pos != 0) {
++			struct cfs_rq *first;
++			first = list_entry(cfs_rq_head.next, struct cfs_rq, bld_cfs_list);
++			if (rq->cfs.load.weight <= first->load.weight) {
++				write_lock_irqsave(&cfs_list_lock, flag);
++				list_del(&rq->cfs.bld_cfs_list);
++				list_add(&rq->cfs.bld_cfs_list, &cfs_rq_head);
++				rq->cfs.pos = 0; first->pos = 1;
++				write_unlock_irqrestore(&cfs_list_lock, flag);
++			}
++		}
++	}
++}
++#else
++static inline void bld_track_load_activate(struct rq *rq, struct task_struct *p)
++{
++}
++
++static inline void bld_track_load_deactivate(struct rq *rq, struct task_struct *p)
++{
++}
++#endif /* CONFIG_BLD */
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ec1a286..e2c3cef 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -24,6 +24,8 @@
+  *  2007-07-01  Group scheduling enhancements by Srivatsa Vaddagiri
+  *  2007-11-29  RT balancing improvements by Steven Rostedt, Gregory Haskins,
+  *              Thomas Gleixner, Mike Kravetz
++ *  2012-Feb	The Barbershop Load Distribution (BLD) algorithm - an alternate
++ *		CPU load distribution technique for kernel scheduler by Rakib Mullick.
+  */
+ 
+ #include <linux/mm.h>
+@@ -86,6 +88,7 @@
+ #include "sched.h"
+ #include "../workqueue_internal.h"
+ #include "../smpboot.h"
++#include "bld.h"
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+@@ -842,6 +845,8 @@ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
+ 	update_rq_clock(rq);
+ 	sched_info_queued(rq, p);
+ 	p->sched_class->enqueue_task(rq, p, flags);
++	if (!dl_task(p))
++		bld_track_load_activate(rq, p);
+ }
+ 
+ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+@@ -849,6 +854,8 @@ static void dequeue_task(struct rq *rq, struct task_struct *p, int flags)
+ 	update_rq_clock(rq);
+ 	sched_info_dequeued(rq, p);
+ 	p->sched_class->dequeue_task(rq, p, flags);
++	if (!dl_task(p))
++		bld_track_load_deactivate(rq, p);
+ }
+ 
+ void activate_task(struct rq *rq, struct task_struct *p, int flags)
+@@ -1409,7 +1416,14 @@ out:
+ static inline
+ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
+ {
++#ifndef	CONFIG_BLD
+ 	cpu = p->sched_class->select_task_rq(p, cpu, sd_flags, wake_flags);
++#else
++	if (dl_task(p))
++		cpu = dl_sched_class.select_task_rq(p, cpu, sd_flags, wake_flags);
++	else
++		cpu = bld_get_cpu(p, sd_flags, wake_flags);
++#endif
+ 
+ 	/*
+ 	 * In order not to call set_task_cpu() on a blocking task we need
+@@ -1579,7 +1593,11 @@ void scheduler_ipi(void)
+ 	 */
+ 	preempt_fold_need_resched();
+ 
++#ifndef	CONFIG_BLD
+ 	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
++#else
++	if (llist_empty(&this_rq()->wake_list))
++#endif
+ 		return;
+ 
+ 	/*
+@@ -1601,13 +1619,16 @@ void scheduler_ipi(void)
+ 	/*
+ 	 * Check if someone kicked us for doing the nohz idle load balance.
+ 	 */
++#ifndef	CONFIG_BLD
+ 	if (unlikely(got_nohz_idle_kick())) {
+ 		this_rq()->idle_balance = 1;
+ 		raise_softirq_irqoff(SCHED_SOFTIRQ);
+ 	}
++#endif
+ 	irq_exit();
+ }
+ 
++#ifndef	CONFIG_BLD
+ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+@@ -1619,6 +1640,7 @@ static void ttwu_queue_remote(struct task_struct *p, int cpu)
+ 			trace_sched_wake_idle_without_ipi(cpu);
+ 	}
+ }
++#endif
+ 
+ bool cpus_share_cache(int this_cpu, int that_cpu)
+ {
+@@ -1630,7 +1652,7 @@ static void ttwu_queue(struct task_struct *p, int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+-#if defined(CONFIG_SMP)
++#if defined(CONFIG_SMP) && !defined(CONFIG_BLD)
+ 	if (sched_feat(TTWU_QUEUE) && !cpus_share_cache(smp_processor_id(), cpu)) {
+ 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
+@@ -1938,7 +1960,7 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 	 * Silence PROVE_RCU.
+ 	 */
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
+-	set_task_cpu(p, cpu);
++	__set_task_cpu(p, cpu);
+ 	raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 
+ #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+@@ -2413,7 +2435,14 @@ void sched_exec(void)
+ 	int dest_cpu;
+ 
+ 	raw_spin_lock_irqsave(&p->pi_lock, flags);
++#ifndef	CONFIG_BLD
+ 	dest_cpu = p->sched_class->select_task_rq(p, task_cpu(p), SD_BALANCE_EXEC, 0);
++#else
++	if (dl_task(p))
++		dest_cpu = task_cpu(p);
++	else
++		dest_cpu = bld_get_cpu(p, SD_BALANCE_EXEC, 0);
++#endif
+ 	if (dest_cpu == smp_processor_id())
+ 		goto unlock;
+ 
+@@ -2530,8 +2559,10 @@ void scheduler_tick(void)
+ 
+ #ifdef CONFIG_SMP
+ 	rq->idle_balance = idle_cpu(cpu);
++#ifndef	CONFIG_BLD
+ 	trigger_load_balance(rq);
+ #endif
++#endif
+ 	rq_last_tick_reset(rq);
+ }
+ 
+@@ -7030,6 +7061,15 @@ void __init sched_init(void)
+ #endif
+ 		init_rq_hrtick(rq);
+ 		atomic_set(&rq->nr_iowait, 0);
++#ifdef CONFIG_BLD
++		INIT_LIST_HEAD(&rq->cfs.bld_cfs_list);
++		list_add_tail(&rq->cfs.bld_cfs_list, &cfs_rq_head);
++		rq->cfs.pos = 0;
++
++		INIT_LIST_HEAD(&rq->rt.bld_rt_list);
++		list_add_tail(&rq->rt.bld_rt_list, &rt_rq_head);
++		rq->rt.lowbit = INT_MAX;
++#endif
+ 	}
+ 
+ 	set_load_weight(&init_task);
+@@ -7070,6 +7110,9 @@ void __init sched_init(void)
+ 	init_sched_fair_class();
+ 
+ 	scheduler_running = 1;
++#ifdef	CONFIG_BLD
++	printk(KERN_INFO "BLD: An Alternate CPU load distributor activated.\n");
++#endif
+ }
+ 
+ #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bfa3c86..20fc00c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4136,6 +4136,7 @@ static void task_waking_fair(struct task_struct *p)
+ 	record_wakee(p);
+ }
+ 
++#ifndef	CONFIG_BLD
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ /*
+  * effective_load() calculates the load change as seen from the root_task_group
+@@ -4585,6 +4586,7 @@ unlock:
+ 
+ 	return new_cpu;
+ }
++#endif	/* CONFIG_BLD */
+ 
+ /*
+  * Called immediately before a task is migrated to a new cpu; task_cpu(p) and
+@@ -4880,6 +4882,7 @@ simple:
+ 	return p;
+ 
+ idle:
++#ifndef	CONFIG_BLD
+ 	new_tasks = idle_balance(rq);
+ 	/*
+ 	 * Because idle_balance() releases (and re-acquires) rq->lock, it is
+@@ -4891,7 +4894,7 @@ idle:
+ 
+ 	if (new_tasks > 0)
+ 		goto again;
+-
++#endif
+ 	return NULL;
+ }
+ 
+@@ -6981,12 +6984,39 @@ static inline int on_null_domain(struct rq *rq)
+  *   needed, they will kick the idle load balancer, which then does idle
+  *   load balancing for all the idle CPUs.
+  */
++#ifndef	CONFIG_BLD
+ static struct {
+ 	cpumask_var_t idle_cpus_mask;
+ 	atomic_t nr_cpus;
+ 	unsigned long next_balance;     /* in jiffy units */
+ } nohz ____cacheline_aligned;
+ 
++static inline void nohz_balance_exit_idle(int cpu)
++{
++	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
++		/*
++		 * Completely isolated CPUs don't ever set, so we must test.
++		 */
++		if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
++			cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
++			atomic_dec(&nohz.nr_cpus);
++		}
++		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
++	}
++}
++
++static int sched_ilb_notifier(struct notifier_block *nfb,
++					unsigned long action, void *hcpu)
++{
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_DYING:
++		nohz_balance_exit_idle(smp_processor_id());
++		return NOTIFY_OK;
++	default:
++		return NOTIFY_DONE;
++	}
++}
++
+ static inline int find_new_ilb(void)
+ {
+ 	int ilb = cpumask_first(nohz.idle_cpus_mask);
+@@ -7024,20 +7054,7 @@ static void nohz_balancer_kick(void)
+ 	smp_send_reschedule(ilb_cpu);
+ 	return;
+ }
+-
+-static inline void nohz_balance_exit_idle(int cpu)
+-{
+-	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
+-		/*
+-		 * Completely isolated CPUs don't ever set, so we must test.
+-		 */
+-		if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
+-			cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+-			atomic_dec(&nohz.nr_cpus);
+-		}
+-		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+-	}
+-}
++#endif	/* CONFIG_BLD */
+ 
+ static inline void set_cpu_sd_state_busy(void)
+ {
+@@ -7079,6 +7096,7 @@ unlock:
+  */
+ void nohz_balance_enter_idle(int cpu)
+ {
++#ifndef	CONFIG_BLD
+ 	/*
+ 	 * If this cpu is going down, then nothing needs to be done.
+ 	 */
+@@ -7097,23 +7115,10 @@ void nohz_balance_enter_idle(int cpu)
+ 	cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
+ 	atomic_inc(&nohz.nr_cpus);
+ 	set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
+-}
+-
+-static int sched_ilb_notifier(struct notifier_block *nfb,
+-					unsigned long action, void *hcpu)
+-{
+-	switch (action & ~CPU_TASKS_FROZEN) {
+-	case CPU_DYING:
+-		nohz_balance_exit_idle(smp_processor_id());
+-		return NOTIFY_OK;
+-	default:
+-		return NOTIFY_DONE;
+-	}
++#endif
+ }
+ #endif
+ 
+-static DEFINE_SPINLOCK(balancing);
+-
+ /*
+  * Scale the max load_balance interval with the number of CPUs in the system.
+  * This trades load-balance latency on larger machines for less cross talk.
+@@ -7123,6 +7128,9 @@ void update_max_interval(void)
+ 	max_load_balance_interval = HZ*num_online_cpus()/10;
+ }
+ 
++#ifndef	CONFIG_BLD
++static DEFINE_SPINLOCK(balancing);
++
+ /*
+  * It checks each scheduling domain to see if it is due to be balanced,
+  * and initiates a balancing operation if so.
+@@ -7371,6 +7379,7 @@ void trigger_load_balance(struct rq *rq)
+ 		nohz_balancer_kick();
+ #endif
+ }
++#endif	/* CONFIG_BLD */
+ 
+ static void rq_online_fair(struct rq *rq)
+ {
+@@ -7816,7 +7825,9 @@ const struct sched_class fair_sched_class = {
+ 	.put_prev_task		= put_prev_task_fair,
+ 
+ #ifdef CONFIG_SMP
++#ifndef	CONFIG_BLD
+ 	.select_task_rq		= select_task_rq_fair,
++#endif
+ 	.migrate_task_rq	= migrate_task_rq_fair,
+ 
+ 	.rq_online		= rq_online_fair,
+@@ -7854,6 +7865,7 @@ void print_cfs_stats(struct seq_file *m, int cpu)
+ 
+ __init void init_sched_fair_class(void)
+ {
++#ifndef	CONFIG_BLD
+ #ifdef CONFIG_SMP
+ 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+ 
+@@ -7863,5 +7875,5 @@ __init void init_sched_fair_class(void)
+ 	cpu_notifier(sched_ilb_notifier, 0);
+ #endif
+ #endif /* SMP */
+-
++#endif /* BLD */
+ }
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 5f6edca..ea0946c 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1295,6 +1295,7 @@ static void yield_task_rt(struct rq *rq)
+ #ifdef CONFIG_SMP
+ static int find_lowest_rq(struct task_struct *task);
+ 
++#ifndef	CONFIG_BLD
+ static int
+ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+ {
+@@ -1348,6 +1349,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
+ out:
+ 	return cpu;
+ }
++#endif	/* CONFIG_BLD */
+ 
+ static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
+ {
+@@ -2112,7 +2114,9 @@ const struct sched_class rt_sched_class = {
+ 	.put_prev_task		= put_prev_task_rt,
+ 
+ #ifdef CONFIG_SMP
++#ifndef	CONFIG_BLD
+ 	.select_task_rq		= select_task_rq_rt,
++#endif
+ 
+ 	.set_cpus_allowed       = set_cpus_allowed_rt,
+ 	.rq_online              = rq_online_rt,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 579712f..a00914d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -358,9 +358,8 @@ struct cfs_rq {
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ #endif /* CONFIG_SMP */
+ 
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	struct rq *rq;	/* cpu runqueue to which this cfs_rq is attached */
+-
++#ifdef CONFIG_FAIR_GROUP_SCHED
+ 	/*
+ 	 * leaf cfs_rqs are those that hold tasks (lowest schedulable entity in
+ 	 * a hierarchy). Non-leaf lrqs hold other higher schedulable entities
+@@ -384,6 +383,11 @@ struct cfs_rq {
+ 	struct list_head throttled_list;
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
++
++#ifdef CONFIG_BLD
++	struct list_head bld_cfs_list;
++	char pos;
++#endif
+ };
+ 
+ static inline int rt_bandwidth_enabled(void)
+@@ -417,12 +421,16 @@ struct rt_rq {
+ 	/* Nests inside the rq lock: */
+ 	raw_spinlock_t rt_runtime_lock;
+ 
++	struct rq *rq;
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	unsigned long rt_nr_boosted;
+ 
+-	struct rq *rq;
+ 	struct task_group *tg;
+ #endif
++#ifdef CONFIG_BLD
++	struct list_head bld_rt_list;
++	int lowbit;
++#endif
+ };
+ 
+ /* Deadline class' related fields in a runqueue */
+
+
