@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaJKQVe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 12:21:34 -0400
-Received: from smtp-out-029.synserver.de ([212.40.185.29]:1034 "EHLO
-	smtp-out-029.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaJKQVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 12:21:33 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 27692
-Message-ID: <5439591B.4020701@metafoo.de>
-Date: Sat, 11 Oct 2014 18:21:47 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: dmaengine@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/12] ASoC: txx9: use dmaengine_terminate_all() API
-References: <1413041973-28146-1-git-send-email-vinod.koul@intel.com> <1413042040-28222-11-git-send-email-vinod.koul@intel.com>
-In-Reply-To: <1413042040-28222-11-git-send-email-vinod.koul@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752789AbaJKQV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 12:21:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29315 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556AbaJKQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 12:20:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,699,1406617200"; 
+   d="scan'208";a="603887854"
+From: Vinod Koul <vinod.koul@intel.com>
+To: dmaengine@vger.kernel.org
+Cc: Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 4/6] carma-fpga: move to fsl_dma_external_start()
+Date: Sat, 11 Oct 2014 21:16:46 +0530
+Message-Id: <1413042408-28491-5-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
+References: <1413042408-28491-1-git-send-email-vinod.koul@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2014 05:40 PM, Vinod Koul wrote:
-> The drivers should use dmaengine_terminate_all() API instead of
-> accessing the device_control which will be deprecated soon
+carma-fpga driver uses device control with custom FSLDMA_EXTERNAL_START
+command. Since we wnat to deprecate the device control, move this driver to
+use new fsl_dma_external_start() API
 
-I already send a similar patch a while ago. It is on it's way into 3.18.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/misc/carma/carma-fpga-program.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
->
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+diff --git a/drivers/misc/carma/carma-fpga-program.c b/drivers/misc/carma/carma-fpga-program.c
+index fd0cb8b..298f912 100644
+--- a/drivers/misc/carma/carma-fpga-program.c
++++ b/drivers/misc/carma/carma-fpga-program.c
+@@ -16,6 +16,7 @@
+ #include <linux/completion.h>
+ #include <linux/miscdevice.h>
+ #include <linux/dmaengine.h>
++#include <linux/fsldma.h>
+ #include <linux/interrupt.h>
+ #include <linux/highmem.h>
+ #include <linux/kernel.h>
+@@ -524,7 +525,7 @@ static noinline int fpga_program_dma(struct fpga_dev *priv)
+ 		goto out_dma_unmap;
+ 	}
+ 
+-	ret = chan->device->device_control(chan, FSLDMA_EXTERNAL_START, 1);
++	ret = fsl_dma_external_start(chan, 1)
+ 	if (ret) {
+ 		dev_err(priv->dev, "DMA external control setup failed\n");
+ 		goto out_dma_unmap;
+-- 
+1.7.0.4
+
