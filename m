@@ -1,207 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661AbaJJXzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 10 Oct 2014 19:55:44 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52148 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246AbaJJXzn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 10 Oct 2014 19:55:43 -0400
-Date: Fri, 10 Oct 2014 16:55:41 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 8/8] clk: Add floor and ceiling constraints to clock
- rates
-Message-ID: <20141010235541.GH5493@codeaurora.org>
-References: <1412866903-6970-1-git-send-email-tomeu.vizoso@collabora.com>
- <1412866903-6970-9-git-send-email-tomeu.vizoso@collabora.com>
+	id S1751769AbaJKAFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 10 Oct 2014 20:05:34 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43286 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751497AbaJKAFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 10 Oct 2014 20:05:33 -0400
+Message-ID: <54387429.2030605@ti.com>
+Date: Fri, 10 Oct 2014 20:04:57 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412866903-6970-9-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Murali Karicheri <m-karicheri2@ti.com>, Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: keystone: add bus notifier to set dma_pfn_offset
+ for pci devices
+References: <1412954137-4567-1-git-send-email-m-karicheri2@ti.com> <7733803.LRHUrkheId@wuerfel> <54385187.6030002@ti.com>
+In-Reply-To: <54385187.6030002@ti.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/09, Tomeu Vizoso wrote:
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 4db918a..97cf1a3 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1629,18 +1609,27 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
->  	/* prevent racing with updates to the clock topology */
->  	clk_prepare_lock();
->  
-> +	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-> +		rate = max(rate, clk_user->floor_constraint);
-> +	}
-> +
-> +	hlist_for_each_entry(clk_user, &clk->per_user_clks, child_node) {
-> +		if (clk_user->ceiling_constraint > 0)
-> +			rate = min(rate, clk_user->ceiling_constraint);
-> +	}
-> +
->  	/* bail early if nothing to do */
-> -	if (rate == clk_get_rate(clk))
-> +	if (rate == clk_core_get_rate(clk))
-
-Can we use the nolock variant here? As an aside, this is going to
-make my per-clock locking series complicated. I'm not even sure
-how the two series will work together. In the per-clock locking
-series I was hoping we could check if rate == current rate
-without holding any locks. Otherwise we get into a recursive lock
-situation. Need to think more about that one.
-
->  		goto out;
->  
-> -	if ((clk->core->flags & CLK_SET_RATE_GATE) &&
-> -	    clk->core->prepare_count) {
-> +	if ((clk->flags & CLK_SET_RATE_GATE) &&
-> +	    clk->prepare_count) {
->  		ret = -EBUSY;
->  		goto out;
->  	}
->  
->  	/* calculate new rates and get the topmost changed clock */
-> -	top = clk_calc_new_rates(clk->core, rate);
-> +	top = clk_calc_new_rates(clk, rate);
->  	if (!top) {
->  		ret = -EINVAL;
->  		goto out;
-> @@ -1664,8 +1653,69 @@ out:
-[...]
-> +int clk_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	return clk_core_set_rate(clk->core, rate);
-> +}
->  EXPORT_SYMBOL_GPL(clk_set_rate);
->  
-
-What about clk_round_rate()? That needs to tell us what the rate
-will be if we call clk_set_rate() with whatever value is passed
-here. I would expect that the rate aggregation logic would be
-somewhere in that codepath but I don't see it.
 
 
-> +int clk_set_floor_rate(struct clk *clk, unsigned long rate)
+On 10/10/14 5:37 PM, Murali Karicheri wrote:
+> On 10/10/2014 02:22 PM, Arnd Bergmann wrote:
+>> On Friday 10 October 2014 11:15:37 Murali Karicheri wrote:
+>>> @@ -54,6 +55,8 @@ static void __init keystone_init(void)
+>>>          keystone_pm_runtime_init();
+>>>          if (platform_nb.notifier_call)
+>>>                  bus_register_notifier(&platform_bus_type,&platform_nb);
+>>> +       if (platform_nb.notifier_call)
+>>> +               bus_register_notifier(&pci_bus_type,&platform_nb);
+>>>          of_platform_populate(NULL, of_default_bus_match_table, NULL,
+>>> NULL);
+>>>
+>>
+>> No, this looks very wrong. Santosh spent an enormous effort on obsoleting
+>> the platform notifier block by adding the range parser to the platform
+>> device probe path.
+>>
+>> You should really remove platform_nb and all associated code rather than
+>> adding more code to it.
+>>
+>> NAK
+>>
+>>     Arnd
+> Arnd,
+>
+> I took a look at the recent work from Santosh where he has introduced
+> dma-range property to set the dma_pfn_offset for platform devices. Are
+> you referring to this commit below?
+>
+Its the correct commit.
 
-We need some documentation for these new functions. I see we have
-them in the header, maybe we can copy that here.
+> commit 591c1ee465ce5372385dbc41e7d3e36cbb477bd8
+> Author: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date:   Thu Apr 24 11:30:04 2014 -0400
+>
+>      of: configure the platform device dma parameters
+>
+>      Retrieve DMA configuration from DT and setup platform device's DMA
+>      parameters. The DMA configuration in DT has to be specified using
+>      "dma-ranges" and "dma-coherent" properties if supported.
+>
+>      We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
+>      using "dma-coherent" device tree properties.
+>
+>      The set_arch_dma_coherent_ops macro has to be defined by arch if
+>      it supports coherent dma_ops. Otherwise,
+> set_arch_dma_coherent_ops() is
+>      declared as nop.
+>
+> Based on this, dma configuration parameters get set for the device which
+> is probed through DT.
+>
+> As PCI devices are attached to the PCI bus during scan, and we don't
+> have DT nodes, we could use similar mechanism to pass the dma-range info
+> from parent host platform device to the PCI devices by adding an
+> of_pci_dma_configure() API and hook it to the PCI probe path some where?
+> Please comment on this so that I can work on the right solution to
+> address this issue for Keystone.
+>
+Adding the DT node parsing code in PCI bus probe path is the right way
+to go about it. You could re-use some of the helpers from dma parsing
+code.
 
-> +{
-> +	int ret;
-> +
-> +	clk_prepare_lock();
-> +
-> +	clk->floor_constraint = rate;
+I let Arnd comment if he disagrees, otherwise I suggest to create an
+RFC patch and post it on the list. We can take it from there.
 
-No check for ceiling being less than floor?
+That also reminded me xhci host code issue with dma-ranges since the
+devices are manually created there. I will review that thread as
+well after this merge window.
 
-> +	ret = clk_set_rate(clk, clk_get_rate(clk));
-> +
-> +	clk_prepare_unlock();
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_floor_rate);
-> +
-> +int clk_set_ceiling_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	int ret;
-> +
-> +	clk_prepare_lock();
-
-We don't need to grab the lock this early right? Presumably the
-caller is doing any required locking so they don't call different
-clk APIs for the same clk pointer at the same time. So we should
-be able to grab this lock after checking for this error
-condition.
-
-> +
-> +	WARN(rate > 0 && rate < clk->floor_constraint,
-> +	     "clk %s dev %s con %s: new ceiling %lu lower than existing floor %lu\n",
-> +	     clk->core->name, clk->dev_id, clk->con_id, rate,
-> +	     clk->floor_constraint);
-> +
-> +	clk->ceiling_constraint = rate;
-> +	ret = clk_set_rate(clk, clk_get_rate(clk));
-
-Why not just pass 0 as the second argument? The same comment
-applies in the floor function.
-
-> +
-> +	clk_prepare_unlock();
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_set_ceiling_rate);
-> +
->  static struct clk_core *clk_core_get_parent(struct clk_core *clk)
->  {
->  	struct clk_core *parent;
-> @@ -2143,6 +2195,12 @@ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
->  }
->  EXPORT_SYMBOL_GPL(__clk_register);
->  
-> +static void __clk_free_clk(struct clk *clk_user)
-> +{
-> +	hlist_del(&clk_user->child_node);
-> +	kfree(clk_user);
-
-We need to re-evaluate the rate when a user is removed, right?
-
-This leads to another question though. What does it means for a
-per-user clock to be disabled and change it's floor or ceiling?
-Should that count in the aggregation logic?
-
-So far we haven't required drivers to explicitly call
-clk_set_rate() with 0 so they can "drop" their rate request
-because there isn't any other user and disabling the clock is
-pretty much the same. With multiple users it looks like we're
-going to require them to set the floor or ceiling to 0 or INT_MAX
-if they want to remove their request. Alternatively we could
-track the prepare/unprepare state of the per-user clock and drop
-the constraint when that instance is unprepared (or reapply it
-when prepared). It's pretty much a semantic difference, but one
-benefit would be that we don't have to make two (or three?) calls
-to the clock framework if we want to drop the rate constraints
-and disable the clock.
-
-> +}
-> +
->  /**
->   * clk_register - allocate a new clock, register it and return an opaque cookie
->   * @dev: device that is registering this clock
-> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
-> index 1cdb727..025aca2 100644
-> --- a/include/linux/clk-private.h
-> +++ b/include/linux/clk-private.h
-> @@ -50,6 +50,7 @@ struct clk_core {
->  	struct hlist_head	children;
->  	struct hlist_node	child_node;
->  	struct hlist_node	debug_node;
-> +	struct hlist_head	per_user_clks;
-
-Can we just call it 'clks'?
-
->  	unsigned int		notifier_count;
->  #ifdef CONFIG_DEBUG_FS
->  	struct dentry		*dentry;
-> @@ -61,6 +62,10 @@ struct clk {
->  	struct clk_core	*core;
->  	const char *dev_id;
->  	const char *con_id;
-> +
-> +	unsigned long	floor_constraint;
-> +	unsigned long	ceiling_constraint;
-> +	struct hlist_node child_node;
->  };
->  
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Regards,
+Santosh
