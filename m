@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952AbaJKH4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 11 Oct 2014 03:56:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5546 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaJKH4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 11 Oct 2014 03:56:22 -0400
-Message-ID: <1413014178.4202.15.camel@ul30vt.home>
-Subject: [GIT PULL] VFIO updates for 3.18-rc1
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Date: Sat, 11 Oct 2014 01:56:18 -0600
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752050AbaJKIeJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 11 Oct 2014 04:34:09 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:63043 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaJKIeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 11 Oct 2014 04:34:07 -0400
+From: hansechang@gmail.com
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Cc: Ian.Campbell@eu.citrix.com, dgdegra@tycho.nsa.gov,
+        jinsong.liu@alibaba-inc.com,
+        Chang Huaixin <huaixin.chx@alibaba-inc.com>
+Subject: [PATCH] Input: xen-kbdfront - free grant table entry in xenkbd_disconnect_backend
+Date: Sat, 11 Oct 2014 16:33:32 +0800
+Message-Id: <1413016412-17890-1-git-send-email-hansechang@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Chang Huaixin <huaixin.chx@alibaba-inc.com>
 
-The following changes since commit fe82dcec644244676d55a1384c958d5f67979adb:
+xenkbd_disconnect_backend doesn't free grant table entry.
+This bug affects live migration.
 
-  Linux 3.17-rc7 (2014-09-28 14:29:07 -0700)
+xenkbd_disconnect_backend uses gnttab_end_foreign_access_ref
+to handle grant table entry which doesn't really free an entry.
 
-are available in the git repository at:
+Thus every time we do xenkbd_resume, grant table entry increses
+by one. As an grant table entry occupies 8 bytes, an grant table
+page has at most 512 entries. Every 512 times we do xenkdb_resume,
+grant table pages increses by one.
 
-  git://github.com/awilliam/linux-vfio.git tags/vfio-v3.18-rc1
+After around 3500 times of live migration, grant table pages
+will increase by 7, causing too many pages to populate and hitting
+max_pages limit when assigning pages.Thus assign_pages will fail,
+so will live migration.
 
-for you to fetch changes up to 93899a679fd6b2534b5c297d9316bae039ebcbe1:
+Signed-off-by: Chang Huaixin <huaixin.chx@alibaba-inc.com>
+---
+ drivers/input/misc/xen-kbdfront.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-  vfio-pci: Fix remove path locking (2014-09-29 17:18:39 -0600)
-
-----------------------------------------------------------------
-VFIO updates for v3.18-rc1
- - Nested IOMMU extension to type1 (Will Deacon)
- - Restore MSIx message before enabling (Gavin Shan)
- - Fix remove path locking (Alex Williamson)
-
-----------------------------------------------------------------
-Alex Williamson (1):
-      vfio-pci: Fix remove path locking
-
-Gavin Shan (3):
-      PCI: Export MSI message relevant functions
-      vfio/pci: Restore MSIx message prior to enabling
-      drivers/vfio: Export vfio_spapr_iommu_eeh_ioctl() with GPL
-
-Will Deacon (2):
-      iommu: introduce domain attribute for nesting IOMMUs
-      vfio/iommu_type1: add new VFIO_TYPE1_NESTING_IOMMU IOMMU type
-
- drivers/pci/msi.c                 |   2 +
- drivers/vfio/pci/vfio_pci.c       | 136 ++++++++++++++++----------------------
- drivers/vfio/pci/vfio_pci_intrs.c |  15 +++++
- drivers/vfio/vfio_iommu_type1.c   |  30 +++++++--
- drivers/vfio/vfio_spapr_eeh.c     |   2 +-
- include/linux/iommu.h             |   1 +
- include/uapi/linux/vfio.h         |   3 +
- 7 files changed, 104 insertions(+), 85 deletions(-)
+diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
+index fbfdc10..e2ecfc6 100644
+--- a/drivers/input/misc/xen-kbdfront.c
++++ b/drivers/input/misc/xen-kbdfront.c
+@@ -285,7 +285,7 @@ static int xenkbd_connect_backend(struct xenbus_device *dev,
+  error_evtchan:
+ 	xenbus_free_evtchn(dev, evtchn);
+  error_grant:
+-	gnttab_end_foreign_access_ref(info->gref, 0);
++	gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ 	return ret;
+ }
+@@ -296,7 +296,7 @@ static void xenkbd_disconnect_backend(struct xenkbd_info *info)
+ 		unbind_from_irqhandler(info->irq, info);
+ 	info->irq = -1;
+ 	if (info->gref >= 0)
+-		gnttab_end_foreign_access_ref(info->gref, 0);
++		gnttab_end_foreign_access(info->gref, 0, 0UL);
+ 	info->gref = -1;
+ }
+ 
+-- 
+1.9.1
 
